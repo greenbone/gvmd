@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_migrators.c
+ * @file
  * @brief The Greenbone Vulnerability Manager DB Migrators file.
  *
  * This file defines the functions used by the manager to migrate the DB to the
@@ -3218,6 +3218,237 @@ migrate_255_to_256 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 256 to version 257.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_256_to_257 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 256. */
+
+  if (manage_db_version () != 256)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add new columns
+
+  sql ("ALTER TABLE report_formats ADD COLUMN"
+       " report_type text DEFAULT 'all';");
+
+  sql ("ALTER TABLE report_formats_trash ADD COLUMN"
+       " report_type text DEFAULT 'all';");
+
+  /* Set the database version to 257. */
+
+  set_db_version (257);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 257 to version 258.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_257_to_258 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 257. */
+
+  if (manage_db_version () != 257)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Change timeout config preferences to normal VT preferences
+
+  sql ("UPDATE config_preferences SET"
+       " type = 'PLUGINS_PREFS',"
+       " name = substring(name, 9) || ':0:entry:timeout',"
+       " pref_nvt = substring(name, 9),"
+       " pref_id = 0,"
+       " pref_type = 'entry',"
+       " pref_name = 'timeout'"
+       " WHERE name LIKE 'timeout.%%' AND type = 'SERVER_PREFS';");
+
+
+  sql ("UPDATE config_preferences_trash SET"
+       " type = 'PLUGINS_PREFS',"
+       " name = substring(name, 9) || ':0:entry:timeout',"
+       " pref_nvt = substring(name, 9),"
+       " pref_id = 0,"
+       " pref_type = 'entry',"
+       " pref_name = 'timeout'"
+       " WHERE name LIKE 'timeout.%%' AND type = 'SERVER_PREFS';");
+
+  /* Set the database version to 258. */
+
+  set_db_version (258);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 258 to version 259.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_258_to_259 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 258. */
+
+  if (manage_db_version () != 258)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add relay_host and relay_port fields to scanners
+
+  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;"); 
+
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_port integer;");
+ 
+  // Set base values for new relay fields
+
+  sql ("UPDATE scanners SET relay_host = '', relay_port = 0;");
+  sql ("UPDATE scanners_trash SET relay_host = '', relay_port = 0;");
+
+  /* Set the database version to 259. */
+
+  set_db_version (259);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 259 to version 260.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_259_to_260 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 259. */
+
+  if (manage_db_version () != 259)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add processing_required and in_assets fields to reports
+
+  sql ("ALTER TABLE reports ADD COLUMN processing_required integer DEFAULT 0;");
+  sql ("ALTER TABLE reports ADD COLUMN in_assets integer;");
+ 
+  /* Set the database version to 260. */
+
+  set_db_version (260);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 260 to version 261.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_260_to_261 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 260. */
+
+  if (manage_db_version () != 260)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add oci_image_target and oci_image_target_location fields to tasks
+
+  sql ("ALTER TABLE tasks ADD COLUMN oci_image_target integer;");
+  sql ("ALTER TABLE tasks ADD COLUMN oci_image_target_location integer;");
+
+  /* Set the database version to 261. */
+
+  set_db_version (261);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 261 to version 262.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_261_to_262 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 261. */
+
+  if (manage_db_version () != 261)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add agent_group_target and agent_group_name fields to tasks
+
+  sql ("ALTER TABLE tasks ADD COLUMN agent_group integer;");
+  sql ("ALTER TABLE tasks ADD COLUMN agent_group_location integer;");
+
+  /* Set the database version to 262. */
+
+  set_db_version (262);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3280,6 +3511,12 @@ static migrator_t database_migrators[] = {
   {254, migrate_253_to_254},
   {255, migrate_254_to_255},
   {256, migrate_255_to_256},
+  {257, migrate_256_to_257},
+  {258, migrate_257_to_258},
+  {259, migrate_258_to_259},
+  {260, migrate_259_to_260},
+  {261, migrate_260_to_261},
+  {262, migrate_261_to_262},
   /* End marker. */
   {-1, NULL}};
 

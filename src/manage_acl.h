@@ -17,13 +17,14 @@
  */
 
 /**
- * @file manage_acl.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
 
 #ifndef _GVMD_MANAGE_ACL_H
 #define _GVMD_MANAGE_ACL_H
 
+#include "manage_commands.h"
 #include "manage_sql.h"
 #include <glib.h>
 

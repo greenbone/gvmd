@@ -17,7 +17,7 @@
  */
 
 /*
- * @file gvmd.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager entry point.
  */
 

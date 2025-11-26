@@ -106,6 +106,27 @@ internal_error_send_to_client (GError **);
   while (0)
 
 /**
+ * @brief Send response message to client, returning a given value on fail.
+ *
+ * Queue a message in \ref to_client with \ref send_to_client.  On failure
+ * call \ref error_send_to_client on a GError* called "error" and do a return.
+ *
+ * @param[in]   err_ret   Return value on send error.
+ * @param[in]   msg       The message, a string.
+ */
+#define SEND_TO_CLIENT_OR_FAIL_WITH_RETURN(err_ret, msg)   \
+  do                                                       \
+    {                                                      \
+      if (send_to_client (msg, gmp_parser->client_writer,  \
+                          gmp_parser->client_writer_data)) \
+        {                                                  \
+          error_send_to_client (error);                    \
+          return err_ret;                                  \
+        }                                                  \
+    }                                                      \
+  while (0)
+
+/**
  * @brief Send response message to client, returning on fail.
  *
  * Queue a message in \ref to_client with \ref send_to_client.  On failure
@@ -128,6 +149,9 @@ internal_error_send_to_client (GError **);
 void
 log_event (const char *, const char *, const char *, const char *)
   __attribute__ ((weak));
+
+void
+log_event_plural (const char *, const char *, const char *, const char *);
 
 void
 log_event_fail (const char *, const char *, const char *, const char *);

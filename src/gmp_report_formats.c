@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_report_formats.c
+ * @file
  * @brief GVM GMP layer: Report Formats
  *
  * GMP report formats.
@@ -32,6 +32,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
 
 
 /* CREATE_REPORT_FORMAT. */
@@ -157,6 +163,7 @@ params_options_free (array_t *params_options)
  * @param[out] params            Address for params.
  * @param[out] params_options    Address for param options.
  * @param[out] deprecated        Address for deprecation status.
+ * @param[out] report_type       Address for report type.
  */
 void
 parse_report_format_entity (entity_t report_format,
@@ -165,7 +172,7 @@ parse_report_format_entity (entity_t report_format,
                             char **summary, char **description,
                             char **signature, array_t **files,
                             array_t **params, array_t **params_options,
-                            char **deprecated)
+                            char **deprecated, char **report_type)
 {
   entity_t file, param_entity;
   entities_t children;
@@ -181,6 +188,18 @@ parse_report_format_entity (entity_t report_format,
   *signature = child_or_null (report_format, "signature");
   if (deprecated)
     *deprecated = child_or_null (report_format, "deprecated");
+  if (report_type)
+    *report_type = child_or_null (report_format, "report_type");
+
+  if (*report_type == NULL)
+    *report_type = "all";
+  else if (strcmp (*report_type, "scan") && strcmp (*report_type, "audit")
+           && strcmp (*report_type, "all"))
+    {
+      g_warning ("report_type for report format %s is invalid.",
+                 *report_format_id);
+      *report_type = "all";
+    }
 
   *files = make_array ();
   *params = make_array ();
@@ -362,7 +381,7 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
       && (report_format = entity_child (get_report_formats_response, "report_format")))
     {
       char *import_name, *content_type, *extension, *summary, *description;
-      char *signature;
+      char *signature, *report_type;
       const char *report_format_id;
       array_t *files, *params, *params_options;
 
@@ -371,7 +390,8 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
       parse_report_format_entity (report_format, &report_format_id,
                                   &import_name, &content_type, &extension,
                                   &summary, &description, &signature, &files,
-                                  &params, &params_options, NULL);
+                                  &params, &params_options, NULL,
+                                  &report_type);
 
       /* Check data, then create report format. */
 
@@ -410,6 +430,7 @@ create_report_format_run (gmp_parser_t *gmp_parser, GError **error)
                                          params,
                                          params_options,
                                          signature,
+                                         report_type,
                                          &new_report_format))
         {
           case -1:

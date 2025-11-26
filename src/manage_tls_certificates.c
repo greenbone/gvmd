@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_tls_certificates.c
+ * @file
  * @brief GVM management layer: TLS Certificates
  *
  * The TLS Certificates helper functions for the GVM management layer.
@@ -33,6 +33,13 @@
 #include "manage_tls_certificates.h"
 
 #include <string.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 
 /**
  * @brief Extract data from a SSLDetails:[...] host detail value

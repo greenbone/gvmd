@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage_pg.c
+ * @file
  * @brief GVM management layer: PostgreSQL specific facilities
  *
  * This file contains the parts of the GVM management layer that need
@@ -230,8 +230,10 @@ manage_create_sql_functions ()
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
        "      CASE"
-       "        WHEN lower (lvl) = 'high' THEN"
+       "        WHEN lower (lvl) = 'critical' THEN"
        "          v := 10.0;"
+       "        WHEN lower (lvl) = 'high' THEN"
+       "          v := 8.9;"
        "        WHEN lower (lvl) = 'medium' THEN"
        "          v := 6.9;"
        "        WHEN lower (lvl) = 'low' THEN"
@@ -262,6 +264,8 @@ manage_create_sql_functions ()
        "      v :=  " G_STRINGIFY (SEVERITY_ERROR) ";"
        "    ELSE"
        "      CASE"
+       "        WHEN lower (lvl) = 'critical' THEN"
+       "          v := 9.0;"
        "        WHEN lower (lvl) = 'high' THEN"
        "          v := 7.0;"
        "        WHEN lower (lvl) = 'medium' THEN"
@@ -497,20 +501,22 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION order_threat (text)"
        " RETURNS integer AS $$"
        " BEGIN"
-       "   IF $1 = 'High' THEN"
+       "   IF $1 = 'Critical' THEN"
        "     RETURN 1;"
-       "   ELSIF $1 = 'Medium' THEN"
+       "   ELSIF $1 = 'High' THEN"
        "     RETURN 2;"
-       "   ELSIF $1 = 'Low' THEN"
+       "   ELSIF $1 = 'Medium' THEN"
        "     RETURN 3;"
-       "   ELSIF $1 = 'Log' THEN"
+       "   ELSIF $1 = 'Low' THEN"
        "     RETURN 4;"
-       "   ELSIF $1 = 'False Positive' THEN"
+       "   ELSIF $1 = 'Log' THEN"
        "     RETURN 5;"
-       "   ELSIF $1 = 'None' THEN"
+       "   ELSIF $1 = 'False Positive' THEN"
        "     RETURN 6;"
-       "   ELSE"
+       "   ELSIF $1 = 'None' THEN"
        "     RETURN 7;"
+       "   ELSE"
+       "     RETURN 8;"
        "   END IF;"
        " END;"
        "$$ LANGUAGE plpgsql"
@@ -606,15 +612,17 @@ manage_create_sql_functions ()
   sql ("CREATE OR REPLACE FUNCTION days_from_now (seconds bigint)"
        " RETURNS integer AS $$"
        " DECLARE"
-       "   diff interval;"
+       "   diff    timestamp;"
+       "   current timestamp;"
        " BEGIN"
-       "   diff := age (to_timestamp (seconds), now ());"
+       "   current := now ();"
+       "   diff := to_timestamp (seconds);"
        "   RETURN CASE"
        "          WHEN seconds = 0"
        "          THEN -2"
-       "          WHEN diff < interval '0 seconds'"
+       "          WHEN diff < current"
        "          THEN -1"
-       "          ELSE date_part ('day', diff)"
+       "          ELSE diff::date - current::date"
        "          END;"
        " END;"
        "$$ LANGUAGE plpgsql"
@@ -871,13 +879,13 @@ manage_create_sql_functions ()
        "       OR qod2 is null"
        "  THEN RETURN 'new';"
        "  WHEN description1 != description2"
-       "       OR severity1 != severity2" 
+       "       OR severity1 != severity2"
        "       OR qod1 != qod2"
        "       OR hostname1 != hostname2"
        "       OR path1 != path2"
        "  THEN RETURN 'changed';"
        "  ELSE RETURN 'same';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -890,7 +898,7 @@ manage_create_sql_functions ()
        "  WHEN port = 'package'"
        "  THEN RETURN 'general/tcp';"
        "  ELSE RETURN port;"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -902,18 +910,18 @@ manage_create_sql_functions ()
        "  CASE"
        "  WHEN (SELECT count(*) FROM results"
        "        WHERE report = report_id"
-       "        AND description LIKE 'Compliant:%%NO%%') > 0"
+       "        AND description ~ '^Compliant:\\s*NO\\s*') > 0"
        "  THEN RETURN 'no';"
        "  WHEN (SELECT count(*) FROM results"
        "        WHERE report = report_id"
-       "        AND description LIKE 'Compliant:%%INCOMPLETE%%') > 0"
+       "        AND description ~ '^Compliant:\\s*INCOMPLETE\\s*') > 0"
        "  THEN RETURN 'incomplete';"
        "  WHEN (SELECT count(*) FROM results"
        "        WHERE report = report_id"
-       "        AND description LIKE 'Compliant:%%YES%%') > 0"
+       "        AND description ~ '^Compliant:\\s*YES\\s*') > 0"
        "  THEN RETURN 'yes';"
        "  ELSE RETURN 'undefined';"
-       "  END CASE;" 
+       "  END CASE;"
        "END;"
        "$$ LANGUAGE plpgsql"
        " IMMUTABLE;");
@@ -925,8 +933,8 @@ manage_create_sql_functions ()
        " DECLARE count integer := 0;"
        " BEGIN"
        "   WITH compliance_count AS"
-       "   (SELECT count(*) AS total FROM results WHERE report = report_id"                        
-       "        AND description LIKE 'Compliant:%%' || compliance || '%%')"
+       "   (SELECT count(*) AS total FROM results WHERE report = report_id"
+       "        AND description ~ ('^Compliant:\\s*' || compliance || '\\s*'))"
        "   SELECT total FROM compliance_count"
        "   INTO count;"
        "   RETURN count;"
@@ -934,7 +942,105 @@ manage_create_sql_functions ()
        " $$ LANGUAGE plpgsql"
        " IMMUTABLE;");
 
- /* Functions in SQL. */       
+     sql ("CREATE OR REPLACE FUNCTION tag_resources_count ("
+          "  tag_id integer,"
+          "  tag_type text)"
+          " RETURNS integer AS $$"
+          " DECLARE usage_types text[];"
+          " BEGIN"
+          "    IF tag_type = 'audit' OR tag_type = 'audit_report'"
+          "      OR tag_type = 'policy'"
+          "    THEN"
+          "      usage_types := ARRAY['audit', 'policy'];"
+          "    ELSIF tag_type = 'task' OR tag_type = 'report'"
+          "      OR tag_type = 'config'"
+          "    THEN"
+          "      usage_types := ARRAY['scan'];"
+          "    END IF;"
+          "    CASE"
+          "    WHEN tag_type = 'audit' OR tag_type = 'task'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources"
+          "                 JOIN tasks"
+          "                   ON tasks.id = resource"
+          "                 WHERE tag_resources.tag = tag_id"
+          "                 AND tasks.usage_type = ANY(usage_types)"
+          "                 AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ");"
+          "    WHEN tag_type = 'policy' OR tag_type = 'config'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources"
+          "                 JOIN configs"
+          "                   ON configs.id = resource"
+          "                 WHERE tag_resources.tag = tag_id"
+          "                 AND configs.usage_type = ANY(usage_types)"
+          "                 AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ");"
+          "    WHEN tag_type = 'audit_report' OR tag_type = 'report'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources"
+          "                 JOIN tasks"
+          "                   ON tasks.id = (SELECT task FROM reports"
+          "                                  WHERE reports.id = resource)"
+          "                 WHERE tag_resources.tag = tag_id"
+          "                 AND tasks.usage_type = ANY(usage_types)"
+          "                 AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ");"
+          "    ELSE"
+          "      RETURN (SELECT count(*)"
+          "              FROM tag_resources"
+          "              WHERE tag_resources.tag = tag_id"
+          "              AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ");"
+          "    END CASE;"
+          " END;"
+          " $$ LANGUAGE plpgsql"
+          " IMMUTABLE;");
+
+     sql ("CREATE OR REPLACE FUNCTION tag_resources_trash_count ("
+          "  tag_id integer,"
+          "  tag_type text)"
+          " RETURNS integer AS $$"
+          " DECLARE usage_types text[];"
+          " BEGIN"
+          "    IF tag_type = 'audit' OR tag_type = 'audit_report'"
+          "      OR tag_type = 'policy'"
+          "    THEN"
+          "      usage_types := ARRAY['audit', 'policy'];"
+          "    ELSIF tag_type = 'task' OR tag_type = 'report'"
+          "      OR tag_type = 'config'"
+          "    THEN"
+          "      usage_types := ARRAY['scan'];"
+          "    END IF;"
+          "    CASE"
+          "    WHEN tag_type = 'audit' OR tag_type = 'task'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources_trash"
+          "                 JOIN tasks"
+          "                   ON tasks.id = resource"
+          "                 WHERE tag_resources_trash.tag = tag_id"
+          "                 AND tasks.usage_type = ANY(usage_types));"
+          "    WHEN tag_type = 'policy' OR tag_type = 'config'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources_trash"
+          "                 JOIN configs"
+          "                   ON configs.id = resource"
+          "                 WHERE tag_resources_trash.tag = tag_id" 
+          "                 AND configs.usage_type = ANY(usage_types));"
+          "    WHEN tag_type = 'audit_report' OR tag_type = 'report'"
+          "    THEN RETURN (SELECT count(*)"
+          "                 FROM tag_resources_trash"
+          "                 JOIN tasks"
+          "                   ON tasks.id = (SELECT task FROM reports"
+          "                                  WHERE reports.id = resource)"
+          "                 WHERE tag_resources_trash.tag = tag_id"
+          "                 AND tasks.usage_type = ANY(usage_types));"
+          "    ELSE"
+          "      RETURN (SELECT count(*)"
+          "              FROM tag_resources_trash"
+          "              WHERE tag_resources_trash.tag = tag_id);"
+          "    END CASE;"
+          " END;"
+          " $$ LANGUAGE plpgsql"
+          " IMMUTABLE;");
+
+ /* Functions in SQL. */
 
   if (sql_int ("SELECT (EXISTS (SELECT * FROM information_schema.tables"
                "                WHERE table_catalog = '%s'"
@@ -1309,18 +1415,41 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
-
-      /* if (current_db_version >= 189)                                           */
-      /* column date in table reports was renamed to creation_time in version 245 */
-      if (current_db_version >= 245)
+      /* column oci_image_target in table task was added in version 261 */
+      /* column agent_group in table task was added in version 262 */
+      if (current_db_version >= 262)
         {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
-               "                                          integer,"  // overrides
-               "                                          integer)"  // min_qod
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
+               "                                          integer," // overrides
+               "                                          integer)" // min_qod
                " RETURNS double precision AS $$"
                /* Calculate the severity of a task. */
                "  SELECT CASE"
-               "         WHEN (SELECT target = 0"
+               "         WHEN (SELECT target = 0 "
+               "               AND agent_group = 0 "
+               "               AND oci_image_target = 0 "
+               "               FROM tasks WHERE id = $1)"
+               "         THEN CAST (NULL AS double precision)"
+               "         ELSE"
+               "         (SELECT report_severity ((SELECT id FROM reports"
+               "                                   WHERE task = $1"
+               "                                   AND scan_run_status = %u"
+               "                                   ORDER BY creation_time DESC"
+               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               "         END;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
+        }
+      /* column date in table reports was renamed to creation_time in version 245 */
+      else if (current_db_version >= 245)
+        {
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
+               "                                          integer," // overrides
+               "                                          integer)" // min_qod
+               " RETURNS double precision AS $$"
+               /* Calculate the severity of a task. */
+               "  SELECT CASE"
+               "         WHEN (SELECT target = 0 "
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
@@ -1364,6 +1493,8 @@ manage_create_sql_functions ()
            "   second_last_report integer;"
            "   severity_a double precision;"
            "   severity_b double precision;"
+           "   critical_a bigint;"
+           "   critical_b bigint;"
            "   high_a bigint;"
            "   high_b bigint;"
            "   medium_a bigint;"
@@ -1399,6 +1530,10 @@ manage_create_sql_functions ()
            "     RETURN 'down'::text;"
            "   END IF;"
            /*  Calculate trend. */
+           "   critical_a := report_severity_count (last_report, $2, $3,"
+           "                                    'critical');"
+           "   critical_b := report_severity_count (second_last_report, $2, $3,"
+           "                                    'critical');"
            "   high_a := report_severity_count (last_report, $2, $3,"
            "                                    'high');"
            "   high_b := report_severity_count (second_last_report, $2, $3,"
@@ -1411,7 +1546,9 @@ manage_create_sql_functions ()
            "                                   'low');"
            "   low_b := report_severity_count (second_last_report, $2, $3,"
            "                                   'low');"
-           "   IF high_a > 0 THEN"
+           "   IF critical_a > 0 THEN"
+           "     threat_a := 5;"
+           "   ELSEIF high_a > 0 THEN"
            "     threat_a := 4;"
            "   ELSIF medium_a > 0 THEN"
            "     threat_a := 3;"
@@ -1420,7 +1557,9 @@ manage_create_sql_functions ()
            "   ELSE"
            "     threat_a := 1;"
            "   END IF;"
-           "   IF high_b > 0 THEN"
+           "   IF critical_b > 0 THEN"
+           "     threat_b := 5;"
+           "   ELSEIF high_b > 0 THEN"
            "     threat_b := 4;"
            "   ELSIF medium_b > 0 THEN"
            "     threat_b := 3;"
@@ -1436,6 +1575,14 @@ manage_create_sql_functions ()
            "     RETURN 'down'::text;"
            "   END IF;"
            /*  Check if the threat count changed. */
+           "   IF critical_a > 0 THEN"
+           "     IF critical_a > critical_b THEN"
+           "       RETURN 'more'::text;"
+           "     ELSIF critical_a < critical_b THEN"
+           "       RETURN 'less'::text;"
+           "     END IF;"
+           "     RETURN 'same'::text;"
+           "   END IF;"
            "   IF high_a > 0 THEN"
            "     IF high_a > high_b THEN"
            "       RETURN 'more'::text;"
@@ -1574,9 +1721,12 @@ manage_create_sql_functions ()
            "                                              text)"
            " RETURNS boolean AS $$"
            "  (SELECT CASE lower ($2)"
+           "         WHEN 'critical'"
+           "         THEN $1 >= 9"
+           "              AND $1 <= 10"
            "         WHEN 'high'"
            "         THEN $1 >= 7"
-           "              AND $1 <= 10"
+           "              AND $1 < 9"
            "         WHEN 'medium'"
            "         THEN $1 >= 4"
            "              AND $1 < 7"
@@ -1619,6 +1769,9 @@ manage_create_sql_functions ()
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
            "                      WHEN severity_in_level ($1::double precision,"
+           "                                              'critical')"
+           "                      THEN 'Critical'"
+           "                      WHEN severity_in_level ($1::double precision,"
            "                                              'high')"
            "                      THEN 'High'"
            "                      WHEN severity_in_level ($1::double precision,"
@@ -1648,6 +1801,8 @@ manage_create_sql_functions ()
            "         THEN (SELECT CASE"
            "                      WHEN $2 = 1"
            "                      THEN 'Alarm'"
+           "                      WHEN severity_in_level ($1, 'critical')"
+           "                      THEN 'Critical'"
            "                      WHEN severity_in_level ($1, 'high')"
            "                      THEN 'High'"
            "                      WHEN severity_in_level ($1, 'medium')"
@@ -1834,7 +1989,7 @@ create_view_vulns ()
          "       severity, "
          G_STRINGIFY (QOD_DEFAULT) " AS qod,"
          "       'cve' AS type"
-         " FROM cves"
+         " FROM scap.cves"
          " WHERE uuid in (SELECT * FROM used_nvts)");
   else
     sql ("CREATE OR REPLACE VIEW vulns AS"
@@ -1996,7 +2151,7 @@ create_indexes_nvt ()
        "                     'nvts', 'cvss_base');");
   sql ("SELECT create_index ('nvts_by_solution_type',"
        "                     'nvts', 'solution_type');");
-  
+
   sql ("SELECT create_index ('vt_refs_by_vt_oid',"
        "                     'vt_refs', 'vt_oid');");
 
@@ -2136,6 +2291,47 @@ create_tables ()
        "  credential INTEGER REFERENCES credentials_trash (id) ON DELETE RESTRICT,"
        "  type TEXT,"
        "  value TEXT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_stores"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid TEXT UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name TEXT NOT NULL,"
+       "  comment TEXT,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER,"
+       "  version TEXT,"
+       "  active INTEGER,"
+       "  host TEXT,"
+       "  path TEXT,"
+       "  port INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_preferences"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential_store INTEGER"
+       "    REFERENCES credential_stores (id) ON DELETE RESTRICT,"
+       "  name TEXT,"
+       "  secret INTEGER,"
+       "  type INTEGER,"
+       "  pattern TEXT,"
+       "  value TEXT,"
+       "  default_value TEXT,"
+       "  passphrase_name TEXT,"
+       "  UNIQUE (credential_store, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_selectors"
+       " (id SERIAL PRIMARY KEY,"
+       "  credential_store INTEGER"
+       "    REFERENCES credential_stores (id) ON DELETE RESTRICT,"
+       "  name TEXT,"
+       "  pattern TEXT,"
+       "  default_value TEXT,"
+       "  UNIQUE (credential_store, name));");
+
+  sql ("CREATE TABLE IF NOT EXISTS credential_store_selector_types"
+       " (selector INTEGER"
+       "    REFERENCES credential_store_selectors (id) ON DELETE RESTRICT,"
+       "  credential_type TEXT);");
 
   sql ("CREATE TABLE IF NOT EXISTS deprecated_feed_data"
        " (id SERIAL PRIMARY KEY,"
@@ -2385,6 +2581,29 @@ create_tables ()
        "  port INTEGER,"
        "  credential_location INTEGER);");
 
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS oci_image_targets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  image_references text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER,"
+       "  credential_location integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2494,6 +2713,13 @@ create_tables ()
        "  timestamp bigint,"
        "  tls_versions text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS scan_queue"
+       " (report integer unique,"
+       "  queued_time_secs integer,"
+       "  queued_time_nano integer,"
+       "  handler_pid integer,"
+       "  start_from integer);");
+  
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2506,7 +2732,9 @@ create_tables ()
        "  ca_pub text,"
        "  credential integer REFERENCES credentials (id) ON DELETE RESTRICT,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  relay_host text,"
+       "  relay_port integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS configs"
        " (id SERIAL PRIMARY KEY,"
@@ -2610,7 +2838,81 @@ create_tables ()
        "  credential integer,"
        "  credential_location integer,"
        "  creation_time integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  relay_host text,"
+       "  relay_port integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agents"
+    " (id SERIAL PRIMARY KEY,"
+    "  uuid UUID NOT NULL UNIQUE,"
+    "  name TEXT NOT NULL,"
+    "  agent_id TEXT UNIQUE NOT NULL,"
+    "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+    "  hostname TEXT,"
+    "  authorized INTEGER NOT NULL,"
+    "  connection_status TEXT,"
+    "  last_update INTEGER,"
+    "  last_updater_heartbeat INTEGER,"
+    "  config TEXT,"
+    "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+    "  comment TEXT,"
+    "  creation_time INTEGER,"
+    "  modification_time INTEGER,"
+    "  updater_version TEXT,"
+    "  agent_version TEXT,"
+    "  operating_system TEXT,"
+    "  architecture TEXT,"
+    "  update_to_latest INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
+    " (id SERIAL PRIMARY KEY,"
+    "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
+    "  ip_address TEXT NOT NULL);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_installers"
+    " (id SERIAL PRIMARY KEY,"
+    "  uuid text UNIQUE NOT NULL,"
+    "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+    "  name text NOT NULL,"
+    "  comment text,"
+    "  creation_time integer,"
+    "  modification_time integer,"
+    "  description text,"
+    "  content_type text,"
+    "  file_extension text,"
+    "  installer_path text,"
+    "  version text,"
+    "  checksum text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups"
+    " (id SERIAL PRIMARY KEY,"
+    "  uuid TEXT NOT NULL UNIQUE,"
+    "  name TEXT NOT NULL,"
+    "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+    "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
+    "  comment TEXT,"
+    "  creation_time INTEGER,"
+    "  modification_time INTEGER);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents"
+    " (group_id INTEGER NOT NULL REFERENCES agent_groups (id) ON DELETE CASCADE,"
+    "  agent_id INTEGER NOT NULL REFERENCES agents (id) ON DELETE CASCADE,"
+    "  PRIMARY KEY (group_id, agent_id));");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_groups_trash"
+    " (id SERIAL PRIMARY KEY,"
+    "  uuid text UNIQUE NOT NULL,"
+    "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+    "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
+    "  name text NOT NULL,"
+    "  comment text,"
+    "  creation_time integer,"
+    "  modification_time integer);");
+
+  sql ("CREATE TABLE IF NOT EXISTS agent_group_agents_trash"
+    " (id SERIAL PRIMARY KEY,"
+    "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
+    "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
 
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id SERIAL PRIMARY KEY,"
@@ -2628,10 +2930,14 @@ create_tables ()
        "  schedule_next_time integer,"
        "  schedule_periods integer,"
        "  scanner integer," // REFERENCES scanner (id) ON DELETE RESTRICT,"
+       "  agent_group integer," // REFERENCES agent_groups (id) ON DELETE RESTRICT,"
        "  config_location integer,"
        "  target_location integer,"
        "  schedule_location integer,"
        "  scanner_location integer,"
+       "  oci_image_target integer,"
+       "  oci_image_target_location integer,"
+       "  agent_group_location integer,"
        "  upload_result_count integer,"
        "  hosts_ordering text,"
        "  alterable integer,"
@@ -2675,7 +2981,9 @@ create_tables ()
        "  scan_run_status integer,"
        "  slave_progress integer,"
        "  flags integer,"
-       "  modification_time integer);");
+       "  modification_time integer,"
+       "  processing_required integer DEFAULT 0,"
+       "  in_assets integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"
@@ -2795,6 +3103,7 @@ create_tables ()
        "  trust_time integer,"
        "  flags integer,"
        "  predefined integer,"
+       "  report_type text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -2821,6 +3130,7 @@ create_tables ()
         * Feed ("predefined") report formats are not given a new UUID because
         * they are not created if they already exist in the trash. */
        "  original_uuid text,"
+       "  report_type text,"
        "  creation_time integer,"
        "  modification_time integer);");
 
@@ -3569,7 +3879,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE scap2.cpe_matches"
            " (id SERIAL PRIMARY KEY,"
-           "  match_criteria_id text,"               
+           "  match_criteria_id text,"
            "  cpe_name_id text,"
            "  cpe_name text);");
 
@@ -3634,9 +3944,7 @@ manage_db_add_constraints (const gchar *name)
       sql ("ALTER TABLE scap2.affected_products"
            " ALTER cve SET NOT NULL,"
            " ALTER cpe SET NOT NULL,"
-           " ADD UNIQUE (cve, cpe),"
-           " ADD FOREIGN KEY(cve) REFERENCES cves(id),"
-           " ADD FOREIGN KEY(cpe) REFERENCES cpes(id);");
+           " ADD UNIQUE (cve, cpe);");
 
       sql ("ALTER TABLE scap2.epss_scores"
            " ALTER cve SET NOT NULL,"
@@ -3665,6 +3973,78 @@ manage_db_add_constraints (const gchar *name)
 }
 
 /**
+ * @brief Create the indexes for the CPEs table in the scap2 schema.
+ */
+void
+create_indexes_cpe ()
+{
+  sql ("CREATE UNIQUE INDEX cpe_idx"
+       " ON scap2.cpes (name);");
+  sql ("CREATE INDEX cpes_by_creation_time_idx"
+       " ON scap2.cpes (creation_time);");
+  sql ("CREATE INDEX cpes_by_modification_time_idx"
+       " ON scap2.cpes (modification_time);");
+  sql ("CREATE INDEX cpes_by_severity"
+       " ON scap2.cpes (severity);");
+  sql ("CREATE INDEX cpes_by_uuid"
+       " ON scap2.cpes (uuid);");
+  sql ("CREATE INDEX cpes_by_cpe_name_id"
+       " ON scap2.cpes(cpe_name_id);");
+}
+
+/**
+ * @brief Remove the indexes for the CPEs table in the scap2 schema.
+ */
+void
+drop_indexes_cpe ()
+{
+  sql ("DROP INDEX IF EXISTS scap2.cpe_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_creation_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_modification_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_severity");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_uuid");
+  sql ("DROP INDEX IF EXISTS scap2.cpes_by_cpe_name_id");
+}
+
+/**
+ * @brief Create the indexes for the CVEs tables in the scap2 schema.
+ */
+void
+create_indexes_cve ()
+{
+  sql ("CREATE UNIQUE INDEX cve_idx"
+       " ON scap2.cves (name);");
+  sql ("CREATE INDEX cves_by_creation_time_idx"
+       " ON scap2.cves (creation_time);");
+  sql ("CREATE INDEX cves_by_modification_time_idx"
+       " ON scap2.cves (modification_time);");
+  sql ("CREATE INDEX cves_by_severity"
+       " ON scap2.cves (severity);");
+
+  sql ("CREATE INDEX cpe_match_nodes_by_root_id"
+       " ON scap2.cpe_match_nodes(root_id);");
+
+  sql ("CREATE INDEX cpe_nodes_match_criteria_by_node_id"
+       " ON scap2.cpe_nodes_match_criteria(node_id);");
+}
+
+/**
+ * @brief Remove the indexes for the CVEs tables in the scap2 schema.
+ */
+void
+drop_indexes_cve ()
+{
+  sql ("DROP INDEX IF EXISTS scap2.cve_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_creation_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_modification_time_idx");
+  sql ("DROP INDEX IF EXISTS scap2.cves_by_severity");
+
+  sql ("DROP INDEX IF EXISTS scap2.cpe_match_nodes_by_root_id");
+
+  sql ("DROP INDEX IF EXISTS scap2.cpe_nodes_match_criteria_by_node_id");
+}
+
+/**
  * @brief Init external database.
  *
  * @param[in]  name  Name.  Currently only "scap".
@@ -3676,25 +4056,9 @@ manage_db_init_indexes (const gchar *name)
 {
   if (strcasecmp (name, "scap") == 0)
     {
-      sql ("CREATE UNIQUE INDEX cve_idx"
-           " ON scap2.cves (name);");
-      sql ("CREATE INDEX cves_by_creation_time_idx"
-           " ON scap2.cves (creation_time);");
-      sql ("CREATE INDEX cves_by_modification_time_idx"
-           " ON scap2.cves (modification_time);");
-      sql ("CREATE INDEX cves_by_severity"
-           " ON scap2.cves (severity);");
+      create_indexes_cpe ();
 
-      sql ("CREATE UNIQUE INDEX cpe_idx"
-           " ON scap2.cpes (name);");
-      sql ("CREATE INDEX cpes_by_creation_time_idx"
-           " ON scap2.cpes (creation_time);");
-      sql ("CREATE INDEX cpes_by_modification_time_idx"
-           " ON scap2.cpes (modification_time);");
-      sql ("CREATE INDEX cpes_by_severity"
-           " ON scap2.cpes (severity);");
-      sql ("CREATE INDEX cpes_by_uuid"
-           " ON scap2.cpes (uuid);");
+      create_indexes_cve ();
 
       sql ("CREATE INDEX afp_cpe_idx"
            " ON scap2.affected_products (cpe);");
@@ -3741,6 +4105,22 @@ manage_scap_loaded ()
                     "               WHERE table_catalog = '%s'"
                     "               AND table_schema = 'scap'"
                     "               AND table_name = 'cves')"
+                    " ::integer;",
+                    sql_database ());
+}
+
+/**
+ * @brief Check whether NVTS table is available in database.
+ *
+ * @return 1 if NVTS table is loaded, else 0.
+ */
+int
+manage_nvts_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = '%s'"
+                    "               AND table_schema = 'public'"
+                    "               AND table_name = 'nvts')"
                     " ::integer;",
                     sql_database ());
 }

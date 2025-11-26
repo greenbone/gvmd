@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  gmp.c
+ * @file
  * @brief The Greenbone Vulnerability Manager GMP library.
  *
  * This file defines a Greenbone Management Protocol (GMP) library, for
@@ -84,12 +84,22 @@
  */
 
 #include "gmp.h"
+#if ENABLE_AGENTS
+#include "gmp_agent_control_scan_agent_config.h"
+#include "gmp_agent_groups.h"
+#include "gmp_agents.h"
+#include "gmp_agent_installers.h"
+#endif
 #include "gmp_base.h"
+#if ENABLE_CREDENTIAL_STORES
+#include "gmp_credential_stores.h"
+#endif
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
+#include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_formats.h"
@@ -97,9 +107,14 @@
 #include "gmp_tls_certificates.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_alerts.h"
+#include "manage_assets.h"
+#include "manage_filters.h"
+#include "manage_oci_image_targets.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_runtime_flags.h"
 #include "manage_tls_certificates.h"
 #include "sql.h"
 #include "utils.h"
@@ -449,6 +464,9 @@ typedef struct
   char *certificate;       ///< Certificate for client certificate auth.
   char *comment;           ///< Comment.
   char *copy;              ///< UUID of resource to copy.
+  char *kdc;               ///< Kerberos KDC (key distribution centers).
+  char *kdcs_kdc;          ///< Current Kerberos KDC (key distribution centers).
+  array_t *kdcs;           ///< List of Kerberos KDC (key distribution centers).
   int key;                 ///< Whether the command included a key element.
   char *key_phrase;        ///< Passphrase for key.
   char *key_private;       ///< Private key from key.
@@ -460,6 +478,10 @@ typedef struct
   char *auth_algorithm;    ///< SNMP Authentication algorithm.
   char *privacy_password;  ///< SNMP Privacy password.
   char *privacy_algorithm; ///< SNMP Privacy algorithm.
+  char *realm;             ///< Kerberos realm.
+  char *credential_store_id;   ///< Credential store UUID.
+  char *vault_id;          ///< Credential store vault ID.
+  char *host_identifier;     ///< Credential store item ID.
   char *type;              ///< Type of credential.
 } create_credential_data_t;
 
@@ -475,6 +497,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->certificate);
   free (data->comment);
   free (data->copy);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -485,6 +508,10 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->auth_algorithm);
   free (data->privacy_password);
   free (data->privacy_algorithm);
+  free (data->realm);
+  free (data->credential_store_id);
+  free (data->vault_id);
+  free (data->host_identifier);
   free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
@@ -869,6 +896,8 @@ typedef struct
   char *type;               ///< Type of new scanner.
   char *ca_pub;             ///< CA Certificate of new scanner.
   char *credential_id;      ///< UUID of credential for new scanner.
+  char *relay_host;         ///< Relay host of new scanner.
+  char *relay_port;         ///< Relay port of new scanner.
 } create_scanner_data_t;
 
 /**
@@ -887,6 +916,8 @@ create_scanner_data_reset (create_scanner_data_t *data)
   free (data->type);
   free (data->ca_pub);
   free (data->credential_id);
+  free (data->relay_host);
+  free (data->relay_port);
 
   memset (data, 0, sizeof (create_scanner_data_t));
 }
@@ -925,7 +956,9 @@ create_schedule_data_reset (create_schedule_data_t *data)
  */
 typedef struct
 {
-  char *alive_tests;                ///< Alive tests.
+  GPtrArray *alive_tests;           ///< Alive tests list.
+  char *alive_tests_str;            ///< Alive tests string.
+  char *alive_test;                 ///< Current alive tests list item.
   char *allow_simultaneous_ips;     ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *asset_hosts_filter;         ///< Asset hosts.
   char *comment;                    ///< Comment.
@@ -946,6 +979,7 @@ typedef struct
   char *esxi_credential_id;         ///< ESXi credential for new target.
   char *esxi_lsc_credential_id;     ///< ESXi credential (deprecated).
   char *snmp_credential_id;         ///< SNMP credential for new target.
+  char *krb5_credential_id;         ///< Kerberos 5 credential for new target.
   char *name;                       ///< Name of new target.
 } create_target_data_t;
 
@@ -957,7 +991,10 @@ typedef struct
 static void
 create_target_data_reset (create_target_data_t *data)
 {
-  free (data->alive_tests);
+  if (data->alive_tests)
+    g_ptr_array_free (data->alive_tests, TRUE);
+  free (data->alive_test);
+  free (data->alive_tests_str);
   free (data->allow_simultaneous_ips);
   free (data->asset_hosts_filter);
   free (data->comment);
@@ -978,6 +1015,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->name);
 
   memset (data, 0, sizeof (create_target_data_t));
@@ -1036,6 +1074,8 @@ typedef struct
   char *schedule_id;    ///< ID of task schedule.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;      ///< ID of task target.
+  char *agent_group_id; ///< ID of task agent group.
+  char *oci_image_target_id;  ///< ID of OCI image target.
   task_t task;          ///< ID of new task.
   char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
@@ -1075,7 +1115,9 @@ create_task_data_reset (create_task_data_t *data)
   free (data->schedule_id);
   free (data->schedule_periods);
   free (data->target_id);
+  free (data->oci_image_target_id);
   free (data->usage_type);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (create_task_data_t));
 }
@@ -1708,6 +1750,7 @@ typedef struct
   get_data_t get;    ///< Get Args.
   int scanners;      ///< Boolean.  Whether to return scanners using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
+  int oci_image_targets; ///< Boolean.  Whether to return OCI image targets.
 } get_credentials_data_t;
 
 /**
@@ -1901,7 +1944,6 @@ get_overrides_data_reset (get_overrides_data_t *data)
 typedef struct
 {
   get_data_t get;     ///< Get args.
-  char *resource_id;  ///< Resource whose permissions to get.
 } get_permissions_data_t;
 
 /**
@@ -1912,8 +1954,6 @@ typedef struct
 static void
 get_permissions_data_reset (get_permissions_data_t *data)
 {
-  free (data->resource_id);
-
   get_data_reset (&data->get);
   memset (data, 0, sizeof (get_permissions_data_t));
 }
@@ -2515,6 +2555,9 @@ typedef struct
   char *comment;              ///< Comment.
   char *community;            ///< SNMP Community string.
   char *credential_id;        ///< ID of credential to modify.
+  char *kdc;                  ///< Kerberos KDC (key distribution centers).
+  char *kdcs_kdc;             ///< Current Kerberos KDC (key distribution centers).
+  array_t *kdcs;              ///< List of Kerberos KDC (key distribution centers).
   int key;                    ///< Whether the command included a key element.
   char *key_phrase;           ///< Passphrase for key.
   char *key_private;          ///< Private key from key.
@@ -2524,6 +2567,10 @@ typedef struct
   char *password;             ///< Password associated with login name.
   char *privacy_algorithm;    ///< SNMP Privacy algorithm.
   char *privacy_password;     ///< SNMP Privacy password.
+  char *realm;                ///< Kerberos realm.
+  char *credential_store_id;  ///< Credential store UUID.
+  char *vault_id;             ///< Credential store vault ID.
+  char *host_identifier;        ///< Credential store item ID.
 } modify_credential_data_t;
 
 /**
@@ -2540,6 +2587,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->comment);
   free (data->community);
   free (data->credential_id);
+  free (data->kdc);
   free (data->key_phrase);
   free (data->key_private);
   free (data->key_public);
@@ -2548,6 +2596,12 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->password);
   free (data->privacy_algorithm);
   free (data->privacy_password);
+  free (data->realm);
+  free (data->kdcs_kdc);
+  free (data->credential_store_id);
+  free (data->vault_id);
+  free (data->host_identifier);
+  array_free (data->kdcs);
 
   memset (data, 0, sizeof (modify_credential_data_t));
 }
@@ -2737,6 +2791,8 @@ typedef struct
   char *scanner_id;         ///< scanner UUID.
   char *ca_pub;             ///< CA Certificate of scanner.
   char *credential_id;      ///< UUID of credential of scanner.
+  char *relay_host;         ///< Relay host of scanner.
+  char *relay_port;         ///< Relay port of scanner.
 } modify_scanner_data_t;
 
 /**
@@ -2755,6 +2811,8 @@ modify_scanner_data_reset (modify_scanner_data_t *data)
   g_free (data->scanner_id);
   free (data->ca_pub);
   free (data->credential_id);
+  g_free (data->relay_host);
+  g_free (data->relay_port);
 
   memset (data, 0, sizeof (modify_scanner_data_t));
 }
@@ -2856,7 +2914,9 @@ modify_setting_data_reset (modify_setting_data_t *data)
  */
 typedef struct
 {
-  char *alive_tests;                 ///< Alive tests.
+  GPtrArray *alive_tests;            ///< Alive tests list.
+  char *alive_test;                  ///< Current Alive tests list item.
+  char *alive_tests_str;             ///< Alive tests string.
   char *allow_simultaneous_ips;      ///< Boolean. Whether to scan multiple IPs of a host simultaneously.
   char *comment;                     ///< Comment.
   char *exclude_hosts;               ///< Hosts to exclude from set.
@@ -2875,6 +2935,7 @@ typedef struct
   char *esxi_credential_id;          ///< ESXi credential for target.
   char *esxi_lsc_credential_id;      ///< ESXi credential for target (deprecated).
   char *snmp_credential_id;          ///< SNMP credential for target.
+  char *krb5_credential_id;          ///< Kerberos 5 credential for target.
   char *target_id;                   ///< Target UUID.
 } modify_target_data_t;
 
@@ -2886,7 +2947,10 @@ typedef struct
 static void
 modify_target_data_reset (modify_target_data_t *data)
 {
-  free (data->alive_tests);
+  if (data->alive_tests)
+    g_ptr_array_free (data->alive_tests, TRUE);
+  free (data->alive_test);
+  free (data->alive_tests_str);
   free (data->allow_simultaneous_ips);
   free (data->exclude_hosts);
   free (data->reverse_lookup_only);
@@ -2905,6 +2969,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->esxi_credential_id);
   free (data->esxi_lsc_credential_id);
   free (data->snmp_credential_id);
+  free (data->krb5_credential_id);
   free (data->target_id);
 
   memset (data, 0, sizeof (modify_target_data_t));
@@ -2932,6 +2997,8 @@ typedef struct
   char *schedule_id;   ///< ID of new schedule for task.
   char *schedule_periods; ///< Number of periods the schedule must run for.
   char *target_id;     ///< ID of new target for task.
+  char *agent_group_id; ///< ID of new agent group for task.
+  char *oci_image_target_id; ///< ID of new OCI target for task.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -2973,7 +3040,9 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_id);
   free (data->schedule_periods);
   free (data->target_id);
+  free (data->oci_image_target_id);
   free (data->task_id);
+  free (data->agent_group_id);
 
   memset (data, 0, sizeof (modify_task_data_t));
 }
@@ -4057,6 +4126,9 @@ typedef enum
   CLIENT_AUTHENTICATE_CREDENTIALS,
   CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_CREATE_ALERT,
   CLIENT_CREATE_ALERT_ACTIVE,
   CLIENT_CREATE_ALERT_COMMENT,
@@ -4088,6 +4160,9 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_COMMENT,
   CLIENT_CREATE_CREDENTIAL_COMMUNITY,
   CLIENT_CREATE_CREDENTIAL_COPY,
+  CLIENT_CREATE_CREDENTIAL_KDC,
+  CLIENT_CREATE_CREDENTIAL_KDCS,
+  CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
   CLIENT_CREATE_CREDENTIAL_KEY,
   CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
   CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
@@ -4098,6 +4173,12 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_PRIVACY,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_CREATE_CREDENTIAL_REALM,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
+  CLIENT_CREATE_CREDENTIAL_VAULT_ID,
+  CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
+#endif /* ENABLE_CREDENTIAL_STORES */
   CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
@@ -4123,6 +4204,7 @@ typedef enum
   CLIENT_CREATE_NOTE_TASK,
   CLIENT_CREATE_NOTE_TEXT,
   CLIENT_CREATE_NOTE_THREAT,
+  CLIENT_CREATE_OCI_IMAGE_TARGET,
   CLIENT_CREATE_OVERRIDE,
   CLIENT_CREATE_OVERRIDE_ACTIVE,
   CLIENT_CREATE_OVERRIDE_COPY,
@@ -4255,6 +4337,8 @@ typedef enum
   CLIENT_CREATE_SCANNER_TYPE,
   CLIENT_CREATE_SCANNER_CA_PUB,
   CLIENT_CREATE_SCANNER_CREDENTIAL,
+  CLIENT_CREATE_SCANNER_RELAY_HOST,
+  CLIENT_CREATE_SCANNER_RELAY_PORT,
   CLIENT_CREATE_SCHEDULE,
   CLIENT_CREATE_SCHEDULE_COMMENT,
   CLIENT_CREATE_SCHEDULE_COPY,
@@ -4272,6 +4356,7 @@ typedef enum
   CLIENT_CREATE_TAG_VALUE,
   CLIENT_CREATE_TARGET,
   CLIENT_CREATE_TARGET_ALIVE_TESTS,
+  CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST,
   CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_CREATE_TARGET_ASSET_HOSTS,
   CLIENT_CREATE_TARGET_EXCLUDE_HOSTS,
@@ -4285,6 +4370,7 @@ typedef enum
   CLIENT_CREATE_TARGET_NAME,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
+  CLIENT_CREATE_TARGET_KRB5_CREDENTIAL,
   CLIENT_CREATE_TARGET_SMB_CREDENTIAL,
   CLIENT_CREATE_TARGET_SNMP_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_CREDENTIAL,
@@ -4294,6 +4380,9 @@ typedef enum
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SSH_ELEVATE_CREDENTIAL,
   CLIENT_CREATE_TASK,
+#if ENABLE_AGENTS
+  CLIENT_CREATE_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_CREATE_TASK_ALERT,
   CLIENT_CREATE_TASK_ALTERABLE,
   CLIENT_CREATE_TASK_COMMENT,
@@ -4303,6 +4392,9 @@ typedef enum
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
   CLIENT_CREATE_TASK_OBSERVERS_GROUP,
+  #if ENABLE_CONTAINER_SCANNING
+  CLIENT_CREATE_TASK_OCI_IMAGE_TARGET,
+  #endif /* ENABLE_CONTAINER_SCANNING */
   CLIENT_CREATE_TASK_PREFERENCES,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -4325,6 +4417,10 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+#if ENABLE_AGENTS
+  CLIENT_DELETE_AGENT_GROUP,
+  CLIENT_DELETE_AGENT,
+#endif /* ENABLE_AGENTS */
   CLIENT_DELETE_ALERT,
   CLIENT_DELETE_ASSET,
   CLIENT_DELETE_CONFIG,
@@ -4332,6 +4428,7 @@ typedef enum
   CLIENT_DELETE_FILTER,
   CLIENT_DELETE_GROUP,
   CLIENT_DELETE_NOTE,
+  CLIENT_DELETE_OCI_IMAGE_TARGET,
   CLIENT_DELETE_OVERRIDE,
   CLIENT_DELETE_PERMISSION,
   CLIENT_DELETE_PORT_LIST,
@@ -4350,6 +4447,12 @@ typedef enum
   CLIENT_DELETE_USER,
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+#if ENABLE_AGENTS
+  CLIENT_GET_AGENT_GROUPS,
+  CLIENT_GET_AGENT_INSTALLER_FILE,
+  CLIENT_GET_AGENT_INSTALLERS,
+  CLIENT_GET_AGENTS,
+#endif /* ENABLE_AGENTS */
   CLIENT_GET_AGGREGATES,
   CLIENT_GET_AGGREGATES_DATA_COLUMN,
   CLIENT_GET_AGGREGATES_SORT,
@@ -4358,6 +4461,9 @@ typedef enum
   CLIENT_GET_ASSETS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_GET_CREDENTIAL_STORES,
+#endif
   CLIENT_GET_FEATURES,
   CLIENT_GET_FEEDS,
   CLIENT_GET_FILTERS,
@@ -4367,6 +4473,7 @@ typedef enum
   CLIENT_GET_NOTES,
   CLIENT_GET_NVTS,
   CLIENT_GET_NVT_FAMILIES,
+  CLIENT_GET_OCI_IMAGE_TARGETS,
   CLIENT_GET_OVERRIDES,
   CLIENT_GET_PERMISSIONS,
   CLIENT_GET_PORT_LISTS,
@@ -4392,6 +4499,10 @@ typedef enum
   CLIENT_GET_VULNS,
   CLIENT_HELP,
   CLIENT_LOGOUT,
+#if ENABLE_AGENTS
+  CLIENT_MODIFY_AGENT_GROUP,
+  CLIENT_MODIFY_AGENT,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_ALERT,
   CLIENT_MODIFY_ALERT_ACTIVE,
   CLIENT_MODIFY_ALERT_COMMENT,
@@ -4420,6 +4531,9 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
   CLIENT_MODIFY_CREDENTIAL_COMMENT,
   CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
+  CLIENT_MODIFY_CREDENTIAL_KDC,
+  CLIENT_MODIFY_CREDENTIAL_KDCS,
+  CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
   CLIENT_MODIFY_CREDENTIAL_KEY,
   CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
   CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
@@ -4430,6 +4544,13 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_PRIVACY,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
   CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
+  CLIENT_MODIFY_CREDENTIAL_REALM,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID,
+  CLIENT_MODIFY_CREDENTIAL_VAULT_ID,
+  CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
+  CLIENT_MODIFY_CREDENTIAL_STORE,
+#endif
   CLIENT_MODIFY_FILTER,
   CLIENT_MODIFY_FILTER_COMMENT,
   CLIENT_MODIFY_FILTER_NAME,
@@ -4450,6 +4571,7 @@ typedef enum
   CLIENT_MODIFY_NOTE_TEXT,
   CLIENT_MODIFY_NOTE_THREAT,
   CLIENT_MODIFY_NOTE_NVT,
+  CLIENT_MODIFY_OCI_IMAGE_TARGET,
   CLIENT_MODIFY_OVERRIDE,
   CLIENT_MODIFY_OVERRIDE_ACTIVE,
   CLIENT_MODIFY_OVERRIDE_HOSTS,
@@ -4492,6 +4614,8 @@ typedef enum
   CLIENT_MODIFY_SCANNER_TYPE,
   CLIENT_MODIFY_SCANNER_CA_PUB,
   CLIENT_MODIFY_SCANNER_CREDENTIAL,
+  CLIENT_MODIFY_SCANNER_RELAY_HOST,
+  CLIENT_MODIFY_SCANNER_RELAY_PORT,
   CLIENT_MODIFY_SCHEDULE,
   CLIENT_MODIFY_SCHEDULE_COMMENT,
   CLIENT_MODIFY_SCHEDULE_ICALENDAR,
@@ -4510,6 +4634,7 @@ typedef enum
   CLIENT_MODIFY_TAG_VALUE,
   CLIENT_MODIFY_TARGET,
   CLIENT_MODIFY_TARGET_ALIVE_TESTS,
+  CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST,
   CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
   CLIENT_MODIFY_TARGET_COMMENT,
   CLIENT_MODIFY_TARGET_ESXI_CREDENTIAL,
@@ -4520,6 +4645,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_MODIFY_TARGET_NAME,
   CLIENT_MODIFY_TARGET_PORT_LIST,
+  CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SMB_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SNMP_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_CREDENTIAL,
@@ -4529,6 +4655,10 @@ typedef enum
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_MODIFY_TASK,
+#if ENABLE_AGENTS
+  CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG,
+  CLIENT_MODIFY_TASK_AGENT_GROUP,
+#endif /* ENABLE_AGENTS */
   CLIENT_MODIFY_TASK_ALERT,
   CLIENT_MODIFY_TASK_ALTERABLE,
   CLIENT_MODIFY_TASK_COMMENT,
@@ -4537,6 +4667,9 @@ typedef enum
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
   CLIENT_MODIFY_TASK_OBSERVERS_GROUP,
+  #if ENABLE_CONTAINER_SCANNING
+  CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET,
+  #endif /* ENABLE_CONTAINER_SCANNING */
   CLIENT_MODIFY_TASK_PREFERENCES,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -4572,6 +4705,9 @@ typedef enum
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
   CLIENT_TEST_ALERT,
+#if ENABLE_CREDENTIAL_STORES
+  CLIENT_VERIFY_CREDENTIAL_STORE,
+#endif
   CLIENT_VERIFY_REPORT_FORMAT,
   CLIENT_VERIFY_SCANNER,
 } client_state_t;
@@ -4747,6 +4883,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             free_credentials (&current_credentials);
             set_client_state (CLIENT_AUTHENTICATE);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("CREATE_AGENT_GROUP", element_name) == 0)
+          {
+            create_agent_group_start (gmp_parser, attribute_names,
+                                      attribute_values);
+            set_client_state (CLIENT_CREATE_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("CREATE_ASSET", element_name) == 0)
           set_client_state (CLIENT_CREATE_ASSET);
         else if (strcasecmp ("CREATE_CONFIG", element_name) == 0)
@@ -4795,6 +4939,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_NOTE", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE);
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("CREATE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            create_oci_image_target_start (gmp_parser, attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_CREATE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("CREATE_OVERRIDE", element_name) == 0)
           set_client_state (CLIENT_CREATE_OVERRIDE);
         else if (strcasecmp ("CREATE_PORT_LIST", element_name) == 0)
@@ -4835,6 +4987,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_TARGET", element_name) == 0)
           {
+            create_target_data->alive_tests
+              = g_ptr_array_new_full (0, free);
             gvm_append_string (&create_target_data->comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
           }
@@ -4864,6 +5018,32 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("DELETE_AGENT_GROUP", element_name) == 0)
+          {
+            delete_start ("agent_group", "Agent Group",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT_GROUP);
+          }
+        else if (strcasecmp ("DELETE_AGENT", element_name) == 0)
+          {
+            delete_agent_start (gmp_parser, attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_AGENT);
+          }
+#endif /* ENABLE_AGENTS */
+        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
+          {
+            const gchar* attribute;
+            append_attribute (attribute_names, attribute_values,
+                              "alert_id",
+                              &delete_alert_data->alert_id);
+            if (find_attribute (attribute_names, attribute_values,
+                                "ultimate", &attribute))
+              delete_alert_data->ultimate = strcmp (attribute, "0");
+            else
+              delete_alert_data->ultimate = 0;
+            set_client_state (CLIENT_DELETE_ALERT);
+          }
         else if (strcasecmp ("DELETE_ASSET", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "asset_id",
@@ -4883,19 +5063,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               delete_config_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_CONFIG);
-          }
-        else if (strcasecmp ("DELETE_ALERT", element_name) == 0)
-          {
-            const gchar* attribute;
-            append_attribute (attribute_names, attribute_values,
-                              "alert_id",
-                              &delete_alert_data->alert_id);
-            if (find_attribute (attribute_names, attribute_values,
-                                "ultimate", &attribute))
-              delete_alert_data->ultimate = strcmp (attribute, "0");
-            else
-              delete_alert_data->ultimate = 0;
-            set_client_state (CLIENT_DELETE_ALERT);
           }
         else if (strcasecmp ("DELETE_CREDENTIAL", element_name) == 0)
           {
@@ -4947,6 +5114,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               delete_note_data->ultimate = 0;
             set_client_state (CLIENT_DELETE_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("DELETE_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            delete_start ("oci_image_target", "OCI Image Target",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("DELETE_OVERRIDE", element_name) == 0)
           {
             const gchar* attribute;
@@ -5117,6 +5292,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+
+#if ENABLE_AGENTS
+        ELSE_GET_START (agent_groups, AGENT_GROUPS)
+
+        ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
+
+        ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
+
+        ELSE_GET_START (agents, AGENTS)
+#endif /* ENABLE_AGENTS */
+
         else if (strcasecmp ("GET_AGGREGATES", element_name) == 0)
           {
             gchar *data_column = g_strdup ("");
@@ -5205,6 +5391,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_AGGREGATES);
           }
+        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
+          {
+            const gchar* attribute;
+
+            get_data_parse_attributes (&get_alerts_data->get,
+                                       "alert",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "tasks", &attribute))
+              get_alerts_data->tasks = strcmp (attribute, "0");
+            else
+              get_alerts_data->tasks = 0;
+
+            set_client_state (CLIENT_GET_ALERTS);
+          }
+        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
+          {
+            const gchar* typebuf;
+            get_data_parse_attributes (&get_assets_data->get, "asset",
+                                       attribute_names,
+                                       attribute_values);
+            if (find_attribute (attribute_names, attribute_values,
+                                "type", &typebuf))
+              get_assets_data->type = g_ascii_strdown (typebuf, -1);
+            set_client_state (CLIENT_GET_ASSETS);
+          }
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5242,33 +5455,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_CONFIGS);
           }
-        else if (strcasecmp ("GET_ALERTS", element_name) == 0)
-          {
-            const gchar* attribute;
-
-            get_data_parse_attributes (&get_alerts_data->get,
-                                       "alert",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "tasks", &attribute))
-              get_alerts_data->tasks = strcmp (attribute, "0");
-            else
-              get_alerts_data->tasks = 0;
-
-            set_client_state (CLIENT_GET_ALERTS);
-          }
-        else if (strcasecmp ("GET_ASSETS", element_name) == 0)
-          {
-            const gchar* typebuf;
-            get_data_parse_attributes (&get_assets_data->get, "asset",
-                                       attribute_names,
-                                       attribute_values);
-            if (find_attribute (attribute_names, attribute_values,
-                                "type", &typebuf))
-              get_assets_data->type = g_ascii_strdown (typebuf, -1);
-            set_client_state (CLIENT_GET_ASSETS);
-          }
         else if (strcasecmp ("GET_CREDENTIALS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5289,11 +5475,20 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_credentials_data->targets = strcmp (attribute, "0");
             else
               get_credentials_data->targets = 0;
-
+#if ENABLE_CONTAINER_SCANNING
+            if (find_attribute (attribute_names, attribute_values,
+                                "oci_image_targets", &attribute))
+              get_credentials_data->oci_image_targets = strcmp (attribute, "0");
+            else
+              get_credentials_data->oci_image_targets = 0;
+#endif /* ENABLE_CONTAINER_SCANNING */
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
           }
+#if ENABLE_CREDENTIAL_STORES
+        ELSE_GET_START (credential_stores, CREDENTIAL_STORES)
+#endif /* ENABLE_CREDENTIAL_STORES */
         else if (strcasecmp ("GET_FEATURES", element_name) == 0)
           {
             set_client_state (CLIENT_GET_FEATURES);
@@ -5421,6 +5616,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_nvt_families_data->sort_order = 1;
             set_client_state (CLIENT_GET_NVT_FAMILIES);
           }
+#if ENABLE_CONTAINER_SCANNING
+        ELSE_GET_START (oci_image_targets, OCI_IMAGE_TARGETS)
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("GET_OVERRIDES", element_name) == 0)
           {
             const gchar* attribute;
@@ -5463,8 +5661,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             get_data_parse_attributes (&get_permissions_data->get, "permission",
                                        attribute_names,
                                        attribute_values);
-            append_attribute (attribute_names, attribute_values, "resource_id",
-                              &get_permissions_data->resource_id);
             set_client_state (CLIENT_GET_PERMISSIONS);
           }
         else if (strcasecmp ("GET_PREFERENCES", element_name) == 0)
@@ -5513,7 +5709,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             append_attribute (attribute_names, attribute_values, "config_id",
                               &get_reports_data->config_id);
-            
+
             append_attribute (attribute_names, attribute_values, "format_id",
                               &get_reports_data->format_id);
 
@@ -5604,7 +5800,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                 "type", &typebuf))
               get_resource_names_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_RESOURCE_NAMES);
-          }             
+          }
         else if (strcasecmp ("GET_RESULTS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5823,6 +6019,28 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                           attribute_values);
             set_client_state (CLIENT_LOGOUT);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("MODIFY_AGENT_CONTROL_SCAN_CONFIG", element_name)
+                 == 0)
+          {
+            modify_agent_control_scan_config_start (gmp_parser,
+                                                    attribute_names,
+                                                    attribute_values);
+            set_client_state (CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG);
+          }
+        else if (strcasecmp ("MODIFY_AGENT_GROUP", element_name) == 0)
+          {
+              modify_agent_group_start (gmp_parser, attribute_names,
+                                        attribute_values);
+              set_client_state (CLIENT_MODIFY_AGENT_GROUP);
+          }
+        else if (strcasecmp ("MODIFY_AGENT", element_name) == 0)
+          {
+            modify_agent_start (gmp_parser, attribute_names,
+                                 attribute_values);
+            set_client_state (CLIENT_MODIFY_AGENT);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("MODIFY_ALERT", element_name) == 0)
           {
             modify_alert_data->event_data = make_array ();
@@ -5860,6 +6078,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_credential_data->credential_id);
             set_client_state (CLIENT_MODIFY_CREDENTIAL);
           }
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("MODIFY_CREDENTIAL_STORE", element_name) == 0)
+          {
+            modify_credential_store_start (gmp_parser, attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_STORE);
+          }
+#endif
         else if (strcasecmp ("MODIFY_FILTER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "filter_id",
@@ -5892,6 +6118,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_note_data->note_id);
             set_client_state (CLIENT_MODIFY_NOTE);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("MODIFY_OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            modify_oci_image_target_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_MODIFY_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("MODIFY_OVERRIDE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "override_id",
@@ -5954,6 +6189,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             append_attribute (attribute_names, attribute_values, "target_id",
                               &modify_target_data->target_id);
+            modify_target_data->alive_tests
+              = g_ptr_array_new_full (0, free);
             set_client_state (CLIENT_MODIFY_TARGET);
           }
         else if (strcasecmp ("MODIFY_TASK", element_name) == 0)
@@ -6029,6 +6266,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
+          {
+            verify_credential_store_start (gmp_parser,
+                                           attribute_names,
+                                           attribute_values);
+            set_client_state (CLIENT_VERIFY_CREDENTIAL_STORE);
+          }
+#endif
         else if (strcasecmp ("VERIFY_REPORT_FORMAT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "report_format_id",
@@ -6094,6 +6340,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_scanner_data->credential_id);
             set_client_state (CLIENT_CREATE_SCANNER_CREDENTIAL);
           }
+        else if (strcasecmp ("RELAY_HOST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_RELAY_HOST);
+        else if (strcasecmp ("RELAY_PORT", element_name) == 0)
+          set_client_state (CLIENT_CREATE_SCANNER_RELAY_PORT);
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCHEDULE:
@@ -6159,6 +6409,27 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_AGGREGATES_TEXT_COLUMN);
           }
         ELSE_READ_OVER;
+
+#if ENABLE_AGENTS
+      case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+        modify_agent_control_scan_config_element_start (
+          gmp_parser, element_name,
+          attribute_names,
+          attribute_values);
+        break;
+
+      case CLIENT_MODIFY_AGENT_GROUP:
+        modify_agent_group_element_start (gmp_parser, element_name,
+                                          attribute_names,
+                                          attribute_values);
+        break;
+
+      case CLIENT_MODIFY_AGENT:
+        modify_agent_element_start (gmp_parser, element_name,
+                                     attribute_names,
+                                     attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_ALERT:
         if (strcasecmp ("NAME", element_name) == 0)
@@ -6283,6 +6554,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_credential_data->community, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
           }
+        else if (strcasecmp ("KDC", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
+          }
+        else if (strcasecmp ("KDCS", element_name) == 0)
+          {
+            modify_credential_data->kdcs = make_array ();
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             modify_credential_data->key = 1;
@@ -6301,6 +6581,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
             gvm_append_string (&modify_credential_data->privacy_algorithm,
                                    "");
+          }
+        else if (strcasecmp ("REALM", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
+          }
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID);
+          }
+        else if (strcasecmp ("VAULT_ID", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
+          }
+        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
+          {
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
+          }
+#endif
+        ELSE_READ_OVER;
+
+      case CLIENT_MODIFY_CREDENTIAL_KDCS:
+        if (strcasecmp ("KDC", element_name) == 0)
+          {
+            gvm_free_string_var (&modify_credential_data->kdcs_kdc);
+            gvm_append_string (&modify_credential_data->kdcs_kdc, "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC);
           }
         ELSE_READ_OVER;
 
@@ -6333,6 +6640,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
           }
         ELSE_READ_OVER;
+
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        modify_credential_store_element_start (gmp_parser, element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
+#endif
 
       case CLIENT_MODIFY_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -6497,6 +6812,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_scanner_data->credential_id);
             set_client_state (CLIENT_MODIFY_SCANNER_CREDENTIAL);
           }
+        else if (strcasecmp ("RELAY_HOST", element_name) == 0)
+          {
+            gvm_append_string (&modify_scanner_data->relay_host, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_RELAY_HOST);
+          }
+        else if (strcasecmp ("RELAY_PORT", element_name) == 0)
+          {
+            gvm_append_string (&modify_scanner_data->relay_port, "");
+            set_client_state (CLIENT_MODIFY_SCANNER_RELAY_PORT);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_SCHEDULE:
@@ -6616,6 +6941,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_target_data->port_list_id);
             set_client_state (CLIENT_MODIFY_TARGET_PORT_LIST);
           }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_target_data->krb5_credential_id);
+            set_client_state (CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL);
+          }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -6659,6 +6990,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_READ_OVER;
 
+      case CLIENT_MODIFY_TARGET_ALIVE_TESTS:
+        if (strcasecmp ("ALIVE_TEST", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST);
+        ELSE_READ_OVER;
+
       case CLIENT_MODIFY_TARGET_SSH_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TARGET_SSH_CREDENTIAL_PORT);
@@ -6685,6 +7021,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_task_data->scanner_id);
             set_client_state (CLIENT_MODIFY_TASK_SCANNER);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+             append_attribute (attribute_names, attribute_values, "id",
+                               &modify_task_data->agent_group_id);
+             set_client_state (CLIENT_MODIFY_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -6706,6 +7050,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_task_data->observers, "");
             set_client_state (CLIENT_MODIFY_TASK_OBSERVERS);
           }
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->oci_image_target_id);
+            set_client_state (CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
           {
             modify_task_data->preferences = make_array ();
@@ -6898,6 +7250,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                      attribute_values);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        create_agent_group_element_start (gmp_parser, element_name,
+                                          attribute_names,
+                                          attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
+
       case CLIENT_CREATE_ALERT:
         if (strcasecmp ("ACTIVE", element_name) == 0)
           set_client_state (CLIENT_CREATE_ALERT_ACTIVE);
@@ -6962,6 +7322,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
+        else if (strcasecmp ("KDC", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
+        else if (strcasecmp ("KDCS", element_name) == 0)
+          {
+            create_credential_data->kdcs = make_array ();
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
+          }
         else if (strcasecmp ("KEY", element_name) == 0)
           {
             create_credential_data->key = 1;
@@ -6980,8 +7347,33 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVACY", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
+        else if (strcasecmp ("REALM", element_name) == 0)
+          set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
         else if (strcasecmp ("TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
+#if ENABLE_CREDENTIAL_STORES
+        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID);
+          }
+        else if (strcasecmp ("VAULT_ID", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_CREDENTIAL_VAULT_ID);
+          }
+        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER);
+          }
+#endif
+        ELSE_READ_OVER;
+
+      case CLIENT_CREATE_CREDENTIAL_KDCS:
+        if (strcasecmp ("KDC", element_name) == 0)
+          {
+            gvm_free_string_var (&create_credential_data->kdcs_kdc);
+            gvm_append_string (&create_credential_data->kdcs_kdc, "");
+            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS_KDC);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL_KEY:
@@ -7089,6 +7481,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("THREAT", element_name) == 0)
           set_client_state (CLIENT_CREATE_NOTE_THREAT);
         ELSE_READ_OVER;
+
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_CREATE_PERMISSION:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -7623,6 +8024,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&create_target_data->port_range, "");
             set_client_state (CLIENT_CREATE_TARGET_PORT_RANGE);
           }
+        else if (strcasecmp ("KRB5_CREDENTIAL", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_target_data->krb5_credential_id);
+            set_client_state (CLIENT_CREATE_TARGET_KRB5_CREDENTIAL);
+          }
         else if (strcasecmp ("SSH_CREDENTIAL", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7666,6 +8073,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_READ_OVER;
 
+      case CLIENT_CREATE_TARGET_ALIVE_TESTS:
+        if (strcasecmp ("ALIVE_TEST", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST);
+        ELSE_READ_OVER;
+
       case CLIENT_CREATE_TARGET_SSH_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_CREDENTIAL_PORT);
@@ -7704,6 +8116,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_task_data->config_id);
             set_client_state (CLIENT_CREATE_TASK_CONFIG);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("AGENT_GROUP", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->agent_group_id);
+            set_client_state (CLIENT_CREATE_TASK_AGENT_GROUP);
+          }
+#endif /* ENABLE_AGENTS */
         else if (strcasecmp ("ALERT", element_name) == 0)
           {
             const gchar* attribute;
@@ -7714,6 +8134,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("OBSERVERS", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_OBSERVERS);
+#if ENABLE_CONTAINER_SCANNING
+        else if (strcasecmp ("OCI_IMAGE_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->oci_image_target_id);
+            set_client_state (CLIENT_CREATE_TASK_OCI_IMAGE_TARGET);
+          }
+#endif /* ENABLE_CONTAINER_SCANNING */
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -7829,6 +8257,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT:
+        delete_agent_element_start (gmp_parser, element_name,
+                                    attribute_names,
+                                    attribute_values);
+        break;
+#endif /* ENABLE_AGENTS */
+
       case CLIENT_LOGOUT:
           logout_element_start (gmp_parser, element_name,
                                 attribute_names, attribute_values);
@@ -7882,6 +8318,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_NOTE_NVT);
           }
         ELSE_READ_OVER;
+
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_start (gmp_parser,
+                                               element_name,
+                                               attribute_names,
+                                               attribute_values);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_MODIFY_OVERRIDE:
         if (strcasecmp ("ACTIVE", element_name) == 0)
@@ -8052,6 +8497,45 @@ convert_to_newlines (const char *text)
   *nptr = '\0';
 
   return new;
+}
+
+/**
+ * @brief Removes XML-illegal control characters from a string in place.
+ *
+ * XML 1.0 only allows the following control characters:
+ *   - Horizontal tab (0x09)
+ *   - Line feed (0x0A)
+ *   - Carriage return (0x0D)
+ * All other control characters in the ranges 0x00–0x1F and 0x7F are not allowed.
+ *
+ * @param[in,out] str  Null-terminated UTF-8 string to sanitize. May be NULL.
+ */
+static void
+strip_control_chars (gchar *str)
+{
+  if (!str)
+    return;
+
+  unsigned char *read_ptr  = (unsigned char *) str;  // source pointer
+  unsigned char *write_ptr = (unsigned char *) str;  // destination pointer
+
+  while (*read_ptr)
+    {
+      unsigned char current_char = *read_ptr++;
+
+      // Keep printable characters (>= 0x20) except DEL (0x7F),
+      // and allow TAB, LF, CR explicitly.
+      if ((current_char >= 0x20 && current_char != 0x7F) ||
+          current_char == '\t' ||
+          current_char == '\n' ||
+          current_char == '\r')
+        {
+          *write_ptr++ = current_char;
+        }
+      // else: skip disallowed control character
+    }
+
+  *write_ptr = '\0'; // null-terminate the cleaned string
 }
 
 /**
@@ -8451,7 +8935,7 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
       buffer_xml_append_printf (buffer,
                                 "<creation_time>%s</creation_time>",
                                 iso_if_time (get_iterator_creation_time (overrides)));
-                                    
+
       buffer_xml_append_printf (buffer,
                                 "<modification_time>%s</modification_time>",
                                 iso_if_time (get_iterator_modification_time (overrides)));
@@ -8469,7 +8953,8 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
                                 override_iterator_active (overrides),
                                 strlen (excerpt) < strlen (text),
                                 excerpt,
-                                override_iterator_threat (overrides)
+                                (override_iterator_severity (overrides)
+                                && override_iterator_threat (overrides))
                                 ? override_iterator_threat (overrides)
                                 : "",
                                 override_iterator_severity (overrides)
@@ -8563,7 +9048,8 @@ buffer_override_xml (GString *buffer, iterator_t *overrides,
          ? override_iterator_hosts (overrides) : "",
          override_iterator_port (overrides)
          ? override_iterator_port (overrides) : "",
-         override_iterator_threat (overrides)
+         (override_iterator_severity (overrides)
+         && override_iterator_threat (overrides))
          ? override_iterator_threat (overrides) : "",
          override_iterator_severity (overrides)
          ? override_iterator_severity (overrides) : "",
@@ -8692,6 +9178,11 @@ buffer_config_preference_xml (GString *buffer, iterator_t *prefs,
   oid = nvt_preference_iterator_oid (prefs);
   type = nvt_preference_iterator_type (prefs);
   real_name = nvt_preference_iterator_real_name (prefs);
+  if (strcmp (real_name, "timeout") == 0)
+    {
+      g_free (real_name);
+      real_name = g_strdup ("Timeout");
+    }
   default_value = nvt_preference_iterator_value (prefs);
   value = nvt_preference_iterator_config_value (prefs, config);
   id = nvt_preference_iterator_id (prefs);
@@ -9353,9 +9844,9 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
  *
  */
 void
-buffer_diff(GString *buffer, const char *descr, const char *delta_descr) 
+buffer_diff(GString *buffer, const char *descr, const char *delta_descr)
 {
-  
+
   gchar *diff = strdiff (descr ? descr : "",
                   delta_descr ? delta_descr : "");
   if (diff)
@@ -9428,7 +9919,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   report_t report;
   task_t selected_task;
   time_t creation_time;
-  
+
   comment = get_iterator_comment (results);
   name = get_iterator_name (results);
   host = result_iterator_host (results);
@@ -9478,6 +9969,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   if (descr)
     {
       nl_descr = convert_to_newlines (descr);
+      strip_control_chars (nl_descr);
       nl_descr_escaped = xml_escape_text_truncated (nl_descr,
                                                     TRUNCATE_TEXT_LENGTH,
                                                     TRUNCATE_TEXT_SUFFIX);
@@ -9503,7 +9995,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       const char *owner_name;
       time_t modification_time;
-     
+
       if (use_delta_fields)
         {
           owner_name = result_iterator_delta_owner_name (results);
@@ -9545,7 +10037,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_delta_task (results);
-          
+
           result_task_name = task_name(result_iterator_delta_task (results));
           result_report_id = report_uuid(result_iterator_delta_report (results));
         }
@@ -9553,7 +10045,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
         {
           if (task == 0)
             selected_task = result_iterator_task (results);
-          
+
           result_task_name = task_name (result_iterator_task (results));
           result_report_id = report_uuid (result_iterator_report (results));
         }
@@ -9674,14 +10166,14 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       const char *nvt_version, *level;
       if (use_delta_fields)
         {
-          nvt_version = result_iterator_delta_nvt_version (results); 
+          nvt_version = result_iterator_delta_nvt_version (results);
           level = result_iterator_delta_level (results);
-        } 
+        }
       else
         {
           nvt_version = result_iterator_scan_nvt_version (results);
           level = result_iterator_level (results);
-        }     
+        }
       buffer_xml_append_printf
       (buffer,
         "<scan_nvt_version>%s</scan_nvt_version>"
@@ -9712,7 +10204,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     {
       /* Only send the original severity if it has changed. */
       if (strncmp (original_severity,
-                    severity,          
+                    severity,
                     /* Avoid rounding differences. */
                     3))
         buffer_xml_append_printf (buffer,
@@ -9749,7 +10241,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       if (delta_state)
         g_string_append_printf (buffer, "%s", delta_state);
 
-      if(delta_results) { 
+      if(delta_results) {
         /* delta reports version 1 */
         if (changed)
           {
@@ -9764,12 +10256,13 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             delta_descr = result_iterator_descr (delta_results);
             delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                         : NULL;
+            strip_control_chars (nl_descr);
             buffer_diff (buffer, nl_descr, delta_nl_descr);
             g_free (delta_nl_descr);
           }
       } else {
-        /* delta reports version 2 */        
-        if (changed) 
+        /* delta reports version 2 */
+        if (changed)
           {
             gchar *delta_nl_descr;
             const char *delta_descr;
@@ -9782,6 +10275,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
             delta_descr = result_iterator_delta_description (results);
             delta_nl_descr = delta_descr ? convert_to_newlines (delta_descr)
                                         : NULL;
+            strip_control_chars (nl_descr);
             buffer_diff (buffer, delta_nl_descr, nl_descr);
             g_free (delta_nl_descr);
           }
@@ -9812,8 +10306,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
       g_free (nl_descr_escaped);
     }
 
-  if (use_delta_fields 
-      ? result_iterator_delta_may_have_tickets (results) 
+  if (use_delta_fields
+      ? result_iterator_delta_may_have_tickets (results)
       : result_iterator_may_have_tickets (results))
     buffer_result_tickets_xml (buffer, result);
 
@@ -11261,7 +11755,8 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   if (filter || get->filter)
     {
       gchar *new_filter;
-      new_filter = manage_clean_filter (filter ? filter : get->filter);
+      new_filter = manage_clean_filter (filter ? filter : get->filter,
+                                        get->ignore_max_rows_per_page);
       g_free (filter);
       if ((strcmp (type, "task") == 0)
           && (filter_term_value (new_filter, "apply_overrides")
@@ -11276,7 +11771,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
       filter = new_filter;
     }
   else
-    filter = manage_clean_filter ("");
+    filter = manage_clean_filter ("", get->ignore_max_rows_per_page);
 
   type_many = g_string_new (type);
 
@@ -12108,33 +12603,7 @@ handle_get_configs (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_TO_CLIENT_OR_FAIL ("<preferences>");
 
-          /* Send NVT timeout preferences where a timeout has been
-           * specified. */
-          init_config_timeout_iterator (&prefs, config);
-          while (next (&prefs))
-            {
-              const char *timeout;
-
-              timeout = config_timeout_iterator_value (&prefs);
-
-              if (timeout && strlen (timeout))
-                SENDF_TO_CLIENT_OR_FAIL
-                 ("<preference>"
-                  "<nvt oid=\"%s\">"
-                  "<name>%s</name>"
-                  "</nvt>"
-                  "<id>0</id>"
-                  "<name>Timeout</name>"
-                  "<type>entry</type>"
-                  "<value>%s</value>"
-                  "</preference>",
-                  config_timeout_iterator_oid (&prefs),
-                  config_timeout_iterator_nvt_name (&prefs),
-                  timeout);
-            }
-          cleanup_iterator (&prefs);
-
-          init_nvt_preference_iterator (&prefs, NULL);
+          init_nvt_preference_iterator (&prefs, NULL, TRUE);
           while (next (&prefs))
             {
               GString *buffer = g_string_new ("");
@@ -12338,6 +12807,52 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
       g_free (formats_xml);
 
+#if ENABLE_CREDENTIAL_STORES
+      if (type && g_str_has_prefix (type, "cs_"))
+        {
+          const char *credential_store_id, *vault_id, *host_identifier;
+          credential_store_id
+            = credential_iterator_credential_store_uuid (&credentials);
+          vault_id = credential_iterator_vault_id (&credentials);
+          host_identifier = credential_iterator_host_identifier (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL (
+            "<credential_store id=\"%s\">"
+            "<vault_id>%s</vault_id>"
+            "<host_identifier>%s</host_identifier>"
+            "</credential_store>",
+            credential_store_id ? credential_store_id : "",
+            vault_id ? vault_id : "",
+            host_identifier ? host_identifier : "");
+        }
+#endif /* ENABLE_CREDENTIAL_STORES */
+
+      if (type && (strcmp (type, "krb5") == 0))
+        {
+          const char *kdc, *realm;
+          kdc = credential_iterator_kdc (&credentials);
+          realm = credential_iterator_realm (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL (
+            "<kdc>%s</kdc>"
+            "<realm>%s</realm>"
+            "<kdcs>",
+            kdc ? kdc : "",
+            realm ? realm : "");
+
+          if (kdc && *kdc)
+            {
+              gchar **kdc_elements = g_strsplit (kdc, ",", -1);
+              for (gchar **elem = kdc_elements; *elem; ++elem)
+                {
+                  SENDF_TO_CLIENT_OR_FAIL ("<kdc>%s</kdc>", *elem);
+                }
+              g_strfreev (kdc_elements);
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("</kdcs>");
+        }
+
       if (type && (strcmp (type, "snmp") == 0))
         {
           const char *auth_algorithm, *privacy_algorithm;
@@ -12502,6 +13017,32 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SEND_TO_CLIENT_OR_FAIL ("</targets>");
         }
 
+#if ENABLE_CONTAINER_SCANNING
+      if (get_credentials_data->oci_image_targets)
+        {
+          iterator_t oci_image_targets;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<oci_image_targets>");
+          init_credential_oci_image_target_iterator
+            (&oci_image_targets, get_iterator_resource (&credentials), 0);
+          while (next (&oci_image_targets))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<oci_image_target id=\"%s\">"
+                "<name>%s</name>",
+                credential_oci_target_iterator_uuid (&oci_image_targets),
+                credential_oci_target_iterator_name (&oci_image_targets));
+              if (credential_oci_target_iterator_readable (&oci_image_targets))
+                SEND_TO_CLIENT_OR_FAIL ("</oci_image_target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                                        "</oci_image_target>");
+            }
+          cleanup_iterator (&oci_image_targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</oci_image_targets>");
+        }
+#endif
       SEND_TO_CLIENT_OR_FAIL ("</credential>");
       count++;
     }
@@ -12574,7 +13115,7 @@ get_feed_lock_status (const char *lockfile_name, gchar **timestamp)
   else
     {
       umask (old_umask);
-      if (flock (lockfile, LOCK_EX | LOCK_NB))  /* Exclusive, Non blocking. */
+      if (flock (lockfile, LOCK_SH | LOCK_NB))  /* Shared, Non blocking. */
         {
           if (errno == EWOULDBLOCK)
             {
@@ -12954,19 +13495,62 @@ get_feed (gmp_parser_t *gmp_parser, GError **error, int feed_type)
 static void
 handle_get_features (gmp_parser_t *gmp_parser, GError **error)
 {
+  int compiled_in;
+  int enabled;
+
   SEND_TO_CLIENT_OR_FAIL ("<get_features_response"
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>CVSS3_RATINGS</name>"
-                           "</feature>",
-                           CVSS3_RATINGS ? 1 : 0);
+  /* OPENVASD */
+  compiled_in = feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_OPENVASD_SCANNER) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "OPENVASD");
 
-  SENDF_TO_CLIENT_OR_FAIL ("<feature enabled=\"%d\">"
-                           "<name>OPENVASD</name>"
-                           "</feature>",
-                           OPENVASD ? 1 : 0);
+  /* CONTAINER_SCANNING */
+  compiled_in = feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_CONTAINER_SCANNING");
+
+  /* AGENTS */
+  compiled_in = feature_compiled_in (FEATURE_ID_AGENTS) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_AGENTS) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_AGENTS");
+
+  /* CREDENTIAL_STORE */
+  compiled_in = feature_compiled_in (FEATURE_ID_CREDENTIAL_STORES) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_CREDENTIAL_STORES) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_CREDENTIAL_STORES");
+
+  /* FEED_VT_METADATA */
+  compiled_in = feature_compiled_in (FEATURE_ID_VT_METADATA) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_VT_METADATA) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "FEED_VT_METADATA");
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
 }
@@ -13304,7 +13888,7 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
       vee = cpe_match_string_iterator_version_end_excl (&cpe_match_ranges);
 
       xml_string_append (buffer,
-                         "<version_start_including>%s</version_start_including>", 
+                         "<version_start_including>%s</version_start_including>",
                          vsi ?: "");
       xml_string_append (buffer,
                          "<version_start_excluding>%s</version_start_excluding>",
@@ -13317,7 +13901,9 @@ print_cpe_match_nodes_xml (resource_t node, GString *buffer)
                          vee ?: "");
 
       iterator_t cpe_matches;
-      init_cpe_match_string_matches_iterator (&cpe_matches, match_criteria_id);
+      init_cpe_match_string_matches_iterator (
+        &cpe_matches, match_criteria_id, NULL
+      );
       xml_string_append (buffer, "<matched_cpes>");
 
       while (next (&cpe_matches))
@@ -13753,7 +14339,9 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                              cve_info_iterator_severity (&info)
                               ? cve_info_iterator_severity (&info)
                               : "",
-                             cve_info_iterator_vector (&info),
+                             cve_info_iterator_vector (&info)
+                              ? cve_info_iterator_vector (&info)
+                              : "",
                              cve_info_iterator_description (&info),
                              cve_info_iterator_products (&info));
 
@@ -14192,14 +14780,9 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                 int pref_count = -1;
                 char *timeout = NULL;
 
-                if (get_nvts_data->timeout)
+                if (get_nvts_data->timeout || get_nvts_data->preferences)
                   timeout = config_nvt_timeout (config,
                                                 nvt_iterator_oid (&nvts));
-
-                if (get_nvts_data->preferences && (timeout == NULL))
-                  timeout = config_nvt_timeout
-                              (config,
-                               nvt_iterator_oid (&nvts));
 
                 if (get_nvts_data->preference_count)
                   {
@@ -14214,6 +14797,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                     else
                       pref_count = nvt_preference_count (nvt_oid);
                   }
+
                 if (send_nvt (&nvts, 1, get_nvts_data->preferences,
                               pref_count, timeout, config,
                               get_nvts_data->skip_cert_refs,
@@ -14775,7 +15359,7 @@ handle_get_preferences (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL ("<get_preferences_response"
                               " status=\"" STATUS_OK "\""
                               " status_text=\"" STATUS_OK_TEXT "\">");
-      init_nvt_preference_iterator (&prefs, nvt_oid);
+      init_nvt_preference_iterator (&prefs, nvt_oid, FALSE);
       if (get_preferences_data->preference)
         while (next (&prefs))
           {
@@ -14924,29 +15508,66 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
   no_report_format = (get_reports_data->format_id == NULL)
                       || (strcmp(get_reports_data->format_id, "") == 0);
 
-  if ((!no_report_format)
-      && find_report_format_with_permission (get_reports_data->format_id,
-                                             &report_format,
+  if (!no_report_format)
+    {
+      if (find_report_format_with_permission (get_reports_data->format_id,
+                                              &report_format,
                                              "get_report_formats"))
-    {
-      get_reports_data_reset (get_reports_data);
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
-    }
-
-  if ((!no_report_format) && (report_format == 0))
-    {
-      if (send_find_error_to_client ("get_reports", "report format",
-                                     get_reports_data->format_id,
-                                     gmp_parser))
         {
-          error_send_to_client (error);
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_reports"));
+          set_client_state (CLIENT_AUTHENTIC);
           return;
         }
-      get_reports_data_reset (get_reports_data);
-      set_client_state (CLIENT_AUTHENTIC);
-      return;
+
+      if (report_format == 0)
+        {
+          if (send_find_error_to_client ("get_reports", "report format",
+                                        get_reports_data->format_id,
+                                        gmp_parser))
+            {
+              error_send_to_client (error);
+              return;
+            }
+          get_reports_data_reset (get_reports_data);
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+
+      task_t task;
+      gchar *usage_type, *report_type;
+      if(report_task (request_report, &task) || (task == 0))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_reports",
+                               "Failed to get report task"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+      if (task_usage_type(task, &usage_type))
+        {
+          get_reports_data_reset (get_reports_data);
+          SEND_TO_CLIENT_OR_FAIL
+            (XML_ERROR_SYNTAX ("get_reports",
+                               "Failed to get usage type"));
+          set_client_state (CLIENT_AUTHENTIC);
+          return;
+        }
+      report_type = report_format_report_type (report_format);
+      if (report_type)
+        {
+          if (strcmp(report_type, usage_type) && strcmp(report_type, "all"))
+            {
+              get_reports_data_reset (get_reports_data);
+              SEND_TO_CLIENT_OR_FAIL
+                (XML_ERROR_SYNTAX ("get_reports",
+                                   "Report format is not compatible with"
+                                   " the report type"));
+              set_client_state (CLIENT_AUTHENTIC);
+              return;
+            }
+        }
     }
 
   if (!no_report_config)
@@ -15142,7 +15763,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             ("apply_overrides=%i min_qod=%i levels=%s compliance_levels=%s",
             overrides,
             min_qod,
-            levels ? levels : "hmlgdf",
+            levels ? levels : "chmlgdf",
             compliance_levels ? compliance_levels : "yniu");
       g_free (compliance_levels);
 
@@ -15267,7 +15888,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               /* Skip task name for Anonymous XML report format. */
               if (get_reports_data->format_id == NULL
                   || strcmp (get_reports_data->format_id,
-                             "5057e5cc-b825-11e4-9d0e-28d24461215b"))
+                             REPORT_FORMAT_UUID_ANON_XML))
                 {
                   gchar *report_task_name;
                   report_task_name = task_name (task);
@@ -15337,10 +15958,10 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                                 && get_reports_data->format_id
                                 && strcmp
                                     (get_reports_data->format_id,
-                                     "a994b278-1f62-11e1-96ac-406186ea4fc5")
+                                     REPORT_FORMAT_UUID_XML)
                                 && strcmp
                                     (get_reports_data->format_id,
-                                      "5057e5cc-b825-11e4-9d0e-28d24461215b"),
+                                     REPORT_FORMAT_UUID_ANON_XML),
                                 send_to_client,
                                 gmp_parser->client_writer,
                                 gmp_parser->client_writer_data,
@@ -15536,7 +16157,7 @@ print_report_config_params (gmp_parser_t *gmp_parser, GError **error,
 
           SENDF_TO_CLIENT_OR_FAIL
             ("</type><value using_default=\"%d\">%s",
-              report_config_param_iterator_using_default (&params), 
+              report_config_param_iterator_using_default (&params),
               value ? value : "");
           if (value)
             {
@@ -15711,27 +16332,27 @@ handle_get_report_configs (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_TO_CLIENT_OR_FAIL ("<orphan>1</orphan>");
         }
-      
-      SENDF_TO_CLIENT_OR_FAIL 
+
+      SENDF_TO_CLIENT_OR_FAIL
         ("<report_format id=\"%s\">",
           report_config_iterator_report_format_id (&report_configs)
         );
-      
+
       if (!orphan)
         {
-          SENDF_TO_CLIENT_OR_FAIL 
+          SENDF_TO_CLIENT_OR_FAIL
             ("<name>%s</name>",
               report_config_iterator_report_format_name (&report_configs)
             );
-            
+
           if (report_config_iterator_report_format_readable (&report_configs) == 0)
             {
               SENDF_TO_CLIENT_OR_FAIL ("<permissions/>");
             }
         }
-      
+
       SENDF_TO_CLIENT_OR_FAIL ("</report_format>");
-      
+
       print_report_config_params (gmp_parser, error,
                                   report_config_param_iterator_rowid (
                                     &report_configs
@@ -15838,7 +16459,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
             "<summary>%s</summary>"
             "<description>%s</description>"
             "<predefined>%i</predefined>"
-            "<configurable>%i</configurable>",
+            "<configurable>%i</configurable>"
+            "<report_type>%s</report_type>",
             report_format_iterator_extension (&report_formats),
             report_format_iterator_content_type (&report_formats),
             report_format_iterator_summary (&report_formats),
@@ -15848,7 +16470,8 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
                  (get_iterator_resource (&report_formats))
               : report_format_predefined
                  (get_iterator_resource (&report_formats)),
-            report_format_iterator_configurable (&report_formats));
+            report_format_iterator_configurable (&report_formats),
+            report_format_iterator_report_type (&report_formats) ?: "");
 
           if (resource_id_deprecated ("report_format",
                                       get_iterator_uuid (&report_formats)))
@@ -16114,16 +16737,16 @@ handle_get_report_formats (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
- * @brief Assign resource iterator with an init iterator based on the type 
+ * @brief Assign resource iterator with an init iterator based on the type
  * in the get command data.
  *
  * @param[in]  resource_names_data   data for get_resource_names command.
  * @param[out] iterator              address of iterator function pointer.
- * 
+ *
  * @return 1 if type is invalid, else 0.
  */
 int
-select_resource_iterator (get_resource_names_data_t *resource_names_data, 
+select_resource_iterator (get_resource_names_data_t *resource_names_data,
                           int (**iterator) (iterator_t*, get_data_t *))
 {
     if (g_strcmp0 ("cpe", resource_names_data->type) == 0)
@@ -16173,7 +16796,7 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("group", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_group_iterator;
-    }                
+    }
   else if (g_strcmp0 ("note", resource_names_data->type) == 0)
     {
       *iterator = init_note_iterator_all;
@@ -16181,41 +16804,41 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("override", resource_names_data->type) == 0)
     {
       *iterator = init_override_iterator_all;
-    }                
+    }
   else if (g_strcmp0 ("permission", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_permission_iterator;
-    }                
+    }
   else if (g_strcmp0 ("port_list", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_port_list_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("scan"));
-    }                
+    }
   else if (g_strcmp0 ("audit_report", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_iterator;
-      get_data_set_extra (&resource_names_data->get, 
+      get_data_set_extra (&resource_names_data->get,
                           "usage_type",
                           g_strdup ("audit"));
     }
   else if (g_strcmp0 ("report_config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_config_iterator;
-    }                
+    }
   else if (g_strcmp0 ("report_format", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_report_format_iterator;
-    }                
+    }
   else if (g_strcmp0 ("role", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_role_iterator;
-    }                
+    }
   else if (g_strcmp0 ("config", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_config_iterator;
@@ -16233,15 +16856,15 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("scanner", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_scanner_iterator;
-    }                
+    }
   else if (g_strcmp0 ("schedule", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_schedule_iterator;
-    }                
+    }
   else if (g_strcmp0 ("target", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_target_iterator;
-    }                
+    }
   else if (g_strcmp0 ("task", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_task_iterator;
@@ -16259,11 +16882,11 @@ select_resource_iterator (get_resource_names_data_t *resource_names_data,
   else if (g_strcmp0 ("tls_certificate", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_tls_certificate_iterator;
-    } 
+    }
   else if (g_strcmp0 ("user", resource_names_data->type) == 0)
     {
       *iterator = (int (*) (iterator_t*, get_data_t *))init_user_iterator;
-    }         
+    }
   else
     {
       return 1;
@@ -16294,10 +16917,10 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0) 
+  if ((((g_strcmp0 ("host", get_resource_names_data->type) == 0)
           ||(g_strcmp0 ("os", get_resource_names_data->type) == 0))
        && (acl_user_may ("get_assets") == 0))
-      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0) 
+      || ((g_strcmp0 ("result", get_resource_names_data->type) == 0)
           && (acl_user_may ("get_results") == 0))
       || (((g_strcmp0 ("report", get_resource_names_data->type) == 0)
            || (g_strcmp0 ("audit_report", get_resource_names_data->type) == 0))
@@ -16345,9 +16968,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
         get_resource_names_data_reset (get_resource_names_data);
         set_client_state (CLIENT_AUTHENTIC);
         return;
-    }    
+    }
 
-  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator)) 
+  if (select_resource_iterator(get_resource_names_data, &init_resource_iterator))
     {
       if (send_find_error_to_client ("get_resource_names", "type",
                                      get_resource_names_data->type, gmp_parser))
@@ -16372,7 +16995,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
               error_send_to_client (error);
               return;
             }
-          break;          
+          break;
         case 2:
           if (send_find_error_to_client
                ("get_resource_names", "filter", get_resource_names_data->get.filt_id,
@@ -16391,7 +17014,7 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
-  
+
   SEND_GET_START ("resource_name");
   SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>", get_resource_names_data->type);
 
@@ -16399,8 +17022,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
     {
       GString *result;
       result = g_string_new ("");
-      
-      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0) 
+
+      if(g_strcmp0 ("tls_certificate", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
                                       "<resource id=\"%s\">"
@@ -16410,8 +17033,8 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                         : "",
                                       tls_certificate_iterator_subject_dn (&resource)
                                         ? tls_certificate_iterator_subject_dn (&resource)
-                                        : "");          
-        } 
+                                        : "");
+        }
       else if (g_strcmp0 ("override", get_resource_names_data->type) == 0)
         {
             buffer_xml_append_printf (result,
@@ -16422,9 +17045,9 @@ handle_get_resource_names (gmp_parser_t *gmp_parser, GError **error)
                                           : "",
                                         override_iterator_nvt_name (&resource)
                                           ? override_iterator_nvt_name (&resource)
-                                          : "");          
+                                          : "");
         }
-      else 
+      else
         {
             buffer_xml_append_printf (result,
                                         "<resource id=\"%s\">"
@@ -16754,6 +17377,171 @@ handle_get_roles (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Send scanner info to the GMP client.
+ *
+ * @param[in]  scanners     Scanner iterator.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
+                   GError **error)
+{
+  switch (scanner_iterator_type (scanners))
+    {
+      case SCANNER_TYPE_OPENVAS:
+      case SCANNER_TYPE_OSP_SENSOR:
+        {
+          char *s_name = NULL, *s_ver = NULL;
+          char *d_name = NULL, *d_ver = NULL;
+          char *p_name = NULL, *p_ver = NULL, *desc = NULL;
+          GSList *params = NULL, *nodes;
+
+          if (!osp_get_version_from_iterator
+                (scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name, &p_ver)
+              && !osp_get_details_from_iterator (scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>%s</name><version>%s</version>"
+                "</scanner><daemon><name>%s</name><version>%s</version>"
+                "</daemon><protocol><name>%s</name><version>%s"
+                "</version></protocol><description>%s</description>",
+                s_name, s_ver, d_name, d_ver, p_name, p_ver, desc);
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              nodes = params;
+              while (nodes)
+                {
+                  osp_param_t *param = nodes->data;
+
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<param><id>%s</id><name>%s</name>"
+                    "<default>%s</default><description>%s</description>"
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
+                    osp_param_id (param), osp_param_name (param),
+                    osp_param_default (param), osp_param_desc (param),
+                    osp_param_type_str (param), osp_param_mandatory (param));
+
+                  osp_param_free (nodes->data);
+                  nodes = nodes->next;
+                }
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/></protocol><description/><params/>"
+              "</info>");
+          g_free (s_name);
+          g_free (s_ver);
+          g_free (d_name);
+          g_free (d_ver);
+          g_free (p_name);
+          g_free (p_ver);
+          g_free (desc);
+          g_slist_free (params);
+        }
+        break;
+#if OPENVASD
+      case SCANNER_TYPE_OPENVASD:
+      case SCANNER_TYPE_OPENVASD_SENSOR:
+        {
+          char *s_name = NULL, *s_ver = NULL;
+          char *d_name = NULL, *d_ver = NULL;
+          char *p_name = NULL, *p_ver = NULL, *desc = NULL;
+          GSList *params = NULL, *nodes;
+
+          if (!openvasd_get_details_from_iterator (scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>openvasd</name><version>0.1</version>"
+                "</scanner><daemon><name>OpenVAS</name><version>23.4.1</version>"
+                "</daemon><protocol><name>SCANNER API</name><version>0.1"
+                "</version></protocol><description>openvasd Sensor</description>");
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              nodes = params;
+              while (nodes)
+                {
+                  http_scanner_param_t *param = nodes->data;
+                  g_warning("<param><id>%s</id><name>%s</name>"
+                    "<default>%s</default><description>%s</description>"
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
+                    http_scanner_param_id (param), http_scanner_param_name (param),
+                    http_scanner_param_default (param), http_scanner_param_desc (param),
+                    http_scanner_param_type (param), http_scanner_param_mandatory (param));
+                  SENDF_TO_CLIENT_OR_FAIL
+                   ("<param><id>%s</id><name>%s</name>"
+                    "<default>%s</default><description>%s</description>"
+                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
+                    http_scanner_param_id (param), http_scanner_param_name (param),
+                    http_scanner_param_default (param), http_scanner_param_desc (param),
+                    http_scanner_param_type (param), 1);
+
+                  http_scanner_param_free (nodes->data);
+                  nodes = nodes->next;
+                }
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/></protocol><description/><params/>"
+              "</info>");
+          g_free (s_name);
+          g_free (s_ver);
+          g_free (d_name);
+          g_free (d_ver);
+          g_free (p_name);
+          g_free (p_ver);
+          g_free (desc);
+          g_slist_free (params);
+        }
+        break;
+#endif
+#if ENABLE_AGENTS
+      case SCANNER_TYPE_AGENT_CONTROLLER:
+      case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+        {
+          char *desc = NULL;
+          GSList *params = NULL;
+
+          if (!agent_control_get_details_from_iterator (scanners, &desc, &params))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+               ("<info><scanner><name>agent-controller</name><version>0.1</version>"
+                "</scanner><daemon><name>AgentController</name><version>1.0</version>"
+                "</daemon><protocol><name>SCANNER API</name><version>0.1"
+                "</version></protocol><description>Agent Control Scanner</description>");
+
+              SENDF_TO_CLIENT_OR_FAIL ("<params>");
+              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
+            }
+          else
+            SENDF_TO_CLIENT_OR_FAIL
+             ("<info><scanner><name/><version/></scanner>"
+              "<daemon><name/><version/></daemon>"
+              "<protocol><name/><version/></protocol><description/><params/>"
+              "</info>");
+          g_free (desc);
+          g_slist_free (params);
+        }
+        break;
+#endif
+      default:
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<info><scanner><name>OpenVAS</name><version/></scanner>"
+            "<daemon><name/><version/></daemon>"
+            "<protocol><name/><version/></protocol><description/><params/>"
+            "</info>");
+        }
+    }
+}
+
+/**
  * @brief Handle end of GET_SCANNERS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -16820,11 +17608,15 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
        ("<host>%s</host>"
         "<port>%d</port>"
         "<type>%d</type>"
-        "<ca_pub>%s</ca_pub>",
+        "<ca_pub>%s</ca_pub>"
+        "<relay_host>%s</relay_host>"
+        "<relay_port>%d</relay_port>",
         scanner_iterator_host (&scanners) ?: "",
         scanner_iterator_port (&scanners) ?: 0,
         scanner_iterator_type (&scanners),
-        scanner_iterator_ca_pub (&scanners) ?: "");
+        scanner_iterator_ca_pub (&scanners) ?: "",
+        scanner_iterator_relay_host (&scanners) ?: "",
+        scanner_iterator_relay_port (&scanners) ?: 0);
 
       if (get_scanners_data->get.details)
         {
@@ -16868,6 +17660,86 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
               g_free (md5_fingerprint);
               g_free (issuer);
             }
+#if ENABLE_AGENTS
+          int stype = scanner_iterator_type (&scanners);
+          if (stype == SCANNER_TYPE_AGENT_CONTROLLER
+              || stype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+            {
+              scanner_t scanner_id = get_iterator_resource (&scanners);
+              agent_controller_scan_agent_config_t cfg =
+                get_agent_control_scan_config (scanner_id);
+
+              if (!cfg)
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config/>");
+                }
+              else
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config>");
+
+                  /* agent_control/retry */
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control><retry>");
+                  SENDF_TO_CLIENT_OR_FAIL ("<attempts>%d</attempts>",
+                                           cfg->agent_control.retry.attempts);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<delay_in_seconds>%d</delay_in_seconds>",
+                    cfg->agent_control.retry.delay_in_seconds);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<max_jitter_in_seconds>%d</max_jitter_in_seconds>",
+                    cfg->agent_control.retry.max_jitter_in_seconds);
+                  SEND_TO_CLIENT_OR_FAIL ("</retry></agent_control>");
+
+                  /* agent_script_executor */
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_script_executor>");
+                  SENDF_TO_CLIENT_OR_FAIL ("<bulk_size>%d</bulk_size>",
+                                           cfg->agent_script_executor.bulk_size)
+                  ;
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<bulk_throttle_time_in_ms>%d</bulk_throttle_time_in_ms>",
+                    cfg->agent_script_executor.bulk_throttle_time_in_ms);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<indexer_dir_depth>%d</indexer_dir_depth>",
+                    cfg->agent_script_executor.indexer_dir_depth);
+
+                  GPtrArray *cron = cfg->agent_script_executor.
+                                         scheduler_cron_time;
+                  if (cron && cron->len > 0)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (
+                        "<scheduler_cron_time is_list=\"1\">");
+                      for (guint i = 0; i < cron->len; ++i)
+                        {
+                          const char *item = (const char *) cron->pdata[i];
+                          gchar *esc = g_markup_escape_text (
+                            item ? item : "", -1);
+                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                          g_free (esc);
+                        }
+                      SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
+                    }
+                  else
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (
+                        "<scheduler_cron_time is_list=\"0\"/>");
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_script_executor>");
+
+                  /* heartbeat */
+                  SEND_TO_CLIENT_OR_FAIL ("<heartbeat>");
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<interval_in_seconds>%d</interval_in_seconds>",
+                    cfg->heartbeat.interval_in_seconds);
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<miss_until_inactive>%d</miss_until_inactive>",
+                    cfg->heartbeat.miss_until_inactive);
+                  SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_control_config>");
+
+                  agent_controller_scan_agent_config_free (cfg);
+                }
+            }
+#endif
         }
 
       credential_id = credential_uuid (scanner_iterator_credential (&scanners));
@@ -16942,11 +17814,13 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                 /* Only show tasks the user may see. */
                 continue;
 
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<task id=\"%s\">"
-                "<name>%s</name>",
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<task id=\"%s\">"
+                "<name>%s</name>"
+                "<usage_type>%s</usage_type>",
                 scanner_task_iterator_uuid (&tasks),
-                scanner_task_iterator_name (&tasks));
+                scanner_task_iterator_name (&tasks),
+                scanner_task_iterator_usage_type (&tasks));
 
               if (scanner_task_iterator_readable (&tasks))
                 SEND_TO_CLIENT_OR_FAIL ("</task>");
@@ -16956,67 +17830,8 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
             }
           cleanup_iterator (&tasks);
           SEND_TO_CLIENT_OR_FAIL ("</tasks>");
-        }
-      if ((scanner_iterator_type (&scanners) == SCANNER_TYPE_OPENVAS)
-          && get_scanners_data->get.details)
-        {
-          char *s_name = NULL, *s_ver = NULL;
-          char *d_name = NULL, *d_ver = NULL;
-          char *p_name = NULL, *p_ver = NULL, *desc = NULL;
-          GSList *params = NULL, *nodes;
 
-          if (!osp_get_version_from_iterator
-                (&scanners, &s_name, &s_ver, &d_name, &d_ver, &p_name, &p_ver)
-              && !osp_get_details_from_iterator (&scanners, &desc, &params))
-            {
-              SENDF_TO_CLIENT_OR_FAIL
-               ("<info><scanner><name>%s</name><version>%s</version>"
-                "</scanner><daemon><name>%s</name><version>%s</version>"
-                "</daemon><protocol><name>%s</name><version>%s"
-                "</version></protocol><description>%s</description>",
-                s_name, s_ver, d_name, d_ver, p_name, p_ver, desc);
-
-              SENDF_TO_CLIENT_OR_FAIL ("<params>");
-              nodes = params;
-              while (nodes)
-                {
-                  osp_param_t *param = nodes->data;
-
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<param><id>%s</id><name>%s</name>"
-                    "<default>%s</default><description>%s</description>"
-                    "<type>osp_%s</type><mandatory>%d</mandatory></param>",
-                    osp_param_id (param), osp_param_name (param),
-                    osp_param_default (param), osp_param_desc (param),
-                    osp_param_type_str (param), osp_param_mandatory (param));
-
-                  osp_param_free (nodes->data);
-                  nodes = nodes->next;
-                }
-              SENDF_TO_CLIENT_OR_FAIL ("</params></info>");
-            }
-          else
-            SENDF_TO_CLIENT_OR_FAIL
-             ("<info><scanner><name/><version/></scanner>"
-              "<daemon><name/><version/></daemon>"
-              "<protocol><name/><version/></protocol><description/><params/>"
-              "</info>");
-          g_free (s_name);
-          g_free (s_ver);
-          g_free (d_name);
-          g_free (d_ver);
-          g_free (p_name);
-          g_free (p_ver);
-          g_free (desc);
-          g_slist_free (params);
-        }
-      else if (get_scanners_data->get.details)
-        {
-          SENDF_TO_CLIENT_OR_FAIL
-           ("<info><scanner><name>OpenVAS</name><version/></scanner>"
-            "<daemon><name/><version/></daemon>"
-            "<protocol><name/><version/></protocol><description/><params/>"
-            "</info>");
+          send_scanner_info (&scanners, gmp_parser, error);
         }
       SEND_TO_CLIENT_OR_FAIL ("</scanner>");
     }
@@ -17766,6 +18581,116 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Send a legacy-style alive tests string to the client.
+ *
+ * @param[in]  alive_tests  The alive tests bitfield.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ * 
+ * @return 0 success, -1 error.
+ */
+static int
+send_alive_tests_str (int alive_tests,
+                      gmp_parser_t *gmp_parser,
+                      GError **error)
+{
+  if (alive_tests == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, "Scan Config Default");
+      return 0;
+    }
+  else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, "Consider Alive");
+      return 0;
+    }
+  else
+    {
+      GPtrArray *tests = g_ptr_array_new ();
+      GString *tests_string = g_string_new ("");
+
+      if (alive_tests & ALIVE_TEST_ICMP)
+        g_ptr_array_add (tests, "ICMP");
+      if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
+        g_ptr_array_add (tests, "TCP-ACK Service");
+      if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
+        g_ptr_array_add (tests, "TCP-SYN Service");
+      if (alive_tests & ALIVE_TEST_ARP)
+        g_ptr_array_add (tests, "ARP");
+
+      for (int i = 0; i < tests->len; i++)
+        {
+          const char *part = g_ptr_array_index (tests, i);
+          if (i == 0)
+            buffer_xml_append_printf (tests_string, "%s", part);
+          else if (i >= tests->len - 1)
+            buffer_xml_append_printf (tests_string, " &amp; %s", part);
+          else
+            buffer_xml_append_printf (tests_string, ", %s", part);
+        }
+      g_string_append (tests_string, " Ping");
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1, tests_string->str);
+      g_string_free (tests_string, TRUE);
+      return 0;
+    }
+}
+
+/**
+ * @brief Send the sub-elements of the alive_tests element inside a target.
+ *
+ * @param[in]  alive_tests  The alive tests bitfield.
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+send_alive_tests_subelems (int alive_tests,
+                           gmp_parser_t *gmp_parser,
+                           GError **error)
+{
+  if (alive_tests == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "Scan Config Default"
+                                          "</alive_test>");
+      return 0;
+    }
+  else if (alive_tests & ALIVE_TEST_CONSIDER_ALIVE)
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "Consider Alive"
+                                          "</alive_test>");
+      return 0;
+    }
+  else {
+    if (alive_tests & ALIVE_TEST_ARP)
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "ARP Ping"
+                                          "</alive_test>");
+    if (alive_tests & ALIVE_TEST_ICMP)
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "ICMP Ping"
+                                          "</alive_test>");
+    if (alive_tests & ALIVE_TEST_TCP_ACK_SERVICE)
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "TCP-ACK Service Ping"
+                                          "</alive_test>");
+    if (alive_tests & ALIVE_TEST_TCP_SYN_SERVICE)
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "TCP-SYN Service Ping"
+                                          "</alive_test>");
+    return 0;
+  }
+}
+
+/**
  * @brief Handle end of GET_TARGETS element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -17825,18 +18750,21 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *ssh_name, *ssh_uuid, *smb_name, *smb_uuid;
           char *esxi_name, *esxi_uuid, *snmp_name, *snmp_uuid;
           char *ssh_elevate_name, *ssh_elevate_uuid;
+          char *krb5_name, *krb5_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
           const char *hosts, *exclude_hosts, *reverse_lookup_only;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
+          int alive_tests;
           credential_t ssh_credential, smb_credential;
           credential_t esxi_credential, snmp_credential;
-          credential_t ssh_elevate_credential;
+          credential_t ssh_elevate_credential, krb5_credential;
           int port_list_trash, max_hosts, port_list_available;
           int ssh_credential_available;
           int smb_credential_available;
           int esxi_credential_available;
           int snmp_credential_available;
           int ssh_elevate_credential_available;
+          int krb5_credential_available;
 
           ret = get_next (&targets, &get_targets_data->get, &first,
                           &count, init_target_iterator);
@@ -17854,6 +18782,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           snmp_credential = target_iterator_snmp_credential (&targets);
           ssh_elevate_credential
             = target_iterator_ssh_elevate_credential (&targets);
+          krb5_credential = target_iterator_krb5_credential (&targets);
 
           ssh_credential_available = 1;
           if (ssh_credential)
@@ -18011,6 +18940,38 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
               ssh_elevate_uuid = NULL;
             }
 
+          krb5_credential_available = 1;
+          if (krb5_credential)
+            {
+              if (get_targets_data->get.trash
+                  && target_iterator_krb5_trash (&targets))
+                {
+                  krb5_name
+                    = trash_credential_name (krb5_credential);
+                  krb5_uuid
+                    = trash_credential_uuid (krb5_credential);
+                  krb5_credential_available
+                    = trash_credential_readable (krb5_credential);
+                }
+              else
+                {
+                  credential_t found;
+
+                  krb5_name = credential_name (krb5_credential);
+                  krb5_uuid = credential_uuid (krb5_credential);
+                  if (find_credential_with_permission (krb5_uuid,
+                                                       &found,
+                                                       "get_credentials"))
+                    abort ();
+                  krb5_credential_available = (found > 0);
+                }
+            }
+          else
+            {
+              krb5_name = NULL;
+              krb5_uuid = NULL;
+            }
+
           port_list_uuid = target_iterator_port_list_uuid (&targets);
           port_list_name = target_iterator_port_list_name (&targets);
           port_list_trash = target_iterator_port_list_trash (&targets);
@@ -18121,20 +19082,39 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
             SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
           SENDF_TO_CLIENT_OR_FAIL ("</ssh_elevate_credential>"
+                                   "<krb5_credential id=\"%s\">"
+                                   "<name>%s</name>"
+                                   "<trash>%i</trash>",
+                                   krb5_uuid ? krb5_uuid : "",
+                                   krb5_name ? krb5_name : "",
+                                   (get_targets_data->get.trash
+                                    && target_iterator_krb5_trash (&targets)));
+
+          if (krb5_credential_available == 0)
+            SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
+
+          SENDF_TO_CLIENT_OR_FAIL ("</krb5_credential>"
                                    "<reverse_lookup_only>"
                                    "%s"
                                    "</reverse_lookup_only>"
                                    "<reverse_lookup_unify>"
                                    "%s"
                                    "</reverse_lookup_unify>"
-                                   "<alive_tests>%s</alive_tests>"
                                    "<allow_simultaneous_ips>"
                                    "%s"
-                                   "</allow_simultaneous_ips>",
+                                   "</allow_simultaneous_ips>"
+                                   "<alive_tests>",
                                    reverse_lookup_only,
                                    reverse_lookup_unify,
-                                   target_iterator_alive_tests (&targets),
                                    allow_simultaneous_ips);
+
+          alive_tests = target_iterator_alive_tests (&targets);
+
+          if (send_alive_tests_str (alive_tests, gmp_parser, error))
+            return;
+          if (send_alive_tests_subelems (alive_tests, gmp_parser, error))
+            return;
+          SEND_TO_CLIENT_OR_FAIL ("</alive_tests>");
 
           if (get_targets_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL ("<port_range>%s</port_range>",
@@ -18178,6 +19158,8 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           free (esxi_uuid);
           free (ssh_elevate_name);
           free (ssh_elevate_uuid);
+          free (krb5_name);
+          free (krb5_uuid);
         }
       cleanup_iterator (&targets);
       filtered = get_targets_data->get.id
@@ -18361,7 +19343,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = NULL;
 
-  clean_filter = manage_clean_filter (filter ? filter : get->filter);
+  clean_filter = manage_clean_filter (filter ? filter : get->filter,
+                                      get->ignore_max_rows_per_page);
   apply_overrides = filter_term_apply_overrides (clean_filter);
   min_qod = filter_term_min_qod (clean_filter);
   g_free (clean_filter);
@@ -18391,6 +19374,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       int target_in_trash, scanner_in_trash;
       int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
+      int criticals = 0, criticals_2 = 0;
       int false_positives = 0, task_scanner_type;
       int target_available, config_available;
       int scanner_available;
@@ -18399,7 +19383,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       iterator_t alerts, groups, roles;
       gchar *in_assets, *max_checks, *max_hosts;
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
-      gchar *assets_min_qod;
+      gchar *assets_min_qod, *accept_invalid_certs, *registry_allow_insecure;
+      gchar *cs_allow_failed_retrieval;
+      gchar *oci_image_target_xml = NULL;
+      gchar *agent_group_xml = NULL;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -18432,7 +19419,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         {
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
           target_in_trash = task_target_in_trash (index);
-          if ((target == 0)
+          if (target && (target == 0)
               && (task_iterator_run_status (&tasks)
                   == TASK_STATUS_RUNNING))
             {
@@ -18497,12 +19484,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             {
               // TODO Could skip this count for tasks page.
               if (report_counts (first_report_id,
-                                 &holes_2, &infos_2, &logs,
+                                 &criticals_2, &holes_2, &infos_2, &logs,
                                  &warnings_2, &false_positives,
                                  &severity_2, apply_overrides, min_qod))
-                g_error ("%s: GET_TASKS: error getting counts for"
-                         " first report, aborting",
-                         __func__);
+                  g_error ("%s: GET_TASKS: error getting counts for"
+                          " first report, aborting",
+                          __func__);
             }
 
           second_last_report_id = task_second_last_report_id (index);
@@ -18513,10 +19500,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               if (((first_report_id == NULL)
                   || (strcmp (second_last_report_id, first_report_id)))
                   && report_counts (second_last_report_id,
-                                    &holes_2, &infos_2,
+                                    &criticals_2, &holes_2, &infos_2,
                                     &logs, &warnings_2,
                                     &false_positives, &severity_2,
-                                    apply_overrides, min_qod))
+                                    apply_overrides, min_qod)
+                 )
                 g_error ("%s: GET_TASKS: error getting counts for"
                          " second report, aborting",
                          __func__);
@@ -18567,7 +19555,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 {
                   if (report_counts
                       (last_report_id,
-                        &holes, &infos, &logs,
+                        &criticals, &holes, &infos, &logs,
                         &warnings, &false_positives, &severity,
                         apply_overrides, min_qod))
                     g_error ("%s: GET_TASKS: error getting counts for"
@@ -18576,6 +19564,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                 }
               else
                 {
+                  criticals = criticals_2;
                   holes = holes_2;
                   infos = infos_2;
                   warnings = warnings_2;
@@ -18629,10 +19618,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        "<scan_start>%s</scan_start>"
                                        "<scan_end>%s</scan_end>"
                                        "<result_count>"
-                                       "<hole>%i</hole>"
-                                       "<info>%i</info>"
+                                       "<critical>%i</critical>"
+                                       "<hole deprecated='1'>%i</hole>"
+                                       "<high>%i</high>"
+                                       "<info deprecated='1'>%i</info>"
+                                       "<low>%i</low>"
                                        "<log>%i</log>"
-                                       "<warning>%i</warning>"
+                                       "<warning deprecated='1'>%i</warning>"
+                                       "<medium>%i</medium>"
                                        "<false_positive>"
                                        "%i"
                                        "</false_positive>"
@@ -18646,9 +19639,13 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                                        timestamp,
                                        scan_start,
                                        scan_end,
+                                       criticals,
+                                       holes,
                                        holes,
                                        infos,
+                                       infos,
                                        logs,
+                                       warnings,
                                        warnings,
                                        false_positives,
                                        severity);
@@ -18690,6 +19687,110 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               task_target_uuid = NULL;
               task_target_name = NULL;
             }
+
+#if ENABLE_CONTAINER_SCANNING
+          oci_image_target_t oci_image_target;
+          int oci_image_target_in_trash, oci_image_target_available;
+          char *task_oci_image_target_uuid, *task_oci_image_target_name;
+          gchar *task_oci_image_target_name_escaped;
+
+          oci_image_target = task_oci_image_target (index);
+          oci_image_target_in_trash = task_oci_image_target_in_trash (index);
+
+          if (oci_image_target || oci_image_target_in_trash)
+            {
+              oci_image_target_available = 1;
+              if (oci_image_target_in_trash)
+                {
+                  task_oci_image_target_uuid
+                    = trash_oci_image_target_uuid (oci_image_target);
+                  task_oci_image_target_name
+                    = trash_oci_image_target_name (oci_image_target);
+                  oci_image_target_available
+                    = trash_oci_image_target_readable (oci_image_target);
+                }
+              else if (oci_image_target)
+                {
+                  oci_image_target_t found;
+                  task_oci_image_target_uuid
+                    = oci_image_target_uuid (oci_image_target);
+                  task_oci_image_target_name
+                    = oci_image_target_name (oci_image_target);
+                  if (find_oci_image_target_with_permission (
+                                                    task_oci_image_target_uuid,
+                                                    &found,
+                                                    "get_oci_image_targets"))
+                    g_error ("%s: GET_TASKS: error finding"
+                            " task OCI image target, aborting",
+                            __func__);
+                  oci_image_target_available = (found > 0);
+                }
+              else
+                {
+                  task_oci_image_target_uuid = NULL;
+                  task_oci_image_target_name = NULL;
+                }
+              task_oci_image_target_name_escaped
+                = task_oci_image_target_name
+                    ? g_markup_escape_text (task_oci_image_target_name, -1)
+                    : NULL;
+
+              oci_image_target_xml = g_strdup_printf
+                ("<oci_image_target id=\"%s\">"
+                "<name>%s</name>"
+                "<trash>%i</trash>"
+                "%s"
+                "</oci_image_target>",
+                task_oci_image_target_uuid ?: "",
+                task_oci_image_target_name_escaped ?: "",
+                oci_image_target_in_trash,
+                oci_image_target_available ? "" : "<permissions/>");
+
+              free (task_oci_image_target_name);
+              free (task_oci_image_target_uuid);
+              g_free (task_oci_image_target_name_escaped);
+            }
+#endif
+#if ENABLE_AGENTS
+          agent_group_t agent_group = 0;
+          int group_readable = 0;
+          char *task_agent_group_uuid = NULL;
+          char *task_agent_group_name = NULL;
+          agent_group =task_agent_group (index); /* row id or 0 */
+          int agent_group_in_trash = task_agent_group_in_trash (index);
+
+          if (agent_group)
+            {
+              if (agent_group_in_trash)
+                {
+                  task_agent_group_uuid = trash_agent_group_uuid (agent_group);
+                  task_agent_group_name = trash_agent_group_name (agent_group);
+                  group_readable = trash_agent_group_readable (
+                    agent_group);
+                }
+              else
+                {
+                  task_agent_group_uuid = agent_group_uuid (agent_group);
+                  task_agent_group_name = agent_group_name (agent_group);
+                  group_readable = agent_group_readable (agent_group);
+                }
+
+              agent_group_xml = g_markup_printf_escaped (
+                "<agent_group id=\"%s\">"
+                "<name>%s</name>"
+                "<trash>%i</trash>"
+                "%s"
+                "</agent_group>",
+                task_agent_group_uuid ? : "",
+                task_agent_group_name ? : "",
+                agent_group_in_trash,
+                group_readable ? "" : "<permissions/>");
+
+              free (task_agent_group_uuid);
+              free (task_agent_group_name);
+            }
+#endif /* ENABLE_AGENT_GROUPS */
+
           config_available = 1;
           if (task_config_in_trash (index))
             config_available = trash_config_readable_uuid (config_uuid);
@@ -18706,7 +19807,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
           scanner_available = 1;
           scanner = task_iterator_scanner (&tasks);
-          if (scanner)
+          if (scanner && scanner_uuid (scanner))
             {
               scanner_in_trash = task_scanner_in_trash (index);
 
@@ -18762,6 +19863,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        "<trash>%i</trash>"
                        "%s"
                        "</target>"
+#if ENABLE_CONTAINER_SCANNING
+                       "%s"
+#endif
+#if ENABLE_AGENTS
+                       "%s"
+#endif
                        "<hosts_ordering>%s</hosts_ordering>"
                        "<scanner id='%s'>"
                        "<name>%s</name>"
@@ -18789,6 +19896,12 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        task_target_name_escaped ?: "",
                        target_in_trash,
                        target_available ? "" : "<permissions/>",
+#if ENABLE_CONTAINER_SCANNING
+                       oci_image_target_xml ?: "",
+#endif
+#if ENABLE_AGENTS
+                       agent_group_xml ?: "",
+#endif
                        task_iterator_hosts_ordering (&tasks)
                         ? task_iterator_hosts_ordering (&tasks)
                         : "",
@@ -18804,8 +19917,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                        get_tasks_data->get.trash
                         ? ""
                         : task_iterator_trend_counts
-                           (&tasks, holes, warnings, infos, severity,
-                            holes_2, warnings_2, infos_2, severity_2),
+                           (&tasks, criticals, holes, warnings, infos, severity,
+                            criticals_2, holes_2, warnings_2, infos_2, severity_2),
                        task_schedule_xml,
                        current_report,
                        last_report);
@@ -18827,12 +19940,16 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
                               gmp_parser->client_writer_data))
             {
               g_free (response);
+              g_free (oci_image_target_xml);
+              g_free (agent_group_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
               cleanup_iterator (&tasks);
               return;
             }
           g_free (response);
+          g_free (oci_image_target_xml);
+          g_free (agent_group_xml);
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<observers>%s",
@@ -18918,6 +20035,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           max_hosts = task_preference_value (index, "max_hosts");
           auto_delete = task_preference_value (index, "auto_delete");
           auto_delete_data = task_preference_value (index, "auto_delete_data");
+          accept_invalid_certs = task_preference_value (index, "accept_invalid_certs");
+          registry_allow_insecure = task_preference_value (index, "registry_allow_insecure");
+          cs_allow_failed_retrieval = task_preference_value (index, "cs_allow_failed_retrieval");
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<preferences>"
@@ -18963,6 +20083,31 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "<scanner_name>auto_delete</scanner_name>"
             "<value>%s</value>"
             "</preference>"
+#if ENABLE_CONTAINER_SCANNING
+            "<preference>"
+            "<name>"
+            "Accept Invalid Certificates"
+            "</name>"
+            "<scanner_name>accept_invalid_certs</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "Allow Insecure Docker Registries"
+            "</name>"
+            "<scanner_name>registry_allow_insecure</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+#endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_CREDENTIAL_STORES
+            "<preference>"
+            "<name>"
+            "Allow Failed Credential Store Retrieval"
+            "</name>"
+            "<scanner_name>cs_allow_failed_retrieval</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+#endif /* ENABLE_CREDENTIAL_STORES */
             "<preference>"
             "<name>"
             "Auto Delete Reports Data"
@@ -18980,6 +20125,13 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               ? assets_min_qod
               : G_STRINGIFY (MIN_QOD_DEFAULT),
             auto_delete ? auto_delete : "0",
+#if ENABLE_CONTAINER_SCANNING
+            accept_invalid_certs ? accept_invalid_certs : "0",
+            registry_allow_insecure ? registry_allow_insecure : "0",
+#endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_CREDENTIAL_STORES
+            cs_allow_failed_retrieval ? cs_allow_failed_retrieval : "0",
+#endif /* ENABLE_CREDENTIAL_STORES */
             auto_delete_data ? auto_delete_data : "0");
 
           g_free (assets_apply_overrides);
@@ -18989,6 +20141,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (max_hosts);
           g_free (auto_delete);
           g_free (auto_delete_data);
+          g_free (accept_invalid_certs);
+          g_free (registry_allow_insecure);
+          g_free (cs_allow_failed_retrieval);
         }
 
       count++;
@@ -19366,9 +20521,10 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
            (create_scanner_data->name, create_scanner_data->comment,
             create_scanner_data->host, create_scanner_data->port,
             create_scanner_data->type, &new_scanner,
-            create_scanner_data->ca_pub, create_scanner_data->credential_id))
+            create_scanner_data->ca_pub, create_scanner_data->credential_id,
+            create_scanner_data->relay_host, create_scanner_data->relay_port))
     {
-      case 0:
+      case CREATE_SCANNER_SUCCESS:
         {
           char *uuid = scanner_uuid (new_scanner);
           SENDF_TO_CLIENT_OR_FAIL
@@ -19377,17 +20533,24 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
           g_free (uuid);
           break;
         }
-      case 1:
+      case CREATE_SCANNER_ALREADY_EXISTS:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Scanner exists already"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case 2:
+      case CREATE_SCANNER_MISSING_TYPE:
         SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("create_scanner", "Invalid entity value"));
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner requires a TYPE"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case 3:
+      case CREATE_SCANNER_MISSING_HOST:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner requires a HOST"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_CREDENTIAL_NOT_FOUND:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        create_scanner_data->credential_id,
                                        gmp_parser))
@@ -19397,32 +20560,61 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
           }
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case 4:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("create_scanner",
-                            "Credential must be of type 'up'"
-                            " (username + password)"));
-        log_event_fail ("scanner", "Scanner", NULL, "created");
-        break;
-      case 5:
+      case CREATE_SCANNER_CREDENTIAL_NOT_CC:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner",
                             "Credential must be of type 'cc'"
                             " (client certificate)"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case 6:
+      case CREATE_SCANNER_INVALID_TYPE:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner",
-                            "Scanner type requires a credential"));
+                            "Invalid scanner TYPE"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case 99:
+      case CREATE_SCANNER_INVALID_PORT:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner PORT must be a valid port number"
+                            " (1 - 65535)"
+                            " if HOST is not a UNIX socket path"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_INVALID_HOST:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner HOST must be a valid hostname,"
+                            " IP address or UNIX socket path."));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_PORT:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner RELAY_PORT must be a valid port number"
+                            " (1 - 65535)"
+                            " if RELAY_HOST is not a UNIX socket path"));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_HOST:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner RELAY_HOST must be a valid hostname,"
+                            " IP address, UNIX socket path or empty."));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("create_scanner",
+                            "Scanner type does not support UNIX sockets."));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
-      case -1:
+      case CREATE_SCANNER_INTERNAL_ERROR:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_scanner"));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
@@ -19467,14 +20659,15 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
            (modify_scanner_data->scanner_id, modify_scanner_data->name,
             modify_scanner_data->comment, modify_scanner_data->host,
             modify_scanner_data->port, modify_scanner_data->type,
-            modify_scanner_data->ca_pub, modify_scanner_data->credential_id))
+            modify_scanner_data->ca_pub, modify_scanner_data->credential_id,
+            modify_scanner_data->relay_host, modify_scanner_data->relay_port))
     {
-      case 0:
+      case MODIFY_SCANNER_SUCCESS:
         SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_scanner"));
         log_event ("scanner", "Scanner", modify_scanner_data->scanner_id,
                    "modified");
         break;
-      case 1:
+      case MODIFY_SCANNER_NOT_FOUND:
         if (send_find_error_to_client ("modify_scanner", "scanner",
                                        modify_scanner_data->scanner_id,
                                        gmp_parser))
@@ -19485,26 +20678,20 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 2:
+      case MODIFY_SCANNER_ALREADY_EXISTS:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Scanner with new name exists already"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 3:
+      case MODIFY_SCANNER_MISSING_ID:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner", "Missing scanner_id"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 4:
-        SEND_TO_CLIENT_OR_FAIL
-         (XML_ERROR_SYNTAX ("modify_scanner", "Invalid value"));
-        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
-                        "modified");
-        break;
-      case 5:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_FOUND:
         if (send_find_error_to_client ("create_scanner", "credential",
                                        modify_scanner_data->credential_id,
                                        gmp_parser))
@@ -19515,7 +20702,7 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 6:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_CC:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Credential must be of type 'cc'"
@@ -19523,29 +20710,61 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 7:
+      case MODIFY_SCANNER_INVALID_TYPE:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
-                            "Credential must be of type 'up'"
-                            " (username + password)"));
+                            "Invalid scanner TYPE"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 8:
+      case MODIFY_SCANNER_INVALID_PORT:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
-                            "Scanner type requires a credential"));
+                            "Scanner PORT must be a valid port number"
+                            " (1 - 65535)"
+                            " if HOST is not a UNIX socket path"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
-      case 99:
+      case MODIFY_SCANNER_INVALID_HOST:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner HOST must be a valid hostname,"
+                            " IP address or UNIX socket path."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_PORT:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner RELAY_PORT must be a valid port number"
+                            " (1 - 65535)"
+                            " if RELAY_HOST is not a UNIX socket path"));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_HOST:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner RELAY_HOST must be a valid hostname,"
+                            " IP address, UNIX socket path or empty."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        SEND_TO_CLIENT_OR_FAIL
+         (XML_ERROR_SYNTAX ("modify_scanner",
+                            "Scanner type does not support UNIX sockets."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner", "Permission denied"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
       default:
-      case -1:
         SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_scanner"));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
@@ -19599,9 +20818,13 @@ gmp_xml_handle_result ()
         {
           create_report_data->result_severity = strdup ("");
         }
-      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+      else if (strcasecmp (create_report_data->result_threat, "Critical") == 0)
         {
           create_report_data->result_severity = strdup ("10.0");
+        }
+      else if (strcasecmp (create_report_data->result_threat, "High") == 0)
+        {
+          create_report_data->result_severity = strdup ("8.9");
         }
       else if (strcasecmp (create_report_data->result_threat, "Medium") == 0)
         {
@@ -19850,6 +21073,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT_GROUP:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
+
       CASE_DELETE (ALERT, alert, "Alert");
 
       case CLIENT_DELETE_ASSET:
@@ -19935,6 +21165,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (PERMISSION, permission, "Permission");
       CASE_DELETE (PORT_LIST, port_list, "Port list");
       CASE_DELETE (PORT_RANGE, port_range, "Port range");
+
+      case CLIENT_DELETE_OCI_IMAGE_TARGET:
+        delete_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
+        break;
 
       case CLIENT_DELETE_REPORT:
         if (delete_report_data->report_id)
@@ -20348,6 +21583,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 
+#if ENABLE_AGENTS
+      CASE_GET_END (AGENT_GROUPS, agent_groups);
+
+      CASE_GET_END (AGENT_INSTALLERS, agent_installers);
+
+      CASE_GET_END (AGENT_INSTALLER_FILE, agent_installer_file);
+
+      CASE_GET_END (AGENTS, agents);
+#endif /* ENABLE_AGENTS */
+
       case CLIENT_GET_AGGREGATES:
         handle_get_aggregates (gmp_parser, error);
         break;
@@ -20371,6 +21616,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_CREDENTIALS:
         handle_get_credentials (gmp_parser, error);
         break;
+
+#if ENABLE_CREDENTIAL_STORES
+      CASE_GET_END (CREDENTIAL_STORES, credential_stores);
+#endif
 
       case CLIENT_GET_FEATURES:
         handle_get_features (gmp_parser, error);
@@ -20413,6 +21662,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_nvt_families (gmp_parser, error);
         break;
 
+#if ENABLE_CONTAINER_SCANNING
+      CASE_GET_END (OCI_IMAGE_TARGETS, oci_image_targets);
+#endif /* ENABLE_CONTAINER_SCANNING */
+
       case CLIENT_GET_OVERRIDES:
         handle_get_overrides (gmp_parser, error);
         break;
@@ -20443,7 +21696,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);
-        break;        
+        break;
 
       case CLIENT_GET_RESULTS:
         handle_get_results (gmp_parser, error);
@@ -20757,6 +22010,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         if (create_config_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
         break;
+
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        if (create_agent_group_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_CREATE_ALERT:
         {
@@ -21333,6 +22593,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->auth_algorithm,
                          create_credential_data->privacy_password,
                          create_credential_data->privacy_algorithm,
+                         create_credential_data->kdc,
+                         create_credential_data->kdcs,
+                         create_credential_data->realm,
+                         create_credential_data->credential_store_id,
+                         create_credential_data->vault_id,
+                         create_credential_data->host_identifier,
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
                          &new_credential))
@@ -21440,6 +22706,49 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                  (XML_ERROR_SYNTAX ("create_credential",
                                     "Cannot determine type for new credential"));
                 break;
+              case 19:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a kdc"));
+                break;
+              case 20:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Selected type requires a realm"));
+                break;
+              case 21:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                  "Invalid kdc value(s)"));
+                break;
+              case 22:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                  "Invalid kerberos realm value"));
+                break;
+#if ENABLE_CREDENTIAL_STORES
+              case 23:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Credential store ID missing"
+                                    " and no default store available"));
+                break;
+              case 24:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Credential store cannot be found"));
+                break;
+              case 25:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Vault ID missing"));
+                break;
+              case 26:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_credential",
+                                    "Host identifier missing"));
+                break;
+#endif
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_credential",
@@ -21462,6 +22771,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
       CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, KDCS);
+      case CLIENT_CREATE_CREDENTIAL_KDCS_KDC:
+        {
+          array_add (create_credential_data->kdcs,
+                     g_strdup (create_credential_data->kdcs_kdc));
+          create_credential_data->kdcs_kdc = NULL;
+          set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
+          break;
+        }
       CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
@@ -21472,6 +22791,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, REALM);
+#if ENABLE_CREDENTIAL_STORES
+      CLOSE (CLIENT_CREATE_CREDENTIAL, CREDENTIAL_STORE_ID);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, VAULT_ID);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, HOST_IDENTIFIER);
+#endif
       CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
       case CLIENT_CREATE_FILTER:
@@ -21872,6 +23197,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_NOTE, TASK);
       CLOSE (CLIENT_CREATE_NOTE, TEXT);
       CLOSE (CLIENT_CREATE_NOTE, THREAT);
+
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        if (create_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif //ENABLE_CONTAINER_SCANNING
 
       case CLIENT_CREATE_OVERRIDE:
         {
@@ -22735,6 +24069,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_SCANNER, TYPE);
       CLOSE (CLIENT_CREATE_SCANNER, CA_PUB);
       CLOSE (CLIENT_CREATE_SCANNER, CREDENTIAL);
+      CLOSE (CLIENT_CREATE_SCANNER, RELAY_HOST);
+      CLOSE (CLIENT_CREATE_SCANNER, RELAY_PORT);
 
       case CLIENT_CREATE_SCHEDULE:
         {
@@ -22912,6 +24248,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t ssh_credential = 0, ssh_elevate_credential = 0;
           credential_t smb_credential = 0;
           credential_t esxi_credential = 0, snmp_credential = 0;
+          credential_t krb5_credential = 0;
           target_t new_target;
 
           if (create_target_data->copy)
@@ -22980,6 +24317,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_target",
                                 "Hosts must be at least one"
                                 " character long"));
+          else if (create_target_data->smb_credential_id
+                   && create_target_data->krb5_credential_id)
+            SEND_TO_CLIENT_OR_FAIL
+             (XML_ERROR_SYNTAX ("create_target",
+                                "Targets cannot have both an SMB and"
+                                " Kerberos 5 credential"));
           else if (create_target_data->ssh_credential_id
                    && find_credential_with_permission
                        (create_target_data->ssh_credential_id,
@@ -23088,6 +24431,25 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   return;
                 }
             }
+          else if (create_target_data->krb5_credential_id
+                   && find_credential_with_permission
+                       (create_target_data->krb5_credential_id,
+                        &krb5_credential,
+                        "get_credentials"))
+            SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_target"));
+          else if (create_target_data->krb5_credential_id
+                   && krb5_credential == 0)
+            {
+              if (send_find_error_to_client
+                   ("create_target", "Credential",
+                    create_target_data->krb5_credential_id,
+                    gmp_parser))
+                {
+                  error_send_to_client (error);
+                  return;
+                }
+            }
+
           /* Create target from host string. */
           else switch (create_target
                         (create_target_data->name,
@@ -23105,9 +24467,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          smb_credential,
                          esxi_credential,
                          snmp_credential,
+                         krb5_credential,
                          create_target_data->reverse_lookup_only,
                          create_target_data->reverse_lookup_unify,
                          create_target_data->alive_tests,
+                         create_target_data->alive_tests_str
+                          ? g_strstrip (create_target_data->alive_tests_str)
+                          : NULL,
                          create_target_data->allow_simultaneous_ips,
                          &new_target))
             {
@@ -23214,6 +24580,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " different from the SSH credential"));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
+              case 30:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target",
+                                    "ALIVE_TESTS can contain either a string"
+                                    " or sub-elements, but not both."));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -23247,12 +24627,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_CREATE_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_CREATE_TARGET, ALIVE_TESTS);
+      case CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST:
+        g_ptr_array_add (create_target_data->alive_tests,
+                         create_target_data->alive_test
+                          ? g_strstrip (create_target_data->alive_test)
+                          : strdup (""));
+        create_target_data->alive_test = NULL;
+        set_client_state (CLIENT_CREATE_TARGET_ALIVE_TESTS);
+        break;
       CLOSE (CLIENT_CREATE_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
       CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
       CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
+      CLOSE (CLIENT_CREATE_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_CREATE_TARGET, SSH_ELEVATE_CREDENTIAL);
@@ -23270,6 +24659,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           target_t target = 0;
           scanner_t scanner = 0;
           char *tsk_uuid = NULL;
+          gboolean is_agent_task = FALSE;
+          gboolean is_container_scanning_task = FALSE;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -23296,7 +24687,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               name = task_name (create_task_data->task);
               comment = task_comment (create_task_data->task);
 
-              if(create_task_data->alterable)
+              if (create_task_data->alterable)
                 alterable = strcmp (create_task_data->alterable, "0") ? 1 : 0;
               else
                 alterable = -1;
@@ -23357,7 +24748,40 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
           if (create_task_data->scanner_id == NULL)
-            create_task_data->scanner_id = g_strdup (scanner_uuid_default ());
+            {
+              if (create_task_data->agent_group_id)
+                is_agent_task = TRUE;
+              else if (create_task_data->oci_image_target_id)
+                is_container_scanning_task = TRUE;
+              else
+                create_task_data->scanner_id =
+                  g_strdup (scanner_uuid_default ());
+            }
+
+          if (create_task_data->scanner_id != NULL)
+            {
+              if (find_scanner_with_permission (create_task_data->scanner_id,
+                                                &scanner, "get_scanners"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (create_task_data->scanner_id && scanner == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "scanner",
+                                                 create_task_data->scanner_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+
+              scanner_type_t type = scanner_type (scanner);
+              if (type == SCANNER_TYPE_AGENT_CONTROLLER
+                  || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+                is_agent_task = TRUE;
+              else if (type == SCANNER_TYPE_CONTAINER_IMAGE)
+                is_container_scanning_task = TRUE;
+            }
 
           /* Check permissions. */
 
@@ -23389,15 +24813,97 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           /* Check for the right combination of target and config. */
 
-          if (create_task_data->target_id == NULL)
+          if (create_task_data->target_id == NULL
+              && create_task_data->agent_group_id == NULL
+              && create_task_data->oci_image_target_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "A target is required"));
+                                  "A target or agent group"
+                                  " or OCI image target is required"));
               goto create_task_fail;
             }
 
-          if (strcmp (create_task_data->target_id, "0") == 0)
+          if (create_task_data->target_id && create_task_data->agent_group_id)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Only one of target_id or agent_group_id must be provided"));
+              goto create_task_fail;
+            }
+
+#if ENABLE_AGENTS
+          if (is_agent_task)
+            {
+              /* Agent group task */
+              agent_group_t agent_group = 0;
+              scanner_t group_scanner = 0;
+
+              if (find_agent_group_with_permission (
+                    create_task_data->agent_group_id, &agent_group,
+                    "get_agent_groups"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+
+              group_scanner = agent_group_scanner (agent_group);
+              if (group_scanner == 0)
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+
+              if (create_task_data->scanner_id == NULL)
+                {
+                  /* Scanner not specified by client, use the one from agent
+                   * group */
+                  scanner = group_scanner;
+                }
+              else if (scanner != group_scanner)
+                {
+                  /* Scanner specified by client does not match the one from
+                   * agent group */
+                  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+                    "create_task",
+                    "Scanner ID does not match agent group's scanner"));
+                  goto create_task_fail;
+                }
+
+              set_task_agent_group_and_location (create_task_data->task,
+                                                 agent_group);
+            }
+#endif /* ENABLE_AGENTS */
+
+#if ENABLE_CONTAINER_SCANNING
+          if (is_container_scanning_task)
+            {
+              oci_image_target_t oci_image_target = 0;
+
+              if (find_oci_image_target_with_permission
+                  (create_task_data->oci_image_target_id, &oci_image_target,
+                   "get_oci_image_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (oci_image_target == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "oci_image_target",
+                                                 create_task_data->oci_image_target_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_oci_image_target (create_task_data->task,
+                                         oci_image_target);
+            }
+#endif /* ENABLE_CONTAINER_SCANNING */
+
+          if (create_task_data->target_id != NULL
+              && strcmp (create_task_data->target_id, "0") == 0
+              && !is_agent_task
+              && !is_container_scanning_task)
             {
               /* Container task. */
 
@@ -23412,14 +24918,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               create_task_data_reset (create_task_data);
               set_client_state (CLIENT_AUTHENTIC);
               break;
-            }
-
-          if (create_task_data->config_id == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_task",
-                                  "A config is required"));
-              goto create_task_fail;
             }
 
           /* Set any alert. */
@@ -23457,54 +24955,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             set_task_alterable (create_task_data->task, 1);
 
           /* Set any schedule. */
+          int schedule_ret = set_task_schedule_and_periods (
+            create_task_data->task, create_task_data->schedule_id,
+            create_task_data->schedule_periods);
 
-          if (create_task_data->schedule_id)
+          if (schedule_ret == -1)
             {
-              schedule_t schedule;
-              int periods;
-
-              periods = create_task_data->schedule_periods
-                         ? atoi (create_task_data->schedule_periods)
-                         : 0;
-              if (find_schedule_with_permission (create_task_data->schedule_id,
-                                                 &schedule,
-                                                 "get_schedules"))
-                {
-                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-                  goto create_task_fail;
-                }
-              if (schedule == 0)
-                {
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_task",
-                                      "Schedule must exist"));
-                  goto create_task_fail;
-                }
-              /** @todo
-               *
-               * This is a contention hole.  Some other process could remove
-               * the schedule at this point.  The variable "schedule" would
-               * still refer to the removed schedule.
-               *
-               * This happens all over the place.  Anywhere that a libmanage
-               * client gets a reference to a resource, in fact.
-               *
-               * Possibly libmanage should lock the db whenever it hands out a
-               * reference, and the client should call something to release
-               * the lock when it's done.
-               *
-               * In many cases, like this one, the client could pass the UUID
-               * directly to libmanage, instead of getting the reference.  In
-               * this case the client would then need something like
-               * set_task_schedule_uuid.
-               */
-              set_task_schedule (create_task_data->task, schedule, periods);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+              goto create_task_fail;
             }
-          else if (create_task_data->schedule_periods
-                   && strlen (create_task_data->schedule_periods))
-            set_task_schedule_periods_id
-             (create_task_data->task,
-              atoi (create_task_data->schedule_periods));
+          else if (schedule_ret == -2)
+            {
+              SEND_TO_CLIENT_OR_FAIL (
+                XML_ERROR_SYNTAX ("create_task", "Schedule must exist"));
+              goto create_task_fail;
+            }
 
           /* Set any observers. */
 
@@ -23561,23 +25026,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
             }
 
-          if (find_scanner_with_permission (create_task_data->scanner_id,
-                                            &scanner,
-                                            "get_scanners"))
+          if ((scanner == 0) || scanner_type_requires_config (scanner_type (scanner)))
             {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (create_task_data->scanner_id && scanner == 0)
-            {
-              if (send_find_error_to_client ("create_task", "scanner",
-                                             create_task_data->scanner_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
-            }
-          if ((scanner == 0) || (scanner_type (scanner) != SCANNER_TYPE_CVE))
-            {
+              if (create_task_data->config_id == NULL)
+                {
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "A config is required"));
+                  goto create_task_fail;
+                }
+
               if (find_config_with_permission (create_task_data->config_id,
                                                &config,
                                                "get_configs"))
@@ -23601,25 +25059,28 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Scanner and config mismatched types."));
                   goto create_task_fail;
                 }
-            }
-          if (find_target_with_permission (create_task_data->target_id,
-                                           &target,
-                                           "get_targets"))
-            {
-              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
-              goto create_task_fail;
-            }
-          if (target == 0)
-            {
-              if (send_find_error_to_client ("create_task", "target",
-                                             create_task_data->target_id,
-                                             gmp_parser))
-                error_send_to_client (error);
-              goto create_task_fail;
+              set_task_config (create_task_data->task, config);
             }
 
-          set_task_config (create_task_data->task, config);
-          set_task_target (create_task_data->task, target);
+          if (!is_agent_task && !is_container_scanning_task)
+            {
+              if (find_target_with_permission (create_task_data->target_id,
+                                               &target, "get_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (target == 0)
+                {
+                  if (send_find_error_to_client ("create_task", "target",
+                                                 create_task_data->target_id,
+                                                 gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_target (create_task_data->task, target);
+            }
+
           set_task_scanner (create_task_data->task, scanner);
           set_task_hosts_ordering (create_task_data->task,
                                    create_task_data->hosts_ordering);
@@ -23676,11 +25137,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TASK, ALERT);
       CLOSE (CLIENT_CREATE_TASK, NAME);
       CLOSE (CLIENT_CREATE_TASK, OBSERVERS);
+#if ENABLE_CONTAINER_SCANNING
+      CLOSE (CLIENT_CREATE_TASK, OCI_IMAGE_TARGET);
+#endif /* ENABLE_CONTAINER_SCANNING */
       CLOSE (CLIENT_CREATE_TASK, PREFERENCES);
       CLOSE (CLIENT_CREATE_TASK, TARGET);
       CLOSE (CLIENT_CREATE_TASK, USAGE_TYPE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE);
       CLOSE (CLIENT_CREATE_TASK, SCHEDULE_PERIODS);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_CREATE_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
@@ -23872,6 +25339,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_USER_SOURCES);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT:
+        if (delete_agent_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
+
       case CLIENT_EMPTY_TRASHCAN:
         switch (manage_empty_trashcan ())
           {
@@ -23900,6 +25374,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
           break;
         }
+#if ENABLE_AGENTS
+    case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+      if (modify_agent_control_scan_config_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+      case CLIENT_MODIFY_AGENT_GROUP:
+        if (modify_agent_group_element_end (gmp_parser, error, element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+        break;
+      case CLIENT_MODIFY_AGENT:
+        if (modify_agent_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif /* ENABLE_AGENTS */
       case CLIENT_MODIFY_ALERT:
         {
           event_t event;
@@ -24365,6 +25853,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_AUTH:
         {
           GSList *item;
+          int err = 0;
 
           if (acl_user_may ("modify_auth") == 0)
             {
@@ -24389,8 +25878,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
                                            ("modify_auth",
                                             "GROUP requires a name attribute"));
-                  set_client_state (CLIENT_AUTHENTIC);
-                  modify_auth_data_reset (modify_auth_data);
+                  err = 1;
                   break;
                 }
               if (strcmp (group, "method:ldap_connect") == 0)
@@ -24425,9 +25913,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       setting = g_slist_next (setting);
                     }
 
-                  manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
-                                        ldap_plaintext, ldap_cacert,
-                                        ldap_ldaps_only);
+                  if (manage_set_ldap_info (ldap_enabled, ldap_host, ldap_authdn,
+                                            ldap_plaintext, ldap_cacert,
+                                            ldap_ldaps_only))
+                    {
+                      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX
+                                               ("modify_auth",
+                                                "Invalid certificate"));
+                      err = 1;
+                      break;
+                    }
                 }
               if (strcmp (group, "method:radius_connect") == 0)
                 {
@@ -24460,8 +25955,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               item = g_slist_next (item);
             }
-
-          SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
+          if (!err)
+            SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_auth"));
           modify_auth_data_reset (modify_auth_data);
           set_client_state (CLIENT_AUTHENTIC);
 
@@ -24527,6 +26022,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->auth_algorithm,
                     modify_credential_data->privacy_password,
                     modify_credential_data->privacy_algorithm,
+                    modify_credential_data->kdc,
+                    modify_credential_data->kdcs,
+                    modify_credential_data->realm,
+                    modify_credential_data->credential_store_id,
+                    modify_credential_data->vault_id,
+                    modify_credential_data->host_identifier,
                     modify_credential_data->allow_insecure))
             {
               case 0:
@@ -24624,6 +26125,56 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_credential_data->credential_id,
                                 "modified");
                 break;
+              case 11:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid kdc value(s)"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 12:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid kerberos realm value"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+#if ENABLE_CREDENTIAL_STORES
+              case 13:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Credential store not found"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 14:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid Vault ID"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 15:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                                    "Invalid host identifier"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+              case 16:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_credential",
+                    "Value cannot be modified for credential store type"));
+                log_event_fail ("credential", "Credential",
+                                modify_credential_data->credential_id,
+                                "modified");
+                break;
+#endif
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
@@ -24649,6 +26200,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDCS);
+      case CLIENT_MODIFY_CREDENTIAL_KDCS_KDC:
+        {
+          array_add (modify_credential_data->kdcs,
+                     g_strdup (modify_credential_data->kdcs_kdc));
+          modify_credential_data->kdcs_kdc = NULL;
+          set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
+          break;
+        }
       CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
@@ -24659,6 +26220,19 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
       CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
+
+#if ENABLE_CREDENTIAL_STORES
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, CREDENTIAL_STORE_ID);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, VAULT_ID);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, HOST_IDENTIFIER);
+
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        if (modify_credential_store_element_end (gmp_parser, error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif
 
       case CLIENT_MODIFY_FILTER:
         {
@@ -24941,6 +26515,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_NOTE, TEXT);
       CLOSE (CLIENT_MODIFY_NOTE, THREAT);
       CLOSE (CLIENT_MODIFY_NOTE, NVT);
+
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_end (gmp_parser,
+                                             error,
+                                             element_name);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_MODIFY_OVERRIDE:
         {
@@ -25485,6 +27067,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_SCANNER, NAME);
       CLOSE (CLIENT_MODIFY_SCANNER, CA_PUB);
       CLOSE (CLIENT_MODIFY_SCANNER, CREDENTIAL);
+      CLOSE (CLIENT_MODIFY_SCANNER, RELAY_HOST);
+      CLOSE (CLIENT_MODIFY_SCANNER, RELAY_PORT);
 
       case CLIENT_MODIFY_SCHEDULE:
         {
@@ -25708,9 +27292,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? modify_target_data->esxi_credential_id
                           : modify_target_data->esxi_lsc_credential_id,
                          modify_target_data->snmp_credential_id,
+                         modify_target_data->krb5_credential_id,
                          modify_target_data->reverse_lookup_only,
                          modify_target_data->reverse_lookup_unify,
                          modify_target_data->alive_tests,
+                         modify_target_data->alive_tests_str
+                          ? g_strstrip (modify_target_data->alive_tests_str)
+                          : NULL,
                          modify_target_data->allow_simultaneous_ips))
             {
               case 1:
@@ -25957,6 +27545,44 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 log_event_fail ("target", "Target",
                                 modify_target_data->target_id, "modified");
                 break;
+              case 26:
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                if (send_find_error_to_client
+                     ("modify_target", "Credential",
+                      modify_target_data->krb5_credential_id,
+                      gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                break;
+              case 27:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Kerberos 5 credential must be of type"
+                                    " 'krb5'"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 28:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "Targets cannot have both an SMB and"
+                                    " Kerberos 5 credential"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
+              case 30:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_target",
+                                    "ALIVE_TESTS can contain either a string"
+                                    " or sub-elements, but not both."));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id,
+                                "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -25991,11 +27617,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_ONLY);
       CLOSE (CLIENT_MODIFY_TARGET, REVERSE_LOOKUP_UNIFY);
       CLOSE (CLIENT_MODIFY_TARGET, ALIVE_TESTS);
+      case CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST:
+        g_ptr_array_add (modify_target_data->alive_tests,
+                         modify_target_data->alive_test
+                          ? g_strstrip (modify_target_data->alive_test)
+                          : strdup (""));
+        modify_target_data->alive_test = NULL;
+        set_client_state (CLIENT_MODIFY_TARGET_ALIVE_TESTS);
+        break;
       CLOSE (CLIENT_MODIFY_TARGET, ALLOW_SIMULTANEOUS_IPS);
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
+      CLOSE (CLIENT_MODIFY_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_LSC_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_ELEVATE_CREDENTIAL);
@@ -26120,6 +27755,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->schedule_periods,
                                       modify_task_data->preferences,
                                       modify_task_data->hosts_ordering,
+                                      modify_task_data->agent_group_id,
+                                      modify_task_data->oci_image_target_id,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
@@ -26274,6 +27911,33 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
+#if ENABLE_AGENTS
+              case 18 :
+                if (send_find_error_to_client ("modify_task", "agent_group",
+                                               modify_task_data->agent_group_id,
+                                               gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
+                log_event_fail ("task", "Task",
+                                modify_task_data->task_id, "modified");
+                break;
+#endif /*ENABLE_AGENTS*/
+#if ENABLE_CONTAINER_SCANNING
+                case 19:
+                  if (send_find_error_to_client
+                       ("modify_task", "oci_image_target",
+                        modify_task_data->oci_image_target_id, gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+#endif /* ENABLE_CONTAINER_SCANNING */
                 default:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26303,6 +27967,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE);
       CLOSE (CLIENT_MODIFY_TASK, SCHEDULE_PERIODS);
       CLOSE (CLIENT_MODIFY_TASK, TARGET);
+#if ENABLE_AGENTS
+      CLOSE (CLIENT_MODIFY_TASK, AGENT_GROUP);
+#endif /* ENABLE_AGENTS */
+#if ENABLE_CONTAINER_SCANNING
+      CLOSE (CLIENT_MODIFY_TASK, OCI_IMAGE_TARGET);
+#endif /* ENABLE_CONTAINER_SCANNING */
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);
@@ -27144,7 +28814,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
-
+#if ENABLE_CREDENTIAL_STORES
+      case CLIENT_VERIFY_CREDENTIAL_STORE:
+        {
+          verify_credential_store_run (gmp_parser, error);
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+#endif
       case CLIENT_VERIFY_REPORT_FORMAT:
         if (verify_report_format_data->report_format_id)
           {
@@ -27288,6 +28965,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         append_to_credentials_password (&current_credentials, text, text_len);
         break;
 
+#if ENABLE_AGENTS
+      case CLIENT_DELETE_AGENT:
+        delete_agent_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       case CLIENT_MODIFY_CONFIG:
         modify_config_element_text (text, text_len);
@@ -27308,6 +28990,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
               &modify_credential_data->community);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
+              &modify_credential_data->kdc);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
+              &modify_credential_data->kdcs_kdc);
 
       APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
               &modify_credential_data->key_phrase);
@@ -27333,6 +29021,22 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
               &modify_credential_data->privacy_password);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
+              &modify_credential_data->realm);
+#if ENABLE_CREDENTIAL_STORES
+      APPEND (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID,
+              &modify_credential_data->credential_store_id);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_VAULT_ID,
+              &modify_credential_data->vault_id);
+
+      APPEND (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
+              &modify_credential_data->host_identifier);
+
+      case CLIENT_MODIFY_CREDENTIAL_STORE:
+        modify_credential_store_element_text (text, text_len);
+        break;
+#endif
 
       case CLIENT_MODIFY_REPORT_CONFIG:
         modify_report_config_element_text (text, text_len);
@@ -27408,6 +29112,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_USER_SOURCES_SOURCE,
               &modify_user_data->current_source);
 
+#if ENABLE_AGENTS
+      case CLIENT_CREATE_AGENT_GROUP:
+        create_agent_group_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       APPEND (CLIENT_CREATE_ASSET_ASSET_COMMENT,
               &create_asset_data->comment);
@@ -27440,6 +29149,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
               &create_credential_data->copy);
 
+      APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
+              &create_credential_data->kdc);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
+              &create_credential_data->kdcs_kdc);
+
       APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
               &create_credential_data->key_phrase);
 
@@ -27463,6 +29178,20 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
               &create_credential_data->privacy_password);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_REALM,
+              &create_credential_data->realm);
+
+#if ENABLE_CREDENTIAL_STORES
+      APPEND (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
+              &create_credential_data->credential_store_id);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_VAULT_ID,
+              &create_credential_data->vault_id);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
+              &create_credential_data->host_identifier);
+#endif
 
       APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
               &create_credential_data->type);
@@ -27565,6 +29294,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_NOTE_THREAT,
               &create_note_data->threat);
 
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_CREATE_OCI_IMAGE_TARGET:
+        create_oci_image_target_element_text (text, text_len);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       APPEND (CLIENT_CREATE_OVERRIDE_ACTIVE,
               &create_override_data->active);
@@ -27592,7 +29326,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_OVERRIDE_THREAT,
               &create_override_data->threat);
-
 
       APPEND (CLIENT_CREATE_PERMISSION_COMMENT,
               &create_permission_data->comment);
@@ -27813,6 +29546,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_SCANNER_CA_PUB,
               &create_scanner_data->ca_pub);
 
+      APPEND (CLIENT_CREATE_SCANNER_RELAY_HOST,
+              &create_scanner_data->relay_host);
+
+      APPEND (CLIENT_CREATE_SCANNER_RELAY_PORT,
+              &create_scanner_data->relay_port);
+
 
       APPEND (CLIENT_CREATE_SCHEDULE_COMMENT,
               &create_schedule_data->comment);
@@ -27859,7 +29598,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &create_target_data->reverse_lookup_unify);
 
       APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS,
-              &create_target_data->alive_tests);
+              &create_target_data->alive_tests_str);
+
+      APPEND (CLIENT_CREATE_TARGET_ALIVE_TESTS_ALIVE_TEST,
+              &create_target_data->alive_test);
 
       APPEND (CLIENT_CREATE_TARGET_ALLOW_SIMULTANEOUS_IPS,
               &create_target_data->allow_simultaneous_ips);
@@ -27944,7 +29686,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
 
-
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
           GList *last = g_list_last (get_aggregates_data->data_columns);
@@ -27968,6 +29709,19 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         get_license_element_text (text, text_len);
         break;
 
+#if ENABLE_AGENTS
+    case CLIENT_MODIFY_AGENT_CONTROL_SCAN_CONFIG:
+      modify_agent_control_scan_config_element_text (text, text_len);
+      break;
+
+      case CLIENT_MODIFY_AGENT_GROUP:
+        modify_agent_group_element_text (text, text_len);
+        break;
+
+      case CLIENT_MODIFY_AGENT:
+        modify_agent_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AGENTS */
 
       APPEND (CLIENT_MODIFY_ALERT_NAME,
               &modify_alert_data->name);
@@ -28068,6 +29822,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_NOTE_NVT,
               &modify_note_data->nvt_oid);
 
+#if ENABLE_CONTAINER_SCANNING
+      case CLIENT_MODIFY_OCI_IMAGE_TARGET:
+        modify_oci_image_target_element_text (text, text_len);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       APPEND (CLIENT_MODIFY_OVERRIDE_ACTIVE,
               &modify_override_data->active);
@@ -28141,6 +29900,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_SCANNER_CA_PUB,
               &modify_scanner_data->ca_pub);
 
+      APPEND (CLIENT_MODIFY_SCANNER_RELAY_HOST,
+              &modify_scanner_data->relay_host);
+
+      APPEND (CLIENT_MODIFY_SCANNER_RELAY_PORT,
+              &modify_scanner_data->relay_port);
+
 
       APPEND (CLIENT_MODIFY_SCHEDULE_COMMENT,
               &modify_schedule_data->comment);
@@ -28181,7 +29946,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &modify_target_data->reverse_lookup_unify);
 
       APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS,
-              &modify_target_data->alive_tests);
+              &modify_target_data->alive_tests_str);
+
+      APPEND (CLIENT_MODIFY_TARGET_ALIVE_TESTS_ALIVE_TEST,
+              &modify_target_data->alive_test);
 
       APPEND (CLIENT_MODIFY_TARGET_ALLOW_SIMULTANEOUS_IPS,
               &modify_target_data->allow_simultaneous_ips);

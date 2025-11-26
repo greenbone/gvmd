@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_tls_certificates.c
+ * @file
  * @brief GVM management layer: TLS Certificates SQL
  *
  * The TLS Certificates SQL for the GVM management layer.
@@ -25,6 +25,7 @@
 
 #include "manage_tls_certificates.h"
 #include "manage_acl.h"
+#include "manage_filters.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql.h"
 #include "utils.h"
@@ -1747,9 +1748,9 @@ cleanup_tls_certificate_encoding ()
       if (g_utf8_validate (subject_dn, -1, NULL) == FALSE
           || g_utf8_validate (issuer_dn, -1, NULL) == FALSE)
         {
-          gchar *quoted_subject_dn 
+          gchar *quoted_subject_dn
             = sql_ascii_escape_and_quote (subject_dn, NULL);
-          gchar *quoted_issuer_dn 
+          gchar *quoted_issuer_dn
             = sql_ascii_escape_and_quote (issuer_dn, NULL);
 
           sql ("UPDATE tls_certificates"

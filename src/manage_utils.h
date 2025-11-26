@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage_utils.h
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
  */
 
@@ -100,5 +100,9 @@ icalendar_first_time_from_vcalendar (icalcomponent *, icaltimezone *);
 
 gchar *
 clean_hosts_string (const char *);
+
+gchar *
+concat_error_messages (const GPtrArray *errors, const gchar *sep,
+                       const gchar *prefix);
 
 #endif /* not _GVMD_MANAGE_UTILS_H */

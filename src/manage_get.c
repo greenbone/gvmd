@@ -22,11 +22,17 @@
  */
 
 #include "manage_get.h"
-#include "manage_sql.h"
 #include "sql.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 
 /**
  * @brief Reset command data.

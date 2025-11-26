@@ -17,7 +17,7 @@
  */
 
 /**
- * @file debug_utils.c
+ * @file
  * @brief Debug utilties and Sentry integration
  */
 
@@ -26,6 +26,12 @@
 #include <gvm/base/logging.h>
 #include <stdio.h> /* for snprintf */
 #include <stdlib.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md  utils"
 
 /**
  * @brief Initialize Sentry using the current gvmd version and DSN.

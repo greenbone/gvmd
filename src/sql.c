@@ -17,7 +17,7 @@
  */
 
 /**
- * @file sql.c
+ * @file
  * @brief Generic SQL interface
  *
  * This is a small generic interface for SQL database access.
@@ -28,6 +28,7 @@
  */
 
 #include "sql.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <errno.h>

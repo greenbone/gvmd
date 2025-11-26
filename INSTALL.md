@@ -1,39 +1,53 @@
-# INSTALLATION INSTRUCTIONS FOR GREENBONE VULNERABILITY MANAGER
+# Installation Instructions for Greenbone Vulnerability Manager Daemon
 
 Please note: The reference system used by most of the developers is Debian
-GNU/Linux 'Buster' 10. The build might fail on any other system. Also, it is
-necessary to install dependent development packages.
+stable. The build might fail on any other system. Also, it is necessary to
+install dependent development packages.
 
-## Prerequisites for Greenbone Vulnerability Manager
+## Prerequisites for Greenbone Vulnerability Manager Daemon
 
 Prerequisites:
-* GCC (Debian package: gcc)
-* cmake >= 3.0 (Debian package: cmake)
-* cJSON >= 1.7.14 (Debian package: libcjson-dev)
-* glib-2.0 >= 2.42 (Debian package: libglib2.0-dev)
-* gnutls >= 3.2.15 (Debian package: libgnutls28-dev)
-* libgvm_base, libgvm_util, libgvm_osp, libgvm_gmp >= 20.08.0 ([gvm-libs](https://github.com/greenbone/gvm-libs/tree/gvm-libs-20.08) component)
-* PostgreSQL database >= 9.6 (Debian packages: libpq-dev postgresql-server-dev-11)
-* pkg-config (Debian package: pkg-config)
-* libical >= 1.0.0 (Debian package: libical-dev)
-* xsltproc (Debian package: xsltproc)
+
+* cJSON >= 1.7.14
+* cmake >= 3.5
+* GCC
+* glib-2.0 >= 2.42
+* gnutls >= 3.2.15
 * gpgme
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.31
+* libical >= 1.0.0
+* libbsd
+* pkg-config
+* PostgreSQL database >= 9.6
+* xsltproc
 
-Install these prerequisites on Debian GNU/Linux 'Buster' 10:
+Install these prerequisites on Debian stable:
 
-    apt-get install gcc cmake libcjson-dev libglib2.0-dev libgnutls28-dev libpq-dev postgresql-server-dev-11 pkg-config libical-dev xsltproc libgpgme-dev
+    apt-get install \
+      cmake \
+      gcc \
+      libcjson-dev \
+      libglib2.0-dev \
+      libgnutls28-dev \
+      libgpgme-dev \
+      libical-dev \
+      libpq-dev \
+      pkg-config \
+      postgresql-server-dev-all \
+      xsltproc
 
 Prerequisites for building documentation:
+
 * Doxygen
 * xsltproc (for building the GMP HTML documentation)
 * xmltoman (optional, for building man page)
 
 Prerequisites for building tests:
+
 * Cgreen (optional, for building tests)
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
-
 
 ## Compiling Greenbone Vulnerability Manager
 
@@ -73,7 +87,6 @@ you have specified a prefix for which your user does not have full permissions.
 To clean up the build environment, simply remove the contents of the `build`
 directory you created above.
 
-
 ## Choosing the Connection Type
 
 Greenbone Vulnerability Manager can serve client connections on either a TCP
@@ -90,7 +103,6 @@ permissions of the socket can be specified with the `--listen-owner`,
 To use a TCP socket, call gvmd with the --listen option, for example:
 
     gvmd --listen=127.0.0.1
-
 
 ## Certificate Generation
 
@@ -115,7 +127,6 @@ Please refer to the documentation provided with the script for usage details.
 If certificates have expired or in other ways there is need to update
 certificates for scanners, please see also section `Updating Scanner
 Certificates`.
-
 
 ## Configure PostgreSQL Database Backend
 
@@ -220,7 +231,6 @@ SELECT nspname || '.' || relname AS "relation",
 
 These queries were taken from https://wiki.postgresql.org/wiki/Disk_Usage
 
-
 ## Migrating the Database (e.g. during an upgrade of GVM)
 
 If you have used Manager before (e.g. an older version which got upgraded to
@@ -233,7 +243,6 @@ If this is happening you need to migrate the database to the current data model.
 Use this command to run the migration:
 
     gvmd --migrate
-
 
 ## Creating an administrator user for GVM
 
@@ -248,7 +257,6 @@ clients like the Greenbone Security Assistant (GSA).
 
 Also, the new user can change their password via GSA.
 
-
 ## Set the Feed Import Owner
 
 Certain resources that were previously part of the gvmd source code are now
@@ -262,47 +270,22 @@ The UUIDs of all created users can be found using
 
     gvmd --get-users --verbose
 
-
 ## Keeping the feeds up-to-date
 
 The `gvmd Data`, `SCAP` and `CERT` Feeds should be kept up-to-date by calling the
 `greenbone-feed-sync` script regularly (e.g. via a cron entry).
 
-There are currently two synchronization methods available: The older
-shell-based one included in the gvmd repository and a newer Python-based one
-that also handles the VT synchronization.
-
-### Python-based sync tool
-
-The currently recommended way of synchronizing the gvmd data feeds is the
-Python tool "greenbone-feed-sync", which can be found at
-https://github.com/greenbone/greenbone-feed-sync together with instruction
-for its installation and usage.
-
-When upgrading to the new synchronization tool, the old script should be
-removed to avoid conflicts as both are named "greenbone-feed-sync".
-
-### Legacy shell script
-
-The legacy feed sync script is deprecated and will be removed in the next major
-release of gvmd.
-
-Therefore, installation of it is now disabled by default but can be enabled for
-backward compatibility with the CMake option `-DINSTALL_OLD_SYNC_SCRIPTS=ON`.
-
-The legacy script has to be run for each type of data:
-
-    greenbone-feed-sync --type GVMD_DATA
-    greenbone-feed-sync --type SCAP
-    greenbone-feed-sync --type CERT
+The currently recommended way of synchronizing the feeds is the Python tool
+**greenbone-feed-sync**, which can be found at [https://github.com/greenbone/greenbone-feed-sync](https://github.com/greenbone/greenbone-feed-sync)
+together with instruction for its installation and usage.
 
 Please note: The `CERT` feed sync depends on data provided by the `SCAP` feed
 and should be called after syncing the latter.
 You will need the `rsync` tool for a successful synchronization.
 
-## Configure the default OSPD scanner socket path
+## Configure the default ospd scanner socket path
 
-By default, Manager tries to connect to the default OSPD scanner via the following path:
+By default, Manager tries to connect to the default ospd scanner via the following path:
 
     /var/run/ospd/ospd.sock
 
@@ -315,7 +298,6 @@ Get the UUID of the `OpenVAS Default` scanner:
 Update the path (example, path needs to be adapted accordingly):
 
     gvmd --modify-scanner=<uuid of OpenVAS Default scanner> --scanner-host=<install-prefix>/var/run/ospd/ospd-openvas.sock
-
 
 ## Logging Configuration
 
@@ -359,7 +341,6 @@ Logging to `syslog` can be enabled in each domain like:
     file=syslog
     syslog_facility=daemon
     level=128
-
 
 ## Optimizing the database
 
@@ -443,13 +424,6 @@ supported values for `<name>` are:
   This cleans up TLS certificates where the subject or issuer DN is not
   valid UTF-8.
 
-- `migrate-relay-sensors`
-
-  If relays are active, this can be used to make sure all sensor type
-  scanners have a matching relay, i.e. OSP sensors have an OSP relay
-  and GMP scanners have a GMP relay.
-  GMP scanners are migrated to OSP sensors if an OSP relay is available.
-
 - `rebuild-report-cache`
 
   This clears the cache containing the unfiltered result counts of all reports
@@ -459,7 +433,6 @@ supported values for `<name>` are:
 
   This creates the cache containing the unfiltered result counts of all reports
   that are not cached yet.
-
 
 ## Encrypted Credentials
 
@@ -521,7 +494,6 @@ No encryption: If for backward compatibility reasons encrypted credentials
 are not desired, the manager must _always_ be started with the option
 `--disable-encrypted-credentials`.
 
-
 ## Resetting Credentials Encryption Key
 
 If you lost some part of the encryption key, neither a regular migration nor
@@ -548,7 +520,6 @@ Create a new key:
     gvmd --create-credentials-encryption-key
 
 Finally, reset all credentials, by hand.
-
 
 ## Updating Scanner Certificates
 
@@ -598,7 +569,6 @@ Replace the path to the pem-file with the one of your setup. The
 UUID is the fixed one of the immutable global setting for the default
 CA certificate and thus does not need to be changed.
 
-
 ## Changing the Maximum Number of Rows per Page
 
 The maximum number of rows returned by the GMP `GET` commands, like `GET_TARGETS`,
@@ -618,12 +588,12 @@ This changes the global value of the setting, and so applies to all users.
 Adding `--user` to the command will set a value for maximum rows only for that
 user.
 
-
 ## Prerequisites for Optional Features
 
 Certain features of the Manager also require some programs at run time:
 
 Prerequisites for generating PDF reports:
+
 * pdflatex
 
   On Debian GNU/Linux 'Stretch' 9 the following packages can be installed to
@@ -633,23 +603,29 @@ Prerequisites for generating PDF reports:
       apt-get install texlive-fonts-recommended
 
 Prerequisites for generating HTML reports:
+
 * xsltproc
 
 Prerequisites for generating verinice reports:
+
 * xsltproc, xmlstarlet, zip
 
 Prerequisites for generating credential RPM packages:
+
 * rpm
 * fakeroot
 
 Prerequisites for generating credential DEB packages:
+
 * dpkg
 * fakeroot
 
 Prerequisites for generating credentials .exe packages:
+
 * makensis (usually distributed as part of nsis)
 
 Prerequisites for generating system reports:
+
 * A program in the `PATH`, with usage `gvmcg seconds type`, where
   seconds is the number of seconds before now that the report covers,
   and type is the type of report.  When called with type `titles` the
@@ -662,49 +638,84 @@ Prerequisites for generating system reports:
   indicate failure by simply refraining from printing.
 
 Prerequisites for signature verification:
+
 * gnupg
 
 Prerequisites for HTTP alerts:
+
 * wget
 
 Prerequisites for Alemba vFire alert:
+
 * A program in the `PATH` called `greenbone_vfire_connector` that takes the
   path to an XML file as described by doc/vfire-data-xml.rnc as an argument.
 
 Prerequisites for Sourcefire Connector alert:
+
 * A program in the `PATH` called `greenbone_sourcefire_connector` that takes
   args IP, port, PKCS12 file and report file in Sourcefire format.
 
 Prerequisites for verinice .PRO Connector alert:
+
 * A program in the `PATH` called `greenbone_verinice_connector` that takes args
   IP, port, username, password and report file in verinice .PRO format.
 
 Prerequisites for SCP alert:
+
 * sshpass
 * scp
 
 Prerequisites for Send alert:
+
 * socat
 
 Prerequisites for SNMP alert:
+
 * snmp
 
 Prerequisites for SMB alert:
+
 * python3
 * smbclient
 
 Prerequisites for Tipping Point alert:
+
 * python3
 * python3-lxml
 
 Prerequisites for key generation on systems with low entropy:
+
 * haveged (or a similar tool)
 
 Prerequisites for S/MIME support (e.g. email encryption):
+
 * GNU privacy guard - S/MIME version (Debian package: gpgsm)
 
 Prerequisites for certificate generation:
+
 * GnuTLS certtool (Debian package: gnutls-bin)
+
+## Enable Agent Control Support
+
+To enable agent management and integration with the Agent Control service, make sure to configure your build with the `ENABLE_AGENTS` flag enabled.
+
+In your CMake configuration:
+
+```bash
+cmake -DENABLE_AGENTS=1 ..
+```
+
+This flag ensures that gvmd is built with support for Agent Control and can interact with agent-based components.
+
+## Set the Agent Owner
+
+Agent resources retrieved from the Agent Control service are associated with a user. gvmd requires an "Agent Owner" to be configured in order to import and manage agents properly.
+
+Use the following command to set the Agent Owner:
+
+```bash
+gvmd --modify-setting 1ee1f106-8b2e-461c-b426-7f5d76001b29 --value <uuid_of_user>
+```
 
 ## Static code analysis with the Clang Static Analyzer
 

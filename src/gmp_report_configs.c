@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_report_configs.c
+ * @file
  * @brief GVM GMP layer: Report Configs
  *
  * GMP report configurations.
@@ -33,12 +33,17 @@
 #include <string.h>
 #include <strings.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
 
 /* General helper functions */
 
 /**
  * @brief Collect params from entity.
- * 
+ *
  * @param[in] entity  Entity to check for param elements.
  *
  * @return Array of params
@@ -49,7 +54,7 @@ params_from_entity (entity_t entity)
   array_t *params;
   entities_t children;
   entity_t param_entity;
-  
+
   params = make_array ();
   children = entity->entities;
   while ((param_entity = first_entity (children)))
@@ -85,7 +90,7 @@ params_from_entity (entity_t entity)
           if (param_value)
             {
               const char *use_default_str;
-              
+
               param->value = g_strdup (entity_text (param_value));
               use_default_str = entity_attribute (param_value, "use_default");
               if (use_default_str)
@@ -100,7 +105,7 @@ params_from_entity (entity_t entity)
               report_config_param_data_free (param);
               continue;
             }
-            
+
 
           array_add (params, param);
         }
@@ -529,7 +534,7 @@ modify_report_config_run (gmp_parser_t *gmp_parser, GError **error)
                               comment ? comment->text : NULL,
                               params,
                               &error_message);
-  
+
   switch (ret)
     {
       case 0:

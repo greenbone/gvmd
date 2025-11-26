@@ -17,7 +17,7 @@
  */
 
 /**
- * @file theia_dummy.h
+ * @file
  * @brief Dummy definitions and headers for libtheia.
  */
 

@@ -17,12 +17,13 @@
  */
 
 /**
- * @file sql_pg.c
+ * @file
  * @brief Generic SQL interface: PostgreSQL backend
  *
  * PostreSQL backend of the SQL interface.
  */
 
+#include "ipc.h"
 #include "sql.h"
 
 #include <assert.h>
@@ -289,12 +290,21 @@ sql_open (const db_conn_info_t *database)
                                database->port ? database->port : "",
                                database->user ? database->user : "",
                                "gvmd");
+
+  if (semaphore_op (SEMAPHORE_DB_CONNECTIONS, -1, database->semaphore_timeout))
+    {
+      g_warning ("%s: error signaling database connection semaphore",
+                 __func__);
+      g_free (conn_info);
+      return -1;
+    }
   conn = PQconnectStart (conn_info);
   g_free (conn_info);
   if (conn == NULL)
     {
       g_warning ("%s: PQconnectStart failed to allocate conn",
                  __func__);
+      semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
       return -1;
     }
   if (PQstatus (conn) == CONNECTION_BAD)
@@ -395,6 +405,7 @@ sql_open (const db_conn_info_t *database)
  fail:
   PQfinish (conn);
   conn = NULL;
+  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
   return -1;
 }
 
@@ -406,6 +417,7 @@ sql_close ()
 {
   PQfinish (conn);
   conn = NULL;
+  semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
 /**
@@ -493,8 +505,11 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
                              (const int*) stmt->param_lengths->data,
                              (const int*) stmt->param_formats->data,
                              0);                   /* Results as text. */
-      if (PQresultStatus (result) != PGRES_TUPLES_OK
-          && PQresultStatus (result) != PGRES_COMMAND_OK)
+      ExecStatusType status = PQresultStatus (result);
+
+      if (status != PGRES_TUPLES_OK
+          && status != PGRES_COMMAND_OK
+          && status != PGRES_COPY_IN)
         {
           char *sqlstate;
 
@@ -537,7 +552,7 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
               g_warning ("%s: PQexec failed: %s (%i)",
                          __func__,
                          PQresultErrorMessage (result),
-                         PQresultStatus (result));
+                         status);
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
           return -1;
@@ -607,7 +622,7 @@ sql_rollback ()
  *
  * @param[in]  table         The table to lock.
  * @param[in]  lock_timeout  The lock timeout in milliseconds, 0 for unlimited.
- * 
+ *
  * @return 1 if locked, 0 if failed / timed out.
  */
 int
@@ -615,10 +630,10 @@ sql_table_lock_wait (const char *table, int lock_timeout)
 {
   int old_lock_timeout = sql_int ("SHOW lock_timeout;");
   sql ("SET LOCAL lock_timeout = %d;", lock_timeout);
-  
+
   // This requires the gvmd functions to be defined first.
   int ret = sql_int ("SELECT try_exclusive_lock_wait ('%s');", table);
-  
+
   sql ("SET LOCAL lock_timeout = %d;", old_lock_timeout);
   return ret;
 }
@@ -866,4 +881,122 @@ sql_cancel_internal ()
     }
 
   return 0;
+}
+
+/**
+ * @brief Tries to transfer data for a COPY ... FROM STDIN statement.
+ *
+ * To finalize the data transfer for the statement, call sql_copy_end
+ *  afterwards.
+ *
+ * @param[in]  str  The string to transfer.
+ * @param[in]  len  Length of the string to write, -1 to use strlen.
+ * 
+ * @return 0 success, -1 error.
+ */
+int
+sql_copy_write_str (const char *str, int len)
+{
+  int put_copy_data_ret = PQputCopyData(conn,
+                                        str,
+                                        len >= 0 ? len : strlen(str));
+  if (put_copy_data_ret == 0)
+    {
+      g_warning ("%s: could not send data: queue blocked", __func__);
+      return -1;
+    }
+  else if (put_copy_data_ret != 1)
+    {
+      g_warning ("%s: could not send data: %s",
+                 __func__, PQerrorMessage(conn));
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Tries to finalize the current COPY ... FROM STDIN data transfer.
+ *
+ * The data is only validated and written after calling this.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+sql_copy_end ()
+{
+  int put_copy_end_ret = PQputCopyEnd (conn, NULL);
+  PGresult *result;
+  if (put_copy_end_ret == 0)
+    {
+      g_warning ("%s: could not send end of data: queue blocked", __func__);
+      return -1;
+    }
+  else if (put_copy_end_ret != 1)
+    {
+      g_warning ("%s: could not send end of data: %s",
+                 __func__, PQerrorMessage(conn));
+      return -1;
+    }
+
+  result = PQgetResult (conn);
+  if (PQresultStatus (result) != PGRES_COMMAND_OK)
+    {
+      g_warning ("%s: PQexec failed: %s (%i)",
+                  __func__,
+                  PQresultErrorMessage (result),
+                  PQresultStatus (result));
+      PQclear (result);
+      return -1;
+    }
+
+  PQclear (result);
+  return 0;
+}
+
+/**
+ * @brief Escapes a string for tab-delimited data of TEXT type COPY statements.
+ *
+ * @param[in]  str  The string to escape.
+ * 
+ * @return The newly allocated, escaped copy of the string.
+ */
+gchar *
+sql_copy_escape (const char *str)
+{
+  if (str == NULL)
+    return NULL;
+
+  gssize i;
+  gssize len = strlen (str);
+  GString *escaped = g_string_sized_new (len);
+
+  for (i = 0; i < len; i++) {
+    switch (str[i])
+      {
+        case '\\':
+          g_string_append (escaped, "\\\\");
+          break;
+        case '\b':
+          g_string_append (escaped, "\\b");
+          break;
+        case '\f':
+          g_string_append (escaped, "\\f");
+          break;
+        case '\n':
+          g_string_append (escaped, "\\n");
+          break;
+        case '\r':
+          g_string_append (escaped, "\\r");
+          break;
+        case '\t':
+          g_string_append (escaped, "\\t");
+          break;
+        case '\v':
+          g_string_append (escaped, "\\v");
+          break;
+        default:
+          g_string_append_c (escaped, str[i]);
+      }
+  }
+  return g_string_free (escaped, FALSE);
 }

@@ -19,11 +19,9 @@
 #ifndef _GVMD_MANAGE_CONFIGS_H
 #define _GVMD_MANAGE_CONFIGS_H
 
-#include "iterator.h"
+#include "manage_resources.h"
 #include "manage_get.h"
 #include "manage_preferences.h"
-
-typedef resource_t config_t;
 
 preference_t *
 get_nvt_preference_by_id (const char *,
@@ -156,18 +154,6 @@ int
 manage_set_config_families (config_t, GPtrArray*, GPtrArray*, GPtrArray*, int,
                             gchar **);
 
-void
-init_config_timeout_iterator (iterator_t*, config_t);
-
-const char*
-config_timeout_iterator_oid (iterator_t *);
-
-const char*
-config_timeout_iterator_nvt_name (iterator_t *);
-
-const char*
-config_timeout_iterator_value (iterator_t *);
-
 gboolean
 configs_feed_dir_exists ();
 
@@ -179,5 +165,8 @@ manage_rebuild_configs ();
 
 gboolean
 should_sync_configs ();
+
+gboolean
+scanner_type_requires_config (int scanner_type);
 
 #endif /* not _GVMD_MANAGE_CONFIGS_H */

@@ -17,7 +17,7 @@
  */
 
 /*
- * @file sql.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: the SQL library.
  */
 
@@ -25,9 +25,20 @@
 #define _GVMD_SQL_H
 
 #include "iterator.h"
-#include "manage.h"
 
 #include <glib.h>
+
+/**
+ * @brief Data structure for info used to connect to the database
+ */
+typedef struct
+{
+  gchar *name;              ///< The database name
+  gchar *host;              ///< The database host or socket directory
+  gchar *port;              ///< The database port or socket file extension
+  gchar *user;              ///< The database user name
+  time_t semaphore_timeout; ///< Semaphore timeout for database connections
+} db_conn_info_t;
 
 /* Helpers. */
 
@@ -166,5 +177,14 @@ iterator_column_name (iterator_t *, int);
 
 int
 iterator_column_count (iterator_t *);
+
+int
+sql_copy_write_str (const char *, int);
+
+int
+sql_copy_end ();
+
+gchar *
+sql_copy_escape (const char *);
 
 #endif /* not _GVMD_SQL_H */

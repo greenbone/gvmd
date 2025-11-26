@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_secinfo.c
+ * @file
  * @brief GVM management layer: SecInfo
  *
  * The SecInfo parts of the GVM management layer.
@@ -30,6 +30,7 @@
 
 #include "debug_utils.h"
 #include "manage_sql.h"
+#include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"
@@ -72,9 +73,26 @@
 #define CPE_MAX_CHUNK_SIZE 10000
 
 /**
+ * @brief Query size for affected products updates.
+ */
+static int affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+
+/**
  * @brief Commit size for updates.
  */
 static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+
+/**
+ * @brief Strategy how to handle SecInfo updates.
+ */
+static secinfo_update_strategy_t secinfo_update_strategy
+  = SECINFO_UPDATE_STRATEGY_DEFAULT;
+
+/**
+ * @brief Whether to prefer faster SQL with less checks for non-incremental
+ *        SecInfo updates.
+ */
+static int secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
 
 /**
  * @brief Maximum number of rows in a EPSS INSERT.
@@ -291,7 +309,7 @@ inserts_check_size (inserts_t *inserts)
       inserts->statements_size += inserts->statement->len;
       inserts->statement = NULL;
       inserts->current_chunk_size = 0;
-      
+
       if (inserts->max_statements_size
           && inserts-> statements_size >= inserts->max_statements_size)
         {
@@ -1019,7 +1037,7 @@ init_cert_bund_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 }
 
 /**
- * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not 
+ * @brief Initialise an CERT-Bund advisory (cert_bund_adv) info iterator not
  *        limited to a name.
  *
  * @param[in]  iterator        Iterator.
@@ -1243,7 +1261,7 @@ init_dfn_cert_adv_info_iterator (iterator_t* iterator, get_data_t *get,
 }
 
 /**
- * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator 
+ * @brief Initialise an DFN-CERT advisory (dfn_cert_adv) info iterator
  *        not limited to a name.
  *
  * @param[in]  iterator        Iterator.
@@ -2026,12 +2044,14 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Convert a CPE name from formatted string to URI and SQL quote it.
  *
- * @param[in]  name  Name.
+ * @param[in]  name        Name.
+ * @param[in]  quote_func  Function for quoting.
  *
  * @return URI converted uoted name.
  */
 static gchar *
-fs_to_uri_convert_and_quote_cpe_name (const char *name)
+fs_to_uri_convert_and_quote_cpe_name (const char *name,
+                                      gchar* (*quote_func)(const char*))
 {
   gchar *name_converted, *name_decoded, *name_tilde, *quoted_name;
 
@@ -2041,7 +2061,7 @@ fs_to_uri_convert_and_quote_cpe_name (const char *name)
                                "~", "%7E", "%7e", NULL);
   g_free (name_decoded);
   g_free (name_converted);
-  quoted_name = sql_quote (name_tilde);
+  quoted_name = quote_func (name_tilde);
   g_free (name_tilde);
   return quoted_name;
 }
@@ -2267,52 +2287,66 @@ scap_cpes_json_skip_to_products (gvm_json_pull_parser_t *parser,
 /**
  * @brief Insert a SCAP CPE from JSON.
  *
- * @param[in]  inserts            Pointer to SQL buffer for main CPE entries.
+ * @param[in]  inserts      Pointer to SQL INSERT buffer for main CPE entries.
  * @param[in]  deprecated_by_inserts  Pointer to SQL buffer for deprecated_by.
- * @param[in]  product_item       JSON object from the products list.
+ * @param[in]  copy_buffer  Pointer to SQL COPY buffer for main CPE entries.
+ * @param[in]  cpe_rowid    Pointer to CPE rowid for COPY.
+ * @param[in]  use_copy     Whether to insert CPEs with COPY statements.
+ * @param[in]  product_item JSON object from the products list.
  *
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
+handle_json_cpe_item (inserts_t *inserts,
+                      inserts_t *deprecated_by_inserts,
+                      db_copy_buffer_t *copy_buffer,
+                      resource_t *cpe_rowid,
+                      gboolean use_copy,
                       cJSON *product_item)
 {
   cJSON *cpe_item;
   char *name, *cpe_name_id, *last_modified, *title_text;
-  gchar *quoted_name, *quoted_title, *quoted_cpe_name_id;
+  gchar *quoted_name;
   cJSON *titles, *title;
   time_t modification_time;
   int deprecated;
   int first;
 
   assert (inserts);
+  assert (copy_buffer);
+
+  (*cpe_rowid)++;
 
   cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
   if (! cJSON_IsObject (cpe_item))
     {
-      g_warning ("%s: 'cpe' field in product missing or not an object",
-                 __func__);
+      g_warning ("%s: 'cpe' field in product missing or not an object"
+                 " at rowid %llu",
+                 __func__, *cpe_rowid);
       return -1;
     }
 
   name = json_object_item_string (cpe_item, "cpeName");
   if (name == NULL)
     {
-      g_warning ("%s: 'cpeName' field missing or not a string", __func__);
+      g_warning ("%s: 'cpeName' field missing or not a string"
+                 " at rowid %llu", __func__, *cpe_rowid);
       return -1;
     }
 
   cpe_name_id = json_object_item_string (cpe_item, "cpeNameId");
   if (cpe_name_id == NULL)
     {
-      g_warning ("%s: 'cpeNameId' field missing or not a string", __func__);
+      g_warning ("%s: 'cpeNameId' field missing or not a string"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
   last_modified = json_object_item_string (cpe_item, "lastModified");
   if (last_modified == NULL)
     {
-      g_warning ("%s: 'lastModified' field missing or not a string", __func__);
+      g_warning ("%s: 'lastModified' field missing or not a string"
+                 " for CPE %s", __func__, name);
       return -1;
     }
   modification_time = parse_iso_time (last_modified);
@@ -2320,7 +2354,8 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
   titles = cJSON_GetObjectItemCaseSensitive (cpe_item, "titles");
   if (! cJSON_IsArray (titles))
     {
-      g_warning ("%s: 'titles' field missing or not an array", __func__);
+      g_warning ("%s: 'titles' field missing or not an array"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
@@ -2338,83 +2373,116 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
   deprecated = json_object_item_boolean (cpe_item, "deprecated", -1);
   if (deprecated == -1)
     {
-      g_warning ("%s: 'deprecated' field missing or not a boolean", __func__);
+      g_warning ("%s: 'deprecated' field missing or not a boolean"
+                 " for CPE %s", __func__, name);
       return -1;
     }
 
-  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_quote);
   if (deprecated)
     {
       cJSON *deprecated_by_array, *deprecated_by_item;
       gchar *quoted_deprecated_by_id;
       deprecated_by_array = cJSON_GetObjectItemCaseSensitive (cpe_item,
                                                               "deprecatedBy");
-      if (! cJSON_IsArray (deprecated_by_array))
+      if (cJSON_IsArray (deprecated_by_array))
         {
-          g_warning ("%s: 'deprecatedBy' field missing or not an array",
-                     __func__);
-          g_free (quoted_name);
-          return -1;
-        }
-      else if (cJSON_GetArraySize (deprecated_by_array) == 0)
-        {
-          g_warning ("%s: 'deprecatedBy' array is empty",
-                     __func__);
-          g_free (quoted_name);
-          return -1;
-        }
-
-      cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
-        {
-          char *deprecated_by_id;
-          deprecated_by_id = json_object_item_string (deprecated_by_item,
-                                                      "cpeName");
-          if (deprecated_by_id == NULL)
+          cJSON_ArrayForEach (deprecated_by_item, deprecated_by_array)
             {
-              g_warning ("%s: 'cpeName' field in 'deprecatedBy' missing or not"
-                         " a string",
-                         __func__);
-              g_free (quoted_name);
-              return -1;
+              char *deprecated_by_id;
+              deprecated_by_id = json_object_item_string (deprecated_by_item,
+                                                          "cpeName");
+              if (deprecated_by_id == NULL)
+                {
+                  g_warning ("%s: 'cpeName' field in 'deprecatedBy'"
+                             " missing or not a string for CPE %s",
+                             __func__, name);
+                  g_free (quoted_name);
+                  return -1;
+                }
+
+              quoted_deprecated_by_id
+                = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id,
+                                                        sql_quote);
+
+              first = inserts_check_size (deprecated_by_inserts);
+
+              g_string_append_printf (deprecated_by_inserts->statement,
+                                      "%s ('%s', '%s')",
+                                      first ? "" : ",",
+                                      quoted_name,
+                                      quoted_deprecated_by_id);
+
+              deprecated_by_inserts->current_chunk_size++;
+              g_free (quoted_deprecated_by_id);
             }
-
-          quoted_deprecated_by_id
-            = fs_to_uri_convert_and_quote_cpe_name (deprecated_by_id);
-
-          first = inserts_check_size (deprecated_by_inserts);
-
-          g_string_append_printf (deprecated_by_inserts->statement,
-                                  "%s ('%s', '%s')",
-                                  first ? "" : ",",
-                                  quoted_name,
-                                  quoted_deprecated_by_id);
-
-          deprecated_by_inserts->current_chunk_size++;   
-          g_free (quoted_deprecated_by_id);
+        }
+      else if (deprecated_by_array)
+        {
+          g_warning ("%s: 'deprecatedBy' field exists but is not an array"
+                     " for CPE %s", __func__, name);
+          g_free (quoted_name);
+          return -1;
         }
     }
 
-  quoted_cpe_name_id = sql_quote (cpe_name_id);
-  quoted_title = sql_quote (title_text ? title_text : "");
+  if (use_copy)
+    {
+      int ret;
+      gchar *copy_escaped_name, *copy_escaped_cpe_name_id, *copy_escaped_title;
 
-  first = inserts_check_size (inserts);
+      copy_escaped_name
+        = fs_to_uri_convert_and_quote_cpe_name (name, sql_copy_escape);
+      copy_escaped_cpe_name_id = sql_copy_escape (cpe_name_id);
+      copy_escaped_title = sql_copy_escape (title_text ? title_text : "");
 
-  g_string_append_printf (inserts->statement,
-                          "%s ('%s', '%s', '%s', %li, %li, %d, '%s')",
-                          first ? "" : ",",
-                          quoted_name,
-                          quoted_name,
-                          quoted_title,
-                          modification_time,
-                          modification_time,
-                          deprecated,
-                          quoted_cpe_name_id);
+      ret = db_copy_buffer_append_printf
+              (copy_buffer,
+               "%llu\t%s\t%s\t%s\t%li\t%li\t%d\t%s\n",
+               *cpe_rowid,
+               copy_escaped_name,
+               copy_escaped_name,
+               copy_escaped_title,
+               modification_time,
+               modification_time,
+               deprecated,
+               copy_escaped_cpe_name_id);
 
-  inserts->current_chunk_size++;
+      g_free (copy_escaped_name);
+      g_free (copy_escaped_cpe_name_id);
+      g_free (copy_escaped_title);
 
-  g_free (quoted_title);
+      if (ret)
+        {
+          g_free (quoted_name);
+          return -1;
+        }
+    }
+  else
+    {
+      gchar *quoted_title, *quoted_cpe_name_id;
+
+      quoted_cpe_name_id = sql_quote (cpe_name_id);
+      quoted_title = sql_quote (title_text ? title_text : "");
+
+      first = inserts_check_size (inserts);
+      g_string_append_printf (inserts->statement,
+                              "%s ('%s', '%s', '%s', %li, %li, %d, '%s')",
+                              first ? "" : ",",
+                              quoted_name,
+                              quoted_name,
+                              quoted_title,
+                              modification_time,
+                              modification_time,
+                              deprecated,
+                              quoted_cpe_name_id);
+
+      inserts->current_chunk_size++;
+      g_free (quoted_title);
+      g_free (quoted_cpe_name_id);
+    }
+
   g_free (quoted_name);
-  g_free (quoted_cpe_name_id);
 
   return 0;
 }
@@ -2422,18 +2490,28 @@ handle_json_cpe_item (inserts_t *inserts, inserts_t *deprecated_by_inserts,
 /**
  * @brief Insert a SCAP CPE from JSON.
  *
- * @param[in]  inserts            Pointer to SQL buffer.
- * @param[in]  product_item       JSON object from the products list.
+ * @param[in]  inserts      Pointer to SQL INSERT buffer.
+ * @param[in]  copy_buffer  Pointer to SQL COPY buffer for main CPE entries.
+ * @param[in]  cpe_rowid    Pointer to CPE rowid for COPY.
+ * @param[in]  use_copy     Whether to insert CPEs with COPY statements.
+ * @param[in]  product_item JSON object from the products list.
  *
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
+handle_json_cpe_refs (inserts_t *inserts,
+                      db_copy_buffer_t *copy_buffer,
+                      gboolean use_copy,
+                      resource_t *cpe_rowid,
+                      cJSON *product_item)
 {
   cJSON *cpe_item, *refs, *refs_item;
   gchar *name, *quoted_name;
+  gchar* (*quote_func)(const char*);
 
   assert (inserts);
+
+  (*cpe_rowid)++;
 
   cpe_item = cJSON_GetObjectItemCaseSensitive (product_item, "cpe");
   if (! cJSON_IsObject (cpe_item))
@@ -2457,7 +2535,12 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
       return 0;
     }
 
-  quoted_name = fs_to_uri_convert_and_quote_cpe_name (name);
+  quote_func = use_copy ? sql_copy_escape : sql_quote;
+  if (use_copy)
+    quoted_name = NULL;
+  else
+    quoted_name = fs_to_uri_convert_and_quote_cpe_name (name, quote_func);
+
   cJSON_ArrayForEach (refs_item, refs)
     {
       int first;
@@ -2471,21 +2554,38 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
           return -1;
         }
       type = json_object_item_string (refs_item, "type");
-      quoted_ref = sql_quote (ref ? ref : "");
-      quoted_type = sql_quote (type ? type : "");
-      
-      first = inserts_check_size (inserts);
+      quoted_ref = quote_func (ref ? ref : "");
+      quoted_type = quote_func (type ? type : "");
 
-      g_string_append_printf (inserts->statement,
-                              "%s ('%s', '%s', '%s')",
-                              first ? "" : ",",
-                              quoted_name,
-                              quoted_ref,
-                              quoted_type);
+      if (use_copy)
+        {
+          if (db_copy_buffer_append_printf (copy_buffer,
+                                            "%llu\t%s\t%s\n",
+                                            *cpe_rowid,
+                                            quoted_ref,
+                                            quoted_type))
+            {
+              g_free (quoted_ref);
+              g_free (quoted_type);
+              return -1;
+            }
+        }
+      else
+        {
+          first = inserts_check_size (inserts);
 
-      inserts->current_chunk_size++;
+          g_string_append_printf (inserts->statement,
+                                  "%s ('%s', '%s', '%s')",
+                                  first ? "" : ",",
+                                  quoted_name,
+                                  quoted_ref,
+                                  quoted_type);
+
+          inserts->current_chunk_size++;
+        }
+
       g_free (quoted_ref);
-      g_free (quoted_type); 
+      g_free (quoted_type);
     }
   g_free (quoted_name);
 
@@ -2496,13 +2596,16 @@ handle_json_cpe_refs (inserts_t *inserts, cJSON *product_item)
  * @brief Update SCAP CPEs from a JSON file.
  *
  * @param[in]  path             Path to file.
+ * @param[in]  use_copy         Whether to use COPY statements to load data.
  *
  * @return 0 success, -1 error.
  */
 static int
-update_scap_cpes_from_json_file (const gchar *path)
+update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
 {
   inserts_t inserts, deprecated_by_inserts;
+  db_copy_buffer_t copy_buffer;
+  resource_t cpe_rowid;
   gvm_json_pull_parser_t parser;
   gvm_json_pull_event_t event;
   FILE *cpe_file;
@@ -2537,22 +2640,39 @@ update_scap_cpes_from_json_file (const gchar *path)
       return -1;
     }
 
+  drop_indexes_cpe ();
+
+  cpe_rowid = 0;
   sql_begin_immediate ();
-  inserts_init (&inserts,
-                CPE_MAX_CHUNK_SIZE,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpes"
-                " (uuid, name, title, creation_time,"
-                "  modification_time, deprecated,"
-                "  cpe_name_id)"
-                " VALUES",
-                " ON CONFLICT (uuid) DO UPDATE"
-                " SET name = EXCLUDED.name,"
-                "     title = EXCLUDED.title,"
-                "     creation_time = EXCLUDED.creation_time,"
-                "     modification_time = EXCLUDED.modification_time,"
-                "     deprecated = EXCLUDED.deprecated,"
-                "     cpe_name_id = EXCLUDED.cpe_name_id");
+
+  if (use_copy)
+    {
+      db_copy_buffer_init (&copy_buffer,
+                           setting_secinfo_sql_buffer_threshold_bytes (),
+                           "COPY scap2.cpes"
+                           " (id, uuid, name, title, creation_time,"
+                           "  modification_time, deprecated,"
+                           "  cpe_name_id)"
+                           " FROM STDIN;");
+    }
+  else
+    {
+      inserts_init (&inserts,
+                    CPE_MAX_CHUNK_SIZE,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.cpes"
+                    " (uuid, name, title, creation_time,"
+                    "  modification_time, deprecated,"
+                    "  cpe_name_id)"
+                    " VALUES",
+                    " ON CONFLICT (uuid) DO UPDATE"
+                    " SET name = EXCLUDED.name,"
+                    "     title = EXCLUDED.title,"
+                    "     creation_time = EXCLUDED.creation_time,"
+                    "     modification_time = EXCLUDED.modification_time,"
+                    "     deprecated = EXCLUDED.deprecated,"
+                    "     cpe_name_id = EXCLUDED.cpe_name_id");
+    }
 
   inserts_init (&deprecated_by_inserts, 10,
                 setting_secinfo_sql_buffer_threshold_bytes (),
@@ -2571,27 +2691,61 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
+          inserts_free (&deprecated_by_inserts);
           sql_commit ();
           return -1;
         }
-      if (handle_json_cpe_item (&inserts, &deprecated_by_inserts, entry))
+      if (handle_json_cpe_item (&inserts,
+                                &deprecated_by_inserts,
+                                &copy_buffer,
+                                &cpe_rowid,
+                                use_copy,
+                                entry))
         {
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
+          inserts_free (&deprecated_by_inserts);
           sql_commit ();
           return -1;
         }
       cJSON_Delete (entry);
       gvm_json_pull_parser_next (&parser, &event);
     }
-  inserts_run (&inserts, TRUE);
+  if (use_copy)
+    {
+      sql ("SELECT setval('scap2.cpes_id_seq', %llu)", cpe_rowid);
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+        {
+          sql_commit ();
+          gvm_json_pull_parser_cleanup (&parser);
+          fclose (cpe_file);
+          db_copy_buffer_cleanup (&copy_buffer);
+          inserts_free (&deprecated_by_inserts);
+          return -1;
+        }
+    }
+  else
+    inserts_run (&inserts, TRUE);
+
   inserts_run (&deprecated_by_inserts, TRUE);
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
+  create_indexes_cpe ();
+
   // Reset and insert refs
+  g_info ("Updating CPE refs...");
+
   fclose (cpe_file);
   fd = open (path, O_RDONLY);
 
@@ -2621,13 +2775,25 @@ update_scap_cpes_from_json_file (const gchar *path)
     }
 
   sql_begin_immediate ();
-  inserts_init (&inserts, 10,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_refs (cpe, ref, type)"
-                " SELECT scap2.cpes.id, new_refs.ref, new_refs.type"
-                " FROM scap2.cpes JOIN (VALUES ",
-                ") AS new_refs (cpe_name, ref, type)"
-                " ON scap2.cpes.name = cpe_name;");
+  cpe_rowid = 0;
+
+  if (use_copy)
+    {
+      db_copy_buffer_init (&copy_buffer,
+                           setting_secinfo_sql_buffer_threshold_bytes (),
+                           "COPY scap2.cpe_refs (cpe, ref, type)"
+                           " FROM STDIN");
+    }
+  else
+    {
+      inserts_init (&inserts, 10,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.cpe_refs (cpe, ref, type)"
+                    " SELECT scap2.cpes.id, new_refs.ref, new_refs.type"
+                    " FROM scap2.cpes JOIN (VALUES ",
+                    ") AS new_refs (cpe_name, ref, type)"
+                    " ON scap2.cpes.name = cpe_name;");
+    }
 
   while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
     {
@@ -2640,22 +2806,46 @@ update_scap_cpes_from_json_file (const gchar *path)
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
           sql_commit ();
           return -1;
         }
-      if (handle_json_cpe_refs (&inserts, entry))
+      if (handle_json_cpe_refs (&inserts, &copy_buffer, use_copy,
+                                &cpe_rowid, entry))
         {
           gvm_json_pull_event_cleanup (&event);
           gvm_json_pull_parser_cleanup (&parser);
           cJSON_Delete (entry);
           fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
           sql_commit ();
           return -1;
         }
       cJSON_Delete (entry);
       gvm_json_pull_parser_next (&parser, &event);
     }
-  inserts_run (&inserts, TRUE);
+  if (use_copy)
+    {
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+        {
+          sql_commit ();
+          gvm_json_pull_parser_cleanup (&parser);
+          fclose (cpe_file);
+          if (use_copy)
+            db_copy_buffer_cleanup (&copy_buffer);
+          else
+            inserts_free (&inserts);
+          return -1;
+        }
+    }
+  else
+    inserts_run (&inserts, TRUE);
   sql_commit ();
   gvm_json_pull_parser_cleanup (&parser);
 
@@ -2908,7 +3098,7 @@ update_scap_cpes ()
 
   g_info ("Updating CPEs");
 
-  ret = update_scap_cpes_from_json_file (full_path);
+  ret = update_scap_cpes_from_json_file (full_path, secinfo_fast_init);
 
   g_free (full_path);
 
@@ -3005,7 +3195,7 @@ insert_cve_products (element_t list, resource_t cve,
 
       product_element = element_next (product_element);
     }
-  
+
   /* Add new CPEs. */
 
   first_product = first_affected = 1;
@@ -3031,7 +3221,7 @@ insert_cve_products (element_t list, resource_t cve,
 
   if (first_product == 0)
     {
-      /* Run the SQL for inserting new CPEs and add them to hashed_cpes 
+      /* Run the SQL for inserting new CPEs and add them to hashed_cpes
        * so they can be looked up quickly when adding affected_products.
        */
       iterator_t inserted_cpes;
@@ -3277,17 +3467,23 @@ insert_cve_from_entry (element_t entry, element_t last_modified,
  * @return The (database) id of the node.
  */
 static resource_t
-save_node (resource_t cve_id, char *operator, gboolean negate)
+save_node (resource_t cve_id, const char *operator, gboolean negate)
 {
-  return sql_int64_0
+  resource_t ret;
+  gchar *quoted_operator = sql_quote (operator);
+
+  ret = sql_int64_0
            ("INSERT INTO scap2.cpe_match_nodes"
             " (cve_id, operator, negate)"
             " VALUES"
             " (%llu, '%s', %d)"
             " RETURNING scap2.cpe_match_nodes.id;",
             cve_id,
-            operator,
+            quoted_operator,
             negate ? 1 : 0);
+
+  g_free (quoted_operator);
+  return ret;
 }
 
 /**
@@ -3306,285 +3502,851 @@ set_root_id (long int id, long int root_id)
 }
 
 /**
- * @brief Handle the references of a CVE.
+ * @brief Get all fields from a single item in the CVE references list.
  *
- * @param[in]  cve_db_id            The id of the CVE the references belong to.
- * @param[in]  cve_id               The id of the CVE.
- * @param[in]  reference_json       JSON array containing the references.
+ * @param[in]  reference_item  The JSON item to get fields from
+ * @param[in]  cve_id          CVE-ID string of the CVE being processed
+ * @param[out] url             Return pointer for the URL field
+ * @param[out] tags_str        Return pointer for tags aggregated into a string
  *
  * @return 0 on success, -1 on error.
  */
 static int
-handle_cve_references (resource_t cve_db_id, char * cve_id,
-                       cJSON* reference_json)
+get_cve_reference_fields (cJSON *reference_item,
+                          const char *cve_id,
+                          gchar **url,
+                          gchar **tags_str)
 {
-    cJSON *reference_data;
-    cJSON *tags;
+  cJSON *tags;
+  GString *tags_buffer;
 
-    cJSON_ArrayForEach (reference_data, reference_json)
-      {
-        GString *tags_string;
-        char *url_value = json_object_item_string (reference_data, "url");
-        if (url_value == NULL)
+  *tags_str = NULL;
+
+  *url = json_object_item_string (reference_item, "url");
+  if (*url == NULL)
+    {
+      g_warning ("%s: url missing in reference for %s.",
+                 __func__, cve_id);
+      return -1;
+    }
+
+  tags = cJSON_GetObjectItemCaseSensitive (reference_item, "tags");
+  tags_buffer = g_string_new ("{");
+  if (cJSON_IsArray (tags))
+    {
+      array_t *tags_array = make_array ();
+
+      for (int i = 0; i < cJSON_GetArraySize (tags); i++)
         {
-            g_warning ("%s: url missing in reference for %s.",
-                       __func__, cve_id);
-            return -1;
+          cJSON *tag = cJSON_GetArrayItem (tags, i);
+          if (!cJSON_IsString (tag))
+            {
+              g_warning ("%s: tag for %s is NULL or not a string.",
+                          __func__, cve_id);
+              return -1;
+            }
+          if ((strcmp (tag->valuestring, "(null)") == 0)
+                || strlen (tag->valuestring) == 0)
+            {
+              g_warning ("%s: tag for %s is empty string or NULL.",
+                          __func__, cve_id);
+              return -1;
+            }
+          array_add (tags_array, tag->valuestring);
         }
 
-        tags = cJSON_GetObjectItemCaseSensitive (reference_data, "tags");
-        if (cJSON_IsArray (tags))
-          {
-            array_t *tags_array = make_array ();
-            tags_string = g_string_new ("{");
+      for (int i = 0; i < tags_array->len; i++)
+        {
+          gchar *tag = g_ptr_array_index (tags_array, i);
+          gchar *quoted_tag = sql_quote (tag);
 
-            for (int i = 0; i < cJSON_GetArraySize (tags); i++)
-              {
-                cJSON *tag = cJSON_GetArrayItem (tags, i);
-                if (!cJSON_IsString (tag))
-                  {
-                    g_warning ("%s: tag for %s is NULL or not a string.",
-                               __func__, cve_id);
-                    return -1;
-                  }
-                if ((strcmp (tag->valuestring, "(null)") == 0)
-                     || strlen (tag->valuestring) == 0)
-                  {
-                    g_warning ("%s: tag for %s is empty string or NULL.",
-                               __func__, cve_id);
-                    return -1;
-                  }
-                array_add (tags_array, tag->valuestring);
-              }
+          g_string_append (tags_buffer, quoted_tag);
 
-            for (int i = 0; i < tags_array->len; i++)
-              {
-                gchar *tag = g_ptr_array_index (tags_array, i);
-                gchar *quoted_tag = sql_quote (tag);
+          if (i < tags_array->len - 1)
+            g_string_append (tags_buffer, ",");
 
-                g_string_append (tags_string, quoted_tag);
+          g_free (quoted_tag);
+        }
+      g_ptr_array_free (tags_array, TRUE);
+    }
+  g_string_append (tags_buffer, "}");
+  *tags_str = g_string_free (tags_buffer, FALSE);
+  return 0;
+}
 
-                if (i < tags_array->len - 1)
-                  g_string_append (tags_string, ",");
+/**
+ * @brief Add a CVE reference to the database.
+ *
+ * If secinfo_fast_init is not 0, this will add the the reference to a COPY
+ *  buffer, otherwise it will run an INSERT statement.
+ *
+ * The COPY buffer and urls hashtable can be NULL if secinfo_fast_init is 0.
+ *
+ * @param[in]  cve_db_id    Database rowid of the CVE being processed
+ * @param[in]  url          URL of the reference to add
+ * @param[in]  tags_str     Tags of the refrence aggregated into one string
+ * @param[in]  cve_refs_buffer  COPY buffer for CVE references.
+ * @param[in]  urls         Hashtable to de-duplicate URLs when using COPY.
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+handle_cve_reference (resource_t cve_db_id,
+                      const char *url,
+                      const char *tags_str,
+                      db_copy_buffer_t *cve_refs_buffer,
+                      GHashTable *urls)
+{
+  if (secinfo_fast_init)
+    {
+      int ret = 0;
 
-                g_free (quoted_tag);
-              }
-            g_string_append (tags_string, "}");
-            g_ptr_array_free (tags_array, TRUE);
-          }
+      if (! g_hash_table_contains (urls, url))
+        {
+          gchar *escaped_url = sql_copy_escape (url);
+          gchar *escaped_tags = sql_copy_escape (tags_str);
 
-          gchar *quoted_url = sql_quote (url_value);
+          ret = db_copy_buffer_append_printf (cve_refs_buffer,
+                                              "%llu\t%s\t%s\n",
+                                              cve_db_id,
+                                              escaped_url,
+                                              escaped_tags);
 
-          sql ("INSERT INTO scap2.cve_references"
-               " (cve_id, url, tags)"
-               " VALUES"
-               " (%llu, '%s', '%s')"
-               " ON CONFLICT (cve_id, url) DO UPDATE"
-               " SET tags = EXCLUDED.tags;",
-               cve_db_id,
-               quoted_url,
-               tags_string->str ?: "{}");
+          g_free (escaped_url);
+          g_free (escaped_tags);
+          if (ret == 0)
+            g_hash_table_add (urls, (gpointer)url);
+        }
 
-        g_free (quoted_url);
-        if (tags_string)
-          g_string_free (tags_string, TRUE);
-      }
+      return ret;
+    }
+  else
+    {
+      gchar *quoted_url = sql_quote (url);
+
+      sql ("INSERT INTO scap2.cve_references"
+            " (cve_id, url, tags)"
+            " VALUES"
+            " (%llu, '%s', '%s')"
+            " ON CONFLICT (cve_id, url) DO UPDATE"
+            " SET tags = EXCLUDED.tags;",
+            cve_db_id,
+            quoted_url,
+            tags_str);
+
+      g_free (quoted_url);
+      return 0;
+    }
+}
+
+/**
+ * @brief Handle the list of references of a CVE.
+ *
+ * @param[in]  cve_db_id            Database id of the CVE references belong to
+ * @param[in]  cve_id               The CVE-ID string of the CVE.
+ * @param[in]  references_array     JSON array containing the references.
+ * @param[in]  cve_refs_buffer      COPY statement buffer for references.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+handle_cve_references (resource_t cve_db_id, char *cve_id,
+                       cJSON *references_array,
+                       db_copy_buffer_t *cve_refs_buffer)
+{
+  int ret = 0;
+  cJSON *reference_item;
+  static GHashTable *urls = NULL;
+
+  if (secinfo_fast_init && urls == NULL)
+    urls = g_hash_table_new (g_str_hash, g_str_equal);
+
+  cJSON_ArrayForEach (reference_item, references_array)
+    {
+      char *url_value;
+      gchar *tags_str;
+
+      if (get_cve_reference_fields (reference_item,
+                                    cve_id,
+                                    &url_value,
+                                    &tags_str))
+        {
+          ret = -1;
+          break;
+        }
+
+      if (handle_cve_reference (cve_db_id, url_value, tags_str,
+                                cve_refs_buffer, urls))
+        {
+          g_free (tags_str);
+          ret = -1;
+          break;
+        }
+
+      g_free (tags_str);
+    }
+
+  if (urls)
+    g_hash_table_remove_all (urls);
+
+  return ret;
+}
+
+/**
+ * @brief Get all fields from a configuration list item of a CVE.
+ *
+ * @param[in]  configuration_item  The JSON configuration item
+ * @param[in]  cve_id       The CVE-ID string of the CVE being processed
+ * @param[out] nodes_array     Return of the list of configuration nodes
+ * @param[out] config_operator Return of the operator joining the config nodes
+ * @param[out] negate          Return whether the node selection is negated
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+get_cve_configuration_fields (cJSON* configuration_item,
+                              const char *cve_id,
+                              cJSON **nodes_array,
+                              char **config_operator,
+                              int *negate)
+{
+  *nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item,
+                                                   "nodes");
+  if (!cJSON_IsArray (*nodes_array))
+    {
+      g_warning ("%s: 'nodes' field missing or not an array for %s.",
+                __func__, cve_id);
+      return -1;
+    }
+
+  *config_operator = json_object_item_string (configuration_item,
+                                              "operator");
+  if (*config_operator)
+    *negate = json_object_item_boolean (configuration_item, "negate", 0);
+
+  return 0;
+}
+
+/**
+ * @brief Get all fields from a configuration node of a CVE.
+ *
+ * @param[in]  configuration_item  The JSON configuration item
+ * @param[in]  cve_id       The CVE-ID string of the CVE being processed
+ * @param[out] nodes_array       Return of the list of configuration nodes
+ * @param[out] config_operator   Return of the operator joining the config nodes
+ * @param[out] negate            Return whether the node selection is negated
+ * @param[out] cpe_matches_array Return of the CPE matches list
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+get_cve_configuration_node_fields (cJSON* node_item,
+                                   const char * cve_id,
+                                   char **node_operator,
+                                   int *negate,
+                                   cJSON **cpe_matches_array)
+{
+  *node_operator = json_object_item_string (node_item, "operator");
+  if (*node_operator == NULL)
+    {
+      g_warning ("%s: operator missing for %s.", __func__, cve_id);
+      return -1;
+    }
+
+  *negate = json_object_item_boolean (node_item, "negate", 0);
+
+  *cpe_matches_array = cJSON_GetObjectItemCaseSensitive (node_item,
+                                                         "cpeMatch");
+  if (*cpe_matches_array == NULL)
+    {
+      g_debug ("%s: cpeMatch missing for %s.",
+               __func__, cve_id);
+    }
+  else if (!cJSON_IsArray (*cpe_matches_array))
+    {
+      g_warning ("%s: cpeMatch not an array for %s.",
+                 __func__, cve_id);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Get fields of a single CPE match in a CVE configuration node.
+ *
+ * @param[in]  cpe_match_item  The CPE match JSON item to the get fields of
+ * @param[in]  cve_id          CVE-ID string of the CVE being processed
+ * @param[out] vulnerable      Return whether the matching CPEs are vulnerable
+ * @param[out] match_criteria_id Return of the MatchCriteriaId of the CPE match
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+get_cve_configuration_node_cpe_match_fields (cJSON* cpe_match_item,
+                                             const char * cve_id,
+                                             int *vulnerable,
+                                             char **match_criteria_id)
+{
+  *vulnerable = json_object_item_boolean (cpe_match_item,
+                                          "vulnerable", -1);
+  if (*vulnerable == -1)
+    {
+      g_warning ("%s: vulnerable missing in cpeMatch for %s.",
+                  __func__, cve_id);
+      return -1;
+    }
+
+  *match_criteria_id = json_object_item_string (cpe_match_item,
+                                                "matchCriteriaId");
+  if (*match_criteria_id == NULL)
+    {
+      g_warning ("%s: matchCriteriaId missing in cpeMatch for %s.",
+                  __func__, cve_id);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Add a root CPE configuration node to the database
+ *
+ * If the given operator is NULL, the configuration node is skipped.
+ *
+ * If secinfo_fast_init is not 0, this will add the the reference to a COPY
+ *  buffer, otherwise it will run an INSERT statement and the COPY buffer
+ *  can be NULL.
+ *
+ * @param[in]  cve_db_id  Database rowid of the CVE being processed
+ * @param[in]  config_operator  Operator of the config item being processed
+ * @param[in]  negate     Whether the nodes within the config items are negated
+ * @param[in,out] node_id_ptr  Pointer to the config node database rowid
+ * @param[in,out] node_id_ptr  Pointer to the root config node database rowid
+ * @param[in]  cpe_match_nodes_buffer COPY buffer for CPE match nodes
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+handle_cve_configuration (resource_t cve_db_id,
+                          const char *config_operator,
+                          int negate,
+                          resource_t *node_id_ptr,
+                          resource_t *root_id_ptr,
+                          db_copy_buffer_t *cpe_match_nodes_buffer)
+{
+  if (config_operator == NULL)
     return 0;
+
+  if (secinfo_fast_init)
+    {
+      gchar *escaped_operator;
+      (*node_id_ptr)++;
+      *root_id_ptr = *node_id_ptr;
+
+      escaped_operator = sql_copy_escape (config_operator);
+      if (db_copy_buffer_append_printf (cpe_match_nodes_buffer,
+                                        "%llu\t%llu\t%llu\t%s\t%d\n",
+                                        *node_id_ptr,
+                                        *root_id_ptr,
+                                        cve_db_id,
+                                        escaped_operator,
+                                        negate))
+        {
+          g_free (escaped_operator);
+          return -1;
+        }
+      g_free (escaped_operator);
+      return 0;
+    }
+  else
+    {
+      *node_id_ptr = save_node (cve_db_id, config_operator, negate);
+      set_root_id (*node_id_ptr, *node_id_ptr);
+      *root_id_ptr = *node_id_ptr;
+      return 0;
+    }
+}
+
+/**
+ * @brief Add a CPE configuration node to the database
+ *
+ * If the given operator is NULL, the configuration node is skipped.
+ *
+ * If secinfo_fast_init is not 0, this will add the the reference to a COPY
+ *  buffer, otherwise it will run an INSERT statement and the COPY buffer
+ *  can be NULL.
+ *
+ * @param[in]  cve_db_id  Database rowid of the CVE being processed
+ * @param[in]  node_operator  Operator of the config node being processed
+ * @param[in]  negate     Whether the nodes within the config items are negated
+ * @param[in,out] node_id_ptr  Pointer to the config node database rowid
+ * @param[in,out] node_id_ptr  Pointer to the root config node database rowid
+ * @param[in]  cpe_match_nodes_buffer COPY buffer for CPE match nodes
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+handle_cve_configuration_node (resource_t cve_db_id,
+                               const char *node_operator,
+                               int negate,
+                               resource_t *node_id_ptr,
+                               resource_t *root_id_ptr,
+                               db_copy_buffer_t *cpe_match_nodes_buffer)
+{
+  if (secinfo_fast_init)
+    {
+      gchar *escaped_operator = sql_copy_escape (node_operator);
+
+      (*node_id_ptr)++;
+      if (*root_id_ptr < 0)
+        *root_id_ptr = *node_id_ptr;
+
+      if (db_copy_buffer_append_printf (cpe_match_nodes_buffer,
+                                        "%llu\t%llu\t%llu\t%s\t%d\n",
+                                        *node_id_ptr,
+                                        *root_id_ptr,
+                                        cve_db_id,
+                                        escaped_operator,
+                                        negate))
+        {
+          g_free (escaped_operator);
+          return -1;
+        }
+      g_free (escaped_operator);
+    }
+  else
+    {
+      *node_id_ptr = save_node (cve_db_id, node_operator, negate);
+
+      if (*node_id_ptr < 0)
+        *node_id_ptr = *node_id_ptr;
+
+      set_root_id (*node_id_ptr, *root_id_ptr);
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Add an affected product and its placeholder CPE to the database
+ *
+ * This uses COPY SQL buffers. Methods not using them have to add affected
+ *  products a different way.
+ *
+ * @param[in]     cve_db_id       Database rowid of the CVE being processed
+ * @param[in,out] cpe_db_id_ptr   Pointer to DB rowid for placeholder CPEs
+ * @param[in]  match_cpe_name     CPE name of the product
+ * @param[in]  match_cpe_name_id  CPE name ID of the product
+ * @param[in]  hashed_cpes        Hashtable of CPE-IDs in the database
+ * @param[in]  current_cve_cpes   Hashtable of CPE rowids for current CVE
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ */
+static int
+handle_cve_affected_product (resource_t cve_db_id,
+                             resource_t *cpe_db_id_ptr,
+                             const char *match_cpe_name,
+                             const char *match_cpe_name_id,
+                             GHashTable *hashed_cpes,
+                             GHashTable *current_cve_cpes,
+                             db_copy_buffer_t *cve_cpes_copy_buffer,
+                             db_copy_buffer_t *affected_products_copy_buffer)
+{
+  resource_t affected_product_cpe_db_id;
+
+  affected_product_cpe_db_id = GPOINTER_TO_INT (
+    g_hash_table_lookup (hashed_cpes, match_cpe_name)
+  );
+  if (g_hash_table_contains (hashed_cpes, match_cpe_name) == 0)
+    {
+      (*cpe_db_id_ptr)++;
+      affected_product_cpe_db_id = (*cpe_db_id_ptr);
+      gchar *escaped_cpe_name, *escaped_cpe_name_id;
+
+      escaped_cpe_name = sql_copy_escape (match_cpe_name);
+      escaped_cpe_name_id = sql_copy_escape (match_cpe_name_id);
+
+      g_hash_table_insert (hashed_cpes,
+                           g_strdup (match_cpe_name),
+                           GINT_TO_POINTER (*cpe_db_id_ptr));
+      if (db_copy_buffer_append_printf (cve_cpes_copy_buffer,
+                                        "%s\t%s\t%lld\t%lld\t0\t%s\n",
+                                        escaped_cpe_name,
+                                        escaped_cpe_name,
+                                        0,
+                                        0,
+                                        escaped_cpe_name_id))
+        {
+          g_free (escaped_cpe_name);
+          g_free (escaped_cpe_name_id);
+          return -1;
+        }
+    }
+
+  if (! g_hash_table_contains (current_cve_cpes,
+                               GINT_TO_POINTER (affected_product_cpe_db_id)))
+    {
+      if (db_copy_buffer_append_printf (affected_products_copy_buffer,
+                                        "%llu\t%llu\n",
+                                        cve_db_id,
+                                        affected_product_cpe_db_id))
+        return -1;
+
+      g_hash_table_add (current_cve_cpes,
+                        GINT_TO_POINTER (affected_product_cpe_db_id));
+    }
+  return 0;
+}
+
+/**
+ * @brief Add a CVE config node match criteria item to the database
+ *
+ * If secinfo_fast_init is not 0, the data will be inserted using COPY
+ *  statements, otherwise INSERT and UPDATE statements will be used and the
+ *  COPY buffers can be NULL.
+ *
+ * If secinfo_fast_init is not 0, placeholder CPEs and entries for the
+ *  affected products table are also generated here, otherwise they have
+ *  to be generated separately later.
+ *
+ * @param[in]  cve_db_id  Database rowid of the CVE being processed
+ * @param[in]  node_id    Database rowid of the CVE config node being processed
+ * @param[in,out] cpe_db_id_ptr Pointer to DB rowid for adding placeholder CPEs
+ * @param[in]  match_criteria_id  MatchCriteriaId of the CPE match
+ * @param[in]  vulnerable         Whether the matching CPEs are vulnerable
+ * @param[in]  hashed_cpes        Hashtable of CPE-IDs in the database
+ * @param[in]  current_cve_cpes   Hashtable of CPE rowids for current CVE
+ * @param[in]  software           String buffer for the CVE products field
+ * @param[in]  cpe_nodes_match_criteria_buffer COPY buffer for match criteria
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ *
+ * @return 0 on success, -1 on error
+ */
+static int
+handle_cve_cpe_nodes_match_criteria (resource_t cve_db_id,
+                                     resource_t node_id,
+                                     resource_t *cpe_db_id_ptr,
+                                     const char *match_criteria_id,
+                                     int vulnerable,
+                                     GHashTable *hashed_cpes,
+                                     GHashTable *current_cve_cpes,
+                                     GString *software,
+                                     db_copy_buffer_t *cpe_nodes_match_criteria_buffer,
+                                     db_copy_buffer_t *cve_cpes_copy_buffer,
+                                     db_copy_buffer_t *affected_products_copy_buffer)
+{
+  if (secinfo_fast_init)
+    {
+      gchar *escaped_match_criteria_id = sql_copy_escape (match_criteria_id);
+      if (db_copy_buffer_append_printf (cpe_nodes_match_criteria_buffer,
+                                        "%llu\t%d\t%s\n",
+                                        node_id,
+                                        vulnerable,
+                                        escaped_match_criteria_id))
+        {
+          g_free (escaped_match_criteria_id);
+          return -1;
+        }
+      g_free (escaped_match_criteria_id);
+    }
+  else
+    {
+      gchar *quoted_match_criteria_id = sql_quote (match_criteria_id);
+
+      sql ("INSERT INTO scap2.cpe_nodes_match_criteria"
+          " (node_id, vulnerable, match_criteria_id)"
+          " VALUES"
+          " (%llu, %d, '%s')",
+          node_id,
+          vulnerable ? 1 : 0,
+          quoted_match_criteria_id);
+
+      g_free (quoted_match_criteria_id);
+    }
+
+  if (vulnerable)
+    {
+      iterator_t cpe_matches;
+      gchar *quoted_match_criteria_id
+        = sql_quote (match_criteria_id);
+
+      init_cpe_match_string_matches_iterator (
+        &cpe_matches,
+        quoted_match_criteria_id,
+        "scap2"
+      );
+      g_free (quoted_match_criteria_id);
+
+      while (next (&cpe_matches))
+        {
+          const char *match_cpe_name;
+          match_cpe_name = cpe_matches_cpe_name (&cpe_matches);
+
+          g_string_append_printf (software, "%s ", match_cpe_name);
+
+          if (secinfo_fast_init)
+            {
+              const char *match_cpe_name_id;
+              match_cpe_name_id = cpe_matches_cpe_name_id (&cpe_matches);
+
+              if (handle_cve_affected_product (cve_db_id,
+                                               cpe_db_id_ptr,
+                                               match_cpe_name,
+                                               match_cpe_name_id,
+                                               hashed_cpes,
+                                               current_cve_cpes,
+                                               cve_cpes_copy_buffer,
+                                               affected_products_copy_buffer))
+                {
+                  cleanup_iterator (&cpe_matches);
+                  return -1;
+                }
+            }
+        }
+      cleanup_iterator (&cpe_matches);
+    }
+  return 0;
 }
 
 /**
  * @brief Handle the configurations of a CVE.
  *
- * @param[in]  cve_db_id            The id of the CVE the configurations belong to.
- * @param[in]  cve_id               The id of the CVE.
- * @param[in]  configurations_json  JSON array containing the configurations.
+ * If secinfo_fast_init is not 0, the data will be inserted using COPY
+ *  statements, otherwise INSERT and UPDATE statements will be used and the
+ *  COPY buffers can be NULL.
+ *
+ * @param[in]     cve_db_id     Database rowid of the configuration's CVE
+ * @param[in,out] node_id_ptr   Pointer to latest configuration node DB rowid
+ * @param[in,out] cpe_db_id_ptr Pointer to latest CPE DB rowid.
+ * @param[in]  cve_id    CVE-ID string of the CVE
+ * @param[in]  configurations_array  JSON array containing the configurations
+ * @param[in]  hashed_cpes           Hashtable of CPE-IDs in the database
+ * @param[in]  cpe_match_nodes_buffer          COPY buffer for CPE match nodes
+ * @param[in]  cpe_nodes_match_criteria_buffer COPY buffer for match criteria
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ * @param[out] products_return  Return pointer for the products string.
  *
  * @return 0 on success, -1 on error.
  */
 static int
-handle_cve_configurations (resource_t cve_db_id, char * cve_id,
-                           cJSON* configurations_json)
+handle_cve_configurations (resource_t cve_db_id,
+                           resource_t *node_id_ptr,
+                           resource_t *cpe_db_id_ptr,
+                           char * cve_id,
+                           cJSON* configurations_array,
+                           GHashTable *hashed_cpes,
+                           db_copy_buffer_t *cpe_match_nodes_buffer,
+                           db_copy_buffer_t *cpe_nodes_match_criteria_buffer,
+                           db_copy_buffer_t *cve_cpes_copy_buffer,
+                           db_copy_buffer_t *affected_products_copy_buffer,
+                           gchar **products_return)
 {
   cJSON *configuration_item;
+  if (products_return)
+    *products_return = NULL;
   GString *software = g_string_new ("");
+  GHashTable *current_cve_hashed_cpes
+    = g_hash_table_new (g_direct_hash, g_direct_equal);
 
-  cJSON_ArrayForEach (configuration_item, configurations_json)
+  cJSON_ArrayForEach (configuration_item, configurations_array)
     {
       cJSON *nodes_array, *node_item;
-      resource_t id, root_id;
+      resource_t root_id;
       char *config_operator;
       int negate;
-      
-      nodes_array = cJSON_GetObjectItemCaseSensitive (configuration_item,
-                                                      "nodes");
-      if (!cJSON_IsArray (nodes_array))
+
+      if (get_cve_configuration_fields (configuration_item,
+                                        cve_id,
+                                        &nodes_array,
+                                        &config_operator,
+                                        &negate))
         {
-          g_warning ("%s: 'nodes' field missing or not an array for %s.",
-                    __func__, cve_id);
+          g_string_free (software, TRUE);
+          g_hash_table_destroy (current_cve_hashed_cpes);
           return -1;
         }
 
       root_id = -1;
-      config_operator = json_object_item_string (configuration_item,
-                                                 "operator");
-      if (config_operator)
-        {
-          negate = json_object_item_boolean (configuration_item, "negate", 0);
-          id = save_node (cve_db_id, config_operator, negate);
-          set_root_id (id, id);
-          root_id = id;
-        }
+      handle_cve_configuration (cve_db_id,
+                                config_operator,
+                                negate,
+                                node_id_ptr,
+                                &root_id,
+                                cpe_match_nodes_buffer);
 
-      char *node_operator;
       cJSON_ArrayForEach(node_item, nodes_array)
         {
-          node_operator = json_object_item_string (node_item, "operator");
-          if (node_operator == NULL)
-            {
-              g_warning ("%s: operator missing for %s.", __func__, cve_id);
-              return -1;
-            }
-          
-          negate = json_object_item_boolean (node_item, "negate", 0);
-
+          char *node_operator;
           cJSON *cpe_matches_array;
-          cpe_matches_array = cJSON_GetObjectItemCaseSensitive (node_item,
-                                                                "cpeMatch");
-          if (!cJSON_IsArray (cpe_matches_array))
+
+          if (get_cve_configuration_node_fields (node_item,
+                                                 cve_id,
+                                                 &node_operator,
+                                                 &negate,
+                                                 &cpe_matches_array))
             {
-              g_warning ("%s: cpeMatch missing or not an array for %s.",
-                         __func__, cve_id);
+              g_string_free (software, TRUE);
+              g_hash_table_destroy (current_cve_hashed_cpes);
               return -1;
             }
 
-          id = save_node (cve_db_id, node_operator, negate);
+          if (handle_cve_configuration_node (cve_db_id,
+                                             node_operator,
+                                             negate,
+                                             node_id_ptr,
+                                             &root_id,
+                                             cpe_match_nodes_buffer))
+            {
+              g_string_free (software, TRUE);
+              g_hash_table_destroy (current_cve_hashed_cpes);
+              return -1;
+            }
 
-          if (root_id < 0)
-            root_id = id;
-
-          set_root_id (id, root_id);
-          
           cJSON *cpe_match_item;
           cJSON_ArrayForEach (cpe_match_item, cpe_matches_array)
             {
               char *match_criteria_id;
               int vulnerable;
-              gchar *quoted_match_criteria_id;
 
-              vulnerable = json_object_item_boolean (cpe_match_item,
-                                                     "vulnerable", -1);
-              if (vulnerable == -1)
+              if (get_cve_configuration_node_cpe_match_fields
+                    (cpe_match_item,
+                     cve_id,
+                     &vulnerable,
+                     &match_criteria_id))
                 {
-                  g_warning ("%s: vulnerable missing in cpeMatch for %s.",
-                             __func__, cve_id);
+                  g_string_free (software, TRUE);
+                  g_hash_table_destroy (current_cve_hashed_cpes);
                   return -1;
                 }
-              match_criteria_id = json_object_item_string (cpe_match_item,
-                                                           "matchCriteriaId");
-              if (match_criteria_id == NULL)
+
+              if (handle_cve_cpe_nodes_match_criteria
+                    (cve_db_id,
+                     *node_id_ptr,
+                     cpe_db_id_ptr,
+                     match_criteria_id,
+                     vulnerable,
+                     hashed_cpes,
+                     current_cve_hashed_cpes,
+                     software,
+                     cpe_nodes_match_criteria_buffer,
+                     cve_cpes_copy_buffer,
+                     affected_products_copy_buffer))
                 {
-                  g_warning ("%s: matchCriteriaId missing in cpeMatch for %s.",
-                             __func__, cve_id);
+                  g_string_free (software, TRUE);
+                  g_hash_table_destroy (current_cve_hashed_cpes);
                   return -1;
                 }
-              quoted_match_criteria_id = sql_quote (match_criteria_id);
-
-              sql ("INSERT INTO scap2.cpe_nodes_match_criteria"
-                  " (node_id, vulnerable, match_criteria_id)"
-                  " VALUES"
-                  " (%llu, %d, '%s')",
-                  id,
-                  vulnerable ? 1 : 0,
-                  quoted_match_criteria_id);
-
-              if (vulnerable)
-                {
-                  iterator_t cpe_matches;
-                  init_cpe_match_string_matches_iterator (&cpe_matches, quoted_match_criteria_id);
-                  while (next (&cpe_matches))
-                    g_string_append_printf (software, "%s ", cpe_matches_cpe_name (&cpe_matches));
-                  cleanup_iterator (&cpe_matches);
-                }
-              g_free (quoted_match_criteria_id);          
             }
         }
     }
-    if (software->len > 0)
-      {
-        gchar *quoted_software = sql_quote (software->str);
-        sql ("UPDATE scap2.cves"
-             " SET products = '%s'"
-             " WHERE id = %llu;",
-             quoted_software, cve_db_id);
-        g_free (quoted_software);
-      }
-    g_string_free (software, TRUE);
+
+  g_hash_table_destroy (current_cve_hashed_cpes);
+  if (secinfo_fast_init)
+    {
+      if (products_return)
+        *products_return = g_string_free (software, FALSE);
+      else
+        g_string_free (software, TRUE);
+    }
+  else
+    {
+      if (software->len > 0)
+        {
+          gchar *quoted_software = sql_quote (software->str);
+          sql ("UPDATE scap2.cves"
+              " SET products = '%s'"
+              " WHERE id = %llu;",
+              quoted_software, cve_db_id);
+          g_free (quoted_software);
+        }
+      g_string_free (software, TRUE);
+    }
 
  return 0;
 }
 
 /**
- * @brief Handle a complete CVE item. Gather some required data and load
- *        all match rules.
+ * @brief Get the fields of a CVE item in a JSON vulnerabilities list.
  *
- * @param[in]  item  The JSON object of the CVE item.
+ * @param[in]  vuln_item            The JSON item from the vulnerabilities list
+ * @param[out] cve_id               Return of the CVE-ID string
+ * @param[out] published_time       Return of the "published" time
+ * @param[out] modified_time        Return of the "modified" time
+ * @param[out] vector               Return of the CVSS vector
+ * @param[out] score_dbl            Return of the CVSS score as a double number
+ * @param[out] description_value    Return of the description
+ * @param[out] configurations_array Return of the configurations array
+ * @param[out] references_array     Return of the references array
  *
- * @return 0 success, -1 error.
+ * @return 0 on success, -1 on error
  */
 static int
-handle_json_cve_item (cJSON *item)
+get_cve_json_fields (cJSON *vuln_item,
+                     gchar **cve_id,
+                     time_t *published_time,
+                     time_t *modified_time,
+                     gchar **vector,
+                     double *score_dbl,
+                     gchar **description_value,
+                     cJSON **configurations_array,
+                     cJSON **references_array)
 {
   cJSON *cve_json;
-  char *cve_id, *vector;
-  double score_dbl;
-  resource_t cve_db_id;
+  char *published, *modified;
 
-  cve_json = cJSON_GetObjectItemCaseSensitive (item, "cve");
+  cJSON *metrics_json = NULL;
+  cJSON *best_cvss_metric_item = NULL;
+  cJSON *descriptions_json = NULL;
+  cJSON *description_item_json = NULL;
+  gboolean cvss_metric_is_primary = FALSE;
+
+  *cve_id = *vector = NULL;
+  *published_time = *modified_time = 0;
+  *score_dbl = SEVERITY_MISSING;
+  *configurations_array = *references_array = NULL;
+
+  cve_json = cJSON_GetObjectItemCaseSensitive (vuln_item, "cve");
   if (!cJSON_IsObject (cve_json))
     {
       g_warning ("%s: 'cve' field is missing or not an object.", __func__);
       return -1;
     }
-  cve_id = json_object_item_string (cve_json, "id");
-  if (cve_id == NULL)
+
+  *cve_id = json_object_item_string (cve_json, "id");
+  if (*cve_id == NULL)
     {
       g_warning ("%s: cve id missing.", __func__);
       return -1;
     }
 
-  char *published;
-  time_t published_time;
   published = json_object_item_string (cve_json, "published");
   if (published == NULL)
     {
-      g_warning("%s: publishedDate missing for %s.", __func__, cve_id);
+      g_warning("%s: publishedDate missing for %s.", __func__, *cve_id);
       return -1;
     }
-  published_time = parse_iso_time (published);
+  *published_time = parse_iso_time (published);
 
-  char *modified;
-  time_t modified_time;
   modified = json_object_item_string (cve_json, "lastModified");
   if (modified == NULL)
     {
-      g_warning ("%s: lastModifiedDate missing for %s.", __func__, cve_id);
+      g_warning ("%s: lastModifiedDate missing for %s.", __func__, *cve_id);
       return -1;
     }
-  modified_time = parse_iso_time (modified);
+  *modified_time = parse_iso_time (modified);
 
-  cJSON *metrics_json;
-  cJSON *cvss_metric_array;
-
+  // Get CVSS vector and score from "best" metric element
   metrics_json = cJSON_GetObjectItemCaseSensitive (cve_json, "metrics");
   if (!cJSON_IsObject (metrics_json))
     {
       g_warning ("%s: Metrics missing or not an object for %s.",
-                 __func__, cve_id);
+                 __func__, *cve_id);
       return -1;
     }
 
-  gboolean cvss_metric_found = FALSE;
-  
   const char *cvss_metric_keys[] = {
     "cvssMetricV40",
     "cvssMetricV31",
@@ -3593,83 +4355,133 @@ handle_json_cve_item (cJSON *item)
 
   for (int i = 0; i < 4; i++)
     {
-      cvss_metric_array
+      cJSON *cvss_metric_array
         = cJSON_GetObjectItemCaseSensitive (metrics_json, cvss_metric_keys[i]);
       if (cJSON_IsArray (cvss_metric_array)
           && cJSON_GetArraySize (cvss_metric_array) > 0)
         {
-          cvss_metric_found = TRUE;
-          break;
+          cJSON *cvss_metric_item;
+          cJSON_ArrayForEach (cvss_metric_item, cvss_metric_array)
+            {
+              char *source_type
+                = json_object_item_string (cvss_metric_item, "type");
+              if (source_type == NULL)
+                {
+                  g_warning ("%s: type missing in CVSS metric for %s.",
+                            __func__, *cve_id);
+                  return -1;
+                }
+              if (strcmp (source_type, "Primary") == 0)
+                cvss_metric_is_primary = TRUE;
+
+              if (cvss_metric_is_primary)
+                {
+                  best_cvss_metric_item = cvss_metric_item;
+                  break;
+                }
+              else if (best_cvss_metric_item == NULL)
+                best_cvss_metric_item = cvss_metric_item;
+            }
+
+          if (cvss_metric_is_primary)
+            break;
         }
     }
 
-  if (cvss_metric_found)
+  if (best_cvss_metric_item)
     {
-      cJSON *cvss_json;
-      cJSON *cvss_metric_item;
-      char *source_type;
-
-      cJSON_ArrayForEach (cvss_metric_item, cvss_metric_array)
+      cJSON *cvss_json
+        = cJSON_GetObjectItemCaseSensitive (best_cvss_metric_item, "cvssData");
+      if (!cJSON_IsObject (cvss_json))
         {
-          source_type = json_object_item_string (cvss_metric_item, "type");
-          if (source_type == NULL)
-            {
-              g_warning ("%s: type missing in CVSS metric for %s.",
-                         __func__, cve_id);
-              return -1;
-            }
-          else if (strcmp (source_type, "Primary"))
-            continue;
+          g_warning ("%s: cvssData missing or not an object for %s.",
+                      __func__, *cve_id);
+          return -1;
+        }
 
-          cvss_json = cJSON_GetObjectItemCaseSensitive (cvss_metric_item,
-                                                        "cvssData");
-          if (!cJSON_IsObject (cvss_json))
-            {
-              g_warning ("%s: cvssData missing or not an object for %s.",
-                         __func__, cve_id);
-              return -1;
-            }
-          score_dbl = json_object_item_double (cvss_json,
-                                               "baseScore",
-                                               SEVERITY_MISSING);
-          if (score_dbl == SEVERITY_MISSING)
-            {
-              g_warning ("%s: baseScore missing for %s.", __func__, cve_id);
-              return -1;
-            }
-          vector = json_object_item_string (cvss_json, "vectorString");
-          if (vector == NULL)
-            {
-              g_warning ("%s: vectorString missing for %s.", __func__, cve_id);
-              return -1;
-            }
+      *score_dbl = json_object_item_double (cvss_json,
+                                           "baseScore",
+                                           SEVERITY_MISSING);
+      if (*score_dbl == SEVERITY_MISSING)
+        {
+          g_warning ("%s: baseScore missing for %s.", __func__, *cve_id);
+          return -1;
+        }
+
+      *vector = json_object_item_string (cvss_json, "vectorString");
+      if (*vector == NULL)
+        {
+          g_warning ("%s: vectorString missing for %s.", __func__, *cve_id);
+          return -1;
         }
     }
-  else
-    {
-      score_dbl = SEVERITY_MISSING;
-      vector = NULL;
-    }
 
-  cJSON *descriptions_json;
-  cJSON *description_item_json;
-  char *description_value;
-
+  // Get description
   descriptions_json = cJSON_GetObjectItemCaseSensitive (cve_json,
                                                         "descriptions");
   if (!cJSON_IsArray (descriptions_json))
     {
       g_warning ("%s: descriptions for %s is missing or not an array.",
-                 __func__, cve_id);
+                 __func__, *cve_id);
       return -1;
     }
   cJSON_ArrayForEach (description_item_json, descriptions_json)
     {
       char *lang = json_object_item_string (description_item_json, "lang");
       if (lang != NULL && strcmp (lang, "en") == 0)
-        description_value = json_object_item_string (description_item_json,
-                                                     "value");
+        *description_value = json_object_item_string (description_item_json,
+                                                      "value");
     }
+
+  // Get configurations
+  *configurations_array = cJSON_GetObjectItemCaseSensitive (cve_json,
+                                                           "configurations");
+  if (!cJSON_IsArray (*configurations_array))
+    {
+      g_warning ("%s: configurations for %s is missing or not an array.",
+                 __func__, *cve_id);
+      return -1;
+    }
+
+  // Get references
+  *references_array = cJSON_GetObjectItemCaseSensitive (cve_json, "references");
+  if (!cJSON_IsArray (*references_array))
+    {
+      g_warning ("%s: references for %s is missing or not an array.",
+                 __func__, *cve_id);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Handle a complete CVE item using INSERT and UPDATE SQL statement.
+ *        Gather some required data and load all match rules.
+ *
+ * @param[in]  item  The JSON object of the CVE item.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+handle_json_cve_item_inserts (cJSON *vuln_item)
+{
+  char *cve_id, *vector, *description_value;
+  time_t published_time, modified_time;
+  double score_dbl;
+  cJSON *configurations_array, *references_array;
+  resource_t cve_db_id, node_id;
+
+  if (get_cve_json_fields (vuln_item,
+                           &cve_id,
+                           &published_time,
+                           &modified_time,
+                           &vector,
+                           &score_dbl,
+                           &description_value,
+                           &configurations_array,
+                           &references_array))
+    return -1;
 
   char *quoted_description = sql_quote (description_value);
 
@@ -3700,44 +4512,222 @@ handle_json_cve_item (cJSON *item)
 
   g_free (quoted_description);
 
-  cJSON *configurations_array;
-  configurations_array = cJSON_GetObjectItemCaseSensitive (cve_json,
-                                                           "configurations");
-  if (!cJSON_IsArray (configurations_array))
-    {
-      g_warning ("%s: configurations for %s is missing or not an array.",
-                 __func__, cve_id);
-      return -1;
-    }
-
-  if (handle_cve_configurations (cve_db_id, cve_id, configurations_array))
+  if (handle_cve_configurations (cve_db_id, &node_id, 0 /*cpe_db_id*/,
+                                 cve_id, configurations_array, NULL,
+                                 NULL, NULL, NULL, NULL, NULL))
     return -1;
 
-  cJSON *references_array;
-  references_array = cJSON_GetObjectItemCaseSensitive (cve_json, "references");
-  if (!cJSON_IsArray (references_array))
-    {
-      g_warning ("%s: references for %s is missing or not an array.",
-                 __func__, cve_id);
-      return -1;
-    }
-
-  if (handle_cve_references (cve_db_id, cve_id, references_array))
+  if (handle_cve_references (cve_db_id, cve_id, references_array, NULL))
     return -1;
 
   return 0;
 }
 
 /**
- * @brief Update CVE info from a single JSON feed file.
+ * @brief Handle a complete CVE item using COPY SQL statements.
+ *        Gather some required data and load all match rules.
  *
- * @param[in]  cve_path          CVE json file path.
- * @param[in]  hashed_cpes       Hashed CPEs.
+ * @param[in]  item  The JSON object of the CVE item
+ * @param[in,out] cve_db_id_ptr  Pointer to current CVE database rowid
+ * @param[in,out] node_id_ptr    Pointer to current CVE config node DB rowid
+ * @param[in,out] cpe_db_id_ptr  Pointer to current placeholder CPE DB rowid
+ * @param[in]  hashed_cpes  Hashtable of all CPEs
+ * @param[in]  cves_buffer                     COPY buffer for CVEs
+ * @param[in]  cve_refs_buffer                 COPY buffer for CVE references
+ * @param[in]  cpe_match_nodes_buffer          COPY buffer for config nodes
+ * @param[in]  cpe_nodes_match_criteria_buffer COPY buffer for match criteria
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
  *
  * @return 0 success, -1 error.
  */
 static int
-update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
+handle_json_cve_item_copy (cJSON *vuln_item,
+                           resource_t *cve_db_id_ptr,
+                           resource_t *node_id_ptr,
+                           resource_t *cpe_db_id_ptr,
+                           GHashTable *hashed_cpes,
+                           db_copy_buffer_t *cves_buffer,
+                           db_copy_buffer_t *cve_refs_buffer,
+                           db_copy_buffer_t *cpe_match_nodes_buffer,
+                           db_copy_buffer_t *cpe_nodes_match_criteria_buffer,
+                           db_copy_buffer_t *cve_cpes_copy_buffer,
+                           db_copy_buffer_t *affected_products_copy_buffer)
+{
+  char *cve_id, *vector, *description_value, *products_str;
+  time_t published_time, modified_time;
+  double score_dbl;
+  cJSON *configurations_array, *references_array;
+  gchar *escaped_cve_id, *escaped_vector, *escaped_description;
+  gchar *escaped_products;
+
+  (*cve_db_id_ptr)++;
+
+  if (get_cve_json_fields (vuln_item,
+                           &cve_id,
+                           &published_time,
+                           &modified_time,
+                           &vector,
+                           &score_dbl,
+                           &description_value,
+                           &configurations_array,
+                           &references_array))
+    return -1;
+
+  if (handle_cve_references (*cve_db_id_ptr,
+                             cve_id,
+                             references_array,
+                             cve_refs_buffer))
+    return -1;
+
+  if (handle_cve_configurations (*cve_db_id_ptr,
+                                 node_id_ptr,
+                                 cpe_db_id_ptr,
+                                 cve_id,
+                                 configurations_array,
+                                 hashed_cpes,
+                                 cpe_match_nodes_buffer,
+                                 cpe_nodes_match_criteria_buffer,
+                                 cve_cpes_copy_buffer,
+                                 affected_products_copy_buffer,
+                                 &products_str))
+    return -1;
+
+  escaped_cve_id = sql_copy_escape (cve_id);
+  escaped_vector = sql_copy_escape (vector);
+  escaped_description = sql_copy_escape (description_value);
+  escaped_products = sql_copy_escape (products_str);
+
+  if (db_copy_buffer_append_printf (cves_buffer,
+                                    "%llu\t%s\t%s\t%i\t%i\t%0.1f\t%s\t%s\t%s\n",
+                                    *cve_db_id_ptr,
+                                    escaped_cve_id ?: "\\N",
+                                    escaped_cve_id ?: "\\N",
+                                    published_time,
+                                    modified_time,
+                                    score_dbl,
+                                    escaped_description ?: "\\N",
+                                    escaped_vector ?: "\\N",
+                                    escaped_products))
+    {
+      g_free (escaped_cve_id);
+      g_free (escaped_vector);
+      g_free (escaped_description);
+      g_free (escaped_products);
+      g_free (products_str);
+      return -1;
+    }
+
+  g_free (escaped_vector);
+  g_free (escaped_description);
+  g_free (escaped_cve_id);
+  g_free (escaped_products);
+  g_free (products_str);
+
+  return 0;
+}
+
+/**
+ * @brief Initialize all COPY buffers for updating the CVEs
+ *
+ * @param[in]  cves_buffer                     COPY buffer for CVEs
+ * @param[in]  cve_refs_buffer                 COPY buffer for CVE references
+ * @param[in]  cpe_match_nodes_buffer          COPY buffer for config nodes
+ * @param[in]  cpe_nodes_match_criteria_buffer COPY buffer for match criteria
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ */
+static void
+init_cve_copy_buffers (db_copy_buffer_t *cves_buffer,
+                       db_copy_buffer_t *cve_refs_buffer,
+                       db_copy_buffer_t *cpe_match_nodes_buffer,
+                       db_copy_buffer_t *cpe_nodes_match_criteria_buffer,
+                       db_copy_buffer_t *cve_cpes_copy_buffer,
+                       db_copy_buffer_t *affected_products_copy_buffer)
+{
+  int buffer_size = setting_secinfo_sql_buffer_threshold_bytes() / 6;
+  db_copy_buffer_init
+    (cves_buffer,
+     buffer_size,
+     "COPY scap2.cves ("
+     "  id, uuid, name, creation_time, modification_time,"
+     "  severity, description, cvss_vector, products"
+     ") FROM STDIN;");
+  db_copy_buffer_init
+    (cve_refs_buffer,
+     buffer_size,
+     "COPY scap2.cve_references ("
+     "  cve_id, url, tags"
+     ") FROM STDIN;");
+  db_copy_buffer_init
+    (cpe_match_nodes_buffer,
+     buffer_size,
+     "COPY scap2.cpe_match_nodes ("
+     "  id, root_id, cve_id, operator, negate"
+     ") FROM STDIN;");
+  db_copy_buffer_init
+    (cpe_nodes_match_criteria_buffer,
+     buffer_size,
+     "COPY scap2.cpe_nodes_match_criteria ("
+     "  node_id, vulnerable, match_criteria_id"
+     ") FROM STDIN");
+  db_copy_buffer_init
+    (cve_cpes_copy_buffer,
+     buffer_size,
+     "COPY scap2.cpes ("
+     "  uuid, name, creation_time, modification_time, deprecated, cpe_name_id"
+     ") FROM STDIN");
+  db_copy_buffer_init
+    (affected_products_copy_buffer,
+     buffer_size,
+     "COPY scap2.affected_products ("
+     "  cve, cpe"
+     ") FROM STDIN");
+}
+
+/**
+ * @brief Free fields of all COPY buffers for updating the CVEs
+ *
+ * @param[in]  cves_buffer                     COPY buffer for CVEs
+ * @param[in]  cve_refs_buffer                 COPY buffer for CVE references
+ * @param[in]  cpe_match_nodes_buffer          COPY buffer for config nodes
+ * @param[in]  cpe_nodes_match_criteria_buffer COPY buffer for match criteria
+ * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
+ * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ */
+static void
+cleanup_cve_copy_buffers (db_copy_buffer_t *cves_buffer,
+                          db_copy_buffer_t *cve_refs_buffer,
+                          db_copy_buffer_t *cpe_match_nodes_buffer,
+                          db_copy_buffer_t *cpe_nodes_match_criteria_buffer,
+                          db_copy_buffer_t *cve_cpes_copy_buffer,
+                          db_copy_buffer_t *affected_products_copy_buffer)
+{
+  db_copy_buffer_cleanup (cves_buffer);
+  db_copy_buffer_cleanup (cve_refs_buffer);
+  db_copy_buffer_cleanup (cpe_match_nodes_buffer);
+  db_copy_buffer_cleanup (cpe_nodes_match_criteria_buffer);
+  db_copy_buffer_cleanup (cve_cpes_copy_buffer);
+  db_copy_buffer_cleanup (affected_products_copy_buffer);
+}
+
+/**
+ * @brief Update CVE info from a single JSON feed file.
+ *
+ * @param[in]     cve_path        CVE json file path
+ * @param[in]     hashed_cpes     Hashtable of all CPEs
+ * @param[in,out] cve_db_id_ptr   Pointer to current CVE database rowid
+ * @param[in,out] node_id_ptr     Pointer to current configuration node rowid
+ * @param[in,out] cpe_db_id_ptr   Pointer to current placeholder CPE rowid
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_cve_json (const gchar *cve_path,
+                 GHashTable *hashed_cpes,
+                 resource_t *cve_db_id_ptr,
+                 resource_t *node_id_ptr,
+                 resource_t *cpe_db_id_ptr)
 {
   cJSON *entry;
   FILE *cve_file;
@@ -3746,6 +4736,12 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
   gvm_json_pull_parser_t parser;
   gchar *full_path;
   int transaction_size = 0;
+  db_copy_buffer_t cves_copy_buffer;
+  db_copy_buffer_t cve_refs_copy_buffer;
+  db_copy_buffer_t cpe_match_nodes_copy_buffer;
+  db_copy_buffer_t cpe_nodes_match_criteria_copy_buffer;
+  db_copy_buffer_t cve_cpes_copy_buffer;
+  db_copy_buffer_t affected_products_copy_buffer;
 
   full_path = g_build_filename (GVM_SCAP_DATA_DIR, cve_path, NULL);
 
@@ -3785,8 +4781,8 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
         {
           gvm_json_pull_parser_next (&parser, &event);
           gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
-          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail &&
-              path_tail->key && strcmp (path_tail->key, "vulnerabilities") == 0)
+          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START && path_tail
+              && path_tail->key && strcmp (path_tail->key, "vulnerabilities") == 0)
             {
               cve_items_found = TRUE;
             }
@@ -3809,6 +4805,17 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
         }
       gvm_json_pull_parser_next (&parser, &event);
       sql_begin_immediate ();
+      drop_indexes_cve ();
+      if (secinfo_fast_init)
+        {
+          init_cve_copy_buffers (&cves_copy_buffer,
+                                 &cve_refs_copy_buffer,
+                                 &cpe_match_nodes_copy_buffer,
+                                 &cpe_nodes_match_criteria_copy_buffer,
+                                 &cve_cpes_copy_buffer,
+                                 &affected_products_copy_buffer);
+        }
+
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
         {
           entry = gvm_json_pull_expand_container (&parser, &error_message);
@@ -3822,19 +4829,83 @@ update_cve_json (const gchar *cve_path, GHashTable *hashed_cpes)
               sql_commit ();
               return -1;
             }
-          if (handle_json_cve_item (entry))
+          if (secinfo_fast_init)
             {
-              gvm_json_pull_event_cleanup (&event);
-              gvm_json_pull_parser_cleanup (&parser);
-              cJSON_Delete (entry);
-              fclose (cve_file);
-              sql_commit ();
-              return -1;
+              if (handle_json_cve_item_copy
+                    (entry,
+                     cve_db_id_ptr,
+                     node_id_ptr,
+                     cpe_db_id_ptr,
+                     hashed_cpes,
+                     &cves_copy_buffer,
+                     &cve_refs_copy_buffer,
+                     &cpe_match_nodes_copy_buffer,
+                     &cpe_nodes_match_criteria_copy_buffer,
+                     &cve_cpes_copy_buffer,
+                     &affected_products_copy_buffer))
+                {
+                  gvm_json_pull_event_cleanup (&event);
+                  gvm_json_pull_parser_cleanup (&parser);
+                  cleanup_cve_copy_buffers
+                    (&cves_copy_buffer,
+                     &cve_refs_copy_buffer,
+                     &cpe_match_nodes_copy_buffer,
+                     &cpe_nodes_match_criteria_copy_buffer,
+                     &cve_cpes_copy_buffer,
+                     &affected_products_copy_buffer);
+                  cJSON_Delete (entry);
+                  fclose (cve_file);
+                  sql_commit ();
+                  return -1;
+                }
+            }
+          else
+            {
+              if (handle_json_cve_item_inserts (entry))
+                {
+                  gvm_json_pull_event_cleanup (&event);
+                  gvm_json_pull_parser_cleanup (&parser);
+                  cJSON_Delete (entry);
+                  fclose (cve_file);
+                  sql_commit ();
+                  return -1;
+                }
             }
           increment_transaction_size (&transaction_size);
           cJSON_Delete (entry);
           gvm_json_pull_parser_next (&parser, &event);
         }
+      if (secinfo_fast_init)
+        {
+          if (db_copy_buffer_commit (&cves_copy_buffer, TRUE)
+              || db_copy_buffer_commit (&cve_refs_copy_buffer, TRUE)
+              || db_copy_buffer_commit (&cpe_match_nodes_copy_buffer, TRUE)
+              || db_copy_buffer_commit (&cpe_nodes_match_criteria_copy_buffer,
+                                        TRUE)
+              || db_copy_buffer_commit (&cve_cpes_copy_buffer, TRUE)
+              || db_copy_buffer_commit (&affected_products_copy_buffer, TRUE))
+            {
+              cleanup_cve_copy_buffers (&cves_copy_buffer,
+                                        &cve_refs_copy_buffer,
+                                        &cpe_match_nodes_copy_buffer,
+                                        &cpe_nodes_match_criteria_copy_buffer,
+                                        &cve_cpes_copy_buffer,
+                                        &affected_products_copy_buffer);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (cve_file);
+              sql_commit ();
+              return -1;
+            }
+        }
+      create_indexes_cve ();
+
+      sql ("SELECT setval('scap2.cves_id_seq', max(id))"
+           " FROM scap2.cves;");
+      sql ("SELECT setval('scap2.cpes_id_seq', max(id))"
+           " FROM scap2.cpes;");
+      sql ("SELECT setval('scap2.cpe_match_nodes_id_seq', max(id))"
+           " FROM scap2.cpe_match_nodes;");
       sql_commit ();
     }
   else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
@@ -3978,6 +5049,11 @@ update_scap_cves ()
   const gchar *cve_path;
   GHashTable *hashed_cpes;
   iterator_t cpes;
+  resource_t cve_db_id = 0;
+  resource_t node_id = 0;
+  resource_t cpe_db_id = 0;
+
+  g_info ("Updating CVEs");
 
   error = NULL;
   dir = g_dir_open (GVM_SCAP_DATA_DIR, 0, &error);
@@ -3992,9 +5068,14 @@ update_scap_cves ()
   hashed_cpes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
   init_iterator (&cpes, "SELECT uuid, id FROM scap2.cpes;");
   while (next (&cpes))
-    g_hash_table_insert (hashed_cpes,
-                         (gpointer*) g_strdup (iterator_string (&cpes, 0)),
-                         GINT_TO_POINTER (iterator_int (&cpes, 1)));
+    {
+      long current_row_cpe_id = iterator_int64 (&cpes, 1);
+      g_hash_table_insert (hashed_cpes,
+                           (gpointer*) g_strdup (iterator_string (&cpes, 0)),
+                           GINT_TO_POINTER (current_row_cpe_id));
+      if (current_row_cpe_id > cpe_db_id)
+        cpe_db_id = current_row_cpe_id;
+    }
 
   gboolean read_json = FALSE;
   while ((cve_path = g_dir_read_name (dir)))
@@ -4015,7 +5096,8 @@ update_scap_cves ()
            fnmatch ("nvdcve-2.0-*.json", cve_path, 0) == 0)
           && read_json)
         {
-          if (update_cve_json (cve_path, hashed_cpes))
+          if (update_cve_json (cve_path, hashed_cpes,
+                               &cve_db_id, &node_id, &cpe_db_id))
             {
               g_dir_close (dir);
               g_hash_table_destroy (hashed_cpes);
@@ -4046,6 +5128,24 @@ update_scap_cves ()
   return 0;
 }
 
+static void
+exec_affected_products_sql (const char *cve_ids_str)
+{
+  sql ("INSERT INTO scap2.affected_products"
+        "  SELECT DISTINCT scap2.cpe_match_nodes.cve_id, scap2.cpes.id"
+        "    FROM scap2.cpe_match_nodes, scap2.cpe_nodes_match_criteria,"
+        "         scap2.cpe_matches, scap2.cpes"
+        "    WHERE scap2.cpe_match_nodes.cve_id IN (%s)"
+        "      AND scap2.cpe_match_nodes.id ="
+        "            scap2.cpe_nodes_match_criteria.node_id"
+        "      AND scap2.cpe_nodes_match_criteria.vulnerable = 1"
+        "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
+        "            scap2.cpe_matches.match_criteria_id"
+        "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id"
+        "  ON CONFLICT DO NOTHING;",
+        cve_ids_str);
+}
+
 /**
  * @brief Update SCAP affected products.
  *
@@ -4054,17 +5154,42 @@ update_scap_cves ()
 static void
 update_scap_affected_products ()
 {
-  g_info ("Updating affected products");
+  iterator_t cves_iter;
+  GString *cve_ids_buffer;
+  int count = 0;
 
-  sql ("INSERT INTO scap2.affected_products"
-       "  SELECT DISTINCT scap2.cpe_match_nodes.cve_id, scap2.cpes.id"
-       "    FROM scap2.cpe_match_nodes, scap2.cpe_nodes_match_criteria,"
-       "         scap2.cpe_matches, scap2.cpes"
-       "    WHERE scap2.cpe_match_nodes.id = scap2.cpe_nodes_match_criteria.node_id"
-       "      AND scap2.cpe_nodes_match_criteria.vulnerable = 1"
-       "      AND scap2.cpe_nodes_match_criteria.match_criteria_id ="
-       "            scap2.cpe_matches.match_criteria_id"
-       "      AND scap2.cpe_matches.cpe_name_id = scap2.cpes.cpe_name_id;");
+  g_info ("Updating affected products ...");
+
+  init_iterator (&cves_iter,
+                 "SELECT DISTINCT cve_id FROM scap2.cpe_match_nodes");
+
+  cve_ids_buffer = g_string_new ("");
+  while (next (&cves_iter))
+    {
+      resource_t cve_id;
+      cve_id = iterator_int64 (&cves_iter, 0);
+      g_string_append_printf (cve_ids_buffer, "%s%llu",
+                              cve_ids_buffer->len ? ", " : "",
+                              cve_id);
+      count ++;
+
+      if (count % affected_products_query_size == 0)
+        {
+          exec_affected_products_sql (cve_ids_buffer->str);
+          g_string_truncate (cve_ids_buffer, 0);
+          g_debug ("%s: Products of %d CVEs processed", __func__, count);
+        }
+    }
+  cleanup_iterator (&cves_iter);
+
+  if (cve_ids_buffer->len)
+    {
+      exec_affected_products_sql (cve_ids_buffer->str);
+      g_debug ("%s: Products of %d CVEs processed", __func__, count);
+    }
+  g_string_free (cve_ids_buffer, TRUE);
+
+  g_info ("Updating affected products ... done");
 }
 
 /**
@@ -4077,15 +5202,20 @@ update_scap_affected_products ()
  * @return 0 success, -1 error.
  */
 static int
-handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
+handle_json_cpe_match_string (inserts_t *inserts,
+                              inserts_t *matches_inserts,
+                              db_copy_buffer_t *copy_buffer,
+                              db_copy_buffer_t *matches_copy_buffer,
+                              gboolean use_copy,
                               cJSON *match_string_item)
 {
   cJSON *match_string, *matches_array;
-  char *criteria, *match_criteria_id, *status, *ver_se;
+  char *criteria, *match_criteria_id, *status, *ver_str;
   gchar *quoted_version_start_incl, *quoted_version_start_excl;
   gchar *quoted_version_end_incl, *quoted_version_end_excl;
-  gchar *quoted_criteria, *quoted_match_criteria_id;
+  gchar *quoted_criteria, *quoted_match_criteria_id, *quoted_status;
   int first;
+  gchar* (*quote_func)(const char*) = use_copy ? sql_copy_escape : sql_quote;
 
   assert (inserts);
   assert (matches_inserts);
@@ -4122,56 +5252,92 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
       return -1;
     }
 
-  ver_se = json_object_item_string (match_string, "versionStartIncluding");
-  if (ver_se == NULL)
-    quoted_version_start_incl = g_strdup ("NULL");
+  ver_str = json_object_item_string (match_string, "versionStartIncluding");
+  if (use_copy)
+    quoted_version_start_incl = ver_str
+                                  ? sql_copy_escape (ver_str)
+                                  : g_strdup ("\\N");
   else
-    quoted_version_start_incl = g_strdup_printf ("'%s'", ver_se);
-    
-  ver_se = json_object_item_string (match_string, "versionStartExcluding");
-  if (ver_se == NULL)
-    quoted_version_start_excl = g_strdup ("NULL");
+    quoted_version_start_incl = sql_insert (ver_str);
+
+
+  ver_str = json_object_item_string (match_string, "versionStartExcluding");
+  if (use_copy)
+    quoted_version_start_excl = ver_str
+                                  ? sql_copy_escape (ver_str)
+                                  : g_strdup ("\\N");
   else
-    quoted_version_start_excl = g_strdup_printf ("'%s'", ver_se);
+    quoted_version_start_excl = sql_insert (ver_str);
 
-  ver_se = json_object_item_string (match_string, "versionEndIncluding");
-  if (ver_se == NULL)
-    quoted_version_end_incl = g_strdup ("NULL");
+  ver_str = json_object_item_string (match_string, "versionEndIncluding");
+  if (use_copy)
+    quoted_version_end_incl = ver_str
+                                ? sql_copy_escape (ver_str)
+                                : g_strdup ("\\N");
   else
-    quoted_version_end_incl = g_strdup_printf ("'%s'", ver_se);
+    quoted_version_end_incl = sql_insert (ver_str);
 
-  ver_se = json_object_item_string (match_string, "versionEndExcluding");
-  if (ver_se == NULL)
-    quoted_version_end_excl = g_strdup ("NULL");
+  ver_str = json_object_item_string (match_string, "versionEndExcluding");
+  if (use_copy)
+    quoted_version_end_excl = ver_str
+                                ? sql_copy_escape (ver_str)
+                                : g_strdup ("\\N");
   else
-    quoted_version_end_excl = g_strdup_printf ("'%s'", ver_se);
+    quoted_version_end_excl = sql_insert (ver_str);
 
-  quoted_match_criteria_id = sql_quote (match_criteria_id);
-  quoted_criteria = fs_to_uri_convert_and_quote_cpe_name (criteria);
+  quoted_match_criteria_id = quote_func (match_criteria_id);
+  quoted_criteria = fs_to_uri_convert_and_quote_cpe_name (criteria, quote_func);
+  quoted_status = quote_func (status);
 
-  first = inserts_check_size (inserts);
+  if (use_copy)
+    {
+      if (db_copy_buffer_append_printf (copy_buffer,
+                                        "%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                                        quoted_match_criteria_id,
+                                        quoted_criteria,
+                                        quoted_version_start_incl,
+                                        quoted_version_start_excl,
+                                        quoted_version_end_incl,
+                                        quoted_version_end_excl,
+                                        quoted_status))
+        {
+          g_free (quoted_match_criteria_id);
+          g_free (quoted_criteria);
+          g_free (quoted_version_start_incl);
+          g_free (quoted_version_start_excl);
+          g_free (quoted_version_end_incl);
+          g_free (quoted_version_end_excl);
+          g_free (quoted_status);
+          return -1;
+        }
+    }
+  else
+    {
+      first = inserts_check_size (inserts);
 
-  g_string_append_printf (inserts->statement,
-                          "%s ('%s', '%s', %s, %s, %s, %s, '%s')",
-                          first ? "" : ",",
-                          quoted_match_criteria_id,
-                          quoted_criteria,
-                          quoted_version_start_incl,
-                          quoted_version_start_excl,
-                          quoted_version_end_incl,
-                          quoted_version_end_excl,
-                          status);
+      g_string_append_printf (inserts->statement,
+                              "%s ('%s', '%s', %s, %s, %s, %s, '%s')",
+                              first ? "" : ",",
+                              quoted_match_criteria_id,
+                              quoted_criteria,
+                              quoted_version_start_incl,
+                              quoted_version_start_excl,
+                              quoted_version_end_incl,
+                              quoted_version_end_excl,
+                              quoted_status);
 
-  inserts->current_chunk_size++;
+      inserts->current_chunk_size++;
+    }
 
   g_free (quoted_criteria);
   g_free (quoted_version_start_incl);
   g_free (quoted_version_start_excl);
   g_free (quoted_version_end_incl);
   g_free (quoted_version_end_excl);
+  g_free (quoted_status);
 
   matches_array = cJSON_GetObjectItemCaseSensitive (match_string, "matches");
-  
+
   if (cJSON_IsArray (matches_array) && cJSON_GetArraySize (matches_array) > 0)
     {
       cJSON *match_item;
@@ -4198,19 +5364,37 @@ handle_json_cpe_match_string (inserts_t *inserts, inserts_t *matches_inserts,
               return -1;
             }
 
-          quoted_cpe_name_id = sql_quote (cpe_name_id);
-          quoted_cpe_name = fs_to_uri_convert_and_quote_cpe_name (cpe_name);
+          quoted_cpe_name_id = quote_func (cpe_name_id);
+          quoted_cpe_name = fs_to_uri_convert_and_quote_cpe_name (cpe_name,
+                                                                  quote_func);
 
-          first = inserts_check_size (matches_inserts);
+          if (use_copy)
+            {
+              if (db_copy_buffer_append_printf (matches_copy_buffer,
+                                                "%s\t%s\t%s\n",
+                                                quoted_match_criteria_id,
+                                                quoted_cpe_name_id,
+                                                quoted_cpe_name))
+                {
+                  g_free (quoted_match_criteria_id);
+                  g_free (quoted_cpe_name_id);
+                  g_free (quoted_cpe_name);
+                  return -1;
+                }
+            }
+          else
+            {
+              first = inserts_check_size (matches_inserts);
 
-          g_string_append_printf (matches_inserts->statement,
-                                "%s ('%s', '%s', '%s')",
-                                first ? "" : ",",
-                                quoted_match_criteria_id,
-                                quoted_cpe_name_id,
-                                quoted_cpe_name);
+              g_string_append_printf (matches_inserts->statement,
+                                      "%s ('%s', '%s', '%s')",
+                                      first ? "" : ",",
+                                      quoted_match_criteria_id,
+                                      quoted_cpe_name_id,
+                                      quoted_cpe_name);
 
-          matches_inserts->current_chunk_size++;
+              matches_inserts->current_chunk_size++;
+            }
 
           g_free (quoted_cpe_name_id);
           g_free (quoted_cpe_name);
@@ -4234,9 +5418,11 @@ update_scap_cpe_match_strings ()
   gvm_json_pull_event_t event;
   gvm_json_pull_parser_t parser;
   inserts_t inserts, matches_inserts;
+  db_copy_buffer_t copy_buffer, matches_copy_buffer;
+  gboolean use_copy = secinfo_fast_init;
 
   current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                        "cpe_match_strings.json.gz",
+                                        "nvd-cpe-matches.json.gz",
                                         NULL);
   int fd = open(current_json_path, O_RDONLY);
 
@@ -4244,7 +5430,7 @@ update_scap_cpe_match_strings ()
   {
     g_free (current_json_path);
     current_json_path = g_build_filename (GVM_SCAP_DATA_DIR,
-                                          "cpe_match_strings.json",
+                                          "nvd-cpe-matches.json",
                                           NULL);
     fd = open(current_json_path, O_RDONLY);
   }
@@ -4321,28 +5507,52 @@ update_scap_cpe_match_strings ()
         }
 
       sql_begin_immediate ();
-      inserts_init (&inserts,
-                CPE_MAX_CHUNK_SIZE,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_match_strings"
-                "  (match_criteria_id, criteria, version_start_incl,"
-                "   version_start_excl, version_end_incl, version_end_excl,"
-                "   status)"
-                "  VALUES ",
-                " ON CONFLICT (match_criteria_id) DO UPDATE"
-                " SET criteria = EXCLUDED.criteria,"
-                "     version_start_incl = EXCLUDED.version_start_incl,"
-                "     version_start_excl = EXCLUDED.version_start_excl,"
-                "     version_end_incl = EXCLUDED.version_end_incl,"
-                "     version_end_excl = EXCLUDED.version_end_excl,"
-                "     status = EXCLUDED.status");
 
-      inserts_init (&matches_inserts, 10,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.cpe_matches" 
-                "  (match_criteria_id, cpe_name_id, cpe_name)"
-                "  VALUES ",              
-                "");
+      if (use_copy)
+        {
+          db_copy_buffer_init
+            (&copy_buffer,
+             setting_secinfo_sql_buffer_threshold_bytes () / 2,
+             "COPY scap2.cpe_match_strings"
+             "  (match_criteria_id, criteria, version_start_incl,"
+             "   version_start_excl, version_end_incl, version_end_excl,"
+             "   status)"
+             " FROM STDIN");
+
+          db_copy_buffer_init
+            (&matches_copy_buffer,
+             setting_secinfo_sql_buffer_threshold_bytes () / 2,
+             "COPY scap2.cpe_matches"
+             "  (match_criteria_id, cpe_name_id, cpe_name)"
+             " FROM STDIN");
+        }
+      else
+        {
+          inserts_init
+            (&inserts,
+             CPE_MAX_CHUNK_SIZE,
+             setting_secinfo_sql_buffer_threshold_bytes (),
+             "INSERT INTO scap2.cpe_match_strings"
+             "  (match_criteria_id, criteria, version_start_incl,"
+             "   version_start_excl, version_end_incl, version_end_excl,"
+             "   status)"
+             "  VALUES ",
+             " ON CONFLICT (match_criteria_id) DO UPDATE"
+             " SET criteria = EXCLUDED.criteria,"
+             "     version_start_incl = EXCLUDED.version_start_incl,"
+             "     version_start_excl = EXCLUDED.version_start_excl,"
+             "     version_end_incl = EXCLUDED.version_end_incl,"
+             "     version_end_excl = EXCLUDED.version_end_excl,"
+             "     status = EXCLUDED.status");
+
+          inserts_init
+            (&matches_inserts, 10,
+             setting_secinfo_sql_buffer_threshold_bytes (),
+             "INSERT INTO scap2.cpe_matches"
+             "  (match_criteria_id, cpe_name_id, cpe_name)"
+             "  VALUES ",
+             "");
+        }
 
       gvm_json_pull_parser_next (&parser, &event);
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
@@ -4355,8 +5565,16 @@ update_scap_cpe_match_strings ()
               g_warning ("%s: Error expanding match string item: %s",
                          __func__, error_message);
               cJSON_Delete (cpe_match_string_item);
-              inserts_free (&inserts);
-              inserts_free (&matches_inserts);
+              if (use_copy)
+                {
+                  db_copy_buffer_cleanup (&copy_buffer);
+                  db_copy_buffer_cleanup (&matches_copy_buffer);
+                }
+              else
+                {
+                  inserts_free (&inserts);
+                  inserts_free (&matches_inserts);
+                }
               sql_commit ();
               g_warning ("Update of CPE match strings failed");
               gvm_json_pull_event_cleanup (&event);
@@ -4366,17 +5584,30 @@ update_scap_cpe_match_strings ()
             }
           if (handle_json_cpe_match_string (&inserts,
                                             &matches_inserts,
+                                            &copy_buffer,
+                                            &matches_copy_buffer,
+                                            use_copy,
                                             cpe_match_string_item))
             {
               cJSON_Delete (cpe_match_string_item);
               inserts_free (&inserts);
               inserts_free (&matches_inserts);
+              if (use_copy)
+                {
+                  db_copy_buffer_cleanup (&copy_buffer);
+                  db_copy_buffer_cleanup (&matches_copy_buffer);
+                }
+              else
+                {
+                  inserts_free (&inserts);
+                  inserts_free (&matches_inserts);
+                }
               sql_commit ();
               g_warning ("Update of CPE match strings failed");
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (cpe_match_strings_file);
-              return -1;            
+              return -1;
             }
           cJSON_Delete (cpe_match_string_item);
           gvm_json_pull_parser_next (&parser, &event);
@@ -4400,8 +5631,25 @@ update_scap_cpe_match_strings ()
       return -1;
     }
 
-  inserts_run (&inserts, TRUE);
-  inserts_run (&matches_inserts, TRUE);
+  if (use_copy)
+    {
+      if (db_copy_buffer_commit (&copy_buffer, TRUE)
+          || db_copy_buffer_commit (&matches_copy_buffer, TRUE))
+        {
+          db_copy_buffer_cleanup (&copy_buffer);
+          db_copy_buffer_cleanup (&matches_copy_buffer);
+          return -1;
+        }
+      sql ("SELECT setval('scap2.cpe_match_strings_id_seq', max(id))"
+           " FROM scap2.cpe_match_strings;");
+      sql ("SELECT setval('scap2.cpe_matches_id_seq', max(id))"
+           " FROM scap2.cpe_matches;");
+    }
+  else
+    {
+      inserts_run (&inserts, TRUE);
+      inserts_run (&matches_inserts, TRUE);
+    }
   sql_commit ();
   gvm_json_pull_event_cleanup (&event);
   gvm_json_pull_parser_cleanup (&parser);
@@ -4426,11 +5674,11 @@ insert_epss_score_entry (inserts_t *inserts, const char *cve,
 
   quoted_cve = sql_quote (cve);
   g_string_append_printf (inserts->statement,
-                          "%s ('%s', %lf, %lf)",
+                          "%s ('%s', %lf, %.3lf)",
                           first ? "" : ",",
                           quoted_cve,
                           epss,
-                          percentile);
+                          percentile * 100.0);
   g_free (quoted_cve);
 
   inserts->current_chunk_size++;
@@ -4447,7 +5695,7 @@ if (failure_condition) {                                          \
 
 /**
  * @brief Updates the base EPSS scores table in the SCAP database.
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -4490,7 +5738,7 @@ update_epss_scores ()
                     __func__, strerror (errno));
           ret = -1;
         }
-        g_free (current_json_path);
+      g_free (current_json_path);
       return ret;
     }
 
@@ -4519,8 +5767,8 @@ update_epss_scores ()
       while (!epss_scores_found)
         {
           gvm_json_pull_parser_next (&parser, &event);
-	        gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
-	        if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
+          gvm_json_path_elem_t *path_tail = g_queue_peek_tail (event.path);
+          if (event.type == GVM_JSON_PULL_EVENT_ARRAY_START
               && path_tail && strcmp (path_tail->key, "epss_scores") == 0)
             {
               epss_scores_found = TRUE;
@@ -4546,12 +5794,12 @@ update_epss_scores ()
 
       sql_begin_immediate ();
       inserts_init (&inserts,
-                EPSS_MAX_CHUNK_SIZE,
-                setting_secinfo_sql_buffer_threshold_bytes (),
-                "INSERT INTO scap2.epss_scores"
-                "  (cve, epss, percentile)"
-                "  VALUES ",
-                " ON CONFLICT (cve) DO NOTHING");
+                    EPSS_MAX_CHUNK_SIZE,
+                    setting_secinfo_sql_buffer_threshold_bytes (),
+                    "INSERT INTO scap2.epss_scores"
+                    "  (cve, epss, percentile)"
+                    "  VALUES ",
+                    " ON CONFLICT (cve) DO NOTHING");
 
       gvm_json_pull_parser_next (&parser, &event);
       while (event.type == GVM_JSON_PULL_EVENT_OBJECT_START)
@@ -4590,13 +5838,13 @@ update_epss_scores ()
                             "Field 'percentile' in item is not a number");
 
           insert_epss_score_entry (&inserts,
-                                  cve_json->valuestring,
-                                  epss_json->valuedouble,
-                                  percentile_json->valuedouble);
+                                   cve_json->valuestring,
+                                   epss_json->valuedouble,
+                                   percentile_json->valuedouble);
 
           gvm_json_pull_parser_next (&parser, &event);
           cJSON_Delete (epss_entry);
-	      }
+        }
     }
   else if (event.type == GVM_JSON_PULL_EVENT_ERROR)
     {
@@ -5310,8 +6558,10 @@ update_vt_scap_extra_data ()
        " FROM epss_candidates"
        " WHERE epss_candidates.vt_oid = nvts.oid"
        "   AND epss_candidates.rank = 1;");
+
+  create_view_result_vt_epss ();
 }
- 
+
 /**
  * @brief Update CERT data that depends on SCAP.
  */
@@ -5372,13 +6622,14 @@ update_scap_end ()
       sql ("ALTER SCHEMA scap RENAME TO scap3;");
       sql ("ALTER SCHEMA scap2 RENAME TO scap;");
       sql ("DROP SCHEMA scap3 CASCADE;");
-      /* View 'vulns' contains references into the SCAP schema, so it is
-       * removed by the CASCADE. */
-      create_view_vulns ();
-      create_view_result_vt_epss ();
     }
   else
     sql ("ALTER SCHEMA scap2 RENAME TO scap;");
+
+  /* View 'vulns' contains references into the SCAP schema, so it is
+   * removed by the CASCADE. */
+  create_view_vulns ();
+  create_view_result_vt_epss ();
 
   /* Update CERT data that depends on SCAP. */
 
@@ -5567,6 +6818,13 @@ update_scap (gboolean reset_scap_db)
         }
     }
 
+  /* Drop old SCAP schema if that is part of the update strategy */
+  if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    {
+      g_info ("%s: Removing old SCAP database schema...", __func__);
+      sql ("DROP SCHEMA scap CASCADE;");
+    }
+
   /* If there's CSV in the feed, just load it. */
 
   if (try_load_csv () == 0)
@@ -5603,6 +6861,8 @@ update_scap (gboolean reset_scap_db)
 
   g_info ("%s: Updating data from feed", __func__);
 
+  g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
+
   g_debug ("%s: update cpes", __func__);
   setproctitle ("Syncing SCAP: Updating CPEs");
 
@@ -5630,10 +6890,13 @@ update_scap (gboolean reset_scap_db)
       return -1;
     }
 
-  g_debug ("%s: update affected_products", __func__);
-  setproctitle ("Syncing SCAP: Updating affected products");
+  if (secinfo_fast_init == 0)
+    {
+      g_debug ("%s: update affected_products", __func__);
+      setproctitle ("Syncing SCAP: Updating affected products");
 
-  update_scap_affected_products ();
+      update_scap_affected_products ();
+    }
 
   g_debug ("%s: updating user defined data", __func__);
 
@@ -5754,7 +7017,8 @@ manage_rebuild_scap (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Rebuilding SCAP data");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return -1;
 
@@ -5776,6 +7040,20 @@ fail:
 }
 
 /**
+ * @brief Set the affected products query size.
+ *
+ * @param new_size The new affected products query size.
+ */
+void
+set_affected_products_query_size (int new_size)
+{
+  if (new_size <= 0)
+    affected_products_query_size = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+  else
+    affected_products_query_size = new_size;
+}
+
+/**
  * @brief Set the SecInfo update commit size.
  *
  * @param new_commit_size The new SecInfo update commit size.
@@ -5787,4 +7065,32 @@ set_secinfo_commit_size (int new_commit_size)
     secinfo_commit_size = 0;
   else
     secinfo_commit_size = new_commit_size;
+}
+
+/**
+ * @brief Set the SecInfo update strategy.
+ *
+ * @param new_strategy The new SecInfo update strategy.
+ */
+void
+set_secinfo_update_strategy (int new_strategy)
+{
+  if (new_strategy < 0 || new_strategy > SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    secinfo_update_strategy = SECINFO_UPDATE_STRATEGY_DEFAULT;
+  else
+    secinfo_update_strategy = new_strategy;
+}
+
+/**
+ * @brief Set the SecInfo fast initialization option.
+ *
+ * @param new_fast_init The new SecInfo fast initialization option.
+ */
+void
+set_secinfo_fast_init (int new_fast_init)
+{
+  if (new_fast_init < 0)
+    secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
+  else
+    secinfo_fast_init = new_fast_init;
 }

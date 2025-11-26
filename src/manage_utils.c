@@ -17,20 +17,21 @@
  */
 
 /**
- * @file manage_utils.c
+ * @file
  * @brief Module for Greenbone Vulnerability Manager: Manage library utilities.
+ *
+ * Utilities used by the manage library that do not depend on anything.
  */
 
 #include "manage_utils.h"
 
 #include <assert.h> /* for assert */
 #include <ctype.h>
-#include <stdlib.h> /* for getenv */
-#include <stdio.h>  /* for sscanf */
-#include <string.h> /* for strcmp */
-
 #include <gvm/base/hosts.h>
 #include <gvm/util/uuidutils.h>
+#include <stdio.h>  /* for sscanf */
+#include <stdlib.h> /* for getenv */
+#include <string.h> /* for strcmp */
 
 #undef G_LOG_DOMAIN
 /**
@@ -42,13 +43,6 @@
  * @brief Number of seconds in a day.
  */
 #define SECS_PER_DAY 86400
-
-/**
- * @file  manage_utils.c
- * @brief The Greenbone Vulnerability Manager management library.
- *
- * Utilities used by the manage library that do not depend on anything.
- */
 
 /**
  * @brief Get the current offset from UTC of a timezone.
@@ -100,7 +94,7 @@ current_offset (const char *zone)
       return 0;
     }
   tzset ();
-  offset = - (now - mktime (&now_broken));
+  offset = -(now - mktime (&now_broken));
 
   /* Revert to stored TZ. */
   if (tz)
@@ -172,9 +166,7 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
       gchar *clean_exclude_hosts;
 
       clean_exclude_hosts = clean_hosts_string (exclude_hosts);
-      if (gvm_hosts_exclude_with_max (hosts,
-                                      clean_exclude_hosts,
-                                      max_hosts)
+      if (gvm_hosts_exclude_with_max (hosts, clean_exclude_hosts, max_hosts)
           < 0)
         {
           g_free (clean_hosts);
@@ -210,8 +202,9 @@ level_min_severity (const char *level)
     return SEVERITY_FP;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-
-  if (strcasecmp (level, "high") == 0)
+  else if (strcasecmp (level, "critical") == 0)
+    return 9.0;
+  else if (strcasecmp (level, "high") == 0)
     return 7.0;
   else if (strcasecmp (level, "medium") == 0)
     return 4.0;
@@ -240,9 +233,10 @@ level_max_severity (const char *level)
     return SEVERITY_FP;
   else if (strcasecmp (level, "Error") == 0)
     return SEVERITY_ERROR;
-
-  if (strcasecmp (level, "high") == 0)
+  else if (strcasecmp (level, "critical") == 0)
     return 10.0;
+  else if (strcasecmp (level, "high") == 0)
+    return 8.9;
   else if (strcasecmp (level, "medium") == 0)
     return 6.9;
   else if (strcasecmp (level, "low") == 0)
@@ -264,7 +258,7 @@ level_max_severity (const char *level)
  * @return 1 if host has equal in hosts_str, 0 otherwise.
  */
 int
-hosts_str_contains (const char* hosts_str, const char* find_host_str,
+hosts_str_contains (const char *hosts_str, const char *find_host_str,
                     int max_hosts)
 {
   gvm_hosts_t *hosts, *find_hosts;
@@ -293,13 +287,27 @@ hosts_str_contains (const char* hosts_str, const char* find_host_str,
  * @return 1 yes, 0 no.
  */
 int
-valid_db_resource_type (const char* type)
+valid_db_resource_type (const char *type)
 {
   if (type == NULL)
     return 0;
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "agent_group") == 0)
+    return 1;
+#endif
 
-  return (strcasecmp (type, "alert") == 0)
-         || (strcasecmp (type, "config") == 0)
+#ifdef ENABLE_AGENTS
+  if ((strcasecmp (type, "agent") == 0)
+      || (strcasecmp (type, "agent_installer") == 0))
+    return 1;
+#endif /* ENABLE_AGENTS */
+
+#ifdef ENABLE_CREDENTIAL_STORES
+  if (strcasecmp (type, "credential_store") == 0)
+    return 1;
+#endif /* ENABLE_CREDENTIAL_STORES */
+
+  return (strcasecmp (type, "alert") == 0) || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "cpe") == 0)
          || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "cve") == 0)
@@ -307,10 +315,11 @@ valid_db_resource_type (const char* type)
          || (strcasecmp (type, "dfn_cert_adv") == 0)
          || (strcasecmp (type, "filter") == 0)
          || (strcasecmp (type, "group") == 0)
-         || (strcasecmp (type, "host") == 0)
-         || (strcasecmp (type, "os") == 0)
-         || (strcasecmp (type, "note") == 0)
-         || (strcasecmp (type, "nvt") == 0)
+         || (strcasecmp (type, "host") == 0) || (strcasecmp (type, "os") == 0)
+         || (strcasecmp (type, "note") == 0) || (strcasecmp (type, "nvt") == 0)
+#if ENABLE_CONTAINER_SCANNING
+         || (strcasecmp (type, "oci_image_target") == 0)
+#endif /* ENABLE_CONTAINER_SCANNING */
          || (strcasecmp (type, "override") == 0)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "permission") == 0)
@@ -337,14 +346,15 @@ void
 blank_control_chars (char *string)
 {
   for (; *string; string++)
-    if (iscntrl (*string) && *string != '\n') *string = ' ';
+    if (iscntrl (*string) && *string != '\n')
+      *string = ' ';
 }
 
 /**
  * @brief GVM product ID.
  */
-#define GVM_PRODID "-//Greenbone.net//NONSGML Greenbone Security Manager " \
-                   GVMD_VERSION "//EN"
+#define GVM_PRODID \
+  "-//Greenbone.net//NONSGML Greenbone Security Manager " GVMD_VERSION "//EN"
 
 /**
  * @brief Try to get a built-in libical timezone from a tzid or city name.
@@ -353,7 +363,7 @@ blank_control_chars (char *string)
  *
  * @return The built-in timezone if found, else NULL.
  */
-icaltimezone*
+icaltimezone *
 icalendar_timezone_from_string (const char *tzid)
 {
   if (tzid)
@@ -381,9 +391,8 @@ icalendar_timezone_from_string (const char *tzid)
  * @return  The generated iCalendar component.
  */
 icalcomponent *
-icalendar_from_old_schedule_data (time_t first_time,
-                                  time_t period, time_t period_months,
-                                  time_t duration,
+icalendar_from_old_schedule_data (time_t first_time, time_t period,
+                                  time_t period_months, time_t duration,
                                   int byday_mask)
 {
   gchar *uid;
@@ -396,8 +405,7 @@ icalendar_from_old_schedule_data (time_t first_time,
   // Setup base calendar component
   ical_new = icalcomponent_new_vcalendar ();
   icalcomponent_add_property (ical_new, icalproperty_new_version ("2.0"));
-  icalcomponent_add_property (ical_new,
-                              icalproperty_new_prodid (GVM_PRODID));
+  icalcomponent_add_property (ical_new, icalproperty_new_prodid (GVM_PRODID));
 
   // Create event component
   vevent = icalcomponent_new_vevent ();
@@ -485,13 +493,12 @@ icalendar_from_old_schedule_data (time_t first_time,
               if (byday_mask & (1 << mask_bit))
                 {
                   recurrence.by_day[array_pos] = ical_day;
-                  array_pos ++;
+                  array_pos++;
                 }
             }
         }
 
-      icalcomponent_add_property (vevent,
-                                  icalproperty_new_rrule (recurrence));
+      icalcomponent_add_property (vevent, icalproperty_new_rrule (recurrence));
     }
 
   // Add duration
@@ -530,8 +537,8 @@ icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
 
   // Check for errors
   icalrestriction_check (vevent);
-  error_prop = icalcomponent_get_first_property (vevent,
-                                                 ICAL_XLICERROR_PROPERTY);
+  error_prop =
+    icalcomponent_get_first_property (vevent, ICAL_XLICERROR_PROPERTY);
   if (error_prop)
     {
       if (error)
@@ -577,12 +584,10 @@ icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
    * Technically there can be multiple ones but behavior is undefined in
    *  the iCalendar specification.
    */
-  rrule_prop = icalcomponent_get_first_property (vevent,
-                                                 ICAL_RRULE_PROPERTY);
+  rrule_prop = icalcomponent_get_first_property (vevent, ICAL_RRULE_PROPERTY);
 
   // Warn about EXRULE being deprecated
-  exrule_prop = icalcomponent_get_first_property (vevent,
-                                                  ICAL_EXRULE_PROPERTY);
+  exrule_prop = icalcomponent_get_first_property (vevent, ICAL_EXRULE_PROPERTY);
   if (exrule_prop)
     {
       g_string_append_printf (warnings_buffer,
@@ -603,8 +608,7 @@ icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
     }
 
   // Simplify and copy RDATE properties
-  rdate_prop = icalcomponent_get_first_property (vevent,
-                                                 ICAL_RDATE_PROPERTY);
+  rdate_prop = icalcomponent_get_first_property (vevent, ICAL_RDATE_PROPERTY);
   while (rdate_prop)
     {
       struct icaldatetimeperiodtype old_datetimeperiod, new_datetimeperiod;
@@ -616,38 +620,36 @@ icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
       new_datetimeperiod.period = icalperiodtype_null_period ();
       if (icalperiodtype_is_null_period (old_datetimeperiod.period))
         {
-          new_datetimeperiod.time
-            = icaltime_convert_to_zone (old_datetimeperiod.time, zone);
+          new_datetimeperiod.time =
+            icaltime_convert_to_zone (old_datetimeperiod.time, zone);
         }
       else
         {
-          new_datetimeperiod.time
-            = icaltime_convert_to_zone (old_datetimeperiod.period.start, zone);
+          new_datetimeperiod.time =
+            icaltime_convert_to_zone (old_datetimeperiod.period.start, zone);
         }
       new_rdate = icalproperty_new_rdate (new_datetimeperiod);
       icalcomponent_add_property (vevent_simplified, new_rdate);
 
-      rdate_prop
-        = icalcomponent_get_next_property (vevent, ICAL_RDATE_PROPERTY);
+      rdate_prop =
+        icalcomponent_get_next_property (vevent, ICAL_RDATE_PROPERTY);
     }
 
   // Copy EXDATE properties
-  exdate_prop = icalcomponent_get_first_property (vevent,
-                                                  ICAL_EXDATE_PROPERTY);
+  exdate_prop = icalcomponent_get_first_property (vevent, ICAL_EXDATE_PROPERTY);
   while (exdate_prop)
     {
       icaltimetype original_exdate_time, exdate_time;
       icalproperty *prop_clone;
 
       original_exdate_time = icalproperty_get_exdate (exdate_prop);
-      exdate_time
-        = icaltime_convert_to_zone (original_exdate_time, zone);
+      exdate_time = icaltime_convert_to_zone (original_exdate_time, zone);
 
       prop_clone = icalproperty_new_exdate (exdate_time);
       icalcomponent_add_property (vevent_simplified, prop_clone);
 
-      exdate_prop
-        = icalcomponent_get_next_property (vevent, ICAL_EXDATE_PROPERTY);
+      exdate_prop =
+        icalcomponent_get_next_property (vevent, ICAL_EXDATE_PROPERTY);
     }
 
   // Generate UID for event
@@ -666,16 +668,16 @@ icalendar_simplify_vevent (icalcomponent *vevent, icaltimezone *zone,
 /**
  * @brief Error return for icalendar_from_string.
  */
-#define ICAL_RETURN_ERROR(message)              \
-  do                                            \
-    {                                           \
-      if (error)                                \
-        *error = message;                       \
-      icalcomponent_free (ical_parsed);         \
-      icalcomponent_free (ical_new);            \
-      g_string_free (warnings_buffer, TRUE);    \
-      return NULL;                              \
-    }                                           \
+#define ICAL_RETURN_ERROR(message)           \
+  do                                         \
+    {                                        \
+      if (error)                             \
+        *error = message;                    \
+      icalcomponent_free (ical_parsed);      \
+      icalcomponent_free (ical_new);         \
+      g_string_free (warnings_buffer, TRUE); \
+      return NULL;                           \
+    }                                        \
   while (0)
 
 /**
@@ -709,8 +711,8 @@ icalendar_from_string (const char *ical_string, icaltimezone *zone,
 
   // Check for errors
   icalrestriction_check (ical_parsed);
-  error_prop = icalcomponent_get_first_property (ical_parsed,
-                                                 ICAL_XLICERROR_PROPERTY);
+  error_prop =
+    icalcomponent_get_first_property (ical_parsed, ICAL_XLICERROR_PROPERTY);
   if (error_prop)
     {
       if (error)
@@ -725,109 +727,102 @@ icalendar_from_string (const char *ical_string, icaltimezone *zone,
 
   ical_new = icalcomponent_new_vcalendar ();
   icalcomponent_add_property (ical_new, icalproperty_new_version ("2.0"));
-  icalcomponent_add_property (ical_new,
-                              icalproperty_new_prodid (GVM_PRODID));
+  icalcomponent_add_property (ical_new, icalproperty_new_prodid (GVM_PRODID));
 
-  timezone_component
-    = icalcomponent_new_clone (icaltimezone_get_component (zone));
+  timezone_component =
+    icalcomponent_new_clone (icaltimezone_get_component (zone));
   icalcomponent_add_component (ical_new, timezone_component);
 
   switch (icalcomponent_isa (ical_parsed))
     {
-      case ICAL_NO_COMPONENT:
-        // The text must contain valid iCalendar component
-        ICAL_RETURN_ERROR
-            (g_strdup_printf ("String contains no iCalendar component"));
-        break;
-      case ICAL_XROOT_COMPONENT:
-      case ICAL_VCALENDAR_COMPONENT:
-        // Check multiple components
-        ical_iter = icalcomponent_begin_component (ical_parsed,
-                                                   ICAL_ANY_COMPONENT);
-        icalcomponent *subcomp;
-        while ((subcomp = icalcompiter_deref (&ical_iter)))
-          {
-            icalcomponent *new_vevent;
-            switch (icalcomponent_isa (subcomp))
-              {
-                case ICAL_VEVENT_COMPONENT:
-                  // Copy and simplify only the first VEVENT, ignoring all
-                  //  following ones.
-                  if (vevent_count == 0)
-                    {
-                      new_vevent = icalendar_simplify_vevent
-                                      (subcomp,
-                                       zone,
-                                       error,
-                                       warnings_buffer);
-                      if (new_vevent == NULL)
-                        ICAL_RETURN_ERROR (*error);
-                      icalcomponent_add_component (ical_new, new_vevent);
-                    }
-                  vevent_count ++;
-                  break;
-                case ICAL_VTIMEZONE_COMPONENT:
-                  // Timezones are collected separately
-                  break;
-                case ICAL_VJOURNAL_COMPONENT:
-                case ICAL_VTODO_COMPONENT:
-                  // VJOURNAL and VTODO components are ignored
-                  other_component_count ++;
-                  break;
-                default:
-                  // Unexpected components
-                  ICAL_RETURN_ERROR
-                      (g_strdup_printf ("Unexpected component type: %s",
-                                        icalcomponent_kind_to_string
-                                            (icalcomponent_isa (subcomp))));
-              }
-            icalcompiter_next (&ical_iter);
-          }
-
-        if (vevent_count == 0)
-          {
-            ICAL_RETURN_ERROR
-                (g_strdup_printf ("iCalendar string must contain a VEVENT"));
-          }
-        else if (vevent_count > 1)
-          {
-            g_string_append_printf (warnings_buffer,
-                                    "<warning>"
-                                    "iCalendar contains %d VEVENT components"
-                                    " but only the first one will be used"
-                                    "</warning>",
-                                    vevent_count);
-          }
-
-        if (other_component_count)
-          {
-            g_string_append_printf (warnings_buffer,
-                                    "<warning>"
-                                    "iCalendar contains %d VTODO and/or"
-                                    " VJOURNAL component(s) which will be"
-                                    " ignored"
-                                    "</warning>",
-                                    other_component_count);
-          }
-        break;
-      case ICAL_VEVENT_COMPONENT:
+    case ICAL_NO_COMPONENT:
+      // The text must contain valid iCalendar component
+      ICAL_RETURN_ERROR (
+        g_strdup_printf ("String contains no iCalendar component"));
+      break;
+    case ICAL_XROOT_COMPONENT:
+    case ICAL_VCALENDAR_COMPONENT:
+      // Check multiple components
+      ical_iter =
+        icalcomponent_begin_component (ical_parsed, ICAL_ANY_COMPONENT);
+      icalcomponent *subcomp;
+      while ((subcomp = icalcompiter_deref (&ical_iter)))
         {
           icalcomponent *new_vevent;
-
-          new_vevent = icalendar_simplify_vevent (ical_parsed,
-                                                  zone,
-                                                  error,
-                                                  warnings_buffer);
-          if (new_vevent == NULL)
-            ICAL_RETURN_ERROR (*error);
-          icalcomponent_add_component (ical_new, new_vevent);
+          switch (icalcomponent_isa (subcomp))
+            {
+            case ICAL_VEVENT_COMPONENT:
+              // Copy and simplify only the first VEVENT, ignoring all
+              //  following ones.
+              if (vevent_count == 0)
+                {
+                  new_vevent = icalendar_simplify_vevent (subcomp, zone, error,
+                                                          warnings_buffer);
+                  if (new_vevent == NULL)
+                    ICAL_RETURN_ERROR (*error);
+                  icalcomponent_add_component (ical_new, new_vevent);
+                }
+              vevent_count++;
+              break;
+            case ICAL_VTIMEZONE_COMPONENT:
+              // Timezones are collected separately
+              break;
+            case ICAL_VJOURNAL_COMPONENT:
+            case ICAL_VTODO_COMPONENT:
+              // VJOURNAL and VTODO components are ignored
+              other_component_count++;
+              break;
+            default:
+              // Unexpected components
+              ICAL_RETURN_ERROR (g_strdup_printf (
+                "Unexpected component type: %s",
+                icalcomponent_kind_to_string (icalcomponent_isa (subcomp))));
+            }
+          icalcompiter_next (&ical_iter);
         }
-        break;
-      default:
-        ICAL_RETURN_ERROR
-            (g_strdup_printf ("iCalendar string must be a VCALENDAR or VEVENT"
-                              " component or consist of multiple elements."));
-        break;
+
+      if (vevent_count == 0)
+        {
+          ICAL_RETURN_ERROR (
+            g_strdup_printf ("iCalendar string must contain a VEVENT"));
+        }
+      else if (vevent_count > 1)
+        {
+          g_string_append_printf (warnings_buffer,
+                                  "<warning>"
+                                  "iCalendar contains %d VEVENT components"
+                                  " but only the first one will be used"
+                                  "</warning>",
+                                  vevent_count);
+        }
+
+      if (other_component_count)
+        {
+          g_string_append_printf (warnings_buffer,
+                                  "<warning>"
+                                  "iCalendar contains %d VTODO and/or"
+                                  " VJOURNAL component(s) which will be"
+                                  " ignored"
+                                  "</warning>",
+                                  other_component_count);
+        }
+      break;
+    case ICAL_VEVENT_COMPONENT:
+      {
+        icalcomponent *new_vevent;
+
+        new_vevent =
+          icalendar_simplify_vevent (ical_parsed, zone, error, warnings_buffer);
+        if (new_vevent == NULL)
+          ICAL_RETURN_ERROR (*error);
+        icalcomponent_add_component (ical_new, new_vevent);
+      }
+      break;
+    default:
+      ICAL_RETURN_ERROR (
+        g_strdup_printf ("iCalendar string must be a VCALENDAR or VEVENT"
+                         " component or consist of multiple elements."));
+      break;
     }
 
   icalcomponent_free (ical_parsed);
@@ -861,7 +856,6 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
   icalcomponent *vevent;
   icalproperty *rrule_prop;
 
-
   assert (period);
   assert (period_months);
   assert (byday_mask);
@@ -877,14 +871,12 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
 
   // Process only the first VEVENT
   // Others should be removed by icalendar_from_string
-  vevent = icalcomponent_get_first_component (vcalendar,
-                                              ICAL_VEVENT_COMPONENT);
+  vevent = icalcomponent_get_first_component (vcalendar, ICAL_VEVENT_COMPONENT);
   if (vevent == NULL)
     return -1;
 
   // Process only first RRULE.
-  rrule_prop = icalcomponent_get_first_property (vevent,
-                                                 ICAL_RRULE_PROPERTY);
+  rrule_prop = icalcomponent_get_first_property (vevent, ICAL_RRULE_PROPERTY);
   if (rrule_prop)
     {
       struct icalrecurrencetype recurrence;
@@ -894,30 +886,30 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
       // Get period or period_months
       switch (recurrence.freq)
         {
-          case ICAL_YEARLY_RECURRENCE:
-            *period_months = recurrence.interval * 12;
-            break;
-          case ICAL_MONTHLY_RECURRENCE:
-            *period_months = recurrence.interval;
-            break;
-          case ICAL_WEEKLY_RECURRENCE:
-            *period = recurrence.interval * 604800;
-            break;
-          case ICAL_DAILY_RECURRENCE:
-            *period = recurrence.interval * 86400;
-            break;
-          case ICAL_HOURLY_RECURRENCE:
-            *period = recurrence.interval * 3600;
-            break;
-          case ICAL_MINUTELY_RECURRENCE:
-            *period = recurrence.interval * 60;
-            break;
-          case ICAL_SECONDLY_RECURRENCE:
-            *period = recurrence.interval;
-          case ICAL_NO_RECURRENCE:
-            break;
-          default:
-            return -1;
+        case ICAL_YEARLY_RECURRENCE:
+          *period_months = recurrence.interval * 12;
+          break;
+        case ICAL_MONTHLY_RECURRENCE:
+          *period_months = recurrence.interval;
+          break;
+        case ICAL_WEEKLY_RECURRENCE:
+          *period = recurrence.interval * 604800;
+          break;
+        case ICAL_DAILY_RECURRENCE:
+          *period = recurrence.interval * 86400;
+          break;
+        case ICAL_HOURLY_RECURRENCE:
+          *period = recurrence.interval * 3600;
+          break;
+        case ICAL_MINUTELY_RECURRENCE:
+          *period = recurrence.interval * 60;
+          break;
+        case ICAL_SECONDLY_RECURRENCE:
+          *period = recurrence.interval;
+        case ICAL_NO_RECURRENCE:
+          break;
+        default:
+          return -1;
         }
 
       /*
@@ -928,8 +920,8 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
       array_pos = 0;
       while (recurrence.by_day[array_pos] != ICAL_RECURRENCE_ARRAY_MAX)
         {
-          int ical_day = icalrecurrencetype_day_day_of_week
-                            (recurrence.by_day[array_pos]);
+          int ical_day =
+            icalrecurrencetype_day_day_of_week (recurrence.by_day[array_pos]);
           int mask_bit = -1;
 
           if (ical_day == 1)
@@ -941,7 +933,7 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
             {
               *byday_mask |= (1 << mask_bit);
             }
-          array_pos ++;
+          array_pos++;
         }
     }
 
@@ -958,10 +950,10 @@ icalendar_approximate_rrule_from_vcalendar (icalcomponent *vcalendar,
  *
  * @return  GPtrArray with pointers to collected times or NULL on error.
  */
-static GPtrArray*
+static GPtrArray *
 icalendar_times_from_vevent (icalcomponent *vevent, icalproperty_kind type)
 {
-  GPtrArray* times;
+  GPtrArray *times;
   icalproperty *date_prop;
 
   if (icalcomponent_isa (vevent) != ICAL_VEVENT_COMPONENT
@@ -1012,9 +1004,7 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
   if (times_array == NULL)
     return FALSE;
 
-  for (index = 0;
-       found == FALSE && index < times_array->len;
-       index++)
+  for (index = 0; found == FALSE && index < times_array->len; index++)
     {
       int compare_result;
       icaltimetype *array_time = g_ptr_array_index (times_array, index);
@@ -1041,10 +1031,8 @@ icalendar_time_matches_array (icaltimetype time, GPtrArray *times_array)
  * @return  The next or previous time as time_t.
  */
 static time_t
-icalendar_next_time_from_rdates (GPtrArray *rdates,
-                                 icaltimetype ref_time_ical,
-                                 icaltimezone *tz,
-                                 int periods_offset)
+icalendar_next_time_from_rdates (GPtrArray *rdates, icaltimetype ref_time_ical,
+                                 icaltimezone *tz, int periods_offset)
 {
   int index;
   time_t ref_time, closest_time;
@@ -1097,10 +1085,8 @@ static time_t
 icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
                                      icaltimetype dtstart,
                                      icaltimetype reference_time,
-                                     icaltimezone *tz,
-                                     GPtrArray *exdates,
-                                     GPtrArray *rdates,
-                                     int periods_offset)
+                                     icaltimezone *tz, GPtrArray *exdates,
+                                     GPtrArray *rdates, int periods_offset)
 {
   icalrecur_iterator *recur_iter;
   icaltimetype recur_time, prev_time, next_time;
@@ -1172,6 +1158,8 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
   rdates_time = icalendar_next_time_from_rdates (rdates, reference_time, tz,
                                                  periods_offset);
 
+  icalrecur_iterator_free (recur_iter);
+
   // Select appropriate time as the RRULE time, compare it to the RDATEs time
   //  and return the appropriate time.
   if (periods_offset == -1)
@@ -1234,8 +1222,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
 
   // Process only the first VEVENT
   // Others should be removed by icalendar_from_string
-  vevent = icalcomponent_get_first_component (vcalendar,
-                                              ICAL_VEVENT_COMPONENT);
+  vevent = icalcomponent_get_first_component (vcalendar, ICAL_VEVENT_COMPONENT);
   if (vevent == NULL)
     return 0;
 
@@ -1244,7 +1231,7 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
   if (icaltime_is_null_time (dtstart))
     return 0;
 
-  tz = (icaltimezone*) icaltime_get_timezone (dtstart);
+  tz = (icaltimezone *) icaltime_get_timezone (dtstart);
   if (tz == NULL)
     {
       tz = icalendar_timezone_from_string (default_tzid);
@@ -1277,11 +1264,9 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
     icalrecurrencetype_clear (&recurrence);
 
   // Calculate next time.
-  next_time = icalendar_next_time_from_recurrence (recurrence,
-                                                   dtstart_with_tz,
-                                                   ical_reference_time, tz,
-                                                   exdates, rdates,
-                                                   periods_offset);
+  next_time = icalendar_next_time_from_recurrence (
+    recurrence, dtstart_with_tz, ical_reference_time, tz, exdates, rdates,
+    periods_offset);
 
   // Cleanup
   g_ptr_array_free (exdates, TRUE);
@@ -1304,19 +1289,15 @@ icalendar_next_time_from_vcalendar (icalcomponent *vcalendar,
  * @return The next or previous time as a time_t.
  */
 time_t
-icalendar_next_time_from_string (const char *ical_string,
-                                 time_t reference_time,
-                                 const char *default_tzid,
-                                 int periods_offset)
+icalendar_next_time_from_string (const char *ical_string, time_t reference_time,
+                                 const char *default_tzid, int periods_offset)
 {
   time_t next_time;
   icalcomponent *ical_parsed;
 
   ical_parsed = icalcomponent_new_from_string (ical_string);
-  next_time = icalendar_next_time_from_vcalendar (ical_parsed,
-                                                  reference_time,
-                                                  default_tzid,
-                                                  periods_offset);
+  next_time = icalendar_next_time_from_vcalendar (ical_parsed, reference_time,
+                                                  default_tzid, periods_offset);
   icalcomponent_free (ical_parsed);
   return next_time;
 }
@@ -1343,8 +1324,7 @@ icalendar_duration_from_vcalendar (icalcomponent *vcalendar)
 
   // Process only the first VEVENT
   // Others should be removed by icalendar_from_string
-  vevent = icalcomponent_get_first_component (vcalendar,
-                                              ICAL_VEVENT_COMPONENT);
+  vevent = icalcomponent_get_first_component (vcalendar, ICAL_VEVENT_COMPONENT);
   if (vevent == NULL)
     return 0;
 
@@ -1380,8 +1360,7 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
 
   // Process only the first VEVENT
   // Others should be removed by icalendar_from_string
-  vevent = icalcomponent_get_first_component (vcalendar,
-                                              ICAL_VEVENT_COMPONENT);
+  vevent = icalcomponent_get_first_component (vcalendar, ICAL_VEVENT_COMPONENT);
   if (vevent == NULL)
     return 0;
 
@@ -1390,7 +1369,7 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
   if (icaltime_is_null_time (dtstart))
     return 0;
 
-  tz = (icaltimezone*) icaltime_get_timezone (dtstart);
+  tz = (icaltimezone *) icaltime_get_timezone (dtstart);
   if (tz == NULL)
     tz = default_tz;
 
@@ -1426,20 +1405,20 @@ clean_hosts_string (const char *hosts)
    * - A final group of digits, separated with a slash "-"
    *   (CIDR notation, e.g. "192.168.123.001/027)
    */
-  ipv4_match_regex
-    = g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
-                   "(?:\\/[0-9]+|-[0-9]+(?:(?:\\.[0-9]+){3})?)?$",
-                   0, 0, NULL);
+  ipv4_match_regex =
+    g_regex_new ("^[0-9]+(?:\\.[0-9]+){3}"
+                 "(?:\\/[0-9]+|-[0-9]+(?:(?:\\.[0-9]+){3})?)?$",
+                 0, 0, NULL);
   /*
    * Regular expression matching leading zeroes in groups of digits
    * separated by dots or other characters.
    * First line matches zeroes before non-zero numbers, e.g. "000" in "000120"
    * Second line matches groups of all zeroes except one, e.g. "00" in "000"
    */
-  ipv4_replace_regex
-    = g_regex_new ("(?<=\\D|^)(0+)(?=(?:(?:[1-9]\\d*)(?:\\D|$)))"
-                   "|(?<=\\D|^)(0+)(?=0(?:\\D|$))",
-                   0, 0, NULL);
+  ipv4_replace_regex =
+    g_regex_new ("(?<=\\D|^)(0+)(?=(?:(?:[1-9]\\d*)(?:\\D|$)))"
+                 "|(?<=\\D|^)(0+)(?=0(?:\\D|$))",
+                 0, 0, NULL);
   new_hosts = g_string_new ("");
 
   hosts_split = g_strsplit (hosts, ",", -1);
@@ -1455,8 +1434,8 @@ clean_hosts_string (const char *hosts)
            * with empty strings,
            * e.g. "000.001.002.003-004" becomes "0.1.2.3-4"
            */
-          new_item = g_regex_replace (ipv4_replace_regex,
-                                      *item, -1, 0, "", 0, NULL);
+          new_item =
+            g_regex_replace (ipv4_replace_regex, *item, -1, 0, "", 0, NULL);
           g_string_append (new_hosts, new_item);
           g_free (new_item);
         }
@@ -1473,4 +1452,53 @@ clean_hosts_string (const char *hosts)
   g_regex_unref (ipv4_replace_regex);
 
   return g_string_free (new_hosts, FALSE);
+}
+
+/**
+ * @brief Join an array of gchar* with a separator, skipping NULL/empty entries.
+ *
+ * @param[in]  errors GPtrArray of gchar* (may be NULL).
+ * @param[in]  sep Separator string, default to "; " if NULL.
+ * @param[in]  prefix Prefix string, default to "" if NULL.
+ *
+ * @return Newly allocated joined string, or NULL if no non-empty entries.
+ *         Caller must g_free().
+ */
+gchar *
+concat_error_messages (const GPtrArray *errors, const gchar *sep,
+                       const gchar *prefix)
+{
+  if (!errors || errors->len == 0)
+    return NULL;
+
+  if (prefix == NULL)
+    prefix = "";
+
+  const gchar *use_sep = sep ? sep : "; ";
+
+  GString *gs = NULL;
+
+  for (guint i = 0; i < errors->len; ++i)
+    {
+      const gchar *m = g_ptr_array_index ((GPtrArray *) errors, i);
+      if (!m || !*m)
+        continue;
+
+      if (!gs)
+        {
+          /* first non-empty: start with prefix */
+          gs = g_string_new (prefix);
+          g_string_append (gs, m);
+        }
+      else
+        {
+          g_string_append (gs, use_sep);
+          g_string_append (gs, m);
+        }
+    }
+
+  if (!gs)
+    return NULL;
+
+  return g_string_free (gs, FALSE);
 }

@@ -17,13 +17,21 @@
  */
 
 /*
- * @file manage_sql_secinfo.h
+ * @file
  * @brief Manager Manage library: SQL backend headers.
  */
 
 #include <glib.h>
 #ifndef _GVMD_MANAGE_SQL_SECINFO_H
 #define _GVMD_MANAGE_SQL_SECINFO_H
+
+/**
+ * @brief Strategies to handle SecInfo updates
+ */
+typedef enum {
+  SECINFO_UPDATE_STRATEGY_KEEP_SCHEMA = 0,
+  SECINFO_UPDATE_STRATEGY_DROP_SCHEMA = 1,
+} secinfo_update_strategy_t;
 
 /**
  * @brief SQL to check if a result has CERT Bunds.
@@ -166,12 +174,27 @@
  }
 
 /**
+ * @brief Default for affected_products_query_size.
+ */
+#define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 20000
+
+/**
+ * @brief Default for secinfo_copy.
+ */
+#define SECINFO_FAST_INIT_DEFAULT 1
+
+/**
  * @brief Default for secinfo_commit_size.
  */
 #define SECINFO_COMMIT_SIZE_DEFAULT 0
 
+/**
+ * @brief Default for secinfo_update_strategy.
+ */
+#define SECINFO_UPDATE_STRATEGY_DEFAULT SECINFO_UPDATE_STRATEGY_KEEP_SCHEMA
+
 int
-secinfo_feed_version_status ();
+secinfo_feed_version_status (const char *);
 
 pid_t
 manage_sync_scap (sigset_t *);
@@ -192,7 +215,16 @@ int
 get_secinfo_commit_size ();
 
 void
+set_affected_products_query_size (int);
+
+void
 set_secinfo_commit_size (int);
+
+void
+set_secinfo_update_strategy (int);
+
+void
+set_secinfo_fast_init (int);
 
 void
 update_scap_extra ();

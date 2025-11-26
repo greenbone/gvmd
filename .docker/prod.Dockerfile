@@ -1,116 +1,31 @@
-ARG VERSION=edge
-ARG GVM_LIBS_VERSION=oldstable
+ARG GVM_LIBS_VERSION=stable
 ARG DEBIAN_FRONTEND=noninteractive
-ARG IMAGE_REGISTRY=ghcr.io
 # when set it will added to the cmake command
 # As an example:
 # FEATURE_TOGGLES="-DOPENVASD=1"
 # enables openvasd feature toggle.
 ARG FEATURE_TOGGLE=""
 
-FROM ${IMAGE_REGISTRY}/greenbone/gvmd-build:${VERSION} as builder
+FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION} AS builder
 ARG FEATURE_TOGGLE
 
 COPY . /source
 WORKDIR /source
 
-RUN mkdir /build && \
-    mkdir /install && \
-    cd /build && \
-    cmake -DCMAKE_BUILD_TYPE=Release $FEATURE_TOGGLE /source && \
-    make DESTDIR=/install install
+RUN sh /source/.github/install-dependencies.sh \
+    /source/.github/build-dependencies.list \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN cmake -DCMAKE_BUILD_TYPE=Release ${FEATURE_TOGGLE} -B/build /source && \
+    DESTDIR=/install cmake --build /build -j$(nproc) -- install
 
 FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Runtime dependencies
-
-# PDF Report
-# texlive-fonts-recommended
-# texlive-latex-extra
-
-# HTML Reports, cert data and scan data details
-# xsltproc
-
-# verinice report
-# xsltproc
-# xmlstarlet
-# zip
-
-# RPM credential packages
-# rpm
-# fakeroot
-
-# DEB credential packages
-# dpkg
-# fakeroot
-
-# Windows Executable (.exe) credential installer
-# nsis
-
-# signature verification
-# gnupg
-
-# HTTP alerts
-# wget
-
-# SCP alert
-# sshpass
-# openssh-client
-
-# Send alert
-# socat
-
-# SNMP alert
-# snmp
-
-# SMB alert
-# python3
-# smbclient
-
-# s/mime email encryption
-# gpgsm
-
-# Loading scap and cert data
-# xml-twig-tools
-
-# Required for set up certificates for GVM
-# gnutls-bin
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    dpkg \
-    fakeroot \
-    nsis \
-    gosu \
-    gnupg \
-    gpgsm \
-    gnutls-bin \
-    libbsd0 \
-    libcjson1 \
-    libgpgme11 \
-    libical3 \
-    libpq5 \
-    msmtp \
-    msmtp-mta \
-    openssh-client \
-    postgresql-client-13 \
-    postgresql-client-common \
-    python3 \
-    rpm \
-    rsync \
-    socat \
-    smbclient \
-    snmp \
-    sshpass \
-    texlive-fonts-recommended \
-    texlive-latex-extra \
-    wget \
-    xmlstarlet \
-    xsltproc \
-    zip && \
-    rm -rf /var/lib/apt/lists/*
+RUN --mount=type=bind,source=.github,target=/source/ \
+    sh /source/install-dependencies.sh /source/runtime-dependencies.list \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install/ /
 

@@ -23,6 +23,16 @@
 
 #include <glib.h>
 
+/**
+ * @brief Report format UUID.
+ */
+#define REPORT_FORMAT_UUID_XML "a994b278-1f62-11e1-96ac-406186ea4fc5"
+
+/**
+ * @brief Report format UUID.
+ */
+#define REPORT_FORMAT_UUID_ANON_XML "5057e5cc-b825-11e4-9d0e-28d24461215b"
+
 gboolean
 find_report_format_with_permission (const char*, report_format_t*,
                                     const char *);
@@ -43,7 +53,8 @@ typedef struct
 int
 create_report_format (const char *, const char *, const char *, const char *,
                       const char *, const char *, array_t *, array_t *,
-                      array_t *, const char *, report_format_t *);
+                      array_t *, const char *, const char *,
+                      report_format_t *);
 
 int
 copy_report_format (const char *, const char *, report_format_t*);
@@ -72,6 +83,9 @@ report_format_content_type (report_format_t);
 
 char *
 report_format_extension (report_format_t);
+
+char *
+report_format_report_type (report_format_t);
 
 int
 report_format_global (report_format_t);
@@ -118,6 +132,9 @@ report_format_iterator_extension (iterator_t *);
 
 const char*
 report_format_iterator_content_type (iterator_t *);
+
+const char*
+report_format_iterator_report_type (iterator_t *);
 
 const char*
 report_format_iterator_description (iterator_t *);

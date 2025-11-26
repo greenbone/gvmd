@@ -97,9 +97,12 @@ update_config (config_t, const gchar *, const gchar *, const gchar *,
                int, const array_t*, const array_t*, const gchar *);
 
 void
-check_db_configs ();
+check_db_configs (int);
 
 void
 check_whole_only_in_configs ();
+
+int
+check_config_families ();
 
 #endif /* not _GVMD_MANAGE_SQL_CONFIGS_H */

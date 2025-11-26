@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>alive_test</name>
     <summary>An alive test</summary>
     <pattern>
-      xsd:token { pattern = "ICMP, TCP-ACK Service &amp; ARP Ping|TCP-ACK Service &amp; ARP Ping|ICMP &amp; ARP Ping|ICMP &amp; TCP-ACK Service Ping|ARP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ICMP Ping|Consider Alive|Scan Config Default" }
+      xsd:token { pattern = "ICMP Ping|TCP-ACK Service Ping|TCP-SYN Service Ping|ARP Ping|Consider Alive|Scan Config Default" }
     </pattern>
   </type>
   <type>
@@ -117,13 +117,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
   </type>
   <type>
     <name>levels</name>
-    <summary>A string selecting severity levels that may include the characters h, m, l, g and f</summary>
+    <summary>A string selecting severity levels that may include the characters c, h, m, l, g and f</summary>
     <description>
-      The meanings of the letters for each level are: "h" for "high",
-      "m" for "medium", "l" for "low", "g" for "log" and
-      "f" for "false positive". 
+      The meanings of the letters for each level are: "c" for "critical",
+      "h" for "high", "m" for "medium", "l" for "low", "g" for "log" and
+      "f" for "false positive".
     </description>
-    <pattern>xsd:token { pattern = "h?m?l?g?f?" }</pattern>
+    <pattern>xsd:token { pattern = "c?h?m?l?g?f?" }</pattern>
   </type>
   <type>
     <name>name</name>
@@ -153,6 +153,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <name>oid</name>
     <summary>An Object Identifier (OID)</summary>
     <pattern>xsd:token { pattern = "[0-9\.]{1,80}" }</pattern>
+  </type>
+  <type>
+    <name>scanner_type</name>
+    <summary>A number specifying the type of a scanner</summary>
+    <description>
+      The mapping of the numbers is as follows:
+      '2' for OpenVAS (classic), '3' for CVE, '5' for OSP Sensor,
+      '6' for OpenVASD, '7' for Agent Controller,
+      '8' for OpenVASD Sensor, '9' for Agent Controller Sensor.
+    </description>
+    <pattern>xsd:token { pattern = "2|3|5|6|7|8|9" }</pattern>
   </type>
   <type>
     <name>severity</name>
@@ -652,16 +663,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <e>value</e>
         <e>type</e>
       </pattern>
-        <ele>
-          <name>value</name>
-          <summary>The value of the QoD</summary>
-          <pattern><t>integer</t></pattern>
-        </ele>
-        <ele>
-          <name>type</name>
-          <summary>The type of the QoD</summary>
-          <pattern><t>name</t></pattern>
-        </ele>
+      <ele>
+        <name>value</name>
+        <summary>The value of the QoD</summary>
+        <pattern><t>integer</t></pattern>
+      </ele>
+      <ele>
+        <name>type</name>
+        <summary>The type of the QoD</summary>
+        <pattern><t>name</t></pattern>
+      </ele>
     </ele>
     <ele>
       <name>refs</name>
@@ -2024,8 +2035,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <o><e>user_tags</e></o>
             <e>scan_run_status</e>
             <o>
-            <e>result_count</e>
-            <e>severity</e>
+              <e>result_count</e>
+              <e>severity</e>
             </o>
             <o><e>compliance_count</e></o>
             <o><e>compliance</e></o>
@@ -2231,6 +2242,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary>Level filter</summary>
           <pattern>
             <alts>
+              <alt>Critical</alt>
               <alt>High</alt>
               <alt>Medium</alt>
               <alt>Low</alt>
@@ -2366,10 +2378,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           text
           <e>full</e>
           <e>filtered</e>
+          <e>critical</e>
           <e>hole</e>
+          <e>high</e>
           <e>info</e>
+          <e>low</e>
           <e>log</e>
           <e>warning</e>
+          <e>medium</e>
         </pattern>
         <ele>
           <name>full</name>
@@ -2382,9 +2398,50 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <pattern><t>integer</t></pattern>
         </ele>
         <ele>
+          <name>critical</name>
+          <summary>
+            Number of "critical" results (threat level critical)
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
           <name>hole</name>
           <summary>
             Number of "hole" results (threat level High)
+            ,will be deprecated. Use high instead
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>high</name>
+          <summary>
+            Number of "high" results (threat level High)
           </summary>
           <pattern>
             <e>full</e>
@@ -2405,6 +2462,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>info</name>
           <summary>
             Number of "info" results (threat level Low)
+            ,will be deprecated. Use low instead
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>low</name>
+          <summary>
+            Number of "low" results (threat level Low)
           </summary>
           <pattern>
             <e>full</e>
@@ -2445,6 +2523,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <name>warning</name>
           <summary>
             Number of "warning" results (threat level Medium)
+            ,will be deprecated. Use medium instead
+          </summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Number of results after filtering</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>medium</name>
+          <summary>
+            Number of "medium" results (threat level Medium)
           </summary>
           <pattern>
             <e>full</e>
@@ -2866,7 +2965,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <e>end</e>
           <e>port_count</e>
           <o>
-          <e>result_count</e>
+            <e>result_count</e>
           </o>
           <o><e>compliance_count</e></o>
           <o><e>host_compliance</e></o>
@@ -2915,10 +3014,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <summary></summary>
           <pattern>
             <e>page</e>
+            <e>critical</e>
             <e>hole</e>
-            <e>warning</e>
+            <e>high</e>
             <e>info</e>
+            <e>low</e>
             <e>log</e>
+            <e>warning</e>
+            <e>medium</e>
             <e>false_positive</e>
           </pattern>
           <ele>
@@ -2927,8 +3030,39 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
+            <name>critical</name>
+            <summary>
+              Number of "critical" results (level "Critical")
+            </summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
             <name>hole</name>
-            <summary>Number of "hole" results (level "High")</summary>
+            <summary>
+              Number of "hole" results (level "High")
+              ,will be deprecated. Use high instead
+            </summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>high</name>
+            <summary>
+              Number of "high" results (level "High")
+            </summary>
             <pattern>
               <e>page</e>
             </pattern>
@@ -2940,7 +3074,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
           <ele>
             <name>warning</name>
-            <summary>Number of "warning" results (level "Medium")</summary>
+            <summary>
+              Number of "warning" results (level "Medium")
+              ,will be deprecated. Use medium instead
+            </summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>medium</name>
+            <summary>
+              Number of "medium" results (level "Medium")
+            </summary>
             <pattern>
               <e>page</e>
             </pattern>
@@ -2952,7 +3103,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           </ele>
           <ele>
             <name>info</name>
-            <summary>Number of "info" results (level "Low")</summary>
+            <summary>
+              Number of "info" results (level "Low")
+              ,will be deprecated. Use low instead
+            </summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <summary>Number of results on current page</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>low</name>
+            <summary>Number of "low" results (level "Low")</summary>
             <pattern>
               <e>page</e>
             </pattern>
@@ -3489,6 +3655,106 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>create_agent_group</name>
+    <summary>Create an agent group</summary>
+    <description>
+      <p>
+        A name for the new agent group is required. Optionally, a comment and a list of agents
+        to include in the group should be provided.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>agents</e></o>
+      <o><e>copy</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of the new agent group</summary>
+      <pattern>text</pattern>
+      <required>1</required>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Optional user-supplied comment</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to include in the group</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>UUID of an existing group to copy from</summary>
+      <pattern>uuid</pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an agent group with agents</summary>
+      <request>
+        <create_agent_group>
+          <name>Test Agent Group</name>
+          <comment>Created via gvm-cli for testing</comment>
+          <agents>
+            <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
+            <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
+          </agents>
+        </create_agent_group>
+      </request>
+      <response>
+        <create_agent_group_response status="201" status_text="Created" id="90f1cde5-a477-42f5-9e0a-b7a78f9bcd23"/>
+      </response>
+    </example>
+    <example>
+      <summary>Create an agent group by copying another</summary>
+      <request>
+        <create_agent_group>
+          <name>Copied Agent Group</name>
+          <copy>6c04e86e-ea40-46a1-80f4-cfce27f821b5</copy>
+        </create_agent_group>
+      </request>
+      <response>
+        <create_agent_group_response status="201" status_text="Created" id="abc123de-4f56-789a-bcde-1234567890ab"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>create_alert</name>
     <summary>Create an alert</summary>
@@ -3987,12 +4253,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <o><e>copy</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
+      <o><e>kdcs</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>community</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4027,6 +4296,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
+    </ele>
+    <ele>
+      <name>kdcs</name>
+      <summary>Multiple Kerberos KDCs</summary>
+      <description>
+        <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+      </description>
+      <pattern>
+        <any><e>kdc</e></any>
+      </pattern>
+      <ele>
+        <name>kdc</name>
+        <summary>A single Kerberos Key Distribution Center</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>key</name>
@@ -4115,10 +4404,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </ele>
     </ele>
     <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
+    </ele>
+    <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
       <description>
         <p>cc: Client certificate</p>
+        <p>krb5: Kerberos 5</p>
         <p>pgp: PGP encryption key</p>
         <p>pw: Password only</p>
         <p>smime: S/MIME certificate</p>
@@ -4129,6 +4424,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <pattern>
         <alts>
           <alt>cc</alt>
+          <alt>krb5</alt>
           <alt>pgp</alt>
           <alt>pw</alt>
           <alt>smime</alt>
@@ -4209,6 +4505,30 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         <create_credential_response status="201"
                                     status_text="OK, resource created"
                                     id="4aa5bf8a-502d-4023-96b0-352fe202a097">
+        </create_credential_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a Kerberos credential with multiple KDCs</summary>
+      <request>
+        <create_credential>
+          <name>Kerberos Cluster Auth</name>
+          <type>krb5</type>
+          <login>admin</login>
+          <password>secret123</password>
+          <realm>EXAMPLE.COM</realm>
+          <kdc>kdc1.example.com,kdc2.example.com,192.168.1.10</kdc>
+          <kdcs>
+            <kdc>kdc1.example.com</kdc>
+            <kdc>kdc2.example.com</kdc>
+            <kdc>192.168.1.10</kdc>
+          </kdcs>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response status="201"
+                                    status_text="OK, resource created"
+                                    id="b2a4a8c3-9f44-4e7f-bd64-7c69b0ec100e">
         </create_credential_response>
       </response>
     </example>
@@ -4527,6 +4847,106 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       </response>
     </example>
   </command>
+  @IF_ENABLE_CONTAINER_SCANNNING@
+  <command>
+    <name>create_oci_image_target</name>
+    <summary>Create an OCI image target</summary>
+    <description>
+      <p>
+        The client uses the create_oci_image_target command to create a
+        new OCI image target.
+      </p>
+      <p>
+        The OCI image references uses the following format:
+        oci://host[:port]/[repository]/[image][:tag]
+      </p>
+      <p>
+        IPv6 addresses for the regitsry should be wrapped in [..]
+        if a port number is included.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <e>image_references</e>
+      <o><e>credential</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the oci image target</summary>
+      <pattern>
+        <t>name</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the oci image target</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing oci image target</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>image_references</name>
+      <summary>A comma-separated list of OCI image urls</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>credential</name>
+      <summary>credentials for the target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a target, giving a list of image references</summary>
+      <request>
+        <create_oci_image_target>
+          <name>All GNU/Linux machines</name>
+          <image_references>oci://myregistry.com/repository</image_references>
+        </create_oci_image_target>
+      </request>
+      <response>
+        <create_oci_image_target_response status="201"
+                                status_text="OK, resource created"
+                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_oci_image_target_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>create_override</name>
     <summary>Create an override</summary>
@@ -5365,6 +5785,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       <e>type</e>
       <e>ca_pub</e>
       <e>credential</e>
+      <o><e>relay_host</e></o>
+      <o><e>relay_port</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -5415,6 +5837,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>relay_host</name>
+      <summary>Optional relay host of the scanner</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>relay_port</name>
+      <summary>Optional relay port of the scanner</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
@@ -5684,7 +6116,12 @@ END:VCALENDAR
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>ssh_elevate_credential</e></o>
-      <o><e>smb_credential</e></o>
+      <o>
+        <or>
+          <e>krb5_credential</e>
+          <e>smb_credential</e>
+        </or>
+      </o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
@@ -5775,6 +6212,17 @@ END:VCALENDAR
       </pattern>
     </ele>
     <ele>
+      <name>krb5_credential</name>
+      <summary>Kerberos 5 login credentials for target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
       <name>smb_credential</name>
       <summary>SMB login credentials for target</summary>
       <pattern>
@@ -5850,8 +6298,23 @@ END:VCALENDAR
       <name>alive_tests</name>
       <summary>Which alive tests to use</summary>
       <pattern>
-        <t>alive_test</t>
+        <any><e>alive_test</e></any>
       </pattern>
+      <description>
+        Instead of the sub-elements a string representation of the
+        old predefined alive test selections can be used, but this is
+        deprecated.
+      </description>
+      <ele>
+        <name>alive_test</name>
+        <summary>
+          A single alive test to use.
+          "Scan Config Default" and "Consider Alive" can only be used alone
+        </summary>
+        <pattern>
+          <t>alive_test</t>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>allow_simultaneous_ips</name>
@@ -5956,6 +6419,12 @@ END:VCALENDAR
       <o><e>alterable</e></o>
       <o><e>usage_type</e></o>
       <e>config</e>
+      @IF_ENABLE_AGENTS@
+      <e>agent_group</e>
+      @ENDIF_ENABLE_AGENTS@
+      @IF_ENABLE_CONTAINER_SCANNNING@
+      <e>oci_image_target</e>
+      @ENDIF_ENABLE_CONTAINER_SCANNNING@
       <e>target</e>
       <o><e>hosts_ordering</e></o>
       <e>scanner</e>
@@ -6021,6 +6490,32 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
+    @IF_ENABLE_AGENTS@
+    <ele>
+      <name>agent_group</name>
+      <summary>The agents scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <ele>
+      <name>oci_image_target</name>
+      <summary>The OCI images scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
     <ele>
       <name>hosts_ordering</name>
       <summary>The order hosts are scanned in</summary>
@@ -6164,6 +6659,45 @@ END:VCALENDAR
         </create_task_response>
       </response>
     </example>
+    @IF_ENABLE_AGENTS@
+    <example>
+      <summary>Create an agent group task, for agent controller</summary>
+      <request>
+        <create_task>
+          <name>Agent Group Task</name>
+          <comment>Task with agent group assigned</comment>
+          <usage_type>scan</usage_type>
+          <agent_group id="fd9bd047-fac8-49e7-bd45-64652f713a41"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="b7f0afbe-bdb3-11e9-9847-28d24461215b">
+        </create_task_response>
+      </response>
+    </example>
+    @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <example>
+      <summary>Create an OCI image task</summary>
+      <request>
+        <create_task>
+          <name>OCI Image Task</name>
+          <comment>Task with OCI image target assigned</comment>
+          <usage_type>scan</usage_type>
+          <oci_image_target id="fd9bd047-fac8-49e7-bd45-64652f713a41"/>
+          <scanner id="8154d8e3-30ee-4959-9151-1863c89a8e62"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="b7f0afbe-bdb3-11e9-9847-28d24461215b">
+        </create_task_response>
+      </response>
+    </example>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
   </command>
   <command>
     <name>create_ticket</name>
@@ -6499,6 +7033,130 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>delete_agent_group</name>
+    <summary>Delete an agent group</summary>
+    <description>
+      <p>
+        The client uses the delete_agent_group command to delete an
+        existing agent group.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+      <p>
+        If ultimate is set to 1, the agent group is permanently deleted.
+        If set to 0, the group is moved to the trashcan and can be restored later.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_group_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or move to trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an agent group</summary>
+      <request>
+        <delete_agent_group agent_group_id="6fca29e3-8b96-4e6b-9ee1-8845680dbda5" ultimate="1"/>
+      </request>
+      <response>
+        <delete_agent_group_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>delete_agent</name>
+    <summary>Delete agents</summary>
+    <description>
+      <p>
+        The client uses the delete_agent command to delete one or more
+        existing agents.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+      <p>
+        The scanner is determined implicitly from the agent UUIDs. It is assumed that
+        all agents belong to the same scanner. If this is not the case, the command
+        will fail.
+      </p>
+    </description>
+    <pattern>
+      <e>agents</e>
+    </pattern>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to delete</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete agents</summary>
+      <request>
+        <delete_agent>
+          <agents>
+            <agent id="c6f1cdc3-8c2c-4b2e-9f43-139d23c7cfd4" />
+          </agents>
+        </delete_agent>
+      </request>
+      <response>
+        <delete_agent_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>delete_alert</name>
     <summary>Delete an alert</summary>
@@ -6570,9 +7228,9 @@ END:VCALENDAR
           <name>asset_id</name>
           <summary>Single asset to delete</summary>
           <description>
-           <p>
-             Overrides report_id.
-           </p>
+            <p>
+              Overrides report_id.
+            </p>
           </description>
           <type>uuid</type>
           <required>1</required>
@@ -6867,6 +7525,60 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CONTAINER_SCANNNING@
+  <command>
+    <name>delete_oci_image_target</name>
+    <summary>Delete an OCI image target</summary>
+    <description>
+      <p>
+        The client uses the delete_oci_image_target command to delete an
+        existing OCI image target.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>oci_image_target_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete an OCI image target</summary>
+      <request>
+        <delete_oci_image_target oci_image_target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_oci_image_target>
+      </request>
+      <response>
+        <delete_oci_image_target_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>delete_override</name>
     <summary>Delete an override</summary>
@@ -7768,6 +8480,1322 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>get_agent_groups</name>
+    <summary>Get agent groups</summary>
+    <description>
+      <p>
+        The client uses the get_agent_groups command to retrieve a list of agent groups.
+      </p>
+    </description>
+    <pattern>
+      <o><e>agent_group_id</e></o>
+      <o><e>filter</e></o>
+      <o><e>filt_id</e></o>
+    </pattern>
+    <ele>
+      <name>agent_group_id</name>
+      <summary>UUID of a specific agent group</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter term</summary>
+      <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filt_id</name>
+      <summary>Filter UUID</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent_group</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>agent_groups</e></o>
+        <o><e>agent_group_count</e></o>
+      </pattern>
+      <ele>
+        <name>agent_group</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>scanner</e>
+          <e>agents</e>
+        </pattern>
+        <ele>
+          <name>agents</name>
+          <summary>Agents assigned to the group</summary>
+          <pattern>
+            <any><e>agent</e></any>
+          </pattern>
+          <ele>
+            <name>agent</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the agent</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          <e>field</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_groups</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_group_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all agent groups</summary>
+      <request>
+        <get_agent_groups/>
+      </request>
+      <response>
+        <get_agent_groups_response status="200" status_text="OK">
+          <agent_group id="cadc0390-f392-4cc5-9fbf-62af5e78a930">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Test Agent Group</name>
+            <comment>Created via gvm-cli for testing</comment>
+            <creation_time>2025-07-15T14:15:31Z</creation_time>
+            <modification_time>2025-07-15T14:15:31Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
+              <name>Agent Controller</name>
+            </scanner>
+            <agents>
+              <agent id="6b9ac61f-aaaa-bbbb-cccc-ddeeff001122">
+                <name>GAT-29</name>
+              </agent>
+              <agent id="6b9ac61f-bbbb-cccc-dddd-eeff00112233">
+                <name>GAT-29-p0MPX0FT</name>
+              </agent>
+            </agents>
+          </agent_group>
+        </get_agent_groups_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agent_installers</name>
+    <summary>Get one or many agent installers</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installers command to get agent installer
+        information.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <summary>ID of single agent installer to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description of the agent installer</summary>
+          </column>
+          <column>
+            <name>content_type</name>
+            <type>text</type>
+            <summary>MIME content type of the agent installer</summary>
+          </column>
+          <column>
+            <name>file_extension</name>
+            <type>text</type>
+            <summary>File extension of the agent installer</summary>
+          </column>
+          <column>
+            <name>version</name>
+            <type>text</type>
+            <summary>Version of the agent installer</summary>
+          </column>
+          <column>
+            <name>last_update</name>
+            <type>iso_time</type>
+            <summary>Time the agent installer was last updated</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include full agent installer details</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan agent installers instead</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent_installer</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>agent_installers</e>
+        <e>agent_installer_count</e>
+      </pattern>
+      <ele>
+        <name>agent_installer</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>description</e>
+          <e>content_type</e>
+          <e>file_extension</e>
+          <e>version</e>
+          <e>checksum</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the agent installer</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the agent installer</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the agent installer is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any targets are using the agent installer</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the agent installer
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the agent installer</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>description</name>
+          <summary>Description of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <summary>MIME content type of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>file_extension</name>
+          <summary>File extension of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>Version of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <summary>Checksum string of the agent installer</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>file_size</name>
+          <summary>File size of the agent installer</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_installers</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First agent installer</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of agent installers</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_installer_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of agent installers after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of agent installers on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export metadata of an agent installer</summary>
+      <request>
+        <get_agent_installers
+          agent_installer_id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d"
+          details="1">
+        </get_agent_installers>
+      </request>
+      <response>
+        <get_agent_installers_response status="200" status_text="OK">
+          <agent_installer id="b993b6f5-f9fb-4e6e-9c94-dd46c00e058d">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Windows 11</name>
+            <comment/>
+            <creation_time>2025-04-11T13:30:00Z</creation_time>
+            <modification_time>2025-04-11T13:32:00Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <description>Greenbone Agent for Windows 11</description>
+            <content_type>application/zip</content_type>
+            <file_extension>zip</file_extension>
+            <version>1.3.0</version>
+            <checksum>sha256:3bbd04dd65dbb8b3f272bd8013d0d4b12fe54be30bb81f3e5df66306fe0fa0d3</checksum>
+          </agent_installer>
+        </get_agent_installers_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agent_installer_file</name>
+    <summary>Get the file of an agent installer</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installer_file to get the
+        file of an agent installer.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_installer_id</name>
+        <summary>UUID of the agent installer to get the file of</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>file</e>
+      </pattern>
+      <ele>
+        <name>file</name>
+        <pattern>
+          <attrib>
+            <name>agent_installer_id</name>
+            <type>uuid</type>
+            <required>1</required>
+            <summary>UUID of the agent installer</summary>
+          </attrib>
+          <e>name</e>
+          <e>content_type</e>
+          <e>file_extension</e>
+          <e>checksum</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <type>text</type>
+          <summary>Name of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <type>text</type>
+          <summary>MIME content type of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>file_extension</name>
+          <type>text</type>
+          <summary>File extension of the agent installer</summary>
+        </ele>
+        <ele>
+          <name>checksum</name>
+          <type>text</type>
+          <summary>Checksum the agent installer</summary>
+        </ele>
+        <ele>
+          <name>content</name>
+          <type>text</type>
+          <summary>The base-64 encoded file content</summary>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Export an agent installer file</summary>
+      <request>
+        <get_agent_installer_file agent_installer_id="xy"/>
+      </request>
+      <response>
+        <get_agent_installer_file_response>
+        </get_agent_installer_file_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agents</name>
+    <summary>Get agents</summary>
+    <description>
+      <p>
+        The client uses the get_agents command to retrieve a list of registered agents.
+      </p>
+      <p>
+        The response includes detailed information about each agent, including metadata,
+        status, config, scanner association, and IP addresses.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_id</name>
+        <summary>ID of a specific agent</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>Index of the first item returned, starting at 1 (e.g. first=5 starts at the 5th item)</summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Agent unique identifier</summary>
+          </column>
+          <column>
+            <name>agent_id</name>
+            <type>text</type>
+            <summary>Agent ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name of the agent</summary>
+          </column>
+          <column>
+            <name>hostname</name>
+            <type>text</type>
+            <summary>Hostname of the agent machine</summary>
+          </column>
+          <column>
+            <name>scanner</name>
+            <type>text</type>
+            <summary>UUID of the scanner the agent belongs to</summary>
+          </column>
+          <column>
+            <name>authorized</name>
+            <type>integer</type>
+            <summary>Whether the agent is authorized (1) or not (0)</summary>
+          </column>
+          <column>
+            <name>connection_status</name>
+            <type>text</type>
+            <summary>Status of agent connection</summary>
+          </column>
+          <column>
+            <name>last_update</name>
+            <type>iso_time</type>
+            <summary>Last time the agent was updated</summary>
+          </column>
+          <column>
+            <name>last_updater_heartbeat</name>
+            <type>iso_time</type>
+            <summary>Last heartbeat timestamp received from updater</summary>
+          </column>
+          <column>
+            <name>updater_version</name>
+            <type>text</type>
+            <summary>Updater version string</summary>
+          </column>
+          <column>
+            <name>agent_version</name>
+            <type>text</type>
+            <summary>Agent version string</summary>
+          </column>
+          <column>
+            <name>operating_system</name>
+            <type>text</type>
+            <summary>Operating system</summary>
+          </column>
+          <column>
+            <name>architecture</name>
+            <type>text</type>
+            <summary>CPU architecture (e.g., amd64)</summary>
+          </column>
+          <column>
+            <name>update_to_latest</name>
+            <type>integer</type>
+            <summary>Update-to-latest flag (1/0)</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Agent comment field</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>id</name>
+            <type>uuid</type>
+            <summary>ID alias for agent UUID</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>Filter UUID</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>agent</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>agents</e>
+        <e>agent_count</e>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>hostname</e>
+          <e>agent_id</e>
+          <e>authorized</e>
+          <e>connection_status</e>
+          <e>last_update</e>
+          <e>last_updater_heartbeat</e>
+          <e>schedule</e>
+          <e>scanner</e>
+          <any><e>ip</e></any>
+          <e>updater_version</e>
+          <e>agent_version</e>
+          <e>operating_system</e>
+          <e>architecture</e>
+          <e>update_to_latest</e>
+          <e>config</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the agent</summary>
+          <pattern><e>name</e></pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the owner</summary>
+            <pattern><type>name</type></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the agent</summary>
+          <pattern><type>name</type></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment on the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation timestamp</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Modification timestamp</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether agent is writable</summary>
+          <pattern><type>boolean</type></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether agent is currently in use</summary>
+          <pattern><type>boolean</type></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>Permissions current user has on the agent</summary>
+          <pattern><any><e>permission</e></any></pattern>
+          <ele>
+            <name>permission</name>
+            <pattern><e>name</e></pattern>
+            <ele>
+              <name>name</name>
+              <summary>Permission name</summary>
+              <pattern><type>name</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>hostname</name>
+          <summary>Hostname of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>agent_id</name>
+          <summary>Agent identifier string</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>authorized</name>
+          <summary>Authorization flag</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>connection_status</name>
+          <summary>Connection status of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>last_update</name>
+          <summary>Timestamp of last update</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>last_updater_heartbeat</name>
+          <summary>Timestamp of last heartbeat received from updater</summary>
+          <pattern><type>iso_time</type></pattern>
+        </ele>
+        <ele>
+          <name>schedule</name>
+          <summary>Agent schedule</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>scanner</name>
+          <summary>Associated scanner</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the scanner</summary>
+            <pattern><type>name</type></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ip</name>
+          <summary>IP addresses of the agent</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>updater_version</name>
+          <summary>Updater version string (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>agent_version</name>
+          <summary>Agent version string (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>operating_system</name>
+          <summary>Operating system (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>architecture</name>
+          <summary>CPU architecture (e.g., amd64)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>update_to_latest</name>
+          <summary>Flag to update to latest version (1/0)</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>config</name>
+          <summary>Structured agent-controller scan configuration</summary>
+          <pattern>
+            <e>agent_control</e>
+            <e>agent_script_executor</e>
+            <e>heartbeat</e>
+          </pattern>
+          <ele>
+            <name>agent_control</name>
+            <pattern><e>retry</e></pattern>
+            <ele>
+              <name>retry</name>
+              <pattern>
+                <e>attempts</e>
+                <e>delay_in_seconds</e>
+                <e>max_jitter_in_seconds</e>
+              </pattern>
+              <ele>
+                <name>attempts</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>delay_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>max_jitter_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>agent_script_executor</name>
+            <pattern>
+              <e>bulk_size</e>
+              <e>bulk_throttle_time_in_ms</e>
+              <e>indexer_dir_depth</e>
+              <any><e>scheduler_cron_time</e></any>
+            </pattern>
+            <ele>
+              <name>bulk_size</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>bulk_throttle_time_in_ms</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>indexer_dir_depth</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>scheduler_cron_time</name>
+              <pattern><any><e>item</e></any></pattern>
+              <ele>
+                <name>item</name>
+                <summary>A cron expression defining execution schedule</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>heartbeat</name>
+            <pattern>
+              <e>interval_in_seconds</e>
+              <e>miss_until_inactive</e>
+            </pattern>
+            <ele>
+              <name>interval_in_seconds</name>
+              <summary>Expected heartbeat interval from the updater/agent</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>miss_until_inactive</name>
+              <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Parsed filter keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Filter column</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Operator</summary>
+              <pattern><alts><alt>=</alt><alt>:</alt><alt>~</alt><alt>&gt;</alt><alt>&lt;</alt></alts></pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern><e>field</e></pattern>
+        <ele>
+          <name>field</name>
+          <pattern><e>order</e></pattern>
+          <ele>
+            <name>order</name>
+            <pattern><alts><alt>ascending</alt><alt>descending</alt></alts></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agents</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>agent_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Count after filtering</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Page count</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Retrieve a filtered agent result</summary>
+      <request>
+        <get_agents/>
+      </request>
+      <response>
+        <get_agents_response status="200" status_text="OK">
+          <agent id="62462fe0-5834-4630-afc2-0d040c63487c">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>GAT-29-p0MPX0FT</name>
+            <comment>Routine sync update</comment>
+            <creation_time>2025-05-30T06:24:51Z</creation_time>
+            <modification_time>2025-06-03T09:20:26Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <hostname>GAT-29</hostname>
+            <agent_id>GAT-29-p0MPX0FT</agent_id>
+            <authorized>1</authorized>
+            <connection_status>inactive</connection_status>
+            <last_update>2025-05-23T08:25:17Z</last_update>
+            <last_updater_heartbeat>2025-05-23T08:24:59Z</last_updater_heartbeat>
+            <schedule>@every 8h</schedule>
+            <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
+              <name>Agent Controller</name>
+            </scanner>
+            <ip>127.0.0.1</ip>
+            <ip>::1</ip>
+            <ip>192.168.79.157</ip>
+            <ip>fe80::fe3e:acb9:1b5b:27da</ip>
+            <ip>192.168.1.11</ip>
+            <updater_version>1.2.3</updater_version>
+            <agent_version>0.9.0</agent_version>
+            <operating_system>Linux</operating_system>
+            <architecture>amd64</architecture>
+            <update_to_latest>0</update_to_latest>
+            <config>
+              <agent_control>
+                <retry>
+                  <attempts>3</attempts>
+                  <delay_in_seconds>10</delay_in_seconds>
+                  <max_jitter_in_seconds>5</max_jitter_in_seconds>
+                </retry>
+              </agent_control>
+              <agent_script_executor>
+                <bulk_size>50</bulk_size>
+                <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
+                <indexer_dir_depth>3</indexer_dir_depth>
+                <scheduler_cron_time>
+                  <item>0 0 * * *</item>
+                </scheduler_cron_time>
+              </agent_script_executor>
+              <heartbeat>
+                <interval_in_seconds>600</interval_in_seconds>
+                <miss_until_inactive>1</miss_until_inactive>
+              </heartbeat>
+            </config>
+          </agent>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <agents start="1" max="1000"/>
+          <agent_count>
+            <filtered>1</filtered>
+            <page>1</page>
+          </agent_count>
+        </get_agents_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>get_aggregates</name>
     <summary>Get aggregates of various resources</summary>
@@ -9533,7 +11561,7 @@ END:VCALENDAR
             <pattern>text</pattern>
           </ele>
           <ele>
-<!-- FIX hosts/host_count? -->
+            <!-- FIX hosts/host_count? -->
             <name>installs</name>
             <summary>
               Number of hosts on which OS has been detected as the best match
@@ -10846,6 +12874,13 @@ END:VCALENDAR
         <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
+      @IF_ENABLE_CONTAINER_SCANNNING@
+      <attrib>
+        <name>oci_image_targets</name>
+        <summary>Whether to include a list of OCI image targets using the credentials</summary>
+        <type>boolean</type>
+      </attrib>
+      @ENDIF_ENABLE_CONTAINER_SCANNNING@
       <attrib>
         <name>format</name>
         <type>
@@ -10904,6 +12939,9 @@ END:VCALENDAR
           <o><e>certificate_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
+          @IF_ENABLE_CONTAINER_SCANNNING@
+          <o><e>oci_image_targets</e></o>
+          @ENDIF_ENABLE_CONTAINER_SCANNNING@
           <o>
             <or>
               <e>public_key</e>
@@ -10911,6 +12949,9 @@ END:VCALENDAR
               <e>certificate</e>
             </or>
           </o>
+          <o><e>kdc</e></o>
+          <o><e>kdcs</e></o>
+          <o><e>realm</e></o>
         </pattern>
         <ele>
           <name>owner</name>
@@ -11037,6 +13078,7 @@ END:VCALENDAR
           <summary>The type of the credential</summary>
           <description>
             <p>cc: Client certificate</p>
+            <p>krb5: Kerberos 5</p>
             <p>pgp: PGP encryption key</p>
             <p>pw: Password only</p>
             <p>smime: S/MIME certificate</p>
@@ -11047,6 +13089,7 @@ END:VCALENDAR
           <pattern>
             <alts>
               <alt>cc</alt>
+              <alt>krb5</alt>
               <alt>pgp</alt>
               <alt>pw</alt>
               <alt>smime</alt>
@@ -11174,6 +13217,37 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
+        @IF_ENABLE_CONTAINER_SCANNNING@
+        <ele>
+          <name>oci_image_targets</name>
+          <summary>All OCI image targets using this credential</summary>
+          <pattern>
+            <any><e>oci_image_target</e></any>
+          </pattern>
+          <ele>
+            <name>oci_image_target</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the OCI image target</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the OCI image target</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
         <ele>
           <name>public_key</name>
           <pattern>text</pattern>
@@ -11198,6 +13272,31 @@ END:VCALENDAR
         <ele>
           <name>certificate</name>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>kdc</name>
+          <pattern>text</pattern>
+          <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
+        </ele>
+        <ele>
+          <name>kdcs</name>
+          <summary>Multiple Kerberos KDCs</summary>
+          <description>
+            <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+          </description>
+          <pattern>
+            <any><e>kdc</e></any>
+          </pattern>
+          <ele>
+            <name>kdc</name>
+            <summary>A single Kerberos Key Distribution Center</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>realm</name>
+          <pattern>text</pattern>
+          <summary>The Kerberos realm</summary>
         </ele>
       </ele>
       <ele>
@@ -11421,6 +13520,546 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+@ENDIF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>get_credential_stores</name>
+    <summary>Get one or many credential stores</summary>
+    <description>
+      The client uses the get_credential_stores command to get
+      information about credential stores, which are interfaces to
+      external services for managing credential information.
+      If the command sent by the client was valid, the manager will
+      reply with a list of credential stores to the client.
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of single credential store to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>version</name>
+            <type>text</type>
+            <summary>The version of the credential store data</summary>
+          </column>
+          <column>
+            <name>active</name>
+            <type>boolean</type>
+            <summary>Whether the credential store is active</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>The host address or hostname of the external service</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>credential_store</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>credential_stores</e>
+        <e>credential_store_count</e>
+      </pattern>
+      <ele>
+        <name>credential_store</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <o><e>permissions</e></o>
+          <e>version</e>
+          <e>active</e>
+          <e>host</e>
+          <e>path</e>
+          <e>preferences</e>
+          <e>selectors</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the credential store</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the credential store</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the credential store</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the credential store was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the credential store was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether this credential store is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether this credential store is in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the credential store
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the credential store</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>version</name>
+          <summary>Version of the data format and connector used to query the external credential service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>active</name>
+          <summary>Whether the credential store is active and can be use in credentials</summary>
+          <pattern>
+            <type>boolean</type>
+          </pattern>
+        </ele>
+        <ele>
+          <name>host</name>
+          <summary>Host address or hostname of the external service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>path</name>
+          <summary>Path of the external service</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>preferences</name>
+          <summary>Store specific preferences for querying the external service</summary>
+          <description>
+            Preferences apply to all credentials using the credential store and
+            mostly consist of data used to connect to and authenticate with the
+            credential store like client certificates and private keys.
+          </description>
+          <pattern>
+            <any><e>preference</e></any>
+          </pattern>
+          <ele>
+            <name>preference</name>
+            <pattern>
+              <attrib>
+                <name>secret</name>
+                <type>boolean</type>
+                <summary>Whether the preference is encrypted and its value is not shown in the response</summary>
+              </attrib>
+              <e>name</e>
+              <e>type</e>
+              <e>pattern</e>
+              <e>passphrase_name</e>
+              <o><e>value</e></o>
+              <o><e>default_value</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the preference</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>type</name>
+              <summary>Data type of the preference</summary>
+              <pattern>
+                <alts>
+                  <alt>string</alt>
+                  <alt>integer</alt>
+                  <alt>float</alt>
+                  <alt>base64</alt>
+                  <alt>x509_certs</alt>
+                  <alt>x509_privkey</alt>
+                  <alt>pkcs12_file</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>pattern</name>
+              <summary>Optional regular expression. If given, string values must match</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>passphrase_name</name>
+              <summary>Optional name of a passphrase preference for private keys</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the preference, hidden if preference is a secret</summary>
+              <description>
+                String, integers and floating point numbers are given as
+                plain text while base64 and the x509 types are Base64 encoded
+                binary data that will be decoded for use and validation.
+              </description>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default_value</name>
+              <summary>
+                Default value of the preference, hidden if preference is
+                a secret
+              </summary>
+              <description>
+                The same encoding rules apply here as for the value.
+                Secrets are empty by default.
+              </description>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>selectors</name>
+          <summary>
+            Credential specific data for selecting a specific credential
+            data set
+          </summary>
+          <pattern>
+            <any><e>selector</e></any>
+          </pattern>
+          <description>
+            Selector values are set individually in each credential using the
+            credential store and are usually unique identifiers of the data
+            in the external service. The credential store defines the names,
+            default values and and supported credential types of selectors.
+          </description>
+          <ele>
+            <name>selector</name>
+            <pattern>
+              <e>name</e>
+              <e>pattern</e>
+              <e>default_value</e>
+              <e>credential_types</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>pattern</name>
+              <summary>Optional regular expression. If given, string values must match</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>default_value</name>
+              <summary>Default value of the selector</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>credential_types</name>
+              <summary>List of credential types that use the selector</summary>
+              <pattern>
+                <any><e>credential_type</e></any>
+              </pattern>
+              <ele>
+                <name>credential_type</name>
+                <pattern>text</pattern>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>credential_stores</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First credential store</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of credential stores</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>credential_store_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of credential stores after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of credential stores on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+  </command>
+@ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>get_features</name>
     <summary>Get a list of optional features</summary>
@@ -11451,6 +14090,12 @@ END:VCALENDAR
         <name>feature</name>
         <pattern>
           <attrib>
+            <name>compiled_in</name>
+            <type>boolean</type>
+            <summary>Whether the feature exists in the binary</summary>
+            <required>1</required>
+          </attrib>
+          <attrib>
             <name>enabled</name>
             <type>boolean</type>
             <summary>Whether the feature is enabled</summary>
@@ -11472,9 +14117,21 @@ END:VCALENDAR
         </get_feeds>
       </request>
       <response>
-        <get_features_response status_text="OK" status="200">
-          <feature enabled="0">
+        <get_features_response status="200" status_text="OK">
+          <feature compiled_in="1" enabled="0">
             <name>OPENVASD</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>ENABLE_CONTAINER_SCANNING</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>ENABLE_AGENTS</name>
+          </feature>
+          <feature compiled_in="0" enabled="0">
+            <name>ENABLE_CREDENTIAL_STORES</name>
+          </feature>
+          <feature compiled_in="1" enabled="0">
+            <name>FEED_VT_METADATA</name>
           </feature>
         </get_features_response>
       </response>
@@ -11745,7 +14402,7 @@ END:VCALENDAR
         <any><e>filter</e></any>
         <e>filters</e>
         <e>sort</e>
-        <e>filters</e>
+        <e>filters2</e>
         <e>filter_count</e>
       </pattern>
       <ele>
@@ -12002,6 +14659,7 @@ END:VCALENDAR
         </ele>
       </ele>
       <ele>
+        <id>filters2</id>
         <name>filters</name>
         <pattern>
           <attrib>
@@ -13836,6 +16494,7 @@ END:VCALENDAR
             <pattern>
               <e>model</e>
               <e>model_type</e>
+              <e>sensor</e>
             </pattern>
             <ele>
               <name>model</name>
@@ -14967,6 +17626,512 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CONTAINER_SCANNNING@
+  <command>
+    <name>get_oci_image_targets</name>
+    <summary>Get one or many OCI image targets</summary>
+    <description>
+      The client uses the get_oci_image_targets command to get oci
+      image targets information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>oci_image_target_id</name>
+        <summary>ID of single OCI image target to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separted value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>image_references</name>
+            <type>text</type>
+            <summary>Comma-separated list of image references</summary>
+          </column>
+          <column>
+            <name>credential_name</name>
+            <type>name</type>
+            <summary>Name of the credential</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan OCI image targets instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Whether to include list of tasks that use the OCI image target</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>oci_image_target</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>oci_image_targets</e>
+        <e>oci_image_target_count</e>
+      </pattern>
+      <ele>
+        <name>oci_image_target</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>image_refrences</e>
+          <e>credential</e>
+          <o><e>tasks</e></o>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the OCI image target</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the OCI image target</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the OCI image target</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the target was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the target was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>image_refrences</name>
+          <summary>A list of OCI image refrences</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the target is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the OCI image target</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the OCI image target
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the OCI image target</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the credential</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the OCI image target</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>oci_image_targets</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First target</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of OCI image targets</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>oci_image_target_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of OCI image targets after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of OCI image targets on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get one or many OCI Image targets</summary>
+      <request>
+        <get_oci_image_targets></get_oci_image_targets>
+      </request>
+      <response>
+        <get_oci_image_targets_response status="200" status_text="OK">
+          <oci_image_target id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>OCI image target</name>
+            <comment></comment>
+            <creation_time>2018-08-29T20:21:33Z</creation_time>
+            <modification_time>2018-08-29T20:21:33Z</modification_time>
+            <writable>0</writable>
+            <in_use>7</in_use>
+            <image_references>oci://myregistry/my/image:mytag1,oci://myregistry/my/image:mytag2</image_references>
+            <credential id="">
+              <name></name>
+            </credential>
+          </oci_image_target>
+          <truncated>...</truncated>
+        </get_oci_image_targets_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single OCI image target, including tasks using the target</summary>
+      <request>
+        <get_oci_image_targets oci_image_target_id="1f28d970-17ef-4c69-ba8a-13827059f2b9" tasks="1">
+        </get_oci_image_targets>
+      </request>
+      <response>
+        <get_oci_image_targets_response status="200" status_text="OK">
+          <oci_image_target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+            <name>dik</name>
+            <comment>dik mm</comment>
+            <creation_time>2018-08-29T20:21:33Z</creation_time>
+            <modification_time>2018-08-29T20:21:33Z</modification_time>
+            <writable>0</writable>
+            <in_use>4</in_use>
+            <image_references>oci://myregistry/my/image:mytag1,oci://myregistry/my/image:mytag2</image_references>
+            <credential id="">
+              <name></name>
+            </credential>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>dik mm</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </oci_image_target>
+        </get_oci_image_targets_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>get_overrides</name>
     <summary>Get one or many overrides</summary>
@@ -17276,6 +20441,17 @@ END:VCALENDAR
             <type>boolean</type>
             <summary>Whether the report format was created from the feed</summary>
           </column>
+          <column>
+            <name>report_type</name>
+            <type>
+              <alts>
+                <alt>scan</alt>
+                <alt>audit</alt>
+                <alt>all</alt>
+              </alts>
+            </type>
+            <summary>The type of the report compatible with the report format</summary>
+          </column>
         </filter_keywords>
       </attrib>
       <attrib>
@@ -17361,6 +20537,7 @@ END:VCALENDAR
           <e>active</e>
           <e>predefined</e>
           <e>configurable</e>
+          <e>report_type</e>
           <o><e>deprecated</e></o>
           <any><e>param</e></any>
         </pattern>
@@ -17673,6 +20850,17 @@ END:VCALENDAR
           <name>configurable</name>
           <summary>Whether the report format can be used with a report config</summary>
           <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>report_type</name>
+          <summary>The type of the report compatible with the report format</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt>all</alt>
+            </alts>
+          </pattern>
         </ele>
         <ele>
           <name>deprecated</name>
@@ -18274,6 +21462,11 @@ END:VCALENDAR
             <summary>Number of high severity results</summary>
           </column>
           <column>
+            <name>critical</name>
+            <type>integer</type>
+            <summary>Number of critical severity results</summary>
+          </column>
+          <column>
             <name>hosts</name>
             <type>integer</type>
             <summary>Total number of hosts</summary>
@@ -18307,6 +21500,11 @@ END:VCALENDAR
             <name>high_per_host</name>
             <type>integer</type>
             <summary>Number of high severity results per host with results</summary>
+          </column>
+          <column>
+            <name>critical_per_host</name>
+            <type>integer</type>
+            <summary>Number of critical severity results per host with results</summary>
           </column>
           <column>
             <name>start_time</name>
@@ -18418,15 +21616,15 @@ END:VCALENDAR
         <type>boolean</type>
       </attrib>
       <attrib>
-          <name>usage_type</name>
-          <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
-          <type>
-            <alts>
-              <alt>scan</alt>
-              <alt>audit</alt>
-              <alt></alt>
-            </alts>
-          </type>
+        <name>usage_type</name>
+        <summary>Optional usage type to limit the reports to. Affects total count unlike filter</summary>
+        <type>
+          <alts>
+            <alt>scan</alt>
+            <alt>audit</alt>
+            <alt></alt>
+          </alts>
+        </type>
       </attrib>
     </pattern>
     <response>
@@ -18615,6 +21813,7 @@ END:VCALENDAR
               </sort>
               <filters id="0">
                 <term>first=1 rows=-1 sort=name</term>
+                <filter>Critical</filter>
                 <filter>High</filter>
                 <filter>Medium</filter>
                 <filter>Low</filter>
@@ -18659,14 +21858,26 @@ END:VCALENDAR
               <result_count>
                 <full>10</full>
                 <filtered>10</filtered>
+                <critical>
+                  <full>0</full>
+                  <filtered>0</filtered>
+                </critical>
                 <hole>
                   <full>0</full>
                   <filtered>0</filtered>
                 </hole>
+                <high>
+                  <full>0</full>
+                  <filtered>0</filtered>
+                </high>
                 <info>
                   <full>7</full>
                   <filtered>7</filtered>
                 </info>
+                <low>
+                  <full>7</full>
+                  <filtered>7</filtered>
+                </low>
                 <log>
                   <full>0</full>
                   <filtered>0</filtered>
@@ -18675,6 +21886,10 @@ END:VCALENDAR
                   <full>3</full>
                   <filtered>3</filtered>
                 </warning>
+                <medium>
+                  <full>3</full>
+                  <filtered>3</filtered>
+                </medium>
               </result_count>
               <task id="13bb418a-4220-4575-b35b-ec398bff7417">
                 <name>dik mm</name>
@@ -19315,7 +22530,7 @@ END:VCALENDAR
               </severities>
               <tags>NOTAGS</tags>
               <refs>
-                 <ref type="cve" id="CVE-2009-3095"/>
+                <ref type="cve" id="CVE-2009-3095"/>
               </refs>
             </nvt>
             <threat>Medium</threat>
@@ -19377,7 +22592,7 @@ END:VCALENDAR
               </severities>
               <tags>NOTAGS</tags>
               <refs>
-                 <ref type="cve" id="CVE-2009-3095"/>
+                <ref type="cve" id="CVE-2009-3095"/>
               </refs>
             </nvt>
             <threat>High</threat>
@@ -19931,15 +23146,20 @@ END:VCALENDAR
             <type>integer</type>
             <summary>Port of the scanner</summary>
           </column>
-         <column>
+          <column>
             <name>type</name>
-            <type>
-              <alts>
-                <alt>1</alt>
-                <alt>2</alt>
-              </alts>
-            </type>
-            <summary>Scanner type: '1' for OSP, '2' for OpenVAS (classic)</summary>
+            <type>scanner_type</type>
+            <summary>Type of the scanner</summary>
+          </column>
+          <column>
+            <name>relay_host</name>
+            <type>text</type>
+            <summary>Relay host of the scanner</summary>
+          </column>
+          <column>
+            <name>relay_port</name>
+            <type>integer</type>
+            <summary>Relay port of the scanner</summary>
           </column>
         </filter_keywords>
       </attrib>
@@ -20002,8 +23222,14 @@ END:VCALENDAR
           <e>type</e>
           <e>ca_pub</e>
           <e>credential</e>
+          <e>relay_host</e>
+          <e>relay_port</e>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
+          <o><e>info</e></o>
+        @IF_ENABLE_AGENTS@
+          <o><e>agent_control_config</e></o>
+        @ENDIF_ENABLE_AGENTS@
         </pattern>
         <ele>
           <name>owner</name>
@@ -20187,6 +23413,16 @@ END:VCALENDAR
           </ele>
         </ele>
         <ele>
+          <name>relay_host</name>
+          <summary>Optional relay host of the scanner</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>relay_port</name>
+          <summary>Optional relay port of the scanner</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
           <name>configs</name>
           <pattern>
             <any><e>config</e></any>
@@ -20228,6 +23464,7 @@ END:VCALENDAR
                 <required>1</required>
               </attrib>
               <e>name</e>
+              <e>usage_type</e>
               <o><e>permissions</e></o>
             </pattern>
             <ele>
@@ -20236,12 +23473,179 @@ END:VCALENDAR
               <pattern><t>name</t></pattern>
             </ele>
             <ele>
+              <name>usage_type</name>
+              <summary>The usage type of the task</summary>
+              <pattern>
+                <alts>
+                  <alt>scan</alt>
+                  <alt>policy</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
               <name>permissions</name>
               <summary>Permissions the user has on the task</summary>
               <pattern></pattern>
             </ele>
           </ele>
         </ele>
+        <ele>
+          <name>info</name>
+          <pattern>
+            <o><e>scanner</e></o>
+            <o><e>daemon</e></o>
+            <o><e>protocol</e></o>
+            <o><e>description</e></o>
+            <o><e>params</e></o>
+          </pattern>
+          <ele>
+            <name>scanner</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>daemon</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner daemon</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner daemon</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>protocol</name>
+            <pattern>
+              <e>name</e>
+              <e>version</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the scanner protocol</summary>
+              <pattern></pattern>
+            </ele>
+            <ele>
+              <name>version</name>
+              <summary>Version of the scanner protocol</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the scanner.</summary>
+          </ele>
+          <ele>
+            <name>params</name>
+            <pattern>
+              <any><e>param</e></any>
+            </pattern>
+            <ele>
+              <name>param</name>
+              <summary>Parameter of the scanner.</summary>
+            </ele>
+          </ele>
+        </ele>
+      @IF_ENABLE_AGENTS@
+        <ele>
+          <name>agent_control_config</name>
+          <summary>Structured agent-controller scan configuration</summary>
+          <pattern>
+            <e>agent_control</e>
+            <e>agent_script_executor</e>
+            <e>heartbeat</e>
+          </pattern>
+          <ele>
+            <name>agent_control</name>
+            <pattern><e>retry</e></pattern>
+            <ele>
+              <name>retry</name>
+              <pattern>
+                <e>attempts</e>
+                <e>delay_in_seconds</e>
+                <e>max_jitter_in_seconds</e>
+              </pattern>
+              <ele>
+                <name>attempts</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>delay_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+              <ele>
+                <name>max_jitter_in_seconds</name>
+                <pattern><type>integer</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>agent_script_executor</name>
+            <pattern>
+              <e>bulk_size</e>
+              <e>bulk_throttle_time_in_ms</e>
+              <e>indexer_dir_depth</e>
+              <any><e>scheduler_cron_time</e></any>
+            </pattern>
+            <ele>
+              <name>bulk_size</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>bulk_throttle_time_in_ms</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>indexer_dir_depth</name>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>scheduler_cron_time</name>
+              <pattern><any><e>item</e></any></pattern>
+              <ele>
+                <name>item</name>
+                <summary>A cron expression defining execution schedule</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+            </ele>
+          </ele>
+          <ele>
+            <name>heartbeat</name>
+            <pattern>
+              <e>interval_in_seconds</e>
+              <e>miss_until_inactive</e>
+            </pattern>
+            <ele>
+              <name>interval_in_seconds</name>
+              <summary>Expected heartbeat interval from the updater/agent</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+            <ele>
+              <name>miss_until_inactive</name>
+              <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+              <pattern><type>integer</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      @ENDIF_ENABLE_AGENTS@
       </ele>
       <ele>
         <name>filters</name>
@@ -20382,6 +23786,7 @@ END:VCALENDAR
             <tasks>
               <task id="813864a9-d3fd-44b3-8717-972bfb01dfc0">
                 <name>Debian desktops</name>
+                <usage_type>scan</usage_type>
               </task>
               <truncated>...</truncated>
             </tasks>
@@ -20390,6 +23795,59 @@ END:VCALENDAR
         </get_scanners_response>
       </response>
     </example>
+  @IF_ENABLE_AGENTS@
+    <example>
+      <summary>Get full details of a single Agent Control scanner</summary>
+      <request>
+        <get_scanners details='1' scanner_id="c33864a9-d3fd-44b3-8717-972bfb01dfcf"/>
+      </request>
+      <response>
+        <get_scanners_response status="200" status_text="OK">
+          <scanner id="c33864a9-d3fd-44b3-8717-972bfb01dfcf">
+            <name>Default Scanner</name>
+            <comment></comment>
+            <creation_time>2014-01-01T13:57:25+01:00</creation_time>
+            <modification_time>2014-01-18T12:07:36+01:00</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <host>localhost</host>
+            <port>9391</port>
+            <type>2</type>
+            <ca_pub>...</ca_pub>
+            <key_pub>...</key_pub>
+            <tasks>
+              <task id="813864a9-d3fd-44b3-8717-972bfb01dfc0">
+                <name>Debian desktops</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </scanner>
+          <truncate>...</truncate>
+          <agent_control_config>
+            <agent_control>
+              <retry>
+                <attempts>5</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>10</indexer_dir_depth>
+              <scheduler_cron_time is_list="1">
+                <item>0 23 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>600</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </agent_control_config>
+        </get_scanners_response>
+      </response>
+    </example>
+  @ENDIF_ENABLE_AGENTS@
   </command>
   <command>
     <name>get_schedules</name>
@@ -21805,6 +25263,7 @@ END:VCALENDAR
           <e>ssh_credential</e>
           <e>smb_credential</e>
           <e>esxi_credential</e>
+          <e>krb5_credential</e>
           <e>snmp_credential</e>
           <e>ssh_elevate_credential</e>
           <e>permissions</e>
@@ -21968,7 +25427,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22004,7 +25463,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22035,7 +25494,38 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the LSC credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>krb5_credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the Kerberos 5 LSC credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22100,7 +25590,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the credential</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22133,7 +25623,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the port_list</summary>
             <pattern></pattern>
           </ele>
           <ele>
@@ -22145,9 +25635,22 @@ END:VCALENDAR
         <ele>
           <name>alive_tests</name>
           <summary>Which alive tests to use</summary>
+          <description>
+            A string representation in the format of the old predefined
+            alive test selections is also included, but its use is deprecated.
+          </description>
           <pattern>
-            <t>alive_test</t>
+            <any><e>alive_test</e></any>
           </pattern>
+          <ele>
+            <name>alive_test</name>
+            <summary>
+              A single alive test to use
+            </summary>
+            <pattern>
+              <t>alive_test</t>
+            </pattern>
+          </ele>
         </ele>
         <ele>
           <name>reverse_lookup_only</name>
@@ -22589,6 +26092,11 @@ END:VCALENDAR
             <summary>Number of high severity results</summary>
           </column>
           <column>
+            <name>critical</name>
+            <type>integer</type>
+            <summary>Number of critical severity results</summary>
+          </column>
+          <column>
             <name>hosts</name>
             <type>integer</type>
             <summary>Total number of hosts</summary>
@@ -22622,6 +26130,11 @@ END:VCALENDAR
             <name>high_per_host</name>
             <type>integer</type>
             <summary>Number of high severity results per host with results</summary>
+          </column>
+          <column>
+            <name>critical_per_host</name>
+            <type>integer</type>
+            <summary>Number of critical severity results per host with results</summary>
           </column>
           <column>
             <name>target</name>
@@ -22730,6 +26243,12 @@ END:VCALENDAR
               <e>usage_type</e>
               <e>config</e>
               <e>target</e>
+              @IF_ENABLE_CONTAINER_SCANNNING@
+              <o><e>oci_image_target</e></o>
+              @ENDIF_ENABLE_CONTAINER_SCANNNING@
+              @IF_ENABLE_AGENTS@
+              <o><e>agent_group</e></o>
+              @ENDIF_ENABLE_AGENTS@
               <e>hosts_ordering</e>
               <e>scanner</e>
               <e>alert</e>
@@ -22945,6 +26464,70 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
+        @IF_ENABLE_CONTAINER_SCANNNING@
+        <ele>
+          <name>oci_image_target</name>
+          <summary>The OCI images scanned by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+              <summary>ID of OCI image target</summary>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the OCI image target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_AGENTS@
+        <ele>
+          <name>agent_group</name>
+          <summary>The Agent Group used by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+              <summary>ID of Agent Group</summary>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the Agent Group target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_AGENTS@
         <ele>
           <name>hosts_ordering</name>
           <summary>The order hosts are scanned in</summary>
@@ -22975,7 +26558,7 @@ END:VCALENDAR
           </ele>
           <ele>
             <name>permissions</name>
-            <summary>Permissions the user has on the task</summary>
+            <summary>Permissions the user has on the scanner</summary>
             <pattern></pattern>
           </ele>
         </ele>
@@ -23149,8 +26732,8 @@ END:VCALENDAR
               <e>timestamp</e>
               <e>scan_end</e>
               <o>
-              <e>result_count</e>
-              <e>severity</e>
+                <e>result_count</e>
+                <e>severity</e>
               </o>
               <o><e>compliance_count</e></o>
             </pattern>
@@ -23169,8 +26752,12 @@ END:VCALENDAR
                 <e>false_positive</e>
                 <e>log</e>
                 <e>info</e>
+                <e>low</e>
                 <e>warning</e>
+                <e>medium</e>
                 <e>hole</e>
+                <e>high</e>
+                <e>critical</e>
               </pattern>
               <ele>
                 <name>false_positive</name>
@@ -23183,13 +26770,32 @@ END:VCALENDAR
               <ele>
                 <name>info</name>
                 <pattern><t>integer</t></pattern>
+                <summary>This will be deprecated. Use low instead</summary>
+              </ele>
+              <ele>
+                <name>low</name>
+                <pattern><t>integer</t></pattern>
               </ele>
               <ele>
                 <name>warning</name>
                 <pattern><t>integer</t></pattern>
+                <summary>This will be deprecated. Use medium instead</summary>
+              </ele>
+              <ele>
+                <name>medium</name>
+                <pattern><t>integer</t></pattern>
               </ele>
               <ele>
                 <name>hole</name>
+                <pattern><t>integer</t></pattern>
+                <summary>This will be deprecated. Use high instead</summary>
+              </ele>
+              <ele>
+                <name>high</name>
+                <pattern><t>integer</t></pattern>
+              </ele>
+              <ele>
+                <name>critical</name>
                 <pattern><t>integer</t></pattern>
               </ele>
             </ele>
@@ -23424,10 +27030,14 @@ END:VCALENDAR
               <report id="f0fdf522-276d-4893-9274-fb8699dc2270">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
+                  <critical>0</critical>
                   <hole>0</hole>
+                  <high>0</high>
                   <info>7</info>
+                  <low>7</low>
                   <log>0</log>
                   <warning>3</warning>
+                  <medium>3</medium>
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -23499,10 +27109,14 @@ END:VCALENDAR
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <result_count>
+                  <critical>0</critical>
                   <hole>0</hole>
+                  <high>0</high>
                   <info>7</info>
+                  <low>7</low>
                   <log>0</log>
                   <warning>3</warning>
+                  <medium>3</medium>
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -23515,20 +27129,28 @@ END:VCALENDAR
                 <timestamp>Mon Feb  1 18:51:38 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
+                  <critical>0</critical>
                   <hole>0</hole>
+                  <high>0</high>
                   <info>7</info>
+                  <low>7</low>
                   <log>0</log>
                   <warning>3</warning>
+                  <medium>3</medium>
                 </result_count>
               </report>
               <report id="2688e6c7-db29-4505-80f1-0fd4a09e1011">
                 <timestamp>Mon Feb  1 19:11:20 2010</timestamp>
                 <scan_run_status>Done</scan_run_status>
                 <result_count>
+                  <critical>0</critical>
                   <hole>0</hole>
+                  <high>0</high>
                   <info>7</info>
+                  <low>7</low>
                   <log>0</log>
                   <warning>3</warning>
+                  <medium>3</medium>
                 </result_count>
                 <severity>5.0</severity>
               </report>
@@ -23607,7 +27229,7 @@ END:VCALENDAR
             <status>Done</status>
             <progress>-1</progress>
             <report_count>1
-            <finished>1</finished></report_count>
+              <finished>1</finished></report_count>
             <trend></trend>
             <schedule id="">
               <name></name>
@@ -23619,10 +27241,14 @@ END:VCALENDAR
                 <scan_start>2019-04-24T14:26:01+02:00</scan_start>
                 <scan_end>2019-04-24T14:50:59+02:00</scan_end>
                 <result_count>
+                  <critical>0</critical>
                   <hole>1</hole>
+                  <high>1</high>
                   <info>0</info>
+                  <low>0</low>
                   <log>77</log>
                   <warning>8</warning>
+                  <medium>8</medium>
                   <false_positive>0</false_positive>
                 </result_count>
                 <severity>9.0</severity>
@@ -23652,13 +27278,17 @@ END:VCALENDAR
             </keywords>
           </filters>
           <sort>
-            <field>name
-            <order>ascending</order></field>
+            <field>
+              name
+              <order>ascending</order>
+            </field>
           </sort>
           <tasks start="1" max="10" />
-          <task_count>21
-          <filtered>1</filtered>
-          <page>1</page></task_count>
+          <task_count>
+            21
+            <filtered>1</filtered>
+            <page>1</page>
+          </task_count>
         </get_tasks_response>
       </response>
     </example>
@@ -26177,6 +29807,375 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>modify_agent_control_scan_config</name>
+    <summary>Modify agents</summary>
+    <description>
+      <p>
+        The client uses the modify_agent_control_scan_config command to update the
+        existing agent control scan agent config.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_control_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>config</e></o>
+    </pattern>
+    <ele>
+      <name>config</name>
+      <summary>Structured agent-controller configuration</summary>
+      <pattern>
+        <o><e>agent_control</e></o>
+        <o><e>agent_script_executor</e></o>
+        <o><e>heartbeat</e></o>
+      </pattern>
+      <ele>
+        <name>agent_control</name>
+        <pattern><e>retry</e></pattern>
+        <ele>
+          <name>retry</name>
+          <pattern>
+            <e>attempts</e>
+            <e>delay_in_seconds</e>
+            <e>max_jitter_in_seconds</e>
+          </pattern>
+          <ele><name>attempts</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>delay_in_seconds</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>max_jitter_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_script_executor</name>
+        <pattern>
+          <o><e>bulk_size</e></o>
+          <o><e>bulk_throttle_time_in_ms</e></o>
+          <o><e>indexer_dir_depth</e></o>
+          <o><e>scheduler_cron_time</e></o>
+        </pattern>
+        <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
+        <ele>
+          <name>scheduler_cron_time</name>
+          <pattern><any><e>item</e></any></pattern>
+          <ele>
+            <name>item</name>
+            <summary>Cron expression</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>heartbeat</name>
+        <summary>Heartbeat cadence and inactivity threshold</summary>
+        <pattern>
+          <o><e>interval_in_seconds</e></o>
+          <o><e>miss_until_inactive</e></o>
+        </pattern>
+        <ele>
+          <name>interval_in_seconds</name>
+          <summary>Expected updater/agent heartbeat interval</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>miss_until_inactive</name>
+          <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify agents</summary>
+      <request>
+        <modify_agent_control_scan_config agent_control_id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b">
+          <config>
+            <agent_control>
+              <retry>
+                <attempts>6</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>100</indexer_dir_depth>
+              <scheduler_cron_time>
+                <item>0 */12 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>300</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </config>
+        </modify_agent_control_scan_config>
+      </request>
+      <response>
+        <modify_agent_control_scan_config_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_agent_group</name>
+    <summary>Modify an agent group</summary>
+    <description>
+      <p>
+        The agent_group_id attribute is required to identify which group
+        should be modified.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_group_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>name</e></o>
+      <o><e>comment</e></o>
+      <o><e>agents</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>New name for the agent group</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Optional comment for the agent group</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to assign to the group</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify an agent group</summary>
+      <request>
+        <modify_agent_group agent_group_id="6fca29e3-8b96-4e6b-9ee1-8845680dbda5">
+          <name>Updated Group Name</name>
+          <comment>Modified via gvm-cli</comment>
+          <agents>
+            <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
+          </agents>
+        </modify_agent_group>
+      </request>
+      <response>
+        <modify_agent_group_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_agent</name>
+    <summary>Modify agents</summary>
+    <description>
+      <p>
+        The client uses the modify_agent command to update one or more
+        existing agents. The supported fields include authorization, scheduling,
+        and operational intervals.
+      </p>
+      <p>
+        The scanner for each agent is determined implicitly from the agent UUID.
+        All provided agents must belong to the same scanner or the command will fail.
+      </p>
+    </description>
+    <pattern>
+      <e>agents</e>
+      <o><e>authorized</e></o>
+      <o><e>config</e></o>
+      <o><e>comment</e></o>
+    </pattern>
+    <ele>
+      <name>agents</name>
+      <summary>List of agents to modify</summary>
+      <pattern>
+        <any><e>agent</e></any>
+      </pattern>
+      <ele>
+        <name>agent</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+    </ele>
+    <ele>
+      <name>authorized</name>
+      <summary>Authorization flag (1 for authorized, 0 for not)</summary>
+      <pattern><t>integer</t></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>config</name>
+      <summary>Structured agent-controller configuration</summary>
+      <pattern>
+        <o><e>agent_control</e></o>
+        <o><e>agent_script_executor</e></o>
+        <o><e>heartbeat</e></o>
+      </pattern>
+      <ele>
+        <name>agent_control</name>
+        <pattern><e>retry</e></pattern>
+        <ele>
+          <name>retry</name>
+          <pattern>
+            <e>attempts</e>
+            <e>delay_in_seconds</e>
+            <e>max_jitter_in_seconds</e>
+          </pattern>
+          <ele><name>attempts</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>delay_in_seconds</name><pattern><type>integer</type></pattern></ele>
+          <ele><name>max_jitter_in_seconds</name><pattern><type>integer</type></pattern></ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>agent_script_executor</name>
+        <pattern>
+          <o><e>bulk_size</e></o>
+          <o><e>bulk_throttle_time_in_ms</e></o>
+          <o><e>indexer_dir_depth</e></o>
+          <o><e>scheduler_cron_time</e></o>
+        </pattern>
+        <ele><name>bulk_size</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>bulk_throttle_time_in_ms</name><pattern><type>integer</type></pattern></ele>
+        <ele><name>indexer_dir_depth</name><pattern><type>integer</type></pattern></ele>
+        <ele>
+          <name>scheduler_cron_time</name>
+          <pattern><any><e>item</e></any></pattern>
+          <ele>
+            <name>item</name>
+            <summary>Cron expression</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>heartbeat</name>
+        <summary>Heartbeat cadence and inactivity threshold</summary>
+        <pattern>
+          <o><e>interval_in_seconds</e></o>
+          <o><e>miss_until_inactive</e></o>
+        </pattern>
+        <ele>
+          <name>interval_in_seconds</name>
+          <summary>Expected updater/agent heartbeat interval</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>miss_until_inactive</name>
+          <summary>Consecutive missed heartbeats before marking agent inactive</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+      </ele>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Optional user-supplied comment</summary>
+      <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify agents</summary>
+      <request>
+        <modify_agent>
+          <agents>
+            <agent id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b"/>
+          </agents>
+          <authorized>1</authorized>
+          <config>
+            <agent_control>
+              <retry>
+                <attempts>6</attempts>
+                <delay_in_seconds>60</delay_in_seconds>
+                <max_jitter_in_seconds>10</max_jitter_in_seconds>
+              </retry>
+            </agent_control>
+            <agent_script_executor>
+              <bulk_size>2</bulk_size>
+              <bulk_throttle_time_in_ms>300</bulk_throttle_time_in_ms>
+              <indexer_dir_depth>100</indexer_dir_depth>
+              <scheduler_cron_time>
+                <item>0 */12 * * *</item>
+              </scheduler_cron_time>
+            </agent_script_executor>
+            <heartbeat>
+              <interval_in_seconds>300</interval_in_seconds>
+              <miss_until_inactive>1</miss_until_inactive>
+            </heartbeat>
+          </config>
+          <comment>example update</comment>
+        </modify_agent>
+      </request>
+      <response>
+        <modify_agent_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>modify_alert</name>
     <summary>Modify an existing alert</summary>
@@ -26311,15 +30310,15 @@ END:VCALENDAR
       <summary>Modify the name and report filter of an alert and the condition that triggers it</summary>
       <request>
         <modify_alert alert_id='914b59f8-25f5-4c8f-832c-2379cd625236'>
-            <name>Low Level Alert 2</name>
-            <condition>
-              Threat level at least
-              <data>
-                Low
-                <name>level</name>
-              </data>
-            </condition>
-            <filter id='7a06bd00-7e4a-4669-b7d7-8fe65ec64a41'/>
+          <name>Low Level Alert 2</name>
+          <condition>
+            Threat level at least
+            <data>
+              Low
+              <name>level</name>
+            </data>
+          </condition>
+          <filter id='7a06bd00-7e4a-4669-b7d7-8fe65ec64a41'/>
         </modify_alert>
       </request>
       <response>
@@ -26744,12 +30743,15 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>allow_insecure</e></o>
       <o><e>certificate</e></o>
+      <o><e>kdc</e></o>
+      <o><e>kdcs</e></o>
       <o><e>key</e></o>
       <o><e>login</e></o>
       <o><e>password</e></o>
       <o><e>community</e></o>
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
+      <o><e>realm</e></o>
     </pattern>
     <ele>
       <name>name</name>
@@ -26776,6 +30778,26 @@ END:VCALENDAR
       <pattern>
         text
       </pattern>
+    </ele>
+    <ele>
+      <name>kdc</name>
+      <pattern>text</pattern>
+      <summary>Deprecated: This element is deprecated. Use kdcs instead. The Kerberos KDC (key distribution center(s))</summary>
+    </ele>
+    <ele>
+      <name>kdcs</name>
+      <summary>Multiple Kerberos KDCs</summary>
+      <description>
+        <p>List of one or more Kerberos Key Distribution Centers (KDCs).</p>
+      </description>
+      <pattern>
+        <any><e>kdc</e></any>
+      </pattern>
+      <ele>
+        <name>kdc</name>
+        <summary>A single Kerberos Key Distribution Center</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>key</name>
@@ -26862,6 +30884,11 @@ END:VCALENDAR
           text
         </pattern>
       </ele>
+    </ele>
+    <ele>
+      <name>realm</name>
+      <pattern>text</pattern>
+      <summary>The Kerberos realm</summary>
     </ele>
     <response>
       <pattern>
@@ -27198,6 +31225,82 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CONTAINER_SCANNNING@
+  <command>
+    <name>modify_oci_image_target</name>
+    <summary>Modify an existing OCI image target</summary>
+    <description>
+      <p>
+        The client uses the modify_oci_image_target command to change an existing
+        target.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>oci_image_target_id</name>
+        <summary>ID of target to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>image_references</e></o>
+      <o><e>credential</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of target</summary>
+      <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on target</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>image_references</name>
+      <summary>Comma-separated list of target hosts</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>credential</name>
+      <summary>credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of an OCI image target</summary>
+      <request>
+        <modify_oci_image_target oci_image_target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <name>OCI Image Target New</name>
+        </modify_oci_image_target>
+      </request>
+      <response>
+        <modify_oci_image_target_response status="200" status_text="OK">
+        </modify_oci_image_target_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CONTAINER_SCANNNING@
   <command>
     <name>modify_override</name>
     <summary>Modify an existing override</summary>
@@ -27771,6 +31874,8 @@ END:VCALENDAR
       <e>type</e>
       <o><e>ca_pub</e></o>
       <o><e>credential</e></o>
+      <o><e>relay_host</e></o>
+      <o><e>relay_port</e></o>
     </pattern>
     <ele>
       <name>comment</name>
@@ -27813,6 +31918,16 @@ END:VCALENDAR
           <required>1</required>
         </attrib>
       </pattern>
+    </ele>
+    <ele>
+      <name>relay_host</name>
+      <summary>Optional relay host of the scanner</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>relay_port</name>
+      <summary>Optional relay port of the scanner</summary>
+      <pattern>text</pattern>
     </ele>
     <response>
       <pattern>
@@ -28106,7 +32221,12 @@ END:VCALENDAR
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>ssh_elevate_credential</e></o>
-      <o><e>smb_credential</e></o>
+      <o>
+        <or>
+          <e>krb5_credential</e>
+          <e>smb_credential</e>
+        </or>
+      </o>
       <o><e>esxi_credential</e></o>
       <o><e>snmp_credential</e></o>
       <o><e>ssh_lsc_credential</e></o>
@@ -28170,6 +32290,17 @@ END:VCALENDAR
     <ele>
       <name>smb_credential</name>
       <summary>SMB credential to use on target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <ele>
+      <name>krb5_credential</name>
+      <summary>Kerberos 5 login credentials for target</summary>
       <pattern>
         <attrib>
           <name>id</name>
@@ -28247,9 +32378,24 @@ END:VCALENDAR
     <ele>
       <name>alive_tests</name>
       <summary>Which alive tests to use</summary>
+      <description>
+        Instead of the sub-elements a string representation of the
+        old predefined alive test selections can be used, but this is
+        deprecated.
+      </description>
       <pattern>
-        <t>alive_test</t>
+        <any><e>alive_test</e></any>
       </pattern>
+      <ele>
+        <name>alive_test</name>
+        <summary>
+          A single alive test to use.
+          "Scan Config Default" and "Consider Alive" can only be used alone
+        </summary>
+        <pattern>
+          <t>alive_test</t>
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>reverse_lookup_only</name>
@@ -28325,6 +32471,12 @@ END:VCALENDAR
         <e>schedule_periods</e>
         <e>scanner</e>
         <e>target</e>
+        @IF_ENABLE_AGENTS@
+        <e>agent_group</e>
+        @ENDIF_ENABLE_AGENTS@
+        @IF_ENABLE_CONTAINER_SCANNNING@
+        <e>oci_image_target</e>
+        @ENDIF_ENABLE_CONTAINER_SCANNNING@
         <e>file</e>
       </or>
     </pattern>
@@ -28431,6 +32583,32 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
+    @IF_ENABLE_AGENTS@
+    <ele>
+      <name>agent_group</name>
+      <summary>The agents scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_AGENTS@
+    @IF_ENABLE_CONTAINER_SCANNNING@
+    <ele>
+      <name>oci_image_target</name>
+      <summary>The OCI images scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_CONTAINER_SCANNNING@
     <ele>
       <name>file</name>
       <summary>File to attach to task</summary>
@@ -28715,7 +32893,7 @@ END:VCALENDAR
           <type>boolean</type>
         </attrib>
         text
-       </pattern>
+      </pattern>
     </ele>
     <ele>
       <name>role</name>
@@ -29293,7 +33471,94 @@ END:VCALENDAR
   </command>
 
   <!-- Compatibility changes between versions. -->
-
+  <change>
+    <command>GET_REPORTS</command>
+    <summary>Attribute &quot;usage_type&quot; is added</summary>
+    <description>
+      <p>
+        Attribute &quot;usage_type&quot; is added to differentiate between
+        scan and audit reports. If omitted the default value is "scan".
+      </p>
+      <p>
+        For audit reports, the elements &quot;result_count&quot;
+        and &quot;severity&quot; are replaced by &quot;compliance_count&quot;
+        and &quot;compliance&quot;.
+      </p>
+      <p>
+        New options/columns for the attribute &quot;report_filter&quot;
+        term are added for audit reports.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_RESULTS</command>
+    <summary>New element &quot;compliance&quot; in &quot;get_results&quot; response</summary>
+    <description>
+      <p>
+        New element &quot;compliance&quot; is added to specify the compliance state
+        for a result.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>CREATE_TAG,MODIFY_TAG,CREATE_FILTER,MODIFY_FILTER</command>
+    <summary>&quot;type&quot; can take new values</summary>
+    <description>
+      <p>
+        &quot;type&quot; can be an &quot;audit_report&quot;, &quot;audit&quot; or &quot;policy&quot;
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>CREATE_REPORT_CONFIG, DELETE_REPORT_CONFIG, GET_REPORT_CONFIGS AND MODIFY_REPORT_CONFIG</command>
+    <summary>New commands for handling report configs</summary>
+    <description>
+      <p>
+        Added new commands for handling report configs.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_FEEDS</command>
+    <summary>Extend &quot;get_feeds&quot; command</summary>
+    <description>
+      <p>
+        &quot;get_feeds&quot; command is extended with &quot;feed_owner_set&quot;,
+        &quot;feed_roles_set&quot; and &quot;feed_resources_access&quot;.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_INFO</command>
+    <summary>Changes for &quot;CVE&quot; and &quot;CPE&quot; info elements</summary>
+    <description>
+      <p>
+        For CVE info elements, &quot;configuration_nodes&quot; and &quot;references&quot;
+        are added.
+      </p>
+      <p>
+        For CPE info elements, &quot;nvd_id&quot; is replaced by &quot;cpe_name_id&quot;
+        and &quot;status&quot; is replaced by &quot;deprecated&quot;.
+        &quot;references&quot; and &quot;deprecated_by&quot; are added.
+      </p>
+    </description>
+    <version>22.6</version>
+  </change>
+  <change>
+    <command>GET_RESOURCE_NAMES</command>
+    <summary>The new command GET_RESOURCE_NAMES has been added</summary>
+    <description>
+      <p>
+        A new command to get one or many names and IDs for items of given type.
+      </p>
+    </description>
+    <version>22.5</version>
+  </change>
   <change>
     <command>CREATE_TASK, CREATE_USER, GET_TASKS, GET_USERS, MODIFY_TASK, MODIFY_USER</command>
     <summary>Removed network interface (iface) options</summary>
@@ -30051,8 +34316,8 @@ END:VCALENDAR
     <description>
       <p>
         The TYPE element in the response will contain "up" instead of "pass"
-         for username + password credentials and "usk" instead of "gen" for
-         username + SSH key ones.
+        for username + password credentials and "usk" instead of "gen" for
+        username + SSH key ones.
       </p>
     </description>
     <version>7.0</version>
@@ -30132,8 +34397,8 @@ END:VCALENDAR
     <description>
       <p>
         The resuming of tasks is now done via the new command RESUME_TASK,
-    which is the former RESUME_STOPPED_TASK. There is no other resumable
-    status than "stopped" anymore and thus the command names are
+        which is the former RESUME_STOPPED_TASK. There is no other resumable
+        status than "stopped" anymore and thus the command names are
         consolidated for consistency and to avoid confusion.
       </p>
     </description>
@@ -30413,6 +34678,18 @@ END:VCALENDAR
     <description>
       <p>
         Remove summary element as the nvt tag includes a summary already.
+      </p>
+    </description>
+  </change>
+
+  <change>
+    <command>GET_REPORTS, GET_TASKS</command>
+    <summary> Include the CVSS3 rating instead of the deprecated CVSS2 rating</summary>
+    <version>22.7</version>
+    <description>
+      <p>
+          The commands GET_REPORTS and GET_TASKS as well as the element
+          report and the data type levels now include the CVSS3 rating.
       </p>
     </description>
   </change>

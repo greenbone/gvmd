@@ -343,7 +343,7 @@ should_sync_config_from_path (const char *path, gboolean rebuild,
   if (resource_id_deprecated ("config", uuid))
     {
       find_config_no_acl (uuid, config);
-      
+
       if (rebuild)
         {
           g_free (uuid);
@@ -627,4 +627,27 @@ should_sync_configs ()
 
   g_dir_close (dir);
   return FALSE;
+}
+
+/**
+ * @brief Returns TRUE if the scanner type requires a scan configuration.
+ *
+ * @param[in] scanner_type  The scanner type enum.
+ *
+ * @return TRUE if config is required, FALSE otherwise.
+ */
+gboolean
+scanner_type_requires_config (int scanner_type)
+{
+  switch (scanner_type)
+    {
+    case SCANNER_TYPE_CVE:
+    case SCANNER_TYPE_AGENT_CONTROLLER:
+    case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+    case SCANNER_TYPE_CONTAINER_IMAGE:
+      return FALSE;
+
+    default:
+      return TRUE;
+    }
 }

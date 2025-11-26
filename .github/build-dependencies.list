@@ -1,0 +1,16 @@
+build-essential
+ca-certificates
+cmake
+curl
+git
+lcov
+libbsd-dev
+libcjson-dev
+libglib2.0-dev
+libgnutls28-dev
+libgpgme-dev
+libical-dev
+libpq-dev
+pkg-config
+postgresql-server-dev-all
+xsltproc

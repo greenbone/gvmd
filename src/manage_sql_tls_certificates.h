@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_tls_certificates.h
+ * @file
  * @brief GVM management layer: TLS Certificates SQL headers
  *
  * Headers for TLS Certificates SQL for the GVM management layer.

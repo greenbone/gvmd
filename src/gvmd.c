@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  gvmd.c
+ * @file
  * @brief The Greenbone Vulnerability Manager daemon.
  *
  * This file defines the Greenbone Vulnerability Manager daemon.  The Manager
@@ -103,10 +103,12 @@
 
 #include "debug_utils.h"
 #include "ipc.h"
-#include "manage.h"
+#include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
+#include "manage_runtime_flags.h"
+#include "manage_scan_queue.h"
 #include "gmpd.h"
 #include "utils.h"
 
@@ -220,6 +222,13 @@ static int manager_socket_2 = -1;
 FILE* log_stream = NULL;
 #endif
 
+#if ENABLE_AGENTS
+  static gint64  s_agent_log_next = 0;   /* next time logging is allowed */
+  static gboolean s_agent_log_token = FALSE; /* copied to child at fork */
+
+  #define AGENT_SYNC_WARN_INTERVAL_SEC 600 /* every 10 minutes */
+#endif
+
 /**
  * @brief Whether to use TLS for client connections.
  */
@@ -238,7 +247,7 @@ static gnutls_certificate_credentials_t client_credentials;
 /**
  * @brief Database connection info.
  */
-static db_conn_info_t database = { NULL, NULL, NULL, NULL };
+static db_conn_info_t database = { NULL, NULL, NULL, NULL, 60};
 
 /**
  * @brief Is this process parent or child?
@@ -1097,21 +1106,6 @@ handle_sigabrt_simple (int signal)
 }
 
 /**
- * @brief Update the NVT Cache using OSP.
- *
- * @param[in]  update_socket  UNIX socket for contacting openvas-ospd.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-static int
-update_nvt_cache_osp (const gchar *update_socket)
-{
-  setproctitle ("OSP: Updating NVT cache");
-
-  return manage_update_nvts_osp (update_socket);
-}
-
-/**
  * @brief Update NVT cache in forked child, retrying if scanner loading.
  *
  * Forks a child process to rebuild the nvt cache, retrying again if the
@@ -1145,34 +1139,81 @@ update_nvt_cache_retry ()
         }
       else if (child_pid == 0)
         {
-          const char *osp_update_socket;
-
+          scanner_type_t sc_type;
           init_sentry ();
-          osp_update_socket = get_osp_vt_update_socket ();
-          if (osp_update_socket)
-            {
-              int ret;
 
-              ret = update_nvt_cache_osp (osp_update_socket);
-              if (ret == 1)
-                {
-                  g_message ("Rebuilding all NVTs because of a hash value mismatch");
-                  ret = update_or_rebuild_nvts (0);
-                  if (ret)
-                    g_warning ("%s: rebuild failed", __func__);
-                  else
-                    g_message ("%s: rebuild successful", __func__);
-                }
+          /* Re-open DB after fork. */
 
-              gvm_close_sentry ();
-              exit (ret);
-            }
-          else
-            {
-              g_warning ("%s: No OSP VT update socket set", __func__);
-              gvm_close_sentry ();
+          reinit_manage_process ();
+          manage_session_init (current_credentials.uuid);
+
+          sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+          switch (sc_type)
+          {
+            case SCANNER_TYPE_OPENVAS:
+              {
+                const char *osp_update_socket;
+
+                osp_update_socket = get_osp_vt_update_socket ();
+                if (osp_update_socket)
+                  {
+                    int ret;
+
+                    setproctitle ("OSP: Updating NVT cache");
+                    ret = manage_update_nvt_cache_osp (osp_update_socket);
+                    if (ret == 1)
+                      {
+                        g_message ("Rebuilding all NVTs because of a"
+                                   " hash value mismatch");
+                        ret = update_or_rebuild_nvts (0);
+                        if (ret)
+                          g_warning ("%s: rebuild failed", __func__);
+                        else
+                          g_message ("%s: rebuild successful", __func__);
+                      }
+
+                    gvm_close_sentry ();
+                    exit (ret);
+                  }
+                else
+                  {
+                    g_warning ("%s: No OSP VT update socket set", __func__);
+                    gvm_close_sentry ();
+                    exit (EXIT_FAILURE);
+                  }
+              }
+            case SCANNER_TYPE_OPENVASD:
+              {
+#if OPENVASD
+                int ret;
+
+                setproctitle ("openvasd: Updating NVT cache");
+                ret = manage_update_nvt_cache_openvasd ();
+                if (ret == 1)
+                  {
+                    g_message (
+                      "Rebuilding all NVTs because of a hash value mismatch");
+                    ret = update_or_rebuild_nvts (0);
+                    if (ret)
+                      g_warning ("%s: rebuild failed", __func__);
+                    else
+                      g_message ("%s: rebuild successful", __func__);
+                  }
+
+                gvm_close_sentry ();
+                exit (ret);
+#else
+                g_critical ("%s: Default scanner is an openvasd one,"
+                            " but gvmd is not built to support this.",
+                            __func__);
+                exit (EXIT_FAILURE);
+#endif
+              }
+            default:
+              g_critical ("%s: scanner type %d is not supported as default",
+                          __func__, sc_type);
               exit (EXIT_FAILURE);
-            }
+          }
         }
     }
 }
@@ -1242,9 +1283,25 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             manager_socket_2 = -1;
           }
 
-        /* Update the cache. */
+        if (feature_enabled (FEATURE_ID_VT_METADATA))
+          {
+            /* Re-open DB after fork. */
+            reinit_manage_process ();
+            manage_session_init (current_credentials.uuid);
 
-        update_nvt_cache_retry ();
+            if (manage_update_nvts_from_feed (FALSE))
+              {
+                g_warning ("%s: NVTs update from feed failed", __func__);
+                cleanup_manage_process (FALSE);
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+              }
+          }
+        else
+          {
+            /* Update the cache. */
+            update_nvt_cache_retry ();
+          }
 
         /* Exit. */
 
@@ -1385,22 +1442,380 @@ fork_feed_sync ()
 }
 
 /**
+ * @brief Forks a process for handling queued scan or audit task actions.
+ * 
+ * These actions include processing imported reports and handling the task
+ *  queue.
+ *
+ * @return 0 success, -1 error.
+ *         Always exits with EXIT_SUCCESS in child.
+ */
+static int
+fork_queued_task_actions ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+  if (sigaddset (&sigmask_all, SIGCHLD))
+    {
+      g_critical ("%s: Error adding SIGCHLD to signal set", __func__);
+      return -1;
+    }
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child.   */
+        init_sentry ();
+        setproctitle ("Manage queued task actions");
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+        /* Clean up the process. */
+        cleanup_manage_process (FALSE);
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        manage_queued_task_actions ();
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+        exit (EXIT_SUCCESS);
+        break;
+
+      case -1:
+        /* Parent when error. */
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        /* Parent.  Unblock signals and continue. */
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+
+#if ENABLE_AGENTS
+/**
+ * @brief Forks a process to sync agents from Agent Control scanners.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_agents_sync ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean agent_sync_in_progress = FALSE;
+
+  if (agent_sync_in_progress)
+    {
+      g_debug ("%s: Agent sync skipped because one is already in progress", __func__);
+      return 1;
+    }
+
+  agent_sync_in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  /* Decide in the parent if this child is allowed to log a warning */
+  const gint64 now = g_get_monotonic_time ();
+  if (now >= s_agent_log_next)
+    {
+      s_agent_log_token = TRUE;
+      s_agent_log_next = now + (gint64) AGENT_SYNC_WARN_INTERVAL_SEC *
+                         G_USEC_PER_SEC;
+    }
+  else
+    {
+      s_agent_log_token = FALSE;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+      case 0:
+        /* Child */
+        init_sentry ();
+        setproctitle ("Synchronizing agent data");
+
+        if (sigmask_normal)
+          pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+        else
+          pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+        cleanup_manage_process (FALSE);
+
+       init_manage_process (&database);
+
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        /* Iterate scanners and sync agents. */
+      iterator_t scanner_iterator;
+      get_data_t get = { 0 };
+
+      if (init_scanner_iterator (&scanner_iterator, &get) == 0)
+        {
+          while (next (&scanner_iterator))
+            {
+              scanner_t scanner = get_iterator_resource (&scanner_iterator);
+              if (scanner && scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+                {
+                  gvmd_agent_connector_t connector =
+                    gvmd_agent_connector_new_from_scanner (scanner);
+
+                  if (connector && connector->base)
+                    {
+                      agent_response_t response =
+                        sync_agents_from_agent_controller (connector);
+
+                      if (response != AGENT_RESPONSE_SUCCESS &&
+                          s_agent_log_token)
+                        {
+                          g_warning ("%s: Synchronizing agent data failed: %s",
+                                     __func__, agent_response_to_string (response));
+                          /* Set token false so we do not double-log inside this child */
+                          s_agent_log_token = FALSE;
+                        }
+                    }
+
+                  gvmd_agent_connector_free (connector);
+                }
+            }
+
+          cleanup_iterator (&scanner_iterator);
+        }
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+        exit (EXIT_SUCCESS);
+
+      case -1:
+        g_warning ("%s: fork: %s", __func__, strerror (errno));
+        agent_sync_in_progress = FALSE;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return -1;
+
+      default:
+        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        agent_sync_in_progress = FALSE;
+        if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+          g_warning ("%s: Error resetting signal mask", __func__);
+        return 0;
+    }
+}
+#endif //ENABLE_AGENTS
+
+/**
+ * @brief Periodic timestamps for background jobs in the main loop.
+ */
+typedef struct
+{
+  time_t last_schedule;    ///< Last time the scheduler management was executed.
+  time_t last_feed_sync;   ///< Last time the feed sync was executed.
+  time_t last_queue;       ///< Last time queued task actions were executed.
+  time_t last_agents_sync; ///< Last time the agents sync was executed.
+} periodic_times_t;
+
+/**
+ * @brief Return non-zero if @p period seconds have elapsed since @p last.
+ *
+ * @param[in] last    Previous run time (epoch seconds).
+ * @param[in] period  Minimum period in seconds.
+ * @param[in] now     Current time (epoch seconds).
+ *
+ * @return Non-zero if due, 0 otherwise.
+ */
+static int
+time_to_run (time_t last, time_t period, time_t now)
+{
+  return (now - last) >= period;
+}
+
+/**
+ * @brief Set a last-run timestamp to @p now.
+ *
+ * @param[out] last  Pointer to last-run timestamp to update.
+ * @param[in]  now   Current time (epoch seconds).
+ */
+static void
+set_last_run_time (time_t *last, time_t now)
+{
+  *last = now;
+}
+
+/**
+ * @brief Run scheduler management if due; updates last timestamp only on work.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ *
+ * @return void. On fatal error, exits the process.
+ */
+static void
+run_schedule (periodic_times_t *t)
+{
+  time_t start = time (NULL);
+  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, start))
+    return;
+
+  int rc = manage_schedule (fork_connection_for_scheduler,
+                            scheduling_enabled,
+                            sigmask_normal);
+  switch (rc)
+    {
+    case 0:
+      {
+        time_t end = time (NULL);
+        set_last_run_time (&t->last_schedule, end);
+        g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
+        break;
+      }
+    case 1:
+      /* lock not acquired or nothing to do; keep last_schedule unchanged */
+      break;
+    default:
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
+}
+
+/**
+ * @brief Run feed sync if due; updates last timestamp when executed.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_feed_sync on run.
+ */
+static void
+run_feed_sync (periodic_times_t *t)
+{
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_feed_sync, SCHEDULE_PERIOD, now))
+    return;
+  fork_feed_sync ();
+  set_last_run_time (&t->last_feed_sync, time (NULL));
+}
+
+/**
+ * @brief Run queued task actions if due; updates last timestamp when executed.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
+ */
+static void
+run_queue (periodic_times_t *t)
+{
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_queue, QUEUE_PERIOD, now))
+    return;
+  fork_queued_task_actions ();
+  set_last_run_time (&t->last_queue, time (NULL));
+}
+
+/**
+ * @brief Run agents sync if due (guarded by ENABLE_AGENTS); updates last on run.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_agents_sync on run.
+ */
+static void
+run_agents_sync (periodic_times_t *t)
+{
+#if ENABLE_AGENTS
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_debug ("%s: AGENTS runtime flag is disabled; skipping agents sync",
+              __func__);
+      return;
+    }
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
+    return;
+  fork_agents_sync ();
+  set_last_run_time (&t->last_agents_sync, time (NULL));
+#else
+  (void)t;
+#endif
+}
+
+/**
+ * @brief Execute all periodic jobs in order.
+ *
+ * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
+ */
+static void
+run_periodic_block (periodic_times_t *t)
+{
+  run_schedule (t);
+  run_feed_sync (t);
+  run_agents_sync (t);
+  run_queue (t);
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
- * `accept_and_maybe_fork'.
+ * `accept_and_maybe_fork`.
  *
  * Periodically, call the manage scheduler to start and stop scheduled tasks.
  */
 static void
 serve_and_schedule ()
 {
-  time_t last_schedule_time, last_sync_time;
+  periodic_times_t times = {
+    .last_schedule = 0,
+    .last_feed_sync = 0,
+    .last_queue = 0,
+    .last_agents_sync = 0,
+  };
+
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
-
-  last_schedule_time = 0;
-  last_sync_time = 0;
 
   if (sigfillset (&sigmask_all))
     {
@@ -1415,16 +1830,22 @@ serve_and_schedule ()
       exit (EXIT_FAILURE);
     }
   sigmask_normal = &sigmask_current;
+
+  g_info ("gvmd is ready to accept GMP connections");
+
   while (1)
     {
       int ret, nfds;
       fd_set readfds, exceptfds;
       struct timespec timeout;
 
+      run_periodic_block (&times);
+
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
       if (manager_socket_2 > -1)
         FD_SET (manager_socket_2, &readfds);
+
       FD_ZERO (&exceptfds);
       FD_SET (manager_socket, &exceptfds);
       if (manager_socket_2 > -1)
@@ -1445,34 +1866,11 @@ serve_and_schedule ()
           raise (termination_signal);
         }
 
-      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled,
-                                 sigmask_normal))
-          {
-            case 0:
-              last_schedule_time = time (NULL);
-              g_debug ("%s: last_schedule_time: %li",
-                       __func__, last_schedule_time);
-              break;
-            case 1:
-              break;
-            default:
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-          }
-
-      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
-        {
-          fork_feed_sync ();
-          last_sync_time = time (NULL);
-        }
-
-      timeout.tv_sec = SCHEDULE_PERIOD;
+      timeout.tv_sec = QUEUE_PERIOD;
       timeout.tv_nsec = 0;
+
       ret = pselect (nfds, &readfds, NULL, &exceptfds, &timeout,
                      sigmask_normal);
-
       if (ret == -1)
         {
           /* Error occurred while selecting socket. */
@@ -1506,27 +1904,7 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      if ((time (NULL) - last_schedule_time) >= SCHEDULE_PERIOD)
-        switch (manage_schedule (fork_connection_for_scheduler,
-                                 scheduling_enabled, sigmask_normal))
-          {
-            case 0:
-              last_schedule_time = time (NULL);
-              g_debug ("%s: last_schedule_time 2: %li",
-                       __func__, last_schedule_time);
-              break;
-            case 1:
-              break;
-            default:
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-          }
-
-      if ((time (NULL) - last_sync_time) >= SCHEDULE_PERIOD)
-        {
-          fork_feed_sync ();
-          last_sync_time = time (NULL);
-        }
+      run_periodic_block (&times);
 
       if (termination_signal)
         {
@@ -1777,7 +2155,8 @@ parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
 {
   if (strcmp (opt, "--pepper") == 0)
     {
-      if (manage_authentication_setup(arg, strlen(arg), 0, NULL) != GMA_SUCCESS)
+      if (manage_authentication_setup (arg, strlen (arg), 0, NULL)
+          != GMA_SUCCESS)
         {
           g_set_error (
             err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
@@ -1788,7 +2167,8 @@ parse_authentication_goption_arg (const gchar *opt, const gchar *arg,
     }
   else if (strcmp (opt, "--hashcount") == 0)
     {
-      if (manage_authentication_setup(NULL, 0, strtol(arg, NULL, 0), NULL) != GMA_SUCCESS)
+      if (manage_authentication_setup (NULL, 0, strtol(arg, NULL, 0), NULL)
+          != GMA_SUCCESS)
         {
           g_set_error (
             err, G_OPTION_ERROR, G_OPTION_ERROR_BAD_VALUE,
@@ -1863,9 +2243,16 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_credential = NULL;
   static gchar *scanner_key_pub = NULL;
   static gchar *scanner_key_priv = NULL;
+  static gchar *scanner_relay_host = NULL;
+  static gchar *scanner_relay_port = NULL;
+  static int scanner_no_default_certs = 0;
   static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
   static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
+  static int affected_products_query_size
+    = AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT;
+  static int secinfo_fast_init = SECINFO_FAST_INIT_DEFAULT;
   static int secinfo_commit_size = SECINFO_COMMIT_SIZE_DEFAULT;
+  static int secinfo_update_strategy = 0;
   static gchar *delete_scanner = NULL;
   static gchar *verify_scanner = NULL;
   static gchar *priorities = "NORMAL";
@@ -1896,12 +2283,18 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *broker_address = NULL;
   static gchar *feed_lock_path = NULL;
   static int feed_lock_timeout = 0;
+  static int max_active_scan_handlers = DEFAULT_MAX_ACTIVE_SCAN_HANDLERS;
   static int max_concurrent_scan_updates = 0;
+  static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
+  static int scan_handler_active_time = 0;
+  static gboolean use_scan_queue = 0;
   static int vt_ref_insert_size = VT_REF_INSERT_SIZE_DEFAULT;
   static int vt_sev_insert_size = VT_SEV_INSERT_SIZE_DEFAULT;
   static gchar *vt_verification_collation = NULL;
+
 
   GString *full_disable_commands = g_string_new ("");
 
@@ -1911,6 +2304,12 @@ gvmd (int argc, char** argv, char *env[])
   GOptionContext *option_context;
   static GOptionEntry option_entries[]
     = {
+        { "affected-products-query-size", '\0', 0, G_OPTION_ARG_INT,
+          &affected_products_query_size,
+          "Sets the number of CVEs to process per query when updating"
+          " the affected products. Defaults to "
+          G_STRINGIFY (AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT) ".",
+          "<number>" },
         { "auth-timeout", '\0', 0, G_OPTION_ARG_INT,
           &auth_timeout,
           "Sets the authentication timeout time for the cached authentication."
@@ -1961,6 +2360,10 @@ gvmd (int argc, char** argv, char *env[])
           &(database.user),
           "Use <user> as database user.",
           "<user>" },
+        { "db-semaphore-timeout", '\0', 0, G_OPTION_ARG_INT,
+          &(database.semaphore_timeout),
+          "Use <semaphore_timeout> as sempahore timeout for PostgreSQL connections.",
+          "<semaphore_timeout>" },
         { "decrypt-all-credentials", '\0', G_OPTION_FLAG_HIDDEN,
           G_OPTION_ARG_NONE,
           &decrypt_all_credentials,
@@ -2075,10 +2478,25 @@ gvmd (int argc, char** argv, char *env[])
           &listen_owner,
           "Owner of the unix socket",
           "<string>" },
+        { "max-active-scan-handlers", '\0', 0, G_OPTION_ARG_INT,
+          &max_active_scan_handlers,
+          "Maximum number of scan handlers from the scan queue that can be"
+          " active at the same time.",
+          "<number>" },
         { "max-concurrent-scan-updates", '\0', 0, G_OPTION_ARG_INT,
           &max_concurrent_scan_updates,
           "Maximum number of scan updates that can run at the same time."
           " Default: 0 (unlimited).",
+          "<number>" },
+        { "max-database-connections", '\0', 0, G_OPTION_ARG_INT,
+          &max_database_connections,
+          "Maximum number of database connections at the same time."
+          " Default: 50",
+          "<number>" },
+        { "max-concurrent-report-processing", '\0', 0, G_OPTION_ARG_INT,
+          &max_concurrent_report_processing,
+          "Maximum number of imported reports processed at the same time."
+          " Default: 30",
           "<number>" },
         { "max-email-attachment-size", '\0', 0, G_OPTION_ARG_INT,
           &max_email_attachment_size,
@@ -2130,7 +2548,7 @@ gvmd (int argc, char** argv, char *env[])
           " cleanup-port-names, cleanup-report-formats, cleanup-result-encoding,"
           " cleanup-result-nvts, cleanup-result-severities,"
           " cleanup-schedule-times, cleanup-sequences,"
-          " cleanup-tls-certificate-encoding, migrate-relay-sensors,"
+          " cleanup-tls-certificate-encoding,"
           " rebuild-report-cache or update-report-cache.",
           "<name>" },
         { "osp-vt-update", '\0', 0, G_OPTION_ARG_STRING,
@@ -2170,10 +2588,10 @@ gvmd (int argc, char** argv, char *env[])
           NULL },
         { "relay-mapper", '\0', 0, G_OPTION_ARG_FILENAME,
           &relay_mapper,
-          "Executable for mapping scanner hosts to relays."
-          " Use an empty string to explicitly disable."
-          " If the option is not given, $PATH is checked for"
-          " gvm-relay-mapper.",
+          "Executable for automatically mapping scanner hosts to relays."
+          " If the option is empty or not given, automatic mapping"
+          " is disabled. This option is deprecated and relays should be"
+          " set explictly in the relay_... fields of scanners.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -2217,12 +2635,38 @@ gvmd (int argc, char** argv, char *env[])
           "Scanner port for --create-scanner and --modify-scanner."
           " Default is " G_STRINGIFY (GVMD_PORT) ".",
           "<scanner-port>" },
+        { "scanner-relay-host", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_host,
+          "Scanner relay host or socket for --create-scanner and"
+          " --modify-scanner.",
+          "<scanner-relay-host>" },
+        { "scanner-relay-port", '\0', 0, G_OPTION_ARG_STRING,
+          &scanner_relay_port,
+          "Scanner relay port for --create-scanner and --modify-scanner.",
+          "<scanner-relay-port>" },
         { "scanner-type", '\0', 0, G_OPTION_ARG_STRING,
           &scanner_type,
           "Scanner type for --create-scanner and --modify-scanner."
           " Either 'OpenVAS', 'OSP', 'OSP-Sensor'"
           " or a number as used in GMP.",
           "<scanner-type>" },
+        { "no-default-certs", '\0', 0, G_OPTION_ARG_NONE,
+          &scanner_no_default_certs,
+          "Bypass reading/validating scanner default certificate files for "
+          "--create-scanner.", NULL },
+        { "scan-handler-active-time", '\0', 0, G_OPTION_ARG_INT,
+          &scan_handler_active_time,
+          "Minimum time in seconds which queued scan handlers will keep"
+          " getting results of running scans before allowing the next"
+          " queued scan handler to run."
+          " Defaults to 0 (always exit after getting results once).",
+          "<seconds>" },
+        { "scan-queue", '\0', 0, G_OPTION_ARG_NONE,
+          &use_scan_queue,
+          "Use the gvmd scan queue which will periodically start new scan"
+          " handler up to a given number (max-active-scan-handlers) instead"
+          " of keeping handlers running for the entire scan duration.",
+          NULL },
         { "schedule-timeout", '\0', 0, G_OPTION_ARG_INT,
           &schedule_timeout,
           "Time out tasks that are more than <time> minutes overdue."
@@ -2234,6 +2678,20 @@ gvmd (int argc, char** argv, char *env[])
           "During CERT and SCAP sync, commit updates to the database every"
           " <number> items, 0 for unlimited, default: "
           G_STRINGIFY (SECINFO_COMMIT_SIZE_DEFAULT), "<number>" },
+        { "secinfo-fast-init", '\0', 0, G_OPTION_ARG_INT,
+          &secinfo_fast_init,
+          "Whether to prefer faster SQL with less checks for non-incremental"
+          " SecInfo updates."
+          " 0 to use statements with more checks, 1 to use faster statements,"
+          " default: "
+          G_STRINGIFY (SECINFO_FAST_INIT_DEFAULT), "<number>" },
+        { "secinfo-update-strategy", '\0', 0, G_OPTION_ARG_INT,
+          &secinfo_update_strategy,
+          "The strategy how to handle SecInfo updates:"
+          " 0 (default) = keep old schemas and replace them at the end,"
+          " 1 = drop old schemas at update start, swap them in at the end.",
+          "<number>"
+          },
         { "set-encryption-key", '\0', 0, G_OPTION_ARG_STRING,
           &set_encryption_key,
           "Set the encryption key with the given UID as the new default"
@@ -2286,6 +2744,17 @@ gvmd (int argc, char** argv, char *env[])
 
   setlocale (LC_ALL, "C.UTF-8");
 
+  /* Initialize variable functions.
+   *
+   * Using variable function pointers allows them to be decoupled from
+   * other parts of the code like the database access or type-specific
+   * functions for testing or gvmd sub-services.
+   */
+
+  init_manage_filter_utils_funcs (filter_term_sql);
+  init_manage_settings_funcs (setting_value_sql,
+                              setting_value_int_sql);
+
   /* Process options. */
 
   option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
@@ -2322,10 +2791,16 @@ gvmd (int argc, char** argv, char *env[])
 #if OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
-#if CVSS3_RATINGS == 1
-      printf ("CVSS3 severity ratings enabled\n");
+#if ENABLE_AGENTS == 1
+      printf ("Agent scanning and management enabled\n");
 #endif
-      printf ("Copyright (C) 2009-2021 Greenbone AG\n");
+#if ENABLE_CONTAINER_SCANNING == 1
+      printf ("Container scanning enabled\n");
+#endif
+#if ENABLE_CREDENTIAL_STORES == 1
+      printf ("Credential stores are enabled\n");
+#endif
+      printf ("Copyright (C) 2009-2025 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
@@ -2362,9 +2837,15 @@ gvmd (int argc, char** argv, char *env[])
   /* Set the connection auto retry */
   set_scanner_connection_retry (scanner_connection_retry);
 
-  /* Set SQL sizes */
+  /* Set SQL sizes and related options */
+
+  set_secinfo_fast_init (secinfo_fast_init);
+
+  set_affected_products_query_size (affected_products_query_size);
 
   set_secinfo_commit_size (secinfo_commit_size);
+
+  set_secinfo_update_strategy (secinfo_update_strategy);
 
   set_vt_ref_insert_size (vt_ref_insert_size);
 
@@ -2415,6 +2896,27 @@ gvmd (int argc, char** argv, char *env[])
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
 
+  /* Setup logging. */
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
+                              "gvmd_log.conf",
+                              NULL);
+  if (gvm_file_is_readable (rc_name))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
+  /* Set maximum number of concurrent scan updates */
+  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
+
+  /* Set maximum number of database connections */
+  set_max_database_connections (max_database_connections);
+
+  /* Set maximum number of concurrent report processing */
+  set_max_concurrent_report_processing (max_concurrent_report_processing);
+
+  /* Initialize Inter-Process Communication */
+  init_semaphore_set ();
+
   /* Switch to UTC for scheduling. */
 
   if (migrate_database
@@ -2435,16 +2937,6 @@ gvmd (int argc, char** argv, char *env[])
 
   umask (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
 
-  /* Setup logging. */
-
-  rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "gvmd_log.conf",
-                              NULL);
-  if (gvm_file_is_readable (rc_name))
-    log_config = load_log_configuration (rc_name);
-  g_free (rc_name);
-  setup_log_handlers (log_config);
-
   /* Log whether sentry support is enabled */
   if (sentry_initialized)
     {
@@ -2455,12 +2947,6 @@ gvmd (int argc, char** argv, char *env[])
     {
       g_debug ("Sentry support disabled");
     }
-
-  /* Set maximum number of concurrent scan updates */
-  set_max_concurrent_scan_updates (max_concurrent_scan_updates);
-
-  /* Initialize Inter-Process Communication */
-  init_semaphore_set ();
 
   /* Enable GNUTLS debugging if requested via env variable.  */
   {
@@ -2474,41 +2960,34 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set number of retries waiting for memory */
   set_mem_wait_retries (mem_wait_retries);
-  
+
   /* Set minimum memory for feed updates */
   set_min_mem_feed_update (min_mem_feed_update);
 
   /* Set relay mapper */
-  if (relay_mapper)
+  if (relay_mapper && strcmp (relay_mapper, ""))
     {
-      if (strcmp (relay_mapper, ""))
-        {
-          if (gvm_file_exists (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' not found.", relay_mapper);
-          else if (gvm_file_is_readable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
-          else if (gvm_file_is_executable (relay_mapper) == 0)
-            g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
-          else
-            {
-              g_debug ("Using relay mapper '%s'.", relay_mapper);
-              set_relay_mapper_path (relay_mapper);
-            }
-        }
+      if (gvm_file_exists (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' not found.", relay_mapper);
+      else if (gvm_file_is_readable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not readable.", relay_mapper);
+      else if (gvm_file_is_executable (relay_mapper) == 0)
+        g_warning ("Relay mapper '%s' is not executable.", relay_mapper);
       else
-        g_debug ("Relay mapper disabled.");
+        {
+          g_debug ("Using relay mapper '%s'.", relay_mapper);
+          set_relay_mapper_path (relay_mapper);
+        }
     }
   else
-    {
-      gchar *default_mapper = g_find_program_in_path ("gvm-relay-mapper");
-      if (default_mapper)
-        {
-          g_debug ("Using default relay mapper '%s'.", default_mapper);
-          set_relay_mapper_path (default_mapper);
-        }
-      else
-        g_debug ("No default relay mapper found.");
-    }
+    g_debug ("Relay mapper disabled.");
+
+  /*
+   * Set up scan queue
+   */
+  set_use_scan_queue (use_scan_queue);
+  set_scan_handler_active_time (scan_handler_active_time);
+  set_max_active_scan_handlers (max_active_scan_handlers);
 
   /*
    * Parameters for new credential encryption keys
@@ -2561,7 +3040,19 @@ gvmd (int argc, char** argv, char *env[])
    * associated files are closed (i.e. when all processes exit). */
 
 
-  switch (lockfile_lock_nb (&lockfile_checking, "gvm-checking"))
+  int lock_ret;
+  int retries = 0;
+
+  lock_ret = lockfile_lock_nb (&lockfile_checking, "gvm-checking");
+
+  while (lock_ret == 1 && retries < MAX_LOCK_RETRIES)
+    {
+      gvm_sleep (4);
+      lock_ret = lockfile_lock_nb (&lockfile_checking, "gvm-checking");
+      retries++;
+    }
+
+  switch (lock_ret)
     {
       case 0:
         break;
@@ -2680,7 +3171,13 @@ gvmd (int argc, char** argv, char *env[])
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
+#if OPENVASD
+    g_critical ("%s: openvasd scanner is enabled."
+                 " The --osp-vt-update command was not executed.",
+                 __func__);
+#else
     set_osp_vt_update_socket (osp_vt_update);
+#endif
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -2833,6 +3330,16 @@ gvmd (int argc, char** argv, char *env[])
         type = SCANNER_TYPE_OPENVAS;
       else if (!strcasecmp (scanner_type, "OSP-Sensor"))
         type = SCANNER_TYPE_OSP_SENSOR;
+      else if (!strcasecmp (scanner_type, "openvasd"))
+        type = SCANNER_TYPE_OPENVASD;
+      else if (!strcasecmp (scanner_type, "openvasd-sensor"))
+        type = SCANNER_TYPE_OPENVASD_SENSOR;
+#if ENABLE_AGENTS
+      else if (!strcasecmp (scanner_type, "agent-controller"))
+        type = SCANNER_TYPE_AGENT_CONTROLLER;
+      else if (!strcasecmp (scanner_type, "agent-controller-sensor"))
+        type = SCANNER_TYPE_AGENT_CONTROLLER_SENSOR;
+#endif
       else
         {
           type = atoi (scanner_type);
@@ -2847,7 +3354,9 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_create_scanner (log_config, &database, create_scanner,
                                    scanner_host, scanner_port, stype,
                                    scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port,
+                                   scanner_no_default_certs);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2875,6 +3384,20 @@ gvmd (int argc, char** argv, char *env[])
             type = SCANNER_TYPE_OPENVAS;
           else if (!strcasecmp (scanner_type, "OSP-Sensor"))
             type = SCANNER_TYPE_OSP_SENSOR;
+          else if (!strcasecmp (scanner_type, "openvasd"))
+            type = SCANNER_TYPE_OPENVASD;
+          else if (!strcasecmp (scanner_type, "openvasd-sensor"))
+            type = SCANNER_TYPE_OPENVASD_SENSOR;
+#if ENABLE_AGENTS
+          else if (!strcasecmp (scanner_type, "agent-controller"))
+            type = SCANNER_TYPE_AGENT_CONTROLLER;
+          else if (!strcasecmp (scanner_type, "agent-controller-sensor"))
+            type = SCANNER_TYPE_AGENT_CONTROLLER_SENSOR;
+#endif
+#if ENABLE_CONTAINER_SCANNING
+          else if (!strcasecmp (scanner_type, "container-image"))
+            type = SCANNER_TYPE_CONTAINER_IMAGE;
+#endif
           else
             {
               type = atoi (scanner_type);
@@ -2894,7 +3417,8 @@ gvmd (int argc, char** argv, char *env[])
       ret = manage_modify_scanner (log_config, &database, modify_scanner,
                                    scanner_name, scanner_host, scanner_port,
                                    stype, scanner_ca_pub, scanner_credential,
-                                   scanner_key_pub, scanner_key_priv);
+                                   scanner_key_pub, scanner_key_priv,
+                                   scanner_relay_host, scanner_relay_port);
       g_free (stype);
       log_config_free ();
       if (ret)
@@ -2991,7 +3515,9 @@ gvmd (int argc, char** argv, char *env[])
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
+      set_skip_update_nvti_cache (TRUE);
       ret = manage_get_roles (log_config, &database, verbose);
+      set_skip_update_nvti_cache (FALSE);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -3007,7 +3533,9 @@ gvmd (int argc, char** argv, char *env[])
       if (option_lock (&lockfile_checking))
         return EXIT_FAILURE;
 
+      set_skip_update_nvti_cache (TRUE);
       ret = manage_get_users (log_config, &database, role, verbose);
+      set_skip_update_nvti_cache (FALSE);
       log_config_free ();
       if (ret)
         return EXIT_FAILURE;
@@ -3261,6 +3789,11 @@ gvmd (int argc, char** argv, char *env[])
   g_string_append (full_disable_commands, "get_license,modify_license");
 #endif
 
+  /* Initialize runtime flags */
+  runtime_flags_init (NULL);
+  /* Append disable commands with runtime flags*/
+  runtime_append_disabled_commands (full_disable_commands);
+
   if (full_disable_commands->len)
     disabled_commands = g_strsplit (full_disable_commands->str, ",", 0);
 
@@ -3366,7 +3899,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-
+#if OPENVASD == 0
   if (check_osp_vt_update_socket ())
     {
       g_critical ("%s: No OSP VT update socket found."
@@ -3376,6 +3909,7 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+#endif
 
   /* Enter the main forever-loop. */
 

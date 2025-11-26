@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_port_lists.c
+ * @file
  * @brief GVM management layer: Port list SQL
  *
  * The Port List SQL for the GVM management layer.
@@ -1826,39 +1826,45 @@ delete_port_range (const char *port_range_id, int dummy)
    GET_ITERATOR_COLUMNS (port_lists),                              \
    {                                                               \
      /* COUNT ALL ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id)",         \
+     "coalesce ("                                                   \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id),"        \
+     " 0)",                                                        \
      "total",                                                      \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT TCP ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id"           \
-     "                  AND   type = 0)",                          \
+     "coalesce ("                                                  \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id"          \
+     "                   AND   type = 0),"                         \
+     " 0)",                          \
      "tcp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
    {                                                               \
      /* COUNT UDP ports */                                         \
-     "(SELECT"                                                     \
-     " sum ((CASE"                                                 \
-     "       WHEN \"end\" IS NULL THEN start ELSE \"end\""         \
-     "       END)"                                                 \
-     "      - start"                                               \
-     "      + 1)"                                                  \
-     " FROM port_ranges WHERE port_list = port_lists.id"           \
-     "                  AND   type = 1)",                          \
+     "coalesce("                                                   \
+     " (SELECT"                                                    \
+     "  sum ((CASE"                                                \
+     "        WHEN \"end\" IS NULL THEN start ELSE \"end\""        \
+     "        END)"                                                \
+     "       - start"                                              \
+     "       + 1)"                                                 \
+     "  FROM port_ranges WHERE port_list = port_lists.id"          \
+     "                   AND   type = 1),"                         \
+     " 0)",                                                        \
      "udp",                                                        \
      KEYWORD_TYPE_INTEGER                                          \
    },                                                              \
@@ -2652,11 +2658,16 @@ update_port_list (port_list_t port_list, const gchar *name,
 
 /**
  * @brief Check port lists, for startup.
+ *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts.
  */
 void
-check_db_port_lists ()
+check_db_port_lists (int avoid_db_check_inserts)
 {
   migrate_predefined_port_lists ();
+
+  if (avoid_db_check_inserts)
+    return;
 
   if (sync_port_lists_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync port lists with feed", __func__);

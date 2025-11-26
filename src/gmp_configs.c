@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_configs.c
+ * @file
  * @brief GVM GMP layer: Configs
  *
  * GMP configs.

@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_port_lists.c
+ * @file
  * @brief GVM GMP layer: Port Lists
  *
  * GMP port lists.
@@ -32,6 +32,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
 
 
 /* CREATE_PORT_LIST. */

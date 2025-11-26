@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_configs.c
+ * @file
  * @brief GVM management layer: Config SQL
  *
  * The Config SQL for the GVM management layer.
@@ -1747,9 +1747,11 @@ manage_nvt_preference_add (const char *name, const char *value,
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  oid       OID of NVT, NULL for all preferences.
+ * @param[in]  include_timeout  Whether to include the timeout preference.
  */
 void
-init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
+init_nvt_preference_iterator (iterator_t* iterator, const char *oid,
+                              gboolean include_timeout)
 {
   if (oid)
     {
@@ -1762,7 +1764,7 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                      " AND name != 'nasl_no_signature_check'"
                      " AND name != 'network_targets'"
                      " AND name != 'ntp_save_sessions'"
-                     " AND name != '%s:0:entry:timeout'"
+                     " %s%s%s"
                      " AND name NOT %s 'server_info_%%'"
                      /* Task preferences. */
                      " AND name != 'max_checks'"
@@ -1770,7 +1772,9 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                      " ORDER BY name ASC",
                      sql_ilike_op (),
                      quoted_oid,
-                     quoted_oid,
+                     include_timeout ? "" : "AND name != '",
+                     include_timeout ? "" : quoted_oid,
+                     include_timeout ? "" : ":0:entry:timeout'",
                      sql_ilike_op ());
       g_free (quoted_oid);
     }
@@ -1782,13 +1786,15 @@ init_nvt_preference_iterator (iterator_t* iterator, const char *oid)
                    " AND name != 'nasl_no_signature_check'"
                    " AND name != 'network_targets'"
                    " AND name != 'ntp_save_sessions'"
-                   " AND name NOT %s '%%:0:entry:timeout'"
+                   " %s%s%s"
                    " AND name NOT %s 'server_info_%%'"
                    /* Task preferences. */
                    " AND name != 'max_checks'"
                    " AND name != 'max_hosts'"
                    " ORDER BY name ASC",
-                   sql_ilike_op (),
+                   include_timeout ? "" : "AND name NOT ",
+                   include_timeout ? "" : sql_ilike_op (),
+                   include_timeout ? "" : " '%:0:entry:timeout'",
                    sql_ilike_op ());
 }
 
@@ -2327,28 +2333,8 @@ config_insert_preferences (config_t config,
         gchar *quoted_value;
 
         if (preference->name == NULL) return -4;
-        if (strcmp (preference->name, "Timeout") == 0)
-          {
-            gchar *quoted_nvt_oid;
 
-            /* Special Timeout preference. */
-
-            if (preference->nvt_oid == NULL)
-              return -4;
-
-            quoted_nvt_oid = sql_quote (preference->nvt_oid);
-            quoted_value = sql_quote (preference->value);
-
-            sql ("INSERT into config_preferences (config, type, name, value)"
-                 " VALUES (%llu, 'SERVER_PREFS', 'timeout.%s', '%s');",
-                 config,
-                 quoted_nvt_oid,
-                 quoted_value);
-
-            g_free (quoted_nvt_oid);
-            g_free (quoted_value);
-          }
-        else if (preference->type)
+        if (preference->type)
           {
             gchar *quoted_type, *quoted_nvt_oid, *quoted_preference_name;
             gchar *quoted_preference_id;
@@ -2367,7 +2353,13 @@ config_insert_preferences (config_t config,
 
             quoted_nvt_oid = sql_quote (preference->nvt_oid ?: "");
             quoted_preference_id = sql_quote (preference->id ?: "");
-            quoted_preference_name = sql_quote (preference->name);
+
+            // Special handling of "Timeout" preference
+            if (strcmp (preference->name, "Timeout") == 0)
+              quoted_preference_name = g_strdup ("timeout");
+            else
+              quoted_preference_name = sql_quote (preference->name);
+
             quoted_type
               = g_str_has_prefix (preference->type, "osp_")
                   ? sql_quote (preference->type + strlen ("osp_"))
@@ -2462,11 +2454,21 @@ create_config_internal (int check_access, const char *config_id,
 
   assert (current_credentials.uuid);
 
-  if (config_id
-      && (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
+  if (config_id)
+    {
+      if (g_regex_match_simple ("^[-0123456789abcdef]{36}$",
                                 config_id, 0, 0)
-          == FALSE))
-    return -5;
+          == FALSE)
+        return -5;
+
+      if (find_config_no_acl (config_id, config))
+        {
+          g_warning ("%s: Error looking up config '%s'", __func__, config_id);
+          return -1;
+        }
+      if (*config)
+        return 1;
+    }
 
   if (proposed_name == NULL || strlen (proposed_name) == 0) return -2;
 
@@ -2736,8 +2738,8 @@ config_nvt_timeout (config_t config, const char *oid)
 {
   return sql_string ("SELECT value FROM config_preferences"
                      " WHERE config = %llu"
-                     " AND type = 'SERVER_PREFS'"
-                     " AND name = 'timeout.%s';",
+                     " AND type = 'PLUGINS_PREFS'"
+                     " AND name = '%s:0:entry:timeout';",
                      config,
                      oid);
 }
@@ -2761,6 +2763,14 @@ create_task_check_scanner_type (scanner_t scanner)
   if (stype == SCANNER_TYPE_OPENVAS)
     return 1;
   if (stype == SCANNER_TYPE_OSP_SENSOR)
+    return 1;
+  if (stype == SCANNER_TYPE_OPENVASD)
+    return 1;
+  if (stype == SCANNER_TYPE_AGENT_CONTROLLER)
+    return 1;
+  if (stype == SCANNER_TYPE_OPENVASD_SENSOR)
+    return 1;
+  if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
     return 1;
 
   return 0;
@@ -2829,6 +2839,18 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
 
   /* OSP Sensor with OpenVAS config. */
   if (stype == SCANNER_TYPE_OSP_SENSOR)
+    return 0;
+
+  if (stype == SCANNER_TYPE_OPENVASD)
+    return 0;
+
+  if (stype == SCANNER_TYPE_OPENVASD_SENSOR)
+    return 0;
+
+  if (stype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    return 0;
+
+  if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
@@ -3465,16 +3487,16 @@ init_preference_iterator (iterator_t* iterator,
                  " FROM config_preferences, nvt_preferences"
                  " WHERE config_preferences.config = %llu"
                  " AND config_preferences.type = '%s'"
-                 " AND (config_preferences.name = nvt_preferences.name"
-                 "      OR config_preferences.name LIKE 'timeout.%%')"
                  " AND config_preferences.name != 'max_checks'"
                  " AND config_preferences.name != 'max_hosts'"
                  " UNION"
                  " SELECT nvt_preferences.name, nvt_preferences.value"
                  " FROM nvt_preferences"
                  " LEFT JOIN config_preferences"
-                 "      ON config_preferences.config = %llu AND config_preferences.name = nvt_preferences.name"
-                 " WHERE config_preferences.id IS NULL AND nvt_preferences.name %s",
+                 "      ON config_preferences.config = %llu"
+                 "         AND config_preferences.name = nvt_preferences.name"
+                 " WHERE config_preferences.id IS NULL"
+                 "   AND nvt_preferences.name %s",
                  config,
                  quoted_section,
                  config,
@@ -4162,62 +4184,6 @@ config_task_iterator_readable (iterator_t* iterator)
 }
 
 /**
- * @brief Initialise a config timeout iterator.
- *
- * Iterate over all timeout preferences of NVTs that have timeouts.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  config     Config.
- */
-void
-init_config_timeout_iterator (iterator_t* iterator, config_t config)
-{
-  init_iterator (iterator,
-                 "SELECT name, substr (name, 9),"
-                 "       (SELECT name FROM nvts"
-                 "        WHERE oid = substr (config_preferences.name, 9)),"
-                 "       value"
-                 " FROM config_preferences"
-                 " WHERE config = %llu"
-                 " AND substr (name, 1, 8) = 'timeout.'"
-                 /* Ensure that the NVT pref comes first, in case an
-                  * error in the GSA added the NVT pref as a Scanner
-                  * pref. */
-                 " ORDER BY type",
-                 config);
-}
-
-/**
- * @brief Get the NVT OID from a config timeout iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return NVT OID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_timeout_iterator_oid, 1);
-
-/**
- * @brief Get the NVT OID from a config timeout iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return NVT OID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_timeout_iterator_nvt_name, 2);
-
-/**
- * @brief Get the value from a config timeout iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Timeout value, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (config_timeout_iterator_value, 3);
-
-/**
  * @brief Update the cached count and growing information in a config.
  *
  * It's up to the caller to organise a transaction.
@@ -4532,11 +4498,16 @@ update_config (config_t config, const gchar *name,
 
 /**
  * @brief Check configs, for startup.
+ *
+ * @param[in] avoid_db_check_inserts  Whether to avoid inserts.
  */
 void
-check_db_configs ()
+check_db_configs (int avoid_db_check_inserts)
 {
   migrate_predefined_configs ();
+
+  if (avoid_db_check_inserts)
+    return;
 
   if (sync_configs_with_feed (FALSE) <= -1)
     g_warning ("%s: Failed to sync configs with feed", __func__);

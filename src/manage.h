@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: the Manage library.
  */
 
@@ -25,8 +25,17 @@
 #define _GVMD_MANAGE_H
 
 #include "iterator.h"
+#include "manage_agent_installers.h"
+#include "manage_filter_utils.h"
+#include "manage_resources.h"
+#include "manage_settings.h"
+
+#include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_events.h"
 #include "manage_get.h"
+#include "manage_tasks.h"
+#include "sql.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -41,15 +50,25 @@
 #include <gvm/util/authutils.h>
 #include <gvm/osp/osp.h>
 
-/**
- * @brief Data structure for info used to connect to the database
- */
-typedef struct {
-  gchar *name; ///< The database name
-  gchar *host; ///< The database host or socket directory
-  gchar *port; ///< The database port or socket file extension
-  gchar *user; ///< The database user name
-} db_conn_info_t;
+#if ENABLE_HTTP_SCANNER
+#include "manage_http_scanner.h"
+#endif
+
+#if OPENVASD
+#include <gvm/openvasd/openvasd.h>
+#endif
+
+#if ENABLE_AGENTS
+#include <gvm/agent_controller/agent_controller.h>
+#include "manage_agent_control_scan_config.h"
+#include "manage_agent_groups.h"
+#include "manage_agents.h"
+#endif
+
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_oci_image_targets.h"
+#include "manage_container_image_scanner.h"
+#endif
 
 /**
  * @brief OID of ping_host.nasl
@@ -127,7 +146,7 @@ init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);
@@ -141,24 +160,14 @@ manage_cleanup_process_error (int);
 void
 manage_reset_currents ();
 
-
 /* Commands. */
 
-/**
- * @brief A command.
- */
-typedef struct
-{
-  gchar *name;     ///< Command name.
-  gchar *summary;  ///< Summary of command.
-} command_t;
+#define MAX_LOCK_RETRIES 16
 
-/**
- * @brief The GMP command list.
- */
-extern command_t gmp_commands[];
+#define MAX_DATABASE_CONNECTIONS_DEFAULT 50
 
-
+#define MAX_REPORT_PROCESSING_DEFAULT 30
+
 /* Certificate and key management. */
 
 gchar*
@@ -261,7 +270,17 @@ void
 manage_transaction_stop (gboolean);
 
 
-/* Task structures. */
+/* Task macros and structures. */
+
+/**
+ * @brief Default for Scanner max_checks preference.
+ */
+#define MAX_CHECKS_DEFAULT "4"
+
+/**
+ * @brief Default for Scanner max_hosts preference.
+ */
+#define MAX_HOSTS_DEFAULT "20"
 
 /**
  * @brief Task statuses, also used as scan/report statuses.
@@ -328,51 +347,25 @@ typedef enum scanner_type
   SCANNER_TYPE_CVE = 3,
   /* 4 was removed (SCANNER_TYPE_GMP). */
   SCANNER_TYPE_OSP_SENSOR = 5,
-  SCANNER_TYPE_MAX = 6,
+  SCANNER_TYPE_OPENVASD = 6,
+  SCANNER_TYPE_AGENT_CONTROLLER = 7,
+  SCANNER_TYPE_OPENVASD_SENSOR = 8,
+  SCANNER_TYPE_AGENT_CONTROLLER_SENSOR = 9,
+  SCANNER_TYPE_CONTAINER_IMAGE = 10,
+  SCANNER_TYPE_MAX = 11,
 } scanner_type_t;
 
 int
 scanner_type_valid (scanner_type_t);
 
-typedef resource_t credential_t;
-typedef resource_t alert_t;
-typedef resource_t filter_t;
-typedef resource_t group_t;
-typedef resource_t host_t;
-typedef resource_t tag_t;
-typedef resource_t target_t;
-typedef resource_t task_t;
-typedef resource_t ticket_t;
-typedef resource_t tls_certificate_t;
-typedef resource_t result_t;
-typedef resource_t report_t;
-typedef resource_t report_host_t;
-typedef resource_t report_config_t;
-typedef resource_t report_config_param_t;
-typedef resource_t report_format_t;
-typedef resource_t report_format_param_t;
-typedef resource_t role_t;
-typedef resource_t note_t;
-typedef resource_t nvt_t;
-typedef resource_t override_t;
-typedef resource_t permission_t;
-typedef resource_t port_list_t;
-typedef resource_t port_range_t;
-typedef resource_t schedule_t;
-typedef resource_t scanner_t;
-typedef resource_t setting_t;
-typedef resource_t user_t;
+int
+scanner_type_supports_unix_sockets (scanner_type_t);
 
-
-/* GMP GET support.
- *
- * The standalone parts of the GET support are in manage_get.h. */
+scanner_type_t
+get_scanner_type (scanner_t);
 
-resource_t
-get_iterator_resource (iterator_t*);
-
-user_t
-get_iterator_owner (iterator_t*);
+scanner_type_t
+get_scanner_type_by_uuid (const char *);
 
 
 /* Resources. */
@@ -398,15 +391,6 @@ find_resource (const char*, const char*, resource_t*);
 gboolean
 find_resource_no_acl (const char*, const char*, resource_t*);
 
-const char *
-type_name_plural (const char*);
-
-const char *
-type_name (const char*);
-
-int
-type_is_scap (const char*);
-
 int
 delete_resource (const char *, const char *, int);
 
@@ -418,22 +402,6 @@ set_resource_id_deprecated (const char *, const char *, gboolean);
 
 
 /* Events and Alerts. */
-
-/**
- * @brief Data about a report sent by an alert.
- */
-typedef struct {
-  gchar *local_filename;          ///< Path to the local report file.
-  gchar *remote_filename;         ///< Path or filename to send to / as.
-  gchar *content_type;            ///< The MIME content type of the report.
-  gchar *report_format_name;      ///< Name of the report format used.
-} alert_report_data_t;
-
-void
-alert_report_data_free (alert_report_data_t *);
-
-void
-alert_report_data_reset (alert_report_data_t *);
 
 /**
  * @brief Default format string for alert email, when including report.
@@ -536,183 +504,6 @@ alert_report_data_reset (alert_report_data_t *);
  "This ticket was created automatically as a security scan escalation.\n"     \
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
-
-/**
- * @brief Types of task events.
- */
-typedef enum
-{
-  EVENT_ERROR,
-  EVENT_TASK_RUN_STATUS_CHANGED,
-  EVENT_NEW_SECINFO,
-  EVENT_UPDATED_SECINFO,
-  EVENT_TICKET_RECEIVED,
-  EVENT_ASSIGNED_TICKET_CHANGED,
-  EVENT_OWNED_TICKET_CHANGED
-} event_t;
-
-/**
- * @brief Types of alerts.
- */
-typedef enum
-{
-  ALERT_METHOD_ERROR,
-  ALERT_METHOD_EMAIL,
-  ALERT_METHOD_HTTP_GET,
-  ALERT_METHOD_SOURCEFIRE,
-  ALERT_METHOD_START_TASK,
-  ALERT_METHOD_SYSLOG,
-  ALERT_METHOD_VERINICE,
-  ALERT_METHOD_SEND,
-  ALERT_METHOD_SCP,
-  ALERT_METHOD_SNMP,
-  ALERT_METHOD_SMB,
-  ALERT_METHOD_TIPPINGPOINT,
-  ALERT_METHOD_VFIRE,
-} alert_method_t;
-
-/**
- * @brief Types of alert conditions.
- */
-typedef enum
-{
-  ALERT_CONDITION_ERROR,
-  ALERT_CONDITION_ALWAYS,
-  ALERT_CONDITION_SEVERITY_AT_LEAST,
-  ALERT_CONDITION_SEVERITY_CHANGED,
-  ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-  ALERT_CONDITION_FILTER_COUNT_CHANGED
-} alert_condition_t;
-
-int
-manage_check_alerts (GSList *, const db_conn_info_t *);
-
-int
-create_alert (const char*, const char*, const char*, const char*, event_t,
-              GPtrArray*, alert_condition_t, GPtrArray*, alert_method_t,
-              GPtrArray*, alert_t*);
-
-int
-copy_alert (const char*, const char*, const char*, alert_t*);
-
-int
-modify_alert (const char*, const char*, const char*, const char*,
-              const char*, event_t, GPtrArray*, alert_condition_t, GPtrArray*,
-              alert_method_t, GPtrArray*);
-
-int
-delete_alert (const char *, int);
-
-char *
-alert_uuid (alert_t);
-
-gboolean
-find_alert_with_permission (const char *, alert_t *, const char *);
-
-int
-manage_alert (const char *, const char *, event_t, const void*, gchar **);
-
-int
-manage_test_alert (const char *, gchar **);
-
-int
-alert_in_use (alert_t);
-
-int
-trash_alert_in_use (alert_t);
-
-int
-alert_writable (alert_t);
-
-int
-trash_alert_writable (alert_t);
-
-int
-alert_count (const get_data_t *);
-
-int
-init_alert_iterator (iterator_t*, get_data_t*);
-
-int
-alert_iterator_event (iterator_t*);
-
-int
-alert_iterator_condition (iterator_t*);
-
-int
-alert_iterator_method (iterator_t*);
-
-char *
-alert_iterator_filter_uuid (iterator_t*);
-
-char *
-alert_iterator_filter_name (iterator_t*);
-
-int
-alert_iterator_filter_trash (iterator_t*);
-
-int
-alert_iterator_filter_readable (iterator_t*);
-
-int
-alert_iterator_active (iterator_t*);
-
-const char*
-alert_condition_name (alert_condition_t);
-
-gchar*
-alert_condition_description (alert_condition_t, alert_t);
-
-const char*
-event_name (event_t);
-
-gchar*
-event_description (event_t, const void *, const char *);
-
-alert_method_t
-alert_method (alert_t alert);
-
-const char*
-alert_method_name (alert_method_t);
-
-alert_condition_t
-alert_condition_from_name (const char*);
-
-event_t
-event_from_name (const char*);
-
-alert_method_t
-alert_method_from_name (const char*);
-
-void
-init_alert_data_iterator (iterator_t *, alert_t, int, const char *);
-
-const char*
-alert_data_iterator_name (iterator_t*);
-
-const char*
-alert_data_iterator_data (iterator_t*);
-
-void
-init_alert_task_iterator (iterator_t*, alert_t, int);
-
-const char*
-alert_task_iterator_name (iterator_t*);
-
-const char*
-alert_task_iterator_uuid (iterator_t*);
-
-int
-alert_task_iterator_readable (iterator_t*);
-
-void
-init_task_alert_iterator (iterator_t*, task_t);
-
-const char*
-task_alert_iterator_uuid (iterator_t*);
-
-const char*
-task_alert_iterator_name (iterator_t*);
 
 
 /* Task global variables and preprocessor variables. */
@@ -832,6 +623,41 @@ task_target_in_trash (task_t);
 void
 set_task_target (task_t, target_t);
 
+#if ENABLE_AGENTS
+void
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group);
+
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner);
+
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner);
+
+agent_group_t
+task_agent_group (task_t);
+
+int
+task_agent_group_in_trash (task_t task);
+
+#endif /* ENABLE_AGENTS */
+
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods);
+
+#if ENABLE_CONTAINER_SCANNING
+
+oci_image_target_t
+task_oci_image_target (task_t);
+
+int
+task_oci_image_target_in_trash (task_t);
+
+void
+set_task_oci_image_target (task_t, oci_image_target_t);
+
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 set_task_hosts_ordering (task_t, const char *);
 
@@ -902,9 +728,8 @@ int
 task_last_report (task_t, report_t*);
 
 const char *
-task_iterator_trend_counts (iterator_t *, int, int, int, double, int, int, int,
-                            double);
-
+task_iterator_trend_counts (iterator_t *, int, int, int, int, double, int, int,
+                            int, int, double);
 int
 task_schedule_periods (task_t);
 
@@ -1005,7 +830,8 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, gchar **, gchar **);
+             array_t *, const gchar *, const gchar *, const gchar *,
+             gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
@@ -1030,6 +856,9 @@ config_task_iterator_readable (iterator_t*);
 
 
 /* General severity related facilities. */
+
+const char *
+threat_message_type (const char *);
 
 int
 severity_in_level (double, const char *);
@@ -1067,13 +896,16 @@ severity_data_add_count (severity_data_t*, double, int);
 
 void
 severity_data_level_counts (const severity_data_t*,
-                            int*, int*, int*, int*, int*, int*);
+                            int*, int*, int*, int*, int*, int*, int*);
 
 
 /* General task facilities. */
 
 const char*
 run_status_name (task_status_t);
+
+void
+set_task_interrupted (task_t, const gchar *);
 
 int
 start_task (const char *, char**);
@@ -1088,21 +920,6 @@ int
 move_task (const char*, const char*);
 
 
-/* Access control. */
-
-int
-user_may (const char *);
-
-extern int
-user_can_everything (const char *);
-
-extern int
-user_can_super_everyone (const char *);
-
-extern int
-user_has_super (const char *, user_t);
-
-
 /* Results. */
 
 /**
@@ -1112,6 +929,7 @@ user_has_super (const char *, user_t);
   "'AIX Local Security Checks',"                   \
   " 'AlmaLinux Local Security Checks',"            \
   " 'Amazon Linux Local Security Checks',"         \
+  " 'Arch Linux Local Security Checks',"           \
   " 'CentOS Local Security Checks',"               \
   " 'Citrix Xenserver Local Security Checks',"     \
   " 'Debian Local Security Checks',"               \
@@ -1120,12 +938,15 @@ user_has_super (const char *, user_t);
   " 'FortiOS Local Security Checks',"              \
   " 'FreeBSD Local Security Checks',"              \
   " 'Gentoo Local Security Checks',"               \
+  " 'HCE Local Security Checks',"                  \
   " 'HP-UX Local Security Checks',"                \
   " 'Huawei EulerOS Local Security Checks',"       \
   " 'JunOS Local Security Checks',"                \
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
+  " 'openEuler Local Security Checks',"            \
+  " 'openSUSE Local Security Checks',"             \
   " 'Oracle Linux Local Security Checks',"         \
   " 'Palo Alto PAN-OS Local Security Checks',"     \
   " 'Red Hat Local Security Checks',"              \
@@ -1135,7 +956,8 @@ user_has_super (const char *, user_t);
   " 'SuSE Local Security Checks',"                 \
   " 'VMware Local Security Checks',"               \
   " 'Ubuntu Local Security Checks',"               \
-  " 'Windows : Microsoft Bulletins'"
+  " 'Windows : Microsoft Bulletins',"              \
+  " 'Windows Local Security Checks'"
 
 /**
  * @brief Whole only families.
@@ -1144,15 +966,19 @@ user_has_super (const char *, user_t);
   { "AIX Local Security Checks",                   \
     "AlmaLinux Local Security Checks",             \
     "Amazon Linux Local Security Checks",          \
+    "Arch Linux Local Security Checks",            \
     "CentOS Local Security Checks",                \
     "Debian Local Security Checks",                \
     "Fedora Local Security Checks",                \
     "FreeBSD Local Security Checks",               \
     "Gentoo Local Security Checks",                \
+    "HCE Local Security Checks",                   \
     "HP-UX Local Security Checks",                 \
     "Huawei EulerOS Local Security Checks",        \
     "Mageia Linux Local Security Checks",          \
     "Mandrake Local Security Checks",              \
+    "openEuler Local Security Checks",             \
+    "openSUSE Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
     "Red Hat Local Security Checks",               \
     "Rocky Linux Local Security Checks",           \
@@ -1160,6 +986,7 @@ user_has_super (const char *, user_t);
     "Solaris Local Security Checks",               \
     "SuSE Local Security Checks",                  \
     "Ubuntu Local Security Checks",                \
+    "Windows Local Security Checks",               \
     NULL }
 
 gboolean
@@ -1176,19 +1003,9 @@ result_detection_reference (result_t, report_t, const char *, const char *,
 /* Reports. */
 
 /**
- * @brief Default apply_overrides setting
- */
-#define APPLY_OVERRIDES_DEFAULT 0
-
-/**
  * @brief Default quality of detection percentage.
  */
 #define QOD_DEFAULT 75
-
-/**
- * @brief Default min quality of detection percentage for filters.
- */
-#define MIN_QOD_DEFAULT 70
 
 /**
  * @brief Default size to limit note and override text to in reports.
@@ -1221,6 +1038,12 @@ find_report_with_permission (const char *, report_t *, const char *);
 
 report_t
 make_report (task_t, const char *, task_status_t);
+
+void
+manage_queued_task_actions ();
+
+void
+manage_process_report_imports ();
 
 int
 qod_from_type (const char *);
@@ -1287,18 +1110,6 @@ insert_report_host_detail (report_t, const char *, const char *, const char *,
                            const char *, const char *, const char *,
                            const char *);
 
-int
-manage_report_host_detail (report_t, const char *, const char *, GHashTable *);
-
-void
-hosts_set_identifiers (report_t);
-
-void
-hosts_set_max_severity (report_t, int*, int*);
-
-void
-hosts_set_details (report_t report);
-
 void
 clear_duration_schedules (task_t);
 
@@ -1338,11 +1149,11 @@ report_scan_result_count (report_t, const char*, const char*, int, const char*,
                           const char*, int, int, int*);
 
 int
-report_counts (const char*, int*, int*, int*, int*, int*, double*,
+report_counts (const char*, int*, int*, int*, int*, int*, int*, double*,
                int, int);
 
 int
-report_counts_id (report_t, int*, int*, int*, int*, int*, double*,
+report_counts_id (report_t, int*, int*, int*, int*, int*, int*, double*,
                   const get_data_t*, const char*);
 
 int
@@ -1406,6 +1217,9 @@ init_report_iterator_task (iterator_t*, task_t);
 void
 init_report_errors_iterator (iterator_t*, report_t);
 
+void
+init_report_awaiting_processing_iterator (iterator_t*, int);
+
 const char*
 report_iterator_uuid (iterator_t*);
 
@@ -1416,7 +1230,7 @@ int
 init_result_get_iterator (iterator_t*, const get_data_t *, report_t,
                           const char*, const gchar *);
 int
-init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);                         
+init_result_get_iterator_all (iterator_t* iterator, get_data_t *get);
 
 gboolean
 next_report (iterator_t*, report_t*);
@@ -1751,7 +1565,7 @@ int
 cpe_match_string_iterator_vulnerable (iterator_t*);
 
 void
-init_cpe_match_string_matches_iterator (iterator_t*, const char *);
+init_cpe_match_string_matches_iterator (iterator_t*, const char *, const char*);
 
 const char*
 cpe_matches_cpe_name_id (iterator_t*);
@@ -1803,20 +1617,6 @@ prognosis_iterator_description (iterator_t*);
 int
 manage_max_hosts ();
 
-void
-manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
-
-void
-manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
-                               int *, gchar **, gchar **, gchar **, gchar **, 
-                               gchar **, int *, int *, int *, int *, gchar **);
-
-gchar *
-manage_clean_filter (const gchar *);
-
-gchar *
-manage_clean_filter_remove (const gchar *, const gchar *);
-
 int
 manage_count_hosts (const char *, const char *);
 
@@ -1826,9 +1626,11 @@ find_target_with_permission (const char *, target_t *, const char *);
 int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, credential_t,
-               const char *, credential_t, credential_t, credential_t,
-               const char *, const char *, const char *, const char *,
-               target_t*);
+               const char *,
+               credential_t, credential_t, credential_t, credential_t,
+               const char *, const char *,
+               GPtrArray *, const char *,
+               const char *, target_t*);
 
 int
 copy_target (const char*, const char*, const char *, target_t*);
@@ -1837,7 +1639,7 @@ int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
-               const char*);
+               GPtrArray *, const char*, const char*);
 
 int
 delete_target (const char*, int);
@@ -1888,6 +1690,9 @@ int
 target_iterator_ssh_elevate_credential (iterator_t*);
 
 int
+target_iterator_krb5_credential (iterator_t*);
+
+int
 target_iterator_ssh_trash (iterator_t*);
 
 int
@@ -1902,6 +1707,9 @@ target_iterator_snmp_trash (iterator_t*);
 int
 target_iterator_ssh_elevate_trash (iterator_t*);
 
+int
+target_iterator_krb5_trash (iterator_t*);
+
 const char*
 target_iterator_allow_simultaneous_ips (iterator_t*);
 
@@ -1914,7 +1722,7 @@ target_iterator_port_list_name (iterator_t*);
 int
 target_iterator_port_list_trash (iterator_t*);
 
-const char*
+int
 target_iterator_alive_tests (iterator_t*);
 
 char*
@@ -2191,7 +1999,7 @@ void
 manage_nvt_preferences_enable ();
 
 void
-init_nvt_preference_iterator (iterator_t*, const char*);
+init_nvt_preference_iterator (iterator_t*, const char*, gboolean);
 
 const char*
 nvt_preference_iterator_name (iterator_t*);
@@ -2293,7 +2101,8 @@ int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, credential_t*);
+                   array_t*,    const char*, const char*, const char*,
+                   const char*, const char*, const char*, credential_t*);
 
 int
 copy_credential (const char*, const char*, const char*,
@@ -2303,7 +2112,8 @@ int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*);
+                   const char*, array_t*, const char*, const char*,
+                   const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -2343,6 +2153,25 @@ credential_iterator_privacy_password (iterator_t*);
 
 const char*
 credential_iterator_public_key (iterator_t*);
+
+const char*
+credential_iterator_kdc (iterator_t*);
+
+const char*
+credential_iterator_realm (iterator_t*);
+
+#if ENABLE_CREDENTIAL_STORES
+
+const char*
+credential_iterator_credential_store_uuid (iterator_t*);
+
+const char*
+credential_iterator_vault_id (iterator_t*);
+
+const char*
+credential_iterator_host_identifier (iterator_t*);
+
+#endif
 
 const char*
 credential_iterator_private_key (iterator_t*);
@@ -2401,6 +2230,20 @@ credential_target_iterator_name (iterator_t*);
 int
 credential_target_iterator_readable (iterator_t*);
 
+#if ENABLE_CONTAINER_SCANNING
+void
+init_credential_oci_image_target_iterator (iterator_t*, credential_t, int);
+
+const char*
+credential_oci_target_iterator_uuid (iterator_t*);
+
+const char*
+credential_oci_target_iterator_name (iterator_t*);
+
+int
+credential_oci_target_iterator_readable (iterator_t*);
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 void
 init_credential_scanner_iterator (iterator_t*, credential_t, int);
 
@@ -2433,128 +2276,6 @@ credential_value (credential_t, const char*);
 
 gchar*
 credential_encrypted_value (credential_t, const char*);
-
-
-
-/* Assets. */
-
-char *
-result_host_asset_id (const char *, result_t);
-
-char*
-host_uuid (resource_t);
-
-host_t
-host_notice (const char *, const char *, const char *, const char *,
-             const char *, int, int);
-
-void
-init_host_identifier_iterator (iterator_t*, host_t, int, const char*);
-
-const char*
-host_identifier_iterator_value (iterator_t *);
-
-const char*
-host_identifier_iterator_source_type (iterator_t *);
-
-const char*
-host_identifier_iterator_source_id (iterator_t *);
-
-const char*
-host_identifier_iterator_source_data (iterator_t *);
-
-int
-host_identifier_iterator_source_orphan (iterator_t *);
-
-const char*
-host_identifier_iterator_os_id (iterator_t *);
-
-const char*
-host_identifier_iterator_os_title (iterator_t *);
-
-int
-init_asset_host_iterator (iterator_t *, const get_data_t *);
-
-int
-init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get);
-
-int
-asset_iterator_writable (iterator_t *);
-
-int
-asset_iterator_in_use (iterator_t *);
-
-const char*
-asset_host_iterator_severity (iterator_t *);
-
-int
-asset_host_count (const get_data_t *);
-
-int
-init_asset_os_iterator (iterator_t *, const get_data_t *);
-
-int
-init_resource_names_os_iterator (iterator_t *, get_data_t *);
-
-const char*
-asset_os_iterator_title (iterator_t *);
-
-int
-asset_os_iterator_installs (iterator_t *);
-
-const char*
-asset_os_iterator_latest_severity (iterator_t *);
-
-const char*
-asset_os_iterator_highest_severity (iterator_t *);
-
-const char*
-asset_os_iterator_average_severity (iterator_t *);
-
-int
-asset_os_iterator_all_installs (iterator_t *);
-
-int
-asset_os_count (const get_data_t *);
-
-int
-total_asset_count (const get_data_t *);
-
-void
-init_os_host_iterator (iterator_t *, resource_t);
-
-const char*
-os_host_iterator_severity (iterator_t *);
-
-void
-init_host_detail_iterator (iterator_t *, resource_t);
-
-const char*
-host_detail_iterator_name (iterator_t *);
-
-const char*
-host_detail_iterator_value (iterator_t *);
-
-const char*
-host_detail_iterator_source_type (iterator_t *);
-
-const char*
-host_detail_iterator_source_id (iterator_t *);
-
-int
-modify_asset (const char *, const char *);
-
-int
-delete_asset (const char *, const char *, int);
-
-int
-create_asset_report (const char *, const char *);
-
-int
-create_asset_host (const char *, const char *, resource_t* );
-
-int
-add_assets_from_host_in_report (report_t report, const char *host);
 
 
 /* Notes. */
@@ -2664,7 +2385,7 @@ init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
                         task_t);
 
 int
-init_override_iterator_all (iterator_t* iterator, get_data_t *get);                        
+init_override_iterator_all (iterator_t* iterator, get_data_t *get);
 
 const char*
 override_iterator_nvt_oid (iterator_t*);
@@ -2757,12 +2478,14 @@ manage_system_report (const char *, const char *, const char *, const char *,
 int
 manage_create_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *);
+                       const char *, const char *, const char *,
+                       const char *, const char *, int);
 
 int
 manage_modify_scanner (GSList *, const db_conn_info_t *, const char *,
                        const char *, const char *, const char *, const char *,
-                       const char *, const char *, const char *, const char *);
+                       const char *, const char *, const char *, const char *,
+                       const char *, const char *);
 
 int
 manage_delete_scanner (GSList *, const db_conn_info_t *, const gchar *);
@@ -2773,16 +2496,53 @@ manage_verify_scanner (GSList *, const db_conn_info_t *, const gchar *);
 int
 manage_get_scanners (GSList *, const db_conn_info_t *);
 
-int
+
+typedef enum {
+  CREATE_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  CREATE_SCANNER_SUCCESS = 0,             ///< Success
+  CREATE_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  CREATE_SCANNER_MISSING_TYPE,            ///< Missing type
+  CREATE_SCANNER_MISSING_HOST,            ///< Missing host
+  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  CREATE_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  CREATE_SCANNER_INVALID_TYPE,            ///< Invalid type
+  CREATE_SCANNER_INVALID_PORT,            ///< Invalid port
+  CREATE_SCANNER_INVALID_HOST,            ///< Invalid host
+  CREATE_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  CREATE_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  CREATE_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} create_scanner_return_t;
+
+create_scanner_return_t
 create_scanner (const char*, const char *, const char *, const char *,
-                const char *, scanner_t *, const char *, const char *);
+                const char *, scanner_t *, const char *, const char *,
+                const char *, const char *);
 
 int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
-int
+typedef enum {
+  MODIFY_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
+  MODIFY_SCANNER_SUCCESS = 0,             ///< Success
+  MODIFY_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
+  MODIFY_SCANNER_MISSING_ID,              ///< Missing scanner id
+  MODIFY_SCANNER_NOT_FOUND,               ///< Scanner not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
+  MODIFY_SCANNER_INVALID_TYPE,            ///< Invalid type
+  MODIFY_SCANNER_INVALID_PORT,            ///< Invalid port
+  MODIFY_SCANNER_INVALID_HOST,            ///< Invalid host
+  MODIFY_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
+  MODIFY_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
+  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
+  MODIFY_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+} modify_scanner_return_t;
+
+modify_scanner_return_t
 modify_scanner (const char*, const char*, const char*, const char *,
-                const char *, const char *, const char *, const char *);
+                const char *, const char *, const char *, const char *,
+                const char *, const char *);
 
 int
 delete_scanner (const char *, int);
@@ -2808,11 +2568,14 @@ scanner_writable (scanner_t);
 const char *
 scanner_uuid_default ();
 
+gboolean
+scanner_has_relay (scanner_t);
+
 char *
-scanner_host (scanner_t);
+scanner_host (scanner_t, gboolean);
 
 int
-scanner_port (scanner_t);
+scanner_port (scanner_t, gboolean);
 
 int
 scanner_type (scanner_t);
@@ -2866,7 +2629,16 @@ const char*
 scanner_iterator_key_pub (iterator_t *);
 
 const char*
+scanner_iterator_key_priv (iterator_t*);
+
+const char*
 scanner_iterator_credential_type (iterator_t *);
+
+const char*
+scanner_iterator_relay_host (iterator_t *);
+
+int
+scanner_iterator_relay_port (iterator_t *);
 
 int
 scanner_config_iterator_readable (iterator_t *);
@@ -2879,6 +2651,9 @@ scanner_task_iterator_uuid (iterator_t *);
 
 const char*
 scanner_task_iterator_name (iterator_t *);
+
+const char *
+scanner_task_iterator_usage_type (iterator_t *);
 
 int
 scanner_task_iterator_readable (iterator_t *);
@@ -2902,16 +2677,6 @@ osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
 int
 osp_get_details_from_iterator (iterator_t *, char **, GSList **);
 
-osp_connection_t *
-osp_connect_with_data (const char *,
-                       int,
-                       const char *,
-                       const char *,
-                       const char *);
-
-osp_connection_t *
-osp_scanner_connect (scanner_t);
-
 int
 get_scanner_connection_retry ();
 
@@ -2926,12 +2691,6 @@ get_relay_mapper_path ();
 
 void
 set_relay_mapper_path (const char *);
-
-int
-get_relay_migrate_sensors ();
-
-void
-set_relay_migrate_sensors (int);
 
 gboolean
 relay_supports_scanner_type (const char *, int, scanner_type_t);
@@ -2956,6 +2715,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 #define SCHEDULE_PERIOD 10
 
 /**
+ * @brief Seconds between calls to manage_queued_task_actions.
+ */
+#define QUEUE_PERIOD 5
+
+/**
  * @brief Minimum schedule timeout seconds.
  * This value must be greater than SCHEDULE_PERIOD.
  */
@@ -2965,6 +2729,13 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  * @brief Default for schedule_timeout in minutes.
  */
 #define SCHEDULE_TIMEOUT_DEFAULT 60
+
+#if ENABLE_AGENTS
+  /**
+  * @brief Seconds between calls to fork_agents_sync.
+  */
+  #define AGENT_SYNC_SCHEDULE_PERIOD 300 /* every 5 minutes */
+#endif
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
@@ -3236,151 +3007,6 @@ int
 modify_role (const char *, const char *, const char *, const char *);
 
 
-/* Filter Utilities. */
-
-/**
- * @brief Keyword type.
- */
-typedef enum
-{
-  KEYWORD_TYPE_UNKNOWN,
-  KEYWORD_TYPE_INTEGER,
-  KEYWORD_TYPE_DOUBLE,
-  KEYWORD_TYPE_STRING
-} keyword_type_t;
-
-/**
- * @brief Comparison returns.
- */
-typedef enum
-{
-  KEYWORD_RELATION_APPROX,
-  KEYWORD_RELATION_COLUMN_ABOVE,
-  KEYWORD_RELATION_COLUMN_APPROX,
-  KEYWORD_RELATION_COLUMN_EQUAL,
-  KEYWORD_RELATION_COLUMN_BELOW,
-  KEYWORD_RELATION_COLUMN_REGEXP
-} keyword_relation_t;
-
-/**
- * @brief Keyword.
- */
-struct keyword
-{
-  gchar *column;                 ///< The column prefix, or NULL.
-  int approx;                    ///< Whether the keyword is like "~example".
-  int equal;                     ///< Whether the keyword is like "=example".
-  int integer_value;             ///< Integer value of the keyword.
-  double double_value;           ///< Floating point value of the keyword.
-  int quoted;                    ///< Whether the keyword was quoted.
-  gchar *string;                 ///< The keyword string, outer quotes removed.
-  keyword_type_t type;           ///< Type of keyword.
-  keyword_relation_t relation;   ///< The relation.
-};
-
-/**
- * @brief Keyword type.
- */
-typedef struct keyword keyword_t;
-
-int
-keyword_special (keyword_t *);
-
-const char *
-keyword_relation_symbol (keyword_relation_t);
-
-void
-filter_free (array_t*);
-
-array_t *
-split_filter (const gchar*);
-
-
-/* Filters. */
-
-/**
- * @brief filt_id value to use term or built-in default filter.
- */
-#define FILT_ID_NONE "0"
-
-/**
- * @brief filt_id value to use the filter in the user setting if possible.
- */
-#define FILT_ID_USER_SETTING "-2"
-
-gboolean
-find_filter (const char*, filter_t*);
-
-gboolean
-find_filter_with_permission (const char*, filter_t*, const char*);
-
-char*
-filter_uuid (filter_t);
-
-char*
-filter_name (filter_t);
-
-gchar*
-filter_term (const char *);
-
-gchar*
-filter_term_value (const char *, const char *);
-
-int
-filter_term_apply_overrides (const char *);
-
-int
-filter_term_min_qod (const char *);
-
-int
-create_filter (const char*, const char*, const char*, const char*, filter_t*);
-
-int
-copy_filter (const char*, const char*, const char*, filter_t*);
-
-int
-delete_filter (const char *, int);
-
-int
-trash_filter_in_use (filter_t);
-
-int
-filter_in_use (filter_t);
-
-int
-trash_filter_writable (filter_t);
-
-int
-filter_writable (filter_t);
-
-int
-filter_count (const get_data_t*);
-
-int
-init_filter_iterator (iterator_t*, get_data_t*);
-
-const char*
-filter_iterator_type (iterator_t*);
-
-const char*
-filter_iterator_term (iterator_t*);
-
-void
-init_filter_alert_iterator (iterator_t*, filter_t);
-
-const char*
-filter_alert_iterator_name (iterator_t*);
-
-const char*
-filter_alert_iterator_uuid (iterator_t*);
-
-int
-filter_alert_iterator_readable (iterator_t*);
-
-int
-modify_filter (const char*, const char*, const char*, const char*, const char*);
-
-
 /* Schema. */
 
 int
@@ -3408,6 +3034,9 @@ info_name_count (const gchar *, const gchar *);
 
 int
 manage_scap_loaded ();
+
+int
+manage_nvts_loaded ();
 
 const char *
 manage_scap_update_time ();
@@ -3576,7 +3205,7 @@ secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
 /* Settings. */
 
 int
-manage_max_rows (int);
+manage_max_rows (int, int);
 
 int
 setting_count (const char *);
@@ -3607,9 +3236,6 @@ const char*
 setting_iterator_value (iterator_t*);
 
 int
-setting_value_int (const char *, int *);
-
-int
 modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
 
 int
@@ -3635,18 +3261,6 @@ manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
 
 int
 manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
-
-report_host_t
-manage_report_host_add (report_t, const char *, time_t, time_t);
-
-int
-report_host_noticeable (report_t, const gchar *);
-
-void
-report_host_set_end_time (report_host_t, time_t);
-
-gchar*
-host_routes_xml (host_t);
 
 int
 manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
@@ -3777,7 +3391,7 @@ vuln_count (const get_data_t*);
 void
 manage_get_ldap_info (int *, gchar **, gchar **, int *, gchar **, int *);
 
-void
+int
 manage_set_ldap_info (int, gchar *, gchar *, int, gchar *, int);
 
 char *
@@ -3975,6 +3589,18 @@ void
 set_max_concurrent_scan_updates (int);
 
 int
+get_max_database_connections ();
+
+void
+set_max_database_connections (int);
+
+int
+get_max_concurrent_report_processing ();
+
+void
+set_max_concurrent_report_processing (int);
+
+int
 get_mem_wait_retries ();
 
 void
@@ -4021,9 +3647,6 @@ nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
 
 int
 nvts_check_feed (int *, int *, gchar **);
-
-int
-manage_update_nvts_osp (const gchar *);
 
 int
 manage_rebuild (GSList *, const db_conn_info_t *);

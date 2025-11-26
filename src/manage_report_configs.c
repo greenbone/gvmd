@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_report_configs.c
+ * @file
  * @brief GVM management layer: Report configs.
  *
  * Non-SQL report config code for the GVM management layer.
@@ -54,7 +54,7 @@ find_report_config_with_permission (const char *uuid,
 
 /**
  * @brief Free a report config parameter data struct.
- * 
+ *
  * @param[in]  param  The parameter to free.
  */
 void

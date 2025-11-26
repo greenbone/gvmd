@@ -1,0 +1,269 @@
+.TH gvmd 8 User Manuals
+.SH NAME
+gvmd \- Greenbone Vulnerability Manager daemon
+.SH SYNOPSIS
+\fBgvmd OPTIONS
+\f1
+.SH DESCRIPTION
+The Greenbone Vulnerability Manager is the central management service between security scanners and the user clients. 
+
+It manages the storage of any vulnerability management configurations and of the scan results. Access to data, control commands and workflows is offered via the XML-based Greenbone Management Protocol (GMP). The primary scanner 'OpenVAS Scanner' is controlled directly via protocol OTP while any other remote scanner is coupled with the Open Scanner Protocol (OSP). 
+.SH OPTIONS
+.TP
+\fB-h, --help\f1
+Show help options.
+.TP
+\fB--affected-products-query-size=\fINUMBER\fB\f1
+Sets the number of CVEs to process per query when updating the affected products. Defaults to 20000. 
+.TP
+\fB--auth-timeout=\fITIMEOUT\fB\f1
+Sets the authentication timeout time for the cached authentication. Defaults to 15 minutes. 
+.TP
+\fB--broker-address=\fIADDRESS\fB\f1
+Sets the address for the publish-subscribe message (MQTT) broker. Defaults to localhost:9138. Set to empty to disable. 
+.TP
+\fB--check-alerts\f1
+Check SecInfo alerts.
+.TP
+\fB--client-watch-interval=\fINUMBER\fB\f1
+Check if client connection was closed every NUMBER seconds. 0 to disable. Defaults to 1 second.
+.TP
+\fB--create-encryption-key\f1
+Create a new credential encryption key, set it as the new default and exit. With no other options given, a 4096 bit RSA key is created. 
+.TP
+\fB--create-scanner=\fISCANNER\fB\f1
+Create global scanner SCANNER and exit.
+.TP
+\fB--create-user=\fIUSERNAME\fB\f1
+Create admin user USERNAME and exit.
+.TP
+\fB-d, --database=\fINAME\fB\f1
+Use NAME as database for PostgreSQL.
+.TP
+\fB--db-host=\fIHOST\fB\f1
+Use HOST as database host or socket directory for PostgreSQL.
+.TP
+\fB--db-port=\fIPORT\fB\f1
+Use PORT as database port or socket extension for PostgreSQL.
+.TP
+\fB--delete-scanner=\fISCANNER-UUID\fB\f1
+Delete scanner SCANNER-UUID and exit.
+.TP
+\fB--delete-user=\fIUSERNAME\fB\f1
+Delete user USERNAME and exit.
+.TP
+\fB--dh-params=\fIFILE\fB\f1
+Diffie-Hellman parameters file
+.TP
+\fB--disable-cmds=\fICOMMANDS\fB\f1
+Disable comma-separated COMMANDS.
+.TP
+\fB--disable-encrypted-credentials\f1
+Do not encrypt or decrypt credentials.
+.TP
+\fB--disable-password-policy\f1
+Do not restrict passwords to the policy.
+.TP
+\fB--disable-scheduling\f1
+Disable task scheduling.
+.TP
+\fB--encryption-key-length=\fILENGTH\fB\f1
+Set key length to LENGTH bits when creating a new RSA credential encryption key. Defaults to 4096. 
+.TP
+\fB--encryption-key-type=\fITYPE\fB\f1
+Use the key type TYPE when creating a new credential encryption key. Currently only RSA is supported. 
+.TP
+\fB--encrypt-all-credentials\f1
+(Re-)Encrypt all credentials.
+.TP
+\fB--feed-lock-path=\fIPATH\fB\f1
+Sets the path to the feed lock file.
+.TP
+\fB--feed-lock-timeout=\fITIMEOUT\fB\f1
+Sets the number of seconds to retry for if the feed is locked in contexts (like migration or rebuilds) that do not retry on their own (like automatic syncs). Defaults to 0 (no retry). 
+.TP
+\fB-f, --foreground\f1
+Run in foreground.
+.TP
+\fB--get-scanners\f1
+List scanners and exit.
+.TP
+\fB--get-users\f1
+List users and exit.
+.TP
+\fB--gnutls-priorities=\fIPRIORITIES-STRING\fB\f1
+Sets the GnuTLS priorities for the Manager socket.
+.TP
+\fB--inheritor=\fIUSERNAME\fB\f1
+Have USERNAME inherit from deleted user.
+.TP
+\fB-a, --listen=\fIADDRESS\fB\f1
+Listen on ADDRESS.
+.TP
+\fB--ldap-debug\f1
+Enable debugging of LDAP authentication.
+.TP
+\fB--listen2=\fIADDRESS\fB\f1
+Listen also on ADDRESS.
+.TP
+\fB--listen-group=\fISTRING\fB\f1
+Group of the unix socket
+.TP
+\fB--listen-mode=\fISTRING\fB\f1
+File mode of the unix socket
+.TP
+\fB--listen-owner=\fISTRING\fB\f1
+Owner of the unix socket
+.TP
+\fB--max-concurrent-scan-updates=\fINUMBER\fB\f1
+Maximum number of scan updates that can run at the same time. Default: 0 (unlimited). 
+.TP
+\fB--max-email-attachment-size=\fINUMBER\fB\f1
+Maximum size of alert email attachments, in bytes.
+.TP
+\fB--max-email-include-size=\fINUMBER\fB\f1
+Maximum size of inlined content in alert emails, in bytes.
+.TP
+\fB--max-email-message-size=\fINUMBER\fB\f1
+Maximum size of user-defined message text in alert emails, in bytes.
+.TP
+\fB--max-ips-per-target=\fINUMBER\fB\f1
+Maximum number of IPs per target.
+.TP
+\fB--mem-wait-retries=\fINUMBER\fB\f1
+How often to try waiting for available memory. Default: 30. Each retry will wait for 10 seconds. 
+.TP
+\fB-m, --migrate\f1
+Migrate the database and exit.
+.TP
+\fB--min-mem-feed-update=\fINUMBER\fB\f1
+Minimum memory in MiB for feed updates. Default: 0. Feed updates are skipped if less physical memory is available. 
+.TP
+\fB--modify-scanner=\fISCANNER-UUID\fB\f1
+Modify scanner SCANNER-UUID and exit.
+.TP
+\fB--modify-setting=\fIUUID\fB\f1
+Modify setting UUID and exit.
+.TP
+\fB--new-password=\fIPASSWORD\fB\f1
+Modify user's password and exit.
+.TP
+\fB--new-password=\fIPASSWORD\fB\f1
+Modify user's password and exit.
+.TP
+\fB--optimize=\fINAME\fB\f1
+Run an optimization: vacuum, add-feed-permissions, analyze, cleanup-config-prefs, cleanup-feed-permissions, cleanup-port-names, cleanup-report-formats, cleanup-result-nvts, cleanup-result-severities, cleanup-schedule-times, cleanup-sequences, cleanup-tls-certificate-encoding, rebuild-report-cache or update-report-cache.
+.TP
+\fB--osp-vt-update=\fISCANNER-SOCKET\fB\f1
+Unix socket for OSP NVT update. Defaults to the path of the 'OpenVAS Default' scanner if it is an absolute path.
+.TP
+\fB--password=\fIPASSWORD\fB\f1
+Password, for --create-user.
+.TP
+\fB-p, --port=\fINUMBER\fB\f1
+Use port number NUMBER.
+.TP
+\fB--port2=\fINUMBER\fB\f1
+Use port number NUMBER for address 2.
+.TP
+\fB--rebuild-gvmd-data=\fITYPES\fB\f1
+Reload all gvmd data objects of a given types from feed. 
+
+The types must be "all" or a comma-separated of the following: "configs", "port_lists" and "report_formats". 
+.TP
+\fB--rebuild-scap\f1
+Rebuild all SCAP data. 
+.TP
+\fB--relay-mapper=\fIFILE\fB\f1
+Executable for automatically mapping scanner hosts to relays. If the option is empty or not given, automatic mapping is disabled. This option is deprecated and relays should be set explictly in the relay_... fields of scanners. 
+.TP
+\fB--role=\fIROLE\fB\f1
+Role for --create-user and --get-users.
+.TP
+\fB--scanner-ca-pub=\fISCANNER-CA-PUB\fB\f1
+Scanner CA Certificate path for --[create|modify]-scanner.
+.TP
+\fB--scanner-credential=\fISCANNER-CREDENTIAL\fB\f1
+Scanner credential for --create-scanner and --modify-scanner.
+
+Can be blank to unset or a credential UUID. If omitted, a new credential can be created instead.
+.TP
+\fB--scanner-host=\fISCANNER-HOST\fB\f1
+Scanner host or socket for --create-scanner and --modify-scanner.
+.TP
+\fB--scanner-key-priv=\fISCANNER-KEY-PRIVATE\fB\f1
+Scanner private key path for --[create|modify]-scanner if --scanner-credential is not given.
+.TP
+\fB--scanner-key-pub=\fISCANNER-KEY-PUBLIC\fB\f1
+Scanner Certificate path for --[create|modify]-scanner if --scanner-credential is not given.
+.TP
+\fB--scanner-name=\fINAME\fB\f1
+Name for --modify-scanner.
+.TP
+\fB--scanner-port=\fISCANNER-PORT\fB\f1
+Scanner port for --create-scanner and --modify-scanner.
+.TP
+\fB--scanner-relay-host=\fISCANNER-HOST\fB\f1
+Scanner relay host or socket for --create-scanner and --modify-scanner. 
+.TP
+\fB--scanner-relay-port=\fISCANNER-PORT\fB\f1
+Scanner relay port for --create-scanner and --modify-scanner.
+.TP
+\fB--scanner-type=\fISCANNER-TYPE\fB\f1
+Scanner type for --create-scanner and --modify-scanner.
+
+Either 'OpenVAS', 'GMP', 'OSP-Sensor' or a number as used in GMP.
+.TP
+\fB--scanner-connection-retry=\fINUMBER\fB\f1
+Number of auto retries if scanner connection is lost in a running task.
+.TP
+\fB--schedule-timeout=\fITIME\fB\f1
+Time out tasks that are more than TIME minutes overdue. -1 to disable, 0 for minimum time.
+.TP
+\fB--secinfo-commit-size=\fINUMBER\fB\f1
+During CERT and SCAP sync, commit updates to the database every NUMBER items, 0 for unlimited.
+.TP
+\fB--secinfo-fast-init=\fINUMBER\fB\f1
+Whether to prefer faster SQL with less checks for non-incremental SecInfo updates. 0 to use statements with more checks, 1 to use faster statements, default: 1
+.TP
+\fB--secinfo-update-strategy=\fINUMBER\fB\f1
+The strategy how to handle SecInfo updates: 0 (default) = keep old schemas and replace them at the end, 1 = drop old schemas at update start, swap them in at the end. 
+.TP
+\fB-c, --unix-socket=\fIFILENAME\fB\f1
+Listen on UNIX socket at FILENAME.
+.TP
+\fB--user=\fIUSERNAME\fB\f1
+User for --new-password.
+.TP
+\fB--value=\fIVALUE\fB\f1
+Value for --modify-setting.
+.TP
+\fB--verbose\f1
+Has no effect. See INSTALL.md for logging config.
+.TP
+\fB--verify-scanner=\fISCANNER-UUID\fB\f1
+Verify scanner SCANNER-UUID and exit.
+.TP
+\fB--version\f1
+Print version and exit.
+.TP
+\fB--vt-verification-collation=\fICOLLATION\fB\f1
+Set collation for VT verification to COLLATION, omit or leave empty to choose automatically. Should be 'ucs_default' if DB uses UTF-8 or 'C' for single-byte encodings. 
+.SH SIGNALS
+SIGHUP causes gvmd to rebuild the database with information from the Scanner (openvas).
+.SH EXAMPLES
+gvmd --port 1241
+
+Serve GMP clients on port 1241 and connect to an OpenVAS scanner via the default OTP file socket.
+.SH SEE ALSO
+\fBopenvas(8)\f1, \fBgsad(8)\f1, \fBospd-openvas(8)\f1, \fBgreenbone-certdata-sync(8)\f1, \fBgreenbone-scapdata-sync(8)\f1, 
+.SH MORE INFORMATION
+The canonical places where you will find more information about the Greenbone Vulnerability Manager are: 
+
+\fBhttps://community.greenbone.net\f1 (Community Portal) 
+
+\fBhttps://github.com/greenbone\f1 (Development Platform) 
+
+\fBhttps://www.greenbone.net\f1 (Greenbone Website) 
+.SH COPYRIGHT
+The Greenbone Vulnerability Manager is released under the GNU GPL, version 2, or, at your option, any later version. 

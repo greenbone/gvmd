@@ -17,7 +17,7 @@
  */
 
 /**
- * @file manage_sql_port_lists.c
+ * @file
  * @brief GVM management layer: Port list SQL
  *
  * The Port List SQL for the GVM management layer.
@@ -280,7 +280,7 @@ should_sync_port_list_from_path (const char *path, gboolean rebuild,
   if (resource_id_deprecated ("port_list", uuid))
     {
       find_port_list_no_acl (uuid, port_list);
-      
+
       if (rebuild)
         {
           return 1;

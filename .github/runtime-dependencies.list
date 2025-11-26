@@ -1,0 +1,85 @@
+# Runtime dependencies
+
+# PDF Report
+# texlive-fonts-recommended
+# texlive-latex-extra
+
+# HTML Reports, cert data and scan data details
+# xsltproc
+
+# verinice report
+# xsltproc
+# xmlstarlet
+# zip
+
+# RPM credential packages
+# rpm
+# fakeroot
+
+# DEB credential packages
+# dpkg
+# fakeroot
+
+# Windows Executable (.exe) credential installer
+# nsis
+
+# signature verification
+# gnupg
+
+# HTTP alerts
+# wget
+
+# SCP alert
+# sshpass
+# openssh-client
+
+# Send alert
+# socat
+
+# SNMP alert
+# snmp
+
+# SMB alert
+# python3
+# smbclient
+
+# s/mime email encryption
+# gpgsm
+
+# Required for set up certificates for GVM
+# gnutls-bin
+
+# SSL/TLS verification
+# ca-certificates
+
+ca-certificates
+dpkg
+fakeroot
+nsis
+gosu
+gnupg
+gpgsm
+gnutls-bin
+libbsd0
+libcjson1
+libgpgme11
+libical3
+libpq5
+msmtp
+msmtp-mta
+openssh-client
+postgresql-client
+postgresql-client-common
+python3
+rpm
+rsync
+socat
+smbclient
+snmp
+sshpass
+texlive-fonts-recommended
+texlive-latex-extra
+wget
+xmlstarlet
+xsltproc
+zip

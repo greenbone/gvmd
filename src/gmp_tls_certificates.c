@@ -17,7 +17,7 @@
  */
 
 /**
- * @file gmp_tls_certificates.c
+ * @file
  * @brief GVM GMP layer: TLS certificates
  *
  * This includes function and variable definitions for GMP handling

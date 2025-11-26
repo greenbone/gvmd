@@ -17,30 +17,51 @@
  */
 
 /**
- * @file  manage_sql.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management library.
  */
+
+/* For strptime in time.h. */
+#undef _XOPEN_SOURCE
+#define _XOPEN_SOURCE
 
 /**
  * @brief Enable extra GNU functions.
  */
 #define _GNU_SOURCE
 
+#include <stdio.h>
+#include "manage.h"
 #include "debug_utils.h"
+#include "ipc.h"
+#include "manage_osp.h"
 #include "manage_sql.h"
+#include "manage_alerts.h"
+#include "manage_assets.h"
+#include "manage_filters.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_runtime_flags.h"
+#include "manage_sql_credential_stores.h"
+#include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_tickets.h"
+#include "manage_scan_queue.h"
+#include "manage_sql_alerts.h"
+#include "manage_sql_assets.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_filters.h"
+#include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
+#include "manage_commands.h"
 #include "manage_authentication.h"
+#include "manage_oci_image_targets.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -56,17 +77,17 @@
 #include <glib/gstdio.h>
 #include <gnutls/x509.h>
 #include <malloc.h>
-#include <pwd.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/un.h>
 #include <sys/wait.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 #include <grp.h>
 #include <gpgme.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include <gvm/base/gvm_sentry.h>
 #include <gvm/base/hosts.h>
@@ -74,7 +95,6 @@
 #include <gvm/base/logging.h>
 #include <bsd/unistd.h>
 #include <gvm/util/fileutils.h>
-#include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
 #include <gvm/util/radiusutils.h>
@@ -83,6 +103,9 @@
 #include <gvm/util/ldaputils.h>
 #include <gvm/gmp/gmp.h>
 #include "manage_report_configs.h"
+#include "manage_sql_agents.h"
+#include "manage_sql_agent_groups.h"
+#include "manage_sql_agent_installers.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -169,8 +192,6 @@ manage_attach_databases ();
  */
 extern int authenticate_allow_all;
 
-const char *threat_message_type (const char *);
-
 int delete_reports (task_t);
 
 int
@@ -178,9 +199,6 @@ stop_task_internal (task_t);
 
 int
 validate_username (const gchar *);
-
-void
-set_task_interrupted (task_t, const gchar *);
 
 
 /* Static headers. */
@@ -230,30 +248,9 @@ static int
 role_is_predefined_id (const char *);
 
 static int
-task_second_last_report (task_t, report_t *);
-
-static gchar *
-new_secinfo_message (event_t, const void*, alert_t);
-
-static gchar *
-new_secinfo_list (event_t, const void*, alert_t, int*);
-
-static void
-check_for_new_scap ();
-
-static void
-check_for_new_cert ();
-
-static void
-check_for_updated_scap ();
-
-static void
-check_for_updated_cert ();
-
-static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *,
+report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, double *);
+                       int *, int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_group_with_permission (const char *, group_t *, const char *);
@@ -266,12 +263,6 @@ vuln_iterator_opts_from_filter (const gchar *);
 
 static gchar*
 vuln_iterator_extra_with_from_filter (const gchar *);
-
-static int
-task_last_report_any_status (task_t, report_t *);
-
-static int
-task_report_previous (task_t task, report_t, report_t *);
 
 static gboolean
 find_trash_task (const char*, task_t*);
@@ -294,14 +285,8 @@ cache_all_permissions_for_users (GArray*);
 static void
 report_cache_counts (report_t, int, int, const char*);
 
-static gchar * 
+static gchar *
 reports_extra_where (int, const char *, const char *);
-
-static int
-report_host_dead (report_host_t);
-
-static int
-report_host_result_count (report_host_t);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -334,14 +319,8 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 static int
 setting_auto_cache_rebuild_int ();
 
-static int
-setting_dynamic_severity_int ();
-
 static char *
 setting_timezone ();
-
-static double
-task_severity_double (task_t, int, int, int);
 
 static char*
 target_comment (target_t);
@@ -351,12 +330,6 @@ type_select_columns (const char *type);
 
 static column_t *
 type_where_columns (const char *type);
-
-static char*
-trash_filter_uuid (filter_t);
-
-static char*
-trash_filter_name (filter_t);
 
 static char*
 trash_target_comment (target_t);
@@ -380,48 +353,12 @@ type_build_select (const char *, const char *, const get_data_t *,
 /**
  * @brief Function to fork a connection that will accept GMP requests.
  */
-static manage_connection_forker_t manage_fork_connection;
+manage_connection_forker_t manage_fork_connection;
 
 /**
  * @brief Max number of hosts per target.
  */
 static int max_hosts = MANAGE_MAX_HOSTS;
-
-/**
- * @brief Default max number of bytes of reports included in email alerts.
- */
-#define MAX_CONTENT_LENGTH 20000
-
-/**
- * @brief Maximum number of bytes of reports included in email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_content_length = MAX_CONTENT_LENGTH;
-
-/**
- * @brief Default max number of bytes of reports attached to email alerts.
- */
-#define MAX_ATTACH_LENGTH 1048576
-
-/**
- * @brief Maximum number of bytes of reports attached to email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_attach_length = MAX_ATTACH_LENGTH;
-
-/**
- * @brief Default max number of bytes of user-defined message in email alerts.
- */
-#define MAX_EMAIL_MESSAGE_LENGTH 2000
-
-/**
- * @brief Maximum number of bytes of user-defined message text in email alerts.
- *
- * A value less or equal to 0 allows any size.
- */
-static int max_email_message_length = MAX_EMAIL_MESSAGE_LENGTH;
 
 /**
  * @brief Memory cache of NVT information from the database.
@@ -431,7 +368,7 @@ static nvtis_t* nvti_cache = NULL;
 /**
  * @brief Name of the database file.
  */
-db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL };
+db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
 
 /**
  * @brief Whether a transaction has been opened and not committed yet.
@@ -447,201 +384,6 @@ static struct timeval last_msg;
  * @brief The VT verification collation override
  */
 static gchar *vt_verification_collation = NULL;
-
-/* GMP commands. */
-
-/**
- * @brief The GMP command list.
- */
-command_t gmp_commands[]
- = {{"AUTHENTICATE", "Authenticate with the manager." },
-    {"CREATE_ALERT", "Create an alert."},
-    {"CREATE_ASSET", "Create an asset."},
-    {"CREATE_CONFIG", "Create a config."},
-    {"CREATE_CREDENTIAL", "Create a credential."},
-    {"CREATE_FILTER", "Create a filter."},
-    {"CREATE_GROUP", "Create a group."},
-    {"CREATE_NOTE", "Create a note."},
-    {"CREATE_OVERRIDE", "Create an override."},
-    {"CREATE_PERMISSION", "Create a permission."},
-    {"CREATE_PORT_LIST", "Create a port list."},
-    {"CREATE_PORT_RANGE", "Create a port range in a port list."},
-    {"CREATE_REPORT", "Create a report."},
-    {"CREATE_REPORT_CONFIG", "Create a report config."},
-    {"CREATE_REPORT_FORMAT", "Create a report format."},
-    {"CREATE_ROLE", "Create a role."},
-    {"CREATE_SCANNER", "Create a scanner."},
-    {"CREATE_SCHEDULE", "Create a schedule."},
-    {"CREATE_TAG", "Create a tag."},
-    {"CREATE_TARGET", "Create a target."},
-    {"CREATE_TASK", "Create a task."},
-    {"CREATE_TICKET", "Create a ticket."},
-    {"CREATE_TLS_CERTIFICATE", "Create a TLS certificate."},
-    {"CREATE_USER", "Create a new user."},
-    {"DELETE_ALERT", "Delete an alert."},
-    {"DELETE_ASSET", "Delete an asset."},
-    {"DELETE_CONFIG", "Delete a config."},
-    {"DELETE_CREDENTIAL", "Delete a credential."},
-    {"DELETE_FILTER", "Delete a filter."},
-    {"DELETE_GROUP", "Delete a group."},
-    {"DELETE_NOTE", "Delete a note."},
-    {"DELETE_OVERRIDE", "Delete an override."},
-    {"DELETE_PERMISSION", "Delete a permission."},
-    {"DELETE_PORT_LIST", "Delete a port list."},
-    {"DELETE_PORT_RANGE", "Delete a port range."},
-    {"DELETE_REPORT", "Delete a report."},
-    {"DELETE_REPORT_CONFIG", "Delete a report config."},
-    {"DELETE_REPORT_FORMAT", "Delete a report format."},
-    {"DELETE_ROLE", "Delete a role."},
-    {"DELETE_SCANNER", "Delete a scanner."},
-    {"DELETE_SCHEDULE", "Delete a schedule."},
-    {"DELETE_TAG", "Delete a tag."},
-    {"DELETE_TARGET", "Delete a target."},
-    {"DELETE_TASK", "Delete a task."},
-    {"DELETE_TICKET", "Delete a ticket."},
-    {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
-    {"DELETE_USER", "Delete an existing user."},
-    {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
-    {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"GET_AGGREGATES", "Get aggregates of resources."},
-    {"GET_ALERTS", "Get all alerts."},
-    {"GET_ASSETS", "Get all assets."},
-    {"GET_CONFIGS", "Get all configs."},
-    {"GET_CREDENTIALS", "Get all credentials."},
-    {"GET_FEEDS", "Get details of one or all feeds this Manager uses."},
-    {"GET_FILTERS", "Get all filters."},
-    {"GET_GROUPS", "Get all groups."},
-    {"GET_INFO", "Get raw information for a given item."},
-    {"GET_LICENSE", "Get license information." },
-    {"GET_NOTES", "Get all notes."},
-    {"GET_NVTS", "Get one or all available NVTs."},
-    {"GET_NVT_FAMILIES", "Get a list of all NVT families."},
-    {"GET_OVERRIDES", "Get all overrides."},
-    {"GET_PERMISSIONS", "Get all permissions."},
-    {"GET_PORT_LISTS", "Get all port lists."},
-    {"GET_PREFERENCES", "Get preferences for all available NVTs."},
-    {"GET_REPORTS", "Get all reports."},
-    {"GET_REPORT_CONFIGS", "Get all report configs."},
-    {"GET_REPORT_FORMATS", "Get all report formats."},
-    {"GET_RESULTS", "Get results."},
-    {"GET_ROLES", "Get all roles."},
-    {"GET_SCANNERS", "Get all scanners."},
-    {"GET_SCHEDULES", "Get all schedules."},
-    {"GET_SETTINGS", "Get all settings."},
-    {"GET_SYSTEM_REPORTS", "Get all system reports."},
-    {"GET_TAGS", "Get all tags."},
-    {"GET_TARGETS", "Get all targets."},
-    {"GET_TASKS", "Get all tasks."},
-    {"GET_TICKETS", "Get all tickets."},
-    {"GET_TLS_CERTIFICATES", "Get all TLS certificates."},
-    {"GET_USERS", "Get all users."},
-    {"GET_VERSION", "Get the Greenbone Management Protocol version."},
-    {"GET_VULNS", "Get all vulnerabilities."},
-    {"HELP", "Get this help text."},
-    {"MODIFY_ALERT", "Modify an existing alert."},
-    {"MODIFY_ASSET", "Modify an existing asset."},
-    {"MODIFY_AUTH", "Modify the authentication methods."},
-    {"MODIFY_CONFIG", "Update an existing config."},
-    {"MODIFY_CREDENTIAL", "Modify an existing credential."},
-    {"MODIFY_FILTER", "Modify an existing filter."},
-    {"MODIFY_GROUP", "Modify an existing group."},
-    {"MODIFY_LICENSE", "Modify the existing license."},
-    {"MODIFY_NOTE", "Modify an existing note."},
-    {"MODIFY_OVERRIDE", "Modify an existing override."},
-    {"MODIFY_PERMISSION", "Modify an existing permission."},
-    {"MODIFY_PORT_LIST", "Modify an existing port list."},
-    {"MODIFY_REPORT_CONFIG", "Modify an existing report config."},
-    {"MODIFY_REPORT_FORMAT", "Modify an existing report format."},
-    {"MODIFY_ROLE", "Modify an existing role."},
-    {"MODIFY_SCANNER", "Modify an existing scanner."},
-    {"MODIFY_SCHEDULE", "Modify an existing schedule."},
-    {"MODIFY_SETTING", "Modify an existing setting."},
-    {"MODIFY_TAG", "Modify an existing tag."},
-    {"MODIFY_TARGET", "Modify an existing target."},
-    {"MODIFY_TASK", "Update an existing task."},
-    {"MODIFY_TICKET", "Modify an existing ticket."},
-    {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
-    {"MODIFY_USER", "Modify a user."},
-    {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
-    {"RESTORE", "Restore a resource."},
-    {"RESUME_TASK", "Resume a stopped task."},
-    {"RUN_WIZARD", "Run a wizard."},
-    {"START_TASK", "Manually start an existing task."},
-    {"STOP_TASK", "Stop a running task."},
-    {"SYNC_CONFIG", "Synchronize a config with a scanner."},
-    {"TEST_ALERT", "Run an alert."},
-    {"VERIFY_REPORT_FORMAT", "Verify a report format."},
-    {"VERIFY_SCANNER", "Verify a scanner."},
-    {NULL, NULL}};
-
-/**
- * @brief Check whether a command name is valid.
- *
- * @param[in]  name  Command name.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_gmp_command (const char* name)
-{
-  command_t *command;
-  command = gmp_commands;
-  while (command[0].name)
-    if (strcasecmp (command[0].name, name) == 0)
-      return 1;
-    else
-      command++;
-  return 0;
-}
-
-/**
- * @brief Get the type associated with a GMP command.
- *
- * @param[in]  name  Command name.
- *
- * @return Freshly allocated type name if any, else NULL.
- */
-static gchar *
-gmp_command_type (const char* name)
-{
-  const char *under;
-  under = strchr (name, '_');
-  if (under && (strlen (under) > 1))
-    {
-      gchar *command;
-      under++;
-      command = g_strdup (under);
-      if (command[strlen (command) - 1] == 's')
-        command[strlen (command) - 1] = '\0';
-      if (valid_type (command))
-        return command;
-      g_free (command);
-    }
-  return NULL;
-}
-
-/**
- * @brief Check whether a GMP command takes a resource.
- *
- * MODIFY_TARGET, for example, takes a target.
- *
- * @param[in]  name  Command name.
- *
- * @return 1 if takes resource, else 0.
- */
-static int
-gmp_command_takes_resource (const char* name)
-{
-  assert (name);
-  return strcasecmp (name, "AUTHENTICATE")
-         && strcasestr (name, "CREATE_") != name
-         && strcasestr (name, "DESCRIBE_") != name
-         && strcasecmp (name, "EMPTY_TRASHCAN")
-         && strcasecmp (name, "GET_VERSION")
-         && strcasecmp (name, "HELP")
-         && strcasecmp (name, "RUN_WIZARD")
-         && strcasestr (name, "SYNC_") != name;
-}
 
 
 /* General helpers. */
@@ -723,22 +465,6 @@ resource_with_name_exists_global (const char *name, const char *type,
   g_free (quoted_name);
   g_free (quoted_type);
   return !!ret;
-}
-
-/**
- * @brief Ensure a string is in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.  Copied into array.
- */
-static void
-array_add_new_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    if (strcmp (g_ptr_array_index (array, index), string) == 0)
-      return;
-  array_add (array, g_strdup (string));
 }
 
 /**
@@ -855,7 +581,7 @@ vector_find_string (const gchar **vector, const gchar *string)
  *
  * @return 1 if found, 2 if found with underscore prefix, else NULL.
  */
-static int
+int
 vector_find_filter (const gchar **vector, const gchar *string)
 {
   gchar *underscore;
@@ -876,7 +602,7 @@ vector_find_filter (const gchar **vector, const gchar *string)
  *
  * @return Last check time.
  */
-static int
+int
 nvts_check_time ()
 {
   return sql_int ("SELECT"
@@ -894,7 +620,7 @@ nvts_check_time ()
  *
  * @return Last time SCAP was checked.
  */
-static int
+int
 scap_check_time ()
 {
   return sql_int ("SELECT"
@@ -912,7 +638,7 @@ scap_check_time ()
  *
  * @return Last time CERT was checked.
  */
-static int
+int
 cert_check_time ()
 {
   return sql_int ("SELECT"
@@ -930,13 +656,15 @@ cert_check_time ()
  *
  * @param[in]  log_config  Log configuration.
  * @param[in]  database    Database.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -3 database needs to be initialised from server,
  *         -5 database is too new.
  */
 int
-manage_option_setup (GSList *log_config, const db_conn_info_t *database)
+manage_option_setup (GSList *log_config, const db_conn_info_t *database,
+                     int avoid_db_check_inserts)
 {
   int ret;
 
@@ -947,7 +675,8 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database)
     }
 
   ret = init_manage_helper (log_config, database,
-                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET);
+                            MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                            avoid_db_check_inserts);
   assert (ret != -4);
   switch (ret)
     {
@@ -1065,3147 +794,7 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 }
 
 
-/* Filter utilities. */
-
-/**
- * @brief Get the symbol of a keyword relation.
- *
- * @param[in]  relation  Relation.
- *
- * @return Relation symbol.
- */
-const char *
-keyword_relation_symbol (keyword_relation_t relation)
-{
-  switch (relation)
-    {
-      case KEYWORD_RELATION_APPROX:        return "~";
-      case KEYWORD_RELATION_COLUMN_ABOVE:  return ">";
-      case KEYWORD_RELATION_COLUMN_APPROX: return "~";
-      case KEYWORD_RELATION_COLUMN_EQUAL:  return "=";
-      case KEYWORD_RELATION_COLUMN_BELOW:  return "<";
-      case KEYWORD_RELATION_COLUMN_REGEXP: return ":";
-      default:                             return "";
-    }
-}
-
-/**
- * @brief Free a keyword.
- *
- * @param[in]  keyword  Filter keyword.
- */
-static void
-keyword_free (keyword_t* keyword)
-{
-  g_free (keyword->string);
-  g_free (keyword->column);
-}
-
-/**
- * @brief Get whether a keyword is special (like "and").
- *
- * @param[in]  keyword  Keyword.
- *
- * @return 1 if special, else 0.
- */
-int
-keyword_special (keyword_t *keyword)
-{
-  if (keyword->string)
-    return (strcmp (keyword->string, "and") == 0)
-           || (strcmp (keyword->string, "or") == 0)
-           || (strcmp (keyword->string, "not") == 0)
-           || (strcmp (keyword->string, "re") == 0)
-           || (strcmp (keyword->string, "regexp") == 0);
-  return 0;
-}
-
-/**
- * @brief Parse a filter column relation.
- *
- * @param[in]  relation  Filter relation.
- *
- * @return keyword relation
- */
-static keyword_relation_t
-parse_column_relation (const char relation)
-{
-  switch (relation)
-    {
-      case '=': return KEYWORD_RELATION_COLUMN_EQUAL;
-      case '~': return KEYWORD_RELATION_COLUMN_APPROX;
-      case '>': return KEYWORD_RELATION_COLUMN_ABOVE;
-      case '<': return KEYWORD_RELATION_COLUMN_BELOW;
-      case ':': return KEYWORD_RELATION_COLUMN_REGEXP;
-      default:  return KEYWORD_RELATION_COLUMN_APPROX;
-    }
-}
-
-/**
- * @brief Parse a filter keyword.
- *
- * @param[in]  keyword  Filter keyword.
- */
-static void
-parse_keyword (keyword_t* keyword)
-{
-  gchar *string;
-  int digits;
-
-  if (keyword->column == NULL && keyword->equal == 0)
-    {
-      keyword->relation = KEYWORD_RELATION_APPROX;
-      keyword->type = KEYWORD_TYPE_STRING;
-      return;
-    }
-
-  /* Special values to substitute */
-
-  if (keyword->column
-      && (strcasecmp (keyword->column, "severity") == 0
-          || strcasecmp (keyword->column, "new_severity") == 0))
-    {
-      if (strcasecmp (keyword->string, "Log") == 0)
-        {
-          keyword->double_value = SEVERITY_LOG;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-      if (strcasecmp (keyword->string, "False Positive") == 0)
-        {
-          keyword->double_value = SEVERITY_FP;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-      else if (strcasecmp (keyword->string, "Error") == 0)
-        {
-          keyword->double_value = SEVERITY_ERROR;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-          return;
-        }
-    }
-
-  /* The type. */
-
-  string = keyword->string;
-  if (*string == '\0')
-    {
-      keyword->type = KEYWORD_TYPE_STRING;
-      return;
-    }
-  if (*string && *string == '-' && strlen (string) > 1) string++;
-  digits = 0;
-  while (*string && isdigit (*string))
-    {
-      digits = 1;
-      string++;
-    }
-  if (digits == 0)
-    keyword->type = KEYWORD_TYPE_STRING;
-  else if (*string)
-    {
-      struct tm date;
-      gchar next;
-      int parsed_integer;
-      double parsed_double;
-      char dummy[2];
-      memset (&date, 0, sizeof (date));
-      next = *(string + 1);
-      if (next == '\0' && *string == 's')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + atoi (keyword->string);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'm')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 60);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'h')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 3600);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'd')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + (atoi (keyword->string) * 86400);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'w')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = now + atoi (keyword->string) * 604800;
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'M')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = add_months (now, atoi (keyword->string));
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (next == '\0' && *string == 'y')
-        {
-          time_t now;
-          now = time (NULL);
-          keyword->integer_value = add_months (now,
-                                               atoi (keyword->string) * 12);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      // Add cases for t%H:%M although it is incorrect sometimes it is easier
-      // to call filter.lower on the frontend then it can happen that the
-      // T indicator is lowered as well.
-      else if (strptime (keyword->string, "%Y-%m-%dt%H:%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dtH:M %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (strptime (keyword->string, "%Y-%m-%dt%Hh%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dtHhM %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (strptime (keyword->string, "%Y-%m-%dT%H:%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dTH:M %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      // Add T%Hh%M for downwards compatible filter
-      else if (strptime (keyword->string, "%Y-%m-%dT%Hh%M", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-dTHhM %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (memset (&date, 0, sizeof (date)),
-               strptime (keyword->string, "%Y-%m-%d", &date))
-        {
-          keyword->integer_value = mktime (&date);
-          keyword->type = KEYWORD_TYPE_INTEGER;
-          g_debug ("Parsed Y-m-d %s to timestamp %d.",
-                   keyword->string, keyword->integer_value);
-        }
-      else if (sscanf (keyword->string, "%d%1s", &parsed_integer, dummy) == 1)
-        {
-          keyword->integer_value = parsed_integer;
-          keyword->type = KEYWORD_TYPE_INTEGER;
-        }
-      else if (sscanf (keyword->string, "%lf%1s", &parsed_double, dummy) == 1
-               && parsed_double <= DBL_MAX)
-        {
-          keyword->double_value = parsed_double;
-          keyword->type = KEYWORD_TYPE_DOUBLE;
-        }
-      else
-        keyword->type = KEYWORD_TYPE_STRING;
-    }
-  else
-    {
-      keyword->integer_value = atoi (keyword->string);
-      keyword->type = KEYWORD_TYPE_INTEGER;
-    }
-}
-
-/**
- * @brief Cleans up keywords with special conditions and relations.
- *
- * @param[in]  keyword  Keyword to clean up.
- */
-static void
-cleanup_keyword (keyword_t *keyword)
-{
-  if (keyword->column == NULL)
-    return;
-
-  if (strcasecmp (keyword->column, "first") == 0)
-    {
-      /* "first" must be >= 1 */
-      if (keyword->integer_value <= 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "rows") == 0)
-    {
-      /* rows must be >= 1 or a special value (-1 or -2) */
-      if (keyword->integer_value == 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      else if (keyword->integer_value < -2)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = -1;
-          keyword->string = g_strdup ("-1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "min_qod") == 0)
-    {
-      /* min_qod must be a percentage (between 0 and 100) */
-      if (keyword->integer_value < 0)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 0;
-          keyword->string = g_strdup ("0");
-        }
-      else if (keyword->integer_value > 100)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 100;
-          keyword->string = g_strdup ("100");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "apply_overrides") == 0
-           || strcasecmp (keyword->column, "overrides") == 0
-           || strcasecmp (keyword->column, "notes") == 0
-           || strcasecmp (keyword->column, "result_hosts_only") == 0)
-    {
-      /* Boolean options (0 or 1) */
-      if (keyword->integer_value != 0 && keyword->integer_value != 1)
-        {
-          g_free (keyword->string);
-          keyword->integer_value = 1;
-          keyword->string = g_strdup ("1");
-        }
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-  else if (strcasecmp (keyword->column, "delta_states") == 0
-           || strcasecmp (keyword->column, "levels") == 0
-           || strcasecmp (keyword->column, "sort") == 0
-           || strcasecmp (keyword->column, "sort-reverse") == 0)
-    {
-      /* Text options */
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-    }
-}
-
-/**
- * @brief Check whether a keyword has any effect in the filter.
- *
- * Some keywords are redundant, like a second sort= keyword.
- *
- * @param[in]  array    Array of existing keywords.
- * @param[in]  keyword  Keyword under consideration.
- *
- * @return 0 no, 1 yes.
- */
-static int
-keyword_applies (array_t *array, const keyword_t *keyword)
-{
-  if (keyword->column
-      && ((strcmp (keyword->column, "sort") == 0)
-          || (strcmp (keyword->column, "sort-reverse") == 0))
-      && (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column
-              && ((strcmp (item->column, "sort") == 0)
-                  || (strcmp (item->column, "sort-reverse") == 0)))
-            return 0;
-        }
-      return 1;
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "first") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "first") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "rows") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "rows") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "apply_overrides") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "apply_overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "delta_states") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "delta_states") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "levels") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "levels") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "min_qod") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "min_qod") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "notes") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "notes") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "overrides") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "overrides") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "result_hosts_only") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "result_hosts_only") == 0))
-            return 0;
-        }
-    }
-
-  if (keyword->column
-      && (strcmp (keyword->column, "timezone") == 0))
-    {
-      int index;
-
-      index = array->len;
-      while (index--)
-        {
-          keyword_t *item;
-          item = (keyword_t*) g_ptr_array_index (array, index);
-          if (item->column && (strcmp (item->column, "timezone") == 0))
-            return 0;
-        }
-    }
-
-  return 1;
-}
-
-/**
- * @brief Free a split filter.
- *
- * @param[in]  split  Split filter.
- */
-void
-filter_free (array_t *split)
-{
-  keyword_t **point;
-  for (point = (keyword_t**) split->pdata; *point; point++)
-    keyword_free (*point);
-  array_free (split);
-}
-
-/**
- * @brief Flag to control the default sorting produced by split_filter.
- *
- * If this is true, and the filter does not specify a sort field, then
- * split_filter will not insert a default sort term, so that the random
- * (and fast) table order in the database will be used.
- */
-static int table_order_if_sort_not_specified = 0;
-
-/**
- * @brief Ensure filter parts contains the special keywords.
- *
- * @param[in]  parts         Array of keyword strings.
- * @param[in]  given_filter  Filter term.
- */
-void
-split_filter_add_specials (array_t *parts, const gchar* given_filter)
-{
-  int index, first, max, sort;
-  keyword_t *keyword;
-
-  index = parts->len;
-  first = max = sort = 0;
-  while (index--)
-    {
-      keyword_t *item;
-      item = (keyword_t*) g_ptr_array_index (parts, index);
-      if (item->column && (strcmp (item->column, "first") == 0))
-        first = 1;
-      else if (item->column && (strcmp (item->column, "rows") == 0))
-        max = 1;
-      else if (item->column
-               && ((strcmp (item->column, "sort") == 0)
-                   || (strcmp (item->column, "sort-reverse") == 0)))
-        sort = 1;
-    }
-
-  if (first == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("first");
-      keyword->string = g_strdup ("1");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-
-  if (max == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("rows");
-      keyword->string = g_strdup ("-2");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-
-  if (table_order_if_sort_not_specified == 0 && sort == 0)
-    {
-      keyword = g_malloc0 (sizeof (keyword_t));
-      keyword->column = g_strdup ("sort");
-      keyword->string = g_strdup ("name");
-      keyword->type = KEYWORD_TYPE_STRING;
-      keyword->relation = KEYWORD_RELATION_COLUMN_EQUAL;
-      array_add (parts, keyword);
-    }
-}
-
-/**
- * @brief Split the filter term into parts.
- *
- * @param[in]  given_filter  Filter term.
- *
- * @return Array of strings, the parts.
- */
-array_t *
-split_filter (const gchar* given_filter)
-{
-  int in_quote, between;
-  array_t *parts;
-  const gchar *current_part, *filter;
-  keyword_t *keyword;
-
-  assert (given_filter);
-
-  /* Collect the filter terms in an array. */
-
-  filter = given_filter;
-  parts = make_array ();
-  in_quote = 0;
-  between = 1;
-  keyword = NULL;
-  current_part = filter;  /* To silence compiler warning. */
-  while (*filter)
-    {
-      switch (*filter)
-        {
-          case '=':
-          case '~':
-            if (between)
-              {
-                /* Empty index.  Start a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                if (*filter == '=')
-                  keyword->equal = 1;
-                else
-                  keyword->approx = 1;
-                current_part = filter + 1;
-                between = 0;
-                break;
-              }
-          case ':':
-          case '>':
-          case '<':
-            if (between)
-              {
-                /* Empty index.  Start a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                current_part = filter;
-                between = 0;
-                break;
-              }
-            if (in_quote)
-              break;
-            /* End of an index. */
-            if (keyword == NULL)
-              {
-                assert (0);
-                break;
-              }
-            if (keyword->column)
-              /* Already had an index char. */
-              break;
-            if (filter <= (current_part - 1))
-              {
-                assert (0);
-                break;
-              }
-            keyword->column = g_strndup (current_part,
-                                         filter - current_part);
-            current_part = filter + 1;
-            keyword->relation = parse_column_relation(*filter);
-            break;
-
-          case ' ':
-          case '\t':
-          case '\n':
-          case '\r':
-            if (in_quote || between)
-              break;
-            /* End of a part. */
-            if (keyword == NULL)
-              {
-                assert (0);
-                break;
-              }
-            keyword->string = g_strndup (current_part, filter - current_part);
-            parse_keyword (keyword);
-            cleanup_keyword (keyword);
-            if (keyword_applies (parts, keyword))
-              array_add (parts, keyword);
-            keyword = NULL;
-            between = 1;
-            break;
-
-          case '"':
-            if (in_quote)
-              {
-                /* End of a quoted part. */
-                if (keyword == NULL)
-                  {
-                    assert (0);
-                    break;
-                  }
-                keyword->quoted = 1;
-                keyword->string = g_strndup (current_part,
-                                             filter - current_part);
-                parse_keyword (keyword);
-                cleanup_keyword (keyword);
-                if (keyword_applies (parts, keyword))
-                  array_add (parts, keyword);
-                keyword = NULL;
-                in_quote = 0;
-                between = 1;
-              }
-            else if (between)
-              {
-                /* Start of a quoted part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                in_quote = 1;
-                current_part = filter + 1;
-                between = 0;
-              }
-            else if (keyword->column && filter == current_part)
-              {
-                /* A quoted index. */
-                in_quote = 1;
-                current_part++;
-              }
-            else if ((keyword->equal || keyword->approx)
-                     && filter == current_part)
-              {
-                /* A quoted exact term, like ="abc"
-                 * or a prefixed approximate term, like ~"abc". */
-                in_quote = 1;
-                current_part++;
-              }
-            /* Else just a quote in a keyword, like ab"cd. */
-            break;
-
-          default:
-            if (between)
-              {
-                /* Start of a part. */
-                keyword = g_malloc0 (sizeof (keyword_t));
-                current_part = filter;
-                between = 0;
-              }
-            break;
-        }
-      filter++;
-    }
-  if (between == 0)
-    {
-      if (keyword == NULL)
-        assert (0);
-      else
-        {
-          keyword->quoted = in_quote;
-          keyword->string = g_strdup (current_part);
-          parse_keyword (keyword);
-          cleanup_keyword (keyword);
-          if (keyword_applies (parts, keyword))
-            array_add (parts, keyword);
-          keyword = NULL;
-        }
-    }
-  assert (keyword == NULL);
-
-  /* Make sure the special keywords appear in the array. */
-
-  split_filter_add_specials (parts, given_filter);
-
-  array_add (parts, NULL);
-
-  return parts;
-}
-
-/**
- * @brief Get info from a filter.
- *
- * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
- * (by calling manage_max_rows).
- *
- * @param[in]   filter      Filter.
- * @param[out]  first       Number of first item.
- * @param[out]  max         Max number of rows.
- * @param[out]  sort_field  Sort field.
- * @param[out]  sort_order  Sort order.
- */
-void
-manage_filter_controls (const gchar *filter, int *first, int *max,
-                        gchar **sort_field, int *sort_order)
-{
-  keyword_t **point;
-  array_t *split;
-
-  if (filter == NULL)
-    {
-      if (first)
-        *first = 1;
-      if (max)
-        *max = -2;
-      if (sort_field)
-        *sort_field = g_strdup ("name");
-      if (sort_order)
-        *sort_order = 1;
-      return;
-    }
-
-  split = split_filter (filter);
-  point = (keyword_t**) split->pdata;
-  if (first)
-    {
-      *first = 1;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "first") == 0))
-            {
-              *first = atoi (keyword->string);
-              if (*first < 0)
-                *first = 0;
-              break;
-            }
-          point++;
-        }
-    }
-
-  point = (keyword_t**) split->pdata;
-  if (max)
-    {
-      *max = -2;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "rows") == 0))
-            {
-              *max = atoi (keyword->string);
-              if (*max == -2)
-                setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max);
-              else if (*max < 1)
-                *max = -1;
-              break;
-            }
-          point++;
-        }
-    }
-
-  point = (keyword_t**) split->pdata;
-  if (sort_field || sort_order)
-    {
-      if (sort_field) *sort_field = NULL;
-      if (sort_order) *sort_order = 1;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column
-              && (strcmp (keyword->column, "sort") == 0))
-            {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 1;
-              break;
-            }
-          if (keyword->column
-              && (strcmp (keyword->column, "sort-reverse") == 0))
-            {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 0;
-              break;
-            }
-          point++;
-        }
-      if (sort_field && (*sort_field == NULL))
-        *sort_field = g_strdup ("name");
-    }
-
-  filter_free (split);
-  return;
-}
-
-/**
- * @brief Get an int column from a filter split.
- *
- * @param[in]  point   Filter split.
- * @param[in]  column  Name of column.
- * @param[out] val     Value of column.
- *
- * @return 0 success, 1 fail.
- */
-static int
-filter_control_int (keyword_t **point, const char *column, int *val)
-{
-  if (val)
-    while (*point)
-      {
-        keyword_t *keyword;
-
-        keyword = *point;
-        if (keyword->column
-            && (strcmp (keyword->column, column) == 0))
-          {
-            *val = atoi (keyword->string);
-            return 0;
-          }
-        point++;
-      }
-  return 1;
-}
-
-/**
- * @brief Get a string column from a filter split.
- *
- * @param[in]  point   Filter split.
- * @param[in]  column  Name of column.
- * @param[out] string  Value of column, freshly allocated.
- *
- * @return 0 success, 1 fail.
- */
-static int
-filter_control_str (keyword_t **point, const char *column, gchar **string)
-{
-  if (string)
-    while (*point)
-      {
-        keyword_t *keyword;
-
-        keyword = *point;
-        if (keyword->column
-            && (strcmp (keyword->column, column) == 0))
-          {
-            *string = g_strdup (keyword->string);
-            return 0;
-          }
-        point++;
-      }
-  return 1;
-}
-
-/**
- * @brief Get info from a result filter for a report.
- *
- * It's up to the caller to ensure that max is adjusted for Max Rows Per Page
- * (by calling manage_max_rows).
- *
- * @param[in]   filter      Filter.
- * @param[out]  first       Number of first item.
- * @param[out]  max         Max number of rows.
- * @param[out]  sort_field  Sort field.
- * @param[out]  sort_order  Sort order.
- * @param[out]  result_hosts_only  Whether to show only hosts with results.
- * @param[out]  min_qod        Minimum QoD base of included results.  All
- *                              results if NULL.
- * @param[out]  levels         String describing threat levels (message types)
- *                             to include in count (for example, "hmlg" for
- *                             High, Medium, Low and loG). All levels if NULL.
- * @param[out]  compliance_levels   String describing compliance levels
- *                             to include in count (for example, "yniu" for
- *                             "yes" (compliant), "n" for "no" (not compliant),
- *                             "i" for "incomplete" and "u" for "undefined" 
- *                              (without compliance information). 
- *                              All levels if NULL.
- * @param[out]  delta_states   String describing delta states to include in count
- *                             (for example, "sngc" Same, New, Gone and Changed).
- *                             All levels if NULL.
- * @param[out]  search_phrase      Phrase that results must include.  All results
- *                                 if NULL or "".
- * @param[out]  search_phrase_exact  Whether search phrase is exact.
- * @param[out]  notes              Whether to include notes.
- * @param[out]  overrides          Whether to include overrides.
- * @param[out]  apply_overrides    Whether to apply overrides.
- * @param[out]  zone               Timezone.
- */
-void
-manage_report_filter_controls (const gchar *filter, int *first, int *max,
-                               gchar **sort_field, int *sort_order,
-                               int *result_hosts_only, gchar **min_qod,
-                               gchar **levels, gchar **compliance_levels,
-                               gchar **delta_states, gchar **search_phrase, 
-                               int *search_phrase_exact, int *notes, 
-                               int *overrides, int *apply_overrides, 
-                               gchar **zone)
-{
-  keyword_t **point;
-  array_t *split;
-  int val;
-  gchar *string;
-
-  if (filter == NULL)
-    return;
-
-  split = split_filter (filter);
-
-  point = (keyword_t**) split->pdata;
-  if (first)
-    {
-      *first = 1;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "first") == 0))
-            {
-              *first = atoi (keyword->string);
-              if (*first < 0)
-                *first = 0;
-              break;
-            }
-          point++;
-        }
-      /* Switch from 1 to 0 indexing. */
-
-      (*first)--;
-    }
-
-  point = (keyword_t**) split->pdata;
-  if (max)
-    {
-      *max = 100;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "rows") == 0))
-            {
-              *max = atoi (keyword->string);
-              if (*max == -2)
-                setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max);
-              else if (*max < 1)
-                *max = -1;
-              break;
-            }
-          point++;
-        }
-    }
-
-  point = (keyword_t**) split->pdata;
-  if (sort_field || sort_order)
-    {
-      if (sort_field) *sort_field = NULL;
-      if (sort_order) *sort_order = 1;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column
-              && (strcmp (keyword->column, "sort") == 0))
-            {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 1;
-              break;
-            }
-          if (keyword->column
-              && (strcmp (keyword->column, "sort-reverse") == 0))
-            {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 0;
-              break;
-            }
-          point++;
-        }
-      if (sort_field && (*sort_field == NULL))
-        *sort_field = g_strdup ("name"); /* NVT name. */
-    }
-
-  if (search_phrase)
-    {
-      GString *phrase;
-      phrase = g_string_new ("");
-      point = (keyword_t**) split->pdata;
-      if (search_phrase_exact)
-        *search_phrase_exact = 0;
-      while (*point)
-        {
-          keyword_t *keyword;
-
-          keyword = *point;
-          if (keyword->column == NULL)
-            {
-              if (search_phrase_exact && keyword->equal)
-                /* If one term is "exact" then the search is "exact", because
-                 * for reports the filter terms are combined into a single
-                 * search term. */
-                *search_phrase_exact = 1;
-              g_string_append_printf (phrase, "%s ", keyword->string);
-            }
-          point++;
-        }
-      *search_phrase = g_strchomp (g_string_free (phrase, FALSE));
-    }
-
-  if (result_hosts_only)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "result_hosts_only",
-                              &val))
-        *result_hosts_only = 1;
-      else
-        *result_hosts_only = val;
-    }
-
-  if (notes)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "notes",
-                              &val))
-        *notes = 1;
-      else
-        *notes = val;
-    }
-
-  if (overrides)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "overrides",
-                              &val))
-        *overrides = 1;
-      else
-        *overrides = val;
-    }
-
-  if (apply_overrides)
-    {
-      if (filter_control_int ((keyword_t **) split->pdata,
-                              "apply_overrides",
-                              &val))
-        {
-          if (filter_control_int ((keyword_t **) split->pdata,
-                                  "overrides",
-                                  &val))
-            *apply_overrides = 1;
-          else
-            *apply_overrides = val;
-        }
-      else
-        *apply_overrides = val;
-    }
-
-  if (compliance_levels)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "compliance_levels",
-                              &string))
-        *compliance_levels = NULL;
-      else
-        *compliance_levels = string;
-    }
-
-  if (delta_states)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "delta_states",
-                              &string))
-        *delta_states = NULL;
-      else
-        *delta_states = string;
-    }
-
-  if (levels)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "levels",
-                              &string))
-        *levels = NULL;
-      else
-        *levels = string;
-    }
-
-  if (min_qod)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "min_qod",
-                              &string))
-        *min_qod = NULL;
-      else
-        *min_qod = string;
-    }
-
-  if (zone)
-    {
-      if (filter_control_str ((keyword_t **) split->pdata,
-                              "timezone",
-                              &string))
-        *zone = NULL;
-      else
-        *zone = string;
-    }
-
-  filter_free (split);
-  return;
-}
-
-/**
- * @brief Append relation to filter.
- *
- * @param[in]  clean     Filter.
- * @param[in]  keyword   Keyword
- * @param[in]  relation  Relation char.
- */
-static void
-append_relation (GString *clean, keyword_t *keyword, const char relation)
-{
-  if (strcmp (keyword->column, "rows") == 0)
-    {
-      int max;
-
-      if (strcmp (keyword->string, "-2") == 0)
-        setting_value_int (SETTING_UUID_ROWS_PER_PAGE, &max);
-      else
-        max = atoi (keyword->string);
-
-      g_string_append_printf (clean,
-                              " %s%c%i",
-                              keyword->column,
-                              relation,
-                              manage_max_rows (max));
-    }
-  else if (keyword->quoted)
-    g_string_append_printf (clean,
-                            " %s%c\"%s\"",
-                            keyword->column,
-                            relation,
-                            keyword->string);
-  else
-    g_string_append_printf (clean,
-                            " %s%c%s",
-                            keyword->column,
-                            relation,
-                            keyword->string);
-}
-
-/**
- * @brief Clean a filter, removing a keyword in the process.
- *
- * @param[in]  filter  Filter.
- * @param[in]  column  Keyword to remove, or NULL.
- *
- * @return Cleaned filter.
- */
-gchar *
-manage_clean_filter_remove (const gchar *filter, const gchar *column)
-{
-  GString *clean;
-  keyword_t **point;
-  array_t *split;
-
-  if (filter == NULL)
-    return g_strdup ("");
-
-  clean = g_string_new ("");
-  split = split_filter (filter);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-
-      keyword = *point;
-      if (keyword->column
-          && column
-          && strlen (column)
-          && ((strcasecmp (keyword->column, column) == 0)
-              || (keyword->column[0] == '_'
-                  && strcasecmp (keyword->column + 1, column) == 0)))
-        {
-          /* Remove this keyword. */;
-        }
-      else if (keyword->column)
-        switch (keyword->relation)
-          {
-            case KEYWORD_RELATION_COLUMN_EQUAL:
-              append_relation (clean, keyword, '=');
-              break;
-            case KEYWORD_RELATION_COLUMN_APPROX:
-              append_relation (clean, keyword, '~');
-              break;
-            case KEYWORD_RELATION_COLUMN_ABOVE:
-              append_relation (clean, keyword, '>');
-              break;
-            case KEYWORD_RELATION_COLUMN_BELOW:
-              append_relation (clean, keyword, '<');
-              break;
-            case KEYWORD_RELATION_COLUMN_REGEXP:
-              append_relation (clean, keyword, ':');
-              break;
-
-            case KEYWORD_RELATION_APPROX:
-              if (keyword->quoted)
-                g_string_append_printf (clean, " \"%s\"", keyword->string);
-              else
-                g_string_append_printf (clean, " %s", keyword->string);
-              break;
-          }
-      else
-        {
-          const char *relation_symbol;
-          if (keyword->equal)
-            relation_symbol = "=";
-          else if (keyword->approx)
-            relation_symbol = "~";
-          else
-            relation_symbol = "";
-
-          if (keyword->quoted)
-            g_string_append_printf (clean, " %s\"%s\"",
-                                    relation_symbol,
-                                    keyword->string);
-          else
-            g_string_append_printf (clean, " %s%s",
-                                    relation_symbol,
-                                    keyword->string);
-        }
-      point++;
-    }
-  filter_free (split);
-  return g_strstrip (g_string_free (clean, FALSE));
-}
-
-/**
- * @brief Clean a filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return Cleaned filter.
- */
-gchar *
-manage_clean_filter (const gchar *filter)
-{
-  return manage_clean_filter_remove (filter, NULL);
-}
-
-/**
- * @brief Return SQL join words for filter_clause.
- *
- * @param[in]  first         Whether keyword is first.
- * @param[in]  last_was_and  Whether last keyword was "and".
- * @param[in]  last_was_not  Whether last keyword was "not".
- *
- * @return SQL join words.
- */
-static const char *
-get_join (int first, int last_was_and, int last_was_not)
-{
-  const char *pre;
-  if (first)
-    {
-      if (last_was_not)
-        pre = "NOT ";
-      else
-        pre = "";
-    }
-  else
-    {
-      if (last_was_and)
-        {
-          if (last_was_not)
-            pre = " AND NOT ";
-          else
-            pre = " AND ";
-        }
-      else
-        {
-          if (last_was_not)
-            pre = " OR NOT ";
-          else
-            pre = " OR ";
-        }
-    }
-  return pre;
-}
-
-/**
- * @brief Get the column expression for a filter column.
- *
- * @param[in]  select_columns  SELECT columns.
- * @param[in]  filter_column   Filter column.
- * @param[out] type            Type of returned column.
- *
- * @return Column for the SELECT statement.
- */
-static gchar *
-columns_select_column_single (column_t *select_columns,
-                              const char *filter_column,
-                              keyword_type_t* type)
-{
-  column_t *columns;
-  if (type)
-    *type = KEYWORD_TYPE_UNKNOWN;
-  if (select_columns == NULL)
-    return NULL;
-  columns = select_columns;
-  while ((*columns).select)
-    {
-      if ((*columns).filter
-          && strcmp ((*columns).filter, filter_column) == 0)
-        {
-          if (type)
-            *type = (*columns).type;
-          return (*columns).select;
-        }
-      if ((*columns).filter
-          && *((*columns).filter)
-          && *((*columns).filter) == '_'
-          && strcmp (((*columns).filter) + 1, filter_column) == 0)
-        {
-          if (type)
-            *type = (*columns).type;
-          return (*columns).select;
-        }
-      columns++;
-    }
-  columns = select_columns;
-  while ((*columns).select)
-    {
-      if (strcmp ((*columns).select, filter_column) == 0)
-        {
-          if (type)
-            *type = (*columns).type;
-          return (*columns).select;
-        }
-      columns++;
-    }
-  return NULL;
-}
-
-/**
- * @brief Get the selection term for a filter column.
- *
- * @param[in]  select_columns  SELECT columns.
- * @param[in]  where_columns   WHERE "columns".
- * @param[in]  filter_column   Filter column.
- *
- * @return Column for the SELECT statement.
- */
-static gchar *
-columns_select_column (column_t *select_columns,
-                       column_t *where_columns,
-                       const char *filter_column)
-{
-  gchar *column;
-  column = columns_select_column_single (select_columns, filter_column, NULL);
-  if (column)
-    return column;
-  return columns_select_column_single (where_columns, filter_column, NULL);
-}
-
-/**
- * @brief Get the selection term for a filter column.
- *
- * @param[in]  select_columns  SELECT columns.
- * @param[in]  where_columns   WHERE "columns".
- * @param[in]  filter_column   Filter column.
- * @param[out] type            Type of the returned column.
- *
- * @return Column for the SELECT statement.
- */
-static gchar *
-columns_select_column_with_type (column_t *select_columns,
-                                 column_t *where_columns,
-                                 const char *filter_column,
-                                 keyword_type_t* type)
-{
-  gchar *column;
-  column = columns_select_column_single (select_columns, filter_column, type);
-  if (column)
-    return column;
-  return columns_select_column_single (where_columns, filter_column, type);
-}
-
-/**
- * @brief Return column list for SELECT statement.
- *
- * @param[in]  select_columns  SELECT columns.
- *
- * @return Column list for the SELECT statement.
- */
-gchar *
-columns_build_select (column_t *select_columns)
-{
-  if (select_columns == NULL)
-    return g_strdup ("''");
-
-  if ((*select_columns).select)
-    {
-      column_t *columns;
-      GString *select;
-
-      columns = select_columns;
-      select = g_string_new ("");
-      g_string_append (select, (*columns).select);
-      if ((*columns).filter)
-        g_string_append_printf (select, " AS %s", (*columns).filter);
-      columns++;
-      while ((*columns).select)
-       {
-         g_string_append_printf (select, ", %s", (*columns).select);
-         if ((*columns).filter)
-           g_string_append_printf (select, " AS %s", (*columns).filter);
-         columns++;
-       }
-      return g_string_free (select, FALSE);
-    }
-  return g_strdup ("''");
-}
-
-/**
- * @brief Check whether a keyword applies to a column.
- *
- * @param[in]  keyword  Keyword.
- * @param[in]  column   Column.
- *
- * @return 1 if applies, else 0.
- */
-static int
-keyword_applies_to_column (keyword_t *keyword, const char* column)
-{
-  if ((strcmp (column, "threat") == 0)
-      && (strstr ("None", keyword->string) == NULL)
-      && (strstr ("False Positive", keyword->string) == NULL)
-      && (strstr ("Error", keyword->string) == NULL)
-      && (strstr ("Alarm", keyword->string) == NULL)
-      && (strstr ("High", keyword->string) == NULL)
-      && (strstr ("Medium", keyword->string) == NULL)
-      && (strstr ("Low", keyword->string) == NULL)
-      && (strstr ("Log", keyword->string) == NULL))
-    return 0;
-  if ((strcmp (column, "trend") == 0)
-      && (strstr ("more", keyword->string) == NULL)
-      && (strstr ("less", keyword->string) == NULL)
-      && (strstr ("up", keyword->string) == NULL)
-      && (strstr ("down", keyword->string) == NULL)
-      && (strstr ("same", keyword->string) == NULL))
-    return 0;
-  if ((strcmp (column, "status") == 0)
-      && (strstr ("Delete Requested", keyword->string) == NULL)
-      && (strstr ("Ultimate Delete Requested", keyword->string) == NULL)
-      && (strstr ("Done", keyword->string) == NULL)
-      && (strstr ("New", keyword->string) == NULL)
-      && (strstr ("Running", keyword->string) == NULL)
-      && (strstr ("Queued", keyword->string) == NULL)
-      && (strstr ("Stop Requested", keyword->string) == NULL)
-      && (strstr ("Stopped", keyword->string) == NULL)
-      && (strstr ("Interrupted", keyword->string) == NULL)
-      && (strstr ("Processing", keyword->string) == NULL))
-    return 0;
-  return 1;
-}
-
-/**
- * @brief Append parts for a "tag" keyword to a filter clause.
- *
- * @param[in,out] clause      Buffer for the filter clause to append to.
- * @param[in]  keyword        The keyword to create the filter clause part for.
- * @param[in]  type           The resource type.
- * @param[in]  first_keyword  Whether keyword is first.
- * @param[in]  last_was_and   Whether last keyword was "and".
- * @param[in]  last_was_not   Whether last keyword was "not".
- */
-static void
-filter_clause_append_tag (GString *clause, keyword_t *keyword,
-                          const char *type, int first_keyword,
-                          int last_was_and, int last_was_not)
-{
-  gchar *quoted_keyword;
-  gchar **tag_split, *tag_name, *tag_value;
-  int value_given;
-
-  quoted_keyword = sql_quote (keyword->string);
-  tag_split = g_strsplit (quoted_keyword, "=", 2);
-  tag_name = g_strdup (tag_split[0] ? tag_split[0] : "");
-
-  if (tag_split[0] && tag_split[1])
-    {
-      tag_value = g_strdup (tag_split[1]);
-      value_given = 1;
-    }
-  else
-    {
-      tag_value = g_strdup ("");
-      value_given = 0;
-    }
-
-  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
-      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
-      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.name = '%s'"
-          "   AND tags.active != 0"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)"
-          "   %s%s%s))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          tag_name,
-          type,
-          type,
-          (value_given
-            ? "AND tags.value = '"
-            : ""),
-          value_given ? tag_value : "",
-          (value_given
-            ? "'"
-            : ""));
-    }
-  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.name %s '%%%%%s%%%%'"
-          "   AND tags.active != 0"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)"
-          "   AND tags.value %s '%%%%%s%%%%'))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          sql_ilike_op (),
-          tag_name,
-          type,
-          type,
-          sql_ilike_op (),
-          tag_value);
-    }
-  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.name %s '%s'"
-          "   AND tags.active != 0"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)"
-          "   AND tags.value"
-          "       %s '%s'))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          sql_regexp_op (),
-          tag_name,
-          type,
-          type,
-          sql_regexp_op (),
-          tag_value);
-    }
-
-  g_free (quoted_keyword);
-  g_strfreev(tag_split);
-  g_free(tag_name);
-  g_free(tag_value);
-}
-
-/**
- * @brief Append parts for a "tag_id" keyword to a filter clause.
- *
- * @param[in,out] clause      Buffer for the filter clause to append to.
- * @param[in]  keyword        The keyword to create the filter clause part for.
- * @param[in]  type           The resource type.
- * @param[in]  first_keyword  Whether keyword is first.
- * @param[in]  last_was_and   Whether last keyword was "and".
- * @param[in]  last_was_not   Whether last keyword was "not".
- */
-static void
-filter_clause_append_tag_id (GString *clause, keyword_t *keyword,
-                             const char *type, int first_keyword,
-                             int last_was_and, int last_was_not)
-{
-  gchar *quoted_keyword;
-
-  quoted_keyword = sql_quote (keyword->string);
-
-  if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL
-      || keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE
-      || keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.uuid = '%s'"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          quoted_keyword,
-          type,
-          type);
-    }
-  else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.uuid %s '%%%%%s%%%%'"
-          "   AND tags.active != 0"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          sql_ilike_op (),
-          quoted_keyword,
-          type,
-          type);
-    }
-  else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
-    {
-      g_string_append_printf
-         (clause,
-          "%s"
-          "(EXISTS"
-          "  (SELECT * FROM tags"
-          "   WHERE tags.uuid %s '%s'"
-          "   AND tags.active != 0"
-          "   AND user_has_access_uuid (CAST ('tag' AS text),"
-          "                             CAST (tags.uuid AS text),"
-          "                             CAST ('get_tags' AS text),"
-          "                             0)"
-          "   AND EXISTS (SELECT * FROM tag_resources"
-          "                WHERE tag_resources.resource_uuid"
-          "                        = %ss.uuid"
-          "                  AND tag_resources.resource_type"
-          "                        = '%s'"
-          "                  AND tag = tags.id)))",
-          get_join (first_keyword, last_was_and,
-                    last_was_not),
-          sql_regexp_op (),
-          quoted_keyword,
-          type,
-          type);
-    }
-
-  g_free (quoted_keyword);
-}
-
-/**
- * @brief Return SQL WHERE clause for restricting a SELECT to a filter term.
- *
- * @param[in]  type     Resource type.
- * @param[in]  filter   Filter term.
- * @param[in]  filter_columns  Filter columns.
- * @param[in]  select_columns  SELECT columns.
- * @param[in]  where_columns   Columns in SQL that only appear in WHERE clause.
- * @param[out] trash           Whether the trash table is being queried.
- * @param[out] order_return  If given then order clause.
- * @param[out] first_return  If given then first row.
- * @param[out] max_return    If given then max rows.
- * @param[out] permissions   When given then permissions string vector.
- * @param[out] owner_filter  When given then value of owner keyword.
- *
- * @return WHERE clause for filter if one is required, else NULL.
- */
-gchar *
-filter_clause (const char* type, const char* filter,
-               const char **filter_columns, column_t *select_columns,
-               column_t *where_columns, int trash, gchar **order_return,
-               int *first_return, int *max_return, array_t **permissions,
-               gchar **owner_filter)
-{
-  GString *clause, *order;
-  keyword_t **point;
-  int first_keyword, first_order, last_was_and, last_was_not, last_was_re, skip;
-  array_t *split;
-
-  if (filter == NULL)
-    filter = "";
-
-  while (*filter && isspace (*filter)) filter++;
-
-  if (permissions)
-    *permissions = make_array ();
-
-  if (owner_filter)
-    *owner_filter = NULL;
-
-  /* Add SQL to the clause for each keyword or phrase. */
-
-  if (max_return)
-    *max_return = -2;
-
-  clause = g_string_new ("");
-  order = g_string_new ("");
-  /* NB This may add terms that are missing, like "sort". */
-  split = split_filter (filter);
-  point = (keyword_t**) split->pdata;
-  first_keyword = 1;
-  last_was_and = 0;
-  last_was_not = 0;
-  last_was_re = 0;
-  first_order = 1;
-  while (*point)
-    {
-      gchar *quoted_keyword;
-      int index;
-      keyword_t *keyword;
-
-      skip = 0;
-
-      keyword = *point;
-
-      if ((keyword->column == NULL)
-          && (strlen (keyword->string) == 0))
-        {
-          point++;
-          continue;
-        }
-
-      if ((keyword->column == NULL)
-          && (strcasecmp (keyword->string, "or") == 0))
-        {
-          point++;
-          continue;
-        }
-
-      if ((keyword->column == NULL)
-          && (strcasecmp (keyword->string, "and") == 0))
-        {
-          last_was_and = 1;
-          point++;
-          continue;
-        }
-
-      if ((keyword->column == NULL)
-          && (strcasecmp (keyword->string, "not") == 0))
-        {
-          last_was_not = 1;
-          point++;
-          continue;
-        }
-
-      if ((keyword->column == NULL)
-          && (strcasecmp (keyword->string, "re") == 0))
-        {
-          last_was_re = 1;
-          point++;
-          continue;
-        }
-
-      if ((keyword->column == NULL)
-          && (strcasecmp (keyword->string, "regexp") == 0))
-        {
-          last_was_re = 1;
-          point++;
-          continue;
-        }
-
-      /* Check for ordering parts, like sort=name or sort-reverse=string. */
-
-      if (keyword->column && (strcasecmp (keyword->column, "sort") == 0))
-        {
-          if (vector_find_filter (filter_columns, keyword->string) == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (first_order)
-            {
-              if ((strcmp (type, "report") == 0)
-                  && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf
-                 (order,
-                  " ORDER BY"
-                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
-                  "              WHERE tasks.id = task)"
-                  "    THEN 'Container'"
-                  "    ELSE run_status_name (scan_run_status)"
-                  "         || (SELECT CAST (temp / 100 AS text)"
-                  "                    || CAST (temp / 10 AS text)"
-                  "                    || CAST (temp %% 10 as text)"
-                  "             FROM (SELECT report_progress (id) AS temp)"
-                  "                  AS temp_sub)"
-                  "    END)"
-                  " ASC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf
-                 (order,
-                  " ORDER BY"
-                  "  (CASE WHEN target = 0"
-                  "    THEN 'Container'"
-                  "    ELSE run_status_name (run_status)"
-                  "         || (SELECT CAST (temp / 100 AS text)"
-                  "                    || CAST (temp / 10 AS text)"
-                  "                    || CAST (temp %% 10 as text)"
-                  "             FROM (SELECT report_progress (id) AS temp"
-                  "                   FROM reports"
-                  "                   WHERE task = tasks.id"
-                  "                   ORDER BY creation_time DESC LIMIT 1)"
-                  "                  AS temp_sub)"
-                  "    END)"
-                  " ASC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "threat") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY order_threat (%s) ASC",
-                                          column);
-                }
-              else if (strcmp (keyword->string, "severity") == 0
-                       || strcmp (keyword->string, "original_severity") == 0
-                       || strcmp (keyword->string, "cvss") == 0
-                       || strcmp (keyword->string, "cvss_base") == 0
-                       || strcmp (keyword->string, "max_cvss") == 0
-                       || strcmp (keyword->string, "fp_per_host") == 0
-                       || strcmp (keyword->string, "log_per_host") == 0
-                       || strcmp (keyword->string, "low_per_host") == 0
-                       || strcmp (keyword->string, "medium_per_host") == 0
-                       || strcmp (keyword->string, "high_per_host") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  g_string_append_printf (order,
-                                          " ORDER BY CASE CAST (%s AS text)"
-                                          " WHEN '' THEN '-Infinity'::real"
-                                          " ELSE coalesce(%s::real,"
-                                          "               '-Infinity'::real)"
-                                          " END ASC",
-                                          column,
-                                          column);
-                }
-              else if (strcmp (keyword->string, "roles") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY"
-                                          " CASE WHEN %s %s 'Admin.*'"
-                                          " THEN '0' || %s"
-                                          " ELSE '1' || %s END ASC",
-                                          column,
-                                          sql_regexp_op (),
-                                          column,
-                                          column);
-                }
-              else if ((strcmp (keyword->string, "created") == 0)
-                       || (strcmp (keyword->string, "modified") == 0)
-                       || (strcmp (keyword->string, "published") == 0)
-                       || (strcmp (keyword->string, "qod") == 0)
-                       || (strcmp (keyword->string, "cves") == 0)
-                       || (strcmp (keyword->string, "high") == 0)
-                       || (strcmp (keyword->string, "medium") == 0)
-                       || (strcmp (keyword->string, "low") == 0)
-                       || (strcmp (keyword->string, "log") == 0)
-                       || (strcmp (keyword->string, "false_positive") == 0)
-                       || (strcmp (keyword->string, "hosts") == 0)
-                       || (strcmp (keyword->string, "result_hosts") == 0)
-                       || (strcmp (keyword->string, "results") == 0)
-                       || (strcmp (keyword->string, "latest_severity") == 0)
-                       || (strcmp (keyword->string, "highest_severity") == 0)
-                       || (strcmp (keyword->string, "average_severity") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY %s ASC",
-                                          column);
-                }
-              else if ((strcmp (keyword->string, "ips") == 0)
-                       || (strcmp (keyword->string, "total") == 0)
-                       || (strcmp (keyword->string, "tcp") == 0)
-                       || (strcmp (keyword->string, "udp") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY CAST (%s AS INTEGER) ASC",
-                                          column);
-                }
-              else if (strcmp (keyword->string, "ip") == 0
-                       || strcmp (keyword->string, "host") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY order_inet (%s) ASC",
-                                          column);
-                }
-              else if ((strcmp (type, "note")
-                        && strcmp (type, "override"))
-                       || (strcmp (keyword->string, "nvt")
-                           && strcmp (keyword->string, "name")))
-                {
-                  gchar *column;
-                  keyword_type_t column_type;
-                  column = columns_select_column_with_type (select_columns,
-                                                            where_columns,
-                                                            keyword->string,
-                                                            &column_type);
-                  assert (column);
-                  if (column_type == KEYWORD_TYPE_INTEGER)
-                    g_string_append_printf (order,
-                                            " ORDER BY"
-                                            " cast (%s AS bigint) ASC",
-                                            column);
-                  else if (column_type == KEYWORD_TYPE_DOUBLE)
-                    g_string_append_printf (order,
-                                            " ORDER BY"
-                                            " cast (%s AS real) ASC",
-                                            column);
-                  else
-                    g_string_append_printf (order, " ORDER BY lower (%s) ASC",
-                                            column);
-                }
-              else
-                /* Special case for notes text sorting. */
-                g_string_append_printf (order,
-                                        " ORDER BY nvt ASC,"
-                                        "          lower (%ss%s.text) ASC",
-                                        type,
-                                        trash ? "_trash" : "");
-              first_order = 0;
-            }
-          else
-            /* To help the client split_filter restricts the filter to one
-             * sorting term, preventing this from happening. */
-            g_string_append_printf (order, ", %s ASC",
-                                    keyword->string);
-          point++;
-          continue;
-        }
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "sort-reverse") == 0))
-        {
-          if (vector_find_filter (filter_columns, keyword->string) == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (first_order)
-            {
-              if ((strcmp (type, "report") == 0)
-                  && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf
-                 (order,
-                  " ORDER BY"
-                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
-                  "              WHERE tasks.id = task)"
-                  "    THEN 'Container'"
-                  "    ELSE run_status_name (scan_run_status)"
-                  "         || (SELECT CAST (temp / 100 AS text)"
-                  "                    || CAST (temp / 10 AS text)"
-                  "                    || CAST (temp %% 10 as text)"
-                  "             FROM (SELECT report_progress (id) AS temp)"
-                  "                  AS temp_sub)"
-                  "    END)"
-                  " DESC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "status") == 0))
-                g_string_append_printf
-                 (order,
-                  " ORDER BY"
-                  "  (CASE WHEN target = 0"
-                  "    THEN 'Container'"
-                  "    ELSE run_status_name (run_status)"
-                  "         || (SELECT CAST (temp / 100 AS text)"
-                  "                    || CAST (temp / 10 AS text)"
-                  "                    || CAST (temp %% 10 as text)"
-                  "             FROM (SELECT report_progress (id) AS temp"
-                  "                   FROM reports"
-                  "                   WHERE task = tasks.id"
-                  "                   ORDER BY creation_time DESC LIMIT 1)"
-                  "                  AS temp_sub)"
-                  "    END)"
-                  " DESC");
-              else if ((strcmp (type, "task") == 0)
-                       && (strcmp (keyword->string, "threat") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY order_threat (%s) DESC",
-                                          column);
-                }
-              else if (strcmp (keyword->string, "severity") == 0
-                       || strcmp (keyword->string, "original_severity") == 0
-                       || strcmp (keyword->string, "cvss") == 0
-                       || strcmp (keyword->string, "cvss_base") == 0
-                       || strcmp (keyword->string, "max_cvss") == 0
-                       || strcmp (keyword->string, "fp_per_host") == 0
-                       || strcmp (keyword->string, "log_per_host") == 0
-                       || strcmp (keyword->string, "low_per_host") == 0
-                       || strcmp (keyword->string, "medium_per_host") == 0
-                       || strcmp (keyword->string, "high_per_host") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  g_string_append_printf (order,
-                                          " ORDER BY CASE CAST (%s AS text)"
-                                          " WHEN '' THEN '-Infinity'::real"
-                                          " ELSE coalesce(%s::real,"
-                                          "               '-Infinity'::real)"
-                                          " END DESC",
-                                          column,
-                                          column);
-                }
-              else if (strcmp (keyword->string, "roles") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY"
-                                          " CASE WHEN %s %s 'Admin.*'"
-                                          " THEN '0' || %s"
-                                          " ELSE '1' || %s END DESC",
-                                          column,
-                                          sql_regexp_op (),
-                                          column,
-                                          column);
-                }
-              else if ((strcmp (keyword->string, "created") == 0)
-                       || (strcmp (keyword->string, "modified") == 0)
-                       || (strcmp (keyword->string, "published") == 0)
-                       || (strcmp (keyword->string, "qod") == 0)
-                       || (strcmp (keyword->string, "cves") == 0)
-                       || (strcmp (keyword->string, "high") == 0)
-                       || (strcmp (keyword->string, "medium") == 0)
-                       || (strcmp (keyword->string, "low") == 0)
-                       || (strcmp (keyword->string, "log") == 0)
-                       || (strcmp (keyword->string, "false_positive") == 0)
-                       || (strcmp (keyword->string, "hosts") == 0)
-                       || (strcmp (keyword->string, "result_hosts") == 0)
-                       || (strcmp (keyword->string, "results") == 0)
-                       || (strcmp (keyword->string, "latest_severity") == 0)
-                       || (strcmp (keyword->string, "highest_severity") == 0)
-                       || (strcmp (keyword->string, "average_severity") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY %s DESC",
-                                          column);
-                }
-              else if ((strcmp (keyword->string, "ips") == 0)
-                       || (strcmp (keyword->string, "total") == 0)
-                       || (strcmp (keyword->string, "tcp") == 0)
-                       || (strcmp (keyword->string, "udp") == 0))
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY CAST (%s AS INTEGER) DESC",
-                                          column);
-                }
-              else if (strcmp (keyword->string, "ip") == 0
-                       || strcmp (keyword->string, "host") == 0)
-                {
-                  gchar *column;
-                  column = columns_select_column (select_columns,
-                                                  where_columns,
-                                                  keyword->string);
-                  assert (column);
-                  g_string_append_printf (order,
-                                          " ORDER BY order_inet (%s) DESC",
-                                          column);
-                }
-              else if ((strcmp (type, "note")
-                        && strcmp (type, "override"))
-                       || (strcmp (keyword->string, "nvt")
-                           && strcmp (keyword->string, "name")))
-                {
-                  gchar *column;
-                  keyword_type_t column_type;
-                  column = columns_select_column_with_type (select_columns,
-                                                            where_columns,
-                                                            keyword->string,
-                                                            &column_type);
-                  assert (column);
-                  if (column_type == KEYWORD_TYPE_INTEGER)
-                    g_string_append_printf (order,
-                                            " ORDER BY"
-                                            " cast (%s AS bigint) DESC",
-                                            column);
-                  else if (column_type == KEYWORD_TYPE_DOUBLE)
-                    g_string_append_printf (order,
-                                            " ORDER BY"
-                                            " cast (%s AS real) DESC",
-                                            column);
-                  else
-                    g_string_append_printf (order, " ORDER BY lower (%s) DESC",
-                                            column);
-                }
-              else
-                /* Special case for notes text sorting. */
-                g_string_append_printf (order,
-                                        " ORDER BY nvt DESC,"
-                                        "          lower (%ss%s.text) DESC",
-                                        type,
-                                        trash ? "_trash" : "");
-              first_order = 0;
-            }
-          else
-            /* To help the client split_filter restricts the filter to one
-             * sorting term, preventing this from happening. */
-            g_string_append_printf (order, ", %s DESC",
-                                    keyword->string);
-          point++;
-          continue;
-        }
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "first") == 0))
-        {
-          if (first_return)
-            {
-              /* Subtract 1 to switch from 1 to 0 indexing. */
-              *first_return = atoi (keyword->string) - 1;
-              if (*first_return < 0)
-                *first_return = 0;
-            }
-
-          point++;
-          continue;
-        }
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "rows") == 0))
-        {
-          if (max_return)
-            *max_return = atoi (keyword->string);
-
-          point++;
-          continue;
-        }
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "permission") == 0))
-        {
-          if (permissions)
-            array_add (*permissions, g_strdup (keyword->string));
-
-          point++;
-          continue;
-        }
-      /* Add tag criteria to clause: tag name with optional value */
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "tag") == 0))
-        {
-          quoted_keyword = NULL;
-
-          filter_clause_append_tag (clause, keyword, type,
-                                    first_keyword, last_was_and, last_was_not);
-
-          first_keyword = 0;
-          last_was_and = 0;
-          last_was_not = 0;
-
-          point++;
-          continue;
-        }
-      /* Add criteria for tag_id to clause */
-      else if (keyword->column
-               && (strcasecmp (keyword->column, "tag_id") == 0))
-        {
-          quoted_keyword = NULL;
-
-          filter_clause_append_tag_id (clause, keyword, type, first_keyword,
-                                       last_was_and, last_was_not);
-
-          first_keyword = 0;
-          last_was_and = 0;
-          last_was_not = 0;
-
-          point++;
-          continue;
-        }
-
-      /* Add SQL to the clause for each column name. */
-
-      quoted_keyword = NULL;
-
-      if (keyword->relation == KEYWORD_RELATION_COLUMN_EQUAL)
-        {
-          if (vector_find_filter (filter_columns, keyword->column) == 0)
-            {
-              last_was_and = 0;
-              last_was_not = 0;
-              point++;
-              continue;
-            }
-
-          if (keyword->column
-              && (strlen (keyword->column) > 3)
-              && (strcmp (keyword->column + strlen (keyword->column) - 3, "_id")
-                  == 0)
-              && strcasecmp (keyword->column, "nvt_id")
-              /* Tickets have a custom result_id column. */
-              && strcasecmp (keyword->column, "result_id"))
-            {
-              gchar *type_term;
-
-              type_term = g_strndup (keyword->column,
-                                     strlen (keyword->column) - 3);
-              if (valid_type (type_term) == 0)
-                {
-                  g_free (type_term);
-                  last_was_and = 0;
-                  last_was_not = 0;
-                  point++;
-                  continue;
-                }
-
-              quoted_keyword = sql_quote (keyword->string);
-              if (strcmp (quoted_keyword, ""))
-                g_string_append_printf (clause,
-                                        "%s(((SELECT id FROM %ss"
-                                        "     WHERE %ss.uuid = '%s')"
-                                        "     = %ss.%s"
-                                        "     OR %ss.%s IS NULL"
-                                        "     OR %ss.%s = 0)",
-                                        get_join (first_keyword,
-                                                  last_was_and,
-                                                  last_was_not),
-                                        type_term,
-                                        type_term,
-                                        quoted_keyword,
-                                        type,
-                                        type_term,
-                                        type,
-                                        type_term,
-                                        type,
-                                        type_term);
-              else
-                g_string_append_printf (clause,
-                                        "%s((%ss.%s IS NULL"
-                                        "   OR %ss.%s = 0)",
-                                        get_join (first_keyword,
-                                                  last_was_and,
-                                                  last_was_not),
-                                        type,
-                                        type_term,
-                                        type,
-                                        type_term);
-
-              g_free (type_term);
-            }
-          else if (keyword->column && strcmp (keyword->column, "owner"))
-            {
-              gchar *column;
-              keyword_type_t column_type;
-              quoted_keyword = sql_quote (keyword->string);
-              column = columns_select_column_with_type (select_columns,
-                                                        where_columns,
-                                                        keyword->column,
-                                                        &column_type);
-              assert (column);
-              if (keyword->type == KEYWORD_TYPE_INTEGER
-                  && (column_type == KEYWORD_TYPE_INTEGER
-                      || column_type == KEYWORD_TYPE_DOUBLE))
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS NUMERIC) = %i",
-                                        get_join (first_keyword, last_was_and,
-                                                  last_was_not),
-                                        column,
-                                        keyword->integer_value);
-          else if (keyword->type == KEYWORD_TYPE_DOUBLE
-                   && (column_type == KEYWORD_TYPE_DOUBLE
-                       || column_type == KEYWORD_TYPE_INTEGER))
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS REAL)"
-                                        " = CAST (%f AS REAL)",
-                                        get_join (first_keyword, last_was_and,
-                                                  last_was_not),
-                                        column,
-                                        keyword->double_value);
-              else if (strcmp (quoted_keyword, ""))
-                g_string_append_printf (clause,
-                                        "%s(CAST (%s AS TEXT) = '%s'",
-                                        get_join (first_keyword, last_was_and,
-                                                  last_was_not),
-                                        column,
-                                        quoted_keyword);
-              else
-                g_string_append_printf (clause,
-                                        "%s((%s IS NULL OR CAST (%s AS TEXT) = '%s')",
-                                        get_join (first_keyword, last_was_and,
-                                                  last_was_not),
-                                        column,
-                                        column,
-                                        quoted_keyword);
-            }
-          else
-            {
-              /* Skip term.  Owner filtering is done via where_owned. */
-              skip = 1;
-              if (owner_filter && (*owner_filter == NULL))
-                *owner_filter = g_strdup (keyword->string);
-            }
-        }
-      else if (keyword->relation == KEYWORD_RELATION_COLUMN_APPROX)
-        {
-          gchar *column;
-
-          if (vector_find_filter (filter_columns, keyword->column) == 0)
-            {
-              last_was_and = 0;
-              last_was_not = 0;
-              point++;
-              continue;
-            }
-
-          quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns,
-                                          where_columns,
-                                          keyword->column);
-          assert (column);
-          g_string_append_printf (clause,
-                                  "%s(CAST (%s AS TEXT) %s '%%%%%s%%%%'",
-                                  get_join (first_keyword, last_was_and,
-                                            last_was_not),
-                                  column,
-                                  sql_ilike_op (),
-                                  quoted_keyword);
-        }
-      else if (keyword->relation == KEYWORD_RELATION_COLUMN_ABOVE)
-        {
-          gchar *column;
-          keyword_type_t column_type;
-
-          if (vector_find_filter (filter_columns, keyword->column) == 0)
-            {
-              last_was_and = 0;
-              last_was_not = 0;
-              point++;
-              continue;
-            }
-
-          quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column_with_type (select_columns,
-                                                    where_columns,
-                                                    keyword->column,
-                                                    &column_type);
-          assert (column);
-          if (keyword->type == KEYWORD_TYPE_INTEGER
-              && (column_type == KEYWORD_TYPE_INTEGER
-                  || column_type == KEYWORD_TYPE_DOUBLE))
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS NUMERIC) > %i",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    keyword->integer_value);
-          else if (keyword->type == KEYWORD_TYPE_DOUBLE
-                   && (column_type == KEYWORD_TYPE_DOUBLE
-                       || column_type == KEYWORD_TYPE_INTEGER))
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS REAL)"
-                                    " > CAST (%f AS REAL)",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    keyword->double_value);
-          else
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS TEXT) > '%s'",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    quoted_keyword);
-        }
-      else if (keyword->relation == KEYWORD_RELATION_COLUMN_BELOW)
-        {
-          gchar *column;
-          keyword_type_t column_type;
-
-          if (vector_find_filter (filter_columns, keyword->column) == 0)
-            {
-              last_was_and = 0;
-              last_was_not = 0;
-              point++;
-              continue;
-            }
-
-          quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column_with_type (select_columns,
-                                                    where_columns,
-                                                    keyword->column,
-                                                    &column_type);
-          assert (column);
-          if (keyword->type == KEYWORD_TYPE_INTEGER
-              && (column_type == KEYWORD_TYPE_INTEGER
-                  || column_type == KEYWORD_TYPE_DOUBLE))
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS NUMERIC) < %i",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    keyword->integer_value);
-          else if (keyword->type == KEYWORD_TYPE_DOUBLE
-                   && (column_type == KEYWORD_TYPE_DOUBLE
-                       || column_type == KEYWORD_TYPE_INTEGER))
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS REAL)"
-                                    " < CAST (%f AS REAL)",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    keyword->double_value);
-          else
-            g_string_append_printf (clause,
-                                    "%s(CAST (%s AS TEXT) < '%s'",
-                                    get_join (first_keyword, last_was_and,
-                                              last_was_not),
-                                    column,
-                                    quoted_keyword);
-        }
-      else if (keyword->relation == KEYWORD_RELATION_COLUMN_REGEXP)
-        {
-          gchar *column;
-
-          if (vector_find_filter (filter_columns, keyword->column) == 0)
-            {
-              last_was_and = 0;
-              last_was_not = 0;
-              point++;
-              continue;
-            }
-
-          quoted_keyword = sql_quote (keyword->string);
-          column = columns_select_column (select_columns,
-                                          where_columns,
-                                          keyword->column);
-          assert (column);
-          g_string_append_printf (clause,
-                                  "%s(CAST (%s AS TEXT) %s '%s'",
-                                  get_join (first_keyword, last_was_and,
-                                            last_was_not),
-                                  column,
-                                  sql_regexp_op (),
-                                  quoted_keyword);
-        }
-      else if (keyword->equal)
-        {
-          const char *filter_column;
-
-          /* Keyword like "=example". */
-
-          g_string_append_printf (clause,
-                                  "%s(",
-                                  (first_keyword
-                                    ? ""
-                                    : (last_was_and ? " AND " : " OR ")));
-
-          quoted_keyword = sql_quote (keyword->string);
-          if (last_was_not)
-            for (index = 0;
-                 (filter_column = filter_columns[index]) != NULL;
-                 index++)
-              {
-                gchar *select_column;
-                keyword_type_t column_type;
-
-                select_column = columns_select_column_with_type (select_columns,
-                                                                 where_columns,
-                                                                 filter_column,
-                                                                 &column_type);
-                assert (select_column);
-
-                if (keyword->type == KEYWORD_TYPE_INTEGER
-                    && (column_type == KEYWORD_TYPE_INTEGER
-                        || column_type == KEYWORD_TYPE_DOUBLE))
-                  g_string_append_printf (clause,
-                                          "%s"
-                                          "(%s IS NULL"
-                                          " OR CAST (%s AS NUMERIC)"
-                                          "    != %i)",
-                                          (index ? " AND " : ""),
-                                          select_column,
-                                          select_column,
-                                          keyword->integer_value);
-                else if (keyword->type == KEYWORD_TYPE_DOUBLE
-                         && (column_type == KEYWORD_TYPE_DOUBLE
-                             || column_type == KEYWORD_TYPE_INTEGER))
-                  g_string_append_printf (clause,
-                                          "%s"
-                                          "(%s IS NULL"
-                                          " OR CAST (%s AS REAL)"
-                                          "    != CAST (%f AS REAL))",
-                                          (index ? " AND " : ""),
-                                          select_column,
-                                          select_column,
-                                          keyword->double_value);
-                else
-                  g_string_append_printf (clause,
-                                          "%s"
-                                          "(%s IS NULL"
-                                          " OR CAST (%s AS TEXT)"
-                                          "    != '%s')",
-                                          (index ? " AND " : ""),
-                                          select_column,
-                                          select_column,
-                                          quoted_keyword);
-              }
-          else
-            for (index = 0;
-                 (filter_column = filter_columns[index]) != NULL;
-                 index++)
-              {
-                gchar *select_column;
-                keyword_type_t column_type;
-
-                select_column = columns_select_column_with_type (select_columns,
-                                                                 where_columns,
-                                                                 filter_column,
-                                                                 &column_type);
-                assert (select_column);
-
-                if (keyword->type == KEYWORD_TYPE_INTEGER
-                    && (column_type == KEYWORD_TYPE_INTEGER
-                        || column_type == KEYWORD_TYPE_DOUBLE))
-                  g_string_append_printf (clause,
-                                          "%sCAST (%s AS NUMERIC)"
-                                          " = %i",
-                                          (index ? " OR " : ""),
-                                          select_column,
-                                          keyword->integer_value);
-                else if (keyword->type == KEYWORD_TYPE_DOUBLE
-                         && (column_type == KEYWORD_TYPE_DOUBLE
-                             || column_type == KEYWORD_TYPE_INTEGER))
-                  g_string_append_printf (clause,
-                                          "%sCAST (%s AS REAL)"
-                                          " = CAST (%f AS REAL)",
-                                          (index ? " OR " : ""),
-                                          select_column,
-                                          keyword->double_value);
-                else
-                  g_string_append_printf (clause,
-                                          "%sCAST (%s AS TEXT)"
-                                          " = '%s'",
-                                          (index ? " OR " : ""),
-                                          select_column,
-                                          quoted_keyword);
-              }
-        }
-      else
-        {
-          const char *filter_column;
-
-          g_string_append_printf (clause,
-                                  "%s(",
-                                  (first_keyword
-                                    ? ""
-                                    : (last_was_and ? " AND " : " OR ")));
-
-          quoted_keyword = sql_quote (keyword->string);
-          if (last_was_not)
-            for (index = 0;
-                 (filter_column = filter_columns[index]) != NULL;
-                 index++)
-              {
-                gchar *select_column;
-                keyword_type_t column_type;
-                int column_type_matches = 0;
-
-                select_column = columns_select_column_with_type (select_columns,
-                                                                 where_columns,
-                                                                 filter_column,
-                                                                 &column_type);
-
-                if (column_type != KEYWORD_TYPE_INTEGER
-                    && column_type != KEYWORD_TYPE_DOUBLE)
-                  column_type_matches = 1;
-
-                if (keyword_applies_to_column (keyword, filter_column)
-                    && select_column && column_type_matches)
-                  {
-                    if (last_was_re)
-                      g_string_append_printf (clause,
-                                              "%s"
-                                              "(%s IS NULL"
-                                              " OR NOT (CAST (%s AS TEXT)"
-                                              "         %s '%s'))",
-                                              (index ? " AND " : ""),
-                                              select_column,
-                                              select_column,
-                                              sql_regexp_op (),
-                                              quoted_keyword);
-                    else
-                      g_string_append_printf (clause,
-                                              "%s"
-                                              "(%s IS NULL"
-                                              " OR CAST (%s AS TEXT)"
-                                              "    NOT %s '%%%s%%')",
-                                              (index ? " AND " : ""),
-                                              select_column,
-                                              select_column,
-                                              sql_ilike_op (),
-                                              quoted_keyword);
-                  }
-                else
-                  g_string_append_printf (clause,
-                                          "%s t ()",
-                                          (index ? " AND " : ""));
-              }
-          else
-            for (index = 0;
-                 (filter_column = filter_columns[index]) != NULL;
-                 index++)
-              {
-                gchar *select_column;
-                keyword_type_t column_type;
-                int column_type_matches = 0;
-
-                select_column = columns_select_column_with_type (select_columns,
-                                                                 where_columns,
-                                                                 filter_column,
-                                                                 &column_type);
-                if (column_type != KEYWORD_TYPE_INTEGER
-                    && column_type != KEYWORD_TYPE_DOUBLE)
-                  column_type_matches = 1;
-
-                if (keyword_applies_to_column (keyword, filter_column)
-                    && select_column && column_type_matches)
-                  g_string_append_printf (clause,
-                                          "%sCAST (%s AS TEXT)"
-                                          " %s '%s%s%s'",
-                                          (index ? " OR " : ""),
-                                          select_column,
-                                          last_was_re
-                                           ? sql_regexp_op ()
-                                           : sql_ilike_op (),
-                                          last_was_re ? "" : "%%",
-                                          quoted_keyword,
-                                          last_was_re ? "" : "%%");
-                else
-                  g_string_append_printf (clause,
-                                          "%snot t ()",
-                                          (index ? " OR " : ""));
-              }
-        }
-
-      if (skip == 0)
-        {
-          g_string_append (clause, ")");
-          first_keyword = 0;
-          last_was_and = 0;
-          last_was_not = 0;
-          last_was_re = 0;
-        }
-      g_free (quoted_keyword);
-      point++;
-    }
-  filter_free (split);
-
-  if (order_return)
-    *order_return = g_string_free (order, FALSE);
-  else
-    g_string_free (order, TRUE);
-
-  if (max_return)
-    {
-      if (*max_return == -2)
-        setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max_return);
-      else if (*max_return < 1)
-        *max_return = -1;
-
-      *max_return = manage_max_rows (*max_return);
-    }
-
-  if (strlen (clause->str))
-    return g_string_free (clause, FALSE);
-  g_string_free (clause, TRUE);
-  return NULL;
-}
-
-
 /* Resources. */
-
-/**
- * @brief Check whether a resource type name is valid.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_type (const char* type)
-{
-  return (strcasecmp (type, "alert") == 0)
-         || (strcasecmp (type, "asset") == 0)
-         || (strcasecmp (type, "config") == 0)
-         || (strcasecmp (type, "credential") == 0)
-         || (strcasecmp (type, "filter") == 0)
-         || (strcasecmp (type, "group") == 0)
-         || (strcasecmp (type, "host") == 0)
-         || (strcasecmp (type, "info") == 0)
-         || (strcasecmp (type, "note") == 0)
-         || (strcasecmp (type, "os") == 0)
-         || (strcasecmp (type, "override") == 0)
-         || (strcasecmp (type, "permission") == 0)
-         || (strcasecmp (type, "port_list") == 0)
-         || (strcasecmp (type, "report") == 0)
-         || (strcasecmp (type, "report_config") == 0)
-         || (strcasecmp (type, "report_format") == 0)
-         || (strcasecmp (type, "result") == 0)
-         || (strcasecmp (type, "role") == 0)
-         || (strcasecmp (type, "scanner") == 0)
-         || (strcasecmp (type, "schedule") == 0)
-         || (strcasecmp (type, "tag") == 0)
-         || (strcasecmp (type, "target") == 0)
-         || (strcasecmp (type, "task") == 0)
-         || (strcasecmp (type, "ticket") == 0)
-         || (strcasecmp (type, "tls_certificate") == 0)
-         || (strcasecmp (type, "user") == 0)
-         || (strcasecmp (type, "vuln") == 0);
-}
-
-/**
- * @brief Check whether a resource subtype name is valid.
- *
- * @param[in]  subtype  Subtype of resource.
- *
- * @return 1 yes, 0 no.
- */
-int
-valid_subtype (const char* type)
-{
-    return (strcasecmp (type, "audit_report") == 0)
-          || (strcasecmp (type, "audit") == 0)
-          || (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Return DB name of type.
- *
- * @param[in]  type  Database or pretty name.
- *
- * @return Database name of type if possible, else NULL.
- */
-static const char *
-type_db_name (const char* type)
-{
-  if (type == NULL)
-    return NULL;
-
-  if (valid_type (type))
-    return type;
-
-  if (strcasecmp (type, "Alert") == 0)
-    return "alert";
-  if (strcasecmp (type, "Asset") == 0)
-    return "asset";
-  if (strcasecmp (type, "Config") == 0)
-    return "config";
-  if (strcasecmp (type, "Credential") == 0)
-    return "credential";
-  if (strcasecmp (type, "Filter") == 0)
-    return "filter";
-  if (strcasecmp (type, "Note") == 0)
-    return "note";
-  if (strcasecmp (type, "Override") == 0)
-    return "override";
-  if (strcasecmp (type, "Permission") == 0)
-    return "permission";
-  if (strcasecmp (type, "Port List") == 0)
-    return "port_list";
-  if (strcasecmp (type, "Report") == 0)
-    return "report";
-  if (strcasecmp (type, "Report Config") == 0)
-    return "report_config";
-  if (strcasecmp (type, "Report Format") == 0)
-    return "report_format";
-  if (strcasecmp (type, "Result") == 0)
-    return "result";
-  if (strcasecmp (type, "Role") == 0)
-    return "role";
-  if (strcasecmp (type, "Scanner") == 0)
-    return "scanner";
-  if (strcasecmp (type, "Schedule") == 0)
-    return "schedule";
-  if (strcasecmp (type, "Tag") == 0)
-    return "tag";
-  if (strcasecmp (type, "Target") == 0)
-    return "target";
-  if (strcasecmp (type, "Task") == 0)
-    return "task";
-  if (strcasecmp (type, "Ticket") == 0)
-    return "ticket";
-  if (strcasecmp (type, "TLS Certificate") == 0)
-    return "tls_certificate";
-  if (strcasecmp (type, "SecInfo") == 0)
-    return "info";
-  return NULL;
-}
-
-/**
- * @brief Check whether a resource type is an asset subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_asset_subtype (const char *type)
-{
-  return (strcasecmp (type, "host")
-          && strcasecmp (type, "os"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is an info subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_info_subtype (const char *type)
-{
-  return (strcasecmp (type, "nvt")
-          && strcasecmp (type, "cve")
-          && strcasecmp (type, "cpe")
-          && strcasecmp (type, "cert_bund_adv")
-          && strcasecmp (type, "dfn_cert_adv"))
-         == 0;
-}
-
-/**
- * @brief Check whether a resource type is a report subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_report_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit_report") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a task subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_task_subtype (const char *type)
-{
-  return (strcasecmp (type, "audit") == 0);
-}
-
-/**
- * @brief Check whether a resource type is a config subtype.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_is_config_subtype (const char *type)
-{
-  return (strcasecmp (type, "policy") == 0);
-}
-
-/**
- * @brief Check whether a type has a name and comment.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_named (const char *type)
-{
-  return strcasecmp (type, "note")
-         && strcasecmp (type, "override");
-}
-
-/**
- * @brief Check whether a type must have globally unique names.
- *
- * @param[in]  type          Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_globally_unique (const char *type)
-{
-  if (strcasecmp (type, "user") == 0)
-    return 1;
-  else
-    return 0;
-}
-
-/**
- * @brief Check whether a type has a comment.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_comment (const char *type)
-{
-  return strcasecmp (type, "report_format");
-}
-
-/**
- * @brief Check whether a resource type uses the trashcan.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_has_trash (const char *type)
-{
-  return strcasecmp (type, "report")
-         && strcasecmp (type, "result")
-         && strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln")
-         && strcasecmp (type, "user")
-         && strcasecmp (type, "tls_certificate");
-}
-
-/**
- * @brief Check whether a resource type has an owner.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_owned (const char* type)
-{
-  return strcasecmp (type, "info")
-         && type_is_info_subtype (type) == 0
-         && strcasecmp (type, "vuln");
-}
-
-/**
- * @brief Check whether the trash is in the real table.
- *
- * @param[in]  type  Type of resource.
- *
- * @return 1 yes, 0 no.
- */
-static int
-type_trash_in_table (const char *type)
-{
-  return strcasecmp (type, "task") == 0;
-}
 
 /* TODO Only used by find_scanner, find_permission and check_permission_args. */
 /**
@@ -4950,7 +1539,7 @@ resource_uuid (const gchar *type, resource_t resource)
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
-static int
+int
 init_get_iterator2_with (iterator_t* iterator, const char *type,
                          const get_data_t *get, column_t *select_columns,
                          column_t *trash_select_columns,
@@ -5048,8 +1637,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                           (get->trash && trash_where_columns)
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, &order, &first, &max, &permissions,
-                          &owner_filter);
+                          get->trash, get->ignore_max_rows_per_page,
+                          &order, &first, &max, &permissions, &owner_filter);
 
   g_free (filter);
 
@@ -5219,7 +1808,7 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
  */
-static int
+int
 init_get_iterator2 (iterator_t* iterator, const char *type,
                     const get_data_t *get, column_t *select_columns,
                     column_t *trash_select_columns,
@@ -5887,7 +2476,7 @@ aggregate_iterator_subgroup_value (iterator_t* iterator)
  *
  * @return Total number of resources in filtered set.
  */
-static int
+int
 count2 (const char *type, const get_data_t *get, column_t *select_columns,
         column_t *trash_select_columns, column_t *where_columns,
         column_t *trash_where_columns, const char **filter_columns,
@@ -5918,7 +2507,8 @@ count2 (const char *type, const get_data_t *get, column_t *select_columns,
                           get->trash && trash_where_columns
                            ? trash_where_columns
                            : where_columns,
-                          get->trash, NULL, NULL, NULL, &permissions,
+                          get->trash, get->ignore_max_rows_per_page,
+                          NULL, NULL, NULL, &permissions,
                           &owner_filter);
 
   g_free (filter);
@@ -6159,10 +2749,9 @@ manage_cert_db_version ()
 void
 set_db_version (int version)
 {
-  sql ("DELETE FROM %s.meta WHERE name = 'database_version';",
-       sql_schema ());
   sql ("INSERT INTO %s.meta (name, value)"
-       " VALUES ('database_version', '%i');",
+       " VALUES ('database_version', '%i')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
        sql_schema (),
        version);
 }
@@ -6408,7 +2997,8 @@ manage_encrypt_all_credentials (GSList *log_config,
 
   g_info ("   (Re-)encrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6449,7 +3039,8 @@ manage_decrypt_all_credentials (GSList *log_config,
 
   g_info ("   Decrypting all credentials.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -6621,8342 +3212,6 @@ DEF_ACCESS (task_role_iterator_name, 3);
 DEF_ACCESS (task_role_iterator_uuid, 4);
 
 
-/* Events and Alerts. */
-
-/**
- * @brief Check if any SecInfo alerts are due.
- */
-void
-check_alerts ()
-{
-  if (manage_scap_loaded ())
-    {
-      int max_time;
-
-      max_time
-       = sql_int ("SELECT %s"
-                  "        ((SELECT max (modification_time) FROM scap.cves),"
-                  "         (SELECT max (modification_time) FROM scap.cpes),"
-                  "         (SELECT max (creation_time) FROM scap.cves),"
-                  "         (SELECT max (creation_time) FROM scap.cpes));",
-                  sql_greatest ());
-
-      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-                   "                   WHERE name = 'scap_check_time')"))
-        sql ("INSERT INTO meta (name, value)"
-             " VALUES ('scap_check_time', %i);",
-             max_time);
-      else if (sql_int ("SELECT value = '0' FROM meta"
-                        " WHERE name = 'scap_check_time';"))
-        sql ("UPDATE meta SET value = %i"
-             " WHERE name = 'scap_check_time';",
-             max_time);
-      else
-        {
-          check_for_new_scap ();
-          check_for_updated_scap ();
-          sql ("UPDATE meta SET value = %i"
-               " WHERE name = 'scap_check_time';",
-               max_time);
-        }
-    }
-
-  if (manage_cert_loaded ())
-    {
-      int max_time;
-
-      max_time
-       = sql_int ("SELECT"
-                  " %s"
-                  "  ((SELECT max (modification_time) FROM cert.cert_bund_advs),"
-                  "   (SELECT max (modification_time) FROM cert.dfn_cert_advs),"
-                  "   (SELECT max (creation_time) FROM cert.cert_bund_advs),"
-                  "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
-                  sql_greatest ());
-
-      if (sql_int ("SELECT NOT EXISTS (SELECT * FROM meta"
-                   "                   WHERE name = 'cert_check_time')"))
-        sql ("INSERT INTO meta (name, value)"
-             " VALUES ('cert_check_time', %i);",
-             max_time);
-      else if (sql_int ("SELECT value = '0' FROM meta"
-                        " WHERE name = 'cert_check_time';"))
-        sql ("UPDATE meta SET value = %i"
-             " WHERE name = 'cert_check_time';",
-             max_time);
-      else
-        {
-          check_for_new_cert ();
-          check_for_updated_cert ();
-          sql ("UPDATE meta SET value = %i"
-               " WHERE name = 'cert_check_time';",
-               max_time);
-        }
-    }
-}
-
-/**
- * @brief Check if any SecInfo alerts are due.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- *
- * @return 0 success, -1 error,
- *         -2 database is too old, -3 database needs to be initialised
- *         from server, -5 database is too new.
- */
-int
-manage_check_alerts (GSList *log_config, const db_conn_info_t *database)
-{
-  int ret;
-
-  g_info ("   Checking alerts.");
-
-  ret = manage_option_setup (log_config, database);
-  if (ret)
-    return ret;
-
-  /* Setup a dummy user, so that create_user will work. */
-  current_credentials.uuid = "";
-
-  check_alerts ();
-
-  current_credentials.uuid = NULL;
-
-  manage_option_cleanup ();
-
-  return ret;
-}
-
-/**
- * @brief Find a alert for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of alert.
- * @param[out]  alert       Alert return, 0 if successfully failed to find alert.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find alert), TRUE on error.
- */
-gboolean
-find_alert_with_permission (const char* uuid, alert_t* alert,
-                            const char *permission)
-{
-  return find_resource_with_permission ("alert", uuid, alert, permission, 0);
-}
-
-/**
- * @brief Validate an email address.
- *
- * @param[in]  address  Email address.
- *
- * @return 0 success, 1 failure.
- */
-static int
-validate_email (const char* address)
-{
-  gchar **split, *point;
-
-  assert (address);
-
-  split = g_strsplit (address, "@", 0);
-
-  if (split[0] == NULL || split[1] == NULL || split[2])
-    {
-      g_strfreev (split);
-      return 1;
-    }
-
-  /* Local part. */
-  point = split[0];
-  while (*point)
-    if (isalnum (*point)
-        || strchr ("!#$%&'*+-/=?^_`{|}~", *point)
-        || ((*point == '.')
-            && (point > split[0])
-            && point[1]
-            && (point[1] != '.')
-            && (point[-1] != '.')))
-      point++;
-    else
-      {
-        g_strfreev (split);
-        return 1;
-      }
-
-  /* Domain. */
-  point = split[1];
-  while (*point)
-    if (isalnum (*point)
-        || strchr ("-_", *point)  /* RFC actually forbids _. */
-        || ((*point == '.')
-            && (point > split[1])
-            && point[1]
-            && (point[1] != '.')
-            && (point[-1] != '.')))
-      point++;
-    else
-      {
-        g_strfreev (split);
-        return 1;
-      }
-
-  g_strfreev (split);
-  return 0;
-}
-
-/**
- * @brief Validate an email address list.
- *
- * @param[in]  list  Comma separated list of email addresses.
- *
- * @return 0 success, 1 failure.
- */
-static int
-validate_email_list (const char *list)
-{
-  gchar **split, **point;
-
-  assert (list);
-
-  split = g_strsplit (list, ",", 0);
-
-  if (split[0] == NULL)
-    {
-      g_strfreev (split);
-      return 1;
-    }
-
-  point = split;
-  while (*point)
-    {
-      const char *address;
-      address = *point;
-      while (*address && (*address == ' ')) address++;
-      if (validate_email (address))
-        {
-          g_strfreev (split);
-          return 1;
-        }
-      point++;
-    }
-
-  g_strfreev (split);
-  return 0;
-}
-
-/**
- * @brief Validate condition data for an alert.
- *
- * @param[in]  name      Name.
- * @param[in]  data      Data to validate.
- * @param[in]  condition The condition.
- *
- * @return 0 on success, 1 unexpected data name, 2 syntax error in data,
- *         3 failed to find filter for condition, -1 internal error.
- */
-static int
-validate_alert_condition_data (gchar *name, gchar* data,
-                               alert_condition_t condition)
-{
-  if (condition == ALERT_CONDITION_ALWAYS)
-    return 1;
-  if (condition == ALERT_CONDITION_SEVERITY_AT_LEAST)
-    {
-      if (strcmp (name, "severity"))
-        return 1;
-
-      if (g_regex_match_simple ("^(-1(\\.0)?|[0-9](\\.[0-9])?|10(\\.0))$",
-                                data ? data : "",
-                                0,
-                                0)
-          == 0)
-        return 2;
-    }
-  else if (condition == ALERT_CONDITION_SEVERITY_CHANGED)
-    {
-      if (strcmp (name, "direction"))
-        return 1;
-
-      if (g_regex_match_simple ("^(increased|decreased|changed)$",
-                                data ? data : "",
-                                0,
-                                0)
-          == 0)
-        return 2;
-    }
-  else if (condition == ALERT_CONDITION_FILTER_COUNT_AT_LEAST)
-    {
-      if (strcmp (name, "filter_id") == 0)
-        {
-          filter_t filter;
-          if (data == NULL)
-            return 3;
-          filter = 0;
-          if (find_filter_with_permission (data, &filter, "get_filters"))
-            return -1;
-          if (filter == 0)
-            return 3;
-          return 0;
-        }
-
-      if (strcmp (name, "count"))
-        return 1;
-    }
-  else if (condition == ALERT_CONDITION_FILTER_COUNT_CHANGED)
-    {
-      if (strcmp (name, "filter_id") == 0)
-        {
-          filter_t filter;
-          if (data == NULL)
-            return 3;
-          filter = 0;
-          if (find_filter_with_permission (data, &filter, "get_filters"))
-            return -1;
-          if (filter == 0)
-            return 3;
-          return 0;
-        }
-
-      if (strcmp (name, "direction")
-          && strcmp (name, "count"))
-        return 1;
-
-      if (strcmp (name, "direction") == 0
-          && g_regex_match_simple ("^(increased|decreased|changed)$",
-                                   data ? data : "",
-                                   0,
-                                   0)
-             == 0)
-        return 2;
-    }
-
-
-  return 0;
-}
-
-/**
- * @brief Validate event data for an alert.
- *
- * @param[in]  name   Name.
- * @param[in]  data   Data to validate.
- * @param[in]  event  The event.
- *
- * @return 0 on success, 1 unexpected data name, 2 syntax error in data.
- */
-static int
-validate_alert_event_data (gchar *name, gchar* data, event_t event)
-{
-  if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-    {
-      if (strcmp (name, "secinfo_type"))
-        return 1;
-
-      if (data == NULL)
-        return 2;
-
-      if (strcasecmp (data, "nvt")
-          && strcasecmp (data, "cve")
-          && strcasecmp (data, "cpe")
-          && strcasecmp (data, "cert_bund_adv")
-          && strcasecmp (data, "dfn_cert_adv"))
-        return 2;
-    }
-  return 0;
-}
-
-/**
- * @brief Validate method data for the email method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- * @param[in]  for_modify      Whether to return error codes for modify_alert.
- *
- * @return 0 valid, 2 or 6: validation of email address failed,
- *         7 or 9 subject too long, 8 or 10 message too long,
- *         60 recipient credential not found, 61 invalid recipient credential
- *         type, -1 error. When for_modify is 0, the first code is returned,
- *         otherwise the second one.
- */
-int
-validate_email_data (alert_method_t method, const gchar *name, gchar **data,
-                     int for_modify)
-{
-  if (method == ALERT_METHOD_EMAIL
-      && strcmp (name, "to_address") == 0
-      && validate_email_list (*data))
-    return for_modify ? 6 : 2;
-
-  if (method == ALERT_METHOD_EMAIL
-      && strcmp (name, "from_address") == 0
-      && validate_email (*data))
-    return for_modify ? 6 : 2;
-
-  if (method == ALERT_METHOD_EMAIL
-      && strcmp (name, "subject") == 0
-      && strlen (*data) > 80)
-    return for_modify ? 9 : 7;
-
-  if (method == ALERT_METHOD_EMAIL
-      && strcmp (name, "message") == 0
-      && strlen (*data) > max_email_message_length)
-    return for_modify ? 10 : 8;
-
-  if (method == ALERT_METHOD_EMAIL
-      && strcmp (name, "recipient_credential") == 0
-      && *data && strcmp (*data, ""))
-    {
-      credential_t credential;
-      char *type;
-
-      if (find_credential_with_permission (*data, &credential, NULL))
-        return -1;
-      else if (credential == 0)
-        return 60;
-
-      type = credential_type (credential);
-      if (strcmp (type, "pgp")
-          && strcmp (type, "smime"))
-        {
-          free (type);
-          return 61;
-        }
-      free (type);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Validate method data for the SCP method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 15 error in SCP host, 16 error in SCP port,
- *         17 failed to find report format for SCP method,
- *         18 error in SCP credential, 19 error in SCP path,
- *         -1 error.
- */
-static int
-validate_scp_data (alert_method_t method, const gchar *name, gchar **data)
-{
-  if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_credential") == 0)
-    {
-      credential_t credential;
-      if (find_credential_with_permission (*data, &credential,
-                                           "get_credentials"))
-        return -1;
-      else if (credential == 0)
-        return 18;
-      else
-        {
-          gchar *username;
-          username = credential_value (credential, "username");
-
-          if (username == NULL || strlen (username) == 0)
-            {
-              g_free (username);
-              return 18;
-            }
-
-          if (strchr (username, ':'))
-            {
-              g_free (username);
-              return 18;
-            }
-
-          g_free (username);
-        }
-    }
-
-  if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_path") == 0)
-    {
-      if (strlen (*data) == 0)
-        return 19;
-    }
-
-  if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_host") == 0)
-    {
-      int type;
-      gchar *stripped;
-
-      stripped = g_strstrip (g_strdup (*data));
-      type = gvm_get_host_type (stripped);
-      g_free (stripped);
-      if ((type != HOST_TYPE_IPV4)
-          && (type != HOST_TYPE_IPV6)
-          && (type != HOST_TYPE_NAME))
-        return 15;
-    }
-
-  if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_port") == 0)
-    {
-      int port;
-
-      port = atoi (*data);
-      if (port <= 0 || port > 65535)
-        return 16;
-    }
-
-  if (method == ALERT_METHOD_SCP
-      && strcmp (name, "scp_report_format") == 0)
-    {
-      report_format_t report_format;
-
-      report_format = 0;
-      if (find_report_format_with_permission (*data,
-                                              &report_format,
-                                              "get_report_formats"))
-        return -1;
-      if (report_format == 0)
-        return 17;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Validate method data for the Send method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 12 error in Send host, 13 error in Send port, 14 failed
- *         to find report format for Send method, -1 error.
- */
-static int
-validate_send_data (alert_method_t method, const gchar *name, gchar **data)
-{
-  if (method == ALERT_METHOD_SEND
-      && strcmp (name, "send_host") == 0)
-    {
-      int type;
-      gchar *stripped;
-
-      stripped = g_strstrip (g_strdup (*data));
-      type = gvm_get_host_type (stripped);
-      g_free (stripped);
-      if ((type != HOST_TYPE_IPV4)
-          && (type != HOST_TYPE_IPV6)
-          && (type != HOST_TYPE_NAME))
-        return 12;
-    }
-
-  if (method == ALERT_METHOD_SEND
-      && strcmp (name, "send_port") == 0)
-    {
-      int port;
-      gchar *stripped, *end;
-
-      stripped = g_strstrip (g_strdup (*data));
-      port = strtol (stripped, &end, 10);
-      if (*end != '\0')
-        {
-          g_free (stripped);
-          return 13;
-        }
-
-      g_free (stripped);
-      g_free (*data);
-      *data = g_strdup_printf ("%i", port);
-    }
-
-  if (method == ALERT_METHOD_SEND
-      && strcmp (name, "send_report_format") == 0)
-    {
-      report_format_t report_format;
-
-      report_format = 0;
-      if (find_report_format_with_permission (*data,
-                                              &report_format,
-                                              "get_report_formats"))
-        return -1;
-      if (report_format == 0)
-        return 14;
-    }
-
-  return 0;
-}
-
-/**
- * @brief Validate method data for the Send method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 40 invalid credential, 41 invalid SMB share path,
- *         42 invalid SMB file path, 43 SMB file path contains dot, -1 error.
- */
-static int
-validate_smb_data (alert_method_t method, const gchar *name, gchar **data)
-{
-  if (method == ALERT_METHOD_SMB)
-    {
-      if (strcmp (name, "smb_credential") == 0)
-        {
-          credential_t credential;
-          if (find_credential_with_permission (*data, &credential,
-                                              "get_credentials"))
-            return -1;
-          else if (credential == 0)
-            return 40;
-          else
-            {
-              gchar *username;
-              username = credential_value (credential, "username");
-
-              if (username == NULL || strlen (username) == 0)
-                {
-                  g_free (username);
-                  return 40;
-                }
-
-              if (strchr (username, '@') || strchr (username, ':'))
-                {
-                  g_free (username);
-                  return 40;
-                }
-
-              g_free (username);
-            }
-        }
-
-      if (strcmp (name, "smb_share_path") == 0)
-        {
-          /* Check if share path has the correct format
-           *  "\\<host>\<share>" */
-          if (g_regex_match_simple ("^(?>\\\\\\\\|\\/\\/)[^:?<>|]+"
-                                    "(?>\\\\|\\/)[^:?<>|]+$", *data, 0, 0)
-              == FALSE)
-            {
-              return 41;
-            }
-        }
-
-      if (strcmp (name, "smb_file_path") == 0)
-        {
-          /* Check if file path contains invalid characters:
-           *  ":", "?", "<", ">", "|" */
-          if (g_regex_match_simple ("^[^:?<>|]+$", *data, 0, 0)
-              == FALSE)
-            {
-              return 42;
-            }
-          /* Check if a file or directory name ends with a dot,
-           *  e.g. "../a", "abc/../xyz" or "abc/..". */
-          else if (g_regex_match_simple ("^(?:.*\\.)(?:[\\/\\\\].*)*$",
-                                         *data, 0, 0))
-            {
-              return 43;
-            }
-        }
-
-    }
-
-  return 0;
-}
-
-/**
- * @brief Validate method data for the TippingPoint method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 50 invalid credential, 51 invalid hostname,
- *  52 invalid certificate, 53 invalid TLS workaround setting.
- */
-static int
-validate_tippingpoint_data (alert_method_t method, const gchar *name,
-                             gchar **data)
-{
-  if (method == ALERT_METHOD_TIPPINGPOINT)
-    {
-      if (strcmp (name, "tp_sms_credential") == 0)
-        {
-          credential_t credential;
-          if (find_credential_with_permission (*data, &credential,
-                                               "get_credentials"))
-            return -1;
-          else if (credential == 0)
-            return 50;
-          else
-            {
-              if (strcmp (credential_type (credential), "up"))
-                return 50;
-
-            }
-        }
-
-      if (strcmp (name, "tp_sms_hostname") == 0)
-        {
-          if (g_regex_match_simple ("^[0-9A-Za-z][0-9A-Za-z.\\-]*$",
-                                    *data, 0, 0)
-              == FALSE)
-            {
-              return 51;
-            }
-        }
-
-      if (strcmp (name, "tp_sms_tls_certificate") == 0)
-        {
-          // Check certificate, return 52 on failure
-          int ret;
-          gnutls_x509_crt_fmt_t crt_fmt;
-
-          ret = get_certificate_info (*data, strlen(*data), FALSE,
-                                      NULL, NULL, NULL,
-                                      NULL, NULL, NULL, NULL, &crt_fmt);
-          if (ret || crt_fmt != GNUTLS_X509_FMT_PEM)
-            {
-              return 52;
-            }
-        }
-
-      if (strcmp (name, "tp_sms_tls_workaround") == 0)
-        {
-          if (g_regex_match_simple ("^0|1$", *data, 0, 0)
-              == FALSE)
-            {
-              return 53;
-            }
-        }
-    }
-
-  return 0;
-}
-
-/**
- * @brief Validate method data for the vFire alert method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 70 credential not found, 71 invalid credential type
- */
-static int
-validate_vfire_data (alert_method_t method, const gchar *name,
-                     gchar **data)
-{
-  if (method == ALERT_METHOD_VFIRE)
-    {
-      if (strcmp (name, "vfire_credential") == 0)
-        {
-          credential_t credential;
-          if (find_credential_with_permission (*data, &credential,
-                                               "get_credentials"))
-            return -1;
-          else if (credential == 0)
-            return 70;
-          else
-            {
-              char *cred_type = credential_type (credential);
-              if (strcmp (cred_type, "up"))
-                {
-                  free (cred_type);
-                  return 71;
-                }
-              free (cred_type);
-            }
-        }
-    }
-  return 0;
-}
-
-/**
- * @brief Validate method data for the Sourcefire method.
- *
- * @param[in]  method          Method that data corresponds to.
- * @param[in]  name            Name of data.
- * @param[in]  data            The data.
- *
- * @return 0 valid, 80 credential not found, 81 invalid credential type
- */
-static int
-validate_sourcefire_data (alert_method_t method, const gchar *name,
-                          gchar **data)
-{
-  if (method == ALERT_METHOD_SOURCEFIRE)
-    {
-      if (strcmp (name, "pkcs12_credential") == 0)
-        {
-          credential_t credential;
-          if (find_credential_with_permission (*data, &credential,
-                                               "get_credentials"))
-            return -1;
-          else if (credential == 0)
-            return 80;
-          else
-            {
-              char *sourcefire_credential_type;
-              sourcefire_credential_type = credential_type (credential);
-              if (strcmp (sourcefire_credential_type, "up")
-                  && strcmp (sourcefire_credential_type, "pw"))
-                {
-                  free (sourcefire_credential_type);
-                  return 81;
-                }
-              free (sourcefire_credential_type);
-            }
-        }
-    }
-
-  return 0;
-}
-
-/**
- * @brief Check alert params.
- *
- * @param[in]  event           Type of event.
- * @param[in]  condition       Event condition.
- * @param[in]  method          Escalation method.
- *
- * @return 0 success, 20 method does not match event, 21 condition does not
- *         match event.
- */
-static int
-check_alert_params (event_t event, alert_condition_t condition,
-                    alert_method_t method)
-{
-  if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-    {
-      if (method == ALERT_METHOD_HTTP_GET
-          || method == ALERT_METHOD_SOURCEFIRE
-          || method == ALERT_METHOD_VERINICE)
-        return 20;
-
-      if (condition == ALERT_CONDITION_SEVERITY_AT_LEAST
-          || condition == ALERT_CONDITION_SEVERITY_CHANGED
-          || condition == ALERT_CONDITION_FILTER_COUNT_CHANGED)
-        return 21;
-    }
-  return 0;
-}
-
-/**
- * @brief Create an alert.
- *
- * @param[in]  name            Name of alert.
- * @param[in]  comment         Comment on alert.
- * @param[in]  filter_id       Filter.
- * @param[in]  active          Whether the alert is active.
- * @param[in]  event           Type of event.
- * @param[in]  event_data      Type-specific event data.
- * @param[in]  condition       Event condition.
- * @param[in]  condition_data  Condition-specific data.
- * @param[in]  method          Escalation method.
- * @param[in]  method_data     Data for escalation method.
- * @param[out] alert       Created alert on success.
- *
- * @return 0 success, 1 escalation exists already, 2 validation of email failed,
- *         3 failed to find filter, 4 type must be "result" if specified,
- *         5 unexpected condition data name, 6 syntax error in condition data,
- *         7 email subject too long, 8 email message too long, 9 failed to find
- *         filter for condition, 12 error in Send host, 13 error in Send port,
- *         14 failed to find report format for Send method,
- *         15 error in SCP host, 16 error in SCP port,
- *         17 failed to find report format for SCP method, 18 error
- *         in SCP credential, 19 error in SCP path, 20 method does not match
- *         event, 21 condition does not match event, 31 unexpected event data
- *         name, 32 syntax error in event data, 40 invalid SMB credential
- *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 SMB file path contains dot,
- *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
- *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type, 70 vFire credential not found,
- *         71 invalid vFire credential type,
- *         99 permission denied, -1 error.
- */
-int
-create_alert (const char* name, const char* comment, const char* filter_id,
-              const char* active, event_t event, GPtrArray* event_data,
-              alert_condition_t condition, GPtrArray* condition_data,
-              alert_method_t method, GPtrArray* method_data,
-              alert_t *alert)
-{
-  int index, ret;
-  gchar *item, *quoted_comment;
-  gchar *quoted_name;
-  filter_t filter;
-
-  assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_alert") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  ret = check_alert_params (event, condition, method);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  filter = 0;
-  if (event != EVENT_NEW_SECINFO && event != EVENT_UPDATED_SECINFO && filter_id
-      && strcmp (filter_id, "0"))
-    {
-      char *type;
-
-      if (find_filter_with_permission (filter_id, &filter, "get_filters"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (filter == 0)
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      /* Filter type must be result if specified. */
-
-      type = sql_string ("SELECT type FROM filters WHERE id = %llu;",
-                         filter);
-      if (type && strcasecmp (type, "result"))
-        {
-          free (type);
-          sql_rollback ();
-          return 4;
-        }
-      free (type);
-    }
-
-  if (resource_with_name_exists (name, "alert", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment ?: "");
-
-  sql ("INSERT INTO alerts (uuid, owner, name, comment, event, condition,"
-       " method, filter, active, creation_time, modification_time)"
-       " VALUES (make_uuid (),"
-       " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', %i, %i, %i, %llu, %i, m_now (), m_now ());",
-       current_credentials.uuid,
-       quoted_name,
-       quoted_comment,
-       event,
-       condition,
-       method,
-       filter,
-       active ? strcmp (active, "0") : 1);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  *alert = sql_last_insert_id ();
-
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
-    {
-      int validation_result;
-      gchar *data_name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
-
-      validation_result = validate_alert_condition_data (data_name,
-                                                         data,
-                                                         condition);
-
-      if (validation_result)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-
-          switch (validation_result)
-            {
-              case 1:
-                return 5;
-              case 2:
-                return 6;
-              case 3:
-                return 9;
-              default:
-                return -1;
-            }
-        }
-
-      sql ("INSERT INTO alert_condition_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           *alert,
-           data_name,
-           data);
-      g_free (data_name);
-      g_free (data);
-    }
-
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
-    {
-      int validation_result;
-      gchar *data_name = sql_quote (item);
-      gchar *data = sql_quote (item + strlen (item) + 1);
-
-      validation_result = validate_alert_event_data (data_name, data, event);
-
-      if (validation_result)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-
-          switch (validation_result)
-            {
-              case 1:
-                return 31;
-              case 2:
-                return 32;
-              default:
-                return -1;
-            }
-        }
-
-      sql ("INSERT INTO alert_event_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           *alert,
-           data_name,
-           data);
-      g_free (data_name);
-      g_free (data);
-    }
-
-  index = 0;
-  while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
-    {
-      gchar *data_name, *data;
-
-      data_name = sql_quote (item);
-      data = sql_quote (item + strlen (item) + 1);
-
-      ret = validate_email_data (method, data_name, &data, 0);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_scp_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_send_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_smb_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_sourcefire_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_tippingpoint_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      ret = validate_vfire_data (method, data_name, &data);
-      if (ret)
-        {
-          g_free (data_name);
-          g_free (data);
-          sql_rollback ();
-          return ret;
-        }
-
-      sql ("INSERT INTO alert_method_data (alert, name, data)"
-           " VALUES (%llu, '%s', '%s');",
-           *alert,
-           data_name,
-           data);
-      g_free (data_name);
-      g_free (data);
-    }
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create an alert from an existing alert.
- *
- * @param[in]  name          Name of new alert. NULL to copy from existing.
- * @param[in]  comment       Comment on new alert. NULL to copy from
- *                           existing.
- * @param[in]  alert_id      UUID of existing alert.
- * @param[out] new_alert     New alert.
- *
- * @return 0 success, 1 alert exists already, 2 failed to find existing
- *         alert, 99 permission denied, -1 error.
- */
-int
-copy_alert (const char* name, const char* comment, const char* alert_id,
-            alert_t* new_alert)
-{
-  int ret;
-  alert_t new, old;
-
-  assert (current_credentials.uuid);
-
-  if (alert_id == NULL)
-    return -1;
-
-  sql_begin_immediate ();
-
-  ret = copy_resource_lock ("alert", name, comment, alert_id,
-                            "event, condition, method, filter, active",
-                            1, &new, &old);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  /* Copy the alert condition data */
-  sql ("INSERT INTO alert_condition_data (alert, name, data)"
-       " SELECT %llu, name, data FROM alert_condition_data"
-       "  WHERE alert = %llu;",
-       new,
-       old);
-
-  /* Copy the alert event data */
-  sql ("INSERT INTO alert_event_data (alert, name, data)"
-       " SELECT %llu, name, data FROM alert_event_data"
-       "  WHERE alert = %llu;",
-       new,
-       old);
-
-  /* Copy the alert method data */
-  sql ("INSERT INTO alert_method_data (alert, name, data)"
-       " SELECT %llu, name, data FROM alert_method_data"
-       "  WHERE alert = %llu;",
-       new,
-       old);
-
-  sql_commit ();
-  if (new_alert) *new_alert = new;
-  return 0;
-}
-
-/**
- * @brief Modify an alert.
- *
- * @param[in]   alert_id        UUID of alert.
- * @param[in]   name            Name of alert.
- * @param[in]   comment         Comment on alert.
- * @param[in]   filter_id       Filter.
- * @param[in]   active          Whether the alert is active.  NULL to leave it
- *                              at the current value.
- * @param[in]   event           Type of event.
- * @param[in]   event_data      Type-specific event data.
- * @param[in]   condition       Event condition.
- * @param[in]   condition_data  Condition-specific data.
- * @param[in]   method          Escalation method.
- * @param[in]   method_data     Data for escalation method.
- *
- * @return 0 success, 1 failed to find alert, 2 alert with new name exists,
- *         3 alert_id required, 4 failed to find filter, 5 filter type must be
- *         result if specified, 6 Provided email address not valid,
- *         7 unexpected condition data name, 8 syntax error in condition data,
- *         9 email subject too long, 10 email message too long, 11 failed to
- *         find filter for condition, 12 error in Send host, 13 error in Send
- *         port, 14 failed to find report format for Send method,
- *         15 error in SCP host, 16 error in SCP port,
- *         17 failed to find report format for SCP method, 18 error
- *         in SCP credential, 19 error in SCP path, 20 method does not match
- *         event, 21 condition does not match event, 31 unexpected event data
- *         name, 32 syntax error in event data, 40 invalid SMB credential
- *       , 41 invalid SMB share path, 42 invalid SMB file path,
- *         43 SMB file path contains dot,
- *         50 invalid TippingPoint credential, 51 invalid TippingPoint hostname,
- *         52 invalid TippingPoint certificate, 53 invalid TippingPoint TLS
- *         workaround setting, 60 recipient credential not found, 61 invalid
- *         recipient credential type, 70 vFire credential not found,
- *         71 invalid vFire credential type,
- *         99 permission denied, -1 internal error.
- */
-int
-modify_alert (const char *alert_id, const char *name, const char *comment,
-              const char *filter_id, const char *active, event_t event,
-              GPtrArray *event_data, alert_condition_t condition,
-              GPtrArray *condition_data, alert_method_t method,
-              GPtrArray *method_data)
-{
-  int index, ret;
-  gchar *quoted_name, *quoted_comment, *item;
-  alert_t alert;
-  filter_t filter;
-
-  if (alert_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_alert") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  ret = check_alert_params (event, condition, method);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  alert = 0;
-  if (find_alert_with_permission (alert_id, &alert, "modify_alert"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (alert == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether an alert with the same name exists already. */
-  if (resource_with_name_exists (name, "alert", alert))
-    {
-      sql_rollback ();
-      return 2;
-    }
-
-  /* Check filter. */
-  filter = 0;
-  if (event != EVENT_NEW_SECINFO && event != EVENT_UPDATED_SECINFO && filter_id
-      && strcmp (filter_id, "0"))
-    {
-      char *type;
-
-      if (find_filter_with_permission (filter_id, &filter, "get_filters"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (filter == 0)
-        {
-          sql_rollback ();
-          return 4;
-        }
-
-      /* Filter type must be report if specified. */
-
-      type = sql_string ("SELECT type FROM filters WHERE id = %llu;",
-                         filter);
-      if (type && strcasecmp (type, "result"))
-        {
-          free (type);
-          sql_rollback ();
-          return 5;
-        }
-      free (type);
-    }
-
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ? comment : "");
-
-  sql ("UPDATE alerts SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " filter = %llu,"
-       " active = %s,"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       filter,
-       active
-        ? (strcmp (active, "0") ? "1" : "0")
-        : "active",
-       alert);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  /* Modify alert event */
-  if (event != EVENT_ERROR)
-    {
-      sql ("UPDATE alerts set event = %i WHERE id = %llu", event, alert);
-      sql ("DELETE FROM alert_event_data WHERE alert = %llu", alert);
-      index = 0;
-      while ((item = (gchar*) g_ptr_array_index (event_data, index++)))
-        {
-          int validation_result;
-          gchar *data_name = sql_quote (item);
-          gchar *data = sql_quote (item + strlen (item) + 1);
-
-          validation_result = validate_alert_event_data (data_name,
-                                                         data,
-                                                         event);
-
-          if (validation_result)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-
-              switch (validation_result)
-                {
-                  case 1:
-                    return 31;
-                  case 2:
-                    return 32;
-                  default:
-                    return -1;
-                }
-            }
-
-          sql ("INSERT INTO alert_event_data (alert, name, data)"
-               " VALUES (%llu, '%s', '%s');",
-               alert,
-               data_name,
-               data);
-          g_free (data_name);
-          g_free (data);
-        }
-    }
-
-  /* Modify alert condition */
-  if (condition != ALERT_CONDITION_ERROR)
-    {
-      sql ("UPDATE alerts set condition = %i WHERE id = %llu",
-           condition,
-           alert);
-      sql ("DELETE FROM alert_condition_data WHERE alert = %llu", alert);
-      index = 0;
-      while ((item = (gchar*) g_ptr_array_index (condition_data, index++)))
-        {
-          int validation_result;
-          gchar *data_name = sql_quote (item);
-          gchar *data = sql_quote (item + strlen (item) + 1);
-
-          validation_result = validate_alert_condition_data (data_name, data,
-                                                             condition);
-
-          if (validation_result)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-
-              switch (validation_result)
-                {
-                  case 1:
-                    return 7;
-                  case 2:
-                    return 8;
-                  case 3:
-                    return 11;
-                  default:
-                    return -1;
-                }
-            }
-
-          sql ("INSERT INTO alert_condition_data (alert, name, data)"
-               " VALUES (%llu, '%s', '%s');",
-               alert,
-               data_name,
-               data);
-          g_free (data_name);
-          g_free (data);
-        }
-    }
-
-  /* Modify alert method */
-  if (method != ALERT_METHOD_ERROR)
-    {
-      sql ("UPDATE alerts set method = %i WHERE id = %llu", method, alert);
-      sql ("DELETE FROM alert_method_data WHERE alert = %llu", alert);
-      index = 0;
-      while ((item = (gchar*) g_ptr_array_index (method_data, index++)))
-        {
-          gchar *data_name, *data;
-
-          data_name = sql_quote (item);
-          data = sql_quote (item + strlen (item) + 1);
-
-          ret = validate_email_data (method, data_name, &data, 1);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_scp_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_send_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_smb_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_sourcefire_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_tippingpoint_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          ret = validate_vfire_data (method, data_name, &data);
-          if (ret)
-            {
-              g_free (data_name);
-              g_free (data);
-              sql_rollback ();
-              return ret;
-            }
-
-          sql ("INSERT INTO alert_method_data (alert, name, data)"
-               " VALUES (%llu, '%s', '%s');",
-               alert,
-               data_name,
-               data);
-          g_free (data_name);
-          g_free (data);
-        }
-    }
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Delete an alert.
- *
- * @param[in]  alert_id  UUID of alert.
- * @param[in]  ultimate      Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a task refers to the alert, 2 failed
- *         to find target, 99 permission denied, -1 error.
- */
-int
-delete_alert (const char *alert_id, int ultimate)
-{
-  alert_t alert = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_alert") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_alert_with_permission (alert_id, &alert, "delete_alert"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (alert == 0)
-    {
-      if (find_trash ("alert", alert_id, &alert))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (alert == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM task_alerts"
-                   " WHERE alert = %llu"
-                   " AND alert_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   alert))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      permissions_set_orphans ("alert", alert, LOCATION_TRASH);
-      tags_remove_resource ("alert", alert, LOCATION_TRASH);
-
-      sql ("DELETE FROM alert_condition_data_trash WHERE alert = %llu;",
-           alert);
-      sql ("DELETE FROM alert_event_data_trash WHERE alert = %llu;",
-           alert);
-      sql ("DELETE FROM alert_method_data_trash WHERE alert = %llu;",
-           alert);
-      sql ("DELETE FROM alerts_trash WHERE id = %llu;", alert);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      alert_t trash_alert;
-
-      if (sql_int ("SELECT count(*) FROM task_alerts"
-                   " WHERE alert = %llu"
-                   " AND alert_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND (SELECT hidden < 2 FROM tasks"
-                   "      WHERE id = task_alerts.task);",
-                   alert))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("INSERT INTO alerts_trash"
-           " (uuid, owner, name, comment, event, condition, method, filter,"
-           "  filter_location, active, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, event, condition, method,"
-           "        filter, " G_STRINGIFY (LOCATION_TABLE) ", active,"
-           "        creation_time, m_now ()"
-           " FROM alerts WHERE id = %llu;",
-           alert);
-
-      trash_alert = sql_last_insert_id ();
-
-      sql ("INSERT INTO alert_condition_data_trash"
-           " (alert, name, data)"
-           " SELECT %llu, name, data"
-           " FROM alert_condition_data WHERE alert = %llu;",
-           trash_alert,
-           alert);
-
-      sql ("INSERT INTO alert_event_data_trash"
-           " (alert, name, data)"
-           " SELECT %llu, name, data"
-           " FROM alert_event_data WHERE alert = %llu;",
-           trash_alert,
-           alert);
-
-      sql ("INSERT INTO alert_method_data_trash"
-           " (alert, name, data)"
-           " SELECT %llu, name, data"
-           " FROM alert_method_data WHERE alert = %llu;",
-           trash_alert,
-           alert);
-
-      /* Update the location of the alert in any trashcan tasks. */
-      sql ("UPDATE task_alerts"
-           " SET alert = %llu,"
-           "     alert_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE alert = %llu"
-           " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           trash_alert,
-           alert);
-
-      permissions_set_locations ("alert", alert, trash_alert,
-                                 LOCATION_TRASH);
-      tags_set_locations ("alert", alert, trash_alert,
-                          LOCATION_TRASH);
-    }
-  else if (sql_int ("SELECT count(*) FROM task_alerts"
-                    " WHERE alert = %llu"
-                    " AND alert_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-                    alert))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  else
-    {
-      permissions_set_orphans ("alert", alert, LOCATION_TABLE);
-      tags_remove_resource ("alert", alert, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM alert_condition_data WHERE alert = %llu;",
-       alert);
-  sql ("DELETE FROM alert_event_data WHERE alert = %llu;", alert);
-  sql ("DELETE FROM alert_method_data WHERE alert = %llu;", alert);
-  sql ("DELETE FROM alerts WHERE id = %llu;", alert);
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Return the UUID of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return UUID of alert.
- */
-char *
-alert_uuid (alert_t alert)
-{
-  return sql_string ("SELECT uuid FROM alerts WHERE id = %llu;",
-                     alert);
-}
-
-/**
- * @brief Return the name of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Name of alert.
- */
-static char *
-alert_name (alert_t alert)
-{
-  return sql_string ("SELECT name FROM alerts WHERE id = %llu;", alert);
-}
-
-/**
- * @brief Return the owner of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Owner.
- */
-static user_t
-alert_owner (alert_t alert)
-{
-  return sql_int64_0 ("SELECT owner FROM alerts WHERE id = %llu;",
-                      alert);
-}
-
-/**
- * @brief Return the UUID of the owner of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return UUID of owner.
- */
-static char *
-alert_owner_uuid (alert_t alert)
-{
-  return sql_string ("SELECT uuid FROM users"
-                     " WHERE id = (SELECT owner FROM alerts WHERE id = %llu);",
-                     alert);
-}
-
-/**
- * @brief Return the UUID of the filter of an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return UUID if there's a filter, else NULL.
- */
-static char *
-alert_filter_id (alert_t alert)
-{
-  return sql_string ("SELECT"
-                     " (CASE WHEN (SELECT filter IS NULL OR filter = 0"
-                     "             FROM alerts WHERE id = %llu)"
-                     "  THEN NULL"
-                     "  ELSE (SELECT uuid FROM filters"
-                     "        WHERE id = (SELECT filter FROM alerts"
-                     "                    WHERE id = %llu))"
-                     "  END);",
-                     alert,
-                     alert);
-}
-
-/**
- * @brief Return the condition associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Condition.
- */
-static alert_condition_t
-alert_condition (alert_t alert)
-{
-  return sql_int ("SELECT condition FROM alerts WHERE id = %llu;",
-                  alert);
-}
-
-/**
- * @brief Return the method associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Method.
- */
-alert_method_t
-alert_method (alert_t alert)
-{
-  return sql_int ("SELECT method FROM alerts WHERE id = %llu;",
-                  alert);
-}
-
-/**
- * @brief Return the event associated with an alert.
- *
- * @param[in]  alert  Alert.
- *
- * @return Event.
- */
-static event_t
-alert_event (alert_t alert)
-{
-  return sql_int ("SELECT event FROM alerts WHERE id = %llu;",
-                  alert);
-}
-
-/**
- * @brief Filter columns for alert iterator.
- */
-#define ALERT_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "event", "condition", "method",               \
-   "filter",  NULL }
-
-/**
- * @brief Alert iterator columns.
- */
-#define ALERT_ITERATOR_COLUMNS                                                \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (alerts),                                             \
-   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
-   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
-   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { "filter", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { G_STRINGIFY (LOCATION_TABLE), NULL, KEYWORD_TYPE_INTEGER },              \
-   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Alert iterator columns for trash case.
- */
-#define ALERT_ITERATOR_TRASH_COLUMNS                                          \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (alerts_trash),                                       \
-   { "event", NULL, KEYWORD_TYPE_INTEGER },                                   \
-   { "condition", NULL, KEYWORD_TYPE_INTEGER },                               \
-   { "method", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { "filter", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "filter_location", NULL, KEYWORD_TYPE_INTEGER},                          \
-   { "active", NULL, KEYWORD_TYPE_INTEGER },                                  \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Count the number of alerts.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of alerts filtered set.
- */
-int
-alert_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
-  return count ("alert", get, columns, trash_columns, filter_columns, 0, 0, 0,
-                  TRUE);
-}
-
-/**
- * @brief Return whether a alert is in use by a task.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if in use, else 0.
- */
-int
-alert_in_use (alert_t alert)
-{
-  return !!sql_int ("SELECT count (*) FROM task_alerts WHERE alert = %llu;",
-                    alert);
-}
-
-/**
- * @brief Return whether a trashcan alert is in use by a task.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_alert_in_use (alert_t alert)
-{
-  return !!sql_int ("SELECT count(*) FROM task_alerts"
-                    " WHERE alert = %llu"
-                    " AND alert_location = " G_STRINGIFY (LOCATION_TRASH),
-                    alert);
-}
-
-/**
- * @brief Return whether a alert is writable.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if writable, else 0.
- */
-int
-alert_writable (alert_t alert)
-{
-    return 1;
-}
-
-/**
- * @brief Return whether a trashcan alert is writable.
- *
- * @param[in]  alert  Alert.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_alert_writable (alert_t alert)
-{
-    return 1;
-}
-
-/**
- * @brief Initialise an alert iterator, including observed alerts.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find alert, 2 failed to find filter (filt_id),
- *         -1 error.
- */
-int
-init_alert_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = ALERT_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ALERT_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ALERT_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "alert",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Return the event from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Event of the alert or NULL if iteration is complete.
- */
-int
-alert_iterator_event (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret;
-}
-
-/**
- * @brief Return the condition from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Condition of the alert or NULL if iteration is complete.
- */
-int
-alert_iterator_condition (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-  return ret;
-}
-
-/**
- * @brief Return the method from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Method of the alert or NULL if iteration is complete.
- */
-int
-alert_iterator_method (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
-  return ret;
-}
-
-/**
- * @brief Return the filter from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Filter of the alert or NULL if iteration is complete.
- */
-static filter_t
-alert_iterator_filter (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return (filter_t) iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
-
-/**
- * @brief Return the filter UUID from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of filter of the alert or NULL if iteration is complete.
- */
-char *
-alert_iterator_filter_uuid (iterator_t* iterator)
-{
-  filter_t filter;
-
-  if (iterator->done) return NULL;
-
-  filter = alert_iterator_filter (iterator);
-  if (filter)
-    {
-      if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
-          == LOCATION_TABLE)
-        return filter_uuid (filter);
-      return trash_filter_uuid (filter);
-    }
-  return NULL;
-}
-
-/**
- * @brief Return the filter name from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of filter of the alert or NULL if iteration is complete.
- */
-char *
-alert_iterator_filter_name (iterator_t* iterator)
-{
-  filter_t filter;
-
-  if (iterator->done) return NULL;
-
-  filter = alert_iterator_filter (iterator);
-  if (filter)
-    {
-      if (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
-          == LOCATION_TABLE)
-        return filter_name (filter);
-      return trash_filter_name (filter);
-    }
-  return NULL;
-}
-
-/**
- * @brief Return the location of an alert iterator filter.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 0 in table, 1 in trash.
- */
-int
-alert_iterator_filter_trash (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  if (alert_iterator_filter (iterator)
-      && (iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
-          == LOCATION_TRASH))
-    return 1;
-  return 0;
-}
-
-/**
- * @brief Return the filter readable state from an alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Whether filter is readable.
- */
-int
-alert_iterator_filter_readable (iterator_t* iterator)
-{
-  filter_t filter;
-
-  if (iterator->done) return 0;
-
-  filter = alert_iterator_filter (iterator);
-  if (filter)
-    {
-      char *uuid;
-      uuid = alert_iterator_filter_uuid (iterator);
-      if (uuid)
-        {
-          int readable;
-          readable = acl_user_has_access_uuid
-                      ("filter", uuid, "get_filters",
-                       iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4)
-                       == LOCATION_TRASH);
-          free (uuid);
-          return readable;
-        }
-    }
-  return 0;
-}
-
-/**
- * @brief Return the active state from an alert.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Method of the alert or NULL if iteration is complete.
- */
-int
-alert_iterator_active (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-  return ret;
-}
-
-/**
- * @brief Initialise an alert data iterator.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  alert  Alert.
- * @param[in]  trash      Whether to iterate over trashcan alert data.
- * @param[in]  table      Type of data: "condition", "event" or "method",
- *                        corresponds to substring of the table to select
- *                        from.
- */
-void
-init_alert_data_iterator (iterator_t *iterator, alert_t alert,
-                          int trash, const char *table)
-{
-  init_iterator (iterator,
-                 "SELECT name, data FROM alert_%s_data%s"
-                 " WHERE alert = %llu;",
-                 table,
-                 trash ? "_trash" : "",
-                 alert);
-}
-
-/**
- * @brief Return the name from an alert data iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the alert data or NULL if iteration is complete.
- */
-const char*
-alert_data_iterator_name (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 0);
-  return ret;
-}
-
-/**
- * @brief Return the data from an alert data iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- *
- * @return Data of the alert data or NULL if iteration is complete.
- */
-const char*
-alert_data_iterator_data (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 1);
-  return ret;
-}
-
-/**
- * @brief Return data associated with an alert.
- *
- * @param[in]  alert  Alert.
- * @param[in]  type       Type of data: "condition", "event" or "method".
- * @param[in]  name       Name of the data.
- *
- * @return Freshly allocated data if it exists, else NULL.
- */
-char *
-alert_data (alert_t alert, const char *type, const char *name)
-{
-  gchar *quoted_name;
-  char *data;
-
-  assert (strcmp (type, "condition") == 0
-          || strcmp (type, "event") == 0
-          || strcmp (type, "method") == 0);
-
-  quoted_name = sql_quote (name);
-  data = sql_string ("SELECT data FROM alert_%s_data"
-                     " WHERE alert = %llu AND name = '%s';",
-                     type,
-                     alert,
-                     quoted_name);
-  g_free (quoted_name);
-  return data;
-}
-
-/**
- * @brief Check whether an alert applies to a task.
- *
- * @param[in]  alert  Alert.
- * @param[in]  task   Task.
- *
- * @return 1 if applies, else 0.
- */
-static int
-alert_applies_to_task (alert_t alert, task_t task)
-{
-  return sql_int ("SELECT EXISTS (SELECT * FROM task_alerts"
-                  "               WHERE task = %llu"
-                  "               AND alert = %llu);",
-                  task,
-                  alert);
-}
-
-/**
- * @brief Initialise a task alert iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  task      Task.
- */
-void
-init_task_alert_iterator (iterator_t* iterator, task_t task)
-{
-  gchar *owned_clause, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (task);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_alerts"));
-  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions, 0,
-                                  &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT alerts.id, alerts.uuid, alerts.name"
-                 " FROM alerts, task_alerts"
-                 " WHERE task_alerts.task = %llu"
-                 " AND task_alerts.alert = alerts.id"
-                 " AND %s;",
-                 with_clause ? with_clause : "",
-                 task,
-                 owned_clause);
-
-  g_free (with_clause);
-  g_free (owned_clause);
-}
-
-/**
- * @brief Get the UUID from a task alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_alert_iterator_uuid, 1);
-
-/**
- * @brief Get the name from a task alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (task_alert_iterator_name, 2);
-
-/**
- * @brief Initialise an event alert iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  event     Event.
- */
-static void
-init_event_alert_iterator (iterator_t* iterator, event_t event)
-{
-  gchar *owned_clause, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (event);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_alerts"));
-  owned_clause = acl_where_owned ("alert", &get, 0, "any", 0, permissions, 0,
-                                  &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT alerts.id, alerts.active"
-                 " FROM alerts"
-                 " WHERE event = %i"
-                 " AND %s;",
-                 with_clause ? with_clause : "",
-                 event,
-                 owned_clause);
-
-  g_free (with_clause);
-  g_free (owned_clause);
-}
-
-/**
- * @brief Get the alert from a event alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return alert.
- */
-static alert_t
-event_alert_iterator_alert (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (task_t) iterator_int64 (iterator, 0);
-}
-
-/**
- * @brief Get the active state from an event alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Active state.
- */
-static int
-event_alert_iterator_active (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, 1);
-  return ret;
-}
-
-/**
- * @brief Write the content of a plain text email to a stream.
- *
- * @param[in]  content_file  Stream to write the email content to.
- * @param[in]  to_address    Address to send to.
- * @param[in]  from_address  Address to send to.
- * @param[in]  subject       Subject of email.
- * @param[in]  body          Body of email.
- * @param[in]  attachment    Attachment in line broken base64, or NULL.
- * @param[in]  attachment_type  Attachment MIME type, or NULL.
- * @param[in]  attachment_name  Base file name of the attachment, or NULL.
- * @param[in]  attachment_extension  Attachment file extension, or NULL.
- *
- * @return 0 success, -1 error.
- */
-static int
-email_write_content (FILE *content_file,
-                     const char *to_address, const char *from_address,
-                     const char *subject, const char *body,
-                     const gchar *attachment, const char *attachment_type,
-                     const char *attachment_name,
-                     const char *attachment_extension)
-{
-  if (fprintf (content_file,
-               "To: %s\n"
-               "From: %s\n"
-               "Subject: %s\n"
-               "%s%s%s"
-               "\n"
-               "%s"
-               "%s\n",
-               to_address,
-               from_address ? from_address
-                            : "automated@openvas.org",
-               subject,
-               (attachment
-                 ? "MIME-Version: 1.0\n"
-                   "Content-Type: multipart/mixed;"
-                   " boundary=\""
-                 : "Content-Type: text/plain; charset=utf-8\n"
-                   "Content-Transfer-Encoding: 8bit\n"),
-               /* @todo Future callers may give email containing this string. */
-               (attachment ? "=-=-=-=-=" : ""),
-               (attachment ? "\"\n" : ""),
-               (attachment ? "--=-=-=-=-=\n"
-                             "Content-Type: text/plain; charset=utf-8\n"
-                             "Content-Transfer-Encoding: 8bit\n"
-                             "Content-Disposition: inline\n"
-                             "\n"
-                           : ""),
-               body)
-      < 0)
-    {
-      g_warning ("%s: output error", __func__);
-      return -1;
-    }
-
-  if (attachment)
-    {
-      int len;
-
-      if (fprintf (content_file,
-                   "--=-=-=-=-=\n"
-                   "Content-Type: %s\n"
-                   "Content-Disposition: attachment;"
-                   " filename=\"%s.%s\"\n"
-                   "Content-Transfer-Encoding: base64\n"
-                   "Content-Description: Report\n\n",
-                   attachment_type,
-                   attachment_name,
-                   attachment_extension)
-          < 0)
-        {
-          g_warning ("%s: output error", __func__);
-          return -1;
-        }
-
-      len = strlen (attachment);
-      while (len)
-        if (len > 72)
-          {
-            if (fprintf (content_file,
-                         "%.*s\n",
-                         72,
-                         attachment)
-                < 0)
-              {
-                g_warning ("%s: output error", __func__);
-                return -1;
-              }
-            attachment += 72;
-            len -= 72;
-          }
-        else
-          {
-            if (fprintf (content_file,
-                         "%s\n",
-                         attachment)
-                < 0)
-              {
-                g_warning ("%s: output error", __func__);
-                return -1;
-              }
-            break;
-          }
-
-      if (fprintf (content_file,
-                   "--=-=-=-=-=--\n")
-          < 0)
-        {
-          g_warning ("%s: output error", __func__);
-          return -1;
-        }
-    }
-
-  while (fflush (content_file))
-    if (errno == EINTR)
-      continue;
-    else
-      {
-        g_warning ("%s", strerror (errno));
-        return -1;
-      }
-
-  return 0;
-}
-
-/**
- * @brief  Create a PGP encrypted email from a plain text one.
- *
- * @param[in]  plain_file     Stream to read the plain text email from.
- * @param[in]  encrypted_file Stream to write the encrypted email to.
- * @param[in]  public_key     Recipient public key to use for encryption.
- * @param[in]  to_address     Email address to send to.
- * @param[in]  from_address   Email address to use as sender.
- * @param[in]  subject        Subject of email.
- *
- * @return 0 success, -1 error.
- */
-static int
-email_encrypt_gpg (FILE *plain_file, FILE *encrypted_file,
-                   const char *public_key,
-                   const char *to_address, const char *from_address,
-                   const char *subject)
-{
-  // Headers and metadata parts
-  if (fprintf (encrypted_file,
-               "To: %s\n"
-               "From: %s\n"
-               "Subject: %s\n"
-               "MIME-Version: 1.0\n"
-               "Content-Type: multipart/encrypted;\n"
-               " protocol=\"application/pgp-encrypted\";\n"
-               " boundary=\"=-=-=-=-=\"\n"
-               "\n"
-               "--=-=-=-=-=\n"
-               "Content-Type: application/pgp-encrypted\n"
-               "Content-Description: PGP/MIME version identification\n"
-               "\n"
-               "Version: 1\n"
-               "\n"
-               "--=-=-=-=-=\n"
-               "Content-Type: application/octet-stream\n"
-               "Content-Description: OpenPGP encrypted message\n"
-               "Content-Disposition: inline; filename=\"encrypted.asc\"\n"
-               "\n",
-               to_address,
-               from_address ? from_address
-                            : "automated@openvas.org",
-               subject) < 0)
-    {
-      g_warning ("%s: output error at headers", __func__);
-      return -1;
-    }
-
-  // Encrypted message
-  if (gvm_pgp_pubkey_encrypt_stream (plain_file, encrypted_file, to_address,
-                                     public_key, -1))
-    {
-      return -1;
-    }
-
-  // End of message
-  if (fprintf (encrypted_file,
-               "\n"
-               "--=-=-=-=-=--\n") < 0)
-    {
-      g_warning ("%s: output error at end of message", __func__);
-      return -1;
-    }
-
-  while (fflush (encrypted_file))
-    if (errno == EINTR)
-      continue;
-    else
-      {
-        g_warning ("%s", strerror (errno));
-        return -1;
-      }
-
-  return 0;
-}
-
-/**
- * @brief  Create an S/MIME encrypted email from a plain text one.
- *
- * @param[in]  plain_file     Stream to read the plain text email from.
- * @param[in]  encrypted_file Stream to write the encrypted email to.
- * @param[in]  certificate    Recipient certificate chain for encryption.
- * @param[in]  to_address     Email address to send to.
- * @param[in]  from_address   Email address to use as sender.
- * @param[in]  subject        Subject of email.
- *
- * @return 0 success, -1 error.
- */
-static int
-email_encrypt_smime (FILE *plain_file, FILE *encrypted_file,
-                     const char *certificate,
-                     const char *to_address, const char *from_address,
-                     const char *subject)
-{
-  // Headers and metadata parts
-  if (fprintf (encrypted_file,
-               "To: %s\n"
-               "From: %s\n"
-               "Subject: %s\n"
-               "Content-Type: application/x-pkcs7-mime;"
-               " smime-type=enveloped-data; name=\"smime.p7m\"\n"
-               "Content-Disposition: attachment; filename=\"smime.p7m\"\n"
-               "Content-Transfer-Encoding: base64\n"
-               "\n",
-               to_address,
-               from_address ? from_address
-                            : "automated@openvas.org",
-               subject) < 0)
-    {
-      g_warning ("%s: output error at headers", __func__);
-      return -1;
-    }
-
-  // Encrypted message
-  if (gvm_smime_encrypt_stream (plain_file, encrypted_file, to_address,
-                                certificate, -1))
-    {
-      g_warning ("%s: encryption failed", __func__);
-      return -1;
-    }
-
-  // End of message
-  if (fprintf (encrypted_file,
-               "\n") < 0)
-    {
-      g_warning ("%s: output error at end of message", __func__);
-      return -1;
-    }
-
-  while (fflush (encrypted_file))
-    if (errno == EINTR)
-      continue;
-    else
-      {
-        g_warning ("%s", strerror (errno));
-        return -1;
-      }
-
-  return 0;
-}
-
-/**
- * @brief Send an email.
- *
- * @param[in]  to_address    Address to send to.
- * @param[in]  from_address  Address to send to.
- * @param[in]  subject       Subject of email.
- * @param[in]  body          Body of email.
- * @param[in]  attachment    Attachment in line broken base64, or NULL.
- * @param[in]  attachment_type  Attachment MIME type, or NULL.
- * @param[in]  attachment_name  Base file name of the attachment, or NULL.
- * @param[in]  attachment_extension  Attachment file extension, or NULL.
- * @param[in]  recipient_credential  Optional credential to use for encryption.
- *
- * @return 0 success, -1 error.
- */
-static int
-email (const char *to_address, const char *from_address, const char *subject,
-       const char *body, const gchar *attachment, const char *attachment_type,
-       const char *attachment_name, const char *attachment_extension,
-       credential_t recipient_credential)
-{
-  int ret, content_fd, args_fd;
-  gchar *command;
-  GError *error = NULL;
-  char content_file_name[] = "/tmp/gvmd-content-XXXXXX";
-  char args_file_name[] = "/tmp/gvmd-args-XXXXXX";
-  gchar *sendmail_args;
-  FILE *content_file;
-
-  content_fd = mkstemp (content_file_name);
-  if (content_fd == -1)
-    {
-      g_warning ("%s: mkstemp: %s", __func__, strerror (errno));
-      return -1;
-    }
-
-  g_debug ("   EMAIL to %s from %s subject: %s, body: %s",
-          to_address, from_address, subject, body);
-
-  content_file = fdopen (content_fd, "w");
-  if (content_file == NULL)
-    {
-      g_warning ("%s: Could not open content file: %s",
-                 __func__, strerror (errno));
-      close (content_fd);
-      return -1;
-    }
-
-  if (recipient_credential)
-    {
-      iterator_t iterator;
-      init_credential_iterator_one (&iterator, recipient_credential);
-
-      if (next (&iterator))
-        {
-          const char *type = credential_iterator_type (&iterator);
-          const char *public_key = credential_iterator_public_key (&iterator);
-          const char *certificate
-            = credential_iterator_certificate (&iterator);
-          char plain_file_name[] = "/tmp/gvmd-plain-XXXXXX";
-          int plain_fd;
-          FILE *plain_file;
-
-          // Create plain text message
-          plain_fd = mkstemp (plain_file_name);
-          if (plain_fd == -1)
-            {
-              g_warning ("%s: mkstemp for plain text file: %s",
-                         __func__, strerror (errno));
-              fclose (content_file);
-              unlink (content_file_name);
-              cleanup_iterator (&iterator);
-              return -1;
-            }
-
-          plain_file = fdopen (plain_fd, "w+");
-          if (plain_file == NULL)
-            {
-              g_warning ("%s: Could not open plain text file: %s",
-                         __func__, strerror (errno));
-              fclose (content_file);
-              unlink (content_file_name);
-              close (plain_fd);
-              unlink (plain_file_name);
-              cleanup_iterator (&iterator);
-              return -1;
-            }
-
-          if (email_write_content (plain_file,
-                                   to_address, from_address,
-                                   subject, body, attachment,
-                                   attachment_type, attachment_name,
-                                   attachment_extension))
-            {
-              fclose (content_file);
-              unlink (content_file_name);
-              fclose (plain_file);
-              unlink (plain_file_name);
-              cleanup_iterator (&iterator);
-              return -1;
-            }
-
-          rewind (plain_file);
-
-          // Create encrypted email
-          if (strcmp (type, "pgp") == 0)
-            {
-              ret = email_encrypt_gpg (plain_file, content_file,
-                                       public_key,
-                                       to_address, from_address, subject);
-
-              fclose (plain_file);
-              unlink (plain_file_name);
-
-              if (ret)
-                {
-                  g_warning ("%s: PGP encryption failed", __func__);
-                  fclose (content_file);
-                  unlink (content_file_name);
-                  cleanup_iterator (&iterator);
-                  return -1;
-                }
-            }
-          else if (strcmp (type, "smime") == 0)
-            {
-              ret = email_encrypt_smime (plain_file, content_file,
-                                         certificate,
-                                         to_address, from_address, subject);
-
-              fclose (plain_file);
-              unlink (plain_file_name);
-
-              if (ret)
-                {
-                  g_warning ("%s: S/MIME encryption failed", __func__);
-                  fclose (content_file);
-                  unlink (content_file_name);
-                  cleanup_iterator (&iterator);
-                  return -1;
-                }
-            }
-          else
-            {
-              g_warning ("%s: Invalid recipient credential type",
-                        __func__);
-              fclose (content_file);
-              unlink (content_file_name);
-              fclose (plain_file);
-              unlink (plain_file_name);
-              cleanup_iterator (&iterator);
-              return -1;
-            }
-        }
-
-      cleanup_iterator (&iterator);
-    }
-  else
-    {
-      if (email_write_content (content_file,
-                               to_address, from_address,
-                               subject, body, attachment, attachment_type,
-                               attachment_name, attachment_extension))
-        {
-          fclose (content_file);
-          return -1;
-        }
-    }
-
-  args_fd = mkstemp (args_file_name);
-  if (args_fd == -1)
-    {
-      g_warning ("%s: mkstemp: %s", __func__, strerror (errno));
-      fclose (content_file);
-      return -1;
-    }
-
-  sendmail_args = g_strdup_printf ("%s %s",
-                                   from_address,
-                                   to_address);
-  g_file_set_contents (args_file_name,
-                       sendmail_args,
-                       strlen (sendmail_args),
-                       &error);
-  g_free (sendmail_args);
-
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      fclose (content_file);
-      close (args_fd);
-      return -1;
-    }
-
-  command = g_strdup_printf ("read FROM TO < %s;"
-                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" < %s"
-                             " > /dev/null 2>&1",
-                             args_file_name,
-                             content_file_name);
-
-  g_debug ("   command: %s", command);
-
-  ret = system (command);
-  if ((ret == -1) || WEXITSTATUS (ret))
-    {
-      g_warning ("%s: system failed with ret %i, %i, %s",
-                 __func__,
-                 ret,
-                 WEXITSTATUS (ret),
-                 command);
-      g_free (command);
-      fclose (content_file);
-      close (args_fd);
-      unlink (content_file_name);
-      unlink (args_file_name);
-      return -1;
-    }
-  g_free (command);
-  fclose (content_file);
-  close (args_fd);
-  unlink (content_file_name);
-  unlink (args_file_name);
-  return 0;
-}
-
-/**
- * @brief GET an HTTP resource.
- *
- * @param[in]  url  URL.
- *
- * @return 0 success, -1 error.
- */
-static int
-http_get (const char *url)
-{
-  int ret;
-  gchar *standard_out = NULL;
-  gchar *standard_err = NULL;
-  gint exit_status;
-  gchar **cmd;
-
-  g_debug ("   HTTP_GET %s", url);
-
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
-  cmd[0] = g_strdup ("/usr/bin/wget");
-  cmd[1] = g_strdup ("-O");
-  cmd[2] = g_strdup ("-");
-  cmd[3] = g_strdup (url);
-  cmd[4] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s",
-           __func__, cmd[0], cmd[1], cmd[2], cmd[3]);
-  if ((g_spawn_sync ("/tmp/",
-                     cmd,
-                     NULL,                  /* Environment. */
-                     G_SPAWN_SEARCH_PATH,
-                     NULL,                  /* Setup function. */
-                     NULL,
-                     &standard_out,
-                     &standard_err,
-                     &exit_status,
-                     NULL)
-       == FALSE)
-      || (WIFEXITED (exit_status) == 0)
-      || WEXITSTATUS (exit_status))
-    {
-      g_debug ("%s: wget failed: %d (WIF %i, WEX %i)",
-               __func__,
-               exit_status,
-               WIFEXITED (exit_status),
-               WEXITSTATUS (exit_status));
-      g_debug ("%s: stdout: %s", __func__, standard_out);
-      g_debug ("%s: stderr: %s", __func__, standard_err);
-      ret = -1;
-    }
-  else
-    {
-      if (strlen (standard_out) > 80)
-        standard_out[80] = '\0';
-      g_debug ("   HTTP_GET %s: %s", url, standard_out);
-      ret = 0;
-    }
-
-  g_free (cmd[0]);
-  g_free (cmd[1]);
-  g_free (cmd[2]);
-  g_free (cmd[3]);
-  g_free (cmd[4]);
-  g_free (cmd);
-  g_free (standard_out);
-  g_free (standard_err);
-  return ret;
-}
-
-/**
- * @brief Initialize common files and variables for an alert script.
- *
- * The temporary file / dir parameters will be modified by mkdtemp / mkstemp
- *  to contain the actual path.
- * The extra data is meant for data that should not be logged like passwords.
- *
- * @param[in]     report_filename Filename for the report or NULL for default.
- * @param[in]     report          Report that should be sent.
- * @param[in]     report_size     Size of the report.
- * @param[in]     extra_content   Optional extra data, e.g. credentials
- * @param[in]     extra_size      Optional extra data length
- * @param[in,out] report_dir      Template for temporary report directory
- * @param[out]    report_path Pointer to store path to report file at
- * @param[out]    error_path  Pointer to temporary file path for error messages
- * @param[out]    extra_path  Pointer to temporary extra data file path
- *
- * @return 0 success, -1 error.
- */
-static int
-alert_script_init (const char *report_filename, const char* report,
-                   size_t report_size,
-                   const char *extra_content, size_t extra_size,
-                   char *report_dir,
-                   gchar **report_path, gchar **error_path, gchar **extra_path)
-{
-  GError *error;
-
-  /* Create temp directory */
-
-  if (mkdtemp (report_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      return -1;
-    }
-
-  /* Create report file */
-
-  *report_path = g_strdup_printf ("%s/%s",
-                                  report_dir,
-                                  report_filename ? report_filename
-                                                  : "report");
-
-  error = NULL;
-  g_file_set_contents (*report_path, report, report_size, &error);
-  if (error)
-    {
-      g_warning ("%s: could not write report: %s",
-                 __func__, error->message);
-      g_error_free (error);
-      g_free (*report_path);
-      gvm_file_remove_recurse (report_dir);
-      return -1;
-    }
-
-  /* Create error file */
-
-  *error_path = g_strdup_printf ("%s/error_XXXXXX", report_dir);
-
-  if (mkstemp (*error_path) == -1)
-    {
-      g_warning ("%s: mkstemp for error output failed", __func__);
-      gvm_file_remove_recurse (report_dir);
-      g_free (*report_path);
-      g_free (*error_path);
-      return -1;
-    }
-
-  /* Create extra data file */
-
-  if (extra_content)
-    {
-      *extra_path = g_strdup_printf ("%s/extra_XXXXXX", report_dir);
-      if (mkstemp (*extra_path) == -1)
-        {
-          g_warning ("%s: mkstemp for extra data failed", __func__);
-          gvm_file_remove_recurse (report_dir);
-          g_free (*report_path);
-          g_free (*error_path);
-          g_free (*extra_path);
-          return -1;
-        }
-
-      error = NULL;
-      g_file_set_contents (*extra_path, extra_content, extra_size, &error);
-      if (error)
-        {
-          g_warning ("%s: could not write extra data: %s",
-                    __func__, error->message);
-          g_error_free (error);
-          gvm_file_remove_recurse (report_dir);
-          g_free (*report_path);
-          g_free (*error_path);
-          g_free (*extra_path);
-          return -1;
-        }
-    }
-  else
-    *extra_path = NULL;
-
-  return 0;
-}
-
-/**
- * @brief Execute the alert script.
- *
- * @param[in]  alert_id      UUID of the alert.
- * @param[in]  command_args  Args for the "alert" script.
- * @param[in]  report_path   Path to temporary file containing the report
- * @param[in]  report_dir    Temporary directory for the report
- * @param[in]  error_path    Path to the script error message file
- * @param[in]  extra_path    Path to the extra data file
- * @param[out] message       Custom error message generated by the script
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-alert_script_exec (const char *alert_id, const char *command_args,
-                   const char *report_path, const char *report_dir,
-                   const char *error_path, const char *extra_path,
-                   gchar **message)
-{
-  gchar *script, *script_dir;
-
-  /* Setup script file name. */
-  script_dir = g_build_filename (GVMD_DATA_DIR,
-                                 "global_alert_methods",
-                                 alert_id,
-                                 NULL);
-
-  script = g_build_filename (script_dir, "alert", NULL);
-
-  if (!gvm_file_is_readable (script))
-    {
-      g_warning ("%s: Failed to find alert script: %s",
-           __func__,
-           script);
-      g_free (script);
-      g_free (script_dir);
-      return -1;
-    }
-
-  /* Run the script */
-  {
-    gchar *command;
-    char *previous_dir;
-    int ret;
-
-    /* Change into the script directory. */
-
-    previous_dir = getcwd (NULL, 0);
-    if (previous_dir == NULL)
-      {
-        g_warning ("%s: Failed to getcwd: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-
-    if (chdir (script_dir))
-      {
-        g_warning ("%s: Failed to chdir: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-    g_free (script_dir);
-
-    /* Call the script. */
-
-    if (extra_path)
-      command = g_strdup_printf ("%s %s %s %s"
-                                 " > /dev/null 2> %s",
-                                 script,
-                                 command_args,
-                                 extra_path,
-                                 report_path,
-                                 error_path);
-    else
-      command = g_strdup_printf ("%s %s %s"
-                                 " > /dev/null 2> %s",
-                                 script,
-                                 command_args,
-                                 report_path,
-                                 error_path);
-    g_free (script);
-
-    g_debug ("   command: %s", command);
-
-    if (geteuid () == 0)
-      {
-        pid_t pid;
-        struct passwd *nobody;
-
-        /* Run the command with lower privileges in a fork. */
-
-        nobody = getpwnam ("nobody");
-        if ((nobody == NULL)
-            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
-            || chown (report_path, nobody->pw_uid, nobody->pw_gid)
-            || chown (error_path, nobody->pw_uid, nobody->pw_gid)
-            || (extra_path && chown (extra_path, nobody->pw_uid,
-                                     nobody->pw_gid)))
-          {
-            g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __func__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (command);
-            return -1;
-          }
-
-        pid = fork ();
-        switch (pid)
-          {
-            case 0:
-              {
-                /* Child.  Drop privileges, run command, exit. */
-                init_sentry ();
-                cleanup_manage_process (FALSE);
-
-                setproctitle ("Running alert script");
-
-                if (setgroups (0,NULL))
-                  {
-                    g_warning ("%s (child): setgroups: %s",
-                               __func__, strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setgid (nobody->pw_gid))
-                  {
-                    g_warning ("%s (child): setgid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setuid (nobody->pw_uid))
-                  {
-                    g_warning ("%s (child): setuid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-
-                ret = system (command);
-                /*
-                 * Check shell command exit status, assuming 0 means success.
-                 */
-                if (ret == -1)
-                  {
-                    g_warning ("%s (child):"
-                               " system failed with ret %i, %i, %s",
-                               __func__,
-                               ret,
-                               WEXITSTATUS (ret),
-                               command);
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                else if (ret != 0)
-                  {
-                    GError *error;
-
-                    if (g_file_get_contents (error_path, message,
-                                             NULL, &error) == FALSE)
-                      {
-                        g_warning ("%s: failed to test error message: %s",
-                                    __func__, error->message);
-                        g_error_free (error);
-                        if (message)
-                          g_free (*message);
-                        gvm_close_sentry ();
-                        exit (EXIT_FAILURE);
-                      }
-
-                    if (message == NULL)
-                      exit (EXIT_FAILURE);
-                    else if (*message == NULL || strcmp (*message, "") == 0)
-                      {
-                        g_free (*message);
-                        *message
-                          = g_strdup_printf ("Exited with code %d.",
-                                              WEXITSTATUS (ret));
-
-                        if (g_file_set_contents (error_path, *message,
-                                                 strlen (*message),
-                                                 &error) == FALSE)
-                          {
-                            g_warning ("%s: failed to write error message:"
-                                        " %s",
-                                        __func__, error->message);
-                            g_error_free (error);
-                            g_free (*message);
-                            gvm_close_sentry ();
-                            exit (EXIT_FAILURE);
-                          }
-                      }
-
-                    g_free (*message);
-                    gvm_close_sentry ();
-                    exit (2);
-                  }
-
-                exit (EXIT_SUCCESS);
-              }
-
-            case -1:
-              /* Parent when error. */
-
-              g_warning ("%s: Failed to fork: %s",
-                         __func__,
-                         strerror (errno));
-              if (chdir (previous_dir))
-                g_warning ("%s: and chdir failed",
-                           __func__);
-              g_free (previous_dir);
-              g_free (command);
-              return -1;
-              break;
-
-            default:
-              {
-                int status;
-
-                /* Parent on success.  Wait for child, and check result. */
-
-                while (waitpid (pid, &status, 0) < 0)
-                  {
-                    if (errno == ECHILD)
-                      {
-                        g_warning ("%s: Failed to get child exit status",
-                                   __func__);
-                        if (chdir (previous_dir))
-                          g_warning ("%s: and chdir failed",
-                                     __func__);
-                        g_free (previous_dir);
-                        return -1;
-                      }
-                    if (errno == EINTR)
-                      continue;
-                    g_warning ("%s: wait: %s",
-                               __func__,
-                               strerror (errno));
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    return -1;
-                  }
-                if (WIFEXITED (status))
-                  switch (WEXITSTATUS (status))
-                    {
-                    case EXIT_SUCCESS:
-                      break;
-                    case 2: // script failed
-                      if (message)
-                        {
-                          GError *error = NULL;
-                          if (g_file_get_contents (error_path, message,
-                                                   NULL, &error) == FALSE)
-                            {
-                              g_warning ("%s: failed to get error message: %s",
-                                         __func__, error->message);
-                              g_error_free (error);
-                            }
-
-                          if (strcmp (*message, "") == 0)
-                            {
-                              g_free (*message);
-                              *message = NULL;
-                            }
-                        }
-                      if (chdir (previous_dir))
-                        g_warning ("%s: chdir failed",
-                                   __func__);
-                      return -5;
-                    case EXIT_FAILURE:
-                    default:
-                      g_warning ("%s: child failed, %s",
-                                 __func__,
-                                 command);
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed",
-                                   __func__);
-                      g_free (previous_dir);
-                      return -1;
-                    }
-                else
-                  {
-                    g_warning ("%s: child failed, %s",
-                               __func__,
-                               command);
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    return -1;
-                  }
-
-                /* Child succeeded, continue to process result. */
-
-                break;
-              }
-          }
-      }
-    else
-      {
-        /* Just run the command as the current user. */
-
-        ret = system (command);
-        /* Ignore the shell command exit status, because we've not
-         * specified what it must be in the past. */
-        if (ret == -1)
-          {
-            g_warning ("%s: system failed with ret %i, %i, %s",
-                       __func__,
-                       ret,
-                       WEXITSTATUS (ret),
-                       command);
-            if (chdir (previous_dir))
-              g_warning ("%s: and chdir failed",
-                         __func__);
-            g_free (previous_dir);
-            g_free (command);
-            return -1;
-          }
-        else if (ret)
-          {
-            if (message)
-              {
-                GError *error = NULL;
-                if (g_file_get_contents (error_path, message, NULL, &error)
-                      == FALSE)
-                  {
-                    g_warning ("%s: failed to get error message: %s",
-                               __func__, error->message);
-                    g_error_free (error);
-                  }
-
-                if (strcmp (*message, "") == 0)
-                  {
-                    g_free (*message);
-                    *message = NULL;
-                  }
-
-                if (*message == NULL)
-                  {
-                    *message
-                      = g_strdup_printf ("Exited with code %d.",
-                                         WEXITSTATUS (ret));
-                  }
-              }
-            g_free (previous_dir);
-            g_free (command);
-            return -5;
-          }
-      }
-
-    g_free (command);
-
-    /* Change back to the previous directory. */
-
-    if (chdir (previous_dir))
-      {
-        g_warning ("%s: Failed to chdir back: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (previous_dir);
-        return -1;
-      }
-    g_free (previous_dir);
-  }
-  return 0;
-}
-
-/**
- * @brief Write data to a file for use by an alert script.
- *
- * @param[in]  directory      Base directory to create the file in
- * @param[in]  filename       Filename without directory
- * @param[in]  content        The file content
- * @param[in]  content_size   Size of the file content
- * @param[in]  description    Short file description for error messages
- * @param[out] file_path      Return location of combined file path
- *
- * @return 0 success, -1 error
- */
-static int
-alert_write_data_file (const char *directory, const char *filename,
-                       const char *content, gsize content_size,
-                       const char *description, gchar **file_path)
-{
-  gchar *path;
-  GError *error;
-
-  if (file_path)
-    *file_path = NULL;
-
-  /* Setup extra data file */
-  path = g_build_filename (directory, filename, NULL);
-  error = NULL;
-  if (g_file_set_contents (path, content, content_size, &error) == FALSE)
-    {
-      g_warning ("%s: Failed to write %s to file: %s",
-                 __func__,
-                 description ? description : "extra data",
-                 error->message);
-      g_free (path);
-      return -1;
-    }
-
-  if (geteuid () == 0)
-    {
-      struct passwd *nobody;
-
-      /* Set the owner for the extra data file like the other
-       * files handled by alert_script_exec, to be able to
-       * run the command with lower privileges in a fork. */
-
-      nobody = getpwnam ("nobody");
-      if ((nobody == NULL)
-          || chown (path, nobody->pw_uid, nobody->pw_gid))
-        {
-          g_warning ("%s: Failed to set permissions for user nobody: %s",
-                      __func__,
-                      strerror (errno));
-          g_free (path);
-          return -1;
-        }
-    }
-
-  if (file_path)
-    *file_path = path;
-
-  return 0;
-}
-
-/**
- * @brief Clean up common files and variables for running alert script.
- *
- * @param[in]  report_dir   The temporary directory.
- * @param[in]  report_path  The temporary report file path to free.
- * @param[in]  error_path   The temporary error file path to free.
- * @param[in]  extra_path   The temporary extra data file path to free.
- *
- * @return 0 success, -1 error.
- */
-static int
-alert_script_cleanup (const char *report_dir,
-                      gchar *report_path, gchar *error_path, gchar *extra_path)
-{
-  gvm_file_remove_recurse (report_dir);
-  g_free (report_path);
-  g_free (error_path);
-  g_free (extra_path);
-  return 0;
-}
-
-/**
- * @brief Run an alert's "alert" script with one file of extra data.
- *
- * @param[in]  alert_id         ID of alert.
- * @param[in]  command_args     Args for the "alert" script.
- * @param[in]  report_filename  Optional report file name, default: "report"
- * @param[in]  report           Report that should be sent.
- * @param[in]  report_size      Size of the report.
- * @param[in]  extra_content    Optional extra data like passwords
- * @param[in]  extra_size       Size of the report.
- * @param[out] message          Custom error message of the script.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-run_alert_script (const char *alert_id, const char *command_args,
-                  const char *report_filename, const char *report,
-                  size_t report_size,
-                  const char *extra_content, size_t extra_size,
-                  gchar **message)
-{
-  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
-  gchar *report_path, *error_path, *extra_path;
-  int ret;
-
-  if (message)
-    *message = NULL;
-
-  if (report == NULL)
-    return -1;
-
-  g_debug ("report: %s", report);
-
-  /* Setup files. */
-  ret = alert_script_init (report_filename, report, report_size,
-                           extra_content, extra_size,
-                           report_dir,
-                           &report_path, &error_path, &extra_path);
-  if (ret)
-    return ret;
-
-  /* Run the script */
-  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
-                           error_path, extra_path, message);
-  if (ret)
-    {
-      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
-      return ret;
-    }
-
-  /* Remove the directory. */
-  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
-
-  return ret;
-}
-
-/**
- * @brief Send an SNMP TRAP to a host.
- *
- * @param[in]  community  Community.
- * @param[in]  agent      Agent.
- * @param[in]  message    Message.
- * @param[out] script_message  Custom error message of the script.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-snmp_to_host (const char *community, const char *agent, const char *message,
-              gchar **script_message)
-{
-  gchar *clean_community, *clean_agent, *clean_message, *command_args;
-  int ret;
-
-  g_debug ("SNMP to host: %s", agent);
-
-  if (community == NULL || agent == NULL || message == NULL)
-    {
-      g_warning ("%s: parameter was NULL", __func__);
-      return -1;
-    }
-
-  clean_community = g_shell_quote (community);
-  clean_agent = g_shell_quote (agent);
-  clean_message = g_shell_quote (message);
-  command_args = g_strdup_printf ("%s %s %s", clean_community, clean_agent,
-                                  clean_message);
-  g_free (clean_community);
-  g_free (clean_agent);
-  g_free (clean_message);
-
-  ret = run_alert_script ("9d435134-15d3-11e6-bf5c-28d24461215b", command_args,
-                          "report", "", 0, NULL, 0, script_message);
-
-  g_free (command_args);
-  return ret;
-}
-
-/**
- * @brief Send a report to a host via TCP.
- *
- * @param[in]  host         Address of host.
- * @param[in]  port         Port of host.
- * @param[in]  report      Report that should be sent.
- * @param[in]  report_size Size of the report.
- * @param[out] script_message  Custom error message of the script.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-send_to_host (const char *host, const char *port,
-              const char *report, int report_size,
-              gchar **script_message)
-{
-  gchar *clean_host, *clean_port, *command_args;
-  int ret;
-
-  g_debug ("send to host: %s:%s", host, port);
-
-  if (host == NULL)
-    return -1;
-
-  clean_host = g_shell_quote (host);
-  clean_port = g_shell_quote (port);
-  command_args = g_strdup_printf ("%s %s", clean_host, clean_port);
-  g_free (clean_host);
-  g_free (clean_port);
-
-  ret = run_alert_script ("4a398d42-87c0-11e5-a1c0-28d24461215b", command_args,
-                          "report", report, report_size, NULL, 0,
-                          script_message);
-
-  g_free (command_args);
-  return ret;
-}
-
-/**
- * @brief Send a report to a host via TCP.
- *
- * @param[in]  username     Username.
- * @param[in]  password     Password or passphrase of private key.
- * @param[in]  private_key  Private key or NULL for password-only auth.
- * @param[in]  host         Address of host.
- * @param[in]  port         SSH Port of host.
- * @param[in]  path         Destination filename with path.
- * @param[in]  known_hosts  Content for known_hosts file.
- * @param[in]  report       Report that should be sent.
- * @param[in]  report_size  Size of the report.
- * @param[out] script_message  Custom error message of the alert script.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-scp_to_host (const char *username, const char *password,
-             const char *private_key,
-             const char *host, int port,
-             const char *path, const char *known_hosts,
-             const char *report, int report_size, gchar **script_message)
-{
-  const char *alert_id = "2db07698-ec49-11e5-bcff-28d24461215b";
-  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
-  gchar *report_path, *error_path, *password_path, *private_key_path;
-  gchar *clean_username, *clean_host, *clean_path, *clean_private_key_path;
-  gchar *clean_known_hosts, *command_args;
-  int ret;
-
-  g_debug ("scp to host: %s@%s:%d:%s", username, host, port, path);
-
-  if (password == NULL || username == NULL || host == NULL || path == NULL
-      || port <= 0 || port > 65535)
-    return -1;
-
-  if (known_hosts == NULL)
-    known_hosts = "";
-
-  /* Setup files, including password but not private key */
-  ret = alert_script_init ("report", report, report_size,
-                           password, strlen (password),
-                           report_dir,
-                           &report_path, &error_path, &password_path);
-  if (ret)
-    return -1;
-
-  if (private_key)
-    {
-      /* Setup private key here because alert_script_init and alert_script_exec
-       *  only handle one extra file. */
-      if (alert_write_data_file (report_dir, "private_key",
-                                 private_key, strlen (private_key),
-                                 "private key", &private_key_path))
-        {
-          alert_script_cleanup (report_dir, report_path, error_path,
-                                password_path);
-          g_free (private_key_path);
-          return -1;
-        }
-    }
-  else
-    private_key_path = g_strdup ("");
-
-  /* Create arguments */
-  clean_username = g_shell_quote (username);
-  clean_host = g_shell_quote (host);
-  clean_path = g_shell_quote (path);
-  clean_known_hosts = g_shell_quote (known_hosts);
-  clean_private_key_path = g_shell_quote (private_key_path);
-  command_args = g_strdup_printf ("%s %s %d %s %s %s",
-                                  clean_username,
-                                  clean_host,
-                                  port,
-                                  clean_path,
-                                  clean_known_hosts,
-                                  clean_private_key_path);
-  g_free (clean_username);
-  g_free (clean_host);
-  g_free (clean_path);
-  g_free (clean_known_hosts);
-  g_free (clean_private_key_path);
-
-  /* Run script */
-  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
-                           error_path, password_path, script_message);
-  g_free (command_args);
-  if (ret)
-    {
-      alert_script_cleanup (report_dir, report_path, error_path,
-                            password_path);
-      g_free (private_key_path);
-      return ret;
-    }
-
-  /* Remove the directory and free path strings. */
-  ret = alert_script_cleanup (report_dir, report_path, error_path,
-                              password_path);
-  g_free (private_key_path);
-  return ret;
-}
-
-/**
- * @brief Send a report to a host via SMB.
- *
- * @param[in]  password       Password.
- * @param[in]  username       Username.
- * @param[in]  share_path     Name/address of host and name of the share.
- * @param[in]  file_path      Destination filename with path inside the share.
- * @param[in]  max_protocol   Max protocol.
- * @param[in]  report         Report that should be sent.
- * @param[in]  report_size    Size of the report.
- * @param[out] script_message Custom error message of the alert script.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-smb_send_to_host (const char *password, const char *username,
-                  const char *share_path, const char *file_path,
-                  const char *max_protocol,
-                  const char *report, gsize report_size,
-                  gchar **script_message)
-{
-  gchar *clean_share_path, *clean_file_path, *clean_max_protocol;
-  gchar *authfile_content;
-  gchar *command_args;
-  int ret;
-
-  g_debug ("smb as %s to share: %s, path: %s, max_protocol: %s",
-           username, share_path, file_path, max_protocol);
-
-  if (password == NULL || username == NULL
-      || share_path == NULL || file_path == NULL)
-    return -1;
-
-  clean_share_path = g_shell_quote (share_path);
-  clean_file_path = g_shell_quote (file_path);
-  clean_max_protocol = g_shell_quote (max_protocol ? max_protocol : "");
-  authfile_content = g_strdup_printf ("username = %s\n"
-                                      "password = %s\n",
-                                      username, password);
-  command_args = g_strdup_printf ("%s %s %s",
-                                  clean_share_path,
-                                  clean_file_path,
-                                  clean_max_protocol);
-  g_free (clean_share_path);
-  g_free (clean_file_path);
-  g_free (clean_max_protocol);
-
-  ret = run_alert_script ("c427a688-b653-40ab-a9d0-d6ba842a9d63", command_args,
-                          "report", report, report_size,
-                          authfile_content, strlen (authfile_content),
-                          script_message);
-
-  g_free (authfile_content);
-  g_free (command_args);
-  return ret;
-}
-
-/**
- * @brief Send a report to a Sourcefire Defense Center.
- *
- * @param[in]  ip               IP of center.
- * @param[in]  port             Port of center.
- * @param[in]  pkcs12_64        PKCS12 content in base64.
- * @param[in]  pkcs12_password  Password for encrypted PKCS12.
- * @param[in]  report           Report in "Sourcefire" format.
- *
- * @return 0 success, -1 error.
- */
-static int
-send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
-                    const char *pkcs12_password, const char *report)
-{
-  gchar *script, *script_dir;
-  gchar *report_file, *pkcs12_file, *pkcs12, *clean_password;
-  gchar *clean_ip, *clean_port;
-  char report_dir[] = "/tmp/gvmd_escalate_XXXXXX";
-  GError *error;
-  gsize pkcs12_len;
-
-  if ((report == NULL) || (ip == NULL) || (port == NULL))
-    return -1;
-
-  g_debug ("send to sourcefire: %s:%s", ip, port);
-  g_debug ("report: %s", report);
-
-  /* Setup files. */
-
-  if (mkdtemp (report_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      return -1;
-    }
-
-  report_file = g_strdup_printf ("%s/report.csv", report_dir);
-
-  error = NULL;
-  g_file_set_contents (report_file, report, strlen (report), &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      g_free (report_file);
-      return -1;
-    }
-
-  pkcs12_file = g_strdup_printf ("%s/pkcs12", report_dir);
-
-  if (strlen (pkcs12_64))
-    pkcs12 = (gchar*) g_base64_decode (pkcs12_64, &pkcs12_len);
-  else
-    {
-      pkcs12 = g_strdup ("");
-      pkcs12_len = 0;
-    }
-
-  error = NULL;
-  g_file_set_contents (pkcs12_file, pkcs12, pkcs12_len, &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      g_free (report_file);
-      g_free (pkcs12_file);
-      return -1;
-    }
-
-  clean_password = g_shell_quote (pkcs12_password ? pkcs12_password : "");
-
-  /* Setup file names. */
-
-  script_dir = g_build_filename (GVMD_DATA_DIR,
-                                 "global_alert_methods",
-                                 "cd1f5a34-6bdc-11e0-9827-002264764cea",
-                                 NULL);
-
-  script = g_build_filename (script_dir, "alert", NULL);
-
-  if (!gvm_file_is_readable (script))
-    {
-      g_free (report_file);
-      g_free (pkcs12_file);
-      g_free (clean_password);
-      g_free (script);
-      g_free (script_dir);
-      return -1;
-    }
-
-  {
-    gchar *command;
-    char *previous_dir;
-    int ret;
-
-    /* Change into the script directory. */
-
-    previous_dir = getcwd (NULL, 0);
-    if (previous_dir == NULL)
-      {
-        g_warning ("%s: Failed to getcwd: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (report_file);
-        g_free (pkcs12_file);
-        g_free (clean_password);
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-
-    if (chdir (script_dir))
-      {
-        g_warning ("%s: Failed to chdir: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (report_file);
-        g_free (pkcs12_file);
-        g_free (clean_password);
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-    g_free (script_dir);
-
-    /* Call the script. */
-
-    clean_ip = g_shell_quote (ip);
-    clean_port = g_shell_quote (port);
-
-    command = g_strdup_printf ("%s %s %s %s %s %s > /dev/null"
-                               " 2> /dev/null",
-                               script,
-                               clean_ip,
-                               clean_port,
-                               pkcs12_file,
-                               report_file,
-                               clean_password);
-    g_free (script);
-    g_free (clean_ip);
-    g_free (clean_port);
-    g_free (clean_password);
-
-    g_debug ("   command: %s", command);
-
-    if (geteuid () == 0)
-      {
-        pid_t pid;
-        struct passwd *nobody;
-
-        /* Run the command with lower privileges in a fork. */
-
-        nobody = getpwnam ("nobody");
-        if ((nobody == NULL)
-            || chown (report_dir, nobody->pw_uid, nobody->pw_gid)
-            || chown (report_file, nobody->pw_uid, nobody->pw_gid)
-            || chown (pkcs12_file, nobody->pw_uid, nobody->pw_gid))
-          {
-            g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __func__,
-                       strerror (errno));
-            g_free (report_file);
-            g_free (pkcs12_file);
-            g_free (previous_dir);
-            return -1;
-          }
-        g_free (report_file);
-        g_free (pkcs12_file);
-
-        pid = fork ();
-        switch (pid)
-          {
-          case 0:
-              {
-                /* Child.  Drop privileges, run command, exit. */
-                init_sentry ();
-                cleanup_manage_process (FALSE);
-
-                setproctitle ("Sending to Sourcefire");
-
-                if (setgroups (0,NULL))
-                  {
-                    g_warning ("%s (child): setgroups: %s",
-                               __func__, strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setgid (nobody->pw_gid))
-                  {
-                    g_warning ("%s (child): setgid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setuid (nobody->pw_uid))
-                  {
-                    g_warning ("%s (child): setuid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-
-                ret = system (command);
-                /* Ignore the shell command exit status, because we've not
-                 * specified what it must be in the past. */
-                if (ret == -1)
-                  {
-                    g_warning ("%s (child):"
-                               " system failed with ret %i, %i, %s",
-                               __func__,
-                               ret,
-                               WEXITSTATUS (ret),
-                               command);
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-
-                gvm_close_sentry ();
-                exit (EXIT_SUCCESS);
-              }
-
-          case -1:
-            /* Parent when error. */
-
-            g_warning ("%s: Failed to fork: %s",
-                       __func__,
-                       strerror (errno));
-            if (chdir (previous_dir))
-              g_warning ("%s: and chdir failed",
-                         __func__);
-            g_free (previous_dir);
-            g_free (command);
-            return -1;
-            break;
-
-          default:
-              {
-                int status;
-
-                /* Parent on success.  Wait for child, and check result. */
-
-
-                while (waitpid (pid, &status, 0) < 0)
-                  {
-                    if (errno == ECHILD)
-                      {
-                        g_warning ("%s: Failed to get child exit status",
-                                   __func__);
-                        if (chdir (previous_dir))
-                          g_warning ("%s: and chdir failed",
-                                     __func__);
-                        g_free (previous_dir);
-                        return -1;
-                      }
-                    if (errno == EINTR)
-                      continue;
-                    g_warning ("%s: wait: %s",
-                               __func__,
-                               strerror (errno));
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    g_free (command);
-                    return -1;
-                  }
-                if (WIFEXITED (status))
-                  switch (WEXITSTATUS (status))
-                    {
-                    case EXIT_SUCCESS:
-                      break;
-                    case EXIT_FAILURE:
-                    default:
-                      g_warning ("%s: child failed, %s",
-                                 __func__,
-                                 command);
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed",
-                                   __func__);
-                      g_free (previous_dir);
-                      g_free (command);
-                      return -1;
-                    }
-                else
-                  {
-                    g_warning ("%s: child failed, %s",
-                               __func__,
-                               command);
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    g_free (command);
-                    return -1;
-                  }
-
-                /* Child succeeded, continue to process result. */
-                g_free (command);
-                break;
-              }
-          }
-      }
-    else
-      {
-        /* Just run the command as the current user. */
-        g_free (report_file);
-        g_free (pkcs12_file);
-
-        ret = system (command);
-        /* Ignore the shell command exit status, because we've not
-         * specified what it must be in the past. */
-        if (ret == -1)
-          {
-            g_warning ("%s: system failed with ret %i, %i, %s",
-                       __func__,
-                       ret,
-                       WEXITSTATUS (ret),
-                       command);
-            if (chdir (previous_dir))
-              g_warning ("%s: and chdir failed",
-                         __func__);
-            g_free (previous_dir);
-            g_free (command);
-            return -1;
-          }
-
-        g_free (command);
-      }
-
-    /* Change back to the previous directory. */
-
-    if (chdir (previous_dir))
-      {
-        g_warning ("%s: Failed to chdir back: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (previous_dir);
-        return -1;
-      }
-    g_free (previous_dir);
-
-    /* Remove the directory. */
-
-    gvm_file_remove_recurse (report_dir);
-
-    return 0;
-  }
-}
-
-/**
- * @brief Send a report to a verinice.PRO server.
- *
- * @param[in]  url          URL of the server.
- * @param[in]  username     Username for server access.
- * @param[in]  password     Password for server access.
- * @param[in]  archive      Verinice archive that should be sent.
- * @param[in]  archive_size Size of the verinice archive
- *
- * @return 0 success, -1 error.
- */
-static int
-send_to_verinice (const char *url, const char *username, const char *password,
-                  const char *archive, int archive_size)
-{
-  gchar *script, *script_dir;
-  gchar *archive_file;
-  gchar *clean_url, *clean_username, *clean_password;
-  char archive_dir[] = "/tmp/gvmd_alert_XXXXXX";
-  GError *error;
-
-  if ((archive == NULL) || (url == NULL))
-    return -1;
-
-  g_debug ("send to verinice: %s", url);
-  g_debug ("archive: %s", archive);
-
-  /* Setup files. */
-
-  if (mkdtemp (archive_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      return -1;
-    }
-
-  archive_file = g_strdup_printf ("%s/archive.vna", archive_dir);
-
-  error = NULL;
-  g_file_set_contents (archive_file, archive, archive_size, &error);
-  if (error)
-    {
-      g_warning ("%s", error->message);
-      g_error_free (error);
-      g_free (archive_file);
-      return -1;
-    }
-
-  /* Setup file names. */
-  script_dir = g_build_filename (GVMD_DATA_DIR,
-                                 "global_alert_methods",
-                                 "f9d97653-f89b-41af-9ba1-0f6ee00e9c1a",
-                                 NULL);
-
-  script = g_build_filename (script_dir, "alert", NULL);
-
-  if (!gvm_file_is_readable (script))
-    {
-      g_warning ("%s: Failed to find alert script: %s",
-           __func__,
-           script);
-      g_free (archive_file);
-      g_free (script);
-      g_free (script_dir);
-      return -1;
-    }
-
-  {
-    gchar *command;
-    gchar *log_command; /* Command with password removed. */
-    char *previous_dir;
-    int ret;
-
-    /* Change into the script directory. */
-
-    previous_dir = getcwd (NULL, 0);
-    if (previous_dir == NULL)
-      {
-        g_warning ("%s: Failed to getcwd: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (archive_file);
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-
-    if (chdir (script_dir))
-      {
-        g_warning ("%s: Failed to chdir: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (archive_file);
-        g_free (previous_dir);
-        g_free (script);
-        g_free (script_dir);
-        return -1;
-      }
-    g_free (script_dir);
-
-    /* Call the script. */
-
-    clean_url = g_shell_quote (url);
-    clean_username = g_shell_quote (username);
-    clean_password = g_shell_quote (password);
-
-    command = g_strdup_printf ("%s %s %s %s %s > /dev/null"
-                               " 2> /dev/null",
-                               script,
-                               clean_url,
-                               clean_username,
-                               clean_password,
-                               archive_file);
-    log_command = g_strdup_printf ("%s %s %s ****** %s > /dev/null"
-                                   " 2> /dev/null",
-                                   script,
-                                   clean_url,
-                                   clean_username,
-                                   archive_file);
-    g_free (script);
-    g_free (clean_url);
-    g_free (clean_username);
-    g_free (clean_password);
-
-    g_debug ("   command: %s", log_command);
-
-    if (geteuid () == 0)
-      {
-        pid_t pid;
-        struct passwd *nobody;
-
-        /* Run the command with lower privileges in a fork. */
-
-        nobody = getpwnam ("nobody");
-        if ((nobody == NULL)
-            || chown (archive_dir, nobody->pw_uid, nobody->pw_gid)
-            || chown (archive_file, nobody->pw_uid, nobody->pw_gid))
-          {
-            g_warning ("%s: Failed to set permissions for user nobody: %s",
-                       __func__,
-                       strerror (errno));
-            g_free (previous_dir);
-            g_free (archive_file);
-            g_free (command);
-            g_free (log_command);
-            return -1;
-          }
-        g_free (archive_file);
-
-        pid = fork ();
-        switch (pid)
-          {
-          case 0:
-              {
-                /* Child.  Drop privileges, run command, exit. */
-                init_sentry ();
-                setproctitle ("Sending to Verinice");
-
-                cleanup_manage_process (FALSE);
-
-                if (setgroups (0,NULL))
-                  {
-                    g_warning ("%s (child): setgroups: %s",
-                               __func__, strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setgid (nobody->pw_gid))
-                  {
-                    g_warning ("%s (child): setgid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-                if (setuid (nobody->pw_uid))
-                  {
-                    g_warning ("%s (child): setuid: %s",
-                               __func__,
-                               strerror (errno));
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-
-                ret = system (command);
-                /* Ignore the shell command exit status, because we've not
-                 * specified what it must be in the past. */
-                if (ret == -1)
-                  {
-                    g_warning ("%s (child):"
-                               " system failed with ret %i, %i, %s",
-                               __func__,
-                               ret,
-                               WEXITSTATUS (ret),
-                               log_command);
-                    gvm_close_sentry ();
-                    exit (EXIT_FAILURE);
-                  }
-
-                gvm_close_sentry ();
-                exit (EXIT_SUCCESS);
-              }
-
-          case -1:
-            /* Parent when error. */
-
-            g_warning ("%s: Failed to fork: %s",
-                       __func__,
-                       strerror (errno));
-            if (chdir (previous_dir))
-              g_warning ("%s: and chdir failed",
-                         __func__);
-            g_free (previous_dir);
-            g_free (command);
-            g_free (log_command);
-            return -1;
-            break;
-
-          default:
-              {
-                int status;
-
-                /* Parent on success.  Wait for child, and check result. */
-
-                while (waitpid (pid, &status, 0) < 0)
-                  {
-                    if (errno == ECHILD)
-                      {
-                        g_warning ("%s: Failed to get child exit status",
-                                   __func__);
-                        if (chdir (previous_dir))
-                          g_warning ("%s: and chdir failed",
-                                     __func__);
-                        g_free (previous_dir);
-                        return -1;
-                      }
-                    if (errno == EINTR)
-                      continue;
-                    g_warning ("%s: wait: %s",
-                               __func__,
-                               strerror (errno));
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    return -1;
-                  }
-                if (WIFEXITED (status))
-                  switch (WEXITSTATUS (status))
-                    {
-                    case EXIT_SUCCESS:
-                      break;
-                    case EXIT_FAILURE:
-                    default:
-                      g_warning ("%s: child failed, %s",
-                                 __func__,
-                                 log_command);
-                      if (chdir (previous_dir))
-                        g_warning ("%s: and chdir failed",
-                                   __func__);
-                      g_free (previous_dir);
-                      return -1;
-                    }
-                else
-                  {
-                    g_warning ("%s: child failed, %s",
-                               __func__,
-                               log_command);
-                    if (chdir (previous_dir))
-                      g_warning ("%s: and chdir failed",
-                                 __func__);
-                    g_free (previous_dir);
-                    return -1;
-                  }
-
-                /* Child succeeded, continue to process result. */
-
-                break;
-              }
-          }
-      }
-    else
-      {
-        /* Just run the command as the current user. */
-        g_free (archive_file);
-
-        ret = system (command);
-        /* Ignore the shell command exit status, because we've not
-         * specified what it must be in the past. */
-        if (ret == -1)
-          {
-            g_warning ("%s: system failed with ret %i, %i, %s",
-                       __func__,
-                       ret,
-                       WEXITSTATUS (ret),
-                       log_command);
-            if (chdir (previous_dir))
-              g_warning ("%s: and chdir failed",
-                         __func__);
-            g_free (previous_dir);
-            g_free (command);
-            return -1;
-          }
-
-      }
-
-    g_free (command);
-    g_free (log_command);
-
-    /* Change back to the previous directory. */
-
-    if (chdir (previous_dir))
-      {
-        g_warning ("%s: Failed to chdir back: %s",
-                   __func__,
-                   strerror (errno));
-        g_free (previous_dir);
-        return -1;
-      }
-    g_free (previous_dir);
-
-    /* Remove the directory. */
-
-    gvm_file_remove_recurse (archive_dir);
-
-    return 0;
-  }
-}
-
-/**
- * @brief  Appends an XML fragment for vFire call input to a string buffer.
- *
- * @param[in]  key      The name of the key.
- * @param[in]  value    The value to add.
- * @param[in]  buffer   The string buffer to append to.
- *
- * @return  Always FALSE.
- */
-gboolean
-buffer_vfire_call_input (gchar *key, gchar *value, GString *buffer)
-{
-  xml_string_append (buffer,
-                     "<%s>%s</%s>",
-                     key, value, key);
-  return FALSE;
-}
-
-/**
- * @brief  Checks a mandatory vFire parameter and adds it to the config XML.
- *
- * @param[in]  param  The parameter to check.
- */
-#define APPEND_VFIRE_PARAM(param)                                             \
-  if (param)                                                                  \
-    xml_string_append (config_xml,                                            \
-                       "<" G_STRINGIFY(param) ">%s</" G_STRINGIFY(param) ">", \
-                       param);                                                \
-  else                                                                        \
-    {                                                                         \
-      if (message)                                                            \
-        *message = g_strdup ("Mandatory " G_STRINGIFY(param) " missing.");    \
-      g_warning ("%s: Missing " G_STRINGIFY(param) ".", __func__);        \
-      g_string_free (config_xml, TRUE);                                       \
-      return -1;                                                              \
-    }
-
-/**
- * @brief Create a new call on an Alemba vFire server.
- *
- * @param[in]  base_url       Base url of the vFire server.
- * @param[in]  client_id      The Alemba API Client ID to authenticate with.
- * @param[in]  session_type   Alemba session type to use, e.g. "Analyst".
- * @param[in]  username       Username.
- * @param[in]  password       Password.
- * @param[in]  report_data    Data for vFire call report attachments.
- * @param[in]  call_data      Data for creating the vFire call.
- * @param[in]  description_template  Template for the description text.
- * @param[out] message        Error message.
- *
- * @return 0 success, -1 error, -5 alert script failed.
- */
-static int
-send_to_vfire (const char *base_url, const char *client_id,
-               const char *session_type, const char *username,
-               const char *password, GPtrArray *report_data,
-               GTree *call_data, const char *description_template,
-               gchar **message)
-{
-  const char *alert_id = "159f79a5-fce8-4ec5-aa49-7d17a77739a3";
-  GString *config_xml;
-  int index;
-  char config_xml_filename[] = "/tmp/gvmd_vfire_data_XXXXXX.xml";
-  int config_xml_fd;
-  FILE *config_xml_file;
-  gchar **cmd;
-  gchar *alert_script;
-  int ret, exit_status;
-  GError *err;
-
-  config_xml = g_string_new ("<alert_data>");
-
-  // Mandatory parameters
-  APPEND_VFIRE_PARAM (base_url)
-  APPEND_VFIRE_PARAM (client_id)
-  APPEND_VFIRE_PARAM (username)
-  APPEND_VFIRE_PARAM (password)
-
-  // Optional parameters
-  xml_string_append (config_xml,
-                     "<session_type>%s</session_type>",
-                     session_type ? session_type : "Analyst");
-
-  // Call input
-  g_string_append (config_xml, "<call_input>");
-  g_tree_foreach (call_data, ((GTraverseFunc) buffer_vfire_call_input),
-                  config_xml);
-  g_string_append (config_xml, "</call_input>");
-
-  // Report data
-  g_string_append (config_xml, "<attach_reports>");
-  for (index = 0; index < report_data->len; index++)
-    {
-      alert_report_data_t *report_item;
-      report_item = g_ptr_array_index (report_data, index);
-
-      xml_string_append (config_xml,
-                         "<report>"
-                         "<src_path>%s</src_path>"
-                         "<dest_filename>%s</dest_filename>"
-                         "<content_type>%s</content_type>"
-                         "<report_format>%s</report_format>"
-                         "</report>",
-                         report_item->local_filename,
-                         report_item->remote_filename,
-                         report_item->content_type,
-                         report_item->report_format_name);
-
-    }
-  g_string_append (config_xml, "</attach_reports>");
-
-  // End data XML and output to file
-  g_string_append (config_xml, "</alert_data>");
-
-  config_xml_fd = g_mkstemp (config_xml_filename);
-  if (config_xml_fd == -1)
-    {
-      g_warning ("%s: Could not create alert script config file: %s",
-                 __func__, strerror (errno));
-      g_string_free (config_xml, TRUE);
-      return -1;
-    }
-
-  config_xml_file = fdopen (config_xml_fd, "w");
-  if (config_xml_file == NULL)
-    {
-      g_warning ("%s: Could not open alert script config file: %s",
-                 __func__, strerror (errno));
-      g_string_free (config_xml, TRUE);
-      close (config_xml_fd);
-      return -1;
-    }
-
-  if (fprintf (config_xml_file, "%s", config_xml->str) <= 0)
-    {
-      g_warning ("%s: Could not write alert script config file: %s",
-                 __func__, strerror (errno));
-      g_string_free (config_xml, TRUE);
-      fclose (config_xml_file);
-      return -1;
-    }
-
-  fflush (config_xml_file);
-  fclose (config_xml_file);
-  g_string_free (config_xml, TRUE);
-
-  // Run the script
-  alert_script = g_build_filename (GVMD_DATA_DIR,
-                                   "global_alert_methods",
-                                   alert_id,
-                                   "alert",
-                                   NULL);
-
-  // TODO: Drop privileges when running as root
-
-  cmd = (gchar **) g_malloc (3 * sizeof (gchar *));
-  cmd[0] = alert_script;
-  cmd[1] = config_xml_filename;
-  cmd[2] = NULL;
-
-  ret = 0;
-  if (g_spawn_sync (NULL,
-                    cmd,
-                    NULL,
-                    G_SPAWN_STDOUT_TO_DEV_NULL,
-                    NULL,
-                    NULL,
-                    NULL,
-                    message,
-                    &exit_status,
-                    &err) == FALSE)
-    {
-      g_warning ("%s: Failed to run alert script: %s",
-                 __func__, err->message);
-      ret = -1;
-    }
-
-  if (exit_status)
-    {
-      g_warning ("%s: Alert script exited with status %d",
-                 __func__, exit_status);
-      g_message ("%s: stderr: %s",
-                 __func__, message ? *message: "");
-      ret = -5;
-    }
-
-  // Cleanup
-  g_free (cmd);
-  g_free (alert_script);
-  g_unlink (config_xml_filename);
-
-  return ret;
-}
-
-/**
- * @brief Convert an XML report and send it to a TippingPoint SMS.
- *
- * @param[in]  report           Report to send.
- * @param[in]  report_size      Size of report.
- * @param[in]  username         Username.
- * @param[in]  password         Password.
- * @param[in]  hostname         Hostname.
- * @param[in]  certificate      Certificate.
- * @param[in]  cert_workaround  Whether to use cert workaround.
- * @param[out] message          Custom error message of the script.
- *
- * @return 0 success, -1 error.
- */
-static int
-send_to_tippingpoint (const char *report, size_t report_size,
-                      const char *username, const char *password,
-                      const char *hostname, const char *certificate,
-                      int cert_workaround, gchar **message)
-{
-  const char *alert_id = "5b39c481-9137-4876-b734-263849dd96ce";
-  char report_dir[] = "/tmp/gvmd_alert_XXXXXX";
-  gchar *auth_config, *report_path, *error_path, *extra_path, *cert_path;
-  gchar *command_args, *hostname_clean, *convert_script;
-  GError *error = NULL;
-  int ret;
-
-  /* Setup auth file contents */
-  auth_config = g_strdup_printf ("machine %s\n"
-                                 "login %s\n"
-                                 "password %s\n",
-                                 cert_workaround ? "Tippingpoint" : hostname,
-                                 username, password);
-
-  /* Setup common files. */
-  ret = alert_script_init ("report", report, report_size,
-                           auth_config, strlen (auth_config),
-                           report_dir,
-                           &report_path, &error_path, &extra_path);
-  g_free (auth_config);
-
-  if (ret)
-    return ret;
-
-  /* Setup certificate file */
-  cert_path = g_build_filename (report_dir, "cacert.pem", NULL);
-
-  if (g_file_set_contents (cert_path,
-                           certificate, strlen (certificate),
-                           &error) == FALSE)
-    {
-      g_warning ("%s: Failed to write TLS certificate to file: %s",
-                 __func__, error->message);
-      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
-      g_free (cert_path);
-      return -1;
-    }
-
-  if (geteuid () == 0)
-    {
-      struct passwd *nobody;
-
-      /* Run the command with lower privileges in a fork. */
-
-      nobody = getpwnam ("nobody");
-      if ((nobody == NULL)
-          || chown (cert_path, nobody->pw_uid, nobody->pw_gid))
-        {
-          g_warning ("%s: Failed to set permissions for user nobody: %s",
-                      __func__,
-                      strerror (errno));
-          g_free (cert_path);
-          alert_script_cleanup (report_dir, report_path, error_path,
-                                extra_path);
-          return -1;
-        }
-    }
-
-  /* Build args and run the script */
-  hostname_clean = g_shell_quote (hostname);
-  convert_script = g_build_filename (GVMD_DATA_DIR,
-                                     "global_alert_methods",
-                                     alert_id,
-                                     "report-convert.py",
-                                     NULL);
-
-  command_args = g_strdup_printf ("%s %s %d %s",
-                                  hostname_clean, cert_path, cert_workaround,
-                                  convert_script);
-
-  g_free (hostname_clean);
-  g_free (cert_path);
-  g_free (convert_script);
-
-  ret = alert_script_exec (alert_id, command_args, report_path, report_dir,
-                           error_path, extra_path, message);
-  if (ret)
-    {
-      alert_script_cleanup (report_dir, report_path, error_path, extra_path);
-      return ret;
-    }
-
-  /* Remove the directory. */
-  ret = alert_script_cleanup (report_dir, report_path, error_path, extra_path);
-  return ret;
-}
-
-/**
- * @brief Format string for simple notice alert email.
- */
-#define SIMPLE_NOTICE_FORMAT                                                  \
- "%s.\n"                                                                      \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is not configured to provide more details.\n"         \
- "Full details are stored on the scan engine.\n"                              \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
-
-/**
- * @brief Format string for simple notice alert email.
- */
-#define SECINFO_SIMPLE_NOTICE_FORMAT                                          \
- "%s.\n"                                                                      \
- "\n"                                                                         \
- "After the event %s,\n"                                                      \
- "the following condition was met: %s\n"                                      \
- "\n"                                                                         \
- "This email escalation is not configured to provide more details.\n"         \
- "Full details are stored on the scan engine.\n"                              \
- "\n"                                                                         \
- "\n"                                                                         \
- "Note:\n"                                                                    \
- "This email was sent to you as a configured security scan escalation.\n"     \
- "Please contact your local system administrator if you think you\n"          \
- "should not have received it.\n"
-
-/**
- * @brief Print an alert subject.
- *
- * @param[in]  subject     Format string for subject.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  alert       Alert.
- * @param[in]  task        Task.
- * @param[in]  total       Total number of resources (for SecInfo alerts).
- *
- * @return Freshly allocated subject.
- */
-static gchar *
-alert_subject_print (const gchar *subject, event_t event,
-                     const void *event_data,
-                     alert_t alert, task_t task, int total)
-{
-  int formatting;
-  const gchar *point, *end;
-  GString *new_subject;
-
-  assert (subject);
-
-  new_subject = g_string_new ("");
-  for (formatting = 0, point = subject, end = (subject + strlen (subject));
-       point < end;
-       point++)
-    if (formatting)
-      {
-        switch (*point)
-          {
-            case '$':
-              g_string_append_c (new_subject, '$');
-              break;
-            case 'd':
-              /* Date that the check was last performed. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                {
-                  char time_string[100];
-                  time_t date;
-                  struct tm tm;
-
-                  if (event_data && (strcasecmp (event_data, "nvt") == 0))
-                    date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
-                    date = scap_check_time ();
-                  else
-                    date = cert_check_time ();
-
-                  if (localtime_r (&date, &tm) == NULL)
-                    {
-                      g_warning ("%s: localtime failed, aborting",
-                                 __func__);
-                      abort ();
-                    }
-                  if (strftime (time_string, 98, "%F", &tm) == 0)
-                    break;
-                  g_string_append (new_subject, time_string);
-                }
-              break;
-            case 'e':
-              {
-                gchar *event_desc;
-                event_desc = event_description (event, event_data,
-                                                NULL);
-                g_string_append (new_subject, event_desc);
-                g_free (event_desc);
-                break;
-              }
-            case 'n':
-              {
-                if (task)
-                  {
-                    char *name = task_name (task);
-                    g_string_append (new_subject, name);
-                    free (name);
-                  }
-                break;
-              }
-            case 'N':
-              {
-                /* Alert Name */
-                char *name = alert_name (alert);
-                g_string_append (new_subject, name);
-                free (name);
-                break;
-              }
-            case 'q':
-              if (event == EVENT_NEW_SECINFO)
-                g_string_append (new_subject, "New");
-              else if (event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, "Updated");
-              break;
-            case 's':
-              /* Type. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name (event_data));
-              break;
-            case 'S':
-              /* Type, plural. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_subject, type_name_plural (event_data));
-              break;
-            case 'T':
-              g_string_append_printf (new_subject, "%i", total);
-              break;
-            case 'u':
-              {
-                /* Current user or owner of the Alert */
-                if (current_credentials.username
-                    && strcmp (current_credentials.username, ""))
-                  {
-                    g_string_append (new_subject, current_credentials.username);
-                  }
-                else
-                  {
-                    char *owner = alert_owner_uuid (alert);
-                    gchar *name = user_name (owner);
-                    g_string_append (new_subject, name);
-                    free (owner);
-                    g_free (name);
-                  }
-                break;
-              }
-            case 'U':
-              {
-                /* Alert UUID */
-                char *uuid = alert_uuid (alert);
-                g_string_append (new_subject, uuid);
-                free (uuid);
-                break;
-              }
-            default:
-              g_string_append_c (new_subject, '$');
-              g_string_append_c (new_subject, *point);
-              break;
-          }
-        formatting = 0;
-      }
-    else if (*point == '$')
-      formatting = 1;
-    else
-      g_string_append_c (new_subject, *point);
-
-  return g_string_free (new_subject, FALSE);
-}
-
-/**
- * @brief Print an alert message.
- *
- * @param[in]  message      Format string for message.
- * @param[in]  event        Event.
- * @param[in]  event_data   Event data.
- * @param[in]  task         Task.
- * @param[in]  alert        Alert.
- * @param[in]  condition    Alert condition.
- * @param[in]  format_name  Report format name.
- * @param[in]  filter       Filter.
- * @param[in]  term         Filter term.
- * @param[in]  zone         Timezone.
- * @param[in]  host_summary    Host summary.
- * @param[in]  content         The report, for inlining.
- * @param[in]  content_length  Length of content.
- * @param[in]  truncated       Whether the report was truncated.
- * @param[in]  total        Total number of resources (for SecInfo alerts).
- * @param[in]  max_length   Max allowed length of content.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-alert_message_print (const gchar *message, event_t event,
-                     const void *event_data, task_t task,
-                     alert_t alert, alert_condition_t condition,
-                     gchar *format_name, filter_t filter,
-                     const gchar *term, const gchar *zone,
-                     const gchar *host_summary, const gchar *content,
-                     gsize content_length, int truncated, int total,
-                     int max_length)
-{
-  int formatting;
-  const gchar *point, *end;
-  GString *new_message;
-
-  assert (message);
-
-  new_message = g_string_new ("");
-  for (formatting = 0, point = message, end = (message + strlen (message));
-       point < end;
-       point++)
-    if (formatting)
-      {
-        switch (*point)
-          {
-            case '$':
-              g_string_append_c (new_message, '$');
-              break;
-            case 'c':
-              {
-                gchar *condition_desc;
-                condition_desc = alert_condition_description
-                                  (condition, alert);
-                g_string_append (new_message, condition_desc);
-                g_free (condition_desc);
-                break;
-              }
-            case 'd':
-              /* Date that the check was last performed. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                {
-                  char time_string[100];
-                  time_t date;
-                  struct tm tm;
-
-                  if (event_data && (strcasecmp (event_data, "nvt") == 0))
-                    date = nvts_check_time ();
-                  else if (type_is_scap (event_data))
-                    date = scap_check_time ();
-                  else
-                    date = cert_check_time ();
-
-                  if (localtime_r (&date, &tm) == NULL)
-                    {
-                      g_warning ("%s: localtime failed, aborting",
-                                 __func__);
-                      abort ();
-                    }
-                  if (strftime (time_string, 98, "%F", &tm) == 0)
-                    break;
-                  g_string_append (new_message, time_string);
-                }
-              break;
-            case 'e':
-              {
-                gchar *event_desc;
-                event_desc = event_description (event, event_data,
-                                                NULL);
-                g_string_append (new_message, event_desc);
-                g_free (event_desc);
-                break;
-              }
-            case 'H':
-              {
-                /* Host summary. */
-
-                g_string_append (new_message,
-                                 host_summary ? host_summary : "N/A");
-                break;
-              }
-            case 'i':
-              {
-                if (content)
-                  {
-                    g_string_append_printf (new_message,
-                                            "%.*s",
-                                            /* Cast for 64 bit. */
-                                            (int) MIN (content_length,
-                                                       max_content_length),
-                                            content);
-                    if (content_length > max_content_length)
-                      g_string_append_printf (new_message,
-                                              "\n... (report truncated after"
-                                              " %i characters)\n",
-                                              max_content_length);
-                  }
-
-                break;
-              }
-            case 'n':
-              if (task)
-                {
-                  char *name = task_name (task);
-                  g_string_append (new_message, name);
-                  free (name);
-                }
-              break;
-            case 'N':
-              {
-                /* Alert Name */
-                char *name = alert_name (alert);
-                g_string_append (new_message, name);
-                free (name);
-                break;
-              }
-            case 'r':
-              {
-                /* Report format name. */
-
-                g_string_append (new_message,
-                                 format_name ? format_name : "N/A");
-                break;
-              }
-            case 'F':
-              {
-                /* Name of filter. */
-
-                if (filter)
-                  {
-                    char *name = filter_name (filter);
-                    g_string_append (new_message, name);
-                    free (name);
-                  }
-                else
-                  g_string_append (new_message, "N/A");
-                break;
-              }
-            case 'f':
-              {
-                /* Filter term. */
-
-                g_string_append (new_message, term ? term : "N/A");
-                break;
-              }
-            case 'q':
-              {
-                if (event == EVENT_NEW_SECINFO)
-                  g_string_append (new_message, "New");
-                else if (event == EVENT_UPDATED_SECINFO)
-                  g_string_append (new_message, "Updated");
-                break;
-              }
-            case 's':
-              /* Type. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name (event_data));
-              break;
-            case 'S':
-              /* Type, plural. */
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                g_string_append (new_message, type_name_plural (event_data));
-              break;
-            case 't':
-              {
-                if (truncated)
-                  g_string_append_printf (new_message,
-                                          "Note: This report exceeds the"
-                                          " maximum length of %i characters"
-                                          " and thus\n"
-                                          "was truncated.\n",
-                                          max_length);
-                break;
-              }
-            case 'T':
-              {
-                g_string_append_printf (new_message, "%i", total);
-                break;
-              }
-            case 'u':
-              {
-                /* Current user or owner of the Alert */
-                if (current_credentials.username
-                    && strcmp (current_credentials.username, ""))
-                  {
-                    g_string_append (new_message, current_credentials.username);
-                  }
-                else
-                  {
-                    char *owner = alert_owner_uuid (alert);
-                    gchar *name = user_name (owner);
-                    g_string_append (new_message, name);
-                    free (owner);
-                    g_free (name);
-                  }
-                break;
-              }
-            case 'U':
-              {
-                /* Alert UUID */
-                char *uuid = alert_uuid (alert);
-                g_string_append (new_message, uuid);
-                free (uuid);
-                break;
-              }
-            case 'z':
-              {
-                /* Timezone. */
-
-                g_string_append (new_message, zone ? zone : "N/A");
-                break;
-              }
-
-            case 'R':
-            default:
-              g_string_append_c (new_message, '$');
-              g_string_append_c (new_message, *point);
-              break;
-          }
-        formatting = 0;
-      }
-    else if (*point == '$')
-      formatting = 1;
-    else
-      g_string_append_c (new_message, *point);
-
-  return g_string_free (new_message, FALSE);
-}
-
-/**
- * @brief Print an SCP alert file path.
- *
- * @param[in]  message      Format string for message.
- * @param[in]  task         Task.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-scp_alert_path_print (const gchar *message, task_t task)
-{
-  int formatting;
-  const gchar *point, *end;
-  GString *new_message;
-
-  assert (message);
-
-  new_message = g_string_new ("");
-  for (formatting = 0, point = message, end = (message + strlen (message));
-       point < end;
-       point++)
-    if (formatting)
-      {
-        switch (*point)
-          {
-            case '$':
-              g_string_append_c (new_message, '$');
-              break;
-            case 'D':
-            case 'T':
-              {
-                char time_string[9];
-                time_t current_time;
-                struct tm tm;
-                const gchar *format_str;
-
-                if (*point == 'T')
-                  format_str = "%H%M%S";
-                else
-                  format_str = "%Y%m%d";
-
-                memset(&time_string, 0, 9);
-                current_time = time (NULL);
-
-                if (localtime_r (&current_time, &tm) == NULL)
-                  {
-                    g_warning ("%s: localtime failed, aborting",
-                                __func__);
-                    abort ();
-                  }
-                if (strftime (time_string, 9, format_str, &tm))
-                  g_string_append (new_message, time_string);
-                break;
-              }
-            case 'n':
-              if (task)
-                {
-                  char *name = task_name (task);
-                  g_string_append (new_message, name);
-                  free (name);
-                }
-              break;
-          }
-        formatting = 0;
-      }
-    else if (*point == '$')
-      formatting = 1;
-    else
-      g_string_append_c (new_message, *point);
-
-  return g_string_free (new_message, FALSE);
-}
-
-/**
- * @brief Build and send email for a ticket alert.
- *
- * @param[in]  alert       Alert.
- * @param[in]  ticket      Ticket.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  method      Method from alert.
- * @param[in]  condition   Condition from alert, which was met by event.
- * @param[in]  to_address    To address.
- * @param[in]  from_address  From address.
- * @param[in]  subject       Subject.
- *
- * @return 0 success, -1 error.
- */
-static int
-email_ticket (alert_t alert, ticket_t ticket, event_t event,
-              const void* event_data, alert_method_t method,
-              alert_condition_t condition, const gchar *to_address,
-              const gchar *from_address, const gchar *subject)
-{
-  gchar *full_subject, *body;
-  char *recipient_credential_id;
-  credential_t recipient_credential;
-  int ret;
-
-  /* Setup subject. */
-
-  full_subject = g_strdup_printf ("%s: %s (UUID: %s)",
-                                  subject,
-                                  ticket_nvt_name (ticket)
-                                   ? ticket_nvt_name (ticket)
-                                   : "[Orphan]",
-                                  ticket_uuid (ticket));
-
-  /* Setup body. */
-
-  {
-    gchar *event_desc, *condition_desc;
-
-    event_desc = event_description (event, event_data, NULL);
-    condition_desc = alert_condition_description
-                      (condition, alert);
-    body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
-                            event_desc,
-                            event_desc,
-                            condition_desc);
-    free (event_desc);
-    free (condition_desc);
-  }
-
-  /* Get credential */
-  recipient_credential_id = alert_data (alert, "method",
-                                        "recipient_credential");
-  recipient_credential = 0;
-  if (recipient_credential_id)
-    {
-      find_credential_with_permission (recipient_credential_id,
-                                       &recipient_credential, NULL);
-    }
-
-  /* Send email. */
-
-  ret = email (to_address, from_address, full_subject,
-               body, NULL, NULL, NULL, NULL,
-               recipient_credential);
-  g_free (body);
-  g_free (full_subject);
-  free (recipient_credential_id);
-  return ret;
-}
-
-/**
- * @brief Build and send email for SecInfo alert.
- *
- * @param[in]  alert       Alert.
- * @param[in]  task        Task.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  method      Method from alert.
- * @param[in]  condition   Condition from alert, which was met by event.
- * @param[in]  to_address    To address.
- * @param[in]  from_address  From address.
- *
- * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter.
- */
-static int
-email_secinfo (alert_t alert, task_t task, event_t event,
-               const void* event_data, alert_method_t method,
-               alert_condition_t condition, const gchar *to_address,
-               const gchar *from_address)
-{
-  gchar *alert_subject, *message, *subject, *example, *list, *type, *base64;
-  gchar *term, *body;
-  char *notice, *recipient_credential_id, *condition_filter_id;
-  filter_t condition_filter;
-  credential_t recipient_credential;
-  int ret, count;
-
-  list = new_secinfo_list (event, event_data, alert, &count);
-
-  type = g_strdup (event_data);
-  if (type && (example = strstr (type, "_example")))
-    example[0] = '\0';
-
-  /* Setup subject. */
-
-  subject = g_strdup_printf
-             ("[GVM] %s %s arrived",
-              event == EVENT_NEW_SECINFO ? "New" : "Updated",
-              type_name_plural (type ? type : "nvt"));
-  alert_subject = alert_data (alert, "method", "subject");
-  if (alert_subject && strlen (alert_subject))
-    {
-      g_free (subject);
-      subject = alert_subject_print (alert_subject, event,
-                                     type, alert, task, count);
-    }
-  g_free (alert_subject);
-
-  /* Setup body. */
-
-  notice = alert_data (alert, "method", "notice");
-
-  message = alert_data (alert, "method", "message");
-  if (message == NULL || strlen (message) == 0)
-    {
-      g_free (message);
-      if (notice && strcmp (notice, "0") == 0)
-        /* Message with inlined report. */
-        message = g_strdup (SECINFO_ALERT_MESSAGE_INCLUDE);
-      else if (notice && strcmp (notice, "2") == 0)
-        /* Message with attached report. */
-        message = g_strdup (SECINFO_ALERT_MESSAGE_ATTACH);
-      else
-        /* Simple notice message. */
-        message = NULL;
-    }
-
-  base64 = NULL;
-  if (list && notice && strcmp (notice, "2") == 0)
-    {
-      /* Add list as text attachment. */
-      if (max_attach_length <= 0
-          || strlen (list) <= max_attach_length)
-        base64 = g_base64_encode ((guchar*) list,
-                                  strlen (list));
-    }
-
-  condition_filter = 0;
-  term = NULL;
-  condition_filter_id = alert_data (alert, "condition", "filter_id");
-  if (condition_filter_id)
-    {
-      gchar *quoted_filter_id;
-      quoted_filter_id = sql_quote (condition_filter_id);
-      sql_int64 (&condition_filter,
-                 "SELECT id FROM filters WHERE uuid = '%s'",
-                 quoted_filter_id);
-      term = filter_term (condition_filter_id);
-      g_free (quoted_filter_id);
-    }
-  free (condition_filter_id);
-
-  if (message && strlen (message))
-    body = alert_message_print (message, event, type,
-                                task, alert, condition,
-                                NULL, condition_filter, term, NULL, NULL,
-                                list,
-                                list ? strlen (list) : 0,
-                                0, count, 0);
-  else
-    {
-      gchar *event_desc, *condition_desc;
-      event_desc = event_description (event, event_data, NULL);
-      condition_desc = alert_condition_description
-                        (condition, alert);
-      body = g_strdup_printf (SECINFO_SIMPLE_NOTICE_FORMAT,
-                              event_desc,
-                              event_desc,
-                              condition_desc);
-      free (event_desc);
-      free (condition_desc);
-    }
-
-  g_free (term);
-  g_free (message);
-  g_free (list);
-
-  /* Get credential */
-  recipient_credential_id = alert_data (alert, "method",
-                                        "recipient_credential");
-  recipient_credential = 0;
-  if (recipient_credential_id)
-    {
-      find_credential_with_permission (recipient_credential_id,
-                                       &recipient_credential, NULL);
-    }
-
-  /* Send email. */
-
-  ret = email (to_address, from_address, subject,
-               body, base64,
-               base64 ? "text/plain" : NULL,
-               base64 ? "secinfo-alert" : NULL,
-               base64 ? "txt" : NULL,
-               recipient_credential);
-  g_free (body);
-  g_free (type);
-  g_free (subject);
-  free (recipient_credential_id);
-  return ret;
-}
-
-/**
- * @brief Get the delta report to be used for an alert.
- *
- * @param[in]  alert         Alert.
- * @param[in]  task          Task.
- * @param[in]  report        Report.
- *
- * @return Report to compare with if required, else 0.
- */
-static report_t
-get_delta_report (alert_t alert, task_t task, report_t report)
-{
-  char *delta_type;
-  report_t delta_report;
-
-  delta_type = alert_data (alert,
-                           "method",
-                           "delta_type");
-
-  if (delta_type == NULL)
-    return 0;
-
-  delta_report = 0;
-  if (strcmp (delta_type, "Previous") == 0)
-    {
-      if (task_report_previous (task, report, &delta_report))
-        g_warning ("%s: failed to get previous report", __func__);
-    }
-  else if (strcmp (delta_type, "Report") == 0)
-    {
-      char *delta_report_id;
-
-      delta_report_id = alert_data (alert,
-                                    "method",
-                                    "delta_report_id");
-
-      if (delta_report_id
-          && find_report_with_permission (delta_report_id,
-                                          &delta_report,
-                                          "get_reports"))
-        g_warning ("%s: error while finding report", __func__);
-    }
-  free (delta_type);
-
-  return delta_report;
-}
-
-/**
- * @brief  Generates report results get data for an alert.
- *
- * @param[in]  alert              The alert to try to get the filter data from.
- * @param[in]  base_get_data      The get data for fallback and other data.
- * @param[out] alert_filter_get   Pointer to the newly allocated get_data.
- * @param[out] filter_return      Pointer to the filter.
- *
- * @return  0 success, -1 error, -3 filter not found.
- */
-static int
-generate_alert_filter_get (alert_t alert, const get_data_t *base_get_data,
-                           get_data_t **alert_filter_get,
-                           filter_t *filter_return)
-{
-  char *ignore_pagination;
-  char *filt_id;
-  filter_t filter;
-
-  if (alert_filter_get == NULL)
-    return -1;
-
-  filt_id = alert_filter_id (alert);
-  filter = 0;
-  if (filt_id)
-    {
-      if (find_filter_with_permission (filt_id, &filter,
-                                       "get_filters"))
-        {
-          free (filt_id);
-          return -1;
-        }
-      if (filter == 0)
-        {
-          free (filt_id);
-          return -3;
-        }
-    }
-
-  if (filter_return)
-    *filter_return = filter;
-
-  (*alert_filter_get) = g_malloc0 (sizeof (get_data_t));
-  (*alert_filter_get)->details = base_get_data->details;
-  (*alert_filter_get)->ignore_pagination = base_get_data->ignore_pagination;
-  (*alert_filter_get)->ignore_max_rows_per_page
-    = base_get_data->ignore_max_rows_per_page;
-
-  if (filter)
-    {
-      (*alert_filter_get)->filt_id = g_strdup (filt_id);
-      (*alert_filter_get)->filter = filter_term (filt_id);
-    }
-  else
-    {
-      (*alert_filter_get)->filt_id = NULL;
-      (*alert_filter_get)->filter = g_strdup (base_get_data->filter);
-    }
-
-  /* Adjust filter for report composer.
-   *
-   * As a first step towards a full composer we have two fields stored
-   * on the alert for controlling visibility of notes and overrides.
-   *
-   * We simply use these fields to adjust the filter.  In the future we'll
-   * remove the filter terms and extend the way we get the report. */
-
-  gchar *include_notes, *include_overrides;
-
-  ignore_pagination = alert_data (alert, "method",
-                                  "composer_ignore_pagination");
-  if (ignore_pagination)
-    {
-      (*alert_filter_get)->ignore_pagination = atoi (ignore_pagination);
-      g_free (ignore_pagination);
-    }
-
-  include_notes = alert_data (alert, "method",
-                              "composer_include_notes");
-  if (include_notes)
-    {
-      gchar *new_filter;
-
-      new_filter = g_strdup_printf ("notes=%i %s",
-                                    atoi (include_notes),
-                                    (*alert_filter_get)->filter);
-      g_free ((*alert_filter_get)->filter);
-      (*alert_filter_get)->filter = new_filter;
-      (*alert_filter_get)->filt_id = NULL;
-      g_free (include_notes);
-    }
-
-  include_overrides = alert_data (alert, "method",
-                                  "composer_include_overrides");
-  if (include_overrides)
-    {
-      gchar *new_filter;
-
-      new_filter = g_strdup_printf ("overrides=%i %s",
-                                    atoi (include_overrides),
-                                    (*alert_filter_get)->filter);
-      g_free ((*alert_filter_get)->filter);
-      (*alert_filter_get)->filter = new_filter;
-      (*alert_filter_get)->filt_id = NULL;
-      g_free (include_overrides);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Generate report content for alert
- *
- * @param[in]  alert  The alert the report is generated for.
- * @param[in]  report Report or NULL to get last report of task.
- * @param[in]  task   Task the report belongs to.
- * @param[in]  get    GET data for the report.
- * @param[in]  report_format_data_name  Name of alert data with report format,
- *                                      or NULL if not configurable.
- * @param[in]  report_format_lookup     Name of report format to lookup if
- *                                      lookup by name, or NULL if not required.
- *                                      Used if report_format_data_name is
- *                                      NULL or fails.
- * @param[in]  fallback_format_id       UUID of fallback report format.  Used
- *                                      if both report_format_data_name and
- *                                      report_format_lookup are NULL or fail.
- * @param[in]  notes_details     Whether to include details of notes in report.
- * @param[in]  overrides_details Whether to include override details in report.
- * @param[out] content              Report content location.
- * @param[out] content_length       Length of report content.
- * @param[out] extension            File extension of report format.
- * @param[out] content_type         Content type of report format.
- * @param[out] term                 Filter term.
- * @param[out] report_zone          Actual timezone used in report.
- * @param[out] host_summary         Summary of results per host.
- * @param[out] used_report_format   Report format used.
- * @param[out] filter_return        Filter used.
- *
- * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter.
- */
-static int
-report_content_for_alert (alert_t alert, report_t report, task_t task,
-                          const get_data_t *get,
-                          const char *report_format_data_name,
-                          const char *report_format_lookup,
-                          const char *fallback_format_id,
-                          int notes_details, int overrides_details,
-                          gchar **content, gsize *content_length,
-                          gchar **extension, gchar **content_type,
-                          gchar **term, gchar **report_zone,
-                          gchar **host_summary,
-                          report_format_t *used_report_format,
-                          filter_t *filter_return)
-{
-  int ret;
-  report_format_t report_format;
-  gboolean report_format_is_fallback = FALSE;
-  report_config_t report_config;
-  get_data_t *alert_filter_get;
-  gchar *report_content;
-  filter_t filter;
-
-  assert (content);
-
-  // Get filter
-
-  ret = generate_alert_filter_get (alert, get, &alert_filter_get, &filter);
-  if (ret)
-    return ret;
-
-  // Get last report from task if no report is given
-
-  if (report == 0)
-    switch (sql_int64 (&report,
-                        "SELECT max (id) FROM reports"
-                        " WHERE task = %llu",
-                        task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-      }
-
-  // Get report format or use fallback.
-
-  report_format = 0;
-
-  if (report_format_data_name)
-    {
-      gchar *format_uuid;
-
-      format_uuid = alert_data (alert,
-                                "method",
-                                report_format_data_name);
-
-      if (format_uuid && strlen (format_uuid))
-        {
-          if (find_report_format_with_permission (format_uuid,
-                                                  &report_format,
-                                                  "get_report_formats")
-              || (report_format == 0))
-            {
-              g_warning ("%s: Could not find report format '%s' for %s",
-                         __func__, format_uuid,
-                         alert_method_name (alert_method (alert)));
-              g_free (format_uuid);
-              if (alert_filter_get)
-                {
-                  get_data_reset (alert_filter_get);
-                  g_free (alert_filter_get);
-                }
-              return -2;
-            }
-          g_free (format_uuid);
-        }
-    }
-
-  if (report_format_lookup && (report_format == 0))
-    {
-      if (lookup_report_format (report_format_lookup, &report_format)
-          || (report_format == 0))
-        {
-          g_warning ("%s: Could not find report format '%s' for %s",
-                     __func__, report_format_lookup,
-                     alert_method_name (alert_method (alert)));
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -2;
-        }
-    }
-
-  if (report_format == 0)
-    {
-      if (fallback_format_id == NULL)
-        {
-          g_warning ("%s: No fallback report format for %s",
-                     __func__,
-                     alert_method_name (alert_method (alert)));
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -1;
-        }
-
-      report_format_is_fallback = TRUE;
-
-      if (find_report_format_with_permission
-            (fallback_format_id,
-             &report_format,
-             "get_report_formats")
-          || (report_format == 0))
-        {
-          g_warning ("%s: Could not find fallback RFP '%s' for %s",
-                      __func__, fallback_format_id,
-                     alert_method_name (alert_method (alert)));
-          if (alert_filter_get)
-            {
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-            }
-          return -2;
-        }
-    }
-
-  // Get report config
-
-  if (report_format_is_fallback)
-    {
-      // Config would only be valid for the original report format
-      report_config = 0;
-    }
-  else
-    {
-      // TODO: Get report config from alert
-      report_config = 0;
-    }
-
-  // Generate report content
-
-  report_content = manage_report (report,
-                                  get_delta_report (alert, task, report),
-                                  alert_filter_get ? alert_filter_get : get,
-                                  report_format,
-                                  report_config,
-                                  notes_details,
-                                  overrides_details,
-                                  content_length,
-                                  extension,
-                                  content_type,
-                                  term,
-                                  report_zone,
-                                  host_summary);
-
-  if (alert_filter_get)
-    {
-      get_data_reset (alert_filter_get);
-      g_free (alert_filter_get);
-    }
-
-  if (report_content == NULL)
-    return -1;
-
-  *content = report_content;
-  *used_report_format = report_format;
-
-  return 0;
-}
-
-/**
- * @brief  Generates a filename or path for a report.
- *
- * If no custom_format is given, the setting "Report Export File Name"
- *  is used instead.
- *
- * @param[in]  report         The report to generate the filename for.
- * @param[in]  report_format  The report format to use.
- * @param[in]  custom_format  A custom format string to use for the filename.
- * @param[in]  add_extension  Whether to add the filename extension or not.
- *
- * @return  Newly allocated filename.
- */
-static gchar *
-generate_report_filename (report_t report, report_format_t report_format,
-                          const char *custom_format, gboolean add_extension)
-{
-  task_t task;
-  char *fname_format, *report_id, *creation_time, *modification_time;
-  char *report_task_name, *rf_name;
-  gchar *filename_base, *filename;
-
-  if (custom_format && strcmp (custom_format, ""))
-    fname_format = g_strdup (custom_format);
-  else
-    fname_format
-      = sql_string ("SELECT value FROM settings"
-                    " WHERE name"
-                    "       = 'Report Export File Name'"
-                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                    " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                    current_credentials.uuid);
-
-  report_id = report_uuid (report);
-
-  creation_time
-    = sql_string ("SELECT iso_time (creation_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
-
-  modification_time
-    = sql_string ("SELECT iso_time (modification_time)"
-                  " FROM reports"
-                  " WHERE id = %llu",
-                  report);
-
-  report_task (report, &task);
-  report_task_name = task_name (task);
-
-  rf_name = report_format ? report_format_name (report_format)
-                          : g_strdup ("unknown");
-
-  filename_base
-    = gvm_export_file_name (fname_format,
-                            current_credentials.username,
-                            "report", report_id,
-                            creation_time, modification_time,
-                            report_task_name, rf_name);
-
-  if (add_extension && report_format)
-    {
-      gchar *extension;
-      extension = report_format_extension (report_format);
-      filename = g_strdup_printf ("%s.%s", filename_base, extension);
-      free (extension);
-    }
-  else
-    filename = g_strdup (filename_base);
-
-  free (fname_format);
-  free (report_id);
-  free (creation_time);
-  free (modification_time);
-  free (report_task_name);
-  free (rf_name);
-  g_free (filename_base);
-
-  return filename;
-}
-
-/**
- * @brief Escalate an event.
- *
- * @param[in]  alert       Alert.
- * @param[in]  task        Task.
- * @param[in]  report      Report.  0 for most recent report.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  method      Method from alert.
- * @param[in]  condition   Condition from alert, which was met by event.
- * @param[in]  get         GET data for report.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[out] script_message  Custom error message from the script.
- *
- * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter, -4 failed to find credential, -5 alert script failed.
- */
-static int
-escalate_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
-                   const void* event_data, alert_method_t method,
-                   alert_condition_t condition, const get_data_t *get,
-                   int notes_details, int overrides_details,
-                   gchar **script_message)
-{
-  int ret;
-  char *credential_id;
-  get_data_t *alert_filter_get;
-  filter_t filter;
-  credential_t credential;
-  char *base_url, *session_type, *client_id, *username, *password;
-  char *report_formats_str;
-  gchar **report_formats, **point;
-  char reports_dir[] = "/tmp/gvmd_XXXXXX";
-  gboolean is_first_report = TRUE;
-  GString *format_names;
-  GPtrArray *reports;
-  char *report_zone;
-  gchar *host_summary;
-  iterator_t data_iterator;
-  GTree *call_input;
-  char *description_template;
-  int name_offset;
-
-  if ((event == EVENT_TICKET_RECEIVED)
-      || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-      || (event == EVENT_OWNED_TICKET_CHANGED))
-    {
-      g_warning ("%s: Ticket events with method"
-                 " \"Alemba vFire\" not support",
-                 __func__);
-      return -1;
-    }
-
-  // Get report
-  if (report == 0)
-    switch (sql_int64 (&report,
-                       "SELECT max (id) FROM reports"
-                       " WHERE task = %llu",
-                       task))
-      {
-        case 0:
-          if (report)
-            break;
-        case 1:        /* Too few rows in result of query. */
-        case -1:
-          return -1;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-          return -1;
-      }
-
-  // Get report results filter and corresponding get data
-  alert_filter_get = NULL;
-  ret = generate_alert_filter_get (alert, get, &alert_filter_get, &filter);
-  if (ret)
-    return ret;
-
-  // Generate reports
-  if (mkdtemp (reports_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      get_data_reset (alert_filter_get);
-      g_free (alert_filter_get);
-      return -1;
-    }
-
-  reports = g_ptr_array_new_full (0, (GDestroyNotify) alert_report_data_free);
-  report_formats_str = alert_data (alert, "method", "report_formats");
-  report_formats = g_strsplit_set (report_formats_str, ",", 0);
-  point = report_formats;
-  free (report_formats_str);
-
-  report_zone = NULL;
-  host_summary = NULL;
-  format_names = g_string_new ("");
-  while (*point)
-    {
-      gchar *report_format_id;
-      report_format_t report_format;
-      report_config_t report_config;
-
-      report_format_id = g_strstrip (*point);
-      find_report_format_with_permission (report_format_id,
-                                          &report_format,
-                                          "get_report_formats");
-
-      // TODO: Add option to set report configs
-      report_config = 0;
-
-      if (report_format)
-        {
-          alert_report_data_t *alert_report_item;
-          size_t content_length;
-          gchar *report_content;
-          GError *error = NULL;
-
-          alert_report_item = g_malloc0 (sizeof (alert_report_data_t));
-
-          report_content = manage_report (report,
-                                          get_delta_report
-                                            (alert, task, report),
-                                          alert_filter_get
-                                            ? alert_filter_get
-                                            : get,
-                                          report_format,
-                                          report_config,
-                                          notes_details,
-                                          overrides_details,
-                                          &content_length,
-                                          NULL /* extension */,
-                                          &(alert_report_item->content_type),
-                                          NULL /* term */,
-                                          is_first_report
-                                            ? &report_zone
-                                            : NULL,
-                                          is_first_report
-                                            ? &host_summary
-                                            : NULL);
-          if (report_content == NULL)
-            {
-              g_warning ("%s: Failed to generate report", __func__);
-
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-              alert_report_data_free (alert_report_item);
-              g_strfreev (report_formats);
-              return -1;
-            }
-
-          alert_report_item->report_format_name
-            = report_format_name (report_format);
-
-          if (is_first_report == FALSE)
-            g_string_append (format_names, ", ");
-          g_string_append (format_names,
-                           alert_report_item->report_format_name);
-
-          alert_report_item->remote_filename
-            = generate_report_filename (report, report_format, NULL, TRUE);
-
-          alert_report_item->local_filename
-            = g_build_filename (reports_dir,
-                                alert_report_item->remote_filename,
-                                NULL);
-
-          g_file_set_contents (alert_report_item->local_filename,
-                               report_content, content_length,
-                               &error);
-          g_free (report_content);
-          if (error)
-            {
-              g_warning ("%s: Failed to write report to %s: %s",
-                         __func__,
-                         alert_report_item->local_filename,
-                         error->message);
-
-              get_data_reset (alert_filter_get);
-              g_free (alert_filter_get);
-              alert_report_data_free (alert_report_item);
-              g_strfreev (report_formats);
-              return -1;
-            }
-          g_ptr_array_add (reports, alert_report_item);
-          is_first_report = FALSE;
-        }
-
-      point ++;
-    }
-  g_strfreev (report_formats);
-
-  // Find vFire credential
-  credential_id = alert_data (alert, "method",
-                              "vfire_credential");
-  if (find_credential_with_permission (credential_id, &credential,
-                                       "get_credentials"))
-    {
-      get_data_reset (alert_filter_get);
-      g_free (alert_filter_get);
-      free (credential_id);
-      return -1;
-    }
-  else if (credential == 0)
-    {
-      get_data_reset (alert_filter_get);
-      g_free (alert_filter_get);
-      free (credential_id);
-      return -4;
-    }
-
-  // vFire General data
-  base_url = alert_data (alert, "method",
-                          "vfire_base_url");
-
-  // vFire Login data
-  session_type = alert_data (alert, "method", "vfire_session_type");
-  client_id = alert_data (alert, "method", "vfire_client_id");
-
-  username = credential_value (credential, "username");
-  password = credential_encrypted_value (credential, "password");
-
-  // Call input data
-  call_input = g_tree_new_full ((GCompareDataFunc) g_strcmp0,
-                                NULL, g_free, g_free);
-  name_offset = strlen ("vfire_call_");
-  init_iterator (&data_iterator,
-                 "SELECT name, data"
-                 " FROM alert_method_data"
-                 " WHERE alert = %llu"
-                 " AND name %s 'vfire_call_%%';",
-                 alert, sql_ilike_op ());
-
-  while (next (&data_iterator))
-    {
-      gchar *name, *value;
-      name = g_strdup (iterator_string (&data_iterator, 0)
-                        + name_offset);
-      value = g_strdup (iterator_string (&data_iterator, 1));
-
-      g_tree_replace (call_input, name, value);
-    }
-  cleanup_iterator (&data_iterator);
-
-  // Special case for descriptionterm
-  description_template = alert_data (alert, "method",
-                                     "vfire_call_description");
-  if (description_template == NULL)
-    description_template = g_strdup (ALERT_VFIRE_CALL_DESCRIPTION);
-
-  gchar *description;
-  description = alert_message_print (description_template,
-                                     event,
-                                     event_data,
-                                     task,
-                                     alert,
-                                     condition,
-                                     format_names->str,
-                                     filter,
-                                     alert_filter_get
-                                       ? alert_filter_get->filter
-                                       : (get->filter ? get->filter : ""),
-                                     report_zone,
-                                     host_summary,
-                                     NULL,
-                                     0,
-                                     0,
-                                     0,
-                                     max_attach_length);
-
-  g_tree_replace (call_input,
-                  g_strdup ("description"),
-                  description);
-
-  // Create vFire ticket
-  ret = send_to_vfire (base_url, client_id, session_type, username,
-                       password, reports, call_input, description_template,
-                       script_message);
-
-  // Cleanup
-  gvm_file_remove_recurse (reports_dir);
-
-  if (alert_filter_get)
-    {
-      get_data_reset (alert_filter_get);
-      g_free (alert_filter_get);
-    }
-  free (base_url);
-  free (session_type);
-  free (client_id);
-  free (username);
-  free (password);
-  g_ptr_array_free (reports, TRUE);
-  g_tree_destroy (call_input);
-  free (description_template);
-
-  return ret;
-}
-
-/**
- * @brief Escalate an event.
- *
- * @param[in]  alert   Alert.
- * @param[in]  task        Task.
- * @param[in]  report      Report.  0 for most recent report.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  method      Method from alert.
- * @param[in]  condition   Condition from alert, which was met by event.
- * @param[in]  get         GET data for report.
- * @param[in]  notes_details      If notes, Whether to include details.
- * @param[in]  overrides_details  If overrides, Whether to include details.
- * @param[out] script_message  Custom error message from the script.
- *
- * @return 0 success, -1 error, -2 failed to find report format, -3 failed to
- *         find filter, -4 failed to find credential, -5 alert script failed.
- */
-static int
-escalate_2 (alert_t alert, task_t task, report_t report, event_t event,
-            const void* event_data, alert_method_t method,
-            alert_condition_t condition,
-            const get_data_t *get, int notes_details, int overrides_details,
-            gchar **script_message)
-{
-  if (script_message)
-    *script_message = NULL;
-
-  {
-    char *name_alert;
-    gchar *event_desc, *alert_desc;
-
-    name_alert = alert_name (alert);
-    event_desc = event_description (event, event_data, NULL);
-    alert_desc = alert_condition_description (condition, alert);
-    g_log ("event alert", G_LOG_LEVEL_MESSAGE,
-           "The alert %s was triggered "
-           "(Event: %s, Condition: %s)",
-           name_alert,
-           event_desc,
-           alert_desc);
-    free (name_alert);
-    free (event_desc);
-    free (alert_desc);
-  }
-
-  switch (method)
-    {
-      case ALERT_METHOD_EMAIL:
-        {
-          char *to_address;
-          char *format_name;
-          format_name = NULL;
-
-          to_address = alert_data (alert, "method", "to_address");
-
-          if (to_address)
-            {
-              int ret;
-              gchar *body, *subject;
-              char *name, *notice, *from_address;
-              gchar *base64, *type, *extension;
-
-              base64 = NULL;
-              type = NULL;
-              extension = NULL;
-
-              from_address = alert_data (alert,
-                                         "method",
-                                         "from_address");
-
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                {
-                  ret = email_secinfo (alert, task, event, event_data, method,
-                                       condition, to_address, from_address);
-                  free (to_address);
-                  free (from_address);
-                  return ret;
-                }
-
-              if (event == EVENT_TICKET_RECEIVED)
-                {
-                  ret = email_ticket (alert, task, event, event_data, method,
-                                      condition, to_address, from_address,
-                                      "Ticket received");
-                  free (to_address);
-                  free (from_address);
-                  return ret;
-                }
-
-              if (event == EVENT_ASSIGNED_TICKET_CHANGED)
-                {
-                  ret = email_ticket (alert, task, event, event_data, method,
-                                      condition, to_address, from_address,
-                                      "Assigned ticket changed");
-                  free (to_address);
-                  free (from_address);
-                  return ret;
-                }
-
-              if (event == EVENT_OWNED_TICKET_CHANGED)
-                {
-                  ret = email_ticket (alert, task, event, event_data, method,
-                                      condition, to_address, from_address,
-                                      "Owned ticket changed");
-                  free (to_address);
-                  free (from_address);
-                  return ret;
-                }
-
-              notice = alert_data (alert, "method", "notice");
-              name = task_name (task);
-
-              if (notice && strcmp (notice, "0") == 0)
-                {
-                  gchar *event_desc, *condition_desc, *report_content;
-                  gchar *alert_subject, *message;
-                  gchar *term, *report_zone, *host_summary;
-                  report_format_t report_format = 0;
-                  gsize content_length;
-                  filter_t filter;
-
-                  /* Message with inlined report. */
-
-                  term = NULL;
-                  report_zone = NULL;
-                  host_summary = NULL;
-                  /* report_content_for_alert always sets this, but init it
-                   * anyway, to make it easier for the compiler to see. */
-                  filter = 0;
-                  ret = report_content_for_alert
-                          (alert, report, task, get,
-                           "notice_report_format",
-                           NULL,
-                           /* TXT fallback */
-                           "a3810a62-1f62-11e1-9219-406186ea4fc5",
-                           notes_details, overrides_details,
-                           &report_content, &content_length, &extension,
-                           NULL, &term, &report_zone, &host_summary,
-                           &report_format, &filter);
-                  if (ret || report_content == NULL)
-                    {
-                      free (notice);
-                      free (name);
-                      free (to_address);
-                      free (from_address);
-                      g_free (term);
-                      g_free (report_zone);
-                      g_free (host_summary);
-                      return -1;
-                    }
-                  format_name = report_format_name (report_format);
-                  condition_desc = alert_condition_description (condition,
-                                                                alert);
-                  event_desc = event_description (event, event_data, NULL);
-                  subject = g_strdup_printf ("[GVM] Task '%s': %s",
-                                             name ? name : "Internal Error",
-                                             event_desc);
-                  g_free (event_desc);
-
-                  alert_subject = alert_data (alert, "method", "subject");
-                  if (alert_subject && strlen (alert_subject))
-                    {
-                      g_free (subject);
-                      subject = alert_subject_print (alert_subject, event,
-                                                     event_data,
-                                                     alert, task, 0);
-                    }
-                  g_free (alert_subject);
-
-                  message = alert_data (alert, "method", "message");
-                  if (message == NULL || strlen (message) == 0)
-                    {
-                      g_free (message);
-                      message = g_strdup (ALERT_MESSAGE_INCLUDE);
-                    }
-                  body = alert_message_print (message, event, event_data,
-                                              task, alert, condition,
-                                              format_name, filter,
-                                              term, report_zone,
-                                              host_summary, report_content,
-                                              content_length,
-                                              content_length
-                                              > max_content_length,
-                                              0,
-                                              max_content_length);
-                  g_free (message);
-                  g_free (report_content);
-                  g_free (condition_desc);
-                  g_free (term);
-                  g_free (report_zone);
-                  g_free (host_summary);
-                }
-              else if (notice && strcmp (notice, "2") == 0)
-                {
-                  gchar *event_desc, *condition_desc, *report_content;
-                  report_format_t report_format = 0;
-                  gsize content_length;
-                  gchar *alert_subject, *message;
-                  gchar *term, *report_zone, *host_summary;
-                  filter_t filter;
-
-                  /* Message with attached report. */
-
-                  term = NULL;
-                  report_zone = NULL;
-                  host_summary = NULL;
-                  /* report_content_for_alert always sets this, but init it
-                   * anyway, to make it easier for the compiler to see. */
-                  filter = 0;
-                  ret = report_content_for_alert
-                          (alert, report, task, get,
-                           "notice_attach_format",
-                           NULL,
-                           /* TXT fallback */
-                           "a3810a62-1f62-11e1-9219-406186ea4fc5",
-                           notes_details, overrides_details,
-                           &report_content, &content_length, &extension,
-                           &type, &term, &report_zone, &host_summary,
-                           &report_format, &filter);
-                  if (ret || report_content == NULL)
-                    {
-                      free (notice);
-                      free (name);
-                      free (to_address);
-                      free (from_address);
-                      g_free (term);
-                      g_free (report_zone);
-                      g_free (host_summary);
-                      return -1;
-                    }
-                  format_name = report_format_name (report_format);
-                  condition_desc = alert_condition_description (condition,
-                                                                    alert);
-                  event_desc = event_description (event, event_data, NULL);
-                  subject = g_strdup_printf ("[GVM] Task '%s': %s",
-                                             name ? name : "Internal Error",
-                                             event_desc);
-                  g_free (event_desc);
-
-                  alert_subject = alert_data (alert, "method", "subject");
-                  if (alert_subject && strlen (alert_subject))
-                    {
-                      g_free (subject);
-                      subject = alert_subject_print (alert_subject, event,
-                                                     event_data,
-                                                     alert, task, 0);
-                    }
-                  g_free (alert_subject);
-                  if (max_attach_length <= 0
-                      || content_length <= max_attach_length)
-                    base64 = g_base64_encode ((guchar*) report_content,
-                                              content_length);
-                  g_free (report_content);
-                  message = alert_data (alert, "method", "message");
-                  if (message == NULL || strlen (message) == 0)
-                    {
-                      g_free (message);
-                      message = g_strdup (ALERT_MESSAGE_ATTACH);
-                    }
-                  body = alert_message_print (message, event, event_data,
-                                              task, alert, condition,
-                                              format_name, filter,
-                                              term, report_zone,
-                                              host_summary, NULL, 0,
-                                              base64 == NULL,
-                                              0,
-                                              max_attach_length);
-                  g_free (message);
-                  g_free (condition_desc);
-                  g_free (term);
-                  g_free (report_zone);
-                  g_free (host_summary);
-                }
-              else
-                {
-                  gchar *event_desc, *generic_desc, *condition_desc;
-                  gchar *alert_subject, *message;
-
-                  /* Simple notice message. */
-
-                  format_name = NULL;
-                  event_desc = event_description (event, event_data, name);
-                  generic_desc = event_description (event, event_data, NULL);
-                  condition_desc = alert_condition_description (condition,
-                                                                    alert);
-
-                  subject = g_strdup_printf ("[GVM] Task '%s':"
-                                             " An event occurred",
-                                             name);
-
-                  alert_subject = alert_data (alert, "method", "subject");
-                  if (alert_subject && strlen (alert_subject))
-                    {
-                      g_free (subject);
-                      subject = alert_subject_print (alert_subject, event,
-                                                     event_data,
-                                                     alert, task, 0);
-                    }
-                  g_free (alert_subject);
-
-                  message = alert_data (alert, "method", "message");
-                  if (message && strlen (message))
-                    body = alert_message_print (message, event, event_data,
-                                                task, alert, condition,
-                                                NULL, 0, NULL, NULL, NULL,
-                                                NULL, 0, 0, 0, 0);
-                  else
-                    body = g_strdup_printf (SIMPLE_NOTICE_FORMAT,
-                                            event_desc,
-                                            generic_desc,
-                                            condition_desc);
-                  g_free (message);
-                  g_free (event_desc);
-                  g_free (generic_desc);
-                  g_free (condition_desc);
-                }
-              free (notice);
-
-              gchar *fname_format, *file_name;
-              gchar *report_id, *creation_time, *modification_time;
-              char *recipient_credential_id;
-              credential_t recipient_credential;
-
-              fname_format
-                = sql_string ("SELECT value FROM settings"
-                              " WHERE name"
-                              "       = 'Report Export File Name'"
-                              " AND " ACL_GLOBAL_OR_USER_OWNS ()
-                              " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
-                              current_credentials.uuid);
-
-              report_id = report_uuid (report);
-
-              creation_time
-                = sql_string ("SELECT iso_time (start_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
-
-              modification_time
-                = sql_string ("SELECT iso_time (end_time)"
-                              " FROM reports"
-                              " WHERE id = %llu",
-                              report);
-
-              file_name
-                = gvm_export_file_name (fname_format,
-                                        current_credentials.username,
-                                        "report", report_id,
-                                        creation_time, modification_time,
-                                        name, format_name);
-
-              /* Get credential */
-              recipient_credential_id = alert_data (alert, "method",
-                                                    "recipient_credential");
-              recipient_credential = 0;
-              if (recipient_credential_id)
-                {
-                  find_credential_with_permission (recipient_credential_id,
-                                                  &recipient_credential, NULL);
-                }
-
-              ret = email (to_address, from_address, subject, body, base64,
-                           type, file_name ? file_name : "openvas-report",
-                           extension, recipient_credential);
-
-              free (extension);
-              free (type);
-              free (name);
-              free (format_name);
-              g_free (base64);
-              free (to_address);
-              free (from_address);
-              g_free (subject);
-              g_free (body);
-              g_free (fname_format);
-              g_free (file_name);
-              g_free (report_id);
-              g_free (creation_time);
-              g_free (modification_time);
-              free (recipient_credential_id);
-              return ret;
-            }
-          return -1;
-        }
-      case ALERT_METHOD_HTTP_GET:
-        {
-          char *url;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"HTTP Get\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              g_warning ("%s: Event \"%s NVTs arrived\" with method"
-                         " \"HTTP Get\" not support",
-                         __func__,
-                         event == EVENT_NEW_SECINFO ? "New" : "Updated");
-              return -1;
-            }
-
-          url = alert_data (alert, "method", "URL");
-
-          if (url)
-            {
-              int ret, formatting;
-              gchar *point, *end;
-              GString *new_url;
-
-              new_url = g_string_new ("");
-              for (formatting = 0, point = url, end = (url + strlen (url));
-                   point < end;
-                   point++)
-                if (formatting)
-                  {
-                    switch (*point)
-                      {
-                        case '$':
-                          g_string_append_c (new_url, '$');
-                          break;
-                        case 'c':
-                          {
-                            gchar *condition_desc;
-                            condition_desc = alert_condition_description
-                                              (condition, alert);
-                            g_string_append (new_url, condition_desc);
-                            g_free (condition_desc);
-                            break;
-                          }
-                        case 'e':
-                          {
-                            gchar *event_desc;
-                            event_desc = event_description (event, event_data,
-                                                            NULL);
-                            g_string_append (new_url, event_desc);
-                            g_free (event_desc);
-                            break;
-                          }
-                        case 'n':
-                          {
-                            char *name = task_name (task);
-                            g_string_append (new_url, name);
-                            free (name);
-                            break;
-                          }
-                        default:
-                          g_string_append_c (new_url, '$');
-                          g_string_append_c (new_url, *point);
-                          break;
-                      }
-                    formatting = 0;
-                  }
-                else if (*point == '$')
-                  formatting = 1;
-                else
-                  g_string_append_c (new_url, *point);
-
-              ret = http_get (new_url->str);
-              g_string_free (new_url, TRUE);
-              g_free (url);
-              return ret;
-            }
-          return -1;
-        }
-      case ALERT_METHOD_SCP:
-        {
-          credential_t credential;
-          char *credential_id;
-          char *private_key, *password, *username, *host, *path, *known_hosts;
-          char *port_str;
-          int port;
-          gchar *report_content, *alert_path;
-          gsize content_length;
-          report_format_t report_format;
-          int ret;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"SCP\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              gchar *message;
-
-              credential_id = alert_data (alert, "method", "scp_credential");
-              if (find_credential_with_permission (credential_id,
-                                                   &credential,
-                                                   "get_credentials"))
-                {
-                  return -1;
-                }
-              else if (credential == 0)
-                {
-                  return -4;
-                }
-              else
-                {
-                  message = new_secinfo_message (event, event_data, alert);
-
-                  username = credential_value (credential, "username");
-                  password = credential_encrypted_value (credential,
-                                                         "password");
-                  private_key = credential_encrypted_value (credential,
-                                                            "private_key");
-
-                  host = alert_data (alert, "method", "scp_host");
-                  port_str = alert_data (alert, "method", "scp_port");
-                  if (port_str)
-                    port = atoi (port_str);
-                  else
-                    port = 22;
-                  path = alert_data (alert, "method", "scp_path");
-                  known_hosts = alert_data (alert, "method", "scp_known_hosts");
-
-                  alert_path = scp_alert_path_print (path, task);
-                  free (path);
-
-                  ret = scp_to_host (username, password, private_key,
-                                     host, port, alert_path, known_hosts,
-                                     message, strlen (message),
-                                     script_message);
-
-                  g_free (message);
-                  free (private_key);
-                  free (password);
-                  free (username);
-                  free (host);
-                  free (port_str);
-                  g_free (alert_path);
-                  free (known_hosts);
-
-                  return ret;
-                }
-            }
-
-          ret = report_content_for_alert
-                  (alert, 0, task, get,
-                   "scp_report_format",
-                   NULL,
-                   /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
-                   notes_details, overrides_details,
-                   &report_content, &content_length, NULL,
-                   NULL, NULL, NULL, NULL,
-                   &report_format, NULL);
-          if (ret || report_content == NULL)
-            {
-              g_warning ("%s: Empty Report", __func__);
-              return -1;
-            }
-
-          credential_id = alert_data (alert, "method", "scp_credential");
-          if (find_credential_with_permission (credential_id, &credential,
-                                               "get_credentials"))
-            {
-              g_free (report_content);
-              return -1;
-            }
-          else if (credential == 0)
-            {
-              g_free (report_content);
-              return -4;
-            }
-          else
-            {
-              username = credential_value (credential, "username");
-              password = credential_encrypted_value (credential, "password");
-              private_key = credential_encrypted_value (credential,
-                                                        "private_key");
-
-
-              host = alert_data (alert, "method", "scp_host");
-              port_str = alert_data (alert, "method", "scp_port");
-              if (port_str)
-                port = atoi (port_str);
-              else
-                port = 22;
-              path = alert_data (alert, "method", "scp_path");
-              known_hosts = alert_data (alert, "method", "scp_known_hosts");
-
-              alert_path = scp_alert_path_print (path, task);
-              free (path);
-
-              ret = scp_to_host (username, password, private_key,
-                                 host, port, alert_path, known_hosts,
-                                 report_content, content_length,
-                                 script_message);
-
-              free (private_key);
-              free (password);
-              free (username);
-              free (host);
-              free (port_str);
-              g_free (alert_path);
-              free (known_hosts);
-            }
-          g_free (report_content);
-
-          return ret;
-        }
-      case ALERT_METHOD_SEND:
-        {
-          char *host, *port;
-          gchar *report_content;
-          gsize content_length;
-          report_format_t report_format;
-          int ret;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"Send\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              gchar *message;
-
-              message = new_secinfo_message (event, event_data, alert);
-              host = alert_data (alert, "method", "send_host");
-              port = alert_data (alert, "method", "send_port");
-
-              g_debug ("send host: %s", host);
-              g_debug ("send port: %s", port);
-
-              ret = send_to_host (host, port, message, strlen (message),
-                                  script_message);
-
-              g_free (message);
-              free (host);
-              free (port);
-
-              return ret;
-            }
-
-          ret = report_content_for_alert
-                  (alert, 0, task, get,
-                   "send_report_format",
-                   NULL,
-                   /* XML fallback. */
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5",
-                   notes_details, overrides_details,
-                   &report_content, &content_length, NULL,
-                   NULL, NULL, NULL, NULL,
-                   &report_format, NULL);
-          if (ret || report_content == NULL)
-            {
-              g_warning ("%s: Empty Report", __func__);
-              return -1;
-            }
-
-          host = alert_data (alert, "method", "send_host");
-          port = alert_data (alert, "method", "send_port");
-
-          g_debug ("send host: %s", host);
-          g_debug ("send port: %s", port);
-
-          ret = send_to_host (host, port, report_content, content_length,
-                              script_message);
-
-          free (host);
-          free (port);
-          g_free (report_content);
-
-          return ret;
-        }
-      case ALERT_METHOD_SMB:
-        {
-          char *credential_id, *username, *password;
-          char *share_path, *file_path_format, *max_protocol;
-          gboolean file_path_is_dir;
-          report_format_t report_format;
-          gchar *file_path, *report_content, *extension;
-          gsize content_length;
-          credential_t credential;
-          int ret;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"SMP\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (report == 0)
-            switch (sql_int64 (&report,
-                                "SELECT max (id) FROM reports"
-                                " WHERE task = %llu",
-                                task))
-              {
-                case 0:
-                  if (report)
-                    break;
-                case 1:        /* Too few rows in result of query. */
-                case -1:
-                  return -1;
-                  break;
-                default:       /* Programming error. */
-                  assert (0);
-                  return -1;
-              }
-
-          if (task == 0 && report)
-            {
-              ret = report_task (report, &task);
-              if (ret)
-                return ret;
-            }
-
-          credential_id = alert_data (alert, "method", "smb_credential");
-          share_path = alert_data (alert, "method", "smb_share_path");
-          max_protocol = alert_data (alert, "method", "smb_max_protocol");
-
-          file_path_format
-            = sql_string ("SELECT value FROM tags"
-                          " WHERE name = 'smb-alert:file_path'"
-                          "   AND EXISTS"
-                          "         (SELECT * FROM tag_resources"
-                          "           WHERE resource_type = 'task'"
-                          "             AND resource = %llu"
-                          "             AND tag = tags.id)"
-                          " ORDER BY modification_time LIMIT 1;",
-                          task);
-
-          if (file_path_format == NULL)
-            file_path_format = alert_data (alert, "method", "smb_file_path");
-
-          file_path_is_dir = (g_str_has_suffix (file_path_format, "\\")
-                              || g_str_has_suffix (file_path_format, "/"));
-
-          report_content = NULL;
-          extension = NULL;
-          report_format = 0;
-
-          g_debug ("smb_credential: %s", credential_id);
-          g_debug ("smb_share_path: %s", share_path);
-          g_debug ("smb_file_path: %s (%s)",
-                   file_path_format, file_path_is_dir ? "dir" : "file");
-
-          ret = report_content_for_alert
-                  (alert, report, task, get,
-                   "smb_report_format",
-                   NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
-                   notes_details, overrides_details,
-                   &report_content, &content_length, &extension,
-                   NULL, NULL, NULL, NULL, &report_format, NULL);
-          if (ret || report_content == NULL)
-            {
-              free (credential_id);
-              free (share_path);
-              free (file_path_format);
-              free (max_protocol);
-              g_free (report_content);
-              g_free (extension);
-              return ret ? ret : -1;
-            }
-
-          if (file_path_is_dir)
-            {
-              char *dirname, *filename;
-
-              dirname = generate_report_filename (report, report_format,
-                                                  file_path_format, FALSE);
-              filename = generate_report_filename (report, report_format,
-                                                   NULL, TRUE);
-
-              file_path = g_strdup_printf ("%s\\%s", dirname, filename);
-
-              free (dirname);
-              free (filename);
-            }
-          else
-            {
-              file_path = generate_report_filename (report, report_format,
-                                                    file_path_format, TRUE);
-            }
-
-          credential = 0;
-          ret = find_credential_with_permission (credential_id, &credential,
-                                                 "get_credentials");
-          if (ret || credential == 0)
-            {
-              if (ret == 0)
-                {
-                  g_warning ("%s: Could not find credential %s",
-                             __func__, credential_id);
-                }
-              free (credential_id);
-              free (share_path);
-              free (file_path);
-              free (max_protocol);
-              g_free (report_content);
-              g_free (extension);
-              return ret ? -1 : -4;
-            }
-
-          username = credential_value (credential, "username");
-          password = credential_encrypted_value (credential, "password");
-
-          ret = smb_send_to_host (password, username, share_path, file_path,
-                                  max_protocol, report_content, content_length,
-                                  script_message);
-
-          g_free (username);
-          g_free (password);
-          free (credential_id);
-          free (share_path);
-          free (file_path);
-          free (max_protocol);
-          g_free (report_content);
-          g_free (extension);
-          return ret;
-        }
-      case ALERT_METHOD_SNMP:
-        {
-          char *community, *agent, *snmp_message;
-          int ret;
-          gchar *message;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"SNMP\" not support",
-                         __func__);
-              return -1;
-            }
-
-          community = alert_data (alert, "method", "snmp_community");
-          agent = alert_data (alert, "method", "snmp_agent");
-          snmp_message = alert_data (alert, "method", "snmp_message");
-
-          g_debug ("snmp_message: %s", snmp_message);
-          g_debug ("snmp_community: %s", community);
-          g_debug ("snmp_agent: %s", agent);
-
-          if (snmp_message)
-            {
-              if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-                {
-                  int count;
-                  gchar *list, *example, *type;
-
-                  type = g_strdup (event_data);
-
-                  if (type && (example = strstr (type, "_example")))
-                    example[0] = '\0';
-
-                  list = new_secinfo_list (event, event_data, alert, &count);
-                  g_free (list);
-
-                  message = alert_subject_print (snmp_message, event, type,
-                                                 alert, task, count);
-
-                  g_free (type);
-                }
-              else
-                message = alert_subject_print (snmp_message, event, event_data,
-                                               alert, task, 0);
-            }
-          else
-            {
-              gchar *event_desc;
-              event_desc = event_description (event, event_data, NULL);
-              message = g_strdup_printf ("%s", event_desc);
-              g_free (event_desc);
-            }
-
-          ret = snmp_to_host (community, agent, message, script_message);
-
-          free (agent);
-          free (community);
-          free (snmp_message);
-          g_free (message);
-          return ret;
-        }
-      case ALERT_METHOD_SOURCEFIRE:
-        {
-          char *ip, *port, *pkcs12, *pkcs12_credential_id;
-          credential_t pkcs12_credential;
-          gchar *pkcs12_password, *report_content;
-          gsize content_length;
-          report_format_t report_format;
-          int ret;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"Sourcefire\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              g_warning ("%s: Event \"%s NVTs arrived\" with method"
-                         " \"Sourcefire\" not support",
-                         __func__,
-                         event == EVENT_NEW_SECINFO ? "New" : "Updated");
-              return -1;
-            }
-
-          ret = report_content_for_alert
-                  (alert, report, task, get,
-                   NULL,
-                   "Sourcefire",
-                   NULL,
-                   notes_details, overrides_details,
-                   &report_content, &content_length, NULL,
-                   NULL, NULL, NULL, NULL, &report_format, NULL);
-          if (ret || report_content == NULL)
-            {
-              g_warning ("%s: Empty Report", __func__);
-              return -1;
-            }
-
-          ip = alert_data (alert, "method", "defense_center_ip");
-          port = alert_data (alert, "method", "defense_center_port");
-          if (port == NULL)
-            port = g_strdup ("8307");
-          pkcs12 = alert_data (alert, "method", "pkcs12");
-          pkcs12_credential_id = alert_data (alert, "method",
-                                             "pkcs12_credential");
-
-          if (pkcs12_credential_id == NULL
-              || strcmp (pkcs12_credential_id, "") == 0)
-            {
-              pkcs12_password = g_strdup ("");
-            }
-          else if (find_credential_with_permission (pkcs12_credential_id,
-                                               &pkcs12_credential,
-                                               "get_credentials"))
-            {
-              g_free (ip);
-              g_free (port);
-              g_free (pkcs12);
-              g_free (pkcs12_credential_id);
-              return -1;
-            }
-          else if (pkcs12_credential == 0)
-            {
-              g_free (ip);
-              g_free (port);
-              g_free (pkcs12);
-              g_free (pkcs12_credential_id);
-              return -4;
-            }
-          else
-            {
-              g_free (pkcs12_credential_id);
-              pkcs12_password = credential_encrypted_value (pkcs12_credential,
-                                                            "password");
-            }
-
-          g_debug ("  sourcefire   ip: %s", ip);
-          g_debug ("  sourcefire port: %s", port);
-          g_debug ("sourcefire pkcs12: %s", pkcs12);
-
-          ret = send_to_sourcefire (ip, port, pkcs12, pkcs12_password,
-                                    report_content);
-
-          free (ip);
-          g_free (port);
-          free (pkcs12);
-          g_free (report_content);
-          g_free (pkcs12_password);
-
-          return ret;
-        }
-      case ALERT_METHOD_SYSLOG:
-        {
-          char *submethod;
-          gchar *message, *event_desc, *level;
-
-          event_desc = event_description (event, event_data, NULL);
-          message = g_strdup_printf ("%s: %s", event_name (event), event_desc);
-          g_free (event_desc);
-
-          submethod = alert_data (alert, "method", "submethod");
-          level = g_strdup_printf ("event %s", submethod);
-          g_free (submethod);
-
-          g_debug ("  syslog level: %s", level);
-          g_debug ("syslog message: %s", message);
-
-          g_log (level, G_LOG_LEVEL_MESSAGE, "%s", message);
-
-          g_free (level);
-          g_free (message);
-
-          return 0;
-        }
-      case ALERT_METHOD_TIPPINGPOINT:
-        {
-          int ret;
-          report_format_t report_format;
-          gchar *report_content, *extension;
-          size_t content_length;
-          char *credential_id, *username, *password, *hostname, *certificate;
-          credential_t credential;
-          char *tls_cert_workaround_str;
-          int tls_cert_workaround;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"TippingPoint SMS\" not support",
-                         __func__);
-              return -1;
-            }
-
-          /* TLS certificate subject workaround setting */
-          tls_cert_workaround_str
-            = alert_data (alert, "method",
-                          "tp_sms_tls_workaround");
-          if (tls_cert_workaround_str)
-            tls_cert_workaround = !!(atoi (tls_cert_workaround_str));
-          else
-            tls_cert_workaround = 0;
-          g_free (tls_cert_workaround_str);
-
-          /* SSL / TLS Certificate */
-          certificate = alert_data (alert, "method",
-                                    "tp_sms_tls_certificate");
-
-          /* Hostname / IP address */
-          hostname = alert_data (alert, "method",
-                                 "tp_sms_hostname");
-
-          /* Credential */
-          credential_id = alert_data (alert, "method",
-                                      "tp_sms_credential");
-          if (find_credential_with_permission (credential_id, &credential,
-                                               "get_credentials"))
-            {
-              g_free (certificate);
-              g_free (hostname);
-              g_free (credential_id);
-              return -1;
-            }
-          else if (credential == 0)
-            {
-              g_free (certificate);
-              g_free (hostname);
-              g_free (credential_id);
-              return -4;
-            }
-          else
-            {
-              g_free (credential_id);
-              username = credential_value (credential, "username");
-              password = credential_encrypted_value (credential, "password");
-            }
-
-          /* Report content */
-          extension = NULL;
-          ret = report_content_for_alert
-                  (alert, report, task, get,
-                   NULL, /* Report format not configurable */
-                   NULL,
-                   "a994b278-1f62-11e1-96ac-406186ea4fc5", /* XML fallback */
-                   notes_details, overrides_details,
-                   &report_content, &content_length, &extension,
-                   NULL, NULL, NULL, NULL, &report_format, NULL);
-          g_free (extension);
-          if (ret)
-            {
-              g_free (username);
-              g_free (password);
-              g_free (hostname);
-              g_free (certificate);
-              return ret;
-            }
-
-          /* Send report */
-          ret = send_to_tippingpoint (report_content, content_length,
-                                      username, password, hostname,
-                                      certificate, tls_cert_workaround,
-                                      script_message);
-
-          g_free (username);
-          g_free (password);
-          g_free (hostname);
-          g_free (certificate);
-          g_free (report_content);
-          return ret;
-        }
-      case ALERT_METHOD_VERINICE:
-        {
-          credential_t credential;
-          char *url, *username, *password;
-          gchar *credential_id, *report_content;
-          gsize content_length;
-          report_format_t report_format;
-          int ret;
-
-          if ((event == EVENT_TICKET_RECEIVED)
-              || (event == EVENT_ASSIGNED_TICKET_CHANGED)
-              || (event == EVENT_OWNED_TICKET_CHANGED))
-            {
-              g_warning ("%s: Ticket events with method"
-                         " \"Verinice\" not support",
-                         __func__);
-              return -1;
-            }
-
-          if (event == EVENT_NEW_SECINFO || event == EVENT_UPDATED_SECINFO)
-            {
-              g_warning ("%s: Event \"%s NVTs arrived\" with method"
-                         " \"Verinice\" not support",
-                         __func__,
-                         event == EVENT_NEW_SECINFO ? "New" : "Updated");
-              return -1;
-            }
-
-          ret = report_content_for_alert
-                  (alert, report, task, get,
-                   "verinice_server_report_format",
-                   "Verinice ISM",
-                   NULL,
-                   notes_details, overrides_details,
-                   &report_content, &content_length, NULL,
-                   NULL, NULL, NULL, NULL, &report_format, NULL);
-          if (ret || report_content == NULL)
-            {
-              g_warning ("%s: Empty Report", __func__);
-              return -1;
-            }
-
-          url = alert_data (alert, "method", "verinice_server_url");
-
-          credential_id = alert_data (alert, "method",
-                                      "verinice_server_credential");
-          if (find_credential_with_permission (credential_id, &credential,
-                                               "get_credentials"))
-            {
-              free (url);
-              g_free (report_content);
-              return -1;
-            }
-          else if (credential == 0)
-            {
-              free (url);
-              g_free (report_content);
-              return -4;
-            }
-          else
-            {
-              username = credential_value (credential, "username");
-              password = credential_encrypted_value (credential, "password");
-
-              g_debug ("    verinice  url: %s", url);
-              g_debug ("verinice username: %s", username);
-
-              ret = send_to_verinice (url, username, password, report_content,
-                                      content_length);
-
-              free (url);
-              g_free (username);
-              g_free (password);
-              g_free (report_content);
-
-              return ret;
-            }
-        }
-      case ALERT_METHOD_VFIRE:
-        {
-          int ret;
-          ret = escalate_to_vfire (alert, task, report, event,
-                                   event_data, method, condition,
-                                   get, notes_details, overrides_details,
-                                   script_message);
-          return ret;
-        }
-      case ALERT_METHOD_START_TASK:
-        {
-          gvm_connection_t connection;
-          char *task_id, *report_id, *owner_id, *owner_name;
-          gmp_authenticate_info_opts_t auth_opts;
-
-          /* Run the callback to fork a child connected to the Manager. */
-
-          if (manage_fork_connection == NULL)
-            {
-              g_warning ("%s: no connection fork available", __func__);
-              return -1;
-            }
-
-          task_id = alert_data (alert, "method", "start_task_task");
-          if (task_id == NULL || strcmp (task_id, "") == 0)
-            {
-              g_warning ("%s: start_task_task missing or empty", __func__);
-              return -1;
-            }
-
-          owner_id = sql_string ("SELECT uuid FROM users"
-                                 " WHERE id = (SELECT owner FROM alerts"
-                                 "              WHERE id = %llu)",
-                                 alert);
-          owner_name = sql_string ("SELECT name FROM users"
-                                   " WHERE id = (SELECT owner FROM alerts"
-                                   "              WHERE id = %llu)",
-                                   alert);
-
-          if (owner_id == NULL)
-            {
-              g_warning ("%s: could not find alert owner",
-                         __func__);
-              free (owner_id);
-              free (owner_name);
-              return -1;
-            }
-
-          switch (manage_fork_connection (&connection, owner_id))
-            {
-              case 0:
-                /* Child.  Break, stop task, exit. */
-                break;
-
-              case -1:
-                /* Parent on error. */
-                g_free (task_id);
-                g_warning ("%s: fork failed", __func__);
-                return -1;
-                break;
-
-              default:
-                /* Parent.  Continue with whatever lead to this escalation. */
-                g_free (task_id);
-                free (owner_id);
-                free (owner_name);
-                return 0;
-                break;
-            }
-
-          /* Start the task. */
-
-          auth_opts = gmp_authenticate_info_opts_defaults;
-          auth_opts.username = owner_name;
-          auth_opts.password = "dummy";
-          if (gmp_authenticate_info_ext_c (&connection, auth_opts))
-            {
-              g_free (task_id);
-              free (owner_id);
-              free (owner_name);
-              gvm_connection_free (&connection);
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-            }
-          if (gmp_start_task_report_c (&connection, task_id, &report_id))
-            {
-              g_free (task_id);
-              free (owner_id);
-              free (owner_name);
-              gvm_connection_free (&connection);
-              gvm_close_sentry ();
-              exit (EXIT_FAILURE);
-            }
-
-          g_free (task_id);
-          g_free (report_id);
-          free (owner_id);
-          free (owner_name);
-          gvm_connection_free (&connection);
-          gvm_close_sentry ();
-          exit (EXIT_SUCCESS);
-        }
-      case ALERT_METHOD_ERROR:
-      default:
-        break;
-    }
-  return -1;
-}
-
-/**
- * @brief Escalate an event with preset report filtering.
- *
- * @param[in]  alert       Alert.
- * @param[in]  task        Task.
- * @param[in]  report      Report.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  method      Method from alert.
- * @param[in]  condition   Condition from alert, which was met by event.
- * @param[out] script_message  Custom error message from alert script.
- *
- * @return 0 success, -1 error, -2 failed to find report format for alert,
- *         -3 failed to find filter for alert, -4 failed to find credential,
- *         -5 alert script failed.
- */
-static int
-escalate_1 (alert_t alert, task_t task, report_t report, event_t event,
-            const void* event_data, alert_method_t method,
-            alert_condition_t condition, gchar **script_message)
-{
-  int ret;
-  get_data_t get;
-  char *results_filter;
-
-  memset (&get, 0, sizeof (get_data_t));
-  get.details = 1;
-
-  results_filter = setting_filter ("Results");
-  if (results_filter && strlen (results_filter))
-    {
-      get.filt_id = results_filter;
-      get.filter = filter_term (results_filter);
-    }
-  else
-    {
-      get.filt_id = g_strdup ("0");
-      get.filter = g_strdup_printf ("notes=1 overrides=1 sort-reverse=severity"
-                                    " rows=%d",
-                                    method == ALERT_METHOD_EMAIL ? 1000 : -1);
-    }
-
-  ret = escalate_2 (alert, task, report, event, event_data, method, condition,
-                    &get, 1, 1, script_message);
-  free (results_filter);
-  g_free (get.filter);
-  return ret;
-}
-
-/**
- * @brief Escalate an alert with task and event data.
- *
- * @param[in]  alert_id    Alert UUID.
- * @param[in]  task_id     Task UUID.
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[out] script_message  Custom error message from alert script.
- *
- * @return 0 success, 1 failed to find alert, 2 failed to find task,
- *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert, -5 alert script failed.
- */
-int
-manage_alert (const char *alert_id, const char *task_id, event_t event,
-              const void* event_data, gchar **script_message)
-{
-  alert_t alert;
-  task_t task;
-  alert_condition_t condition;
-  alert_method_t method;
-
-  if (acl_user_may ("test_alert") == 0)
-    return 99;
-
-  if (find_alert_with_permission (alert_id, &alert, "test_alert"))
-    return -1;
-  if (alert == 0)
-    return 1;
-
-  if (task_id == NULL || strcmp (task_id, "0") == 0)
-    task = 0;
-  else
-    {
-      if (find_task_with_permission (task_id, &task, NULL))
-        return -1;
-      if (task == 0)
-        return 2;
-    }
-
-  condition = alert_condition (alert);
-  method = alert_method (alert);
-  return escalate_1 (alert, task, 0, event, event_data, method, condition,
-                     script_message);
-}
-
-/**
- * @brief Header for "New NVTs" alert message.
- */
-#define NEW_NVTS_HEADER                                                       \
-/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100% */ \
-  "Name                                                          Solution Type  Severity  QOD\n" \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New NVTs" alert message, when there's an OID.
- */
-#define NEW_NVTS_HEADER_OID                                                   \
-/* Open-Xchange (OX) AppSuite XHTML File HTML Injection Vuln...  NoneAvailable       0.0 100%  1.3... */ \
-  "Name                                                          Solution Type  Severity  QOD  OID\n" \
-  "------------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CVEs" alert message.
- */
-#define NEW_CVES_HEADER                                                         \
-/* CVE-2014-100001       6.8  Cross-site request forgery (CSRF) vulnerability in... */ \
-  "Name             Severity  Description\n"                                    \
-  "--------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CPEs" alert message.
- */
-#define NEW_CPES_HEADER                                                        \
-/* cpe:/a:.joomclan:com_joomclip                                 1024cms... */ \
-  "Name                                                          Title\n"      \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New CERT-Bund Advisories" alert message.
- */
-#define NEW_CERT_BUNDS_HEADER                                                       \
-/* CB-K13/0849  Novell SUSE Linux Enterprise Server: Mehrere Schwachstellen... */   \
-  "Name         Title\n"                                                            \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Header for "New DFN-CERT Advisories" alert message.
- */
-#define NEW_DFN_CERTS_HEADER                                                   \
-/* DFN-CERT-2008-1100  Denial of Service Schwachstelle in der... */            \
-  "Name                Title\n"                                                \
-  "------------------------------------------------------------------------------------------\n"
-
-/**
- * @brief Test an alert.
- *
- * @param[in]  alert_id    Alert UUID.
- * @param[out] script_message  Custom message from the alert script.
- *
- * @return 0 success, 1 failed to find alert, 2 failed to find task,
- *         99 permission denied, -1 error, -2 failed to find report format
- *         for alert, -3 failed to find filter for alert, -4 failed to find
- *         credential for alert, -5 alert script failed.
- */
-int
-manage_test_alert (const char *alert_id, gchar **script_message)
-{
-  int ret;
-  alert_t alert;
-  task_t task;
-  report_t report;
-  result_t result;
-  char *task_id, *report_id;
-  time_t now;
-  char now_string[26];
-  gchar *clean;
-
-  if (acl_user_may ("test_alert") == 0)
-    return 99;
-
-  if (find_alert_with_permission (alert_id, &alert, "test_alert"))
-    return -1;
-  if (alert == 0)
-    return 1;
-
-  if (alert_event (alert) == EVENT_NEW_SECINFO
-      || alert_event (alert) == EVENT_UPDATED_SECINFO)
-    {
-      char *alert_event_data;
-      gchar *type;
-
-      alert_event_data = alert_data (alert, "event", "secinfo_type");
-      type = g_strdup_printf ("%s_example", alert_event_data ?: "NVT");
-      free (alert_event_data);
-
-      if (alert_event (alert) == EVENT_NEW_SECINFO)
-        ret = manage_alert (alert_id, "0", EVENT_NEW_SECINFO, (void*) type,
-                            script_message);
-      else
-        ret = manage_alert (alert_id, "0", EVENT_UPDATED_SECINFO, (void*) type,
-                            script_message);
-
-      g_free (type);
-
-      return ret;
-    }
-
-  task = make_task (g_strdup ("Temporary Task for Alert"),
-                    g_strdup (""),
-                    0,  /* Exclude from assets. */
-                    0); /* Skip event and log. */
-
-  report_id = gvm_uuid_make ();
-  if (report_id == NULL)
-    return -1;
-  task_uuid (task, &task_id);
-  report = make_report (task, report_id, TASK_STATUS_DONE);
-
-  result = make_result (task, "127.0.0.1", "localhost", "23/tcp",
-                        "1.3.6.1.4.1.25623.1.0.10330", "Alarm",
-                        "A telnet server seems to be running on this port.",
-                        NULL);
-  if (result)
-    report_add_result (report, result);
-
-
-  result = make_result (
-              task, "127.0.0.1", "localhost", "general/tcp",
-              "1.3.6.1.4.1.25623.1.0.103823", "Alarm",
-              "IP,Host,Port,SSL/TLS-Version,Ciphers,Application-CPE\n"
-              "127.0.0.1,localhost,443,TLSv1.1;TLSv1.2",
-              NULL);
-  if (result)
-    report_add_result (report, result);
-
-  now = time (NULL);
-  if (strlen (ctime_r (&now, now_string)) == 0)
-    {
-      ret = -1;
-      goto exit;
-    }
-  clean = g_strdup (now_string);
-  if (clean[strlen (clean) - 1] == '\n')
-    clean[strlen (clean) - 1] = '\0';
-  set_task_start_time_ctime (task, g_strdup (clean));
-  set_scan_start_time_ctime (report, g_strdup (clean));
-  set_scan_host_start_time_ctime (report, "127.0.0.1", clean);
-
-  insert_report_host_detail (report,
-                             "127.0.0.1",
-                             "nvt",
-                             "1.3.6.1.4.1.25623.1.0.108577",
-                             "",
-                             "App",
-                             "cpe:/a:openbsd:openssh:8.9p1",
-                             "0123456789ABCDEF0123456789ABCDEF");
-
-  insert_report_host_detail (report,
-                             "127.0.0.1",
-                             "nvt",
-                             "1.3.6.1.4.1.25623.1.0.10330",
-                             "Host Details",
-                             "best_os_cpe",
-                             "cpe:/o:canonical:ubuntu_linux:22.04",
-                             "123456789ABCDEF0123456789ABCDEF0");
-
-  set_scan_host_end_time_ctime (report, "127.0.0.1", clean);
-  set_scan_end_time_ctime (report, clean);
-  g_free (clean);
-  ret = manage_alert (alert_id,
-                      task_id,
-                      EVENT_TASK_RUN_STATUS_CHANGED,
-                      (void*) TASK_STATUS_DONE,
-                      script_message);
- exit:
-  /* No one should be running this task, so we don't worry about the lock.  We
-   * could guarantee that no one runs the task, but this is a very rare case. */
-  delete_task (task, 1);
-  free (task_id);
-  free (report_id);
-  return ret;
-}
-
-/**
- * @brief Return whether an event applies to a task and an alert.
- *
- * @param[in]  event           Event.
- * @param[in]  event_data      Event data.
- * @param[in]  event_resource  Event resource.
- * @param[in]  alert           Alert.
- *
- * @return 1 if event applies, else 0.
- */
-static int
-event_applies (event_t event, const void *event_data,
-               resource_t event_resource, alert_t alert)
-{
-  switch (event)
-    {
-      case EVENT_TASK_RUN_STATUS_CHANGED:
-        {
-          int ret;
-          char *alert_event_data;
-
-          if (alert_applies_to_task (alert, event_resource) == 0)
-            return 0;
-
-          alert_event_data = alert_data (alert, "event", "status");
-          if (alert_event_data == NULL)
-            return 0;
-          ret = (task_run_status (event_resource) == (task_status_t) event_data)
-                && (strcmp (alert_event_data,
-                            run_status_name_internal ((task_status_t)
-                                                      event_data))
-                    == 0);
-          free (alert_event_data);
-          return ret;
-        }
-      case EVENT_NEW_SECINFO:
-      case EVENT_UPDATED_SECINFO:
-        {
-          char *alert_event_data;
-
-          alert_event_data = alert_data (alert, "event", "secinfo_type");
-          if (alert_event_data == NULL)
-            return 0;
-          if (strcasecmp (alert_event_data, event_data) == 0)
-            return 1;
-          return 0;
-        }
-      case EVENT_TICKET_RECEIVED:
-      case EVENT_ASSIGNED_TICKET_CHANGED:
-        return ticket_assigned_to (event_resource) == alert_owner (alert);
-      case EVENT_OWNED_TICKET_CHANGED:
-        return ticket_owner (event_resource) == alert_owner (alert);
-      default:
-        return 0;
-    }
-}
-
-/**
- * @brief Return the SecInfo count.
- *
- * @param[in]  alert      Alert.
- * @param[in]  filter_id  Condition filter id.
- *
- * @return 1 if met, else 0.
- */
-static time_t
-alert_secinfo_count (alert_t alert, char *filter_id)
-{
-  get_data_t get;
-  int db_count, uuid_was_null;
-  event_t event;
-  gboolean get_modified;
-  time_t feed_version_epoch;
-  char *secinfo_type;
-
-  event = alert_event (alert);
-  get_modified = (event == EVENT_UPDATED_SECINFO);
-
-  if (current_credentials.uuid == NULL)
-    {
-      current_credentials.uuid = alert_owner_uuid (alert);
-      uuid_was_null = 1;
-    }
-  else
-    uuid_was_null = 0;
-
-  memset (&get, '\0', sizeof (get));
-  if (filter_id && strlen (filter_id) && strcmp (filter_id, "0"))
-    get.filt_id = filter_id;
-
-  secinfo_type = alert_data (alert, "event", "secinfo_type");
-
-  if (strcmp (secinfo_type, "nvt") == 0)
-    {
-      feed_version_epoch = nvts_feed_version_epoch ();
-      db_count = nvt_info_count_after (&get,
-                                       feed_version_epoch,
-                                       get_modified);
-    }
-  else if (strcmp (secinfo_type, "cert_bund_adv") == 0
-           || strcmp (secinfo_type, "dfn_cert_adv") == 0)
-    {
-      feed_version_epoch = cert_check_time ();
-      db_count = secinfo_count_after (&get,
-                                      secinfo_type,
-                                      feed_version_epoch,
-                                      get_modified);
-    }
-  else // assume SCAP data
-    {
-      feed_version_epoch = scap_check_time ();
-      db_count = secinfo_count_after (&get,
-                                      secinfo_type,
-                                      feed_version_epoch,
-                                      get_modified);
-    }
-
-  if (uuid_was_null)
-    {
-      free (current_credentials.uuid);
-      current_credentials.uuid = NULL;
-    }
-
-  return db_count;
-}
-
-/**
- * @brief Return whether the condition of an alert is met by a task.
- *
- * @param[in]  task       Task.
- * @param[in]  report     Report.
- * @param[in]  alert      Alert.
- * @param[in]  condition  Condition.
- *
- * @return 1 if met, else 0.
- */
-static int
-condition_met (task_t task, report_t report, alert_t alert,
-               alert_condition_t condition)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return 1;
-        break;
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        {
-          char *filter_id, *count_string;
-          report_t last_report;
-          int holes, infos, logs, warnings, false_positives;
-          int count;
-          double severity;
-
-          /* True if there are at least the given number of results matched by
-           * the given filter in the last finished report. */
-
-          filter_id = alert_data (alert, "condition", "filter_id");
-          count_string = alert_data (alert, "condition", "count");
-          if (count_string)
-            {
-              count = atoi (count_string);
-              free (count_string);
-            }
-          else
-            count = 0;
-
-          if (task == 0)
-            {
-              int db_count;
-
-              /* SecInfo event. */
-
-              db_count = alert_secinfo_count (alert, filter_id);
-
-              if (db_count >= count)
-                return 1;
-              break;
-            }
-
-          if (report)
-            last_report = report;
-          else
-            {
-              last_report = 0;
-              if (task_last_report (task, &last_report))
-                g_warning ("%s: failed to get last report", __func__);
-            }
-
-          g_debug ("%s: last_report: %llu", __func__, last_report);
-          if (last_report)
-            {
-              int db_count;
-              get_data_t get;
-              memset (&get, 0, sizeof (get_data_t));
-              get.type = "result";
-              get.filt_id = filter_id;
-              report_counts_id (last_report, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                &get, NULL);
-
-              db_count = holes + infos + logs + warnings
-                         + false_positives;
-
-              g_debug ("%s: count: %i vs %i", __func__, db_count, count);
-              if (db_count >= count)
-                {
-                  g_free (filter_id);
-                  return 1;
-                }
-            }
-          g_free (filter_id);
-          break;
-        }
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        {
-          char *direction, *filter_id, *count_string;
-          report_t last_report;
-          int holes, infos, logs, warnings, false_positives;
-          int count;
-          double severity;
-
-          /* True if the number of results matched by the given filter in the
-           * last finished report changed in the given direction with respect
-           * to the second last finished report. */
-
-          direction = alert_data (alert, "condition", "direction");
-          filter_id = alert_data (alert, "condition", "filter_id");
-          count_string = alert_data (alert, "condition", "count");
-          if (count_string)
-            {
-              count = atoi (count_string);
-              free (count_string);
-            }
-          else
-            count = 0;
-
-          if (report)
-            last_report = report;
-          else
-            {
-              last_report = 0;
-              if (task_last_report (task, &last_report))
-                g_warning ("%s: failed to get last report", __func__);
-            }
-
-          if (last_report)
-            {
-              report_t second_last_report;
-              int last_count;
-              get_data_t get;
-              get.type = "result";
-              get.filt_id = filter_id;
-
-              report_counts_id (last_report, &holes, &infos, &logs,
-                                &warnings, &false_positives, &severity,
-                                &get, NULL);
-              last_count = holes + infos + logs + warnings
-                            + false_positives;
-
-              second_last_report = 0;
-              if (task_second_last_report (task, &second_last_report))
-                g_warning ("%s: failed to get second last report", __func__);
-
-              if (second_last_report)
-                {
-                  int cmp, second_last_count;
-
-                  report_counts_id (second_last_report, &holes, &infos,
-                                    &logs, &warnings, &false_positives,
-                                    &severity, &get, NULL);
-                  second_last_count = holes + infos + logs + warnings
-                                      + false_positives;
-
-                  cmp = last_count - second_last_count;
-                  g_debug ("cmp: %i (vs %i)", cmp, count);
-                  g_debug ("direction: %s", direction);
-                  g_debug ("last_count: %i", last_count);
-                  g_debug ("second_last_count: %i", second_last_count);
-                  if (count < 0)
-                    {
-                      count = -count;
-                      if (direction == NULL
-                          || strcasecmp (direction, "increased") == 0)
-                        {
-                          free (direction);
-                          direction = g_strdup ("decreased");
-                        }
-                      else if (strcasecmp (direction, "decreased") == 0)
-                        {
-                          free (direction);
-                          direction = g_strdup ("increased");
-                        }
-                    }
-                  if (direction == NULL)
-                    {
-                      /* Same as "increased". */
-                      if (cmp >= count)
-                        {
-                          free (filter_id);
-                          return 1;
-                        }
-                    }
-                  else if (((strcasecmp (direction, "changed") == 0)
-                            && (abs (cmp) >= count))
-                           || ((strcasecmp (direction, "increased") == 0)
-                               && (cmp >= count))
-                           || ((strcasecmp (direction, "decreased") == 0)
-                               && (cmp <= count)))
-                    {
-                      free (direction);
-                      free (filter_id);
-                      return 1;
-                    }
-                }
-              else
-                {
-                  g_debug ("direction: %s", direction);
-                  g_debug ("last_count: %i", last_count);
-                  g_debug ("second_last_count NULL");
-                  if (direction == NULL)
-                    {
-                      /* Same as "increased". */
-                      if (last_count > 0)
-                        {
-                          free (filter_id);
-                          return 1;
-                        }
-                    }
-                  else if (((strcasecmp (direction, "changed") == 0)
-                       || (strcasecmp (direction, "increased") == 0))
-                      && (last_count > 0))
-                    {
-                      free (direction);
-                      free (filter_id);
-                      return 1;
-                    }
-                }
-            }
-          free (direction);
-          free (filter_id);
-          break;
-        }
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        {
-          char *condition_severity_str;
-
-          /* True if the threat level of the last finished report is at
-           * least the given level. */
-
-          condition_severity_str = alert_data (alert, "condition", "severity");
-
-          if (condition_severity_str)
-            {
-              double condition_severity_dbl, task_severity_dbl;
-
-              condition_severity_dbl = g_ascii_strtod (condition_severity_str,
-                                                       0);
-              task_severity_dbl = task_severity_double (task, 1,
-                                                        MIN_QOD_DEFAULT, 0);
-
-              if (task_severity_dbl >= condition_severity_dbl)
-                {
-                  free (condition_severity_str);
-                  return 1;
-                }
-            }
-          free (condition_severity_str);
-          break;
-        }
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        {
-          char *direction;
-          double last_severity, second_last_severity;
-
-          /* True if the threat level of the last finished report changed
-           * in the given direction with respect to the second last finished
-           * report. */
-
-          direction = alert_data (alert, "condition", "direction");
-          last_severity = task_severity_double (task, 1,
-                                                MIN_QOD_DEFAULT, 0);
-          second_last_severity = task_severity_double (task, 1,
-                                                       MIN_QOD_DEFAULT, 1);
-          if (direction
-              && last_severity > SEVERITY_MISSING
-              && second_last_severity > SEVERITY_MISSING)
-            {
-              double cmp = last_severity - second_last_severity;
-              g_debug ("cmp: %f", cmp);
-              g_debug ("direction: %s", direction);
-              g_debug ("last_level: %1.1f", last_severity);
-              g_debug ("second_last_level: %1.1f", second_last_severity);
-              if (((strcasecmp (direction, "changed") == 0) && cmp)
-                  || ((strcasecmp (direction, "increased") == 0) && (cmp > 0))
-                  || ((strcasecmp (direction, "decreased") == 0) && (cmp < 0)))
-                {
-                  free (direction);
-                  return 1;
-                }
-            }
-          else if (direction
-                   && last_severity > SEVERITY_MISSING)
-            {
-              g_debug ("direction: %s", direction);
-              g_debug ("last_level: %1.1f", last_severity);
-              g_debug ("second_last_level NULL");
-              if ((strcasecmp (direction, "changed") == 0)
-                  || (strcasecmp (direction, "increased") == 0))
-                {
-                  free (direction);
-                  return 1;
-                }
-            }
-          free (direction);
-          break;
-        }
-      default:
-        break;
-    }
-  return 0;
-}
-
-/**
- * @brief Produce an event.
- *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event type specific details.
- * @param[in]  resource_1  Event type specific resource 1.  For example,
- *                         a task for EVENT_TASK_RUN_STATUS_CHANGED.
- * @param[in]  resource_2  Event type specific resource 2.
- */
-void
-event (event_t event, void* event_data, resource_t resource_1,
-       resource_t resource_2)
-{
-  iterator_t alerts;
-  GArray *alerts_triggered;
-  guint index;
-
-  g_debug ("   EVENT %i on resource %llu", event, resource_1);
-
-  alerts_triggered = g_array_new (TRUE, TRUE, sizeof (alert_t));
-
-  if ((event == EVENT_TASK_RUN_STATUS_CHANGED)
-      && (((task_status_t) event_data) == TASK_STATUS_DONE))
-    check_tickets (resource_1);
-
-  init_event_alert_iterator (&alerts, event);
-  while (next (&alerts))
-    {
-      alert_t alert = event_alert_iterator_alert (&alerts);
-      if (event_alert_iterator_active (&alerts)
-          && event_applies (event, event_data, resource_1, alert))
-        {
-          alert_condition_t condition;
-
-          condition = alert_condition (alert);
-          if (condition_met (resource_1, resource_2, alert, condition))
-            g_array_append_val (alerts_triggered, alert);
-        }
-    }
-  cleanup_iterator (&alerts);
-
-  /* Run the alerts outside the iterator, because they may take some
-   * time and the iterator would prevent update processes (GMP MODIFY_XXX,
-   * CREATE_XXX, ...) from locking the database. */
-  index = alerts_triggered->len;
-  while (index--)
-    {
-      alert_t alert;
-      alert_condition_t condition;
-
-      alert = g_array_index (alerts_triggered, alert_t, index);
-      condition = alert_condition (alert);
-      escalate_1 (alert,
-                  resource_1,
-                  resource_2,
-                  event,
-                  event_data,
-                  alert_method (alert),
-                  condition,
-                  NULL);
-    }
-
-  g_array_free (alerts_triggered, TRUE);
-}
-
-/**
- * @brief Initialise an alert task iterator.
- *
- * Iterate over all tasks that use the alert.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  alert  Alert.
- * @param[in]  ascending  Whether to sort ascending or descending.
- */
-void
-init_alert_task_iterator (iterator_t* iterator, alert_t alert,
-                              int ascending)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (alert);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT tasks.name, tasks.uuid, %s FROM tasks, task_alerts"
-                 " WHERE tasks.id = task_alerts.task"
-                 " AND task_alerts.alert = %llu"
-                 " AND hidden = 0"
-                 " ORDER BY tasks.name %s;",
-                 with_clause ? with_clause : "",
-                 available,
-                 alert,
-                 ascending ? "ASC" : "DESC");
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Return the name from an alert task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the task or NULL if iteration is complete.
- */
-const char*
-alert_task_iterator_name (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 0);
-  return ret;
-}
-
-/**
- * @brief Return the uuid from an alert task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the task or NULL if iteration is complete.
- */
-const char*
-alert_task_iterator_uuid (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, 1);
-  return ret;
-}
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-alert_task_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
-}
-
-
 /* Task functions. */
 
 /**
@@ -15020,16 +3275,57 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
+#define SEVERITY_FILTER_COLUMNS \
+  "false_positive", "log", "low", "medium", "high", "critical"
+
+#if ENABLE_AGENTS
+  #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
+#else
+  #define TASK_AGENT_GROUP_FILTER_COLUMNS
+#endif
+
 /**
  * @brief Filter columns for task iterator.
  */
-#define TASK_ITERATOR_FILTER_COLUMNS                                          \
- { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",            \
-   "last_report", "threat", "trend", "severity", "schedule", "next_due",      \
-   "first", "last", "false_positive", "log", "low", "medium", "high",         \
-   "hosts", "result_hosts", "fp_per_host", "log_per_host", "low_per_host",    \
-   "medium_per_host", "high_per_host", "target", "usage_type",                \
-   "first_report_created", "last_report_created", NULL }
+#define TASK_ITERATOR_FILTER_COLUMNS                                         \
+  { GET_ITERATOR_FILTER_COLUMNS, "status", "total", "first_report",          \
+    "last_report", "threat", "trend", "severity", "schedule", "next_due",    \
+    "first", "last", SEVERITY_FILTER_COLUMNS, "hosts", "result_hosts",       \
+    "fp_per_host", "log_per_host", "low_per_host", "medium_per_host",        \
+    "high_per_host", "critical_per_host", "target", "usage_type",            \
+    "first_report_created", "last_report_created", "scanner_type",           \
+    TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
+    NULL}
+
+#if ENABLE_AGENTS
+  #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
+    ,{                                                                        \
+      "(SELECT uuid FROM agent_groups"                                        \
+      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      "agent_group_id",                                                       \
+      KEYWORD_TYPE_STRING                                                     \
+    },                                                                        \
+    {                                                                         \
+      "(SELECT name FROM agent_groups"                                        \
+      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      "agent_group",                                                          \
+      KEYWORD_TYPE_STRING                                                     \
+    }
+#else
+  #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
+#endif
+
+#if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
+#elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL)"
+#elif !ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
+  #define TASK_NO_TARGET_CTX "(target IS NULL AND oci_image_target IS NULL)"
+#else
+  #define TASK_NO_TARGET_CTX "(target IS NULL)"
+#endif
+
+#define TASK_SEV_CASE_GUARD "(" TASK_NO_TARGET_CTX " OR opts.ignore_severity != 0)"
 
 /**
  * @brief Task iterator columns.
@@ -15124,7 +3420,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod,"                  \
      "                        'False Positive')"                             \
@@ -15133,7 +3429,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Log')"           \
      " END",                                                                 \
@@ -15141,7 +3437,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Low')"           \
      " END",                                                                 \
@@ -15149,7 +3445,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'Medium')"        \
      " END",                                                                 \
@@ -15157,7 +3453,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_severity_count (task_last_report (id),"                        \
      "                        opts.override, opts.min_qod, 'High')"          \
      " END",                                                                 \
@@ -15165,21 +3461,29 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
+     " report_severity_count (task_last_report (id),"                        \
+     "                        opts.override, opts.min_qod, 'Critical')"      \
+     " END",                                                                 \
+     "critical",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_host_count (task_last_report (id))"                            \
      " END",                                                                 \
      "hosts",                                                                \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " report_result_host_count (task_last_report (id), opts.min_qod)"       \
      " END",                                                                 \
      "result_hosts",                                                         \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'False Positive') * 1.0"              \
@@ -15191,7 +3495,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Log') * 1.0"                         \
@@ -15203,7 +3507,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Low') * 1.0"                         \
@@ -15215,7 +3519,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'Medium') * 1.0"                      \
@@ -15227,7 +3531,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "CASE WHEN target IS null OR opts.ignore_severity != 0 THEN 0 ELSE"     \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
      " coalesce (report_severity_count (task_last_report (id),"              \
      "                                 opts.override, opts.min_qod,"         \
      "                                 'High') * 1.0"                        \
@@ -15236,6 +3540,18 @@ append_to_task_string (task_t task, const char* field, const char* value)
      "          0)"                                                          \
      " END",                                                                 \
      "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "CASE WHEN " TASK_SEV_CASE_GUARD " THEN 0 ELSE"                         \
+     " coalesce (report_severity_count (task_last_report (id),"              \
+     "                                 opts.override, opts.min_qod,"         \
+     "                                 'Critical') * 1.0"                    \
+     "            / nullif (report_result_host_count (task_last_report (id),"\
+     "                                                opts.min_qod), 0),"    \
+     "          0)"                                                          \
+     " END",                                                                 \
+     "critical_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
@@ -15258,7 +3574,12 @@ append_to_task_string (task_t task, const char* field, const char* value)
      " ORDER BY creation_time DESC LIMIT 1)",                                \
      "last_report_created",                                                  \
      KEYWORD_TYPE_INTEGER                                                    \
-   }                                                                         \
+   },                                                                        \
+   {                                                                         \
+     "(SELECT type FROM scanners WHERE scanners.id = tasks.scanner)",        \
+     "scanner_type",                                                         \
+     KEYWORD_TYPE_INTEGER                                                    \
+   } TASK_AGENT_GROUP_ITERATOR_COLUMNS
 
 /**
  * @brief Task iterator WHERE columns.
@@ -15705,6 +4026,8 @@ init_manage_create_functions ()
 void
 init_manage_process (const db_conn_info_t *database)
 {
+  if (reinit_semaphore_set())
+    abort ();
   if (init_manage_open_db (database))
     return;
   init_manage_create_functions ();
@@ -15758,7 +4081,7 @@ update_nvti_cache ()
    * to sort the data by NVT, which would make the query too slow. */
   init_iterator (&nvts,
                  "SELECT nvts.oid, vt_refs.type, vt_refs.ref_id,"
-                 "       vt_refs.ref_text"
+                 "       vt_refs.ref_text, nvts.qod"
                  " FROM nvts"
                  " LEFT OUTER JOIN vt_refs ON nvts.oid = vt_refs.vt_oid;");
 
@@ -15776,6 +4099,7 @@ update_nvti_cache ()
         {
           nvti = nvti_new ();
           nvti_set_oid (nvti, iterator_string (&nvts, 0));
+          nvti_set_qod(nvti, iterator_string (&nvts, 4));
 
           nvtis_add (nvti_cache, nvti);
 
@@ -15843,6 +4167,15 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
+#if OPENVASD
+      sql ("INSERT INTO scanners"
+           " (uuid, owner, name, host, port, type, ca_pub, credential,"
+           "  creation_time, modification_time)"
+           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
+           " m_now ());",
+           SCANNER_TYPE_OPENVASD);
+#else
       sql ("INSERT INTO scanners"
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
@@ -15851,7 +4184,22 @@ check_db_scanners ()
            " m_now ());",
            OPENVAS_DEFAULT_SOCKET,
            SCANNER_TYPE_OPENVAS);
+#endif
     }
+
+#if ENABLE_CONTAINER_SCANNING
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+                SCANNER_UUID_CONTAINER_IMAGE_DEFAULT) == 0)
+    {
+      sql ("INSERT INTO scanners"
+        " (uuid, owner, name, host, port, type, ca_pub, credential,"
+        "  creation_time, modification_time)"
+        " VALUES ('" SCANNER_UUID_CONTAINER_IMAGE_DEFAULT "', NULL, "
+        " 'Container Image Default', 'localhost', 3000, %d, NULL, NULL,"
+        " m_now (), m_now ());",
+        SCANNER_TYPE_CONTAINER_IMAGE);
+    }
+#endif
 
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_CVE) == 0)
@@ -15874,12 +4222,12 @@ static void
 check_db_settings ()
 {
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '6765549a-934e-11e3-b358-406186ea4fc5'"
+               " WHERE uuid = '" SETTING_UUID_PREFERRED_LANG "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('6765549a-934e-11e3-b358-406186ea4fc5', NULL,"
+         " ('" SETTING_UUID_PREFERRED_LANG "', NULL,"
          "  'User Interface Language',"
          "  'Preferred language to be used in client user interfaces.',"
          "  'Browser Language');");
@@ -15905,76 +4253,76 @@ check_db_settings ()
          "  1000);");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '77ec2444-e7f2-4a80-a59b-f4237782d93f'"
+               " WHERE uuid = '" SETTING_UUID_DYNAMIC_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('77ec2444-e7f2-4a80-a59b-f4237782d93f', NULL, 'Dynamic Severity',"
+         " ('" SETTING_UUID_DYNAMIC_SEVERITY "', NULL, 'Dynamic Severity',"
          "  'Whether to use dynamic severity scores by default.',"
          "  '0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '578a1c14-e2dc-45ef-a591-89d31391d007'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_REFRESH "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('578a1c14-e2dc-45ef-a591-89d31391d007', NULL, 'Auto-Refresh',"
+         " ('" SETTING_UUID_AUTO_REFRESH "', NULL, 'Auto-Refresh',"
          "  'The delay between automatic page refreshs in seconds.',"
          "  '0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'a6ac88c5-729c-41ba-ac0a-deea4a3441f2'"
+               " WHERE uuid = '" SETTING_UUID_FILE_DETAILS "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('a6ac88c5-729c-41ba-ac0a-deea4a3441f2', NULL,"
+         " ('" SETTING_UUID_FILE_DETAILS "', NULL,"
          "  'Details Export File Name',"
          "  'File name format string for the export of resource details.',"
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '0872a6ed-4f85-48c5-ac3f-a5ef5e006745'"
+               " WHERE uuid = '" SETTING_UUID_FILE_LIST "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('0872a6ed-4f85-48c5-ac3f-a5ef5e006745', NULL,"
+         " ('" SETTING_UUID_FILE_LIST "', NULL,"
          "  'List Export File Name',"
          "  'File name format string for the export of resource lists.',"
          "  '%%T-%%D');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'e1a2ae0b-736e-4484-b029-330c9e15b900'"
+               " WHERE uuid = '" SETTING_UUID_FILE_REPORT "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('e1a2ae0b-736e-4484-b029-330c9e15b900', NULL,"
+         " ('" SETTING_UUID_FILE_REPORT "', NULL,"
          "  'Report Export File Name',"
          "  'File name format string for the export of reports.',"
          "  '%%T-%%U');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+               " WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('7eda49c5-096c-4bef-b1ab-d080d87300df', NULL,"
+         " ('" SETTING_UUID_DEFAULT_SEVERITY "', NULL,"
          "  'Default Severity',"
          "  'Severity to use if none is specified or available from SecInfo.',"
          "  '10.0');");
 
   if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+               " WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
     sql ("INSERT into settings (uuid, owner, name, comment, value)"
          " VALUES"
-         " ('a09285b0-2d47-49b6-a4ef-946ee71f1d5c', NULL,"
+         " ('" SETTING_UUID_AUTO_CACHE_REBUILD "', NULL,"
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
@@ -16048,6 +4396,17 @@ check_db_settings ()
           "  'User Interface Date Format',"
           "  'Preferred date format to be used in client user interfaces.',"
           "  'system_default' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_CVE_CPE_MATCHING_VERSION "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_CVE_CPE_MATCHING_VERSION "', NULL,"
+          "  'CVE-CPE Matching Version',"
+          "  'Version of the CVE-CPE matching used in CVE scans.',"
+          "  '0' );");
 }
 
 /**
@@ -16177,7 +4536,7 @@ check_db_versions ()
   else
     {
       int supported;
-      
+
       supported = manage_scap_db_supported_version ();
       if (scap_db_version != supported)
         {
@@ -16590,6 +4949,124 @@ check_db_roles ()
          " m_now (), m_now ());");
 }
 
+#if ENABLE_CREDENTIAL_STORES
+/**
+ * @brief Create or update the CyberArk credential store if needed.
+ *
+ * @param owner  The owner if the credential store is newly created.
+ */
+static void
+check_db_cyberark_credential_store (user_t owner)
+{
+  const char *current_version = "0.1";
+  credential_store_preference_data_t *new_pref;
+  credential_store_selector_data_t *new_selector;
+  GList *preferences = NULL, *selectors = NULL;
+
+  if (sql_int ("SELECT count(*) FROM credential_stores"
+               " WHERE uuid = '%s' AND version = '%s'",
+               CREDENTIAL_STORE_UUID_CYBERARK,
+               current_version))
+    return;
+
+  new_pref = credential_store_preference_new
+               ("app_id",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_key",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_PRIVKEY,
+                "", "", "", "passphrase");
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_cert",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("server_ca_cert",
+                FALSE, CREDENTIAL_STORE_PREFERENCE_TYPE_X509_CERTS,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("client_pkcs12_file",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_PKCS12_FILE,
+                "", "", "", "passphrase");
+  preferences = g_list_append (preferences, new_pref);
+
+  new_pref = credential_store_preference_new
+               ("passphrase",
+                TRUE, CREDENTIAL_STORE_PREFERENCE_TYPE_STRING,
+                "", "", "", NULL);
+  preferences = g_list_append (preferences, new_pref);
+
+  new_selector = credential_store_selector_new
+                  ("username_password_object", "", "", 0);
+  credential_store_selector_add_credential_type (new_selector, "cs-up");
+  selectors = g_list_append (selectors, new_selector);
+
+  create_or_update_credential_store (CREDENTIAL_STORE_UUID_CYBERARK,
+                                     "CyberArk",
+                                     "localhost",
+                                     "api",
+                                     current_version,
+                                     preferences,
+                                     selectors,
+                                     owner);
+
+  g_list_free_full (preferences,
+                    (GDestroyNotify) credential_store_preference_free);
+  g_list_free_full (selectors,
+                    (GDestroyNotify) credential_store_selector_free);
+}
+#endif
+
+/**
+ * @brief Ensure the predefined credential stores exists.
+ */
+static void
+check_db_credential_stores ()
+{
+#if ENABLE_CREDENTIAL_STORES
+  gchar *feed_owner_uuid;
+  user_t owner = 0;
+  char *old_user_uuid, *old_username;
+
+  setting_value (SETTING_UUID_FEED_IMPORT_OWNER, &feed_owner_uuid);
+
+  if (feed_owner_uuid != NULL && strlen (feed_owner_uuid) > 0)
+    {
+      gchar *quoted_user_id = sql_quote (feed_owner_uuid);
+      owner = sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s'",
+                           quoted_user_id);
+      g_free (quoted_user_id);
+    }
+  if (owner == 0)
+    {
+      g_message ("%s: No feed owner set, skipping credential store creation",
+               __func__);
+      g_free (feed_owner_uuid);
+      return;
+    }
+
+  old_user_uuid = current_credentials.uuid;
+  old_username = current_credentials.username;
+  current_credentials.uuid = feed_owner_uuid;
+  current_credentials.username = user_name (feed_owner_uuid);
+
+  check_db_cyberark_credential_store (owner);
+
+  current_credentials.uuid = old_user_uuid;
+  current_credentials.username = old_username;
+  g_free (feed_owner_uuid);
+#endif /* ENABLE_CREDENTIAL_STORES */
+}
+
 /**
  * @brief Cleanup the auth_cache table.
  */
@@ -16600,91 +5077,16 @@ clean_auth_cache ()
 }
 
 /**
- * @brief Tries to migrate sensor type scanners to match the relays.
- *
- * @return A string describing the results or NULL on error.
- */
-static gchar *
-manage_migrate_relay_sensors ()
-{
-  iterator_t scanners;
-  int gmp_successes, gmp_failures, osp_failures;
-
-  gmp_successes = gmp_failures = osp_failures = 0;
-
-  if (get_relay_mapper_path () == NULL)
-    {
-      g_warning ("%s: No relay mapper set", __func__);
-      return NULL;
-    }
-
-  init_iterator (&scanners,
-                 "SELECT id, uuid, type, host, port FROM scanners"
-                 " WHERE type = %d",
-                 SCANNER_TYPE_OSP_SENSOR);
-
-  while (next (&scanners))
-    {
-      scanner_type_t type;
-      const char *scanner_id, *host;
-      int port;
-
-      scanner_id = iterator_string (&scanners, 1);
-      type = iterator_int (&scanners, 2);
-      host = iterator_string (&scanners, 3);
-      port = iterator_int (&scanners, 4);
-
-      if (relay_supports_scanner_type (host, port, type) == FALSE)
-        {
-          if (type == SCANNER_TYPE_OSP_SENSOR)
-            {
-              g_message ("%s: No relay found for OSP Sensor %s (%s:%d).",
-                         __func__, scanner_id, host, port);
-              osp_failures++;
-            }
-          else
-            g_warning ("%s: Unexpected type for scanner %s: %d",
-                       __func__, scanner_id, type);
-        }
-    }
-  cleanup_iterator (&scanners);
-
-  if (gmp_successes == 0 && gmp_failures == 0 && osp_failures == 0)
-    return g_strdup ("All GMP or OSP sensors up to date.");
-  else
-    {
-      GString *message = g_string_new ("");
-      g_string_append_printf (message,
-                              "%d sensors(s) not matching:",
-                              gmp_successes + gmp_failures + osp_failures);
-      if (gmp_successes)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) migrated to OSP.",
-                                gmp_successes);
-      if (gmp_failures)
-        g_string_append_printf (message,
-                                " %d GMP scanner(s) not migrated.",
-                                gmp_failures);
-      if (osp_failures)
-        g_string_append_printf (message,
-                                " %d OSP sensor(s) not migrated.",
-                                osp_failures);
-
-      return g_string_free (message, FALSE);
-    }
-}
-
-/**
  * @brief Ensure that the database is in order.
  *
  * Only called by init_manage_internal, and ultimately only by the main process.
  *
  * @param[in]  check_encryption_key  Whether to check encryption key.
- *
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  * @return 0 success, -1 error.
  */
 static int
-check_db (int check_encryption_key)
+check_db (int check_encryption_key, int avoid_db_check_inserts)
 {
   /* The file locks managed at startup ensure that this is the only Manager
    * process accessing the db.  Nothing else should be accessing the db, access
@@ -16695,19 +5097,26 @@ check_db (int check_encryption_key)
   create_tables ();
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
-  check_db_roles ();
-  check_db_nvt_selectors ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_roles ();
+      check_db_nvt_selectors ();
+    }
   check_db_nvts ();
-  check_db_port_lists ();
+  check_db_port_lists (avoid_db_check_inserts);
   clean_auth_cache ();
-  if (check_db_scanners ())
+  if (avoid_db_check_inserts == 0 && check_db_scanners ())
     goto fail;
-  if (check_db_report_formats ())
+  if (check_db_report_formats (avoid_db_check_inserts))
     goto fail;
   if (check_db_report_formats_trash ())
     goto fail;
-  check_db_permissions ();
-  check_db_settings ();
+  if (avoid_db_check_inserts == 0)
+    {
+      check_db_permissions ();
+      check_db_settings ();
+      check_db_credential_stores ();
+    }
   cleanup_schedule_times ();
   if (check_encryption_key && check_db_encryption_key ())
     goto fail;
@@ -16729,6 +5138,9 @@ stop_active_tasks ()
   iterator_t tasks;
   get_data_t get;
 
+  /* Clear the scan queue */
+  scan_queue_clear ();
+  
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
@@ -16874,6 +5286,7 @@ cleanup_tables ()
  *                                 with GMP when an alert occurs.
  * @param[in]  skip_db_check       Skip DB check.
  * @param[in]  check_encryption_key  Check encryption key if doing DB check.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
@@ -16888,7 +5301,8 @@ init_manage_internal (GSList *log_config,
                       int stop_tasks,
                       manage_connection_forker_t fork_connection,
                       int skip_db_check,
-                      int check_encryption_key)
+                      int check_encryption_key,
+                      int avoid_db_check_inserts)
 {
   int ret;
 
@@ -16935,11 +5349,11 @@ init_manage_internal (GSList *log_config,
 
   max_hosts = max_ips_per_target;
   if (max_email_attachment_size)
-    max_attach_length = max_email_attachment_size;
+    set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
-    max_content_length = max_email_include_size;
+    set_max_email_include_size (max_email_include_size);
   if (max_email_message_size)
-    max_email_message_length = max_email_message_size;
+    set_max_email_message_size (max_email_message_size);
 
   g_log_set_handler (G_LOG_DOMAIN,
                      ALL_LOG_LEVELS,
@@ -16974,7 +5388,7 @@ init_manage_internal (GSList *log_config,
        *   2 a helper processes (--create-user, --get-users, etc) when the
        *     main process is not running. */
 
-      ret = check_db (check_encryption_key);
+      ret = check_db (check_encryption_key, avoid_db_check_inserts);
       if (ret)
         return ret;
 
@@ -16982,8 +5396,10 @@ init_manage_internal (GSList *log_config,
 
       /* Set max_hosts in db, so database server side can access it. */
 
-      sql ("DELETE FROM meta WHERE name = 'max_hosts';");
-      sql ("INSERT INTO meta (name, value) VALUES ('max_hosts', %i);", max_hosts);
+      sql ("INSERT INTO meta (name, value)"
+           " VALUES ('max_hosts', %i)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           max_hosts);
     }
 
   if (stop_tasks)
@@ -16992,18 +5408,22 @@ init_manage_internal (GSList *log_config,
 
   /* Load the NVT cache into memory. */
 
-  if (nvti_cache == NULL)
+  if (nvti_cache == NULL && !skip_update_nvti_cache ())
     update_nvti_cache ();
 
+  if (skip_update_nvti_cache ())
+    avoid_db_check_inserts = TRUE;
+
   if (skip_db_check == 0)
-    /* Requires NVT cache. */
-    check_db_configs ();
+    /* Requires NVT cache if avoid_db_check_inserts == FALSE */
+    check_db_configs (avoid_db_check_inserts);
 
   sql_close ();
   gvmd_db_conn_info.name = database->name ? g_strdup (database->name) : NULL;
   gvmd_db_conn_info.host = database->host ? g_strdup (database->host) : NULL;
   gvmd_db_conn_info.port = database->port ? g_strdup (database->port) : NULL;
   gvmd_db_conn_info.user = database->user ? g_strdup (database->user) : NULL;
+  gvmd_db_conn_info.semaphore_timeout = database->semaphore_timeout;
 
   if (fork_connection)
     manage_fork_connection = fork_connection;
@@ -17051,7 +5471,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
                                1,  /* Stop active tasks. */
                                fork_connection,
                                skip_db_check,
-                               1); /* Check encryption key if checking db. */
+                               1, /* Check encryption key if checking db. */
+                               0  /* Do not avoid inserts if checking db. */);
 }
 
 /**
@@ -17063,7 +5484,8 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  *
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
- * @param[in]  max_ips_per_target  Max number of IPs per target.
+ * @param[in]  max_ips_per_target   Max number of IPs per target.
+ * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
@@ -17071,7 +5493,7 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
-                    int max_ips_per_target)
+                    int max_ips_per_target, int avoid_db_check_inserts)
 {
   return init_manage_internal (log_config,
                                database,
@@ -17088,7 +5510,8 @@ init_manage_helper (GSList *log_config, const db_conn_info_t *database,
                                lockfile_locked ("gvm-serving")
                                 ? 1    /* Skip DB check. */
                                 : 0,   /* Do DB check. */
-                               0);  /* Dummy. */
+                               0, /* Dummy. */
+                               avoid_db_check_inserts);
 }
 
 /**
@@ -17451,21 +5874,22 @@ auth_cache_find (const char *username, const char *password, int method)
     return -1;
 
   // verify for VALID or OUTDATED but don't update
-  ret = manage_authentication_verify(hash, password);
-  switch(ret){
-      case GMA_HASH_INVALID:
-          ret = 1;
-          break;
-       case GMA_HASH_VALID_BUT_DATED:
-          ret = 0;
-          break;
-        case GMA_SUCCESS:
-          ret = 0;
-          break;
-        default:
-          ret = -1;
-          break;
-  }
+  ret = manage_authentication_verify (hash, password);
+  switch (ret)
+    {
+    case GMA_HASH_INVALID:
+      ret = 1;
+      break;
+    case GMA_HASH_VALID_BUT_DATED:
+      ret = 0;
+      break;
+    case GMA_SUCCESS:
+      ret = 0;
+      break;
+    default:
+      ret = -1;
+      break;
+    }
   g_free (hash);
   return ret;
 }
@@ -17484,12 +5908,13 @@ auth_cache_insert (const char *username, const char *password, int method)
   char *hash, *quoted_username;
 
   quoted_username = sql_quote (username);
-  hash = manage_authentication_hash(password);
+  hash = manage_authentication_hash (password);
   sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
        " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
   /* Cleanup cache */
   sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - %d",
        get_auth_timeout()*60);
+  g_free (hash);
 }
 
 /**
@@ -17535,6 +5960,15 @@ authenticate_any_method (const gchar *username, const gchar *password,
   gchar *hash;
 
   sql_begin_immediate ();
+
+  ret = sql_table_lock_wait ("auth_cache", 30000);
+  if (ret != 1)
+    {
+      sql_rollback ();
+      g_warning ("%s: Failed to acquire auth_cache lock", __func__);
+      return -1;
+    }
+
   if (gvm_auth_ldap_enabled ()
       && ldap_auth_enabled ()
       && user_exists_method (username, AUTHENTICATION_METHOD_LDAP_CONNECT))
@@ -17609,27 +6043,28 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return 0;
     }
   hash = manage_user_hash (username);
-  ret = manage_authentication_verify(hash, password);
-  switch(ret){
-      case GMA_HASH_INVALID:
-          ret = 1;
-          break;
-       case GMA_HASH_VALID_BUT_DATED:
-          g_free(hash);
-          hash = manage_authentication_hash(password);
-          sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
-               hash, username);
-          auth_cache_insert (username, password, 2);
-          ret = 0;
-          break;
-        case GMA_SUCCESS:
-          auth_cache_insert (username, password, 2);
-          ret = 0;
-          break;
-        default:
-          ret = -1;
-          break;
-  }
+  ret = manage_authentication_verify (hash, password);
+  switch (ret)
+    {
+    case GMA_HASH_INVALID:
+      ret = 1;
+      break;
+    case GMA_HASH_VALID_BUT_DATED:
+      g_free(hash);
+      hash = manage_authentication_hash (password);
+      sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
+           hash, username);
+      auth_cache_insert (username, password, 2);
+      ret = 0;
+      break;
+    case GMA_SUCCESS:
+      auth_cache_insert (username, password, 2);
+      ret = 0;
+      break;
+    default:
+      ret = -1;
+      break;
+    }
 
   if (ret)
     sql_rollback ();
@@ -18140,6 +6575,174 @@ set_task_target (task_t task, target_t target)
        task);
 }
 
+#if ENABLE_AGENTS
+/**
+ * @brief Set the agent group of a task, also updating the agent group location.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  agent_group  Agent group.
+ */
+void
+set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
+{
+  sql ("UPDATE tasks SET agent_group = %llu, agent_group_location = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       agent_group,
+       task);
+}
+
+/**
+ * @brief Return whether any task exists for agent groups of a scanner.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
+ */
+int
+agent_group_tasks_exist_by_scanner (scanner_t scanner)
+{
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks"
+    " WHERE agent_group IN ("
+    "  SELECT id FROM agent_groups WHERE scanner = %llu)"
+    " AND agent_group_location = "
+    G_STRINGIFY (LOCATION_TABLE)
+    " AND hidden = 0;",
+    scanner);
+}
+/**
+ * @brief Return whether any hidden task exists for agent groups of a scanner.
+ *
+ * @param[in] scanner  The row ID of the scanner.
+ *
+ * @return 1 if at least one task exists, else 0.
+ */
+int
+agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
+{
+  return !!sql_int (
+    "SELECT COUNT(*) FROM tasks "
+    "WHERE hidden != 0 "
+    " AND ("
+    "  (agent_group_location = %d"
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups WHERE scanner = %llu ))"
+    " OR "
+    "  (agent_group_location = %d "
+    "   AND agent_group IN ("
+    "    SELECT id FROM agent_groups_trash WHERE scanner = %llu ))"
+    ");",
+    LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
+}
+
+/**
+ * @brief Return the agent_group of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Agent group of task.
+ */
+agent_group_t
+task_agent_group (task_t task)
+{
+  agent_group_t agent_group = 0;
+  switch (sql_int64 (&agent_group,
+                     "SELECT agent_group FROM tasks WHERE id = %llu;",
+                     task))
+    {
+    case 0:
+      return agent_group;
+      break;
+    case 1:        /* Too few rows in result of query. */
+    default:       /* Programming error. */
+      assert (0);
+    case -1:
+      return 0;
+      break;
+    }
+}
+
+/**
+ * @brief Return whether the agent group target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_agent_group_in_trash (task_t task)
+{
+  return sql_int ("SELECT agent_group_location = "
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;",
+                  task);
+}
+#endif /*ENABLE_AGENTS*/
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Return the OCI image target of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return OCI image target of task.
+ */
+oci_image_target_t
+task_oci_image_target (task_t task)
+{
+  oci_image_target_t oci_image_target = 0;
+  switch (sql_int64 (&oci_image_target,
+                     "SELECT oci_image_target FROM tasks WHERE id = %llu;",
+                     task))
+    {
+      case 0:
+        return oci_image_target;
+        break;
+      case 1:        /* Too few rows in result of query. */
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        return 0;
+        break;
+    }
+}
+
+/**
+ * @brief Return whether the OCI image target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_oci_image_target_in_trash (task_t task)
+{
+  return sql_int ("SELECT oci_image_target_location = " 
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM tasks WHERE id = %llu;",
+                  task);
+}
+
+/**
+ * @brief Set the OCI image target of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
+{
+  sql ("UPDATE tasks SET oci_image_target = %llu,"
+       " oci_image_target_location = 0,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       oci_image_target,
+       task);
+}
+
+#endif
+
 /**
  * @brief Set the hosts ordering of a task.
  *
@@ -18528,7 +7131,7 @@ set_task_start_time_ctime (task_t task, char* time)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_report_previous (task_t task, report_t report, report_t *previous)
 {
   switch (sql_int64 (previous,
@@ -18598,12 +7201,13 @@ task_last_report (task_t task, report_t *report)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_last_report_any_status (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
-                     "SELECT id FROM reports WHERE task = %llu"
-                     " ORDER BY creation_time DESC LIMIT 1;",
+                     "SELECT max (id) FROM reports"
+                     " WHERE task = %llu"
+                     " LIMIT 1;",
                      task))
     {
       case 0:
@@ -18629,7 +7233,7 @@ task_last_report_any_status (task_t task, report_t *report)
  *
  * @return 0 success, -1 error.
  */
-static int
+int
 task_second_last_report (task_t task, report_t *report)
 {
   switch (sql_int64 (report,
@@ -18852,6 +7456,65 @@ set_task_groups (task_t task, array_t *groups, gchar **group_id_return)
     }
 
   sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Set task schedule and schedule periods.
+ *
+ * If a valid schedule_id is provided, looks up the schedule and sets it for the task.
+ * If not, falls back to setting schedule_periods if available.
+ *
+ * @param[in,out] task              Task object to update.
+ * @param[in]     schedule_id       UUID of the schedule.
+ * @param[in]     schedule_periods  Optional string representing number of periods.
+ *
+ * @return 0  on success,
+ *         -1 if schedule lookup failed with permission,
+ *         -2 if schedule not found.
+ */
+int
+set_task_schedule_and_periods (task_t task, const gchar *schedule_id,
+                               const gchar *schedule_periods)
+{
+  if (schedule_id)
+    {
+      schedule_t schedule;
+      int periods = schedule_periods ? atoi (schedule_periods) : 0;
+
+      if (find_schedule_with_permission (schedule_id,
+                                         &schedule, "get_schedules"))
+        {
+          return -1;
+        }
+      if (schedule == 0)
+        {
+          return -2;
+        }
+      /** @todo
+       *
+       * This is a contention hole.  Some other process could remove
+       * the schedule at this point.  The variable "schedule" would
+       * still refer to the removed schedule.
+       *
+       * This happens all over the place.  Anywhere that a libmanage
+       * client gets a reference to a resource, in fact.
+       *
+       * Possibly libmanage should lock the db whenever it hands out a
+       * reference, and the client should call something to release
+       * the lock when it's done.
+       *
+       * In many cases, like this one, the client could pass the UUID
+       * directly to libmanage, instead of getting the reference.  In
+       * this case the client would then need something like
+       * set_task_schedule_uuid.
+       */
+      set_task_schedule (task, schedule, periods);
+    }
+  else if (schedule_periods
+           && strlen (schedule_periods))
+    set_task_schedule_periods_id (task,
+                                  atoi (schedule_periods));
   return 0;
 }
 
@@ -19158,7 +7821,7 @@ set_task_schedule_next_time_uuid (const gchar *task_id, time_t time)
  * @return Severity score of last report on task as a double if there is one,
  *         else SEVERITY_MISSING.
  */
-static double
+double
 task_severity_double (task_t task, int overrides, int min_qod, int offset)
 {
   report_t report;
@@ -19770,203 +8433,6 @@ qod_from_type (const char *qod_type)
 }
 
 /**
- * @brief Identify a host, given an identifier.
- *
- * Find a host which has an identifier of the same name and value, and
- * which has no identifiers of the same name and a different value.
- *
- * @param[in]  host_name         Host name.
- * @param[in]  identifier_name   Host identifier name.
- * @param[in]  identifier_value  Value of host identifier.
- * @param[in]  source_type       Source of identification: result.
- * @param[in]  source            Source identifier.
- *
- * @return Host if exists, else 0.
- */
-static host_t
-host_identify (const char *host_name, const char *identifier_name,
-               const char *identifier_value, const char *source_type,
-               const char *source)
-{
-  host_t host = 0;
-  gchar *quoted_host_name, *quoted_identifier_name, *quoted_identifier_value;
-
-  quoted_host_name = sql_quote (host_name);
-  quoted_identifier_name = sql_quote (identifier_name);
-  quoted_identifier_value = sql_quote (identifier_value);
-
-  switch (sql_int64 (&host,
-                     "SELECT hosts.id FROM hosts, host_identifiers"
-                     " WHERE hosts.name = '%s'"
-                     " AND hosts.owner = (SELECT id FROM users"
-                     "                    WHERE uuid = '%s')"
-                     " AND host = hosts.id"
-                     " AND host_identifiers.owner = (SELECT id FROM users"
-                     "                               WHERE uuid = '%s')"
-                     " AND host_identifiers.name = '%s'"
-                     " AND value = '%s';",
-                     quoted_host_name,
-                     current_credentials.uuid,
-                     current_credentials.uuid,
-                     quoted_identifier_name,
-                     quoted_identifier_value))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        host = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        host = 0;
-        break;
-    }
-
-  if (host == 0)
-    switch (sql_int64 (&host,
-                       "SELECT id FROM hosts"
-                       " WHERE name = '%s'"
-                       " AND owner = (SELECT id FROM users"
-                       "              WHERE uuid = '%s')"
-                       " AND NOT EXISTS (SELECT * FROM host_identifiers"
-                       "                 WHERE host = hosts.id"
-                       "                 AND owner = (SELECT id FROM users"
-                       "                              WHERE uuid = '%s')"
-                       "                 AND name = '%s');",
-                       quoted_host_name,
-                       current_credentials.uuid,
-                       current_credentials.uuid,
-                       quoted_identifier_name))
-      {
-        case 0:
-          break;
-        case 1:        /* Too few rows in result of query. */
-          host = 0;
-          break;
-        default:       /* Programming error. */
-          assert (0);
-        case -1:
-          host = 0;
-          break;
-      }
-
-  g_free (quoted_host_name);
-  g_free (quoted_identifier_name);
-  g_free (quoted_identifier_value);
-
-  return host;
-}
-
-/**
- * @brief Notice a host.
- *
- * When a host is detected during a scan, this makes the decision about which
- * asset host is used for the host, as described in \ref asset_rules.  This
- * decision is revised at the end of the scan by \ref hosts_set_identifiers if
- * there are any identifiers for the host.
- *
- * @param[in]  host_name         Name of host.
- * @param[in]  identifier_type   Type of host identifier.
- * @param[in]  identifier_value  Value of host identifier.
- * @param[in]  source_type       Type of source identifier
- * @param[in]  source_id         Source identifier.
- * @param[in]  check_add_to_assets  Whether to check the 'Add to Assets'
- *                                  task preference.
- * @param[in]  check_for_existing_identifier  Whether to check for an existing
- *                                            identifier like this one.  Used
- *                                            for slaves, which call this
- *                                            repeatedly.
- *
- * @return Host if existed, else 0.
- */
-host_t
-host_notice (const char *host_name, const char *identifier_type,
-             const char *identifier_value, const char *source_type,
-             const char *source_id, int check_add_to_assets,
-             int check_for_existing_identifier)
-{
-  host_t host;
-  gchar *quoted_identifier_value, *quoted_identifier_type, *quoted_source_type;
-  gchar *quoted_source_id;
-
-  /* Only add to assets if "Add to Assets" is set on the task. */
-  if (check_add_to_assets
-      && g_str_has_prefix (source_type, "Report")
-      && sql_int ("SELECT value = 'no' FROM task_preferences"
-                  " WHERE task = (SELECT task FROM reports WHERE uuid = '%s')"
-                  " AND name = 'in_assets';",
-                  source_id))
-    return 0;
-
-  host = host_identify (host_name, identifier_type, identifier_value,
-                        source_type, source_id);
-  if (host == 0)
-    {
-      gchar *quoted_host_name;
-      quoted_host_name = sql_quote (host_name);
-      sql ("INSERT into hosts"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
-           "  m_now (), m_now ());",
-           current_credentials.uuid,
-           quoted_host_name);
-      g_free (quoted_host_name);
-
-      host = sql_last_insert_id ();
-    }
-
-  quoted_identifier_value = sql_quote (identifier_value);
-  quoted_source_id = sql_quote (source_id);
-  quoted_source_type = sql_quote (source_type);
-  quoted_identifier_type = sql_quote (identifier_type);
-
-  if (check_for_existing_identifier
-      && sql_int ("SELECT EXISTS (SELECT * FROM host_identifiers"
-                  "               WHERE host = %llu"
-                  "               AND owner = (SELECT id FROM users WHERE uuid = '%s')"
-                  "               AND name = '%s'"
-                  "               AND value = '%s'"
-                  "               AND source_type = '%s'"
-                  "               AND source_id = '%s');",
-                  host,
-                  current_credentials.uuid,
-                  quoted_identifier_type,
-                  quoted_identifier_value,
-                  quoted_source_type,
-                  quoted_source_id))
-    return 0;
-
-  sql ("INSERT into host_identifiers"
-       " (uuid, host, owner, name, comment, value, source_type, source_id,"
-       "  source_data, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), '%s',"
-       "  '', '%s', '%s', '%s', '', m_now (), m_now ());",
-       host,
-       current_credentials.uuid,
-       quoted_identifier_type,
-       quoted_identifier_value,
-       quoted_source_type,
-       quoted_source_id);
-
-  sql ("UPDATE hosts SET modification_time = (SELECT modification_time"
-       "                                      FROM host_identifiers"
-       "                                      WHERE id = %llu)"
-       " WHERE id = %llu;",
-       sql_last_insert_id (),
-       host);
-
-  g_free (quoted_identifier_type);
-  g_free (quoted_identifier_value);
-  g_free (quoted_source_id);
-  g_free (quoted_source_type);
-
-  return host;
-}
-
-/**
  * @brief Get a severity string from an nvt and result type.
  *
  * @param[in]  nvt_id   NVT oid.
@@ -19974,19 +8440,22 @@ host_notice (const char *host_name, const char *identifier_type,
  *
  * @return A severity string, NULL if unknown type or no nvt id for Alarm type.
  */
-static char *
+char *
 nvt_severity (const char *nvt_id, const char *type)
 {
   char *severity = NULL;
 
-  if (strcasecmp (type, "Alarm") == 0 && nvt_id)
+  if ((strcasecmp (type, "alarm") == 0 || strcasecmp (type, "Alarm") == 0) && nvt_id)
     severity = sql_string ("SELECT coalesce(cvss_base, '0.0')"
                            " FROM nvts WHERE uuid = '%s';", nvt_id);
-  else if (strcasecmp (type, "Alarm") == 0)
+  else if (strcasecmp (type, "Alarm") == 0
+           || strcasecmp (type, "alarm") == 0)
     g_warning ("%s result type requires an NVT", type);
-  else if (strcasecmp (type, "Log Message") == 0)
+  else if (strcasecmp (type, "Log Message") == 0
+           || strcasecmp (type, "log") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
-  else if (strcasecmp (type, "Error Message") == 0)
+  else if (strcasecmp (type, "Error Message") == 0
+           || strcasecmp (type, "error") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_ERROR));
   else
     g_warning ("Invalid result nvt type %s", type);
@@ -20643,15 +9112,18 @@ DEF_ACCESS (cpe_match_string_iterator_version_end_excl, 7);
  *
  * @param[in]  iterator           Iterator.
  * @param[in]  match_criteria_id  The match criteria id to get the matches for.
+ * @param[in]  schema             Schema name, NULL for the default "scap".
  */
 void
 init_cpe_match_string_matches_iterator (iterator_t* iterator,
-                                       const char *match_criteria_id)
+                                        const char *match_criteria_id,
+                                        const char *schema)
 {
   init_iterator (iterator,
                  "SELECT cpe_name_id, cpe_name"
-                 " FROM scap.cpe_matches"
+                 " FROM %s.cpe_matches"
                  " WHERE match_criteria_id = '%s'",
+                 schema ? schema : "scap",
                  match_criteria_id);
 }
 
@@ -20734,11 +9206,6 @@ DEF_ACCESS (prognosis_iterator_cpe, 3);
 
 
 /* Reports. */
-
-/**
- * @brief Whether to ignore the Max Rows Per Page settings.
- */
-int ignore_max_rows_per_page = 0;
 
 /**
  * @brief Create a new GHashTable for containing resource rowids.
@@ -21130,7 +9597,8 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
                report, user, override, min_qod);
         }
 
-      report_counts_id (report, &holes, &infos, &logs, &warnings,
+      int criticals;
+      report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                         &false_positives, &severity, get, NULL);
 
       get_data_reset (get);
@@ -21280,13 +9748,13 @@ insert_report_host_detail (report_t report, const char *host,
   char *quoted_source_desc, *quoted_name, *quoted_value;
   char *quoted_hash_value;
 
-  quoted_host = sql_quote (host);
-  quoted_source_type = sql_quote (s_type);
-  quoted_source_name = sql_quote (s_name);
-  quoted_source_desc = sql_quote (s_desc);
-  quoted_name = sql_quote (name);
-  quoted_value = sql_quote (value);
-  quoted_hash_value = sql_quote(hash_value ?: "");
+  quoted_host = sql_quote (host ? host : "");
+  quoted_source_type = sql_quote (s_type ? s_type : "");
+  quoted_source_name = sql_quote (s_name ? s_name : "");
+  quoted_source_desc = sql_quote (s_desc ? s_desc : "");
+  quoted_name = sql_quote (name ? name : "");
+  quoted_value = sql_quote (value ? value : "");
+  quoted_hash_value = sql_quote (hash_value ? hash_value : "");
   sql ("INSERT INTO report_host_details"
        " (report_host, source_type, source_name, source_description,"
        "  name, value, hash_value)"
@@ -21307,9 +9775,10 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
- * @brief Maximum number of values per insert, when uploading report.
+ * @brief Maximum number of COPY statements per transaction, 
+ *        when uploading report.
  */
-#define CREATE_REPORT_INSERT_SIZE 300
+#define CREATE_REPORT_COPY_CHUNK_SIZE 3000
 
 /**
  * @brief Number of results per transaction, when uploading report.
@@ -21320,6 +9789,109 @@ insert_report_host_detail (report_t report, const char *host,
  * @brief Number of microseconds to sleep between insert chunks.
  */
 #define CREATE_REPORT_CHUNK_SLEEP 1000
+
+/**
+ * @brief Size of the buffer used for COPY statements in bytes.
+ */
+#define BUFFER_SIZE (20 * 1048576)  /* 20 MiB */
+
+/**
+ * @brief Set whether processing of a report is required
+ *        and whether to add it to assets.
+ * 
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  processing_required  Whether processing is required.
+ * @param[in]  in_assets            Whether to add to assets.
+ */
+void
+report_set_processing_required (report_t report,
+                                int processing_required, int in_assets)
+{
+  sql ("UPDATE reports SET processing_required = %d, in_assets = %d"
+       " WHERE id = %llu;",
+       processing_required ? 1 : 0,
+       in_assets ? 1 : 0,
+       report);
+}
+
+/**
+ * @brief Process imported report.
+ * 
+ * Adds TLS certificates to the database and creates assets from the report.
+ *
+ * @param[in]  report  Report to process.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+process_report_import (report_t report)
+{
+  iterator_t hosts;
+  task_t task;
+  int uuid_was_null;
+
+  init_report_host_iterator (&hosts, report, NULL, 0);
+
+  report_task (report, &task);
+  if (task == 0)
+    {
+      cleanup_iterator (&hosts);
+      return -1;
+    }
+
+  uuid_was_null = 0;
+  if (current_credentials.uuid == NULL)
+    {
+      current_credentials.uuid = task_owner_uuid (task);
+      uuid_was_null = 1;
+    }
+
+  sql_begin_immediate ();
+
+  while (next (&hosts))
+    {
+      const char* host = host_iterator_host (&hosts);
+      gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+      add_assets_from_host_in_report (report, host);
+    }
+
+  sql_commit ();
+  cleanup_iterator (&hosts);
+
+  current_scanner_task = task;
+  global_current_report = report;
+  set_task_run_status (task, TASK_STATUS_PROCESSING);
+
+  if (sql_int ("SELECT coalesce (in_assets, 0) = 1 FROM reports"
+               " WHERE id = %llu;",
+               report))
+    {
+      if (create_asset_report (report_uuid (report), ""))
+        {
+          g_warning ("%s: failed to create assets from report %llu", 
+                     __func__,
+                     report);
+          set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+          return -1;
+        }
+    }
+
+  sql ("UPDATE reports SET processing_required = 0"
+       " WHERE id = %llu;",
+       report);
+
+  set_task_run_status (task, TASK_STATUS_DONE);
+  current_scanner_task = 0;
+  global_current_report = 0;
+
+  if (uuid_was_null)
+    {
+      g_free (current_credentials.uuid);
+      current_credentials.uuid = NULL;
+    }
+
+  return 0;
+}
 
 /**
  * @brief Create a report from an array of results.
@@ -21346,14 +9918,15 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                array_t *host_starts, array_t *host_ends, array_t *details,
                char **report_id)
 {
-  int index, in_assets_int, count, insert_count, first, rc;
+  int index, in_assets_int, count, rc;
   create_report_result_t *result, *end, *start;
   report_t report;
   user_t owner;
   task_t task;
   pid_t pid;
   host_detail_t *detail;
-  GString *insert;
+  db_copy_buffer_t copy_buffer;
+  resource_t result_rowid, report_host_details_rowid;
 
   in_assets_int
     = (in_assets && strcmp (in_assets, "") && strcmp (in_assets, "0"));
@@ -21499,6 +10072,15 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   /* Add the results. */
 
+  db_copy_buffer_init (&copy_buffer,
+                       BUFFER_SIZE,
+                       "COPY results"
+                       " (id, uuid, owner, date, task, host, hostname, port,"
+                       "  nvt, type, description,"
+                       "  nvt_version, severity, qod, qod_type,"
+                       "  result_nvt, report)"
+                       " FROM STDIN;");
+
   if (sql_int64 (&owner,
                  "SELECT owner FROM tasks WHERE tasks.id = %llu",
                  task))
@@ -21518,10 +10100,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                               0);
 
   g_debug ("%s: add results", __func__);
-  insert = g_string_new ("");
   index = 0;
-  first = 1;
-  insert_count = 0;
   count = 0;
   while ((result = (create_report_result_t*) g_ptr_array_index (results,
                                                                 index++)))
@@ -21531,77 +10110,71 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_qod, *quoted_qod_type;
       g_debug ("%s: add results: index: %i", __func__, index);
 
-      quoted_host = sql_quote (result->host ? result->host : "");
-      quoted_hostname = sql_quote (result->hostname ? result->hostname : "");
-      quoted_port = sql_quote (result->port ? result->port : "");
-      quoted_nvt_oid = sql_quote (result->nvt_oid ? result->nvt_oid : "");
-      quoted_description = sql_quote (result->description
+      quoted_host = sql_copy_escape (result->host ? result->host : "");
+      quoted_hostname = sql_copy_escape (result->hostname ? result->hostname : "");
+      quoted_port = sql_copy_escape (result->port ? result->port : "");
+      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
+      quoted_description = sql_copy_escape (result->description
                                        ? result->description
                                        : "");
-      quoted_scan_nvt_version = sql_quote (result->scan_nvt_version
+      quoted_scan_nvt_version = sql_copy_escape (result->scan_nvt_version
                                        ? result->scan_nvt_version
                                        : "");
-      quoted_severity =  sql_quote (result->severity ? result->severity : "");
+      quoted_severity =  sql_copy_escape (result->severity ? result->severity : "");
       if (result->qod && strcmp (result->qod, "") && strcmp (result->qod, "0"))
-        quoted_qod = sql_quote (result->qod);
+        quoted_qod = sql_copy_escape (result->qod);
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
-      quoted_qod_type = sql_quote (result->qod_type ? result->qod_type : "");
+      quoted_qod_type = sql_copy_escape (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
 
-      if (first)
-        g_string_append (insert,
-                         "INSERT INTO results"
-                         " (uuid, owner, date, task, host, hostname, port,"
-                         "  nvt, type, description,"
-                         "  nvt_version, severity, qod, qod_type,"
-                         "  result_nvt, report)"
-                         " VALUES");
-      else
-        g_string_append (insert, ", ");
-      first = 0;
-      g_string_append_printf (insert,
-                              " (make_uuid (), %llu, m_now (), %llu, '%s',"
-                              "  '%s', '%s', '%s', '%s', '%s', '%s', '%s',"
-                              "  '%s', '%s',"
-                              "  (SELECT id FROM result_nvts WHERE nvt = '%s'),"
-                              "  %llu)",
-                              owner,
-                              task,
-                              quoted_host,
-                              quoted_hostname,
-                              quoted_port,
-                              quoted_nvt_oid,
-                              result->threat
-                               ? threat_message_type (result->threat)
-                               : "Log Message",
-                              quoted_description,
-                              quoted_scan_nvt_version,
-                              quoted_severity,
-                              quoted_qod,
-                              quoted_qod_type,
-                              quoted_nvt_oid,
-                              report);
-
-      /* Limit the number of results inserted at a time. */
-      if (insert_count == CREATE_REPORT_INSERT_SIZE)
+      if (sql_int64 (&result_rowid,
+        "SELECT nextval('results_id_seq');"))
         {
-          sql ("%s", insert->str);
-          g_string_truncate (insert, 0);
-          count++;
-          insert_count = 0;
-          first = 1;
-
-          if (count == CREATE_REPORT_CHUNK_SIZE)
-            {
-              report_cache_counts (report, 1, 1, NULL);
-              sql_commit ();
-              gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-              sql_begin_immediate ();
-              count = 0;
-            }
+          g_warning ("%s: failed to get result row ID", __func__);
+          return -1;
         }
-      insert_count++;
+
+      char* uuid = gvm_uuid_make ();
+      if (uuid == NULL)
+        {
+          g_warning ("%s: failed to generate result UUID", __func__);
+          return -2;
+        }
+      time_t date = time (NULL);
+
+      resource_t result_nvt;
+
+      if (sql_int64 (&result_nvt,
+                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
+                     quoted_nvt_oid))
+        {
+          g_warning ("%s: failed to get result_nvt ID", __func__);
+          return -1;
+        }
+
+      int ret = db_copy_buffer_append_printf
+                  (&copy_buffer,
+                  "%llu\t%s\t%llu\t%lld\t%llu\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%llu\t%llu\n",
+                  result_rowid,
+                  uuid,
+                  owner,
+                  (long long) date,
+                  task,
+                  quoted_host,
+                  quoted_hostname,
+                  quoted_port,
+                  quoted_nvt_oid,
+                  result->threat
+                  ? threat_message_type (result->threat)
+                  : "Log Message",
+                  quoted_description,
+                  quoted_scan_nvt_version,
+                  quoted_severity,
+                  quoted_qod,
+                  quoted_qod_type,
+                  result_nvt,
+                  report);
 
       g_free (quoted_host);
       g_free (quoted_hostname);
@@ -21612,11 +10185,40 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_free (quoted_severity);
       g_free (quoted_qod);
       g_free (quoted_qod_type);
+      g_free (uuid);
+
+      if (ret)
+        {
+          g_warning ("%s: failed to write to database copy buffer",
+                     __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      count++;
+
+      if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
+        {
+          if (db_copy_buffer_commit (&copy_buffer, FALSE))
+            {
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }
+          report_cache_counts (report, 1, 1, NULL);
+          sql_commit ();
+          gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+          sql_begin_immediate ();
+          count = 0;
+        }
     }
 
-  if (first == 0)
+  if (count > 0)
     {
-      sql ("%s", insert->str);
+      if (db_copy_buffer_commit (&copy_buffer, TRUE))
+      {
+        db_copy_buffer_cleanup (&copy_buffer);
+        return -1;
+      }
       report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
@@ -21665,41 +10267,63 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       }
 
   g_debug ("%s: add host details", __func__);
+
+
+  db_copy_buffer_init (&copy_buffer,
+                       BUFFER_SIZE,
+                       "COPY report_host_details"
+                       " (id, report_host, source_type, source_name,"
+                           "  source_description, name, value)"
+                       " FROM STDIN;");
+
   index = 0;
-  first = 1;
   count = 0;
-  insert_count = 0;
-  g_string_truncate (insert, 0);
   while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
     if (detail->ip && detail->name)
       {
         char *quoted_host, *quoted_source_name, *quoted_source_type;
         char *quoted_source_desc, *quoted_name, *quoted_value;
 
-        quoted_host = sql_quote (detail->ip);
-        quoted_source_type = sql_quote (detail->source_type ?: "");
-        quoted_source_name = sql_quote (detail->source_name ?: "");
-        quoted_source_desc = sql_quote (detail->source_desc ?: "");
-        quoted_name = sql_quote (detail->name);
-        quoted_value = sql_quote (detail->value ?: "");
+        quoted_host = sql_copy_escape (detail->ip);
+        quoted_source_type = sql_copy_escape (detail->source_type ?: "");
+        quoted_source_name = sql_copy_escape (detail->source_name ?: "");
+        quoted_source_desc = sql_copy_escape (detail->source_desc ?: "");
+        quoted_name = sql_copy_escape (detail->name);
+        quoted_value = sql_copy_escape (detail->value ?: "");
 
-        if (first)
-          g_string_append (insert,
-                           "INSERT INTO report_host_details"
-                           " (report_host, source_type, source_name,"
-                           "  source_description, name, value)"
-                           " VALUES");
-        else
-          g_string_append (insert, ", ");
-        first = 0;
+        if (sql_int64 (&report_host_details_rowid,
+          "SELECT nextval('report_host_details_id_seq');"))
+          {
+            g_warning ("%s: failed to get report_host_details row ID", __func__);
+            return -1;
+          }
 
-        g_string_append_printf (insert,
-                                " ((SELECT id FROM report_hosts"
-                                "   WHERE report = %llu AND host = '%s'),"
-                                "  '%s', '%s', '%s', '%s', '%s')",
-                                report, quoted_host, quoted_source_type,
-                                quoted_source_name, quoted_source_desc,
-                                quoted_name, quoted_value);
+        resource_t report_host;
+
+        sql_int64 (&report_host,
+                    "SELECT id FROM report_hosts"
+                    "   WHERE report = %llu AND host = '%s';",
+                    report,
+                    quoted_host);
+
+        int ret = db_copy_buffer_append_printf
+                    (&copy_buffer,
+                    "%llu\t%llu\t%s\t%s\t%s\t%s\t%s\n",
+                    report_host_details_rowid,
+                    report_host,
+                    quoted_source_type,
+                    quoted_source_name,
+                    quoted_source_desc,
+                    quoted_name,
+                    quoted_value);
+
+        if (ret)
+        {
+          g_warning ("%s: failed to write to database copy buffer",
+                      __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
 
         g_free (quoted_host);
         g_free (quoted_source_type);
@@ -21708,59 +10332,32 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
         g_free (quoted_name);
         g_free (quoted_value);
 
-        /* Limit the number of details inserted at a time. */
-        if (insert_count == CREATE_REPORT_INSERT_SIZE)
+        count++;
+        if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
           {
-            sql ("%s", insert->str);
-            g_string_truncate (insert, 0);
-            count++;
-            insert_count = 0;
-            first = 1;
-
-            if (count == CREATE_REPORT_CHUNK_SIZE)
-              {
-                sql_commit ();
-                gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-                sql_begin_immediate ();
-                count = 0;
-              }
+            if (db_copy_buffer_commit (&copy_buffer, FALSE))
+            {
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }            
+            sql_commit ();
+            gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+            sql_begin_immediate ();
+            count = 0;
           }
-        insert_count++;
       }
-
-  sql_commit ();
-
-  index = 0;
-  sql_begin_immediate ();
-  while ((end = (create_report_result_t*) g_ptr_array_index (host_ends,
-                                                             index++)))
-    if (end->host)
-      {
-        sql_commit ();
-        gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-        add_assets_from_host_in_report (report, end->host);
-        sql_begin_immediate ();
-      }
-
-  if (first == 0)
-    sql ("%s", insert->str);
-
-  sql_commit ();
-  g_string_free (insert, TRUE);
-
-  current_scanner_task = task;
-  global_current_report = report;
-  set_task_run_status (task, TASK_STATUS_PROCESSING);
-
-  if (in_assets_int)
+  if (db_copy_buffer_commit (&copy_buffer, TRUE))
     {
-      create_asset_report (*report_id, "");
+      db_copy_buffer_cleanup (&copy_buffer);
+      return -1;
     }
 
-  set_task_run_status (task, TASK_STATUS_DONE);
-  current_scanner_task = 0;
-  global_current_report = 0;
+  sql_commit ();
+
+  report_set_processing_required (report, 1, in_assets_int);
+
   gvm_close_sentry ();
+  cleanup_manage_process (FALSE); //check this
   exit (EXIT_SUCCESS);
   return 0;
 }
@@ -21835,7 +10432,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_yes
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description LIKE 'Compliant:%%YES%%';",
+                   " AND description ~ '^Compliant:\\s*YES\\s*';",
                    report);
     }
 
@@ -21844,7 +10441,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_no
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description LIKE 'Compliant:%%NO%%';",
+                   " AND description ~ '^Compliant:\\s*NO\\s*';",
                    report);
     }
 
@@ -21853,7 +10450,7 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_incomplete
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description LIKE 'Compliant:%%INCOMPLETE%%';",
+                   " AND description ~ '^Compliant:\\s*INCOMPLETE\\s*';",
                    report);
     }
   if (compliance_undefined)
@@ -21861,9 +10458,9 @@ report_compliance_by_uuid (const char *report_id,
       *compliance_undefined
         = sql_int ("SELECT count(*) FROM results"
                    " WHERE report = %llu"
-                   " AND description NOT LIKE 'Compliant:%%';",
+                   " AND description !~ '^Compliant:\\s*';",
                    report);
-    }    
+    }
 
   g_free (quoted_uuid);
 }
@@ -22089,11 +10686,11 @@ report_add_results_array (report_t report, GArray *results)
 #define REPORT_ITERATOR_FILTER_COLUMNS                                         \
  { ANON_GET_ITERATOR_FILTER_COLUMNS, "task_id", "name", "creation_time",       \
    "date", "status", "task", "severity", "false_positive", "log", "low",       \
-   "medium", "high", "hosts", "result_hosts", "fp_per_host", "log_per_host",   \
-   "low_per_host", "medium_per_host", "high_per_host", "duration",             \
-   "duration_per_host", "start_time", "end_time", "scan_start", "scan_end",    \
-   "compliance_yes", "compliance_no", "compliance_incomplete",                 \
-   "compliant", NULL }
+   "medium", "high", "critical", "hosts", "result_hosts", "fp_per_host",       \
+   "log_per_host", "low_per_host", "medium_per_host", "high_per_host",         \
+   "critical_per_host", "duration", "duration_per_host", "start_time",         \
+   "end_time", "scan_start", "scan_end", "compliance_yes", "compliance_no",    \
+   "compliance_incomplete", "compliant", NULL }
 
 /**
  * @brief Report iterator columns.
@@ -22162,6 +10759,11 @@ report_add_results_array (report_t report, GArray *results)
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
+     "report_severity_count (id, opts.override, opts.min_qod, 'Critical')",  \
+     "critical",                                                             \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
      "(SELECT name FROM users WHERE users.id = reports.owner)",              \
      "_owner",                                                               \
      KEYWORD_TYPE_STRING                                                     \
@@ -22214,6 +10816,14 @@ report_add_results_array (report_t report, GArray *results)
      "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
      "          0)",                                                         \
      "high_per_host",                                                        \
+     KEYWORD_TYPE_INTEGER                                                    \
+   },                                                                        \
+   {                                                                         \
+     "coalesce (report_severity_count (id, opts.override, opts.min_qod,"     \
+     "                                 'Critical') * 1.0"                    \
+     "            / nullif (report_result_host_count (id, opts.min_qod), 0),"\
+     "          0)",                                                         \
+     "critical_per_host",                                                    \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
@@ -22277,7 +10887,7 @@ report_iterator_opts_table (int override, int min_qod)
  * @brief Return SQL WHERE for restricting a SELECT to compliance statuses.
  *
  * @param[in]  compliance  String describing compliance statuses of reports
- *                         to include (for example, "yniu" for yes (compliant), 
+ *                         to include (for example, "yniu" for yes (compliant),
  *                         no (not compliant), i (incomplete) and u (undefined))
  *                         All compliance statuses if NULL.
  *
@@ -22351,7 +10961,7 @@ reports_extra_where (int trash, const gchar *filter, const char *usage_type)
     {
       trash_clause = g_strdup_printf (" AND (SELECT hidden FROM tasks"
                                       "      WHERE tasks.id = task)"
-                                      "     = 2");    
+                                      "     = 2");
     }
   else
     {
@@ -22460,7 +11070,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
   extra_tables = report_iterator_opts_table (overrides, min_qod);
   usage_type = get_data_get_extra (get, "usage_type");
 
-  extra_where = reports_extra_where (get->trash, 
+  extra_where = reports_extra_where (get->trash,
                                      filter ? filter : get->filter,
                                      usage_type);
 
@@ -22500,6 +11110,27 @@ init_report_iterator_task (iterator_t* iterator, task_t task)
   init_iterator (iterator,
                  "SELECT id, uuid FROM reports WHERE task = %llu;",
                  task);
+}
+
+/**
+ * @brief Initialise a report iterator for reports that require processing.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  max       Maximum number of reports returned.
+ */
+void
+init_report_awaiting_processing_iterator (iterator_t* iterator, int max)
+{
+  if (max < 1)
+    max = -1;
+
+  init_iterator (iterator,
+                 "SELECT id FROM reports"
+                 " WHERE scan_run_status = %u"
+                 " AND processing_required = 1"
+                 " ORDER BY creation_time LIMIT %s;",
+                 TASK_STATUS_RUNNING,
+                 sql_select_limit (max));
 }
 
 /**
@@ -22563,6 +11194,11 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append_printf (levels_sql, " AND severity_in_levels (%s", new_severity_sql);
 
+  if (strchr (levels, 'c'))
+    {
+      g_string_append (levels_sql, ", 'critical'");
+      count++;
+    }
   if (strchr (levels, 'h'))
     {
       g_string_append (levels_sql, ", 'high'");
@@ -22597,7 +11233,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 
   g_string_append (levels_sql, ")");
 
-  if (count == 5)
+  if (count == 6)
     {
       /* All levels. */
       g_string_free (levels_sql, TRUE);
@@ -22616,7 +11252,7 @@ where_levels_auto (const char *levels, const char *new_severity_sql)
 /**
  * @brief Return SQL WHERE for restricting a SELECT to compliance levels.
  *
- * @param[in]  levels  String describing compliance levels to include in 
+ * @param[in]  levels  String describing compliance levels to include in
  *                     report (for example, "yniu" for "yes, "no", "incomplete"
  *                     and "undefined").  All levels if NULL.
  *
@@ -23229,7 +11865,7 @@ result_iterator_opts_table (int override, int dynamic)
  *
  * @return Newly allocated clause.
  */
-static gchar*
+gchar *
 new_severity_clause (int apply_overrides, int dynamic_severity)
 {
   if (apply_overrides)
@@ -23291,7 +11927,8 @@ results_extra_where (int trash, report_t report, const gchar* host,
   min_qod = filter_term_min_qod (filter);
   levels = filter_term_value (filter, "levels");
   if (levels == NULL)
-    levels = g_strdup ("hmlgdf");
+    levels = g_strdup ("chmlgdf");
+
   compliance_levels = filter_term_value (filter, "compliance_levels");
 
   // Build clause fragments
@@ -23317,7 +11954,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   min_qod_clause = where_qod (min_qod);
 
-  levels_clause = where_levels_auto (levels ? levels : "hmlgdf",
+  levels_clause = where_levels_auto (levels,
                                      given_new_severity_sql
                                       ? given_new_severity_sql
                                       : new_severity_sql);
@@ -23620,14 +12257,14 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
  * @param[in]  apply_overrides   Whether to apply overrides.
  * @param[in]  dynamic_severity  Whether to use dynamic severity.
  * @param[in]  nvts_table        NVTS table.
- * @param[in]  results_table     Results table. 
+ * @param[in]  results_table     Results table.
  *
  * @return SQL clause for FROM.
  */
 static gchar *
-result_iterator_lateral (int apply_overrides, 
-                         int dynamic_severity, 
-                         const char *results_table, 
+result_iterator_lateral (int apply_overrides,
+                         int dynamic_severity,
+                         const char *results_table,
                          const char *nvts_table)
 {
   if (apply_overrides && dynamic_severity)
@@ -23642,11 +12279,11 @@ result_iterator_lateral (int apply_overrides,
       "                         ov_old_severity)"
       "                   LIMIT 1),"
       "                  (SELECT curr_severity FROM curr LIMIT 1))"
-      " AS new_severity)", 
+      " AS new_severity)",
       results_table,
       nvts_table,
       results_table,
-      results_table, 
+      results_table,
       results_table);
 
   if (apply_overrides)
@@ -23832,7 +12469,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
 
   opts_tables = result_iterator_opts_table (apply_overrides, dynamic_severity);
 
-  lateral_clause = result_iterator_lateral (apply_overrides, 
+  lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
                                             "nvts");
@@ -25055,7 +13692,7 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
  *
  * @return Report host.
  */
-static report_host_t
+report_host_t
 host_iterator_report_host (iterator_t* iterator)
 {
   if (iterator->done) return 0;
@@ -25155,9 +13792,9 @@ init_report_errors_iterator (iterator_t* iterator, report_t report)
                    " results.nvt_version, results.severity,"
                    " results.id"
                    " FROM results"
-                   " WHERE results.type = 'Error Message'"
+                   " WHERE results.severity = %0.1f"
                    "  AND results.report = %llu",
-                   report);
+                   SEVERITY_ERROR, report);
 }
 
 /**
@@ -25269,7 +13906,7 @@ report_errors_iterator_result (iterator_t* iterator)
  * @param[in]  report_host  Report host whose details the iterator loops over.
  *                          All report_hosts if NULL.
  */
-static void
+void
 init_report_host_details_iterator (iterator_t* iterator,
                                    report_host_t report_host)
 {
@@ -25281,7 +13918,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  " FROM report_host_details WHERE report_host = %llu"
                  " AND NOT name IN ('detected_at', 'detected_by')"
                  " AND NOT name LIKE 'detected_by@%%'"
-                 " UNION SELECT 0, 'Closed CVE', cve, 'openvasmd', oid,"
+                 " UNION SELECT 0, 'Closed CVE', cve, 'gvmd', oid,"
                  "              nvts.name, cvss_base"
                  "       FROM nvts, report_host_details"
                  "       WHERE cve != ''"
@@ -25290,8 +13927,7 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "       AND report_host = %llu"
                  "       AND report_host_details.name = 'EXIT_CODE'"
                  "       AND report_host_details.value = 'EXIT_NOTVULN';",
-                 report_host,
-                 report_host);
+                 report_host, report_host);
 }
 
 /**
@@ -25302,7 +13938,6 @@ init_report_host_details_iterator (iterator_t* iterator,
  * @return The name of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_name, 1);
 
 /**
@@ -25313,7 +13948,6 @@ DEF_ACCESS (report_host_details_iterator_name, 1);
  * @return The value of the report host detail.  Caller must use only before
  *         calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_value, 2);
 
 /**
@@ -25335,7 +13969,6 @@ DEF_ACCESS (report_host_details_iterator_source_type, 3);
  * @return The source name of the report host detail.  Caller must use only
  *         before calling cleanup_iterator.
  */
-static
 DEF_ACCESS (report_host_details_iterator_source_name, 4);
 
 /**
@@ -25673,6 +14306,71 @@ report_timestamp (const char* report_id, gchar** timestamp)
 }
 
 /**
+ * @brief Get the creation time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_creation_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (creation_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+
+/**
+ * @brief Get the modification time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_modification_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (modification_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+/**
+ * @brief Get the start time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_start_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (start_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+/**
+ * @brief Get the end time of a report.
+ *
+ * @param[in]  report  Report.
+ *
+ * @return Time in ISO format.
+ */
+gchar *
+report_end_time (report_t report)
+{
+  return sql_string ("SELECT iso_time (end_time)"
+                     " FROM reports"
+                     " WHERE id = %llu",
+                     report);
+}
+
+/**
  * @brief Return the run status of the scan associated with a report.
  *
  * @param[in]   report  Report.
@@ -25763,9 +14461,8 @@ report_severity_data (report_t report, const char *host,
       get_data_t *get_all;
 
       get_all = report_results_get_data (1, -1, apply_overrides, 0);
-      ignore_max_rows_per_page = 1;
+      get_all->ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, get_all, report, host, NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -25791,11 +14488,10 @@ report_severity_data (report_t report, const char *host,
       get_filtered.filter = get->filter;
       get_filtered.type = get->type;
       get_filtered.ignore_pagination = 1;
+      get_filtered.ignore_max_rows_per_page = 1;
 
-      ignore_max_rows_per_page = 1;
       init_result_get_iterator_severity (&results, &get_filtered, report, host,
                                          NULL);
-      ignore_max_rows_per_page = 0;
       while (next (&results))
         {
           double severity;
@@ -25819,6 +14515,7 @@ report_severity_data (report_t report, const char *host,
  *       use report_counts_id instead.
  *
  * @param[in]   report_id    ID of report.
+ * @param[out]  criticals    Number of critical messages.
  * @param[out]  holes        Number of hole messages.
  * @param[out]  infos        Number of info messages.
  * @param[out]  logs         Number of log messages.
@@ -25831,8 +14528,14 @@ report_severity_data (report_t report, const char *host,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts (const char* report_id, int* holes, int* infos,
-               int* logs, int* warnings, int* false_positives, double* severity,
+report_counts (const char* report_id,
+               int* criticals,
+               int* holes,
+               int* infos,
+               int* logs,
+               int* warnings,
+               int* false_positives,
+               double* severity,
                int override, int min_qod)
 {
   report_t report;
@@ -25844,7 +14547,7 @@ report_counts (const char* report_id, int* holes, int* infos,
   // TODO Check if report was found.
 
   get = report_results_get_data (1, -1, override, min_qod);
-  ret = report_counts_id (report, holes, infos, logs, warnings,
+  ret = report_counts_id (report, criticals, holes, infos, logs, warnings,
                           false_positives, severity, get, NULL);
   get_data_reset (get);
   free (get);
@@ -26015,6 +14718,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @brief Get the message counts for a report.
  *
  * @param[in]   report    Report.
+ * @param[out]  criticals Number of critical messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -26023,6 +14727,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @param[out]  severity  Maximum severity of the report.
  * @param[in]   get       Get data.
  * @param[in]   host      Host to which to limit the count.
+ * @param[out]  filtered_criticals Number of critical messages after filtering.
  * @param[out]  filtered_holes     Number of hole messages after filtering.
  * @param[out]  filtered_infos     Number of info messages after filtering.
  * @param[out]  filtered_logs      Number of log messages after filtering.
@@ -26034,13 +14739,22 @@ cache_report_counts (report_t report, int override, int min_qod,
  * @return 0 on success, -1 on error.
  */
 static int
-report_counts_id_full (report_t report, int* holes, int* infos,
-                       int* logs, int* warnings, int* false_positives,
+report_counts_id_full (report_t report,
+                       int* criticals,
+                       int* holes,
+                       int* infos,
+                       int* logs,
+                       int* warnings,
+                       int* false_positives,
                        double* severity,
-                       const get_data_t* get, const char* host,
+                       const get_data_t* get,
+                       const char* host,
+                       int* filtered_criticals,
                        int* filtered_holes,
-                       int* filtered_infos, int* filtered_logs,
-                       int* filtered_warnings, int* filtered_false_positives,
+                       int* filtered_infos,
+                       int* filtered_logs,
+                       int* filtered_warnings,
+                       int* filtered_false_positives,
                        double* filtered_severity)
 {
   const char *filter;
@@ -26050,11 +14764,11 @@ report_counts_id_full (report_t report, int* holes, int* infos,
   int override, min_qod_int;
   severity_data_t severity_data, filtered_severity_data;
 
-  unfiltered_requested = (holes || warnings || infos || logs || false_positives
+  unfiltered_requested = (criticals || holes || warnings || infos || logs || false_positives
                           || severity);
-  filtered_requested = (filtered_holes || filtered_warnings || filtered_infos
-                        || filtered_logs || filtered_false_positives
-                        || filtered_severity);
+  filtered_requested = (filtered_criticals || filtered_holes || filtered_warnings
+                        || filtered_infos  || filtered_logs
+                        || filtered_false_positives || filtered_severity);
 
   if (current_credentials.uuid == NULL
       || strcmp (current_credentials.uuid, "") == 0)
@@ -26149,11 +14863,11 @@ report_counts_id_full (report_t report, int* holes, int* infos,
 
   severity_data_level_counts (&severity_data,
                               NULL, false_positives,
-                              logs, infos, warnings, holes);
+                              logs, infos, warnings, holes, criticals);
   severity_data_level_counts (&filtered_severity_data,
                               NULL, filtered_false_positives,
                               filtered_logs, filtered_infos,
-                              filtered_warnings, filtered_holes);
+                              filtered_warnings, filtered_holes, filtered_criticals);
 
   if (severity)
     *severity = severity_data.max;
@@ -26215,19 +14929,19 @@ report_compliance_from_counts (const int* yes_count,
  * @param[in]   get                  Get data.
  * @param[out]  f_compliance_yes     Compliant results count after filtering.
  * @param[out]  f_compliance_no      Incompliant results count after filtering.
- * @param[out]  f_compliance_incomplete  Incomplete results count 
+ * @param[out]  f_compliance_incomplete  Incomplete results count
  *                                       after filtering.
- * @param[out]  f_compliance_undefined   Undefined results count 
+ * @param[out]  f_compliance_undefined   Undefined results count
  *                                       after filtering.
  *
  * @return 0 on success, -1 on error.
  */
 static int
-report_compliance_f_counts (report_t report, 
-                            const get_data_t* get, 
-                            int* f_compliance_yes, 
-                            int* f_compliance_no, 
-                            int* f_compliance_incomplete, 
+report_compliance_f_counts (report_t report,
+                            const get_data_t* get,
+                            int* f_compliance_yes,
+                            int* f_compliance_no,
+                            int* f_compliance_incomplete,
                             int* f_compliance_undefined)
 {
   if (report == 0)
@@ -26244,11 +14958,10 @@ report_compliance_f_counts (report_t report,
   get_filtered.filter = get->filter;
   get_filtered.type = get->type;
   get_filtered.ignore_pagination = 1;
+  get_filtered.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   init_result_get_iterator (&results, &get_filtered, report, NULL,
                             NULL);
-  ignore_max_rows_per_page = 0;
   while (next (&results))
     {
       const char* compliance;
@@ -26262,7 +14975,7 @@ report_compliance_f_counts (report_t report,
       else if (strcasecmp (compliance, "no") == 0)
         {
           no_count++;
-        }      
+        }
       else if (strcasecmp (compliance, "incomplete") == 0)
         {
           incomplete_count++;
@@ -26270,7 +14983,7 @@ report_compliance_f_counts (report_t report,
       else if (strcasecmp (compliance, "undefined") == 0)
         {
           undefined_count++;
-        }      
+        }
 
     }
 
@@ -26301,11 +15014,11 @@ report_compliance_f_counts (report_t report,
  * @return 0 on success, -1 on error.
  */
 static int
-report_compliance_counts (report_t report, 
+report_compliance_counts (report_t report,
                           const get_data_t* get,
-                          int* compliance_yes, 
+                          int* compliance_yes,
                           int* compliance_no,
-                          int* compliance_incomplete, 
+                          int* compliance_incomplete,
                           int* compliance_undefined)
 {
   if (report == 0)
@@ -26313,7 +15026,7 @@ report_compliance_counts (report_t report,
 
   report_compliance_by_uuid (report_uuid(report),
                              compliance_yes,
-                             compliance_no, 
+                             compliance_no,
                              compliance_incomplete,
                              compliance_undefined);
 
@@ -26324,6 +15037,7 @@ report_compliance_counts (report_t report,
  * @brief Get only the filtered message counts for a report.
  *
  * @param[in]   report    Report.
+ * @param[out]  criticals Number of critical messages.
  * @param[out]  holes     Number of hole messages.
  * @param[out]  infos     Number of info messages.
  * @param[out]  logs      Number of log messages.
@@ -26336,14 +15050,23 @@ report_compliance_counts (report_t report,
  * @return 0 on success, -1 on error.
  */
 int
-report_counts_id (report_t report, int* holes, int* infos,
-                  int* logs, int* warnings, int* false_positives,
-                  double* severity, const get_data_t *get, const char *host)
+report_counts_id (report_t report,
+                  int* criticals,
+                  int* holes,
+                  int* infos,
+                  int* logs,
+                  int* warnings,
+                  int* false_positives,
+                  double* severity,
+                  const get_data_t *get,
+                  const char *host)
 {
   int ret;
-  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL,
-                               get, host, holes, infos, logs, warnings,
-                               false_positives, severity);
+
+  ret = report_counts_id_full (report, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                               get, host, criticals, holes, infos, logs,
+                               warnings, false_positives, severity);
+
   return ret;
 }
 
@@ -26385,8 +15108,10 @@ report_severity (report_t report, int overrides, int min_qod)
     {
       g_debug ("%s: could not get max from cache", __func__);
       get_data_t *get = report_results_get_data (1, -1, overrides, min_qod);
+
       report_counts_id (report, NULL, NULL, NULL, NULL,
-                        NULL, &severity, get, NULL);
+                        NULL, NULL, &severity, get, NULL);
+
       get_data_reset (get);
       free (get);
     }
@@ -27550,7 +16275,7 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream,
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_tls_certificates_xml (report_host_t report_host, 
+print_report_host_tls_certificates_xml (report_host_t report_host,
                                         const char *host_ip,
                                         FILE *stream)
 {
@@ -27572,14 +16297,14 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
                  "        OR source_description = 'SSL Certificate')",
                  report_host);
 
-  while (next (&tls_certs)) 
+  while (next (&tls_certs))
     {
       const char *certificate_prefixed, *certificate_b64;
       gsize certificate_size;
       unsigned char *certificate;
       const char *scanner_fpr_prefixed, *scanner_fpr;
       gchar *quoted_scanner_fpr;
-      char *ssldetails;       
+      char *ssldetails;
       iterator_t ports;
       gboolean valid;
       time_t now;
@@ -27642,7 +16367,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
 
       now = time (NULL);
 
-      if((expiration_time >= now || expiration_time == -1) 
+      if((expiration_time >= now || expiration_time == -1)
          && (activation_time <= now || activation_time == -1))
         {
           valid = TRUE;
@@ -27692,7 +16417,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       g_free (serial);
 
       free (hostname);
-    
+
       init_iterator (&ports,
                      "SELECT value FROM report_host_details"
                      " WHERE report_host = %llu"
@@ -27700,7 +16425,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
                      "   AND value LIKE '%%:%%:%s'",
                      report_host,
                      quoted_scanner_fpr);
-     
+
       PRINT (stream, "<ports>");
 
       while (next (&ports))
@@ -27719,10 +16444,10 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       PRINT (stream, "</ports>");
 
       PRINT (stream, "</tls_certificate>");
-      
+
       g_free (quoted_scanner_fpr);
-      cleanup_iterator (&ports);   
-    
+      cleanup_iterator (&ports);
+
     }
     cleanup_iterator (&tls_certs);
 
@@ -28100,6 +16825,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  lean                     Whether to return lean report.
  * @param[in]  host_summary_buffer      Host sumary buffer.
  * @param[in]  f_host_ports             Hashtable for host ports.
+ * @param[in]  f_host_criticals         Hashtable for host criticals.
  * @param[in]  f_host_holes             Hashtable for host holes.
  * @param[in]  f_host_warnings          Hashtable for host host warnings.
  * @param[in]  f_host_infos             Hashtable for host infos.
@@ -28120,6 +16846,7 @@ print_report_host_xml (FILE *stream,
                        int lean,
                        GString *host_summary_buffer,
                        GHashTable *f_host_ports,
+                       GHashTable *f_host_criticals,
                        GHashTable *f_host_holes,
                        GHashTable *f_host_warnings,
                        GHashTable *f_host_infos,
@@ -28205,7 +16932,11 @@ print_report_host_xml (FILE *stream,
     {
       int holes_count, warnings_count, infos_count;
       int logs_count, false_positives_count;
+      int criticals_count = 0;
 
+      criticals_count
+        = GPOINTER_TO_INT
+            (g_hash_table_lookup ( f_host_criticals, current_host));
       holes_count
         = GPOINTER_TO_INT
             (g_hash_table_lookup ( f_host_holes, current_host));
@@ -28229,9 +16960,13 @@ print_report_host_xml (FILE *stream,
             "<port_count><page>%d</page></port_count>"
             "<result_count>"
             "<page>%d</page>"
-            "<hole><page>%d</page></hole>"
-            "<warning><page>%d</page></warning>"
-            "<info><page>%d</page></info>"
+            "<critical><page>%d</page></critical>"
+            "<hole deprecated='1'><page>%d</page></hole>"
+            "<high><page>%d</page></high>"
+            "<warning deprecated='1'><page>%d</page></warning>"
+            "<medium><page>%d</page></medium>"
+            "<info deprecated='1'><page>%d</page></info>"
+            "<low><page>%d</page></low>"
             "<log><page>%d</page></log>"
             "<false_positive><page>%d</page></false_positive>"
             "</result_count>",
@@ -28240,10 +16975,14 @@ print_report_host_xml (FILE *stream,
               ? host_iterator_end_time (hosts)
               : "",
             ports_count,
-            (holes_count + warnings_count + infos_count
+            (criticals_count + holes_count + warnings_count + infos_count
               + logs_count + false_positives_count),
+            criticals_count,
+            holes_count,
             holes_count,
             warnings_count,
+            warnings_count,
+            infos_count,
             infos_count,
             logs_count,
             false_positives_count);
@@ -28331,7 +17070,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                   " ON results.nvt = nvts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
-                                  lateral_clause);                                                         
+                                  lateral_clause);
 
   g_free (lateral_clause);
 
@@ -28355,41 +17094,41 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
 
   extra_with = g_strdup_printf(" comparison AS ("
     " WITH r1a as (SELECT results.id, description, host, report, port,"
-    "              severity, nvt, results.qod, results.uuid, hostname," 
+    "              severity, nvt, results.qod, results.uuid, hostname,"
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
     "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
-    "       %s, LATERAL %s AS r1_lateral" 
+    "       %s, LATERAL %s AS r1_lateral"
     "       WHERE report = %llu),"
-    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity" 
-    "        FROM results" 
+    " r2a as (SELECT results.*, r2_lateral.new_severity AS new_severity"
+    "        FROM results"
     "        LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
-    "        AS nvts_cols" 
-    "        ON nvts_cols.nvts_oid = results.nvt" 
-    "        %s, LATERAL %s AS r2_lateral" 
+    "        AS nvts_cols"
+    "        ON nvts_cols.nvts_oid = results.nvt"
+    "        %s, LATERAL %s AS r2_lateral"
     "        WHERE report = %llu),"
     " r1 as (SELECT DISTINCT ON (r1a.id) r1a.*, r2a.id as r2id, row_number() over w1 as r1_rank"
     "        FROM r1a LEFT JOIN r2a ON r1a.host = r2a.host"
-    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)" 
+    "        AND normalize_port(r1a.port) = normalize_port(r2a.port)"
     "        AND r1a.nvt = r2a.nvt "
     "        AND (r1a.new_severity = 0) = (r2a.new_severity = 0)"
     "        AND (r1a.description = r2a.description)"
     "        WINDOW w1 AS (PARTITION BY r1a.host, normalize_port(r1a.port),"
-    "                      r1a.nvt, r1a.new_severity = 0, r2a.id is null ORDER BY r2a.id)"
+    "                      r1a.nvt, r1a.new_severity = 0, r2a.id is null ORDER BY r1a.description, r2a.id)"
     "        ORDER BY r1a.id),"
     " r2 as (SELECT DISTINCT ON (r2a.id) r2a.*, r1a.id as r1id, row_number() over w2 as r2_rank"
     "        FROM r2a LEFT JOIN r1a ON r2a.host = r1a.host"
-    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)" 
+    "        AND normalize_port(r2a.port) = normalize_port(r1a.port)"
     "        AND r2a.nvt = r1a.nvt "
     "        AND (r2a.new_severity = 0) = (r1a.new_severity = 0)"
     "        AND (r2a.description = r1a.description)"
     "        WINDOW w2 AS (PARTITION BY r2a.host, normalize_port(r2a.port),"
-    "                      r2a.nvt, r2a.new_severity = 0, r1a.id is null ORDER BY r1a.id)"
+    "                      r2a.nvt, r2a.new_severity = 0, r1a.id is null ORDER BY r2a.description, r1a.id)"
     "        ORDER BY r2a.id)"
-    " (SELECT r1.id AS result1_id," 
-    " r2.id AS result2_id," 
+    " (SELECT r1.id AS result1_id,"
+    " r2.id AS result2_id,"
     " compare_results("
     "  r1.description,"
     "  r2.description,"
@@ -28413,13 +17152,13 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
     " r2.owner AS delta_owner,"
     " r2.path AS delta_path,"
     " r2.host AS delta_host,"
-      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report") 
+      RESULT_HOSTNAME_SQL("r2.hostname", "r2.host", "r2.report")
     "   AS delta_hostname,"
     " r2.nvt_version AS delta_nvt_version"
     " FROM r1"
     " FULL OUTER JOIN r2"
     " ON r1.host = r2.host"
-    " AND normalize_port(r1.port) = normalize_port(r2.port)" 
+    " AND normalize_port(r1.port) = normalize_port(r2.port)"
     " AND r1.nvt = r2.nvt "
     " AND (r1.new_severity = 0) = (r2.new_severity = 0)"
     " AND ((r1id IS NULL AND r2id IS NULL) OR"
@@ -28484,22 +17223,24 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  result_hosts_only  Whether to only include hosts with results.
  * @param[in]  orig_filtered_result_count  Result count.
  * @param[in]  filtered_result_count       Result count.
- * @param[in]  orig_f_holes   Result count.
- * @param[in]  f_holes        Result count.
- * @param[in]  orig_f_infos   Result count.
- * @param[in]  f_infos        Result count.
- * @param[in]  orig_f_logs    Result count.
- * @param[in]  f_logs         Result count.
- * @param[in]  orig_f_warnings  Result count.
- * @param[in]  f_warnings       Result count.
- * @param[in]  orig_f_false_positives  Result count.
- * @param[in]  f_false_positives       Result count.
- * @param[in]  f_compliance_yes        filtered compliant count.
- * @param[in]  f_compliance_no         filtered incompliant count.
- * @param[in]  f_compliance_incomplete filtered incomplete count.
- * @param[in]  f_compliance_undefined  filtered undefined count.
- * @param[in]  f_compliance_count      total filtered compliance count.
- * @param[in]  result_hosts   Result hosts.
+ * @param[in]  orig_f_criticals            Result count.
+ * @param[in]  f_criticals                 Result count.
+ * @param[in]  orig_f_infos                Result count.
+ * @param[in]  f_holes                     Result count.
+ * @param[in]  orig_f_infos                Result count.
+ * @param[in]  f_infos                     Result count.
+ * @param[in]  orig_f_logs                 Result count.
+ * @param[in]  f_logs                      Result count.
+ * @param[in]  orig_f_warnings             Result count.
+ * @param[in]  f_warnings                  Result count.
+ * @param[in]  orig_f_false_positives      Result count.
+ * @param[in]  f_false_positives           Result count.
+ * @param[in]  f_compliance_yes            filtered compliant count.
+ * @param[in]  f_compliance_no             filtered incompliant count.
+ * @param[in]  f_compliance_incomplete     filtered incomplete count.
+ * @param[in]  f_compliance_undefined      filtered undefined count.
+ * @param[in]  f_compliance_count          total filtered compliance count.
+ * @param[in]  result_hosts                Result hosts.
  *
  * @return 0 on success, -1 error.
  */
@@ -28512,6 +17253,7 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         const char *sort_field, int result_hosts_only,
                         int *orig_filtered_result_count,
                         int *filtered_result_count,
+                        int *orig_f_criticals, int *f_criticals,
                         int *orig_f_holes, int *f_holes,
                         int *orig_f_infos, int *f_infos,
                         int *orig_f_logs, int *f_logs,
@@ -28524,8 +17266,8 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 {
   GString *buffer = g_string_new ("");
   GTree *ports;
-
   *orig_f_holes = *f_holes;
+  *orig_f_criticals = *f_criticals;
   *orig_f_infos = *f_infos;
   *orig_f_logs = *f_logs;
   *orig_f_warnings = *f_warnings;
@@ -28574,6 +17316,11 @@ print_report_delta_xml (FILE *out, iterator_t *results,
         level = result_iterator_level (results);
         (*orig_filtered_result_count)++;
         (*filtered_result_count)++;
+        if (strcmp (level, "Critical") == 0)
+          {
+            (*orig_f_criticals)++;
+            (*f_criticals)++;
+          }
         if (strcmp (level, "High") == 0)
           {
             (*orig_f_holes)++;
@@ -28613,12 +17360,12 @@ print_report_delta_xml (FILE *out, iterator_t *results,
                         0,
                         state,
                         NULL,
-                        (strcmp (state, "changed") == 0), 
+                        (strcmp (state, "changed") == 0),
                         -1,
                         0,  /* Lean. */
                         0); /* Delta fields. */
- 
-    if (fprintf (out, "%s", buffer->str) < 0) 
+
+    if (fprintf (out, "%s", buffer->str) < 0)
       {
         g_string_free (buffer, TRUE);
         g_tree_destroy (ports);
@@ -28674,6 +17421,67 @@ print_report_delta_xml (FILE *out, iterator_t *results,
 }
 
 /**
+ * @brief Ensure a filter string has min_qod and apply_overrides.
+ *
+ * @param[in]  clean  Filter string.
+ *
+ * @return clean, which may have been reallocated.
+ */
+static gchar *
+ensure_term_has_qod_and_overrides (gchar *clean)
+{
+  gchar *term_value;
+
+  term_value = filter_term_value (clean, "min_qod");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("min_qod=%i %s",
+                                    MIN_QOD_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
+  term_value = filter_term_value (clean, "apply_overrides");
+  if (term_value == NULL)
+    {
+      gchar *new_filter;
+      new_filter = g_strdup_printf ("apply_overrides=%i %s",
+                                    APPLY_OVERRIDES_DEFAULT,
+                                    clean);
+      g_free (clean);
+      clean = new_filter;
+    }
+  g_free (term_value);
+
+  return clean;
+}
+
+/**
+ * @brief Clean a filter term string for print_report_xml_start.
+ *
+ * @param[in]  term  Pointer to filter term, which will be reallocated.
+ * @param[in]  get   GET command data.
+ */
+static void
+print_report_clean_filter (gchar **term, const get_data_t *get)
+{
+  gchar *clean;
+
+  assert (term);
+
+  clean = manage_clean_filter (*term
+                                ? *term
+                                : (get->filter ? get->filter : ""),
+                               get->ignore_max_rows_per_page);
+
+  g_free (*term);
+  *term = ensure_term_has_qod_and_overrides (clean);
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -28706,7 +17514,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int first_result, max_results, sort_order;
 
   FILE *out;
-  gchar *clean, *term, *sort_field, *levels, *search_phrase;
+  gchar *term, *sort_field, *levels, *search_phrase;
   gchar *min_qod, *compliance_levels;
   gchar *delta_states, *timestamp;
   int min_qod_int;
@@ -28715,21 +17523,21 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int holes, infos, logs, warnings, false_positives;
-  int f_holes, f_infos, f_logs, f_warnings, f_false_positives;
-  int orig_f_holes, orig_f_infos, orig_f_logs;
+  int criticals = 0, holes, infos, logs, warnings, false_positives;
+  int f_criticals = 0, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
+  int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
   gchar *tz, *zone;
   char *old_tz_override;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
-  gchar *term_value;
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
   GHashTable *f_host_logs, *f_host_false_positives;
   GHashTable *f_host_compliant, *f_host_notcompliant;
   GHashTable  *f_host_incomplete, *f_host_undefined;
+  GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
   gchar *tsk_usage_type = NULL;
   int f_compliance_yes, f_compliance_no;
@@ -28748,7 +17556,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
-  orig_f_holes = 0;
+  orig_f_holes = orig_f_criticals = 0;
+  host_summary_buffer = NULL;
   f_host_ports = NULL;
   f_host_holes = NULL;
   f_host_warnings = NULL;
@@ -28810,8 +17619,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &compliance_levels,
-                                     &delta_states, &search_phrase, 
-                                     &search_phrase_exact, &notes, 
+                                     &delta_states, &search_phrase,
+                                     &search_phrase_exact, &notes,
                                      &overrides, &apply_overrides, &zone);
     }
   else
@@ -28822,14 +17631,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
                                      &min_qod, &levels, &compliance_levels,
-                                     &delta_states, &search_phrase, 
+                                     &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &zone);
     }
 
-  max_results = manage_max_rows (max_results);
+  max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
 
-  levels = levels ? levels : g_strdup ("hmlgdf");
+  levels = levels ? levels : g_strdup ("chmlgdf");
 
   if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
     {
@@ -28944,17 +17753,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       if (strcmp (tsk_usage_type, "audit"))
         {
           if (delta == 0)
-            {         
-              int total_holes, total_infos, total_logs;
+            {
+              int total_criticals = 0, total_holes, total_infos, total_logs;
               int total_warnings, total_false_positives;
               get_data_t *all_results_get;
 
               all_results_get = report_results_get_data (1, -1, 0, 0);
-              report_counts_id (report, &total_holes, &total_infos,
-                                &total_logs, &total_warnings,
+
+              report_counts_id (report, &total_criticals, &total_holes,
+                                &total_infos, &total_logs, &total_warnings,
                                 &total_false_positives, NULL, all_results_get,
                                 NULL);
-              total_result_count = total_holes + total_infos
+
+              total_result_count = total_criticals + total_holes + total_infos
                                   + total_logs + total_warnings
                                   + total_false_positives;
               get_data_reset (all_results_get);
@@ -28974,49 +17785,20 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               /* Beware, we're using the full variables temporarily here, but
               * report_counts_id counts the filtered results. */
-              report_counts_id (report, &holes, &infos, &logs, &warnings,
+              report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                                 &false_positives, NULL, get, NULL);
 
-              filtered_result_count = holes + infos + logs + warnings
+              filtered_result_count = criticals + holes + infos + logs + warnings
                                       + false_positives;
 
-            }          
+            }
         }
       /* Get report run status. */
 
       report_scan_run_status (report, &run_status);
     }
 
-  clean = manage_clean_filter (term
-                                ? term
-                                : (get->filter ? get->filter : ""));
-
-  term_value = filter_term_value (clean, "min_qod");
-  if (term_value == NULL)
-    {
-      gchar *new_filter;
-      new_filter = g_strdup_printf ("min_qod=%i %s",
-                                    MIN_QOD_DEFAULT,
-                                    clean);
-      g_free (clean);
-      clean = new_filter;
-    }
-  g_free (term_value);
-
-  term_value = filter_term_value (clean, "apply_overrides");
-  if (term_value == NULL)
-    {
-      gchar *new_filter;
-      new_filter = g_strdup_printf ("apply_overrides=%i %s",
-                                    APPLY_OVERRIDES_DEFAULT,
-                                    clean);
-      g_free (clean);
-      clean = new_filter;
-    }
-  g_free (term_value);
-
-  g_free (term);
-  term = clean;
+  print_report_clean_filter (&term, get);
 
   if (filter_term_return)
     *filter_term_return = g_strdup (term);
@@ -29044,6 +17826,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      if (strchr (levels, 'c'))
+        g_string_append (filters_extra_buffer, "<filter>Critical</filter>");
       if (strchr (levels, 'h'))
         g_string_append (filters_extra_buffer, "<filter>High</filter>");
       if (strchr (levels, 'm'))
@@ -29085,7 +17869,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      int tag_count = resource_tag_count ("report", report, 1);
+      const char *report_type = (strcmp (tsk_usage_type, "audit") == 0)
+                                 ? "audit_report"
+                                 : "report";
+      int tag_count = resource_tag_count (report_type, report, 1);
 
       if (tag_count)
         {
@@ -29098,7 +17885,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               iterator_t tags;
 
-              init_resource_tag_iterator (&tags, "report", report, 1, NULL, 1);
+              init_resource_tag_iterator (&tags, report_type, report, 1, NULL, 1);
 
               while (next (&tags))
                 {
@@ -29163,7 +17950,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       target_t target;
       gchar *progress_xml;
       iterator_t tags;
-      int task_tag_count = resource_tag_count ("task", task, 1);
+
+      const char *task_type = (strcmp (tsk_usage_type, "audit") == 0)
+                               ? "audit"
+                               : "task";
+      int task_tag_count = resource_tag_count (task_type, task, 1);
 
       tsk_name = task_name (task);
 
@@ -29203,23 +17994,99 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "<trash>%i</trash>"
              "<name>%s</name>"
              "<comment>%s</comment>"
-             "</target>"
-             "<progress>%s</progress>",
+             "</target>",
              tsk_uuid,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
              task_target_in_trash (task),
              task_target_name ? task_target_name : "",
-             task_target_comment ? task_target_comment : "",
-             progress_xml);
-      g_free (progress_xml);
+             task_target_comment ? task_target_comment : "");
+
       free (comment);
       free (tsk_name);
       free (tsk_uuid);
       free (task_target_uuid);
       free (task_target_name);
       free (task_target_comment);
+
+#if ENABLE_AGENTS
+      agent_group_t agent_group = task_agent_group (task);
+      if (agent_group)
+        {
+          char *ag_uuid, *ag_name, *ag_comment;
+          int in_trash;
+
+          in_trash = task_agent_group_in_trash (task);
+
+          ag_uuid = in_trash
+                      ? trash_agent_group_uuid (agent_group)
+                      : agent_group_uuid (agent_group);
+          ag_name = in_trash
+                      ? trash_agent_group_name (agent_group)
+                      : agent_group_name (agent_group);
+          ag_comment = in_trash
+                         ? trash_agent_group_comment (agent_group)
+                         : agent_group_comment (agent_group);
+
+          PRINT (out,
+                 "<agent_group id=\"%s\">"
+                 "<trash>%i</trash>"
+                 "<name>%s</name>"
+                 "<comment>%s</comment>"
+                 "</agent_group>",
+                 ag_uuid ? ag_uuid : "",
+                 in_trash,
+                 ag_name ? ag_name : "",
+                 ag_comment ? ag_comment : "");
+
+          g_free (ag_uuid);
+          g_free (ag_name);
+          g_free (ag_comment);
+
+          g_free (progress_xml);
+          progress_xml = g_strdup_printf ("%i", 100);
+        }
+#endif /* ENABLE_AGENTS */
+
+#if ENABLE_CONTAINER_SCANNING
+      oci_image_target_t oci_image_target = task_oci_image_target (task);
+      if (oci_image_target)
+        {
+          char *oci_uuid, *oci_name, *oci_comment;
+          int in_trash;
+
+          in_trash = task_oci_image_target_in_trash (task);
+
+          oci_uuid = in_trash
+                       ? trash_oci_image_target_uuid (oci_image_target)
+                       : oci_image_target_uuid (oci_image_target);
+          oci_name = in_trash
+                       ? trash_oci_image_target_name (oci_image_target)
+                       : oci_image_target_name (oci_image_target);
+          oci_comment = in_trash
+                          ? trash_oci_image_target_comment (oci_image_target)
+                          : oci_image_target_comment (oci_image_target);
+
+          PRINT (out,
+                 "<oci_image_target id=\"%s\">"
+                 "<trash>%i</trash>"
+                 "<name>%s</name>"
+                 "<comment>%s</comment>"
+                 "</oci_image_target>",
+                 oci_uuid ? oci_uuid : "",
+                 in_trash,
+                 oci_name ? oci_name : "",
+                 oci_comment ? oci_comment : "");
+
+          g_free (oci_uuid);
+          g_free (oci_name);
+          g_free (oci_comment);
+        }
+#endif /* ENABLE_CONTAINER_SCANNING */
+      PRINT (out, "<progress>%s</progress>", progress_xml);
+
+      g_free (progress_xml);
 
       if (task_tag_count)
         {
@@ -29319,8 +18186,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
 
   /* Prepare result counts. */
-  int compliance_yes, compliance_no;
-  int compliance_incomplete, compliance_undefined;
+  int compliance_yes = 0, compliance_no = 0;
+  int compliance_incomplete = 0, compliance_undefined = 0;
   int total_compliance_count = 0;
 
   if (strcmp (tsk_usage_type, "audit") == 0)
@@ -29353,24 +18220,24 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-    if (count_filtered)
-      {
-        /* We're getting all the filtered results, so we can count them as we
-        * print them, to save time. */
+      if (count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+          * print them, to save time. */
+          report_counts_id_full (report, &criticals, &holes, &infos, &logs,
+                                 &warnings, &false_positives, &severity,
+                                 get, NULL, NULL, NULL, NULL, NULL,
+                                 NULL, NULL, NULL);
 
-        report_counts_id_full (report, &holes, &infos, &logs,
-                              &warnings, &false_positives, &severity,
-                              get, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-
-        f_holes = f_infos = f_logs = f_warnings = 0;
-        f_false_positives = f_severity = 0;
-      }
+          f_criticals = f_holes = f_infos = f_logs = f_warnings = 0;
+          f_false_positives = f_severity = 0;
+        }
     else
-      report_counts_id_full (report, &holes, &infos, &logs,
-                            &warnings, &false_positives, &severity,
-                            get, NULL,
-                            &f_holes, &f_infos, &f_logs, &f_warnings,
-                            &f_false_positives, &f_severity);
+      report_counts_id_full (report, &criticals, &holes, &infos, &logs,
+                             &warnings, &false_positives, &severity,
+                             get, NULL,
+                             &f_criticals, &f_holes, &f_infos, &f_logs,
+                             &f_warnings, &f_false_positives, &f_severity);
     }
 
   /* Results. */
@@ -29434,6 +18301,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
       f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
                                             g_free, NULL);
       f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -29457,6 +18326,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
                                   &filtered_result_count,
+                                  &orig_f_criticals, &f_criticals,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
                                   &orig_f_logs, &f_logs,
@@ -29469,6 +18339,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   &f_compliance_undefined,
                                   &f_compliance_count,
                                   result_hosts))
+
         goto failed_delta_report;
     }
   else if (get->details)
@@ -29565,6 +18436,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                   f_host_result_counts = f_host_logs;
                   if (count_filtered)
                     f_logs++;
+                }
+              else if (strcasecmp (level, "critical") == 0)
+                {
+                  f_host_result_counts = f_host_criticals;
+                  if (count_filtered)
+                    f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
@@ -29680,24 +18557,32 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         PRINT (out,
               "<result_count>"
               "<filtered>%i</filtered>"
-              "<hole><filtered>%i</filtered></hole>"
-              "<info><filtered>%i</filtered></info>"
+              "<critical><filtered>%i</filtered></critical>"
+              "<hole deprecated='1'><filtered>%i</filtered></hole>"
+              "<high><filtered>%i</filtered></high>"
+              "<info deprecated='1'><filtered>%i</filtered></info>"
+              "<low><filtered>%i</filtered></low>"
               "<log><filtered>%i</filtered></log>"
-              "<warning><filtered>%i</filtered></warning>"
+              "<warning deprecated='1'><filtered>%i</filtered></warning>"
+              "<medium><filtered>%i</filtered></medium>"
               "<false_positive>"
               "<filtered>%i</filtered>"
               "</false_positive>"
               "</result_count>",
               orig_filtered_result_count,
+              (strchr (levels, 'c') ? orig_f_criticals : 0),
+              (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'h') ? orig_f_holes : 0),
               (strchr (levels, 'l') ? orig_f_infos : 0),
+              (strchr (levels, 'l') ? orig_f_infos : 0),
               (strchr (levels, 'g') ? orig_f_logs : 0),
+              (strchr (levels, 'm') ? orig_f_warnings : 0),
               (strchr (levels, 'm') ? orig_f_warnings : 0),
               (strchr (levels, 'f') ? orig_f_false_positives : 0));
       else
         {
           if (count_filtered)
-            filtered_result_count = f_holes + f_infos + f_logs
+            filtered_result_count = f_criticals + f_holes + f_infos + f_logs
                                     + f_warnings + false_positives;
 
           PRINT (out,
@@ -29705,10 +18590,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "%i"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
-                "<hole><full>%i</full><filtered>%i</filtered></hole>"
-                "<info><full>%i</full><filtered>%i</filtered></info>"
+                "<critical>"
+                "<full>%i</full>"
+                "<filtered>%i</filtered>"
+                "</critical>"
+                "<hole deprecated='1'><full>%i</full><filtered>%i</filtered></hole>"
+                "<high><full>%i</full><filtered>%i</filtered></high>"
+                "<info deprecated='1'><full>%i</full><filtered>%i</filtered></info>"
+                "<low><full>%i</full><filtered>%i</filtered></low>"
                 "<log><full>%i</full><filtered>%i</filtered></log>"
-                "<warning><full>%i</full><filtered>%i</filtered></warning>"
+                "<warning deprecated='1'><full>%i</full><filtered>%i</filtered></warning>"
+                "<medium><full>%i</full><filtered>%i</filtered></medium>"
                 "<false_positive>"
                 "<full>%i</full>"
                 "<filtered>%i</filtered>"
@@ -29717,12 +18609,20 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 total_result_count,
                 total_result_count,
                 filtered_result_count,
+                criticals,
+                (strchr (levels, 'c') ? f_criticals : 0),
+                holes,
+                (strchr (levels, 'h') ? f_holes : 0),
                 holes,
                 (strchr (levels, 'h') ? f_holes : 0),
                 infos,
                 (strchr (levels, 'l') ? f_infos : 0),
+                infos,
+                (strchr (levels, 'l') ? f_infos : 0),
                 logs,
                 (strchr (levels, 'g') ? f_logs : 0),
+                warnings,
+                (strchr (levels, 'm') ? f_warnings : 0),
                 warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
                 false_positives,
@@ -29761,25 +18661,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           present = next (&hosts);
           if (present)
             {
-                if (print_report_host_xml (out,
-                                          &hosts,
-                                          result_host,
-                                          tsk_usage_type,
-                                          lean,
-                                          host_summary_buffer,
-                                          f_host_ports,
-                                          f_host_holes,
-                                          f_host_warnings,
-                                          f_host_infos,
-                                          f_host_logs,
-                                          f_host_false_positives,
-                                          f_host_compliant,
-                                          f_host_notcompliant,
-                                          f_host_incomplete,
-                                          f_host_undefined))
-
+              if (print_report_host_xml (out,
+                                         &hosts,
+                                         result_host,
+                                         tsk_usage_type,
+                                         lean,
+                                         host_summary_buffer,
+                                         f_host_ports,
+                                         f_host_criticals,
+                                         f_host_holes,
+                                         f_host_warnings,
+                                         f_host_infos,
+                                         f_host_logs,
+                                         f_host_false_positives,
+                                         f_host_compliant,
+                                         f_host_notcompliant,
+                                         f_host_incomplete,
+                                         f_host_undefined))
                 {
-                    goto failed_print_report_host;
+                  goto failed_print_report_host;
                 }
             }
           cleanup_iterator (&hosts);
@@ -29792,21 +18692,23 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       while (next (&hosts))
         {
           if (print_report_host_xml (out,
-                                    &hosts,
-                                    NULL,
-                                    tsk_usage_type,
-                                    lean,
-                                    host_summary_buffer,
-                                    f_host_ports,
-                                    f_host_holes,
-                                    f_host_warnings,
-                                    f_host_infos,
-                                    f_host_logs,
-                                    f_host_false_positives,
-                                    f_host_compliant,
-                                    f_host_notcompliant,
-                                    f_host_incomplete,
-                                    f_host_undefined))
+                                     &hosts,
+                                     NULL,
+                                     tsk_usage_type,
+                                     lean,
+                                     host_summary_buffer,
+                                     f_host_ports,
+                                     f_host_criticals,
+                                     f_host_holes,
+                                     f_host_warnings,
+                                     f_host_infos,
+                                     f_host_logs,
+                                     f_host_false_positives,
+                                     f_host_compliant,
+                                     f_host_notcompliant,
+                                     f_host_incomplete,
+                                     f_host_undefined))
+
             goto failed_print_report_host;
         }
       cleanup_iterator (&hosts);
@@ -29820,6 +18722,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
+      g_hash_table_destroy (f_host_criticals);
       g_hash_table_destroy (f_host_holes);
       g_hash_table_destroy (f_host_warnings);
       g_hash_table_destroy (f_host_infos);
@@ -29845,7 +18748,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               report_host_t report_host = host_iterator_report_host(&hosts);
 
-              if (print_report_host_tls_certificates_xml(report_host, 
+              if (print_report_host_tls_certificates_xml(report_host,
                                                          result_host,
                                                          out))
                 {
@@ -29865,15 +18768,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       const char *host;
       iterator_t hosts;
       init_report_host_iterator (&hosts, report, NULL, 0);
-      
+
       PRINT (out, "<tls_certificates>");
-      
+
       while (next (&hosts))
         {
           report_host_t report_host = host_iterator_report_host(&hosts);
           host = host_iterator_host (&hosts);
 
-          if (print_report_host_tls_certificates_xml(report_host, 
+          if (print_report_host_tls_certificates_xml(report_host,
                                                      host,
                                                      out))
             {
@@ -29947,6 +18850,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       }
     else
       {
+        g_hash_table_destroy (f_host_criticals);
         g_hash_table_destroy (f_host_holes);
         g_hash_table_destroy (f_host_warnings);
         g_hash_table_destroy (f_host_infos);
@@ -30144,10 +19048,10 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
  * @param[in]  send               Function to write to client.
  * @param[in]  send_data_1        Second argument to \p send.
  * @param[in]  send_data_2        Third argument to \p send.
- * @param[in]  alert_id       ID of alert to escalate report with,
+ * @param[in]  alert_id           ID of alert to trigger with the report,
  *                                instead of getting report.  NULL to get
  *                                report.
- * @param[in]  prefix              Text to send to client before the report.
+ * @param[in]  prefix             Text to send to client before the report.
  *
  * @return 0 success, -1 error, -2 failed to find alert report format, -3 error
  *         during alert, -4 failed to find alert filter, 1 failed to find alert,
@@ -30181,7 +19085,7 @@ manage_send_report (report_t report, report_t delta_report,
   if (report_task (report, &task))
     return -1;
 
-  /* Escalate instead, if requested. */
+  /* Trigger alert instead, if requested. */
 
   if (alert_id)
     {
@@ -30198,9 +19102,9 @@ manage_send_report (report_t report, report_t delta_report,
       condition = alert_condition (alert);
       method = alert_method (alert);
 
-      ret = escalate_2 (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
-                        (void*) TASK_STATUS_DONE, method, condition,
-                        get, notes_details, overrides_details, NULL);
+      ret = trigger (alert, task, report, EVENT_TASK_RUN_STATUS_CHANGED,
+                     (void*) TASK_STATUS_DONE, method, condition,
+                     get, notes_details, overrides_details, NULL);
       if (ret == -3)
         return -4;
       if (ret == -1)
@@ -30368,111 +19272,6 @@ manage_send_report (report_t report, report_t delta_report,
 }
 
 /**
- * @brief Get the IP of a host, using the 'hostname' report host details.
- *
- * The most recent host detail takes preference.
- *
- * @param[in]  host  Host name or IP.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-gchar*
-report_host_ip (const char *host)
-{
-  gchar *quoted_host, *ret;
-  quoted_host = sql_quote (host);
-  ret = sql_string ("SELECT host FROM report_hosts"
-                    " WHERE id = (SELECT report_host FROM report_host_details"
-                    "             WHERE name = 'hostname'"
-                    "             AND value = '%s'"
-                    "             ORDER BY id DESC LIMIT 1);",
-                    quoted_host);
-  g_free (quoted_host);
-  return ret;
-}
-
-/**
- * @brief Get the hostname of a report_host.
- *
- * The most recent host detail takes preference.
- *
- * @param[in]  report_host  Report host.
- *
- * @return Newly allocated hostname if available, else NULL.
- */
-gchar*
-report_host_hostname (report_host_t report_host)
-{
-  return sql_string ("SELECT value FROM report_host_details"
-                     " WHERE report_host = %llu"
-                     " AND name = 'hostname'"
-                     " ORDER BY id DESC LIMIT 1;",
-                     report_host);
-}
-
-/**
- * @brief Get the best_os_cpe of a report_host.
- *
- * The most recent host detail takes preference.
- *
- * @param[in]  report_host  Report host.
- *
- * @return Newly allocated best_os_cpe if available, else NULL.
- */
-gchar*
-report_host_best_os_cpe (report_host_t report_host)
-{
-  return sql_string ("SELECT value FROM report_host_details"
-                     " WHERE report_host = %llu"
-                     " AND name = 'best_os_cpe'"
-                     " ORDER BY id DESC LIMIT 1;",
-                     report_host);
-}
-
-/**
- * @brief Get the best_os_txt of a report_host.
- *
- * The most recent host detail takes preference.
- *
- * @param[in]  report_host  Report host.
- *
- * @return Newly allocated best_os_txt if available, else NULL.
- */
-gchar*
-report_host_best_os_txt (report_host_t report_host)
-{
-  return sql_string ("SELECT value FROM report_host_details"
-                     " WHERE report_host = %llu"
-                     " AND name = 'best_os_txt'"
-                     " ORDER BY id DESC LIMIT 1;",
-                     report_host);
-}
-
-/**
- * @brief Check if a report host is alive and has at least one result.
- *
- * @param[in]  report  Report.
- * @param[in]  host    Host name or IP.
- *
- * @return 0 if dead, else alive.
- */
-int
-report_host_noticeable (report_t report, const gchar *host)
-{
-  report_host_t report_host = 0;
-
-  sql_int64 (&report_host,
-             "SELECT id FROM report_hosts"
-             " WHERE report = %llu AND host = '%s';",
-             report,
-             host);
-
-  return report_host
-         && report_host_dead (report_host) == 0
-         && report_host_result_count (report_host) > 0;
-}
-
-/**
  * @brief Generate the hash value for the entity of the result and
  * check if osp result for report already exists
  *
@@ -30614,7 +19413,7 @@ check_osp_result_exists (report_t report, task_t task,
  *
  * @return     "1" if osp result already exists, else "0"
  */
-static int
+int
 check_host_detail_exists (report_t report, const char *host, const char *s_type,
                           const char *s_name, const char *s_desc, const char *name,
                           const char *value, char **detail_hash_value,
@@ -30896,20 +19695,23 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  holes_a   Number of holes on earlier report.
- * @param[in]  warns_a   Number of warnings on earlier report.
- * @param[in]  infos_a   Number of infos on earlier report.
- * @param[in]  severity_a Severity of earlier report.
- * @param[in]  holes_b   Number of holes on later report.
- * @param[in]  warns_b   Number of warnings on later report.
- * @param[in]  infos_b   Number of infos on later report.
- * @param[in]  severity_b Severity of later report.
+ * @param[in]  criticals_a  Number of criticals on earlier report.
+ * @param[in]  holes_a      Number of holes on earlier report.
+ * @param[in]  warns_a      Number of warnings on earlier report.
+ * @param[in]  infos_a      Number of infos on earlier report.
+ * @param[in]  severity_a   Severity of earlier report.
+ * @param[in]  criticals_b  Number of criticals on later report.
+ * @param[in]  holes_b      Number of holes on later report.
+ * @param[in]  warns_b      Number of warnings on later report.
+ * @param[in]  infos_b      Number of infos on later report.
+ * @param[in]  severity_b   Severity of later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 static const char *
-task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
-                 int holes_b, int warns_b, int infos_b, double severity_b)
+task_trend_calc (int criticals_a, int holes_a, int warns_a, int infos_a,
+                 double severity_a, int criticals_b, int holes_b, int warns_b,
+                 int infos_b, double severity_b)
 {
   int threat_a, threat_b;
 
@@ -30923,7 +19725,9 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
 
   /* Calculate trend. */
 
-  if (holes_a > 0)
+  if (criticals_a > 0)
+    threat_a = 5;
+  else if (holes_a > 0)
     threat_a = 4;
   else if (warns_a > 0)
     threat_a = 3;
@@ -30932,7 +19736,9 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
   else
     threat_a = 1;
 
-  if (holes_b > 0)
+  if (criticals_b > 0)
+    threat_b = 5;
+  else if (holes_b > 0)
     threat_b = 4;
   else if (warns_b > 0)
     threat_b = 3;
@@ -30950,6 +19756,15 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
     return "down";
 
   /* Check if the threat count changed in the highest level. */
+
+  if (criticals_a)
+    {
+      if (criticals_a > criticals_b)
+        return "more";
+      if (criticals_a < criticals_b)
+        return "less";
+      return "same";
+    }
 
   if (holes_a)
     {
@@ -30984,22 +19799,25 @@ task_trend_calc (int holes_a, int warns_a, int infos_a, double severity_a,
 /**
  * @brief Return the trend of a task, given counts.
  *
- * @param[in]  iterator  Task iterator.
- * @param[in]  holes_a   Number of holes on earlier report.
- * @param[in]  warns_a   Number of warnings on earlier report.
- * @param[in]  infos_a   Number of infos on earlier report.
- * @param[in]  severity_a Severity score of earlier report.
- * @param[in]  holes_b   Number of holes on later report.
- * @param[in]  warns_b   Number of warnings on later report.
- * @param[in]  infos_b   Number of infos on later report.
+ * @param[in]  iterator     Task iterator.
+ * @param[in]  criticals_a  Number of criticals on earlier report.
+ * @param[in]  holes_a      Number of holes on earlier report.
+ * @param[in]  warns_a      Number of warnings on earlier report.
+ * @param[in]  infos_a      Number of infos on earlier report.
+ * @param[in]  severity_a   Severity score of earlier report.
+ * @param[in]  criticals_b  Number of criticals on later report.
+ * @param[in]  holes_b      Number of holes on later report.
+ * @param[in]  warns_b      Number of warnings on later report.
+ * @param[in]  infos_b      Number of infos on later report.
  * @param[in]  severity_b  Severity score of later report.
  *
  * @return "up", "down", "more", "less", "same" or if too few reports "".
  */
 const char *
-task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
-                            int infos_a, double severity_a, int holes_b,
-                            int warns_b, int infos_b, double severity_b)
+task_iterator_trend_counts (iterator_t *iterator, int criticals_a, int holes_a,
+                            int warns_a, int infos_a, double severity_a,
+                            int criticals_b, int holes_b, int warns_b,
+                            int infos_b, double severity_b)
 {
   /* Ensure there are enough reports. */
   if (task_iterator_finished_reports (iterator) <= 1)
@@ -31010,8 +19828,8 @@ task_iterator_trend_counts (iterator_t *iterator, int holes_a, int warns_a,
   if (task_iterator_run_status (iterator) == TASK_STATUS_RUNNING)
     return "";
 
-  return task_trend_calc (holes_a, warns_a, infos_a, severity_a,
-                          holes_b, warns_b, infos_b, severity_b);
+  return task_trend_calc (criticals_a, holes_a, warns_a, infos_a, severity_a,
+                          criticals_b, holes_b, warns_b, infos_b, severity_b);
 }
 
 /**
@@ -31150,11 +19968,13 @@ copy_task (const char* name, const char* comment, const char *task_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, schedule, schedule_periods,"
+                            "config, target, oci_image_target,"
+                            " schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " hosts_ordering, usage_type, alterable",
+                            " oci_image_target_location, hosts_ordering,"
+                            " usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -31945,6 +20765,8 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  schedule_periods  Period of schedule.
  * @param[in]  preferences       Preferences.
  * @param[in]  hosts_ordering    Host scan order.
+ * @param[in]  agent_group_id    Agent group.
+ * @param[in]  oci_image_target_id  OCI image target.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -31956,7 +20778,8 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for container tasks only
- *         certain fields may be edited, -1 error.
+ *         certain fields may be edited, 18 failed to find agent group,
+           19 failed to find OCI image target, -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -31968,6 +20791,8 @@ modify_task (const gchar *task_id, const gchar *name,
              const gchar *schedule_periods,
              array_t *preferences,
              const gchar *hosts_ordering,
+             const gchar *agent_group_id,
+             const gchar* oci_image_target_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -31983,7 +20808,10 @@ modify_task (const gchar *task_id, const gchar *name,
   if (task == 0)
     return 1;
 
-  if ((task_target (task) == 0)
+
+  if ((task_target (task) == 0 
+       && (agent_group_id == NULL)
+       && (oci_image_target_id == NULL))
       && (alerts->len || schedule_id))
     return 17;
 
@@ -32035,7 +20863,9 @@ modify_task (const gchar *task_id, const gchar *name,
   else
     type_of_scanner = scanner_type (scanner);
 
-  if (config_id && (type_of_scanner != SCANNER_TYPE_CVE))
+  if (config_id 
+      && (type_of_scanner != SCANNER_TYPE_CVE)
+      && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
     {
       config_t config;
 
@@ -32150,6 +20980,45 @@ modify_task (const gchar *task_id, const gchar *name,
       else
         set_task_target (task, target);
     }
+#if ENABLE_AGENTS
+  if (agent_group_id) {
+    agent_group_t agent_group;
+
+    agent_group = 0;
+    if ((task_run_status(task) != TASK_STATUS_NEW)
+        && (task_alterable(task) == 0))
+      return 16;
+    else if (find_agent_group_with_permission(agent_group_id,
+                                              &agent_group,
+                                              "get_agent_groups"))
+      return -1;
+    else if (agent_group == 0)
+      return 18;
+    else
+      {
+        set_task_agent_group_and_location (task, agent_group);
+      }
+  }
+#endif
+
+#if ENABLE_CONTAINER_SCANNING
+  if (oci_image_target_id)
+    {
+      oci_image_target_t oci_image_target = 0;
+
+      if ((task_run_status (task) != TASK_STATUS_NEW)
+          && (task_alterable (task) == 0))
+        return 16;
+      else if (find_oci_image_target_with_permission (oci_image_target_id,
+                                                      &oci_image_target,
+                                                      "get_oci_image_targets"))
+        return -1;
+      else if (oci_image_target == 0)
+        return 19;
+      else
+        set_task_oci_image_target (task, oci_image_target);
+    }
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   if (preferences)
     switch (set_task_preferences (task, preferences))
@@ -32444,7 +21313,57 @@ validate_results_port (const char *port)
 }
 
 /**
- * @brief Convert alive test name to alive test bitfield.
+ * @brief Convert alive test array to alive test bitfield.
+ *
+ * @param[in]  alive_tests NULL-terminated array of alive tests.
+ *
+ * @return Alive test bitfield, or -1 on error.
+ */
+static int
+alive_test_from_array (GPtrArray *alive_tests)
+{
+  alive_test_t alive_test_bitfield = 0;
+
+  if (alive_tests->len == 0)
+    return 0;
+
+  for (int i = 0; i < alive_tests->len; i++)
+    {
+      const char *item = g_ptr_array_index (alive_tests, i);
+      if (strcasecmp (item, "Scan Config Default") == 0)
+        {
+          alive_test_bitfield = 0;
+          break;
+        }
+      else if (strcasecmp (item, "Consider Alive") == 0)
+        {
+          alive_test_bitfield = ALIVE_TEST_CONSIDER_ALIVE;
+          break;
+        }
+      else if (strcasecmp (item, "ARP") == 0
+          || strcasecmp (item, "ARP Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_ARP;
+      else if (strcmp (item, "ICMP") == 0
+                || strcmp (item, "ICMP Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_ICMP;
+      else if (strcmp (item, "TCP-ACK Service") == 0
+                || strcmp (item, "TCP-ACK Service Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_TCP_ACK_SERVICE;
+      else if (strcmp (item, "TCP-SYN Service") == 0
+                || strcmp (item, "TCP-SYN Service Ping") == 0)
+        alive_test_bitfield |= ALIVE_TEST_TCP_SYN_SERVICE;
+      else
+        {
+          g_debug ("%s: Invalid alive_tests item: %s", __func__, item);
+          alive_test_bitfield = -1;
+          break;
+        }
+    }
+  return alive_test_bitfield;
+}
+
+/**
+ * @brief Convert legacy alive test name string to alive test bitfield.
  *
  * @param[in]  alive_tests  Name of alive test.
  *
@@ -32634,7 +21553,8 @@ target_login_port (target_t target, const char* type)
  * @param[in]   snmp_credential SNMP credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests.
+ * @param[in]   alive_tests     Alive tests array.
+ * @param[in]   alive_test_str  Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
  * @param[out]  target          Created target.
  *
@@ -32645,6 +21565,9 @@ target_login_port (target_t target, const char* type)
  *         10 invalid SMB credential type, 11 invalid ESXi credential type,
  *         12 invalid SNMP credential type, 13 port range or port list required,
  *         14 SSH elevate credential without an SSH credential,
+ *         15 elevate credential must be different from the SSH credential,
+ *         16 invalid Kerberos 5 credential type,
+ *         30 cannot use both alive_tests string and sub-elements,
  *         99 permission denied, -1 error.
  */
 int
@@ -32655,8 +21578,11 @@ create_target (const char* name, const char* asset_hosts_filter,
                credential_t ssh_elevate_credential,
                const char* ssh_port, credential_t smb_credential,
                credential_t esxi_credential, credential_t snmp_credential,
+               credential_t krb5_credential,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *reverse_lookup_unify,
+               GPtrArray *alive_tests,
+               const char *alive_test_str,
                const char *allow_simultaneous_ips,
                target_t* target)
 {
@@ -32675,7 +21601,15 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_port && validate_port (ssh_port))
     return 5;
 
-  alive_test = alive_test_from_string (alive_tests);
+  if (alive_tests && alive_tests->len
+      && alive_test_str && strlen (alive_test_str))
+    return 30;
+  else if (alive_tests && alive_tests->len)
+    alive_test = alive_test_from_array (alive_tests);
+  else if (alive_test_str && strlen (alive_test_str))
+    alive_test = alive_test_from_string (alive_test_str);
+  else
+    alive_test = 0;
   if (alive_test <= -1)
     return 7;
 
@@ -32840,7 +21774,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_credential)
     {
       gchar *type = credential_type (ssh_credential);
-      if (strcmp (type, "usk") && strcmp (type, "up"))
+      if (strcmp (type, "usk") && strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_usk") && strcmp (type, "cs_up")
+#endif
+          )
         {
           sql_rollback ();
           g_free (quoted_ssh_port);
@@ -32858,7 +21796,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential)
     {
       gchar *type = credential_type (ssh_elevate_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up") 
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+         )
         {
           sql_rollback ();
           return 9;
@@ -32874,7 +21816,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (smb_credential)
     {
       gchar *type = credential_type (smb_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+         )
         {
           sql_rollback ();
           return 10;
@@ -32890,7 +21836,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (esxi_credential)
     {
       gchar *type = credential_type (esxi_credential);
-      if (strcmp (type, "up"))
+      if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_up")
+#endif
+        )
         {
           sql_rollback ();
           return 11;
@@ -32906,7 +21856,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (snmp_credential)
     {
       gchar *type = credential_type (snmp_credential);
-      if (strcmp (type, "snmp"))
+      if (strcmp (type, "snmp")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_snmp")
+#endif
+         )
         {
           sql_rollback ();
           return 12;
@@ -32917,6 +21871,23 @@ create_target (const char* name, const char* asset_hosts_filter,
            " (target, type, credential, port)"
            " VALUES (%llu, 'snmp', %llu, %s);",
            new_target, snmp_credential, "0");
+    }
+
+  if (krb5_credential)
+    {
+      gchar *type = credential_type (krb5_credential);
+      if (strcmp (type, "krb5"))
+        {
+          sql_rollback ();
+          g_free (type);
+          return 16;
+        }
+      g_free (type);
+
+      sql ("INSERT INTO targets_login_data"
+           " (target, type, credential, port)"
+           " VALUES (%llu, 'krb5', %llu, %s);",
+           new_target, krb5_credential, "0");
     }
 
   sql_commit ();
@@ -33116,9 +22087,10 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   smb_credential_id  SMB credential.
  * @param[in]   esxi_credential_id  ESXi credential.
  * @param[in]   snmp_credential_id  SNMP credential.
+ * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests.
+ * @param[in]   alive_tests         Alive tests array.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -33134,6 +22106,10 @@ delete_target (const char *target_id, int ultimate)
  *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
  *         credential type, 24 SSH elevate credential without SSH credential,
  *         25 SSH elevate credential equals SSH credential,
+ *         26 failed to find Kerberos 5 credential,
+ *         27 invalid Kerberos 5 credential type,
+ *         28 cannot use both SMB and Kerberos 5 credential,
+ *         30 cannot use both alive_tests string and sub-elements,
  *         99 permission denied, -1 error.
  */
 int
@@ -33143,13 +22119,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *ssh_elevate_credential_id,
                const char *ssh_port, const char *smb_credential_id,
                const char *esxi_credential_id, const char* snmp_credential_id,
+               const char *krb5_credential_id,
                const char *reverse_lookup_only,
-               const char *reverse_lookup_unify, const char *alive_tests,
+               const char *reverse_lookup_unify,
+               GPtrArray *alive_tests,
+               const char *alive_test_str,
                const char *allow_simultaneous_ips)
 {
   target_t target;
   credential_t ssh_credential = 0;
   credential_t ssh_elevate_credential = 0;
+  credential_t smb_credential;
+  credential_t krb5_credential;
 
   assert (target_id);
 
@@ -33237,11 +22218,31 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (alive_tests)
+  if (alive_tests && alive_tests->len
+      && alive_test_str && strlen (alive_test_str))
+    return 30;
+  else if (alive_tests && alive_tests->len)
     {
       int alive_test;
 
-      alive_test = alive_test_from_string (alive_tests);
+      alive_test = alive_test_from_array (alive_tests);
+      if (alive_test <= -1)
+        {
+          sql_rollback ();
+          return 10;
+        }
+      sql ("UPDATE targets SET"
+           " alive_test = '%i',"
+           " modification_time = m_now ()"
+           " WHERE id = %llu;",
+           alive_test,
+           target);
+    }
+  else if (alive_test_str && strlen (alive_test_str))
+    {
+      int alive_test;
+
+      alive_test = alive_test_from_string (alive_test_str);
       if (alive_test <= -1)
         {
           sql_rollback ();
@@ -33328,7 +22329,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             port_int = 22;
 
           type = credential_type (ssh_credential);
-          if (strcmp (type, "up") && strcmp (type, "usk"))
+          if (strcmp (type, "up") && strcmp (type, "usk")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up") && strcmp (type, "cs_usk")
+#endif
+          )
             {
               sql_rollback ();
               return 18;
@@ -33368,7 +22373,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (ssh_elevate_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+            )
             {
               sql_rollback ();
               return 23;
@@ -33383,8 +22392,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (smb_credential_id)
     {
-      credential_t smb_credential;
-
       if (target_in_use (target))
         {
           sql_rollback ();
@@ -33410,7 +22417,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (smb_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+             )
             {
               sql_rollback ();
               return 19;
@@ -33422,6 +22433,8 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       else
         set_target_login_data (target, "smb", 0, 0);
     }
+  else
+    smb_credential = target_smb_credential (target);
 
   if (esxi_credential_id)
     {
@@ -33452,7 +22465,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (esxi_credential);
-          if (strcmp (type, "up"))
+          if (strcmp (type, "up")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_up")
+#endif
+             )
             {
               sql_rollback ();
               return 20;
@@ -33494,7 +22511,11 @@ modify_target (const char *target_id, const char *name, const char *hosts,
             }
 
           type = credential_type (snmp_credential);
-          if (strcmp (type, "snmp"))
+          if (strcmp (type, "snmp")
+#if ENABLE_CREDENTIAL_STORES
+              && strcmp (type, "cs_snmp")
+#endif
+             )
             {
               sql_rollback ();
               return 21;
@@ -33524,6 +22545,55 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           sql_rollback ();
           return 25;
         }
+    }
+
+  if (krb5_credential_id)
+    {
+      if (target_in_use (target))
+        {
+          sql_rollback ();
+          return 15;
+        }
+
+      krb5_credential = 0;
+      if (strcmp (krb5_credential_id, "0"))
+        {
+          gchar *type;
+          if (find_credential_with_permission (krb5_credential_id,
+                                               &krb5_credential,
+                                               "get_credentials"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (krb5_credential == 0)
+            {
+              sql_rollback ();
+              return 26;
+            }
+
+          type = credential_type (krb5_credential);
+          if (strcmp (type, "krb5"))
+            {
+              sql_rollback ();
+              g_free (type);
+              return 27;
+            }
+          g_free (type);
+
+          set_target_login_data (target, "krb5", krb5_credential, 0);
+        }
+      else
+        set_target_login_data (target, "krb5", 0, 0);
+    }
+  else
+    krb5_credential = target_krb5_credential (target);
+
+  if (smb_credential && krb5_credential)
+    {
+      sql_rollback ();
+      return 28;
     }
 
   if (exclude_hosts)
@@ -33689,6 +22759,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
    { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
+   { "(SELECT credential FROM targets_login_data"              \
+     " WHERE target = targets.id"                              \
+     " AND type = CAST ('krb5' AS text))",                     \
+     NULL,                                                     \
+     KEYWORD_TYPE_INTEGER },                                   \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
    { "allow_simultaneous_ips",                                 \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
@@ -33735,6 +22811,15 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      "          WHERE target = targets.id"                     \
      "          AND type = CAST ('elevate' AS text)))",        \
      "ssh_elevate_credential",                                 \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT name FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('krb5' AS text)))",           \
+     "krb5_credential",                                        \
      KEYWORD_TYPE_STRING                                       \
    },                                                          \
    { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
@@ -33812,6 +22897,12 @@ modify_target (const char *target_id, const char *name, const char *hosts,
      NULL,                                                              \
      KEYWORD_TYPE_INTEGER },                                            \
    { "trash_target_credential_location (id, CAST ('elevate' AS text))", \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "target_credential (id, 1, CAST ('krb5' AS text))",                \
+     NULL,                                                              \
+     KEYWORD_TYPE_INTEGER },                                            \
+   { "trash_target_credential_location (id, CAST ('krb5' AS text))",    \
      NULL,                                                              \
      KEYWORD_TYPE_INTEGER },                                            \
    { "allow_simultaneous_ips",                                          \
@@ -34034,42 +23125,18 @@ DEF_ACCESS (target_iterator_reverse_lookup_unify,
             GET_ITERATOR_COLUMN_COUNT + 12);
 
 /**
- * @brief Get the alive test description from a target iterator.
+ * @brief Get the alive_tests value from a target iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Reverse lookup unify of the target or NULL if iteration is complete.
+ * @return Alive_tests of the target or -1 if iteration is complete.
  */
-const char*
+int
 target_iterator_alive_tests (iterator_t* iterator)
 {
-  int tests;
-  if (iterator->done) return "";
-  tests = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
-  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
-      && (tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_ARP))
-    return "ICMP, TCP-ACK Service & ARP Ping";
-  if ((tests & ALIVE_TEST_TCP_ACK_SERVICE)
-      && (tests & ALIVE_TEST_ARP))
-    return "TCP-ACK Service & ARP Ping";
-  if ((tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_ARP))
-    return "ICMP & ARP Ping";
-  if ((tests & ALIVE_TEST_ICMP)
-      && (tests & ALIVE_TEST_TCP_ACK_SERVICE))
-    return "ICMP & TCP-ACK Service Ping";
-  if (tests & ALIVE_TEST_ARP)
-    return "ARP Ping";
-  if (tests & ALIVE_TEST_TCP_ACK_SERVICE)
-    return "TCP-ACK Service Ping";
-  if (tests & ALIVE_TEST_TCP_SYN_SERVICE)
-    return "TCP-SYN Service Ping";
-  if (tests & ALIVE_TEST_ICMP)
-    return "ICMP Ping";
-  if (tests & ALIVE_TEST_CONSIDER_ALIVE)
-    return "Consider Alive";
-  return "Scan Config Default";
+  if (iterator->done)
+    return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
 }
 
 /**
@@ -34169,6 +23236,38 @@ target_iterator_ssh_elevate_trash (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the Kerberos 5 LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
+  return ret;
+}
+
+/**
+ * @brief Get the Kerberos 5 LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
  * @brief Get the allow_simultaneous_ips value from a target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -34176,7 +23275,7 @@ target_iterator_ssh_elevate_trash (iterator_t* iterator)
  * @return allow_simult_ips_same_host or NULL if iteration is complete.
  */
 DEF_ACCESS (target_iterator_allow_simultaneous_ips,
-            GET_ITERATOR_COLUMN_COUNT + 20);
+            GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Return the UUID of a tag.
@@ -34440,6 +23539,19 @@ target_ssh_elevate_credential (target_t target)
 }
 
 /**
+ * @brief Return the Kerberos 5 credential associated with a target, if any.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Kerberos 5 credential if any, else 0.
+ */
+credential_t
+target_krb5_credential (target_t target)
+{
+  return target_credential (target, "krb5");
+}
+
+/**
  * @brief Return the port list associated with a target, if any.
  *
  * @param[in]  target  Target.
@@ -34676,751 +23788,6 @@ target_task_iterator_readable (iterator_t* iterator)
 }
 
 
-/* SecInfo Alerts. */
-
-/**
- * @brief Check for new SCAP SecInfo after an update.
- */
-static void
-check_for_new_scap ()
-{
-  if (manage_scap_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cves"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cve", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cpes"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cpe", 0, 0);
-    }
-}
-
-/**
- * @brief Check for new CERT SecInfo after an update.
- */
-static void
-check_for_new_cert ()
-{
-  if (manage_cert_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.cert_bund_advs"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "cert_bund_adv", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.dfn_cert_advs"
-                   "  WHERE creation_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0));"))
-        event (EVENT_NEW_SECINFO, "dfn_cert_adv", 0, 0);
-    }
-}
-
-/**
- * @brief Print an URL for a New NVTs alert.
- *
- * @param[in]  url      Format string for url.
- * @param[in]  oid      SecInfo ID.
- * @param[in]  type     SecInfo Type.
- *
- * @return Freshly allocated url.
- */
-static gchar *
-alert_url_print (const gchar *url, const gchar *oid, const gchar *type)
-{
-  int formatting;
-  const gchar *point, *end;
-  GString *new_url;
-
-  assert (url);
-
-  new_url = g_string_new ("");
-  for (formatting = 0, point = url, end = (url + strlen (url));
-       point < end;
-       point++)
-    if (formatting)
-      {
-        switch (*point)
-          {
-            case '$':
-              g_string_append_c (new_url, '$');
-              break;
-            case 'o':
-              {
-                g_string_append (new_url, oid);
-                break;
-              }
-            case 't':
-              {
-                g_string_append (new_url, type);
-                break;
-              }
-            default:
-              g_string_append_c (new_url, '$');
-              g_string_append_c (new_url, *point);
-              break;
-          }
-        formatting = 0;
-      }
-    else if (*point == '$')
-      formatting = 1;
-    else
-      g_string_append_c (new_url, *point);
-
-  return g_string_free (new_url, FALSE);
-}
-
-/**
- * @brief Create list for New NVTs event.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event type specific details.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated list.
- */
-static gchar *
-new_nvts_list (event_t event, const void* event_data, alert_t alert,
-               int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-  time_t feed_version_epoch;
-
-  feed_version_epoch = nvts_feed_version_epoch();
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  if (details_url && strlen (details_url))
-    buffer = g_string_new (NEW_NVTS_HEADER);
-  else
-    buffer = g_string_new (NEW_NVTS_HEADER_OID);
-
-  count = 0;
-  // TODO This should use an iterator provided by manage_sql_nvts.c.
-  if (example)
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE creation_time > %ld"
-                   " ORDER BY creation_time DESC;",
-                   feed_version_epoch);
-  else
-    init_iterator (&rows,
-                   "SELECT oid, name, solution_type, cvss_base, qod FROM nvts"
-                   " WHERE modification_time > %ld"
-                   "   AND creation_time <= %ld"
-                   " ORDER BY modification_time DESC;",
-                   feed_version_epoch,
-                   feed_version_epoch);
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name;
-
-      name = iterator_string (&rows, 1);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-57.57s%-3s  %13s  %8s %3s%%%s%s%s",
-                              name,
-                              strlen (name) > 60
-                               ? "..."
-                               : (strlen (name) > 57 ? name + 57 : "   "),
-                              iterator_string (&rows, 2),
-                              iterator_string (&rows, 3),
-                              iterator_string (&rows, 4),
-                              url ? "\n  " : "  ",
-                              url ? url : iterator_string (&rows, 0),
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create list for New CVEs event.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event type specific details.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_cves_list (event_t event, const void* event_data, alert_t alert,
-               int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CVES_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, severity, description FROM cves"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, severity, description FROM cves"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, severity, description FROM cves"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *desc;
-
-      name = iterator_string (&rows, 1);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      desc = iterator_string (&rows, 3);
-      g_string_append_printf (buffer,
-                              "%-15.15s  %8s  %50.50s%s%s%s%s",
-                              name,
-                              iterator_string (&rows, 2),
-                              desc,
-                              strlen (desc) > 53
-                               ? "..."
-                               : (strlen (desc) > 50 ? desc + 50 : "   "),
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create list for New CPEs event.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event type specific details.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated list.
- */
-static gchar *
-new_cpes_list (event_t event, const void* event_data, alert_t alert,
-               int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CPES_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cpes"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'scap_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-57.57s%-3s  %-s%s%s%s",
-                              name,
-                              strlen (name) > 60
-                               ? "..."
-                               : (strlen (name) > 57 ? name + 57 : "   "),
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create list for "New CERT-Bund Advisories" event message.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event data.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated string.
- */
-static gchar *
-new_cert_bunds_list (event_t event, const void* event_data, alert_t alert,
-                     int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_CERT_BUNDS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM cert_bund_advs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'cert_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-11s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create list for "New DFN-CERT Advisories" event message.
- *
- * @param[in]  event         Event.
- * @param[in]  event_data    Event type specific details.
- * @param[in]  alert         Alert.
- * @param[in]  example       Whether the message is an example only.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated string.
- */
-static gchar *
-new_dfn_certs_list (event_t event, const void* event_data, alert_t alert,
-                    int example, int *count_return)
-{
-  iterator_t rows;
-  GString *buffer;
-  int count;
-  char *details_url;
-  const gchar *type;
-
-  details_url = alert_data (alert, "method", "details_url");
-  type = (gchar*) event_data;
-
-  buffer = g_string_new (NEW_DFN_CERTS_HEADER);
-
-  count = 0;
-  if (example)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " LIMIT 4;");
-  else if (event == EVENT_NEW_SECINFO)
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " WHERE creation_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " ORDER BY creation_time DESC;");
-  else
-    init_iterator (&rows,
-                   "SELECT uuid, name, title FROM dfn_cert_advs"
-                   " WHERE modification_time"
-                   "       > coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0)"
-                   " AND creation_time"
-                   "     <= coalesce (CAST ((SELECT value FROM meta"
-                   "                         WHERE name"
-                   "                               = 'cert_check_time')"
-                   "                        AS INTEGER),"
-                   "                  0)"
-                   " ORDER BY modification_time DESC;");
-
-  while (next (&rows))
-    {
-      gchar *url;
-      const char *name, *title;
-
-      name = iterator_string (&rows, 1);
-      title = iterator_string (&rows, 2);
-      if (details_url && strlen (details_url))
-        url = alert_url_print (details_url, iterator_string (&rows, 0), type);
-      else
-        url = NULL;
-      g_string_append_printf (buffer,
-                              "%-18s  %-s%s%s%s",
-                              name,
-                              title,
-                              url ? "\n  " : "",
-                              url ? url : "",
-                              url ? "\n\n" : "\n");
-      g_free (url);
-      count++;
-    }
-  cleanup_iterator (&rows);
-
-  if (count_return)
-    *count_return = count;
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Create message for New NVTs event.
- *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  alert       Alert.
- * @param[out] count_return  NULL, or address for row count.
- *
- * @return Freshly allocated list.
- */
-static gchar *
-new_secinfo_list (event_t event, const void* event_data, alert_t alert,
-                  int *count_return)
-{
-  g_debug ("%s: event_data: %s", __func__, (gchar*) event_data);
-
-  if (strcasecmp (event_data, "nvt_example") == 0)
-    return new_nvts_list (event, "nvt", alert, 1, count_return);
-  if (strcasecmp (event_data, "nvt") == 0)
-    return new_nvts_list (event, "nvt", alert, 0, count_return);
-
-  if (strcasecmp (event_data, "cve_example") == 0)
-    return new_cves_list (event, "cve", alert, 1, count_return);
-  if (strcasecmp (event_data, "cve") == 0)
-    return new_cves_list (event, "cve", alert, 0, count_return);
-
-  if (strcasecmp (event_data, "cpe_example") == 0)
-    return new_cpes_list (event, "cpe", alert, 1, count_return);
-  if (strcasecmp (event_data, "cpe") == 0)
-    return new_cpes_list (event, "cpe", alert, 0, count_return);
-
-  if (strcasecmp (event_data, "cert_bund_adv_example") == 0)
-    return new_cert_bunds_list (event, "cert_bund_adv", alert, 1, count_return);
-  if (strcasecmp (event_data, "cert_bund_adv") == 0)
-    return new_cert_bunds_list (event, "cert_bund_adv", alert, 0, count_return);
-
-  if (strcasecmp (event_data, "dfn_cert_adv_example") == 0)
-    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 1, count_return);
-  if (strcasecmp (event_data, "dfn_cert_adv") == 0)
-    return new_dfn_certs_list (event, "dfn_cert_adv", alert, 0, count_return);
-
-  if (count_return)
-    {
-      g_warning ("%s: Type error: %s", __func__, (char *) event_data);
-      *count_return = 0;
-    }
-
-  return g_strdup ("ERROR generating list");
-}
-
-/**
- * @brief Create message for New NVTs event.
- *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event type specific details.
- * @param[in]  alert       Alert.
- *
- * @return Freshly allocated message.
- */
-static gchar *
-new_secinfo_message (event_t event, const void* event_data, alert_t alert)
-{
-  gchar *type, *list, *message, *name, *point;
-  int count, example;
-
-  list = new_secinfo_list (event, event_data, alert, &count);
-
-  assert (count > 0);
-
-  type = g_strdup (event_data);
-  if (type && (point = strstr (type, "_example")))
-    {
-      example = 1;
-      point[0] = '\0';
-    }
-  else
-    example = 0;
-
-  name = alert_name (alert);
-  message = g_strdup_printf ("%s%i%s%s%s%s, according to the\nalert \"%s\":\n\n%s",
-                             example
-                              ? "Warning: This is an example alert only.\n\n"
-                              : "",
-                             count,
-                             event == EVENT_NEW_SECINFO
-                              ? " new "
-                              : " ",
-                             count == 1
-                              ? type_name (type)
-                              : type_name_plural (type),
-                             event == EVENT_NEW_SECINFO
-                              ? ""
-                              : (count == 1 ? " was" : " were"),
-                             event == EVENT_NEW_SECINFO
-                              ? " appeared in the feed"
-                              : " updated in the feed",
-                             name,
-                             list);
-  free (name);
-  g_free (list);
-  return message;
-}
-
-/**
- * @brief Check for updated SCAP SecInfo after an update.
- */
-static void
-check_for_updated_scap ()
-{
-  if (manage_scap_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cves"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cve", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM scap.cpes"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'scap_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'scap_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cpe", 0, 0);
-    }
-}
-
-/**
- * @brief Check for updated CERT SecInfo after an update.
- */
-static void
-check_for_updated_cert ()
-{
-  if (manage_cert_loaded ())
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.cert_bund_advs"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "cert_bund_adv", 0, 0);
-
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM cert.dfn_cert_advs"
-                   "  WHERE modification_time"
-                   "        > coalesce (CAST ((SELECT value FROM meta"
-                   "                           WHERE name"
-                   "                                 = 'cert_check_time')"
-                   "                          AS INTEGER),"
-                   "                    0)"
-                   "  AND creation_time"
-                   "      <= coalesce (CAST ((SELECT value FROM meta"
-                   "                          WHERE name"
-                   "                                = 'cert_check_time')"
-                   "                         AS INTEGER),"
-                   "                   0));"))
-        event (EVENT_UPDATED_SECINFO, "dfn_cert_adv", 0, 0);
-    }
-}
-
-
 /* Credentials. */
 
 /**
@@ -35649,6 +24016,142 @@ validate_credential_username_for_format (const gchar *username,
 }
 
 /**
+ * @brief Validate the format and resolvability of a Kerberos KDC input string.
+ *
+ * @param[in] kdc_input  A comma or newline-separated list of KDC hostnames or IPs.
+ *
+ * @return TRUE if all KDC entries are valid hosts, FALSE otherwise.
+ */
+static gboolean
+validate_credential_kdc_format (const char *kdc_input)
+{
+  if (!kdc_input || !*kdc_input)
+    return FALSE;
+
+  gchar *input_copy = g_strdup (kdc_input);
+  for (gchar *p = input_copy; *p; ++p)
+    {
+      if (*p == '\n')
+        *p = ',';
+    }
+
+  gchar **parts = g_strsplit (input_copy, ",", 0);
+  g_free (input_copy);
+
+  for (gchar **ptr = parts; *ptr != NULL; ptr++)
+    {
+      const gchar *entry = *ptr;
+
+      // reject empty strings
+      if (!*entry)
+        {
+          g_strfreev (parts);
+          return FALSE;
+        }
+
+      // validate whitespace in the KDC entry
+      for (const gchar *c = entry; *c; ++c)
+        {
+          if (g_ascii_isspace (*c))
+            {
+              g_strfreev (parts);
+              return FALSE;
+            }
+        }
+
+      // validate host or IP
+      if (gvm_get_host_type (entry) == -1)
+        {
+          g_strfreev (parts);
+          return FALSE;
+        }
+    }
+
+  g_strfreev (parts);
+  return TRUE;
+}
+
+/**
+ * @brief Validate the format and resolvability of a list of Kerberos KDCs.
+ *
+ * This function checks that each entry in the provided kdcs array:
+ * - does not contain any whitespace,
+ * - can be resolved via gvm_get_host_type(),
+ * and if all entries are valid, it joins them into a single comma-separated string.
+ *
+ * @param[in]  kdcs        A pointer to an array of KDC strings (hostnames or IPs).
+ * @param[out] joined_out  A location to store the resulting joined string
+ *                         if validation succeeds.
+ *                         The caller is responsible for freeing
+ *                         the returned string using g_free().
+ *
+ * @return TRUE if all KDC entries are valid and @joined_out is set; FALSE otherwise.
+ */
+static gboolean
+validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
+{
+  if (!kdcs || kdcs->len == 0 || !joined_out)
+    return FALSE;
+
+  GString *joined = g_string_new ("");
+
+  for (size_t i = 0; i < kdcs->len; ++i)
+    {
+      const char *kdc_val = g_ptr_array_index (kdcs, i);
+
+      // reject whitespace
+      for (const char *c = kdc_val; *c; ++c)
+        {
+          if (g_ascii_isspace (*c))
+            {
+              g_string_free (joined, TRUE);
+              return FALSE;
+            }
+        }
+
+      // reject unresolvable host
+      if (gvm_get_host_type (kdc_val) == -1)
+        {
+          g_string_free (joined, TRUE);
+          return FALSE;
+        }
+
+      if (i > 0)
+        g_string_append_c (joined, ',');
+
+      g_string_append (joined, kdc_val);
+    }
+
+  *joined_out = g_string_free (joined, FALSE);
+  return TRUE;
+}
+
+/**
+ * @brief Validate the format of a Kerberos realm string.
+ *
+ * This function checks whether the given @realm is non-empty and does not
+ * contain any whitespace characters.
+ *
+ * @param[in] realm  A string representing the Kerberos realm.
+ *
+ * @return TRUE if the realm is valid; FALSE otherwise.
+ */
+gboolean
+validate_credential_realm_format (const char *realm)
+{
+  if (!realm || !*realm)
+    return FALSE;
+
+  for (const char *c = realm; *c; ++c)
+    {
+      if (g_ascii_isspace (*c))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
  * @brief Length of password generated in create_credential.
  */
 #define PASSWORD_LENGTH 10
@@ -35670,6 +24173,15 @@ validate_credential_username_for_format (const gchar *username,
  * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
  * @param[in]  privacy_password   SNMP privacy password.
  * @param[in]  privacy_algorithm  SNMP privacy algorithm.
+ * @param[in]  kdc             Kerberos KDC (key distribution centers).
+ * @param[in]  kdcs            List of Kerberos KDCs.
+ * @param[in]  realm           Kerberos realm.
+ * @param[in]  credential_store_id Credential store ID, or NULL 
+ *                                 (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]  vault_id         Vault ID, or NULL.
+ *                              (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]  host_identifier  Host identifier, or NULL.
+ *                              (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
@@ -35683,6 +24195,14 @@ validate_credential_username_for_format (const gchar *username,
  *         14 privacy algorithm missing,
  *         15 invalid auth algorithm, 16 invalid privacy algorithm,
  *         17 invalid certificate, 18 cannot determine type,
+ *         19 key distribution center missing, 20 realm missing,
+ *         21 invalid key distribution center,
+ *         22 invalid kerberos realm,
+ *         23 credential store ID missing and no default store available,
+ *            (if ENABLE_CREDENTIAL_STORES),
+ *         24 credential store cannot be found (if ENABLE_CREDENTIAL_STORES),
+ *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES), 
+ *         26 host identifier missing (if ENABLE_CREDENTIAL_STORES),
  *         99 permission denied, -1 error.
  */
 int
@@ -35692,6 +24212,9 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* certificate, const char* community,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
+                   const char* kdc, array_t* kdcs, const char *realm,
+                   const char* credential_store_id, const char* vault_id,
+                   const char* host_identifier,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -35704,6 +24227,7 @@ create_credential (const char* name, const char* comment, const char* login,
   int auto_generate, allow_insecure_int;
   int using_snmp_v3;
   int ret;
+  gchar *kdc_value = NULL;
 
   assert (name && strlen (name) > 0);
   assert (current_credentials.uuid);
@@ -35738,7 +24262,16 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "snmp")
           && strcmp (given_type, "smime")
           && strcmp (given_type, "up")
-          && strcmp (given_type, "usk"))
+          && strcmp (given_type, "usk")
+          && strcmp (given_type, "krb5")
+          && strcmp (given_type, "cs_pgp")
+          && strcmp (given_type, "cs_pw")
+          && strcmp (given_type, "cs_snmp")
+          && strcmp (given_type, "cs_smime")
+          && strcmp (given_type, "cs_up")
+          && strcmp (given_type, "cs_usk")
+          && strcmp (given_type, "cs_krb5")
+      )
         {
           sql_rollback ();
           return 4;
@@ -35753,13 +24286,18 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("cc");
   else if (login && key_private)
     quoted_type = g_strdup ("usk");
+  else if (login && given_password && (realm || kdc))
+    quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
+  else if (credential_store_id || (vault_id && host_identifier))
+    quoted_type = g_strdup ("cs");
   else if (login && key_private == NULL && given_password == NULL)
     quoted_type = g_strdup ("usk"); /* auto-generate */
   else
     {
       g_warning ("%s: Cannot determine type of new credential", __func__);
+      sql_rollback ();
       return 18;
     }
 
@@ -35773,7 +24311,9 @@ create_credential (const char* name, const char* comment, const char* login,
       && (strcmp (quoted_type, "cc") == 0
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
-          || strcmp (quoted_type, "snmp") == 0))
+          || strcmp (quoted_type, "snmp") == 0
+          || g_str_has_prefix (quoted_type, "cs_") == 0
+          || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
   using_snmp_v3 = 0;
@@ -35783,11 +24323,14 @@ create_credential (const char* name, const char* comment, const char* login,
       && strcmp (quoted_type, "pgp")
       && strcmp (quoted_type, "pw")
       && strcmp (quoted_type, "smime")
-      && strcmp (quoted_type, "snmp"))
+      && strcmp (quoted_type, "snmp")
+      && g_str_has_prefix (quoted_type, "cs_") == 0
+    )
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
            && (strcmp (quoted_type, "up") == 0
-               || strcmp (quoted_type, "pw") == 0))
+               || strcmp (quoted_type, "pw") == 0
+               || strcmp (quoted_type, "krb5") == 0))
       // (username) password requires a password
     ret = 6;
   else if (key_private == NULL && auto_generate == 0
@@ -35801,6 +24344,39 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
+  else if (strcmp (quoted_type, "krb5") == 0)
+    {
+      if (kdcs && kdcs->len > 0)
+        {
+          if (!validate_credential_kdcs_format (kdcs, &kdc_value))
+            {
+              ret = 21;
+            }
+        }
+      else if (kdc)
+        {
+          if (!validate_credential_kdc_format (kdc))
+            {
+              ret = 21;
+            }
+          else
+            {
+              kdc_value = g_strdup (kdc);
+            }
+        }
+      else
+        {
+          // both kdcs and kdc missing
+          ret = 19;
+        }
+      if (ret == 0)
+        {
+          if (realm == NULL && auto_generate == 0)
+            ret = 20;
+          else if (!validate_credential_realm_format (realm))
+            ret = 22;
+        }
+    }
   else if (strcmp (quoted_type, "snmp") == 0)
     {
       if (login || given_password || auth_algorithm
@@ -35828,6 +24404,23 @@ create_credential (const char* name, const char* comment, const char* login,
                && strcmp (privacy_algorithm, "aes")
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
+    }
+  else if (g_str_has_prefix (quoted_type, "cs_"))
+    {
+      credential_store_t store;
+      if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+        ret = 4;
+      else if (credential_store_id == NULL
+               && get_default_credential_store_id () == NULL)
+        ret = 23;
+      else if (credential_store_id
+               && (find_credential_store_no_acl (credential_store_id, &store)
+                   || store == 0))
+        ret = 24;
+      else if (vault_id == NULL)
+        ret = 25;
+      else if (host_identifier == NULL)
+        ret = 26;
     }
 
   if (ret)
@@ -35876,9 +24469,13 @@ create_credential (const char* name, const char* comment, const char* login,
                            "username", login);
     }
 
+  if (kdc_value)
+    {
+      set_credential_data (new_credential, "kdc", kdc_value);
+      g_free (kdc_value);
+    }
   if (key_public)
     set_credential_data (new_credential, "public_key", key_public);
-
   if (certificate)
     {
       gchar *certificate_truncated;
@@ -35899,6 +24496,30 @@ create_credential (const char* name, const char* comment, const char* login,
   if (privacy_algorithm)
     set_credential_data (new_credential,
                          "privacy_algorithm", privacy_algorithm);
+  if (realm)
+    set_credential_data (new_credential, "realm", realm);
+
+  if (g_str_has_prefix (quoted_type, "cs_"))
+    {
+      if (credential_store_id)
+        set_credential_data (new_credential,
+                             "credential_store_id", credential_store_id);
+      else 
+        set_credential_data (new_credential,
+                             "credential_store_id", get_default_credential_store_id ());
+      if (vault_id)
+        set_credential_data (new_credential,
+                             "vault_id", vault_id);
+      if (host_identifier)
+        set_credential_data (new_credential,
+                             "host_identifier", host_identifier);
+      if (credential)
+        *credential = new_credential;
+
+      g_free (quoted_type);
+      sql_commit ();
+      return 0;
+    }
 
   g_free (quoted_type);
 
@@ -35916,7 +24537,10 @@ create_credential (const char* name, const char* comment, const char* login,
       if (key_private)
         key_private_truncated = truncate_private_key (key_private);
       else
-        return 3;
+        {
+          sql_rollback ();
+          return 3;
+        }
 
       generated_key_public = gvm_ssh_public_from_private
                                 (key_private_truncated
@@ -35926,6 +24550,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (generated_key_public == NULL)
         {
           g_free (key_private_truncated);
+          sql_rollback ();
           return 3;
         }
       g_free (generated_key_public);
@@ -36177,6 +24802,15 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   auth_algorithm      Authentication algorithm of Credential.
  * @param[in]   privacy_password    Privacy password of Credential.
  * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
+ * @param[in]   kdc                 Kerberos KDC (key distribution centers).
+ * @param[in]   kdcs                List of Kerberos KDCs.
+ * @param[in]   realm               Kerberos realm.
+ * @param[in]   credential_store_id Credential store ID, or NULL 
+ *                                   (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]   vault_id            Vault ID, or NULL.
+ *                                  (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]   host_identifier     Host identifier, or NULL.
+ *                                  (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
@@ -36185,6 +24819,13 @@ copy_credential (const char* name, const char* comment,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
+ *         11 invalid key distribution center,
+ *         12 invalid kerberos realm,
+ *         13 credential store cannot be found,
+ *            (if ENABLE_CREDENTIAL_STORES),
+ *         14 invalid vault ID (if ENABLE_CREDENTIAL_STORES),
+ *         15 invalid host identifier (if ENABLE_CREDENTIAL_STORES),
+ *         16 value cannot be modified for credential store type,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -36196,6 +24837,10 @@ modify_credential (const char *credential_id,
                    const char* certificate,
                    const char* community, const char* auth_algorithm,
                    const char* privacy_password, const char* privacy_algorithm,
+                   const char* kdc, array_t* kdcs,
+                   const char* realm,
+                   const char* credential_store_id, const char* vault_id,
+                   const char* host_identifier,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -36258,6 +24903,14 @@ modify_credential (const char *credential_id,
     }
 
   ret = 0;
+
+  if ((credential_store_id || vault_id || host_identifier)
+      && (login || password || privacy_password || key_private
+          || key_public ||certificate || community))
+    {
+      sql_rollback ();
+      return 16;
+    }
 
   if (login && ret == 0)
     {
@@ -36471,6 +25124,94 @@ modify_credential (const char *credential_id,
         {
           set_credential_data (credential, "secret", "");
         }
+      else if (strcmp (type, "krb5") == 0)
+        {
+          if (password)
+            set_credential_password (credential, password);
+          if (kdcs)
+            {
+              gchar *joined_kdcs = NULL;
+
+              if (!validate_credential_kdcs_format (kdcs, &joined_kdcs))
+                {
+                  sql_rollback ();
+                  return 11;
+                }
+
+              set_credential_data (credential, "kdc", joined_kdcs);
+              g_free (joined_kdcs);
+            }
+          else if (kdc)
+            {
+              if (!validate_credential_kdc_format (kdc))
+                {
+                  sql_rollback ();
+                  return 11;
+                }
+
+              set_credential_data (credential, "kdc", kdc);
+            }
+
+          if (realm)
+            {
+              if (!validate_credential_realm_format (realm))
+                {
+                  sql_rollback ();
+                  return 12;
+                }
+
+              set_credential_data (credential, "realm", realm);
+            }
+        }
+
+      else if (g_str_has_prefix (type, "cs_"))
+        {
+          if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+            {
+              sql_rollback ();
+              cleanup_iterator (&iterator);
+              return -1;
+            }
+          if (credential_store_id)
+            {
+              credential_store_t store;
+              if (find_credential_store_no_acl (credential_store_id, &store)
+                  || store == 0)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 13;
+                }
+
+              set_credential_data (credential,
+                                   "credential_store_id",
+                                   credential_store_id);
+            }
+          if (vault_id)
+            {
+              if (!*vault_id)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 14;
+                }
+              set_credential_data (credential,
+                                   "vault_id",
+                                   vault_id);
+            }
+          if (host_identifier)
+            {
+              if (!*host_identifier)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 15;
+                }
+              set_credential_data (credential,
+                                   "host_identifier",
+                                   host_identifier);
+            }
+        }
       else
         {
           g_warning ("%s: Unknown credential type: %s", __func__, type);
@@ -36608,6 +25349,15 @@ delete_credential (const char *credential_id, int ultimate)
            "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            trash_credential,
            credential);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_credential,
+           credential);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", credential,
                                  trash_credential,
@@ -36638,6 +25388,7 @@ delete_credential (const char *credential_id, int ultimate)
 /**
  * @brief LSC Credential iterator columns.
  */
+#if ENABLE_CREDENTIAL_STORES
 #define CREDENTIAL_ITERATOR_COLUMNS                                           \
  {                                                                            \
    GET_ITERATOR_COLUMNS (credentials),                                        \
@@ -36666,6 +25417,86 @@ delete_credential (const char *credential_id, int ultimate)
      " WHERE credential = credentials.id AND type = 'public_key')",           \
      NULL,                                                                    \
      KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
+     "kdc",                                                                   \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'realm')",                \
+     "realm",                                                                 \
+     KEYWORD_TYPE_STRING },                                                   \
+   /* private data */                                                         \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'secret')",               \
+     "secret",                                                                \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'password')",             \
+     "password",                                                              \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'private_key')",          \
+     "private_key",                                                           \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'community')",            \
+     "community",                                                             \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'privacy_password')",     \
+     "privacy_password",                                                      \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'credential_store_id')",  \
+     "credential_store_id",                                                   \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'vault_id')",             \
+     "vault_id",                                                              \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'host_identifier')",      \
+     "host_identifier",                                                       \
+     KEYWORD_TYPE_STRING },                                                   \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
+ }
+#else
+#define CREDENTIAL_ITERATOR_COLUMNS                                           \
+ {                                                                            \
+   GET_ITERATOR_COLUMNS (credentials),                                        \
+   /* public generic data */                                                  \
+   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
+   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
+   /* public type specific data */                                            \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'username')",             \
+     "login",                                                                 \
+     KEYWORD_TYPE_STRING                                                      \
+   },                                                                         \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'certificate')",          \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'public_key')",           \
+     NULL,                                                                    \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
+     "kdc",                                                                   \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id AND type = 'realm')",                \
+     "realm",                                                                 \
+     KEYWORD_TYPE_STRING },                                                   \
    /* private data */                                                         \
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'secret')",               \
@@ -36689,6 +25520,7 @@ delete_credential (const char *credential_id, int ultimate)
      KEYWORD_TYPE_STRING },                                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
+#endif
 
 /**
  * @brief LSC Credential iterator columns for trash case.
@@ -36780,6 +25612,11 @@ credential_in_use (credential_t credential)
   ret = !!(sql_int ("SELECT count (*) FROM targets_login_data"
                     " WHERE credential = %llu;",
                     credential)
+#if ENABLE_CONTAINER_SCANNING
+           || sql_int ("SELECT count (*) FROM oci_image_targets"
+                       " WHERE credential = %llu;",
+                       credential)
+#endif /* ENABLE_CONTAINER_SCANNING */
            || sql_int ("SELECT count (*) FROM scanners"
                        " WHERE credential = %llu;",
                        credential)
@@ -36820,6 +25657,13 @@ trash_credential_in_use (credential_t credential)
                        " AND credential_location"
                        "      = " G_STRINGIFY (LOCATION_TRASH) ";",
                        credential)
+#if ENABLE_CONTAINER_SCANNING
+           || sql_int ("SELECT count (*) FROM oci_image_targets_trash"
+                       " WHERE credential = %llu"
+                       " AND credential_location"
+                       "      = " G_STRINGIFY (LOCATION_TRASH) ";",
+                       credential)
+#endif
            || sql_int ("SELECT count (*) FROM alert_method_data_trash"
                        " WHERE (name = 'recipient_credential'"
                        "        OR name = 'scp_credential'"
@@ -37248,20 +26092,20 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  else if (strcmp (type, "community") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
-  else if (strcmp (type, "privacy_password") == 0)
     unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+  else if (strcmp (type, "community") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  else if (strcmp (type, "privacy_password") == 0)
+    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __func__, type);
@@ -37361,6 +26205,64 @@ DEF_ACCESS (credential_iterator_privacy_algorithm,
  */
 DEF_ACCESS (credential_iterator_public_key,
             GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the key distribution center from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Key distribution center, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_kdc,
+            GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the realm from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Realm, or NULL if iteration is complete.  Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_realm,
+            GET_ITERATOR_COLUMN_COUNT + 8);
+
+#if ENABLE_CREDENTIAL_STORES
+
+/**
+ * @brief Get the credential store UUID from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential store UUID, or NULL if iteration is complete. 
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_credential_store_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 14);
+
+/**
+ * @brief Get the credential store vault ID from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Vault ID, or NULL if iteration is complete. 
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_vault_id,
+            GET_ITERATOR_COLUMN_COUNT + 15);
+
+/**
+ * @brief Get the host identifier from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Host identifier, or NULL if iteration is complete. 
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_host_identifier,
+            GET_ITERATOR_COLUMN_COUNT + 16);
+
+#endif
 
 /**
  * @brief Get the password from a Credential iterator.
@@ -37810,6 +26712,83 @@ credential_target_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 2);
 }
 
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Initialise a Credential OCI image target iterator.
+ *
+ * Iterates over all OCI image targets that use the credential.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  credential      Credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ */
+void
+init_credential_oci_image_target_iterator (iterator_t* iterator,
+                                           credential_t credential,
+                                           int ascending)
+{
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_oci_image_targets"));
+  available = acl_where_owned ("oci_image_target", &get, 1, "any",
+                               0, permissions, 0, &with_clause);
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT uuid, name, %s FROM oci_image_targets"
+                 " WHERE credential = %llu"
+                 " ORDER BY name %s;",
+                 with_clause ? with_clause : "",
+                 available,
+                 credential,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the uuid from an Credential OCI Image Target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Uuid, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_oci_target_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from an Credential OCI Image Target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.  Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (credential_oci_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a GET iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+credential_oci_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int (iterator, 2);
+}
+#endif /* ENABLE_CONTAINER_SCANNING */
+
 /**
  * @brief Initialise a Credential scanner iterator.
  *
@@ -37978,8 +26957,12 @@ create_note (const char* active, const char* nvt, const char* text,
   if (text == NULL)
     return -1;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
+  if (threat
+      && strcmp (threat, "Critical")
+      && strcmp (threat, "High")
+      && strcmp (threat, "Medium")
+      && strcmp (threat, "Low")
+      && strcmp (threat, "Log")
       && strcmp (threat, ""))
     return -1;
 
@@ -37999,6 +26982,8 @@ create_note (const char* active, const char* nvt, const char* text,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -38234,9 +27219,14 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
   if (nvt && !nvt_exists (nvt))
     return 4;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
+  if (threat
+      && strcmp (threat, "Critical")
+      && strcmp (threat, "High")
+      && strcmp (threat, "Medium")
+      && strcmp (threat, "Low")
+      && strcmp (threat, "Log")
+      && strcmp (threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
   if (port && validate_results_port (port))
@@ -38259,6 +27249,8 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -38966,15 +27958,25 @@ create_override (const char* active, const char* nvt, const char* text,
   if (port && validate_results_port (port))
     return 2;
 
-  if (threat && strcmp (threat, "High") && strcmp (threat, "Medium")
-      && strcmp (threat, "Low") && strcmp (threat, "Log")
-      && strcmp (threat, "Alarm") && strcmp (threat, ""))
+  if (threat
+      && strcmp (threat, "Critical")
+      && strcmp (threat, "High")
+      && strcmp (threat, "Medium")
+      && strcmp (threat, "Low")
+      && strcmp (threat, "Log")
+      && strcmp (threat, "Alarm")
+      && strcmp (threat, ""))
     return -1;
 
-  if (new_threat && strcmp (new_threat, "High") && strcmp (new_threat, "Medium")
-      && strcmp (new_threat, "Low") && strcmp (new_threat, "Log")
+  if (new_threat
+      && strcmp (new_threat, "Critical")
+      && strcmp (new_threat, "High")
+      && strcmp (new_threat, "Medium")
+      && strcmp (new_threat, "Low")
+      && strcmp (new_threat, "Log")
       && strcmp (new_threat, "False Positive")
-      && strcmp (new_threat, "Alarm") && strcmp (new_threat, ""))
+      && strcmp (new_threat, "Alarm")
+      && strcmp (new_threat, ""))
     return -1;
 
   severity_dbl = 0.0;
@@ -38989,6 +27991,8 @@ create_override (const char* active, const char* nvt, const char* text,
   else if (threat != NULL && strcmp (threat, ""))
     {
       if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
@@ -39022,8 +28026,10 @@ create_override (const char* active, const char* nvt, const char* text,
     {
       if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-      else if (strcmp (new_threat, "High") == 0)
+      else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 8.9;
       else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
       else if (strcmp (new_threat, "Low") == 0)
@@ -39340,6 +28346,8 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (strcmp (threat, "Alarm") == 0)
         severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
+        severity_dbl = 0.1;
       else if (strcmp (threat, "High") == 0)
         severity_dbl = 0.1;
       else if (strcmp (threat, "Medium") == 0)
@@ -39372,8 +28380,10 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
     {
       if (strcmp (new_threat, "Alarm") == 0)
         new_severity_dbl = 10.0;
-      else if (strcmp (new_threat, "High") == 0)
+      else if (strcmp (new_threat, "Critical") == 0)
         new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 8.9;
       else if (strcmp (new_threat, "Medium") == 0)
         new_severity_dbl = 5.0;
       else if (strcmp (new_threat, "Low") == 0)
@@ -40214,147 +29224,163 @@ DEF_ACCESS (override_iterator_new_severity, GET_ITERATOR_COLUMN_COUNT + 15);
 /**
  * @brief Create the given scanner.
  *
- * @param[in]  log_config       Log configuration.
- * @param[in]  database         Location of manage database.
- * @param[in]  name             Name of scanner.
- * @param[in]  host             Host of scanner.
- * @param[in]  port             Port of scanner.
- * @param[in]  type             Type of scanner.
- * @param[in]  ca_pub_path      CA Certificate path.
- * @param[in]  credential_id    UUID of credential to use or NULL to create.
- * @param[in]  key_pub_path     Certificate path.
- * @param[in]  key_priv_path    Private key path.
+ * @param[in]  log_config        Log configuration.
+ * @param[in]  database          Location of manage database.
+ * @param[in]  name              Name of scanner.
+ * @param[in]  host              Host of scanner.
+ * @param[in]  port              Port of scanner.
+ * @param[in]  type              Type of scanner.
+ * @param[in]  ca_pub_path       CA Certificate path.
+ * @param[in]  credential_id     UUID of credential to use or NULL to create.
+ * @param[in]  key_pub_path      Certificate path.
+ * @param[in]  key_priv_path     Private key path.
+ * @param[in]  relay_host        Relay host of scanner.
+ * @param[in]  relay_port        Relay port of scanner.
+ * @param[in]  no_default_certs  If non-zero, bypasses certificate validation
+ *                               and disables automatic credential creation.
  *
- * @return 0 success, -1 error, -2 database is too old, -3 database needs
- *         to be initialised from server, -5 database is too new.
+ * @return 0 success, -1 failure.
  */
 int
 manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *name, const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
-                       const char *key_pub_path, const char *key_priv_path)
+                       const char *key_pub_path, const char *key_priv_path,
+                       const char *relay_host, const char *relay_port,
+                       int no_default_certs)
 {
   int ret;
-  char *ca_pub, *key_pub, *key_priv;
+  char *ca_pub = NULL, *key_pub = NULL, *key_priv = NULL;
   GError *error = NULL;
   credential_t new_credential;
-  gchar *used_credential_id;
+  gchar *used_credential_id = NULL;
   gchar *name_for_credential;
   scanner_t scanner;
 
   g_info ("   Creating scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
 
-  if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
+  if (!no_default_certs)
     {
-      fprintf (stderr, "%s.\n", error->message);
-      g_error_free (error);
-      manage_option_cleanup ();
-      return -1;
+      if (!g_file_get_contents (ca_pub_path, &ca_pub, NULL, &error))
+        {
+          fprintf (stderr, "%s.\n", error->message);
+          g_error_free (error);
+          manage_option_cleanup ();
+          return -1;
+        }
     }
 
   if (credential_id)
     {
-      key_pub = NULL;
-      key_priv = NULL;
       used_credential_id = g_strdup (credential_id);
     }
   else
     {
-      if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
+      if (!no_default_certs)
         {
-          fprintf (stderr, "%s.\n", error->message);
-          g_error_free (error);
-          g_free (ca_pub);
-          manage_option_cleanup ();
-          return -1;
-        }
-      if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
-        {
-          fprintf (stderr, "%s.\n", error->message);
-          g_error_free (error);
-          g_free (ca_pub);
-          g_free (key_pub);
-          manage_option_cleanup ();
-          return -1;
-        }
-
-      name_for_credential = sql_quote (name);
-
-      if (sql_int ("SELECT count(*) FROM credentials"
-                  " WHERE name = 'Credential for Scanner %s'"
-                  "   AND owner = NULL;",
-                  name_for_credential))
-        sql ("INSERT INTO credentials"
-            " (uuid, name, owner, comment, type,"
-            "  creation_time, modification_time)"
-            " VALUES"
-            " (make_uuid (),"
-            "  uniquify ('scanner', 'Credential for Scanner %s',"
-            "            NULL, ''),"
-            "  NULL, 'Autogenerated', 'cc',"
-            "  m_now (), m_now ());",
-            name_for_credential);
-      else
-        sql ("INSERT INTO credentials"
-            " (uuid, name, owner, comment, type,"
-            "  creation_time, modification_time)"
-            " VALUES"
-            " (make_uuid (), 'Credential for Scanner %s',"
-            "  NULL, 'Autogenerated', 'cc',"
-            "  m_now (), m_now ());",
-            name_for_credential);
-
-      g_free (name_for_credential);
-
-      new_credential = sql_last_insert_id();
-
-      set_credential_data (new_credential, "certificate", key_pub);
-
-      if (disable_encrypted_credentials)
-        {
-          set_credential_data (new_credential, "private_key", key_priv);
-        }
-      else
-        {
-          lsc_crypt_ctx_t crypt_ctx;
-          char *secret;
-
-          char *encryption_key_uid = current_encryption_key_uid (TRUE);
-          crypt_ctx = lsc_crypt_new (encryption_key_uid);
-          free (encryption_key_uid);
-
-          secret = lsc_crypt_encrypt (crypt_ctx,
-                                      "private_key", key_priv, NULL);
-          if (!secret)
+          if (!g_file_get_contents (key_pub_path, &key_pub, NULL, &error))
             {
-              fprintf (stderr, "Failed to encrypt private key.\n");
+              fprintf (stderr, "%s.\n", error->message);
+              g_error_free (error);
               g_free (ca_pub);
-              g_free (key_pub);
-              g_free (key_priv);
               manage_option_cleanup ();
               return -1;
             }
-          set_credential_data (new_credential, "secret", secret);
-        }
+          if (!g_file_get_contents (key_priv_path, &key_priv, NULL, &error))
+            {
+              fprintf (stderr, "%s.\n", error->message);
+              g_error_free (error);
+              g_free (ca_pub);
+              g_free (key_pub);
+              manage_option_cleanup ();
+              return -1;
+            }
 
-      used_credential_id = credential_uuid (new_credential);
+          name_for_credential = sql_quote (name);
+
+          if (sql_int ("SELECT count(*) FROM credentials"
+                      " WHERE name = 'Credential for Scanner %s'"
+                      "   AND owner = NULL;",
+                      name_for_credential))
+            sql ("INSERT INTO credentials"
+                " (uuid, name, owner, comment, type,"
+                "  creation_time, modification_time)"
+                " VALUES"
+                " (make_uuid (),"
+                "  uniquify ('scanner', 'Credential for Scanner %s',"
+                "            NULL, ''),"
+                "  NULL, 'Autogenerated', 'cc',"
+                "  m_now (), m_now ());",
+                name_for_credential);
+          else
+            sql ("INSERT INTO credentials"
+                " (uuid, name, owner, comment, type,"
+                "  creation_time, modification_time)"
+                " VALUES"
+                " (make_uuid (), 'Credential for Scanner %s',"
+                "  NULL, 'Autogenerated', 'cc',"
+                "  m_now (), m_now ());",
+                name_for_credential);
+
+          g_free (name_for_credential);
+
+          new_credential = sql_last_insert_id();
+
+          set_credential_data (new_credential, "certificate", key_pub);
+
+          if (disable_encrypted_credentials)
+            {
+              set_credential_data (new_credential, "private_key", key_priv);
+            }
+          else
+            {
+              lsc_crypt_ctx_t crypt_ctx;
+              char *secret;
+
+              char *encryption_key_uid = current_encryption_key_uid (TRUE);
+              crypt_ctx = lsc_crypt_new (encryption_key_uid);
+              free (encryption_key_uid);
+
+              secret = lsc_crypt_encrypt (crypt_ctx,
+                                          "private_key", key_priv, NULL);
+              if (!secret)
+                {
+                  fprintf (stderr, "Failed to encrypt private key.\n");
+                  g_free (ca_pub);
+                  g_free (key_pub);
+                  g_free (key_priv);
+                  manage_option_cleanup ();
+                  return -1;
+                }
+              set_credential_data (new_credential, "secret", secret);
+            }
+
+          used_credential_id = credential_uuid (new_credential);
+        }
+      else
+        {
+          /* Bypass mode: do NOT auto-create a credential */
+          used_credential_id = NULL;
+        }
     }
   ret = create_scanner (name, NULL, host, port, type, &scanner, ca_pub,
-                        used_credential_id);
+                        used_credential_id, relay_host, relay_port);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
   g_free (used_credential_id);
+
   switch (ret)
     {
-      case 0:
+      case CREATE_SCANNER_SUCCESS:
         {
           gchar *uuid;
 
@@ -40373,23 +29399,49 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
         printf ("Scanner created.\n");
         break;
-      case 1:
+      case CREATE_SCANNER_ALREADY_EXISTS:
         fprintf (stderr, "Scanner exists already.\n");
         break;
-      case 2:
-        fprintf (stderr, "Invalid value provided.\n");
+      case CREATE_SCANNER_MISSING_TYPE:
+        fprintf (stderr, "Scanner type is required.\n");
         break;
-      case 3:
+      case CREATE_SCANNER_MISSING_HOST:
+        fprintf (stderr, "Scanner host is required.\n");
+        break;
+      case CREATE_SCANNER_CREDENTIAL_NOT_FOUND:
         fprintf (stderr, "Credential not found.\n");
         break;
-      case 4:
-        fprintf (stderr, "Credential should be 'up'.\n");
-        break;
-      case 5:
+      case CREATE_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case 6:
-        fprintf (stderr, "Credential required.\n");
+      case CREATE_SCANNER_INVALID_TYPE:
+        fprintf (stderr, "Invalid scanner type.\n");
+        break;
+      case CREATE_SCANNER_INVALID_PORT:
+        fprintf (stderr, 
+                 "Scanner port must be a valid port number (1 - 65535)"
+                 " if host is not a UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_HOST:
+        fprintf (stderr,
+                 "Scanner host must be a valid hostname,"
+                 " IP address or UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_PORT:
+        fprintf (stderr, 
+                 "Scanner relay port must be a valid port number (1 - 65535)"
+                 " if relay host is not a UNIX socket path.\n");
+        break;
+      case CREATE_SCANNER_INVALID_RELAY_HOST:
+        fprintf (stderr,
+                 "Scanner relay host must be a valid hostname,"
+                 " IP address, UNIX socket path or empty.\n");
+        break;
+      case CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        fprintf (stderr, "Scanner type does not support UNIX sockets.\n");
+        break;
+      case CREATE_SCANNER_PERMISSION_DENIED:
+        fprintf (stderr, "Permission denied.\n");
         break;
       default:
         fprintf (stderr, "Failed to create scanner.\n");
@@ -40398,7 +29450,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
 
   manage_option_cleanup ();
 
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -40434,7 +29486,8 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -40478,11 +29531,10 @@ manage_delete_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  credential_id    UUID of credential to use or NULL to create.
  * @param[in]  key_pub_path     Certificate path.
  * @param[in]  key_priv_path    Private key path.
+ * @param[in]  relay_host       Relay host of scanner.
+ * @param[in]  relay_port       Relay port of scanner.
  *
- * @return 0 success, , 1 failed to find scanner, 2 scanner with new name
- *         exists, 3 scanner_id required, 4 invalid value, 99 permission
- *         denied, -1 error, -2 database is too old, -3 database needs
- *         to be initialised from server, -5 database is too new.
+ * @return 0 success, -1 failed.
  */
 int
 manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -40490,7 +29542,8 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const char *host, const char *port,
                        const char *type, const char *ca_pub_path,
                        const char *credential_id,
-                       const char *key_pub_path, const char *key_priv_path)
+                       const char *key_pub_path, const char *key_priv_path,
+                       const char *relay_host, const char *relay_port)
 {
   int ret;
   char *ca_pub, *key_pub, *key_priv;
@@ -40502,9 +29555,10 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Modifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
 
@@ -40522,14 +29576,14 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         {
           fprintf (stderr, "Failed to find scanner %s.\n", scanner_id);
           manage_option_cleanup ();
-          return 1;
+          return -1;
         }
     }
   else
     {
       fprintf (stderr, "Scanner UUID required.\n");
       manage_option_cleanup ();
-      return 3;
+      return -1;
     }
 
   if (name)
@@ -40655,38 +29709,59 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         used_credential_id = NULL;
     }
   ret = modify_scanner (scanner_id, name, NULL, host, port, type, ca_pub,
-                        used_credential_id);
+                        used_credential_id, relay_host, relay_port);
   g_free (ca_pub);
   g_free (key_pub);
   g_free (key_priv);
   g_free (used_credential_id);
   switch (ret)
     {
-      case 0:
+      case MODIFY_SCANNER_SUCCESS:
         printf ("Scanner modified.\n");
         break;
-      case 2:
+      case MODIFY_SCANNER_ALREADY_EXISTS:
         fprintf (stderr, "Scanner with new name exists already.\n");
         break;
-      case 3:
+      case MODIFY_SCANNER_MISSING_ID:
         fprintf (stderr, "Scanner ID required.\n");
         break;
-      case 4:
-        fprintf (stderr, "Invalid value.\n");
+      case MODIFY_SCANNER_NOT_FOUND:
+        fprintf (stderr, "Scanner not found.\n");
         break;
-      case 5:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_FOUND:
         fprintf (stderr, "Credential not found.\n");
         break;
-      case 6:
+      case MODIFY_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case 7:
-        fprintf (stderr, "Credential should be 'up'.\n");
+      case CREATE_SCANNER_INVALID_TYPE:
+        fprintf (stderr, "Invalid scanner type.\n");
         break;
-      case 8:
-        fprintf (stderr, "Credential missing.\n");
+      case MODIFY_SCANNER_INVALID_PORT:
+        fprintf (stderr, 
+                 "Scanner port must be a valid port number (1 - 65535)"
+                 " if host is not a UNIX socket path.\n");
         break;
-      case 99:
+      case MODIFY_SCANNER_INVALID_HOST:
+        fprintf (stderr,
+                 "Scanner host must be a valid hostname,"
+                 " IP address or UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_PORT:
+        fprintf (stderr, 
+                 "Scanner relay port must be a valid port number (1 - 65535)"
+                 " if relay host is not a UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_INVALID_RELAY_HOST:
+        fprintf (stderr,
+                 "Scanner relay host must be a valid hostname,"
+                 " IP address, UNIX socket path or empty.\n");
+        break;
+      case MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED:
+        fprintf (stderr,
+                 "Scanner type does not support UNIX sockets.\n");
+        break;
+      case MODIFY_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
         break;
       default:
@@ -40696,7 +29771,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   manage_option_cleanup ();
 
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -40706,9 +29781,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  database    Location of manage database.
  * @param[in]  uuid        UUID of scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
- *         -1 error, -2 database is too old, -3 database needs to be
- *         initialised from server, -5 database is too new.
+ * @return 0 success, -1 failure.
  */
 int
 manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
@@ -40721,9 +29794,10 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Verifying scanner.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
-    return ret;
+    return -1;
 
   current_credentials.uuid = "";
   switch ((ret = verify_scanner (uuid, &version)))
@@ -40749,7 +29823,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   current_credentials.uuid = NULL;
 
   manage_option_cleanup ();
-  return ret;
+  return ret ? -1 : 0;
 }
 
 /**
@@ -40771,6 +29845,15 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
                                         0);
 }
 
+scanner_type_t
+get_scanner_type (scanner_t scanner)
+{
+  if (scanner == 0)
+    return SCANNER_TYPE_NONE;
+  return sql_int ("SELECT type FROM scanners WHERE id=%llu", scanner);
+}
+
+
 /**
  * @brief Insert a scanner for create_scanner.
  *
@@ -40780,14 +29863,18 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
  * @param[in]   ca_pub       CA Certificate for scanner.
  * @param[in]   iport        Port of scanner.
  * @param[in]   itype        Type of scanner.
+ * @param[in]   relay_host   Relay host of scanner.
+ * @param[in]   irelay_port  Relay port of scanner.
  * @param[out]  new_scanner  The created scanner.
  */
 static void
 insert_scanner (const char* name, const char *comment, const char *host,
                 const char *ca_pub, int iport, int itype,
+                const char *relay_host, int irelay_port,
                 scanner_t *new_scanner)
 {
   char *quoted_name, *quoted_comment, *quoted_host, *quoted_ca_pub;
+  char *quoted_relay_host;
 
   assert (current_credentials.uuid);
 
@@ -40795,22 +29882,28 @@ insert_scanner (const char* name, const char *comment, const char *host,
   quoted_comment = sql_quote (comment ?: "");
   quoted_host = sql_quote (host ?: "");
   quoted_ca_pub = sql_quote (ca_pub ?: "");
+  quoted_relay_host = sql_quote (relay_host ?: "");
 
   sql ("INSERT INTO scanners (uuid, name, owner, comment, host, port, type,"
-       "                      ca_pub,creation_time, modification_time)"
+       "                      ca_pub, creation_time, modification_time,"
+       "                      relay_host, relay_port)"
        " VALUES (make_uuid (), '%s',"
        "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now ());",
+       "  '%s', '%s', %d, %d, %s%s%s, m_now (), m_now (),"
+       "  '%s', %d);",
        quoted_name, current_credentials.uuid, quoted_comment, quoted_host,
        iport, itype,
        ca_pub ? "'" : "",
        ca_pub ? quoted_ca_pub : "NULL",
-       ca_pub ? "'" : "");
+       ca_pub ? "'" : "",
+       quoted_relay_host,
+       irelay_port);
 
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_ca_pub);
+  g_free (quoted_relay_host);
 
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
@@ -40827,18 +29920,18 @@ insert_scanner (const char* name, const char *comment, const char *host,
  * @param[out]  new_scanner    The created scanner.
  * @param[in]   ca_pub         CA Certificate for scanner.
  * @param[in]   credential_id  ID of credential for scanner.
+ * @param[in]   relay_host  Relay host of scanner.
+ * @param[in]   relay_port  Relay port of scanner.
  *
- * @return 0 success, 1 scanner exists already, 2 Invalid value,
- *         3 credential not found, 4 credential should be 'up',
- *         5 credential should be 'cc', 6 credential required,
- *         99 permission denied.
+ * @return 0 success, error otherwise (see create_scanner_return_t)
  */
-int
+create_scanner_return_t
 create_scanner (const char* name, const char *comment, const char *host,
                 const char *port, const char *type, scanner_t *new_scanner,
-                const char *ca_pub, const char *credential_id)
+                const char *ca_pub, const char *credential_id,
+                const char *relay_host, const char *relay_port)
 {
-  int iport, itype, unix_socket = 0;
+  int iport, itype, irelay_port, unix_socket, relay_unix_socket = 0;
   credential_t credential;
 
   assert (name);
@@ -40848,33 +29941,94 @@ create_scanner (const char* name, const char *comment, const char *host,
   if (acl_user_may ("create_scanner") == 0)
     {
       sql_rollback ();
-      return 99;
+      return CREATE_SCANNER_PERMISSION_DENIED;
     }
 
-  if (!host || !port || !type)
-    return 2;
-  if (*host == '/')
-    {
-      unix_socket = 1;
-      ca_pub = NULL;
-    }
-  iport = atoi (port);
-  itype = atoi (type);
-  if (iport <= 0 || iport > 65535)
-    return 2;
-  if (scanner_type_valid (itype) == 0)
-    return 2;
-  /* XXX: Workaround for unix socket case. */
-  if (gvm_get_host_type (host) == -1 && !unix_socket)
-    return 2;
   if (resource_with_name_exists (name, "scanner", 0))
     {
       sql_rollback ();
-      return 1;
+      return CREATE_SCANNER_ALREADY_EXISTS;
+    }
+
+  if (!type)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_MISSING_TYPE;
+    }
+
+  if (!host)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_MISSING_HOST;
+    }
+
+  unix_socket = host && (*host == '/');
+  relay_unix_socket = relay_host && (*relay_host == '/');
+  itype = atoi (type);
+
+  if (scanner_type_valid (itype) == 0)
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_INVALID_TYPE;
     }
 
   if (unix_socket)
-    insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+    {
+      ca_pub = NULL;
+      iport = 0;
+      
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+    }
+  else
+    {
+      iport = atoi (port ?: "0");
+      if (iport <= 0 || iport > 65535)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_PORT;
+        }
+      if (gvm_get_host_type (host) == -1)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_HOST;
+        }
+    }
+
+  if (relay_host == NULL || strcmp (relay_host, "") == 0)
+    {
+      irelay_port = 0;
+    }
+  else if (relay_unix_socket)
+    {
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+      irelay_port = 0;
+    }
+  else
+    {
+      irelay_port = atoi (relay_port ?: "0");
+      if (irelay_port <= 0 || irelay_port > 65535)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_RELAY_PORT;
+        }
+      if (gvm_get_host_type (host) == -1)
+        {
+          sql_rollback ();
+          return CREATE_SCANNER_INVALID_RELAY_HOST;
+        }
+    }
+
+  if (unix_socket)
+    insert_scanner (name, comment, host, ca_pub, iport, itype,
+                    relay_host, irelay_port, new_scanner);
   else
     {
       credential = 0;
@@ -40886,23 +30040,24 @@ create_scanner (const char* name, const char *comment, const char *host,
               (credential_id, &credential, "get_credentials"))
             {
               sql_rollback ();
-              return -1;
+              return CREATE_SCANNER_INTERNAL_ERROR;
             }
           if (credential == 0)
             {
               sql_rollback ();
-              return 3;
+              return CREATE_SCANNER_CREDENTIAL_NOT_FOUND;
             }
           if (sql_int ("SELECT type != 'cc' FROM credentials"
                        " WHERE id = %llu;",
                        credential))
             {
               sql_rollback ();
-              return 5;
+              return CREATE_SCANNER_CREDENTIAL_NOT_CC;
             }
         }
 
-      insert_scanner (name, comment, host, ca_pub, iport, itype, new_scanner);
+      insert_scanner (name, comment, host, ca_pub, iport, itype,
+                      relay_host, irelay_port, new_scanner);
 
       if (credential)
         {
@@ -40912,7 +30067,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   sql_commit ();
-  return 0;
+  return CREATE_SCANNER_SUCCESS;
 }
 
 /**
@@ -40941,7 +30096,7 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
 }
 
 /**
- * @brief Modify an scanner.
+ * @brief Modify a scanner.
  *
  * @param[in]   scanner_id  UUID of scanner.
  * @param[in]   name        Name of scanner.
@@ -40952,80 +30107,168 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
  * @param[in]   ca_pub      CA Certificate of scanner, or "" for default, or
  *                          to keep existing value.
  * @param[in]   credential_id  UUID of credential or NULL.
+ * @param[in]   relay_host  Relay host of scanner.
+ * @param[in]   relay_port  Relay port of scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 scanner with new name exists,
- *         3 scanner_id required, 4 invalid value, 5 credential not found,
- *         6 credential should be 'cc', 7 credential should be 'up',
- *         8 credential missing, 99 permission denied, -1 internal error.
+ * @return 0 success, -1 internal error, other non-zero for other errors.
+ *         (See modify_scanner_return_t)
  */
-int
+modify_scanner_return_t
 modify_scanner (const char *scanner_id, const char *name, const char *comment,
                 const char *host, const char *port, const char *type,
-                const char *ca_pub, const char *credential_id)
+                const char *ca_pub, const char *credential_id,
+                const char *relay_host, const char *relay_port)
 {
-  gchar *quoted_name, *quoted_comment, *quoted_host, *new_port, *new_type;
+  gchar *used_host, *used_relay_host;
+  gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_relay_host;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int iport, itype, unix_socket, credential_given;
+  int itype, iport, irelay_port;
+  int unix_socket, relay_unix_socket, credential_given;
 
   assert (current_credentials.uuid);
 
   if (scanner_id == NULL)
-    return 3;
-
-  if (port)
-    {
-      iport = atoi (port);
-      if (iport <= 0 || iport > 65535)
-        return 4;
-    }
-  else
-    /* Keep compiler quiet. */
-    iport = 0;
-
-  if (type)
-    {
-      itype = atoi (type);
-      if (scanner_type_valid (itype) == 0)
-        return 4;
-    }
-  else
-    itype = 0;
+    return MODIFY_SCANNER_MISSING_ID;
 
   sql_begin_immediate ();
 
   if (acl_user_may ("modify_scanner") == 0)
     {
       sql_rollback ();
-      return 99;
+      return MODIFY_SCANNER_PERMISSION_DENIED;
     }
 
   if (find_scanner_with_permission (scanner_id, &scanner, "modify_scanner"))
     {
       sql_rollback ();
-      return -1;
+      return MODIFY_SCANNER_INTERNAL_ERROR;
     }
   if (scanner == 0)
     {
       sql_rollback ();
-      return 1;
+      return MODIFY_SCANNER_NOT_FOUND;
     }
 
-  if (host)
+  if (type)
     {
-      unix_socket = (*host == '/');
-      if ((unix_socket == 0) && (gvm_get_host_type (host) == -1))
-        return 4;
+      itype = atoi (type);
+      if (scanner_type_valid (itype) == 0)
+        {
+          sql_rollback ();
+          return MODIFY_SCANNER_INVALID_TYPE;
+        }
+    }
+  else
+    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+
+  if (port)
+    iport = atoi (port);
+  else
+    iport = sql_int ("SELECT port FROM scanners WHERE id = %llu;",
+                     scanner);
+
+  if (relay_port)
+    irelay_port = atoi (relay_port);
+  else
+    irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
+                           scanner);
+
+  if (host)
+    used_host = g_strdup (host);
+  else
+    used_host = sql_string ("SELECT host FROM scanners"
+                            " WHERE id = %llu;",
+                            scanner);
+
+  if (relay_host)
+    used_relay_host = g_strdup (relay_host);
+  else
+    used_relay_host = sql_string ("SELECT relay_host FROM scanners"
+                                  " WHERE id = %llu;",
+                                  scanner);
+
+  unix_socket = used_host && (*used_host == '/');
+  relay_unix_socket = used_relay_host && (*used_relay_host == '/');
+
+  if (unix_socket)
+    {
+      iport = 0;
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
     }
   else
     {
-      char *old_host = scanner_host (scanner);
-      unix_socket = (*old_host == '/');
-      g_free (old_host);
+      if (port)
+        iport = atoi (port);
+      else
+        iport = sql_int ("SELECT port FROM scanners"
+                         " WHERE id = %llu;",
+                         scanner);
+
+      if (iport <= 0 || iport > 65535)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_PORT;
+        }
     }
 
-  if (itype == 0)
-    itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
+  if (unix_socket == 0 
+      && (gvm_get_host_type (used_host) == -1))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      g_free (used_relay_host);
+      return MODIFY_SCANNER_INVALID_HOST;
+    }
+
+  if (used_relay_host == NULL || strcmp (used_relay_host, "") == 0)
+    {
+      irelay_port = 0;
+    }
+  else if (relay_unix_socket)
+    {
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+      irelay_port = 0;
+    }
+  else
+    {
+      if (relay_port)
+        irelay_port = atoi (relay_port);
+      else
+        irelay_port = sql_int ("SELECT relay_port FROM scanners"
+                               " WHERE id = %llu;",
+                               scanner);
+
+      if (irelay_port <= 0 || irelay_port > 65535)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_RELAY_PORT;
+        }
+
+      if (gvm_get_host_type (used_relay_host) == -1)
+        {
+          sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INVALID_RELAY_HOST;
+        }
+    }
 
   if (credential_id
       && (strcmp (credential_id, "") == 0 || strcmp (credential_id, "0") == 0))
@@ -41039,13 +30282,17 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                                            "get_credentials"))
         {
           sql_rollback ();
-          return -1;
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_INTERNAL_ERROR;
         }
 
       if (credential == 0)
         {
           sql_rollback ();
-          return 5;
+          g_free (used_host);
+          g_free (used_relay_host);
+          return MODIFY_SCANNER_CREDENTIAL_NOT_FOUND;
         }
 
       credential_given = 1;
@@ -41065,7 +30312,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                    credential))
         {
           sql_rollback ();
-          return 6;
+          return MODIFY_SCANNER_CREDENTIAL_NOT_CC;
         }
     }
 
@@ -41075,34 +30322,30 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       if (resource_with_name_exists (name, "scanner", scanner))
         {
           sql_rollback ();
-          return 2;
+          return MODIFY_SCANNER_ALREADY_EXISTS;
         }
     }
 
-  quoted_name = name ? sql_quote (name) : NULL;
-  quoted_comment = sql_quote (comment ?: "");
-  quoted_host = host ? sql_quote (host) : NULL;
-  new_port = port ? g_strdup_printf ("%d", iport) : g_strdup ("port");
-  new_type = type ? g_strdup_printf ("%d", itype) : g_strdup ("type");
-  sql ("UPDATE scanners SET name = %s%s%s, comment = %s%s%s, host = %s%s%s,"
-       " port = %s, type = %s, modification_time = m_now () WHERE id = %llu;",
-       quoted_name ? "'" : "",
-       quoted_name ? quoted_name : "name",
-       quoted_name ? "'" : "",
-       quoted_comment ? "'" : "",
-       quoted_comment ? quoted_comment : "comment",
-       quoted_comment ? "'" : "",
-       quoted_host ? "'" : "",
-       quoted_host ? quoted_host : "host",
-       quoted_host ? "'" : "",
-       new_port,
-       new_type,
+  quoted_name = name ? sql_insert (name) : g_strdup ("name");
+  quoted_comment = comment ? sql_insert (comment) : g_strdup ("comment");
+  quoted_host = sql_insert (used_host);
+  quoted_relay_host = sql_insert (used_relay_host);
+
+  sql ("UPDATE scanners SET name = %s, comment = %s, type = %d,"
+       " host = %s, port = %d, relay_host = %s, relay_port = %d,"
+       " modification_time = m_now () WHERE id = %llu;",
+       quoted_name,
+       quoted_comment,
+       itype,
+       quoted_host,
+       iport,
+       quoted_relay_host,
+       irelay_port,
        scanner);
-  g_free (new_type);
-  g_free (new_port);
   g_free (quoted_host);
   g_free (quoted_comment);
   g_free (quoted_name);
+  g_free (quoted_relay_host);
 
   if (ca_pub && !unix_socket)
     {
@@ -41204,6 +30447,15 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       scanner_t trash_scanner;
 
+#if ENABLE_AGENTS
+      // check scanner is in use by agent_group
+      if (agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
+
       if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE scanner = %llu"
                    " AND scanner_location = " G_STRINGIFY (LOCATION_TABLE)
@@ -41242,7 +30494,23 @@ delete_scanner (const char *scanner_id, int ultimate)
     {
       permissions_set_orphans ("scanner", scanner, LOCATION_TABLE);
       tags_remove_resource ("scanner", scanner, LOCATION_TABLE);
+
+#if ENABLE_AGENTS
+      if (agent_group_hidden_tasks_exist_by_scanner (scanner)
+          || agent_group_tasks_exist_by_scanner (scanner))
+        {
+          sql_rollback ();
+          return 1;
+        }
+#endif // ENABLE_AGENTS
     }
+
+#if ENABLE_AGENTS
+  // Delete agent groups related to the scanner.
+  delete_agent_groups_by_scanner (scanner);
+  // Delete agents related to the scanner.
+  delete_agents_by_scanner_and_uuids (scanner, NULL);
+#endif // ENABLE_AGENTS
 
   sql ("DELETE FROM scanners WHERE id = %llu;", scanner);
   sql_commit ();
@@ -41253,7 +30521,8 @@ delete_scanner (const char *scanner_id, int ultimate)
  * @brief Filter columns for scanner iterator.
  */
 #define SCANNER_ITERATOR_FILTER_COLUMNS                              \
- { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "type", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "host", "port", "type",              \
+   "relay_host", "relay_port", NULL }
 
 /**
  * @brief Scanner iterator columns.
@@ -41286,6 +30555,8 @@ delete_scanner (const char *scanner_id, int ultimate)
      "credential_type",                                                \
      KEYWORD_TYPE_STRING                                               \
    },                                                                  \
+   { "relay_host" , NULL, KEYWORD_TYPE_STRING },                       \
+   { "relay_port" , NULL, KEYWORD_TYPE_INTEGER },                      \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                \
  }
 
@@ -41319,6 +30590,17 @@ delete_scanner (const char *scanner_id, int ultimate)
    { "credential_value (credential, 1, CAST ('secret' AS TEXT))",       \
      NULL,                                                              \
      KEYWORD_TYPE_STRING },                                             \
+   {                                                                    \
+     "(SELECT CASE"                                                     \
+     " WHEN credential_location = " G_STRINGIFY (LOCATION_TABLE)        \
+     " THEN (SELECT type FROM credentials WHERE id = credential)"       \
+     " ELSE (SELECT type FROM credentials_trash WHERE id = credential)" \
+     " END)",                                                            \
+     "credential_type",                                                 \
+     KEYWORD_TYPE_STRING                                                \
+   },                                                                   \
+   { "relay_host" , NULL, KEYWORD_TYPE_STRING },                        \
+   { "relay_port" , NULL, KEYWORD_TYPE_INTEGER },                       \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 
@@ -41453,7 +30735,7 @@ DEF_ACCESS (scanner_iterator_key_pub, GET_ITERATOR_COLUMN_COUNT + 7);
  * @return Scanner private key, or NULL if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-static const char*
+const char*
 scanner_iterator_key_priv (iterator_t* iterator)
 {
   const char *private_key;
@@ -41485,6 +30767,32 @@ scanner_iterator_key_priv (iterator_t* iterator)
  *         cleanup_iterator.
  */
 DEF_ACCESS (scanner_iterator_credential_type, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get the relay host from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Relay host, or NULL if iteration is complete.  Freed
+ *         by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_iterator_relay_host, GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get the relay port from an scanner iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Relay port, or -1 if iteration is complete.
+ */
+int
+scanner_iterator_relay_port (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return ret;
+}
 
 /**
  * @brief Get the read permission status from a GET iterator.
@@ -41524,7 +30832,7 @@ init_scanner_task_iterator (iterator_t* iterator, scanner_t scanner)
 
   init_iterator (iterator,
                  "%s"
-                 " SELECT id, uuid, name, %s FROM tasks"
+                 " SELECT id, uuid, name, usage_type, %s FROM tasks"
                  " WHERE scanner = %llu AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
@@ -41554,6 +30862,15 @@ DEF_ACCESS (scanner_task_iterator_uuid, 1);
 DEF_ACCESS (scanner_task_iterator_name, 2);
 
 /**
+ * @brief Get the usage type from a scanner task iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (scanner_task_iterator_usage_type, 3);
+
+/**
  * @brief Get the read permission status from a GET iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -41564,7 +30881,7 @@ int
 scanner_task_iterator_readable (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int (iterator, 3);
+  return iterator_int (iterator, 4);
 }
 
 /**
@@ -41688,31 +31005,52 @@ scanner_uuid_default ()
 }
 
 /**
+ * @brief Return whether the scanner has a relay host defined.
+ *
+ * @param[in]  scanner    Scanner.
+ * 
+ * @return TRUE if a relay host is defined, FALSE otherwise.
+ */
+gboolean
+scanner_has_relay (scanner_t scanner)
+{
+  return sql_int ("SELECT coalesce (relay_host, '') != ''"
+                  " FROM scanners WHERE id = %llu;",
+                  scanner);
+}
+
+/**
  * @brief Return the host of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Newly allocated host.
  */
 char *
-scanner_host (scanner_t scanner)
+scanner_host (scanner_t scanner, gboolean get_relay)
 {
-  return sql_string ("SELECT host FROM scanners WHERE id = %llu;", scanner);
+  return sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                     get_relay ? "relay_host" : "host",
+                     scanner);
 }
 
 /**
  * @brief Return the port of a scanner.
  *
- * @param[in]  scanner  Scanner.
+ * @param[in]  scanner    Scanner.
+ * @param[in]  get_relay  Whether to get the relay host.
  *
  * @return Scanner port, -1 if not found;
  */
 int
-scanner_port (scanner_t scanner)
+scanner_port (scanner_t scanner, gboolean get_relay)
 {
   int port;
   char *str;
-  str = sql_string ("SELECT port FROM scanners WHERE id = %llu;", scanner);
+  str = sql_string ("SELECT %s FROM scanners WHERE id = %llu;",
+                    get_relay ? "relay_port" : "port",
+                    scanner);
   if (!str)
     return -1;
   port = atoi (str);
@@ -41935,153 +31273,6 @@ openvas_default_scanner_host ()
 }
 
 /**
- * @brief Create a new connection to an OSP scanner relay.
- *
- * @param[in]   host     Original host name or IP address.
- * @param[in]   port     Original port.
- * @param[in]   ca_pub   Original CA certificate.
- * @param[in]   key_pub  Public key for authentication.
- * @param[in]   key_priv Private key for authentication.
- *
- * @return New connection if success, NULL otherwise.
- */
-static osp_connection_t *
-osp_scanner_relay_connect (const char *host, int port, const char *ca_pub,
-                           const char *key_pub, const char *key_priv)
-{
-  int ret, new_port;
-  gchar *new_host, *new_ca_pub;
-  osp_connection_t *connection;
-
-  new_host = NULL;
-  new_ca_pub = NULL;
-  new_port = 0;
-
-  ret = slave_get_relay (host,
-                         port,
-                         ca_pub,
-                         "OSP",
-                         &new_host,
-                         &new_port,
-                         &new_ca_pub);
-
-  switch (ret)
-    {
-      case 0:
-        break;
-      case 1:
-        g_warning ("No relay found for Scanner at %s:%d", host, port);
-        return NULL;
-      default:
-        g_warning ("%s: Error getting relay for Scanner at %s:%d",
-                   __func__, host, port);
-        return NULL;
-    }
-
-  connection
-    = osp_connection_new (new_host, new_port, new_ca_pub, key_pub, key_priv);
-
-  if (connection == NULL)
-    {
-      if (new_port)
-        g_warning ("Could not connect to relay at %s:%d"
-                    " for Scanner at %s:%d",
-                    new_host, new_port, host, port);
-      else
-        g_warning ("Could not connect to relay at %s"
-                    " for Scanner at %s:%d",
-                    new_host, host, port);
-    }
-
-  g_free (new_host);
-  g_free (new_ca_pub);
-
-  return connection;
-}
-
-/**
- * @brief Create a new connection to an OSP scanner using the scanner data.
- *
- * @param[in]   host     Host name or IP address.
- * @param[in]   port     Port.
- * @param[in]   ca_pub   CA certificate.
- * @param[in]   key_pub  Public key.
- * @param[in]   key_priv Private key.
- *
- * @return New connection if success, NULL otherwise.
- */
-osp_connection_t *
-osp_connect_with_data (const char *host,
-                       int port,
-                       const char *ca_pub,
-                       const char *key_pub,
-                       const char *key_priv)
-{
-  osp_connection_t *connection;
-  int is_unix_socket = (host && *host == '/') ? 1 : 0;
-
-  if (is_unix_socket == 0
-      && get_relay_mapper_path ())
-    {
-      connection
-        = osp_scanner_relay_connect (host, port, ca_pub, key_pub, key_priv);
-    }
-  else
-    {
-      connection = osp_connection_new (host, port, ca_pub, key_pub, key_priv);
-
-      if (connection == NULL)
-        {
-          if (is_unix_socket)
-            g_warning ("Could not connect to Scanner at %s", host);
-          else
-            g_warning ("Could not connect to Scanner at %s:%d", host, port);
-        }
-    }
-  return connection;
-}
-
-/**
- * @brief Create a new connection to an OSP scanner.
- *
- * @param[in]   scanner     Scanner.
- *
- * @return New connection if success, NULL otherwise.
- */
-osp_connection_t *
-osp_scanner_connect (scanner_t scanner)
-{
-  int port;
-  osp_connection_t *connection;
-  char *host, *ca_pub, *key_pub, *key_priv;
-
-  assert (scanner);
-  host = scanner_host (scanner);
-  if (host && *host == '/')
-    {
-      port = 0;
-      ca_pub = NULL;
-      key_pub = NULL;
-      key_priv = NULL;
-    }
-  else
-    {
-      port = scanner_port (scanner);
-      ca_pub = scanner_ca_pub (scanner);
-      key_pub = scanner_key_pub (scanner);
-      key_priv = scanner_key_priv (scanner);
-    }
-
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
-
-  g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
-  return connection;
-}
-
-/**
  * @brief Get an OSP Scanner's get_version info.
  *
  * @param[in]   iterator    Scanner object iterator.
@@ -42099,14 +31290,12 @@ osp_get_version_from_iterator (iterator_t *iterator, char **s_name,
                                char **s_ver, char **d_name, char **d_ver,
                                char **p_name, char **p_ver)
 {
+  osp_connect_data_t conn_data;
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
-                                      scanner_iterator_ca_pub (iterator),
-                                      scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+  osp_connect_data_from_scanner_iterator (iterator, &conn_data);
+  connection = osp_connect_with_data (&conn_data);
   if (!connection)
     return 1;
   if (osp_get_version (connection, s_name, s_ver, d_name, d_ver, p_name, p_ver))
@@ -42128,14 +31317,12 @@ int
 osp_get_details_from_iterator (iterator_t *iterator, char **desc,
                                GSList **params)
 {
+  osp_connect_data_t conn_data;
   osp_connection_t *connection;
 
   assert (iterator);
-  connection = osp_connect_with_data (scanner_iterator_host (iterator),
-                                      scanner_iterator_port (iterator),
-                                      scanner_iterator_ca_pub (iterator),
-                                      scanner_iterator_key_pub (iterator),
-                                      scanner_iterator_key_priv (iterator));
+  osp_connect_data_from_scanner_iterator (iterator, &conn_data);
+  connection = osp_connect_with_data (&conn_data);
   if (!connection)
     return 1;
   if (osp_get_scanner_details (connection, desc, params))
@@ -42143,6 +31330,179 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   osp_connection_close (connection);
   return 0;
 }
+
+#if OPENVASD
+/**
+ * @brief Get an openvasd Scanner's get_scanner_preferences info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  desc        Scanner description.
+ * @param[out]  params      Scanner parameters.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
+                               GSList **params)
+{
+  int port;
+  http_scanner_connector_t connection;
+  const char *host, *ca_pub, *key_pub, *key_priv, *protocol;
+
+  assert (iterator);
+  host = scanner_iterator_host (iterator);
+  port = scanner_iterator_port (iterator);
+  ca_pub = scanner_iterator_ca_pub (iterator);
+  key_pub = scanner_iterator_key_pub (iterator);
+  key_priv = scanner_iterator_key_priv (iterator);
+
+  /* Determine protocol based on certificate presence */
+  if (ca_pub && key_pub && key_priv)
+    protocol = "https";
+  else
+    protocol = "http";
+
+  connection = http_scanner_connector_new ();
+
+  http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
+  http_scanner_connector_builder (connection, HTTP_SCANNER_PORT, (void *) &port);
+
+  if (!connection)
+    return 1;
+
+  *desc = g_strdup_printf("openvasd Sensor on %s://%s:%d", protocol, host, port);
+  if (http_scanner_parsed_scans_preferences (connection, params) < 0)
+    return 1;
+  http_scanner_connector_free (connection);
+  return 0;
+}
+#endif
+
+#if ENABLE_AGENTS
+/**
+ * @brief Get an Agent Control sensor's version info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  name        Scanner name.
+ * @param[out]  version     Scanner version.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+agent_control_get_version_from_iterator (iterator_t *iterator,
+                                         char **name,
+                                         char **version)
+{
+  int port;
+  const char *host, *ca_pub, *key_pub, *key_priv;
+  const char *protocol = "https";
+  agent_controller_connector_t connection;
+
+  assert (iterator);
+
+  host = scanner_iterator_host (iterator);
+  port = scanner_iterator_port (iterator);
+  ca_pub = scanner_iterator_ca_pub (iterator);
+  key_pub = scanner_iterator_key_pub (iterator);
+  key_priv = scanner_iterator_key_priv (iterator);
+
+  if (!ca_pub || !key_pub)
+    {
+      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
+      protocol = "http";
+    }
+
+  connection = agent_controller_connector_new ();
+  if (!connection)
+    return 1;
+
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
+
+  /*
+   The following block has to be replaced by something like:
+
+        agent_controller_get_version (name, version);
+        agent_controller_connector_free (connection);
+        if (name == NULL && version == NULL)
+          return 1;
+
+   as soon as the required endpoint is available.
+   */
+  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
+  agent_controller_connector_free (connection);
+  if (agents == NULL)
+    return 1;
+  *name = g_strdup ("TestName");
+  *version = g_strdup ("TestVersion");
+  agent_controller_agent_list_free (agents);
+
+  return 0;
+}
+
+/**
+ * @brief Get an Agent Control scanner's preferences info.
+ *
+ * @param[in]   iterator    Scanner object iterator.
+ * @param[out]  desc        Scanner description.
+ * @param[out]  params      Scanner parameters.
+ *
+ * @return 0 success, 1 for failure.
+ */
+int
+agent_control_get_details_from_iterator (iterator_t *iterator, char **desc,
+                                         GSList **params)
+{
+  int port;
+  const char *host, *ca_pub, *key_pub, *key_priv;
+  const char *protocol = "https";
+  agent_controller_connector_t connection;
+
+  assert (iterator);
+
+  host = scanner_iterator_host (iterator);
+  port = scanner_iterator_port (iterator);
+  ca_pub = scanner_iterator_ca_pub (iterator);
+  key_pub = scanner_iterator_key_pub (iterator);
+  key_priv = scanner_iterator_key_priv (iterator);
+
+  if (!ca_pub || !key_pub)
+    {
+      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
+      protocol = "http";
+    }
+
+  connection = agent_controller_connector_new ();
+  if (!connection)
+    return 1;
+
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
+  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
+
+  *desc = g_strdup_printf ("Agent Control Scanner on %s://%s:%d", protocol, host, port);
+
+  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
+  agent_controller_connector_free (connection);
+
+  if (agents == NULL)
+    return 1;
+
+  agent_controller_agent_list_free (agents);
+  return 0;
+}
+#endif
 
 /**
  * @brief Verify a scanner.
@@ -42179,6 +31539,44 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD
+      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
+    {
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+#if ENABLE_AGENTS
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+    {
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+  else if (scanner_iterator_type (&scanner) ==
+           SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      char *name;
+      int ret = agent_control_get_version_from_iterator (&scanner, &name,
+                                                         version);
+      cleanup_iterator (&scanner);
+      g_free (name);
+
+      if (ret)
+        return 2;
+      return 0;
+    }
+#endif
+#if ENABLE_CONTAINER_SCANNING
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
+    {
+      // Once container scanner is availabe and has version endpoint, replace
+      // this
+      if (version)
+        *version = g_strdup ("TestVersion");
+
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+#endif
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
@@ -42206,7 +31604,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
 
   g_info ("   Getting scanners.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -42235,6 +31634,21 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_OSP_SENSOR:
             scanner_type_str = "OSP-Sensor";
+            break;
+          case SCANNER_TYPE_OPENVASD:
+            scanner_type_str = "openvasd";
+            break;
+          case SCANNER_TYPE_OPENVASD_SENSOR:
+            scanner_type_str = "openvasd-sensor";
+            break;
+          case SCANNER_TYPE_AGENT_CONTROLLER:
+            scanner_type_str = "agent-controller";
+            break;
+          case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+            scanner_type_str = "agent-controller-sensor";
+            break;
+          case SCANNER_TYPE_CONTAINER_IMAGE:
+            scanner_type_str = "container-image";
             break;
           default:
             scanner_type_str = NULL;
@@ -46051,20 +35465,16 @@ clean_feed_role_permissions (const char *type,
 
   sql_roles = g_string_new ("(");
 
-  if (roles_str)
+  roles = g_strsplit (roles_str, ",", 0);
+  role = roles;
+  while (*role)
     {
-      roles = g_strsplit (roles_str, ",", 0);
-      role = roles;
-      while (*role)
-        {
-          gchar *quoted_role = sql_insert (*role);
-          g_string_append (sql_roles, quoted_role);
+      gchar *quoted_role = sql_insert (*role);
+      g_string_append (sql_roles, quoted_role);
 
-          role ++;
-          if (*role)
-            g_string_append (sql_roles, ", ");
-        }
-
+      role ++;
+      if (*role)
+        g_string_append (sql_roles, ", ");
     }
 
   g_string_append (sql_roles, ")");
@@ -46145,7 +35555,8 @@ manage_get_roles (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting roles.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -46816,911 +36227,6 @@ init_role_iterator (iterator_t* iterator, get_data_t *get)
 }
 
 
-/* Filters. */
-
-/**
- * @brief Find a filter for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of filter.
- * @param[out]  filter      Filter return, 0 if successfully failed to find
- *                          filter.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find filter), TRUE on error.
- */
-gboolean
-find_filter_with_permission (const char* uuid, filter_t* filter,
-                             const char *permission)
-{
-  return find_resource_with_permission ("filter", uuid, filter, permission, 0);
-}
-
-/**
- * @brief Return the UUID of a filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-filter_uuid (filter_t filter)
-{
-  return sql_string ("SELECT uuid FROM filters WHERE id = %llu;",
-                     filter);
-}
-
-/**
- * @brief Return the UUID of a trashcan filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-static char*
-trash_filter_uuid (filter_t filter)
-{
-  return sql_string ("SELECT uuid FROM filters_trash WHERE id = %llu;",
-                     filter);
-}
-
-/**
- * @brief Return the name of a filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return name of filter.
- */
-char*
-filter_name (filter_t filter)
-{
-  return sql_string ("SELECT name FROM filters WHERE id = %llu;",
-                     filter);
-}
-
-/**
- * @brief Return the name of a trashcan filter.
- *
- * @param[in]  filter  Filter.
- *
- * @return name of filter.
- */
-static char*
-trash_filter_name (filter_t filter)
-{
-  return sql_string ("SELECT name FROM filters_trash WHERE id = %llu;",
-                     filter);
-}
-
-/**
- * @brief Return the term of a filter.
- *
- * @param[in]  uuid  Filter UUID.
- *
- * @return Newly allocated term if available, else NULL.
- */
-gchar*
-filter_term (const char *uuid)
-{
-  gchar *quoted_uuid, *ret;
-  quoted_uuid = sql_quote (uuid);
-  ret = sql_string ("SELECT term FROM filters WHERE uuid = '%s';",
-                    quoted_uuid);
-  g_free (quoted_uuid);
-  return ret;
-}
-
-/**
- * @brief Return the value of a column keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- * @param[in]  column  Column name.
- *
- * @return Value of column keyword if one exists, else NULL.
- */
-gchar*
-filter_term_value (const char *term, const char *column)
-{
-  keyword_t **point;
-  array_t *split;
-
-  if (term == NULL)
-    return NULL;
-
-  split = split_filter (term);
-  point = (keyword_t**) split->pdata;
-  while (*point)
-    {
-      keyword_t *keyword;
-
-      keyword = *point;
-      if (keyword->column
-          && ((strcasecmp (keyword->column, column) == 0)
-              || (keyword->column[0] == '_'
-                  && (strcasecmp (keyword->column + 1, column) == 0))))
-        {
-          gchar *ret = g_strdup (keyword->string);
-          filter_free (split);
-          return ret;
-        }
-      point++;
-    }
-  filter_free (split);
-  return NULL;
-}
-
-/**
- * @brief Return the value of the apply_overrides keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of apply_overrides if it exists, else APPLY_OVERRIDES_DEFAULT.
- */
-int
-filter_term_apply_overrides (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *apply_overrides_str;
-
-      apply_overrides_str = filter_term_value (term, "apply_overrides");
-      ret = apply_overrides_str
-              ? (strcmp (apply_overrides_str, "0") ? 1 : 0)
-              : APPLY_OVERRIDES_DEFAULT;
-
-      g_free (apply_overrides_str);
-      return ret;
-    }
-  else
-    return APPLY_OVERRIDES_DEFAULT;
-}
-
-/**
- * @brief Return the value of the min_qod keyword of a filter term.
- *
- * @param[in]  term    Filter term.
- *
- * @return Value of min_qod if it exists, else MIN_QOD_DEFAULT.
- */
-int
-filter_term_min_qod (const char *term)
-{
-  if (term)
-    {
-      int ret;
-      gchar *min_qod_str;
-
-      min_qod_str = filter_term_value (term, "min_qod");
-      ret = (min_qod_str && strcmp (min_qod_str, ""))
-              ? atoi (min_qod_str) : MIN_QOD_DEFAULT;
-
-      g_free (min_qod_str);
-      return ret;
-    }
-  else
-    return MIN_QOD_DEFAULT;
-}
-
-
-/**
- * @brief Create a filter.
- *
- * @param[in]   name            Name of filter.
- * @param[in]   comment         Comment on filter.
- * @param[in]   type            Type of resource.
- * @param[in]   term            Filter term.
- * @param[out]  filter          Created filter.
- *
- * @return 0 success, 1 filter exists already, 2 error in type, 99 permission
- *         denied.
- */
-int
-create_filter (const char *name, const char *comment, const char *type,
-               const char *term, filter_t* filter)
-{
-  gchar *quoted_name, *quoted_comment, *quoted_term, *clean_term;
-  const char *db_type;
-
-  assert (current_credentials.uuid);
-
-  if (type && strlen (type))
-    {
-      db_type = type_db_name (type);
-      if ((db_type == NULL || !valid_type (db_type)) && !valid_subtype (type))
-      {
-        return 2;
-      }
-      type = valid_subtype (type) ? type : db_type;
-    }
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_filter") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (name, "filter", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  quoted_name = sql_quote (name ?: "");
-
-  clean_term = manage_clean_filter (term ? term : "");
-  quoted_term = sql_quote (clean_term);
-  g_free (clean_term);
-
-  if (comment)
-    {
-      quoted_comment = sql_quote (comment);
-      sql ("INSERT INTO filters"
-           " (uuid, name, owner, comment, type, term, creation_time,"
-           "  modification_time)"
-           " VALUES (make_uuid (), '%s',"
-           " (SELECT id FROM users WHERE users.uuid = '%s'),"
-           " '%s', %s%s%s, '%s', m_now (), m_now ());",
-           quoted_name,
-           current_credentials.uuid,
-           quoted_comment,
-           type ? "lower ('" : "",
-           type ? type : "''",
-           type ? "')" : "",
-           quoted_term);
-      g_free (quoted_comment);
-    }
-  else
-    sql ("INSERT INTO filters"
-         " (uuid, name, owner, comment, type, term, creation_time,"
-         "  modification_time)"
-         " VALUES (make_uuid (), '%s',"
-         " (SELECT id FROM users WHERE users.uuid = '%s'),"
-         " '', %s%s%s, '%s', m_now (), m_now ());",
-         quoted_name,
-         current_credentials.uuid,
-         type ? "lower ('" : "",
-         type ? type : "''",
-         type ? "')" : "",
-         quoted_term);
-
-  if (filter)
-    *filter = sql_last_insert_id ();
-
-  g_free (quoted_name);
-  g_free (quoted_term);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create a filter from an existing filter.
- *
- * @param[in]  name        Name of new filter.  NULL to copy from existing.
- * @param[in]  comment     Comment on new filter.  NULL to copy from existing.
- * @param[in]  filter_id   UUID of existing filter.
- * @param[out] new_filter  New filter.
- *
- * @return 0 success, 1 filter exists already, 2 failed to find existing
- *         filter, -1 error.
- */
-int
-copy_filter (const char* name, const char* comment, const char *filter_id,
-             filter_t* new_filter)
-{
-  return copy_resource ("filter", name, comment, filter_id, "term, type",
-                        1, new_filter, NULL);
-}
-
-/**
- * @brief Delete a filter.
- *
- * @param[in]  filter_id  UUID of filter.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a task refers to the filter, 2 failed
- *         to find filter, 99 permission denied, -1 error.
- */
-int
-delete_filter (const char *filter_id, int ultimate)
-{
-  gchar *quoted_filter_id;
-  filter_t filter = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_filter") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_filter_with_permission (filter_id, &filter, "delete_filter"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (filter == 0)
-    {
-      if (find_trash ("filter", filter_id, &filter))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (filter == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      /* Check if it's in use by an alert in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM alerts_trash"
-                   " WHERE filter = %llu"
-                   " AND filter_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   filter))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      /* Check if it's in use by the condition of an alert in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
-                   " WHERE name = 'filter_id'"
-                   " AND data = (SELECT uuid FROM filters_trash"
-                   "             WHERE id = %llu)"
-                   " AND (SELECT condition = %i OR condition = %i"
-                   "      FROM alerts_trash WHERE id = alert);",
-                   filter,
-                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      permissions_set_orphans ("filter", filter, LOCATION_TRASH);
-      tags_remove_resource ("filter", filter, LOCATION_TRASH);
-
-      sql ("DELETE FROM filters_trash WHERE id = %llu;", filter);
-      sql_commit ();
-      return 0;
-    }
-
-  /* Check if it's in use by an alert. */
-  if (sql_int ("SELECT count(*) FROM alerts"
-               " WHERE filter = %llu;",
-               filter))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check if it's in use by the condition of an alert. */
-  if (sql_int ("SELECT count(*) FROM alert_condition_data"
-               " WHERE name = 'filter_id'"
-               " AND data = (SELECT uuid FROM filters"
-               "             WHERE id = %llu)"
-               " AND (SELECT condition = %i OR condition = %i"
-               "      FROM alerts WHERE id = alert);",
-               filter,
-               ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-               ALERT_CONDITION_FILTER_COUNT_CHANGED))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (ultimate)
-    {
-      /* Check if it's in use by the condition of an alert in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM alert_condition_data_trash"
-                   " WHERE name = 'filter_id'"
-                   " AND data = (SELECT uuid FROM filters"
-                   "             WHERE id = %llu)"
-                   " AND (SELECT condition = %i OR condition = %i"
-                   "      FROM alerts_trash WHERE id = alert);",
-                   filter,
-                   ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                   ALERT_CONDITION_FILTER_COUNT_CHANGED))
-        {
-          sql_rollback ();
-          return 1;
-        }
-    }
-
-  quoted_filter_id = sql_quote (filter_id);
-  sql ("DELETE FROM settings WHERE name %s '%% Filter' AND value = '%s';",
-       sql_ilike_op (),
-       quoted_filter_id);
-  g_free (quoted_filter_id);
-
-  if (ultimate == 0)
-    {
-      sql ("INSERT INTO filters_trash"
-           " (uuid, owner, name, comment, type, term, creation_time,"
-           "  modification_time)"
-           " SELECT uuid, owner, name, comment, type, term, creation_time,"
-           "  modification_time"
-           " FROM filters WHERE id = %llu;",
-           filter);
-
-      /* Update the location of the filter in any trashcan alerts. */
-      sql ("UPDATE alerts_trash"
-           " SET filter = %llu,"
-           "     filter_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE filter = %llu"
-           " AND filter_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           filter);
-
-      permissions_set_locations ("filter", filter,
-                                 sql_last_insert_id (),
-                                 LOCATION_TRASH);
-      tags_set_locations ("filter", filter,
-                          sql_last_insert_id (),
-                          LOCATION_TRASH);
-    }
-  else
-    {
-      permissions_set_orphans ("filter", filter, LOCATION_TABLE);
-      tags_remove_resource ("filter", filter, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM filters WHERE id = %llu;", filter);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Check whether a filter is in use.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-int
-filter_in_use (filter_t filter)
-{
-  return !!sql_int ("SELECT count (*) FROM alerts"
-                    /* Filter applied to results passed to alert's "generate". */
-                    " WHERE filter = %llu"
-                    /* Filter applied to check alert condition. */
-                    "   OR (EXISTS (SELECT * FROM alert_condition_data"
-                    "             WHERE name = 'filter_id'"
-                    "             AND data = (SELECT uuid FROM filters"
-                    "                          WHERE id = %llu)"
-                    "             AND alert = alerts.id)"
-                    "       AND (condition = %i OR condition = %i))",
-                    filter,
-                    filter,
-                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
-}
-
-/**
- * @brief Check whether a filter is in use for the output of any alert.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-static int
-filter_in_use_for_output (filter_t filter)
-{
-  return !!sql_int ("SELECT count (*) FROM alerts"
-                    " WHERE filter = %llu;",
-                    filter);
-}
-
-/**
- * @brief Check whether a filter is in use by any result alert conditions.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-static int
-filter_in_use_for_result_event (filter_t filter)
-{
-  return !!sql_int ("SELECT count (*) FROM alerts"
-                    " WHERE event = %llu"
-                    " AND (EXISTS (SELECT * FROM alert_condition_data"
-                    "              WHERE name = 'filter_id'"
-                    "              AND data = (SELECT uuid FROM filters"
-                    "                          WHERE id = %llu)"
-                    "              AND alert = alerts.id)"
-                    " AND (condition = %i OR condition = %i))",
-                    EVENT_TASK_RUN_STATUS_CHANGED,
-                    filter,
-                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
-}
-
-/**
- * @brief Check whether a filter is in use by any secinfo alert conditions.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-static int
-filter_in_use_for_secinfo_event (filter_t filter)
-{
-  return !!sql_int ("SELECT count (*) FROM alerts"
-                    " WHERE (event = %llu OR event = %llu)"
-                    " AND (EXISTS (SELECT * FROM alert_condition_data"
-                    "              WHERE name = 'filter_id'"
-                    "              AND data = (SELECT uuid FROM filters"
-                    "                          WHERE id = %llu)"
-                    "              AND alert = alerts.id)"
-                    " AND (condition = %i OR condition = %i))",
-                    EVENT_NEW_SECINFO,
-                    EVENT_UPDATED_SECINFO,
-                    filter,
-                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
-}
-
-/**
- * @brief Check whether a trashcan filter is in use.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_filter_in_use (filter_t filter)
-{
-  return !!sql_int ("SELECT count (*) FROM alerts_trash"
-                    " WHERE (filter = %llu"
-                    "        AND filter_location = "
-                                    G_STRINGIFY (LOCATION_TRASH) ")"
-                    "   OR (EXISTS (SELECT *"
-                    "               FROM alert_condition_data_trash"
-                    "               WHERE name = 'filter_id'"
-                    "                 AND data = (SELECT uuid"
-                    "                             FROM filters_trash"
-                    "                             WHERE id = %llu)"
-                    "                 AND alert = alerts_trash.id)"
-                    "       AND (condition = %i OR condition = %i))",
-                    filter,
-                    filter,
-                    ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                    ALERT_CONDITION_FILTER_COUNT_CHANGED);
-}
-
-/**
- * @brief Check whether a filter is writable.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-int
-filter_writable (filter_t filter)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan filter is writable.
- *
- * @param[in]  filter  Filter.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_filter_writable (filter_t filter)
-{
-  return 1;
-}
-
-/**
- * @brief Filter columns for filter iterator.
- */
-#define FILTER_ITERATOR_FILTER_COLUMNS                        \
- { GET_ITERATOR_FILTER_COLUMNS, "type", "term", NULL }
-
-/**
- * @brief Filter iterator columns.
- */
-#define FILTER_ITERATOR_COLUMNS                               \
- {                                                            \
-   GET_ITERATOR_COLUMNS (filters),                            \
-   { "type" , NULL, KEYWORD_TYPE_STRING },                    \
-   { "term", NULL, KEYWORD_TYPE_STRING },                     \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
- }
-
-/**
- * @brief Filter iterator columns for trash case.
- */
-#define FILTER_ITERATOR_TRASH_COLUMNS                         \
- {                                                            \
-   GET_ITERATOR_COLUMNS (filters_trash),                      \
-   { "type" , NULL, KEYWORD_TYPE_STRING },                    \
-   { "term", NULL, KEYWORD_TYPE_STRING },                     \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
- }
-
-/**
- * @brief Count number of filters.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of filters in filtered set.
- */
-int
-filter_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
-  return count ("filter", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a filter iterator, including observed filters.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find filter, 2 failed to find filter (filt_id),
- *         -1 error.
- */
-int
-init_filter_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = FILTER_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = FILTER_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = FILTER_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "filter",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the type from a filter iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The type of the filter, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.  "" for any type.
- */
-const char*
-filter_iterator_type (iterator_t* iterator)
-{
-  const char *ret;
-  if (iterator->done) return NULL;
-  ret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT);
-  return ret ? ret : "";
-}
-
-/**
- * @brief Get the term from a filter iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The term of the filter, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (filter_iterator_term, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Initialise a filter alert iterator.
- *
- * Iterates over all alerts that use the filter.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  filter     Filter.
- */
-void
-init_filter_alert_iterator (iterator_t* iterator, filter_t filter)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (filter);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_alerts"));
-  available = acl_where_owned ("alert", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM alerts"
-                 " WHERE filter = %llu"
-                 " OR (EXISTS (SELECT * FROM alert_condition_data"
-                 "             WHERE name = 'filter_id'"
-                 "             AND data = (SELECT uuid FROM filters"
-                 "                         WHERE id = %llu)"
-                 "             AND alert = alerts.id)"
-                 "     AND (condition = %i OR condition = %i))"
-                 " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
-                 available,
-                 filter,
-                 filter,
-                 ALERT_CONDITION_FILTER_COUNT_AT_LEAST,
-                 ALERT_CONDITION_FILTER_COUNT_CHANGED);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the name from a filter_alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (filter_alert_iterator_name, 0);
-
-/**
- * @brief Get the UUID from a filter_alert iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (filter_alert_iterator_uuid, 1);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-filter_alert_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
-}
-
-/**
- * @brief Modify a filter.
- *
- * @param[in]   filter_id       UUID of filter.
- * @param[in]   name            Name of filter.
- * @param[in]   comment         Comment on filter.
- * @param[in]   term            Filter term.
- * @param[in]   type            Type of filter.
- *
- * @return 0 success, 1 failed to find filter, 2 filter with new name exists,
- *         3 error in type name, 4 filter_id required, 5 filter is in use so
- *         type must be "result", 6 filter is in use so type must be "info",
- *         99 permission denied, -1 internal error.
- */
-int
-modify_filter (const char *filter_id, const char *name, const char *comment,
-               const char *term, const char *type)
-{
-  gchar *quoted_name, *quoted_comment, *quoted_term, *quoted_type, *clean_term;
-  filter_t filter;
-  const char *db_type;
-
-  if (filter_id == NULL)
-    return 4;
-
-  db_type = type_db_name (type);
-  if (db_type && !((strcmp (db_type, "") == 0) || valid_type (db_type))) 
-    {
-      if (!valid_subtype (type))
-        return 3;
-    }
-  type = valid_subtype (type) ? type : db_type;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_filter") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  filter = 0;
-  if (find_filter_with_permission (filter_id, &filter, "modify_filter"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (filter == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* If the filter is linked to an alert, check that the type is valid. */
-
-  if ((filter_in_use_for_output (filter)
-       || filter_in_use_for_result_event (filter))
-      && type
-      && strcasecmp (type, "result"))
-    {
-      sql_rollback ();
-      return 5;
-    }
-
-  if (filter_in_use_for_secinfo_event (filter)
-      && type
-      && strcasecmp (type, "info"))
-    {
-      sql_rollback ();
-      return 6;
-    }
-
-  /* Check whether a filter with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "filter", filter))
-        {
-          sql_rollback ();
-          return 2;
-        }
-    }
-
-  quoted_name = sql_quote(name ?: "");
-  clean_term = manage_clean_filter (term ? term : "");
-  quoted_term = sql_quote (clean_term);
-  g_free (clean_term);
-  quoted_comment = sql_quote (comment ? comment : "");
-  quoted_type = sql_quote (type ? type : "");
-
-  sql ("UPDATE filters SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " term = '%s',"
-       " type = lower ('%s'),"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       quoted_term,
-       quoted_type,
-       filter);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_term);
-  g_free (quoted_type);
-
-  sql_commit ();
-
-  return 0;
-}
-
-
 /* Schema. */
 
 /**
@@ -47960,6 +36466,13 @@ manage_restore (const char *id)
       return 99;
     }
 
+#if ENABLE_AGENTS
+  /* Agent Group. */
+  ret = restore_agent_group (id);
+  if (ret != 2)
+    return ret;
+#endif
+
   /* Port List. */
   ret = restore_port_list (id);
   if (ret != 2)
@@ -47979,6 +36492,13 @@ manage_restore (const char *id)
   ret = restore_ticket (id);
   if (ret != 2)
     return ret;
+
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  ret = restore_oci_image_target (id);
+  if (ret != 2)
+    return ret;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   /* Config. */
 
@@ -48317,6 +36837,15 @@ manage_restore (const char *id)
            " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
            credential,
            resource);
+#if ENABLE_CONTAINER_SCANNING
+      sql ("UPDATE oci_image_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TABLE) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           " AND credential_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           credential,
+           resource);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       permissions_set_locations ("credential", resource, credential,
                                  LOCATION_TABLE);
@@ -48922,6 +37451,9 @@ manage_empty_trashcan ()
       sql_rollback ();
       return 99;
     }
+#if ENABLE_AGENTS
+  empty_trashcan_agent_groups ();
+#endif
 
   sql ("DELETE FROM nvt_selectors"
        " WHERE name != '" MANAGE_NVT_SELECTOR_UUID_ALL "'"
@@ -48973,6 +37505,9 @@ manage_empty_trashcan ()
   sql ("DELETE FROM credentials_trash" WHERE_OWNER);
   sql ("DELETE FROM filters_trash" WHERE_OWNER);
   sql ("DELETE FROM notes_trash" WHERE_OWNER);
+#if ENABLE_CONTAINER_SCANNING
+  sql ("DELETE FROM oci_image_targets_trash" WHERE_OWNER);
+#endif /* ENABLE_CONTAINER_SCANNING */
   sql ("DELETE FROM overrides_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions_trash" WHERE_OWNER);
   empty_trashcan_port_lists ();
@@ -49042,2482 +37577,6 @@ manage_empty_trashcan ()
 }
 
 
-/* Assets. */
-
-/**
- * \page asset_rules Ruleset for updating assets from scan detections
- *
- * During a scan various assets are identfied. The findings are by default
- * used to update the asset database. Since assets may already be present in
- * the database or even be present with contradictive properties, a ruleset
- * defines how the asset database is updated upon findings.
- *
- * Hosts
- * -----
- *
- * When a host is detected, and there is at least one asset host that has the
- * same name and owner as the detected host, and whose identifiers all have
- * the same values as the identifiers of the detected host, then the most
- * recent such asset host is used. Otherwise a new asset host is created.
- * Either way the identifiers are added to the asset host. It does not matter
- * if the asset host has fewer identifiers than detected, as long as the
- * existing identifiers match.
- *
- * At the beginning of a scan, when a host is first detected, the decision
- * about which asset host to use is made by \ref host_notice.  At the end
- * of the scan, if the host has identifiers, then this decision is revised
- * by \ref hosts_set_identifiers to take the identifiers into account.
- *
- * Host identifiers can be ip, hostname, MAC, OS or ssh-key.
- *
- * This documentation includes some pseudo-code and tabular definition.
- * Eventually one of them will repalce the other.
- *
- * Name    : The assigned name (usually the IP)
- * IP      : The detected IP
- * Hostname: The detected Hostname
- * OS:     : The detected OS
- *
- * If IP And Not Hostname:
- *   If Not Assets.Host(id=Name) And Not Assets.Host(attrib=IP, IP):
- *     Assets.Host.New(id=Name, ip=IP)
- *   If Assets.Host(id=Name) == 1:
- *     Assets.Host.Add(id=Name, ip=IP)
- *
- * This pseudo-code is equivalent to the first two rows of:
- *
- * Detection                     | Asset State                                                                 |     Asset Update
- * ----------------------------- | --------------------------------------------------------------------------- | -----------------------------
- * IP address X.                 | No host with Name=X or any ip=X.                                            | Create host with Name=X and ip=X.
- * IP address X.                 | Host A with Name=X.                                                         | Add ip=X to host A.
- * IP address X.                 | (Host A with Name=X and ip=X) and (Host B with Name=X and ip=X).            | Add ip=X to host (Newest(A,B)).
- * IP address X with Hostname Y. | Host A with Name=X and ip=X.                                                | Add ip=X and hostname=Y to host A.
- * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y.                                 | Add ip=X and hostname=Y to host A.
- * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname<>Y.                                | Create host with Name=X, ip=X and hostname=Y.
- * IP address X with Hostname Y. | Host A with Name=X and ip=X and hostname=Y and host B with Name=X and ip=X. | Add ip=X and hostname=Y to host (Newst(A,B)).
- *
- * Follow up action: If a MAC, OS or ssh-key was detected, then the respective
- * identifiers are added to the asset host selected during asset update.
- *
- * Operating Systems
- * -----------------
- *
- * If OS:
- *   If Not Assets.OS(id=OS):
- *     Assets.OS.New(id=OS)
- *
- * This pseudo-code is equivalent to:
- *
- * Detection | Asset State        | Asset Update
- * --------- | ------------------ | ------------------------
- * OS X.     | No OS with Name=X. | Create OS with Name=X.
- * OS X.     | OS with Name=X.    | No action.
- */
-
-/**
- * @brief Return the UUID of the asset associated with a result host.
- *
- * @param[in]  host    Host value from result.
- * @param[in]  result  Result.
- *
- * @return Asset UUID.
- */
-char *
-result_host_asset_id (const char *host, result_t result)
-{
-  gchar *quoted_host;
-  char *asset_id;
-
-  quoted_host = sql_quote (host);
-  asset_id = sql_string ("SELECT uuid FROM hosts"
-                         " WHERE id = (SELECT host FROM host_identifiers"
-                         "             WHERE source_type = 'Report Host'"
-                         "             AND name = 'ip'"
-                         "             AND source_id"
-                         "                 = (SELECT uuid"
-                         "                    FROM reports"
-                         "                    WHERE id = (SELECT report"
-                         "                                FROM results"
-                         "                                WHERE id = %llu))"
-                         "             AND value = '%s'"
-                         "             LIMIT 1);",
-                         result,
-                         quoted_host);
-  g_free (quoted_host);
-  return asset_id;
-}
-
-/**
- * @brief Return the UUID of a host.
- *
- * @param[in]  host  Host.
- *
- * @return Host UUID.
- */
-char*
-host_uuid (resource_t host)
-{
-  return sql_string ("SELECT uuid FROM hosts WHERE id = %llu;",
-                     host);
-}
-
-/**
- * @brief Add a report host.
- *
- * @param[in]  report   UUID of resource.
- * @param[in]  host     Host.
- * @param[in]  start    Start time.
- * @param[in]  end      End time.
- *
- * @return Report host.
- */
-report_host_t
-manage_report_host_add (report_t report, const char *host, time_t start,
-                        time_t end)
-{
-  char *quoted_host = sql_quote (host);
-
-  sql ("INSERT INTO report_hosts"
-       " (report, host, start_time, end_time, current_port, max_port)"
-       " SELECT %llu, '%s', %lld, %lld, 0, 0"
-       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
-       "                   AND host = '%s');",
-       report, quoted_host, (long long) start, (long long) end, report,
-       quoted_host);
-  g_free (quoted_host);
-  return sql_last_insert_id ();
-}
-
-/**
- * @brief Tests if a report host is marked as dead.
- *
- * @param[in]  report_host  Report host.
- *
- * @return 1 if the host is marked as dead, 0 otherwise.
- */
-static int
-report_host_dead (report_host_t report_host)
-{
-  return sql_int ("SELECT count(*) != 0 FROM report_host_details"
-                  " WHERE report_host = %llu"
-                  "   AND name = 'Host dead'"
-                  "   AND value != '0';",
-                  report_host);
-}
-
-/**
- * @brief Counts.
- *
- * @param[in]  report_host  Report host.
- *
- * @return 1 if the host is marked as dead, 0 otherwise.
- */
-static int
-report_host_result_count (report_host_t report_host)
-{
-  return sql_int ("SELECT count(*) FROM report_hosts, results"
-                  " WHERE report_hosts.id = %llu"
-                  "   AND results.report = report_hosts.report"
-                  "   AND report_hosts.host = results.host;",
-                  report_host);
-}
-
-/**
- * @brief Set end time of a report host.
- *
- * @param[in]  report_host  Report host.
- * @param[in]  end_time     End time.
- */
-void
-report_host_set_end_time (report_host_t report_host, time_t end_time)
-{
-  sql ("UPDATE report_hosts SET end_time = %lld WHERE id = %llu;",
-       end_time, report_host);
-}
-
-/**
- * @brief Host identifiers for the current scan.
- */
-array_t *identifiers = NULL;
-
-/**
- * @brief Unique hosts listed in host_identifiers.
- */
-static array_t *identifier_hosts = NULL;
-
-/**
- * @brief Host identifier type.
- */
-typedef struct
-{
-  gchar *ip;                ///< IP of host.
-  gchar *name;              ///< Name of identifier, like "hostname".
-  gchar *value;             ///< Value of identifier.
-  gchar *source_type;       ///< Type of identifier source, like "Report Host".
-  gchar *source_id;         ///< ID of source.
-  gchar *source_data;       ///< Extra data for source.
-} identifier_t;
-
-/**
- * @brief Free an identifier.
- *
- * @param[in]  identifier  Identifier.
- */
-static void
-identifier_free (identifier_t *identifier)
-{
-  if (identifier)
-    {
-      g_free (identifier->ip);
-      g_free (identifier->name);
-      g_free (identifier->value);
-      g_free (identifier->source_type);
-      g_free (identifier->source_id);
-      g_free (identifier->source_data);
-    }
-}
-
-/**
- * @brief Setup hosts and their identifiers after a scan, from host details.
- *
- * At the end of a scan this revises the decision about which asset host to use
- * for each host that has identifiers.  The rules for this decision are described
- * in \ref asset_rules.  (The initial decision is made by \ref host_notice.)
- *
- * @param[in]  report  Report that the identifiers come from.
- */
-void
-hosts_set_identifiers (report_t report)
-{
-  if (identifier_hosts)
-    {
-      int host_index, index;
-      gchar *ip;
-
-      array_terminate (identifiers);
-      array_terminate (identifier_hosts);
-
-      host_index = 0;
-      while ((ip = (gchar*) g_ptr_array_index (identifier_hosts, host_index)))
-        {
-          host_t host, host_new;
-          gchar *quoted_host_name;
-          identifier_t *identifier;
-          GString *select;
-
-          if (report_host_noticeable (report, ip) == 0)
-            {
-              host_index++;
-              continue;
-            }
-
-          quoted_host_name = sql_quote (ip);
-
-          select = g_string_new ("");
-
-          /* Select the most recent host whose identifiers all match the given
-           * identifiers, even if the host has fewer identifiers than given. */
-
-          g_string_append_printf (select,
-                                  "SELECT id FROM hosts"
-                                  " WHERE name = '%s'"
-                                  " AND owner = (SELECT id FROM users"
-                                  "              WHERE uuid = '%s')",
-                                  quoted_host_name,
-                                  current_credentials.uuid);
-
-          index = 0;
-          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers, index)))
-            {
-              gchar *quoted_identifier_name, *quoted_identifier_value;
-
-              if (strcmp (identifier->ip, ip))
-                {
-                  index++;
-                  continue;
-                }
-
-              quoted_identifier_name = sql_quote (identifier->name);
-              quoted_identifier_value = sql_quote (identifier->value);
-
-              g_string_append_printf (select,
-                                      " AND (EXISTS (SELECT * FROM host_identifiers"
-                                      "              WHERE host = hosts.id"
-                                      "              AND owner = (SELECT id FROM users"
-                                      "                           WHERE uuid = '%s')"
-                                      "              AND name = '%s'"
-                                      "              AND value = '%s')"
-                                      "      OR NOT EXISTS (SELECT * FROM host_identifiers"
-                                      "                     WHERE host = hosts.id"
-                                      "                     AND owner = (SELECT id FROM users"
-                                      "                                  WHERE uuid = '%s')"
-                                      "                     AND name = '%s'))",
-                                      current_credentials.uuid,
-                                      quoted_identifier_name,
-                                      quoted_identifier_value,
-                                      current_credentials.uuid,
-                                      quoted_identifier_name);
-
-              g_free (quoted_identifier_name);
-              g_free (quoted_identifier_value);
-
-              index++;
-            }
-
-          g_string_append_printf (select,
-                                  " ORDER BY creation_time DESC LIMIT 1;");
-
-          switch (sql_int64 (&host, select->str))
-            {
-              case 0:
-                break;
-              case 1:        /* Too few rows in result of query. */
-                host = 0;
-                break;
-              default:       /* Programming error. */
-                assert (0);
-              case -1:
-                host = 0;
-                break;
-            }
-
-          g_string_free (select, TRUE);
-
-          if (host == 0)
-            {
-              /* Add the host. */
-
-              sql ("INSERT into hosts"
-                   " (uuid, owner, name, comment, creation_time, modification_time)"
-                   " VALUES"
-                   " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '',"
-                   "  m_now (), m_now ());",
-                   current_credentials.uuid,
-                   quoted_host_name);
-
-              host_new = host = sql_last_insert_id ();
-
-              /* Make sure the Report Host identifiers added when the host was
-               * first noticed now refer to the new host. */
-
-              sql ("UPDATE host_identifiers SET host = %llu"
-                   " WHERE source_id = (SELECT uuid FROM reports"
-                   "                    WHERE id = %llu)"
-                   " AND name = 'ip'"
-                   " AND value = '%s';",
-                   host_new,
-                   report,
-                   quoted_host_name);
-            }
-          else
-            {
-              /* Use the existing host. */
-
-              host_new = 0;
-            }
-
-          /* Add the host identifiers. */
-
-          index = 0;
-          while ((identifier = (identifier_t*) g_ptr_array_index (identifiers,
-                                                                  index)))
-            {
-              gchar *quoted_identifier_name, *quoted_identifier_value;
-              gchar *quoted_source_id, *quoted_source_type, *quoted_source_data;
-
-              if (strcmp (identifier->ip, ip))
-                {
-                  index++;
-                  continue;
-                }
-
-              quoted_identifier_name = sql_quote (identifier->name);
-              quoted_identifier_value = sql_quote (identifier->value);
-              quoted_source_id = sql_quote (identifier->source_id);
-              quoted_source_data = sql_quote (identifier->source_data);
-              quoted_source_type = sql_quote (identifier->source_type);
-
-              if (strcmp (identifier->name, "OS") == 0)
-                {
-                  resource_t os;
-
-                  switch (sql_int64 (&os,
-                                     "SELECT id FROM oss"
-                                     " WHERE name = '%s'"
-                                     " AND owner = (SELECT id FROM users"
-                                     "              WHERE uuid = '%s');",
-                                     quoted_identifier_value,
-                                     current_credentials.uuid))
-                    {
-                      case 0:
-                        break;
-                      default:       /* Programming error. */
-                        assert (0);
-                      case -1:
-                      case 1:        /* Too few rows in result of query. */
-                        sql ("INSERT into oss"
-                             " (uuid, owner, name, comment, creation_time,"
-                             "  modification_time)"
-                             " VALUES"
-                             " (make_uuid (),"
-                             "  (SELECT id FROM users WHERE uuid = '%s'),"
-                             "  '%s', '', m_now (), m_now ());",
-                             current_credentials.uuid,
-                             quoted_identifier_value);
-                        os = sql_last_insert_id ();
-                        break;
-                    }
-
-                  sql ("INSERT into host_oss"
-                       " (uuid, host, owner, name, comment, os, source_type,"
-                       "  source_id, source_data, creation_time, modification_time)"
-                       " VALUES"
-                       " (make_uuid (), %llu,"
-                       "  (SELECT id FROM users WHERE uuid = '%s'),"
-                       "  '%s', '', %llu, '%s', '%s', '%s', m_now (), m_now ());",
-                       host,
-                       current_credentials.uuid,
-                       quoted_identifier_name,
-                       os,
-                       quoted_source_type,
-                       quoted_source_id,
-                       quoted_source_data);
-
-                  if (host_new == 0)
-                    {
-                      sql ("UPDATE hosts"
-                           " SET modification_time = (SELECT modification_time"
-                           "                          FROM host_oss"
-                           "                          WHERE id = %llu)"
-                           " WHERE id = %llu;",
-                           sql_last_insert_id (),
-                           host);
-
-                      sql ("UPDATE oss"
-                           " SET modification_time = (SELECT modification_time"
-                           "                          FROM host_oss"
-                           "                          WHERE id = %llu)"
-                           " WHERE id = %llu;",
-                           sql_last_insert_id (),
-                           os);
-                    }
-                }
-              else
-                {
-                  sql ("INSERT into host_identifiers"
-                       " (uuid, host, owner, name, comment, value, source_type,"
-                       "  source_id, source_data, creation_time, modification_time)"
-                       " VALUES"
-                       " (make_uuid (), %llu,"
-                       "  (SELECT id FROM users WHERE uuid = '%s'),"
-                       "  '%s', '', '%s', '%s', '%s', '%s', m_now (), m_now ());",
-                       host,
-                       current_credentials.uuid,
-                       quoted_identifier_name,
-                       quoted_identifier_value,
-                       quoted_source_type,
-                       quoted_source_id,
-                       quoted_source_data);
-
-                  if (host_new == 0)
-                    sql ("UPDATE hosts"
-                         " SET modification_time = (SELECT modification_time"
-                         "                          FROM host_identifiers"
-                         "                          WHERE id = %llu)"
-                         " WHERE id = %llu;",
-                         sql_last_insert_id (),
-                         host);
-                }
-
-              g_free (quoted_source_type);
-              g_free (quoted_source_id);
-              g_free (quoted_source_data);
-              g_free (quoted_identifier_name);
-              g_free (quoted_identifier_value);
-
-              index++;
-            }
-
-          g_free (quoted_host_name);
-          host_index++;
-        }
-
-      index = 0;
-      while (identifiers && (index < identifiers->len))
-        identifier_free (g_ptr_array_index (identifiers, index++));
-      array_free (identifiers);
-      identifiers = NULL;
-
-      array_free (identifier_hosts);
-      identifier_hosts = NULL;
-    }
-}
-
-/**
- * @brief Set the maximum severity of each host in a scan.
- *
- * @param[in]  report         The report associated with the scan.
- * @param[in]  overrides_arg  Whether override should be applied.
- * @param[in]  min_qod_arg    Min QOD to use.
- */
-void
-hosts_set_max_severity (report_t report, int *overrides_arg, int *min_qod_arg)
-{
-  gchar *new_severity_sql;
-  int dynamic_severity, overrides, min_qod;
-
-  if (overrides_arg)
-    overrides = *overrides_arg;
-  else
-    {
-      task_t task;
-      /* Get "Assets Apply Overrides" task preference. */
-      overrides = 1;
-      if (report_task (report, &task) == 0)
-        {
-          char *value;
-          value = task_preference_value (task, "assets_apply_overrides");
-          if (value && (strcmp (value, "yes") == 0))
-            overrides = 1;
-          else
-            overrides = 0;
-          free (value);
-        }
-    }
-
-  if (min_qod_arg)
-    min_qod = *min_qod_arg;
-  else
-    {
-      task_t task;
-      /* Get "Assets Min QOD". */
-      min_qod = MIN_QOD_DEFAULT;
-      if (report_task (report, &task) == 0)
-        {
-          char *value;
-          value = task_preference_value (task, "assets_min_qod");
-          if (value)
-            min_qod = atoi (value);
-          free (value);
-        }
-    }
-
-  dynamic_severity = setting_dynamic_severity_int ();
-  new_severity_sql = new_severity_clause (overrides, dynamic_severity);
-
-  sql ("INSERT INTO host_max_severities"
-       " (host, severity, source_type, source_id, creation_time)"
-       " SELECT asset_host,"
-       "        coalesce ((SELECT max (%s) FROM results"
-       "                   WHERE report = %llu"
-       "                   AND qod >= %i"
-       "                   AND host = (SELECT name FROM hosts"
-       "                               WHERE id = asset_host)),"
-       "                  0.0),"
-       "        'Report',"
-       "        (SELECT uuid FROM reports WHERE id = %llu),"
-       "        m_now ()"
-       " FROM (SELECT host AS asset_host"
-       "       FROM host_identifiers"
-       "       WHERE source_id = (SELECT uuid FROM reports WHERE id = %llu))"
-       "      AS subquery;",
-       new_severity_sql,
-       report,
-       min_qod,
-       report,
-       report);
-
-  g_free (new_severity_sql);
-}
-
-/**
- * @brief Store certain host details in the assets after a scan.
- *
- * @param[in]  report  The report associated with the scan.
- */
-void
-hosts_set_details (report_t report)
-{
-  sql ("INSERT INTO host_details"
-       " (detail_source_type, detail_source_name, detail_source_description,"
-       "  name, value, source_type, source_id, host)"
-       " SELECT source_type,"
-       "        source_name,"
-       "        source_description,"
-       "        name,"
-       "        value,"
-       "        'Report',"
-       "        (SELECT uuid FROM reports WHERE id = %llu),"
-       "        (SELECT host"
-       "         FROM host_identifiers"
-       "         WHERE source_id = (SELECT uuid FROM reports"
-       "                            WHERE id = %llu)"
-       "         AND (SELECT name FROM hosts WHERE id = host)"
-       "             = (SELECT host FROM report_hosts"
-       "                WHERE id = report_host_details.report_host)"
-       "         LIMIT 1)"
-       " FROM report_host_details"
-       " WHERE (SELECT report FROM report_hosts"
-       "        WHERE id = report_host)"
-       "       = %llu"
-       /* Only if the task is included in the assets. */
-       " AND (SELECT value = 'yes' FROM task_preferences"
-       "      WHERE task = (SELECT task FROM reports WHERE id = %llu)"
-       "      AND name = 'in_assets')"
-       /* Ensure that every report host detail has a corresponding host
-        *  in the assets. */
-       " AND EXISTS (SELECT *"
-       "               FROM host_identifiers"
-       "              WHERE source_id = (SELECT uuid FROM reports"
-       "                                 WHERE id = %llu)"
-       "                AND (SELECT name FROM hosts WHERE id = host)"
-       "                      = (SELECT host FROM report_hosts"
-       "                         WHERE id = report_host_details.report_host))"
-       " AND (name IN ('best_os_cpe', 'best_os_txt', 'traceroute'));",
-       report,
-       report,
-       report,
-       report,
-       report);
-}
-
-/**
- * @brief Get XML of a detailed host route.
- *
- * @param[in]  host  The host.
- *
- * @return XML.
- */
-gchar*
-host_routes_xml (host_t host)
-{
-  iterator_t routes;
-  GString* buffer;
-
-  gchar *owned_clause, *with_clause;
-
-  owned_clause = acl_where_owned_for_get ("host", NULL, NULL, &with_clause);
-
-  buffer = g_string_new ("<routes>");
-  init_iterator (&routes,
-                 "SELECT outer_details.value,"
-                 "       outer_details.source_type,"
-                 "       outer_details.source_id,"
-                 "       outer_identifiers.modification_time"
-                 "  FROM host_details AS outer_details"
-                 "  JOIN host_identifiers AS outer_identifiers"
-                 "    ON outer_identifiers.host = outer_details.host"
-                 " WHERE outer_details.host = %llu"
-                 "   AND outer_details.name = 'traceroute'"
-                 "   AND outer_details.source_id = outer_identifiers.source_id"
-                 "   AND outer_identifiers.name='ip'"
-                 "   AND outer_identifiers.modification_time"
-                 "         = (SELECT max (modification_time)"
-                 "              FROM host_identifiers"
-                 "             WHERE host_identifiers.host = %llu"
-                 "               AND host_identifiers.source_id IN"
-                 "                   (SELECT source_id FROM host_details"
-                 "                     WHERE host = %llu"
-                 "                       AND value = outer_details.value)"
-                 "              AND host_identifiers.name='ip')"
-                 " ORDER BY outer_identifiers.modification_time DESC;",
-                 host, host, host);
-
-  while (next (&routes))
-    {
-      const char *traceroute;
-      const char *source_id;
-      time_t modified;
-      gchar **hop_ips, **hop_ip;
-      int distance;
-
-      g_string_append (buffer, "<route>");
-
-      traceroute = iterator_string (&routes, 0);
-      source_id = iterator_string (&routes, 2);
-      modified = iterator_int64 (&routes, 3);
-
-      hop_ips = g_strsplit (traceroute, ",", 0);
-      hop_ip = hop_ips;
-
-      distance = 0;
-
-      while (*hop_ip != NULL) {
-        iterator_t best_host_iterator;
-        const char *best_host_id;
-        int same_source;
-
-        init_iterator (&best_host_iterator,
-                       "%s"
-                       " SELECT hosts.uuid,"
-                       "       (source_id='%s')"
-                       "         AS same_source"
-                       "  FROM hosts, host_identifiers"
-                       " WHERE hosts.id = host_identifiers.host"
-                       "   AND host_identifiers.name = 'ip'"
-                       "   AND host_identifiers.value='%s'"
-                       "   AND %s"
-                       " ORDER BY same_source DESC,"
-                       "          abs(host_identifiers.modification_time"
-                       "              - %llu) ASC"
-                       " LIMIT 1;",
-                       with_clause ? with_clause : "",
-                       source_id,
-                       *hop_ip,
-                       owned_clause,
-                       modified);
-
-        if (next (&best_host_iterator))
-          {
-            best_host_id = iterator_string (&best_host_iterator, 0);
-            same_source = iterator_int (&best_host_iterator, 1);
-          }
-        else
-          {
-            best_host_id = NULL;
-            same_source = 0;
-          }
-
-        g_string_append_printf (buffer,
-                                "<host id=\"%s\""
-                                " distance=\"%d\""
-                                " same_source=\"%d\">"
-                                "<ip>%s</ip>"
-                                "</host>",
-                                best_host_id ? best_host_id : "",
-                                distance,
-                                same_source,
-                                *hop_ip);
-
-        cleanup_iterator (&best_host_iterator);
-
-        distance++;
-        hop_ip++;
-      }
-
-      g_string_append (buffer, "</route>");
-      g_strfreev(hop_ips);
-    }
-
-  g_free (with_clause);
-  g_free (owned_clause);
-
-  cleanup_iterator (&routes);
-
-  g_string_append (buffer, "</routes>");
-
-  return g_string_free (buffer, FALSE);
-}
-
-/**
- * @brief Add host details to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  ip      Host.
- * @param[in]  entity  XML entity containing details.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML.
- */
-int
-manage_report_host_details (report_t report, const char *ip,
-                            entity_t entity, GHashTable *hashed_host_details)
-{
-  int in_assets;
-  entities_t details;
-  entity_t detail;
-  char *uuid;
-  char *hash_value;
-
-  in_assets = sql_int ("SELECT not(value = 'no') FROM task_preferences"
-                       " WHERE task = (SELECT task FROM reports"
-                       "                WHERE id = %llu)"
-                       " AND name = 'in_assets';",
-                       report);
-
-  details = entity->entities;
-  if (identifiers == NULL)
-    identifiers = make_array ();
-  if (identifier_hosts == NULL)
-    identifier_hosts = make_array ();
-  uuid = report_uuid (report);
-  while ((detail = first_entity (details)))
-    {
-      if (strcmp (entity_name (detail), "detail") == 0)
-        {
-          entity_t source, source_type, source_name, source_desc, name, value;
-
-          /* Parse host detail and add to report */
-          source = entity_child (detail, "source");
-          if (source == NULL)
-            goto error;
-          source_type = entity_child (source, "type");
-          if (source_type == NULL)
-            goto error;
-          source_name = entity_child (source, "name");
-          if (source_name == NULL)
-            goto error;
-          source_desc = entity_child (source, "description");
-          if (source_desc == NULL)
-            goto error;
-          name = entity_child (detail, "name");
-          if (name == NULL)
-            goto error;
-          value = entity_child (detail, "value");
-          if (value == NULL)
-            goto error;
-
-          if (!check_host_detail_exists (report, ip, entity_text (source_type),
-                                         entity_text (source_name),
-                                         entity_text (source_desc),
-                                         entity_text (name),
-                                         entity_text (value),
-                                         (char**) &hash_value,
-                                         hashed_host_details))
-            {
-              insert_report_host_detail
-               (report, ip, entity_text (source_type), entity_text (source_name),
-                entity_text (source_desc), entity_text (name), entity_text (value),
-                hash_value);
-              g_free (hash_value);
-            }
-          else
-            {
-              g_free (hash_value);
-              details = next_entities (details);
-              continue;
-            }
-
-          /* Only add to assets if "Add to Assets" is set on the task. */
-          if (in_assets)
-            {
-              if (strcmp (entity_text (name), "hostname") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("hostname");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "MAC") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("MAC");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "OS") == 0
-                  && g_str_has_prefix (entity_text (value), "cpe:"))
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("OS");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-              if (strcmp (entity_text (name), "ssh-key") == 0)
-                {
-                  identifier_t *identifier;
-
-                  identifier = g_malloc (sizeof (identifier_t));
-                  identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("ssh-key");
-                  identifier->value = g_strdup (entity_text (value));
-                  identifier->source_id = g_strdup (uuid);
-                  identifier->source_type = g_strdup ("Report Host Detail");
-                  identifier->source_data
-                    = g_strdup (entity_text (source_name));
-                  array_add (identifiers, identifier);
-                  array_add_new_string (identifier_hosts, g_strdup (ip));
-                }
-            }
-        }
-      details = next_entities (details);
-    }
-  free (uuid);
-
-  return 0;
-
- error:
-  free (uuid);
-  return -1;
-}
-
-/**
- * @brief Add a host detail to a report host.
- *
- * @param[in]  report  UUID of resource.
- * @param[in]  host    Host.
- * @param[in]  xml     Report host detail XML.
- * @param[in]  hashed_host_details  A GHashtable containing hashed host details.
- *
- * @return 0 success, -1 failed to parse XML, -2 host was NULL.
- */
-int
-manage_report_host_detail (report_t report, const char *host,
-                           const char *xml, GHashTable *hashed_host_details)
-{
-  int ret;
-  entity_t entity;
-
-  if (host == NULL)
-    return -2;
-
-  entity = NULL;
-  if (parse_entity (xml, &entity))
-    return -1;
-
-  ret = manage_report_host_details (report,
-                                    host,
-                                    entity,
-                                    hashed_host_details);
-  free_entity (entity);
-  return ret;
-}
-
-/**
- * @brief Initialise a host identifier iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  host        Host.
- * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for type then start.
- */
-void
-init_host_identifier_iterator (iterator_t* iterator, host_t host,
-                               int ascending, const char* sort_field)
-{
-  assert (current_credentials.uuid);
-
-  if (host)
-    init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, creation_time,"
-                   "       modification_time, creation_time AS created,"
-                   "       modification_time AS modified, owner, owner, value,"
-                   "       source_type, source_id, source_data,"
-                   "       (CASE WHEN source_type LIKE 'Report%%'"
-                   "        THEN NOT EXISTS (SELECT * FROM reports"
-                   "                         WHERE uuid = source_id)"
-                   "        ELSE CAST (0 AS boolean)"
-                   "        END),"
-                   "       '', ''"
-                   " FROM host_identifiers"
-                   " WHERE host = %llu"
-                   " UNION"
-                   " SELECT id, uuid, name, comment, creation_time,"
-                   "        modification_time, creation_time AS created,"
-                   "        modification_time AS modified, owner, owner,"
-                   "        (SELECT name FROM oss WHERE id = os),"
-                   "        source_type, source_id, source_data,"
-                   "        (CASE WHEN source_type LIKE 'Report%%'"
-                   "         THEN NOT EXISTS (SELECT * FROM reports"
-                   "                          WHERE uuid = source_id)"
-                   "         ELSE CAST (0 AS boolean)"
-                   "         END),"
-                   "        (SELECT uuid FROM oss WHERE id = os),"
-                   "        cpe_title ((SELECT name FROM oss WHERE id = os))"
-                   " FROM host_oss"
-                   " WHERE host = %llu"
-                   " ORDER BY %s %s;",
-                   host,
-                   host,
-                   sort_field ? sort_field : "creation_time",
-                   ascending ? "ASC" : "DESC");
-  else
-    init_iterator (iterator,
-                   "SELECT id, uuid, name, comment, creation_time,"
-                   "       modification_time, creation_time AS created,"
-                   "       modification_time AS modified, owner, owner, value,"
-                   "       source_type, source_id, source_data, 0, '', ''"
-                   " FROM host_identifiers"
-                   " ORDER BY %s %s;",
-                   sort_field ? sort_field : "creation_time",
-                   ascending ? "ASC" : "DESC");
-}
-
-/**
- * @brief Get the value from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The value of the host identifier, or NULL if iteration is complete.
- *         Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_value, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the source type from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source type of the host identifier, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_source_type,
-            GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the source from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source of the host identifier, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_source_id, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the source data from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source data of the host identifier, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_source_data,
-            GET_ITERATOR_COLUMN_COUNT + 3);
-
-/**
- * @brief Get the source orphan state from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source orphan state of the host identifier, or 0 if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-int
-host_identifier_iterator_source_orphan (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
-}
-
-/**
- * @brief Get the OS UUID from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The OS UUID of the host identifier, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_os_id,
-            GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the OS title from a host identifier iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The OS title of the host identifier, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_identifier_iterator_os_title,
-            GET_ITERATOR_COLUMN_COUNT + 6);
-
-/**
- * @brief Filter columns for host iterator.
- */
-#define HOST_ITERATOR_FILTER_COLUMNS                                        \
- { GET_ITERATOR_FILTER_COLUMNS, "severity", "os", "oss", "hostname", "ip",  \
-   "severity_level", "updated", "best_os_cpe", NULL }
-
-/**
- * @brief Host iterator columns.
- */
-#define HOST_ITERATOR_COLUMNS                                         \
- {                                                                    \
-   GET_ITERATOR_COLUMNS (hosts),                                      \
-   {                                                                  \
-     "1",                                                             \
-     "writable",                                                      \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "0",                                                             \
-     "in_use",                                                        \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT round (CAST (severity AS numeric), 1)"                  \
-     " FROM host_max_severities"                                      \
-     " WHERE host = hosts.id"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT CASE"                                                   \
-     "        WHEN best_os_text LIKE '%[possible conflict]%'"         \
-     "        THEN best_os_text"                                      \
-     "        WHEN best_os_cpe IS NULL"                               \
-     "        THEN '[unknown]'"                                       \
-     "        ELSE best_os_cpe"                                       \
-     "        END"                                                    \
-     " FROM (SELECT (SELECT value"                                    \
-     "               FROM (SELECT max (id) AS id"                     \
-     "                     FROM host_details"                         \
-     "                     WHERE host = hosts.id"                     \
-     "                     AND name = 'best_os_cpe')"                 \
-     "                     AS sub,"                                   \
-     "                    host_details"                               \
-     "               WHERE sub.id = host_details.id)"                 \
-     "              AS best_os_cpe,"                                  \
-     "              (SELECT value"                                    \
-     "               FROM (SELECT max (id) AS id"                     \
-     "                     FROM host_details"                         \
-     "                     WHERE host = hosts.id"                     \
-     "                     AND name = 'best_os_text')"                \
-     "                     AS sub,"                                   \
-     "                    host_details"                               \
-     "               WHERE sub.id = host_details.id)"                 \
-     "              AS best_os_text)"                                 \
-     "      AS vars)",                                                \
-     "os",                                                            \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT group_concat (name, ', ') FROM oss"                     \
-     "  WHERE id IN (SELECT distinct os FROM host_oss"                \
-     "               WHERE host = hosts.id))",                        \
-     "oss",                                                           \
-     KEYWORD_TYPE_INTEGER                                             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     " FROM host_identifiers"                                         \
-     " WHERE host = hosts.id"                                         \
-     " AND name = 'hostname'"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "hostname",                                                      \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     " FROM host_identifiers"                                         \
-     " WHERE host = hosts.id"                                         \
-     " AND name = 'ip'"                                               \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "ip",                                                            \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
-
-/**
- * @brief Host iterator WHERE columns.
- */
-#define HOST_ITERATOR_WHERE_COLUMNS                                   \
- {                                                                    \
-   {                                                                  \
-     "(SELECT severity_to_level (CAST (severity AS numeric), 0)"      \
-     " FROM host_max_severities"                                      \
-     " WHERE host = hosts.id"                                         \
-     " ORDER by creation_time DESC"                                   \
-     " LIMIT 1)",                                                     \
-     "severity_level",                                                \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   {                                                                  \
-     "modification_time", "updated", KEYWORD_TYPE_INTEGER             \
-   },                                                                 \
-   {                                                                  \
-     "(SELECT value"                                                  \
-     "   FROM (SELECT max (id) AS id"                                 \
-     "           FROM host_details"                                   \
-     "          WHERE host = hosts.id"                                \
-     "            AND name = 'best_os_cpe')"                          \
-     "         AS sub, host_details"                                  \
-     "  WHERE sub.id = host_details.id)",                             \
-     "best_os_cpe",                                                   \
-     KEYWORD_TYPE_STRING                                              \
-   },                                                                 \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                               \
- }
-
-/**
- * @brief Extra WHERE clause for host assets.
- *
- * @param[in]  filter  Filter term.
- *
- * @return WHERE clause.
- */
-static gchar*
-asset_host_extra_where (const char *filter)
-{
-  gchar *ret, *os_id;
-
-  os_id = filter_term_value (filter, "os_id");
-
-  if (os_id)
-    {
-      gchar *quoted_os_id = os_id ? sql_quote (os_id) : NULL;
-      ret = g_strdup_printf (" AND EXISTS"
-                             "  (SELECT * FROM host_oss"
-                             "   WHERE os = (SELECT id FROM oss"
-                             "                WHERE uuid = '%s')"
-                             "     AND host = hosts.id)",
-                             quoted_os_id);
-      g_free (quoted_os_id);
-    }
-  else
-    ret = g_strdup ("");
-
-  g_free (os_id);
-
-  return ret;
-}
-
-/**
- * @brief Initialise a host iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find host, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_asset_host_iterator (iterator_t *iterator, const get_data_t *get)
-{
-  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = HOST_ITERATOR_COLUMNS;
-  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
-
-  int ret;
-  gchar *filter, *extra_where;
-
-  // Get filter
-  if (get->filt_id && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      if (get->filter_replacement)
-        /* Replace the filter term with one given by the caller.  This is
-         * used by GET_REPORTS to use the default filter with any task (when
-         * given the special value of -3 in filt_id). */
-        filter = g_strdup (get->filter_replacement);
-      else
-        filter = filter_term (get->filt_id);
-      if (filter == NULL)
-        {
-          return 1;
-        }
-    }
-  else
-    filter = NULL;
-
-  extra_where = asset_host_extra_where (filter ? filter : get->filter);
-
-  ret = init_get_iterator2 (iterator,
-                            "host",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            /* WHERE Columns. */
-                            where_columns,
-                            /* WHERE Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            extra_where,
-                            NULL,
-                            TRUE,
-                            FALSE,
-                            NULL);
-
-  g_free (filter);
-  g_free (extra_where);
-  return ret;
-}
-
-/**
- * @brief Initialise a host iterator for GET_RESOURCE_NAMES.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find host, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_resource_names_host_iterator (iterator_t *iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
-  static column_t columns[] = { GET_ITERATOR_COLUMNS (hosts) };
-  int ret;
-
-  ret = init_get_iterator2 (iterator,
-                            "host",
-                            get,
-                            /* Columns. */
-                            columns,
-                            /* Columns for trashcan. */
-                            NULL,
-                            /* WHERE Columns. */
-                            NULL,
-                            /* WHERE Columns for trashcan. */
-                            NULL,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            NULL,
-                            TRUE,
-                            FALSE,
-                            NULL);
-
-  return ret;
-}
-
-/**
- * @brief Get the writable status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if writable, else 0.
- */
-int
-asset_iterator_writable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT);
-}
-
-/**
- * @brief Get the "in use" status from an asset iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if in use, else 0.
- */
-int
-asset_iterator_in_use (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-}
-
-/**
- * @brief Get the max severity from an asset host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The maximum severity of the host, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Count number of hosts.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of hosts in filtered set.
- */
-int
-asset_host_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = HOST_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = HOST_ITERATOR_COLUMNS;
-  static column_t where_columns[] = HOST_ITERATOR_WHERE_COLUMNS;
-  return count2 ("host", get, columns, NULL, where_columns, NULL,
-                 filter_columns, 0, NULL, NULL, NULL, TRUE);
-}
-
-/**
- * @brief Filter columns for os iterator.
- */
-#define OS_ITERATOR_FILTER_COLUMNS                                           \
- { GET_ITERATOR_FILTER_COLUMNS, "title", "hosts", "latest_severity",         \
-   "highest_severity", "average_severity", "average_severity_score",         \
-   "severity", "all_hosts", NULL }
-
-/**
- * @brief OS iterator columns.
- */
-#define OS_ITERATOR_COLUMNS                                                   \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (oss),                                                \
-   {                                                                          \
-     "0",                                                                     \
-     "writable",                                                              \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count (*) > 0 FROM host_oss WHERE os = oss.id)",                \
-     "in_use",                                                                \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT coalesce (cpe_title (oss.name), ''))",                          \
-     "title",                                                                 \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count(*)"                                                       \
-     " FROM (SELECT inner_cpes[1] AS cpe, host"                               \
-     "       FROM (SELECT array_agg (host_details.value"                      \
-     "                               ORDER BY host_details.id DESC)"          \
-     "                    AS inner_cpes,"                                     \
-     "                    host"                                               \
-     "             FROM host_details, hosts"                                  \
-     "             WHERE host_details.name = 'best_os_cpe'"                   \
-     "             AND hosts.id = host_details.host"                          \
-     "             AND (" ACL_USER_MAY_OPTS ("hosts") ")"                     \
-     "             GROUP BY host)"                                            \
-     "            AS host_details_subselect)"                                 \
-     "      AS array_removal_subselect"                                       \
-     " WHERE cpe = oss.name)",                                                \
-     "hosts",                                                                 \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (severity AS numeric), 1) FROM host_max_severities" \
-     " WHERE host = (SELECT host FROM host_oss"                               \
-     "               WHERE os = oss.id"                                       \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     " ORDER BY creation_time DESC LIMIT 1)",                                 \
-     "latest_severity",                                                       \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (max (CAST (severity AS numeric)), 1)"                    \
-     " FROM host_max_severities"                                              \
-     " WHERE host IN (SELECT DISTINCT host FROM host_oss"                     \
-     "                WHERE os = oss.id))",                                   \
-     "highest_severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "average_severity",                                                      \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT count(DISTINCT host) FROM host_oss WHERE os = oss.id)",         \
-     "all_hosts",                                                             \
-     KEYWORD_TYPE_INTEGER                                                     \
-   },                                                                         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief OS iterator optional filtering columns.
- */
-#define OS_ITERATOR_WHERE_COLUMNS                                             \
- {                                                                            \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric)"                        \
-     "               * (SELECT count (distinct host)"                         \
-     "                  FROM host_oss WHERE os = oss.id), 2)"                 \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "average_severity_score",                                                \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   {                                                                          \
-     "(SELECT round (CAST (avg (severity) AS numeric), 2)"                    \
-     " FROM (SELECT (SELECT severity FROM host_max_severities"                \
-     "               WHERE host = hosts.host"                                 \
-     "               ORDER BY creation_time DESC LIMIT 1)"                    \
-     "              AS severity"                                              \
-     "       FROM (SELECT distinct host FROM host_oss WHERE os = oss.id)"     \
-     "       AS hosts)"                                                       \
-     " AS severities)",                                                       \
-     "severity",                                                              \
-     KEYWORD_TYPE_DOUBLE                                                      \
-   },                                                                         \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Generate the extra_tables string for an OS iterator.
- *
- * @return Newly allocated string.
- */
-static gchar *
-asset_os_iterator_opts_table ()
-{
-  assert (current_credentials.uuid);
-
-  return g_strdup_printf (", (SELECT"
-                          "   (SELECT id FROM users"
-                          "    WHERE users.uuid = '%s')"
-                          "   AS user_id,"
-                          "   'host' AS type)"
-                          "  AS opts",
-                          current_credentials.uuid);
-}
-
-/**
- * @brief Initialise an OS iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find os, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
-{
-  int ret;
-  static const char *filter_columns[] = OS_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = OS_ITERATOR_COLUMNS;
-  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  gchar *extra_tables;
-
-  extra_tables = asset_os_iterator_opts_table ();
-
-  ret = init_get_iterator2_with (iterator,
-                                 "os",
-                                 get,
-                                 /* Columns. */
-                                 columns,
-                                 /* Columns for trashcan. */
-                                 NULL,
-                                 /* WHERE Columns. */
-                                 where_columns,
-                                 /* WHERE Columns for trashcan. */
-                                 NULL,
-                                 filter_columns,
-                                 0,
-                                 extra_tables,
-                                 NULL,
-                                 NULL,
-                                 TRUE,
-                                 FALSE,
-                                 NULL,
-                                 NULL,
-                                 0,
-                                 0);
-
-  g_free (extra_tables);
-
-  return ret;
-}
-
-/**
- * @brief Initialise an OS iterator for GET_RESOURCE_NAMES.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find os, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = { GET_ITERATOR_FILTER_COLUMNS };
-  static column_t columns[] = { GET_ITERATOR_COLUMNS (oss) };
-  int ret;
-
-  ret = init_get_iterator2_with (iterator,
-                                 "os",
-                                 get,
-                                 /* Columns. */
-                                 columns,
-                                 /* Columns for trashcan. */
-                                 NULL,
-                                 /* WHERE Columns. */
-                                 NULL,
-                                 /* WHERE Columns for trashcan. */
-                                 NULL,
-                                 filter_columns,
-                                 0,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 TRUE,
-                                 FALSE,
-                                 NULL,
-                                 NULL,
-                                 0,
-                                 0);
-
-  return ret;
-}
-
-/**
- * @brief Get the title from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The title of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_title, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the number of installs from an asset OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of hosts that have the OS.
- */
-int
-asset_os_iterator_installs (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-}
-
-/**
- * @brief Get the latest severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_latest_severity, GET_ITERATOR_COLUMN_COUNT + 4);
-
-/**
- * @brief Get the highest severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_highest_severity, GET_ITERATOR_COLUMN_COUNT + 5);
-
-/**
- * @brief Get the average severity from an OS iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS, or NULL if iteration is
- *         complete. Freed by cleanup_iterator.
- */
-DEF_ACCESS (asset_os_iterator_average_severity, GET_ITERATOR_COLUMN_COUNT + 6);
-
-/**
- * @brief Get the number of all installs from an asset OS iterator.
- *
- * This includes hosts where the OS is not the best match.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Number of any hosts that have the OS not only as the best match.
- */
-int
-asset_os_iterator_all_installs (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
-}
-
-/**
- * @brief Count number of oss.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of oss in filtered set.
- */
-int
-asset_os_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = OS_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = OS_ITERATOR_COLUMNS;
-  static column_t where_columns[] = OS_ITERATOR_WHERE_COLUMNS;
-  int ret;
-
-  ret = count2 ("os", get, columns, NULL, where_columns, NULL,
-                extra_columns, 0, 0, 0, NULL, TRUE);
-
-  return ret;
-}
-
-/**
- * @brief Initialise an OS host iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  os          OS.
- */
-void
-init_os_host_iterator (iterator_t* iterator, resource_t os)
-{
-  assert (os);
-  init_iterator (iterator,
-                 "SELECT id, uuid, name, comment, creation_time,"
-                 "       modification_time, creation_time,"
-                 "       modification_time, owner, owner,"
-                 "       (SELECT round (CAST (severity AS numeric), 1)"
-                 "        FROM host_max_severities"
-                 "        WHERE host = hosts.id"
-                 "        ORDER by creation_time DESC"
-                 "        LIMIT 1)"
-                 " FROM hosts"
-                 " WHERE id IN (SELECT DISTINCT host FROM host_oss"
-                 "              WHERE os = %llu)"
-                 " ORDER BY modification_time DESC;",
-                 os);
-}
-
-/**
- * @brief Get the severity from an OS host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The severity of the OS host, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (os_host_iterator_severity, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Initialise an asset host detail iterator.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  host        Host.
- */
-void
-init_host_detail_iterator (iterator_t* iterator, resource_t host)
-{
-  assert (host);
-  init_iterator (iterator,
-                 "SELECT sub.id, name, value, source_type, source_id"
-                 " FROM (SELECT max (id) AS id FROM host_details"
-                 "       WHERE host = %llu"
-                 "       GROUP BY name)"
-                 "      AS sub,"
-                 "      host_details"
-                 " WHERE sub.id = host_details.id"
-                 " ORDER BY name ASC;",
-                 host);
-}
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_name, 1);
-
-/**
- * @brief Get the name from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_value, 2);
-
-/**
- * @brief Get the source type from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source type of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_type, 3);
-
-/**
- * @brief Get the source ID from an asset host detail iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source ID of the host detail, or NULL if iteration is
- *         complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (host_detail_iterator_source_id, 4);
-
-/**
- * @brief Find a host for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of host.
- * @param[out]  host      Host return, 0 if successfully failed to find host.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find host), TRUE on error.
- */
-static gboolean
-find_host_with_permission (const char* uuid, host_t* host,
-                           const char *permission)
-{
-  return find_resource_with_permission ("host", uuid, host, permission, 0);
-}
-
-/**
- * @brief Check whether a string is an identifier name.
- *
- * @param[in]  name  Possible identifier name.
- *
- * @return 1 if an identifier name, else 0.
- */
-static int
-identifier_name (const char *name)
-{
-  return (strcmp ("hostname", name) == 0)
-         || (strcmp ("MAC", name) == 0)
-         || (strcmp ("OS", name) == 0)
-         || (strcmp ("ssh-key", name) == 0);
-}
-
-/**
- * @brief Create a host asset.
- *
- * @param[in]  host_name    Host Name.
- * @param[in]  comment      Comment.
- * @param[out] host_return  Created asset.
- *
- * @return 0 success, 1 failed to find report, 2 host not an IP address,
- *         99 permission denied, -1 error.
- */
-int
-create_asset_host (const char *host_name, const char *comment,
-                   resource_t* host_return)
-{
-  int host_type;
-  resource_t host;
-  gchar *quoted_host_name, *quoted_comment;
-
-  if (host_name == NULL)
-    return -1;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  host_type = gvm_get_host_type (host_name);
-  if (host_type != HOST_TYPE_IPV4 && host_type != HOST_TYPE_IPV6)
-    {
-      sql_rollback ();
-      return 2;
-    }
-
-  quoted_host_name = sql_quote (host_name);
-  quoted_comment = sql_quote (comment ? comment : "");
-  sql ("INSERT into hosts"
-       " (uuid, owner, name, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), (SELECT id FROM users WHERE uuid = '%s'), '%s', '%s',"
-       "  m_now (), m_now ());",
-       current_credentials.uuid,
-       quoted_host_name,
-       quoted_comment);
-  g_free (quoted_comment);
-
-  host = sql_last_insert_id ();
-
-  sql ("INSERT into host_identifiers"
-       " (uuid, host, owner, name, comment, value, source_type, source_id,"
-       "  source_data, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), %llu, (SELECT id FROM users WHERE uuid = '%s'), 'ip',"
-       "  '', '%s', 'User', '%s', '', m_now (), m_now ());",
-       host,
-       current_credentials.uuid,
-       quoted_host_name,
-       current_credentials.uuid);
-
-  g_free (quoted_host_name);
-
-  if (host_return)
-    *host_return = host;
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create all available assets from a report.
- *
- * @param[in]  report_id  UUID of report.
- * @param[in]  term       Filter term, for min_qod and apply_overrides.
- *
- * @return 0 success, 1 failed to find report, 99 permission denied, -1 error.
- */
-int
-create_asset_report (const char *report_id, const char *term)
-{
-  resource_t report;
-  iterator_t hosts;
-  gchar *quoted_report_id;
-  int apply_overrides, min_qod;
-
-  if (report_id == NULL)
-    return -1;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  report = 0;
-  if (find_report_with_permission (report_id, &report, "get_reports"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (report == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* These are freed by hosts_set_identifiers. */
-  if (identifiers == NULL)
-    identifiers = make_array ();
-  if (identifier_hosts == NULL)
-    identifier_hosts = make_array ();
-
-  quoted_report_id = sql_quote (report_id);
-  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_details WHERE source_id = '%s';",
-       quoted_report_id);
-  g_free (quoted_report_id);
-
-  init_report_host_iterator (&hosts, report, NULL, 0);
-  while (next (&hosts))
-    {
-      const char *host;
-      report_host_t report_host;
-      iterator_t details;
-
-      host = host_iterator_host (&hosts);
-      report_host = host_iterator_report_host (&hosts);
-
-      if (report_host_dead (report_host)
-          || report_host_result_count (report_host) == 0)
-        continue;
-
-      host_notice (host, "ip", host, "Report Host", report_id, 0, 0);
-
-      init_report_host_details_iterator (&details, report_host);
-      while (next (&details))
-        {
-          const char *name;
-
-          name = report_host_details_iterator_name (&details);
-
-          if (identifier_name (name))
-            {
-              const char *value;
-              identifier_t *identifier;
-
-              value = report_host_details_iterator_value (&details);
-
-              if ((strcmp (name, "OS") == 0)
-                  && (g_str_has_prefix (value, "cpe:") == 0))
-                continue;
-
-              identifier = g_malloc (sizeof (identifier_t));
-              identifier->ip = g_strdup (host);
-              identifier->name = g_strdup (name);
-              identifier->value = g_strdup (value);
-              identifier->source_id = g_strdup (report_id);
-              identifier->source_type = g_strdup ("Report Host Detail");
-              identifier->source_data
-               = g_strdup (report_host_details_iterator_source_name (&details));
-
-              array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (host));
-            }
-        }
-      cleanup_iterator (&details);
-    }
-  cleanup_iterator (&hosts);
-  hosts_set_identifiers (report);
-  apply_overrides = filter_term_apply_overrides (term);
-  min_qod = filter_term_min_qod (term);
-  hosts_set_max_severity (report, &apply_overrides, &min_qod);
-  hosts_set_details (report);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Modify an asset.
- *
- * @param[in]   asset_id        UUID of asset.
- * @param[in]   comment         Comment on asset.
- *
- * @return 0 success, 1 failed to find asset, 3 asset_id required,
- *         99 permission denied, -1 internal error.
- */
-int
-modify_asset (const char *asset_id, const char *comment)
-{
-  gchar *quoted_asset_id, *quoted_comment;
-  resource_t asset;
-
-  if (asset_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("modify_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  /* Host. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM hosts WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  quoted_comment = sql_quote (comment ?: "");
-
-  sql ("UPDATE hosts SET"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_comment, asset);
-
-  g_free (quoted_comment);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Delete all asset that came from a report.
- *
- * Assume caller started a transaction.
- *
- * @param[in]  report_id  UUID of report.
- *
- * @return 0 success, 2 failed to find report, 4 UUID
- *         required, 99 permission denied, -1 error.
- */
-static int
-delete_report_assets (const char *report_id)
-{
-  resource_t report;
-  gchar *quoted_report_id;
-
-  report = 0;
-  if (find_report_with_permission (report_id, &report, "delete_report"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (report == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  quoted_report_id = sql_quote (report_id);
-
-  /* Delete the hosts and OSs identified by this report if they were only
-   * identified by this report. */
-
-  sql ("CREATE TEMPORARY TABLE delete_report_assets_hosts (host INTEGER);");
-
-  /* Collect hosts that were only identified by the given source. */
-  sql ("INSERT into delete_report_assets_hosts"
-       " (host)"
-       " SELECT id FROM hosts"
-       " WHERE (EXISTS (SELECT * FROM host_identifiers"
-       "                WHERE host = hosts.id"
-       "                AND source_id = '%s')"
-       "        OR EXISTS (SELECT * FROM host_oss"
-       "                   WHERE host = hosts.id"
-       "                   AND source_id = '%s'))"
-       " AND NOT EXISTS (SELECT * FROM host_identifiers"
-       "                 WHERE host = hosts.id"
-       "                 AND source_id != '%s')"
-       " AND NOT EXISTS (SELECT * FROM host_oss"
-       "                 WHERE host = hosts.id"
-       "                 AND source_id != '%s');",
-      quoted_report_id,
-      quoted_report_id,
-      quoted_report_id,
-      quoted_report_id);
-
-  sql ("DELETE FROM host_identifiers WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_oss WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_max_severities WHERE source_id = '%s';",
-       quoted_report_id);
-  sql ("DELETE FROM host_details WHERE source_id = '%s';",
-       quoted_report_id);
-
-  g_free (quoted_report_id);
-
-  /* The host may have details from sources that did not identify the host. */
-  sql ("DELETE FROM host_details"
-       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
-
-  /* The host may have severities from sources that did not identify the
-   * host. */
-  sql ("DELETE FROM host_max_severities"
-       " WHERE host in (SELECT host FROM delete_report_assets_hosts);");
-
-  sql ("DELETE FROM hosts"
-       " WHERE id in (SELECT host FROM delete_report_assets_hosts);");
-
-  sql ("DROP TABLE delete_report_assets_hosts;");
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Delete an asset.
- *
- * @param[in]  asset_id   UUID of asset.
- * @param[in]  report_id  UUID of report from which to delete assets.
- *                        Overridden by asset_id.
- * @param[in]  dummy      Dummy arg to match other delete functions.
- *
- * @return 0 success, 1 asset is in use, 2 failed to find asset, 4 UUID
- *         required, 99 permission denied, -1 error.
- */
-int
-delete_asset (const char *asset_id, const char *report_id, int dummy)
-{
-  resource_t asset, parent;
-  gchar *quoted_asset_id, *parent_id;
-
-  asset = parent = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_asset") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (asset_id == NULL)
-    {
-      if (report_id == NULL)
-        {
-          sql_rollback ();
-          return 3;
-        }
-      return delete_report_assets (report_id);
-    }
-
-  /* Host identifier. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM host_identifiers WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      parent_id = sql_string ("SELECT uuid FROM hosts"
-                              " WHERE id = (SELECT host FROM host_identifiers"
-                              "             WHERE id = %llu);",
-                              asset);
-      parent = 0;
-      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (parent == 0)
-        {
-          sql_rollback ();
-          return 99;
-        }
-
-      sql ("DELETE FROM host_identifiers WHERE id = %llu;", asset);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* Host OS. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM host_oss WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      parent_id = sql_string ("SELECT uuid FROM hosts"
-                              " WHERE id = (SELECT host FROM host_oss"
-                              "             WHERE id = %llu);",
-                              asset);
-      parent = 0;
-      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (parent == 0)
-        {
-          sql_rollback ();
-          return 99;
-        }
-
-      sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* OS. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM oss WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      if (sql_int ("SELECT count (*) FROM host_oss"
-                   " WHERE os = %llu;",
-                   asset))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("DELETE FROM oss WHERE id = %llu;", asset);
-      permissions_set_orphans ("os", asset, LOCATION_TABLE);
-      tags_remove_resource ("os", asset, LOCATION_TABLE);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* Host. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM hosts WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      sql ("DELETE FROM host_identifiers WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_oss WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_details WHERE host = %llu;", asset);
-      sql ("DELETE FROM hosts WHERE id = %llu;", asset);
-      permissions_set_orphans ("host", asset, LOCATION_TABLE);
-      tags_remove_resource ("host", asset, LOCATION_TABLE);
-      sql_commit ();
-
-      return 0;
-    }
-
-  sql_rollback ();
-  return 2;
-}
-
-/**
- * @brief Generates and adds assets from report host details
- *
- * @param[in]  report   The report to get host details from.
- * @param[in]  host_ip  IP address of the host to get details from.
- *
- * @return 0 success, -1 error.
- */
-int
-add_assets_from_host_in_report (report_t report, const char *host_ip)
-{
-  int ret;
-  gchar *quoted_host;
-  char *report_id;
-  report_host_t report_host = 0;
-
-  /* Get report UUID */
-  report_id = report_uuid (report);
-  if (report_id == NULL)
-    {
-      g_warning ("%s: report %llu not found.",
-                 __func__, report);
-      return -1;
-    }
-
-  /* Find report_host */
-  quoted_host = sql_quote (host_ip);
-  sql_int64 (&report_host,
-             "SELECT id FROM report_hosts"
-             " WHERE host = '%s' AND report = %llu",
-             quoted_host,
-             report);
-  g_free (quoted_host);
-  if (report_host == 0)
-    {
-      g_warning ("%s: report_host for host '%s' and report '%s' not found.",
-                 __func__, host_ip, report_id);
-      free (report_id);
-      return -1;
-    }
-
-  /* Create assets */
-  if (report_host_noticeable (report, host_ip))
-    {
-      host_notice (host_ip, "ip", host_ip, "Report Host", report_id, 1, 1);
-    }
-
-  ret = add_tls_certificates_from_report_host (report_host,
-                                               report_id,
-                                               host_ip);
-  if (ret)
-    {
-      free (report_id);
-      return ret;
-    }
-
-  return 0;
-}
-
-
 /* Settings. */
 
 /**
@@ -51557,7 +37616,7 @@ setting_count (const char *filter)
   assert (current_credentials.uuid);
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   ret = sql_int ("SELECT count (*)"
                  " FROM settings"
@@ -51615,7 +37674,7 @@ setting_excerpt_size_int ()
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
  *         or does not exist.
  */
-static int
+int
 setting_dynamic_severity_int ()
 {
   return current_credentials.dynamic_severity;
@@ -51643,7 +37702,7 @@ setting_auto_cache_rebuild_int ()
 {
   return sql_int ("SELECT coalesce"
                   "        ((SELECT value FROM settings"
-                  "          WHERE uuid = 'a09285b0-2d47-49b6-a4ef-946ee71f1d5c'"
+                  "          WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
                   "          AND " ACL_USER_OWNS () ""
                   "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
                   "         '1');",
@@ -51678,7 +37737,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
     max = -1;
 
   clause = filter_clause ("setting", filter, filter_columns, select_columns,
-                          NULL, 0, NULL, NULL, NULL, NULL, NULL);
+                          NULL, 0, 0, NULL, NULL, NULL, NULL, NULL);
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
@@ -51776,7 +37835,7 @@ DEF_ACCESS (setting_iterator_value, 4);
  * @return 0 success, -1 error.
  */
 int
-setting_value (const char *uuid, char **value)
+setting_value_sql (const char *uuid, char **value)
 {
   gchar *quoted_uuid;
 
@@ -51822,7 +37881,7 @@ setting_value (const char *uuid, char **value)
  * @return 0 success, -1 error.
  */
 int
-setting_value_int (const char *uuid, int *value)
+setting_value_int_sql (const char *uuid, int *value)
 {
   gchar *quoted_uuid;
 
@@ -51950,17 +38009,15 @@ modify_setting (const gchar *uuid, const gchar *name,
       return ret;
     }
 
-  if (uuid && (strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+  if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
+               || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
+               || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_EXCERPT_SIZE) == 0
-               || strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0
-               || strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0
-               || strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0
-               || strcmp (uuid, "578a1c14-e2dc-45ef-a591-89d31391d007") == 0
-               || strcmp (uuid, "02e294fa-061b-11e6-ae64-28d24461215b") == 0
-               || strcmp (uuid, "5a9046cc-0628-11e6-ba53-28d24461215b") == 0
-               || strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0
-               || strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0
-               || strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0))
+               || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
+               || strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_uuid, *quoted_value;
@@ -52011,7 +38068,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "6765549a-934e-11e3-b358-406186ea4fc5") == 0)
+      if (strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0)
         {
           GRegex *languages_regex;
           gboolean match;
@@ -52059,7 +38116,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "77ec2444-e7f2-4a80-a59b-f4237782d93f") == 0)
+      if (strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0)
         {
           /* Dynamic Severity */
           current_credentials.dynamic_severity = atoi (value);
@@ -52072,7 +38129,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           current_credentials.excerpt_size = atoi (value);
         }
 
-      if (strcmp (uuid, "7eda49c5-096c-4bef-b1ab-d080d87300df") == 0)
+      if (strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0)
         {
           double severity_dbl;
           /* Default Severity */
@@ -52086,7 +38143,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             current_credentials.default_severity = severity_dbl;
         }
 
-      if (strcmp (uuid, "a09285b0-2d47-49b6-a4ef-946ee71f1d5c") == 0)
+      if (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0)
         {
           int value_int;
           /* Auto Cache Rebuild */
@@ -52098,7 +38155,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "11deb7ff-550b-4950-aacf-06faeb7c61b9") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0)
         {
           /* User Interface Time Format */
           if (strcmp (value, "12") && strcmp (value, "24")
@@ -52109,7 +38166,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, "d9857b7c-1159-4193-9bc0-18fae5473a69") == 0)
+      if (strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0)
         {
           /* User Interface Date Format */
           if (strcmp (value, "wmdy") && strcmp (value, "wdmy")
@@ -52160,19 +38217,19 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   /* Export file name format */
   if (uuid
-      && (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0
-          || strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0
-          || strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0))
+      && (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0
+          || strcmp (uuid, SETTING_UUID_FILE_LIST) == 0
+          || strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0))
     {
       gsize value_size;
       gchar *value, *quoted_value;
 
       assert (current_credentials.uuid);
-      if (strcmp (uuid, "a6ac88c5-729c-41ba-ac0a-deea4a3441f2") == 0)
+      if (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0)
         setting_name = "Details Export File Name";
-      else if (strcmp (uuid, "0872a6ed-4f85-48c5-ac3f-a5ef5e006745") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_LIST) == 0)
         setting_name = "List Export File Name";
-      else if (strcmp (uuid, "e1a2ae0b-736e-4484-b029-330c9e15b900") == 0)
+      else if (strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0)
         setting_name = "Report Export File Name";
       else
         return -1;
@@ -52243,8 +38300,18 @@ modify_setting (const gchar *uuid, const gchar *name,
       /* Filters */
       if (strcmp (uuid, "b833a6f2-dcdc-4535-bfb0-a5154b5b5092") == 0)
         setting_name = g_strdup ("Alerts Filter");
+#if ENABLE_AGENTS
+      else if (strcmp (uuid, "391fc4f4-9f6c-4f0e-a689-37dd7d70d144") == 0)
+        setting_name = g_strdup ("Agent Groups Filter");
+      else if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
+        setting_name = g_strdup ("Agents Filter");
+      else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
+        setting_name = g_strdup ("Agent Installers Filter");
+#endif
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
+      else if (strcmp (uuid, "aaf1b63b-55a6-40ee-ae06-e8e50726f55a") == 0)
+        setting_name = g_strdup ("Audits Filter");
       else if (strcmp (uuid, "45414da7-55f0-44c1-abbb-6b7d1126fbdf") == 0)
         setting_name = g_strdup ("Audit Reports Filter");
       else if (strcmp (uuid, "1a9fbd91-0182-44cd-bc88-a13a9b3b1bef") == 0)
@@ -52259,6 +38326,10 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Hosts Filter");
       else if (strcmp (uuid, "96abcd5a-9b6d-456c-80b8-c3221bfa499d") == 0)
         setting_name = g_strdup ("Notes Filter");
+#if ENABLE_CONTAINER_SCANNING
+      else if (strcmp (uuid, "db61a364-de40-4552-b1bc-a518744f847a") == 0)
+        setting_name = g_strdup ("OCI Image Targets Filter");
+#endif
       else if (strcmp (uuid, "f608c3ec-ce73-4ff6-8e04-7532749783af") == 0)
         setting_name = g_strdup ("Operating Systems Filter");
       else if (strcmp (uuid, "eaaaebf1-01ef-4c49-b7bb-955461c78e0a") == 0)
@@ -52266,6 +38337,8 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, "ffb16b28-538c-11e3-b8f9-406186ea4fc5") == 0)
         setting_name = g_strdup ("Permissions Filter");
       else if (strcmp (uuid, "7d52d575-baeb-4d98-bb68-e1730dbc6236") == 0)
+        setting_name = g_strdup ("Policies Filter");
+      else if (strcmp (uuid, "a17e1497-b27d-4389-9860-2f3b01dff9b2") == 0)
         setting_name = g_strdup ("Port Lists Filter");
       else if (strcmp (uuid, "48ae588e-9085-41bc-abcb-3d6389cf7237") == 0)
         setting_name = g_strdup ("Reports Filter");
@@ -52513,18 +38586,17 @@ modify_setting (const gchar *uuid, const gchar *name,
  * @brief Return max, adjusted according to maximum allowed rows.
  *
  * @param[in]  max  Max.
+ * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
  *
  * @return Adjusted max.
  */
 int
-manage_max_rows (int max)
+manage_max_rows (int max, int ignore_max_rows_per_page)
 {
   int max_rows;
 
-  if (current_credentials.uuid == NULL)
-    return max;
-
-  if (ignore_max_rows_per_page
+  if (current_credentials.uuid == NULL
+      || ignore_max_rows_per_page
       || setting_value_int (SETTING_UUID_MAX_ROWS_PER_PAGE, &max_rows))
     return max;
 
@@ -52543,6 +38615,8 @@ manage_max_rows (int max)
 static const gchar *
 setting_name (const gchar *uuid)
 {
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "Agent Owner";
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Cert";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
@@ -52555,6 +38629,8 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "SecInfo SQL Buffer Threshold";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "CVE-CPE Matching Version";
 
   return NULL;
 }
@@ -52582,6 +38658,8 @@ setting_is_default_ca_cert (const gchar *uuid)
 static const gchar *
 setting_description (const gchar *uuid)
 {
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "User who is given ownership of new Agents.";
   if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
     return "Default CA Certificate for Scanners";
   if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
@@ -52595,6 +38673,8 @@ setting_description (const gchar *uuid)
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "Buffer size threshold in MiB for running buffered SQL statements"
            " in SecInfo updates before the end of the file being processed.";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "Version of the CVE-CPE matching used in CVE scans.";
 
   return NULL;
 }
@@ -52638,8 +38718,9 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
-      && strlen (value))
+  if ((strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
+     || (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0 ))
+    && strlen (value))
     {
       user_t value_user;
       gchar *quoted_uuid;
@@ -52687,6 +38768,12 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
       int threshold;
       threshold = atoi (value);
       if (threshold < 0 || threshold > (INT_MAX / 1048576))
+        return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    {
+      if (strcmp (value, "0") && strcmp (value, "1"))
         return 1;
     }
 
@@ -52779,18 +38866,21 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Modifying setting.");
 
-  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER)
+      && strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
       && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
       && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
-      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD))
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD)
+      && strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION))
     {
       fprintf (stderr, "Error in setting UUID.\n");
       return 3;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -52808,10 +38898,12 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
     {
       user_t user;
 
-      if ((strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+      if ((strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
-          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0))
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+          || (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0))
         {
           sql_rollback ();
           fprintf (stderr,
@@ -52944,7 +39036,8 @@ manage_create_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Creating user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53034,7 +39127,8 @@ manage_delete_user (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Deleting user.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53099,7 +39193,8 @@ manage_get_users (GSList *log_config, const db_conn_info_t *database,
 
   g_info ("   Getting users.");
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -53203,7 +39298,8 @@ manage_set_password (GSList *log_config, const db_conn_info_t *database,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     return ret;
 
@@ -54228,6 +40324,21 @@ delete_user (const char *user_id_arg, const char *name_arg,
        " (SELECT id FROM targets_trash WHERE owner = %llu);", user);
   sql ("DELETE FROM targets WHERE owner = %llu;", user);
   sql ("DELETE FROM targets_trash WHERE owner = %llu;", user);
+
+#if ENABLE_CONTAINER_SCANNING
+  /* OCI Image Targets. */
+  if (user_resources_in_use (user,
+                             "oci_image_targets",
+                             oci_image_target_in_use,
+                             "oci_image_targets_trash",
+                             trash_oci_image_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM oci_image_targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM oci_image_targets_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_CONTAINER_SCANNING */
 
   /* Delete resources used indirectly by tasks */
 
@@ -55264,7 +41375,7 @@ vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
   if (report_id && strcmp (report_id, ""))
     {
       report_t report = 0;
-      find_report_with_permission (task_id, &report, "get_reports");
+      find_report_with_permission (report_id, &report, "get_reports");
       g_string_append_printf (ret, " AND results.report = %llu", report);
     }
 
@@ -55689,10 +41800,11 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
  */
-void
+int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
                       int allow_plaintext, gchar *cacert, int ldaps_only)
 {
+  int err = 0;
   gchar *quoted;
 
   sql_begin_immediate ();
@@ -55730,11 +41842,27 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
 
   if (cacert)
     {
-      sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
-      quoted = sql_quote (cacert);
-      sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
-           quoted);
-      g_free (quoted);
+      /* check if the certificate is valid */
+      err = get_certificate_info (cacert,
+                                  -1,
+                                  TRUE,
+                                  NULL,   /* activation_time */
+                                  NULL,   /* expiration_time */
+                                  NULL,   /* md5_fingerprint */
+                                  NULL,   /* sha256_fingerprint */
+                                  NULL,   /* subject */
+                                  NULL,   /* issuer */
+                                  NULL,   /* serial */
+                                  NULL);  /* certificate_format */
+
+      if (!err)
+        {
+          sql ("DELETE FROM meta WHERE name LIKE 'ldap_cacert';");
+          quoted = sql_quote (cacert);
+          sql ("INSERT INTO meta (name, value) VALUES ('ldap_cacert', '%s');",
+               quoted);
+          g_free (quoted);
+        }
     }
 
   if (ldaps_only >= 0)
@@ -55745,6 +41873,7 @@ manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
     }
 
   sql_commit ();
+  return err;
 }
 
 /**
@@ -55962,14 +42091,18 @@ tag_add_resource (tag_t tag, const char *type, const char *uuid,
  * @brief Find a resource by UUID and add it as a tag resource.
  *
  * @param[in]  tag         Tag to attach to the resource.
- * @param[in]  type        The resource Type.
+ * @param[in]  type        The resource type.
+ * @param[in]  tag_type    The tag type. Could be a sub-type.
  * @param[in]  uuid        The resource UUID.
  * @param[in]  permission  The permission required to get the resource.
  *
  * @return 0 success, -1 error, 1 resource not found.
  */
 static int
-tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
+tag_add_resource_uuid (tag_t tag,
+                       const char *type,
+                       const char *tag_type,
+                       const char *uuid,
                        const char *permission)
 {
   int resource_location = LOCATION_TABLE;
@@ -56000,6 +42133,43 @@ tag_add_resource_uuid (tag_t tag, const char *type, const char *uuid,
   if (resource == 0)
     return 1;
 
+  if ((strcmp (type, "task") == 0)
+      || (strcmp (type, "config") == 0)
+      || (strcmp (type, "report") == 0))
+    {
+      gchar *usage_type;
+      if (strcmp (type, "report"))
+        usage_type = sql_string ("SELECT usage_type FROM %ss WHERE id = %llu",
+                                 type, resource);
+      else
+        {
+          task_t task;
+          if (report_task (resource, &task))
+            return -1;
+
+          usage_type = sql_string ("SELECT usage_type FROM tasks WHERE id = %llu",
+                                   task);
+        }
+
+      if (usage_type == NULL)
+        return -1;
+
+      int same_type = (strcmp (tag_type, type) == 0);
+
+      if (same_type && ((strcmp (usage_type, "audit") == 0)
+                        || (strcmp (usage_type, "policy") == 0)))
+        {
+          g_free (usage_type);
+          return 1;
+        }
+      if (!same_type && (strcmp (usage_type, "scan") == 0))
+        {
+          g_free (usage_type);
+          return 1;
+        }
+      g_free (usage_type);
+    }
+
   return tag_add_resource (tag, type, uuid, resource, resource_location);
 }
 
@@ -56020,24 +42190,29 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
   gchar *resource_permission, *current_uuid;
   int index;
 
+  gchar *resource_type = g_strdup (type);
+
   if (type_is_info_subtype (type))
     resource_permission = g_strdup ("get_info");
   else if (type_is_asset_subtype (type))
     resource_permission = g_strdup ("get_assets");
-  else if (type_is_report_subtype (type)) 
+  else if (type_is_report_subtype (type))
     {
       resource_permission = g_strdup ("get_reports");
-      type = g_strdup("report");
+      g_free (resource_type);
+      resource_type = g_strdup ("report");
     }
   else if (type_is_task_subtype (type))
     {
       resource_permission = g_strdup ("get_tasks");
-      type = g_strdup("task");
+      g_free (resource_type);
+      resource_type = g_strdup ("task");
     }
   else if (type_is_config_subtype (type))
     {
       resource_permission = g_strdup ("get_configs");
-      type = g_strdup("config");
+      g_free (resource_type);
+      resource_type = g_strdup ("config");
     }
   else
     resource_permission = g_strdup_printf ("get_%ss", type);
@@ -56047,16 +42222,19 @@ tag_add_resources_list (tag_t tag, const char *type, array_t *uuids,
     {
       int ret;
 
-      ret = tag_add_resource_uuid (tag, type, current_uuid,
+      ret = tag_add_resource_uuid (tag, resource_type, type, current_uuid,
                                    resource_permission);
       if (ret)
         {
           g_free (resource_permission);
+          g_free (resource_type);
           if (error_extra)
             *error_extra = g_strdup (current_uuid);
           return ret;
         }
     }
+  g_free (resource_permission);
+  g_free (resource_type);
 
   return 0;
 }
@@ -56083,8 +42261,7 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
-
-  ignore_max_rows_per_page = 1;
+  resources_get.ignore_max_rows_per_page = 1;
   filtered_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -56157,7 +42334,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
@@ -56167,7 +42343,6 @@ tag_add_resources_filter (tag_t tag, const char *type, const char *filter)
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
@@ -56263,8 +42438,8 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
   resources_get.filt_id = FILT_ID_NONE;
   resources_get.trash = LOCATION_TABLE;
   resources_get.type = g_strdup (type);
+  resources_get.ignore_max_rows_per_page = 1;
 
-  ignore_max_rows_per_page = 1;
   iterator_select = NULL;
 
   if (strcasecmp (type, "TICKET") == 0)
@@ -56273,7 +42448,6 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
        * to contain each per-resource implementation in its own file. */
       if (init_ticket_iterator (&resources, &resources_get))
         {
-          ignore_max_rows_per_page = 0;
           g_warning ("%s: Failed to init ticket iterator", __func__);
           sql_rollback ();
           g_free (resources_get.filter);
@@ -56330,22 +42504,20 @@ tag_remove_resources_filter (tag_t tag, const char *type, const char *filter)
             break;
           default:
             g_free (columns);
-            ignore_max_rows_per_page = 0;
             g_warning ("%s: Failed to build filter SELECT", __func__);
             sql_rollback ();
             g_free (resources_get.filter);
             g_free (resources_get.type);
             if (resources_get.extra_params)
-              g_hash_table_destroy (resources_get.extra_params);           
+              g_hash_table_destroy (resources_get.extra_params);
             return -1;
         }
     }
-  ignore_max_rows_per_page = 0;
 
   g_free (resources_get.filter);
   g_free (resources_get.type);
   if (resources_get.extra_params)
-      g_hash_table_destroy (resources_get.extra_params);  
+      g_hash_table_destroy (resources_get.extra_params);
 
   ret = 2;
   while (next (&resources))
@@ -56462,11 +42634,11 @@ create_tag (const char * name, const char * comment, const char * value,
   if (strcmp (lc_resource_type, "")
       && valid_db_resource_type (lc_resource_type) == 0)
     {
-      if (!valid_subtype (lc_resource_type)) 
+      if (!valid_subtype (lc_resource_type))
         {
           g_free (lc_resource_type);
           sql_rollback ();
-          return -1;          
+          return -1;
         }
     }
 
@@ -56700,7 +42872,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
       if (!valid_subtype (lc_resource_type))
         {
           sql_rollback ();
-          return -1;          
+          return -1;
         }
     }
 
@@ -56866,9 +43038,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources"                                   \
-     " WHERE tag = tags.id"                                                  \
-     " AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ")",           \
+   { "tag_resources_count (tags.id, tags.resource_type)",                    \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -56882,8 +43052,7 @@ modify_tag (const char *tag_id, const char *name, const char *comment,
    { "resource_type", NULL, KEYWORD_TYPE_STRING },                           \
    { "active", NULL, KEYWORD_TYPE_INTEGER },                                 \
    { "value", NULL, KEYWORD_TYPE_STRING },                                   \
-   { "(SELECT count(*) FROM tag_resources_trash"                             \
-     " WHERE tag = tags_trash.id)",                                          \
+   { "tag_resources_trash_count (tags_trash.id, tags_trash.resource_type)",  \
      "resources", KEYWORD_TYPE_INTEGER },                                    \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
@@ -57054,6 +43223,7 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
 {
   get_data_t get;
   gchar *owned_clause, *with_clause;
+  const char *parent_type;
 
   assert (type);
   assert (resource);
@@ -57063,11 +43233,21 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
   owned_clause = acl_where_owned ("tag", &get, 1, "any", 0, NULL, 0,
                                   &with_clause);
 
+  if (type_is_report_subtype (type))
+    parent_type = "report";
+  else if (type_is_task_subtype (type))
+    parent_type = "task";
+  else if (type_is_config_subtype (type))
+    parent_type = "config";
+  else
+    parent_type = type;
+
   init_iterator (iterator,
                  "%s"
                  " SELECT id, uuid, name, value, comment"
                  " FROM tags"
-                 " WHERE EXISTS"
+                 " WHERE resource_type = '%s'"
+                 " AND EXISTS"
                  "  (SELECT * FROM tag_resources"
                  "   WHERE resource_type = '%s'"
                  "   AND resource = %llu"
@@ -57078,6 +43258,7 @@ init_resource_tag_iterator (iterator_t* iterator, const char* type,
                  " ORDER BY %s %s;",
                  with_clause ? with_clause : "",
                  type,
+                 parent_type,
                  resource,
                  LOCATION_TABLE,
                  active_only ? " AND active=1" : "",
@@ -57175,24 +43356,35 @@ int
 resource_tag_count (const char* type, resource_t resource, int active_only)
 {
   int ret;
+  const char *parent_type;
 
   assert (type);
   assert (resource);
 
+  if (type_is_report_subtype (type))
+    parent_type = "report";
+  else if (type_is_task_subtype (type))
+    parent_type = "task";
+  else if (type_is_config_subtype (type))
+    parent_type = "config";
+  else
+    parent_type = type;
+
   ret = sql_int ("SELECT count (id)"
-                 " FROM tags"
-                 " WHERE resource_type = '%s'"
-                 "   AND EXISTS"
-                 "     (SELECT * FROM tag_resources"
-                 "      WHERE tag = tags.id"
-                 "        AND resource = %llu"
-                 "        AND resource_location = %d"
-                 "        AND tags.resource_type = tag_resources.resource_type)"
-                 "   %s;",
-                 type,
-                 resource,
-                 LOCATION_TABLE,
-                 active_only ? "AND active=1": "");
+                " FROM tags"
+                " WHERE resource_type = '%s'"
+                "   AND EXISTS"
+                "     (SELECT * FROM tag_resources"
+                "      WHERE tag = tags.id"
+                "        AND resource = %llu"
+                "        AND resource_location = %d"
+                "        AND tag_resources.resource_type = '%s')"
+                "   %s;",
+                type,
+                resource,
+                LOCATION_TABLE,
+                parent_type,
+                active_only ? "AND active=1": "");
 
   return ret;
 }
@@ -57277,6 +43469,11 @@ column_is_timestamp (const char* column)
 static column_t *
 type_select_columns (const char *type)
 {
+#if ENABLE_AGENTS
+  static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
+  static column_t agent_group_columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
+  static column_t agent_installer_columns[] = AGENT_INSTALLER_ITERATOR_COLUMNS;
+#endif
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
@@ -57306,6 +43503,14 @@ type_select_columns (const char *type)
 
   if (type == NULL)
     return NULL;
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "AGENT") == 0)
+    return agent_columns;
+  if (strcasecmp (type, "AGENT_GROUP") == 0)
+    return agent_group_columns;
+  if (strcasecmp (type, "AGENT_INSTALLER") == 0)
+    return agent_installer_columns;
+#endif
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
   if (strcasecmp (type, "CERT_BUND_ADV") == 0)
@@ -57413,6 +43618,23 @@ type_filter_columns (const char *type)
 {
   if (type == NULL)
     return NULL;
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "AGENT") == 0)
+    {
+      static const char *ret[] = AGENT_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "AGENT_GROUP") == 0)
+    {
+      static const char *ret[] = AGENT_GROUP_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+  if (strcasecmp (type, "AGENT_INSTALLER") == 0)
+    {
+      static const char *ret[] = AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS;
+      return ret;
+    }
+#endif
   if (strcasecmp (type, "ALERT") == 0)
     {
       static const char *ret[] = ALERT_ITERATOR_FILTER_COLUMNS;
@@ -57672,7 +43894,7 @@ type_extra_where (const char *type, int trash, const char *filter,
         usage_type = g_hash_table_lookup (extra_params, "usage_type");
       else
         usage_type = NULL;
-      
+
       extra_where = reports_extra_where (trash, filter, usage_type);
     }
   else if (strcasecmp (type, "RESULT") == 0)
@@ -57809,9 +44031,9 @@ type_build_select (const char *type, const char *columns_str,
 
       original = opts_table;
 
-      lateral_clause = result_iterator_lateral (overrides, 
-                                                dynamic, 
-                                                "results", 
+      lateral_clause = result_iterator_lateral (overrides,
+                                                dynamic,
+                                                "results",
                                                 "nvts");
 
       opts_table = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
@@ -57835,6 +44057,7 @@ type_build_select (const char *type, const char *columns_str,
 
   clause = filter_clause (type, filter ? filter : get->filter, filter_columns,
                           select_columns, where_columns, get->trash,
+                          get->ignore_max_rows_per_page,
                           &filter_order, &first, &max, &permissions,
                           &owner_filter);
 
@@ -58214,7 +44437,15 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       return 1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  int avoid_db_check_inserts = 0;
+  /* The optimize=cleanup-sequences option may be used if a sequence has
+   * already reached its maximum value, so avoid any inserts that may cause
+   * a sequence maximum error. *
+   */
+  if (strcasecmp (name, "cleanup-sequences") == 0)
+    avoid_db_check_inserts = 1;
+
+  ret = manage_option_setup (log_config, database, avoid_db_check_inserts);
   if (ret)
     return ret;
 
@@ -58459,7 +44690,7 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       sql ("UPDATE results"
           " SET severity"
           "       = (SELECT CAST (value AS real) FROM settings"
-          "           WHERE uuid = '7eda49c5-096c-4bef-b1ab-d080d87300df'"
+          "           WHERE uuid = '" SETTING_UUID_DEFAULT_SEVERITY "'"
           "             AND (settings.owner = results.owner"
           "                  OR settings.owner IS NULL)"
           "          ORDER BY settings.owner DESC LIMIT 1)"
@@ -58545,25 +44776,6 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
       success_text = g_strdup_printf ("Optimized: Cleaned up encoding"
                                       " of %d TLS certificate(s).",
                                       changes);
-    }
-  else if (strcasecmp (name, "migrate-relay-sensors") == 0)
-    {
-      if (get_relay_mapper_path ())
-        {
-          sql_begin_immediate ();
-
-          success_text = manage_migrate_relay_sensors ();
-
-          sql_commit ();
-        }
-      else
-        {
-          fprintf (stderr,
-                   "No relay mapper found."
-                   " Please check your $PATH or the --relay-mapper option.\n");
-          success_text = NULL;
-          ret = -1;
-        }
     }
   else if (strcasecmp (name, "rebuild-permissions-cache") == 0)
     {
@@ -58728,3 +44940,359 @@ cleanup_ids_for_table (const char *table)
   free (sequence_name);
   return 0;
 }
+
+#if ENABLE_HTTP_SCANNER
+
+/**
+ * @brief Get the QoD value for a given nvti OID.
+ *
+ * @param nvti_oid The unique identifier for the vulnerability test.
+ *
+ * @return The QoD value as an integer (1–100), or
+ *         QOD_DEFAULT if unavailable or invalid.
+ */
+int
+get_http_scanner_nvti_qod (const char *nvti_oid)
+{
+  int qod = QOD_DEFAULT;
+
+  nvti_t *nvti = lookup_nvti (nvti_oid);
+  if (nvti != NULL)
+    {
+      const char *qod_str = nvti_qod (nvti);
+      if (qod_str != NULL)
+        {
+          int parsed_qod = atoi (qod_str);
+          if (parsed_qod > 0 && parsed_qod <= 100)
+            {
+              qod = parsed_qod;
+            }
+        }
+    }
+
+  return qod;
+}
+
+/**
+ * @brief Generate the hash value for the fields of the result and
+ * check if HTTP scanner result for report already exists
+ *
+ * @param[in]  report      Report.
+ * @param[in]  task        Task.
+ * @param[in]  r_entity    entity of the result.
+ * @param[out] entity_hash_value  The generated hash value of r_entity.
+ *
+ * @return     "1" if openvasd result already exists, else "0"
+ */
+int
+check_http_scanner_result_exists (report_t report,
+                                  task_t task,
+                                  http_scanner_result_t res,
+                                  char **entity_hash_value,
+                                  GHashTable *hashed_results)
+{
+  GString *result_string;
+  int return_value = 0;
+  result_string = g_string_new ("");
+  g_string_append_printf (result_string, "host:%s\n"
+                          "hostname:%s\n"
+                          "type:%s\n"
+                          "description:%s\n"
+                          "port:%s\n"
+                          "oid:%s",res->ip_address, res->hostname,
+                          res->type, res->message, res->port, res->oid);
+
+ *entity_hash_value = get_md5_hash_from_string (result_string->str);
+  if (g_hash_table_contains (hashed_results, *entity_hash_value))
+    {
+      return_value = 1;
+    }
+  else
+    {
+      g_hash_table_insert (hashed_results,
+                           g_strdup(*entity_hash_value),
+                           GINT_TO_POINTER(1));
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT * FROM results"
+                   "  WHERE report = %llu and hash_value = '%s');",
+                   report, *entity_hash_value))
+        {
+          const char *desc, *type, *severity = NULL, *host;
+          const char *hostname, *port = NULL;
+          gchar *quoted_desc, *quoted_type, *quoted_host;
+          gchar *quoted_hostname, *quoted_port;
+          double severity_double = 0.0;
+          int qod_int = get_http_scanner_nvti_qod (res->oid);
+
+          host = res->ip_address;
+          hostname = res->hostname;
+          type = convert_http_scanner_type_to_osp_type(res->type);
+          desc = res->message;
+          severity = nvt_severity (res->oid, type);
+          port = res->port;
+
+          if (!severity)
+            {
+              g_debug ("%s: Result without severity", __func__);
+              g_string_free (result_string, TRUE);
+              return 0;
+            }
+          else
+            {
+              severity_double = strtod (severity, NULL);
+            }
+
+          quoted_host = sql_quote (host ?: "");
+          quoted_hostname = sql_quote (hostname ?: "");
+          quoted_type = sql_quote (type ?: "");
+          quoted_desc = sql_quote (desc ?: "");
+          quoted_port = sql_quote (port ?: "");
+
+          if (sql_int ("SELECT EXISTS"
+                       " (SELECT * FROM results"
+                       "   WHERE report = %llu and hash_value = '%s'"
+                       "    and host = '%s' and hostname = '%s'"
+                       "    and type = '%s' and description = '%s'"
+                       "    and port = '%s' and severity = %1.1f::real"
+                       "    and qod = %d"
+                       " );",
+                       report, *entity_hash_value,
+                       quoted_host, quoted_hostname,
+                       quoted_type, quoted_desc,
+                       quoted_port, severity_double,
+                       qod_int))
+            {
+              g_info ("Captured duplicate result, report: %llu hash_value: %s",
+                      report, *entity_hash_value);
+              g_debug ("Entity string: %s", result_string->str);
+              return_value = 1;
+            }
+
+          g_free (quoted_host);
+          g_free (quoted_hostname);
+          g_free (quoted_type);
+          g_free (quoted_desc);
+          g_free (quoted_port);
+        }
+    }
+  if (return_value)
+    {
+      g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+                report, *entity_hash_value);
+      g_debug ("Entity string: %s", result_string->str);
+    }
+  g_string_free (result_string, TRUE);
+  return return_value;
+}
+
+/**
+ * @brief Convert HTTP scanner result types to OSP result types.
+ *
+ * @param http_scanner_type The HTTP scanner type as a string.
+ *
+ * @return A new string with the corresponding OSP type.
+ */
+char *
+convert_http_scanner_type_to_osp_type (const char *http_scanner_type)
+{
+  if (g_strcmp0 (http_scanner_type, "alarm") == 0)
+    return g_strdup ("Alarm");
+  else if (g_strcmp0 (http_scanner_type, "error") == 0)
+    return g_strdup ("Error Message");
+  else if (g_strcmp0 (http_scanner_type, "log") == 0
+           || g_strcmp0 (http_scanner_type, "host_detail") == 0)
+    return g_strdup ("Log Message");
+
+  return g_strdup (http_scanner_type);
+}
+
+/**
+ * @brief Convert and add a single http scanner result to the report structure.
+ *
+ * @param[in]  res            The http scanner result to be processed.
+ * @param[in,out] results_aux Pointer to auxiliary report data,
+ *                            containing the report handle, task reference,
+ *                            results array, and hash maps for deduplication.
+ */
+static void
+add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_aux)
+{
+
+  struct report_aux *rep_aux = *results_aux;
+  result_t result;
+  char *type, *name, *severity, *host, *hostname, *test_id;
+  char *port = NULL, *path = NULL;
+  char *desc = NULL, *nvt_id = NULL, *severity_str = NULL;
+  int qod_int;
+
+  type = convert_http_scanner_type_to_osp_type (res->type);
+  name = NULL;
+  severity = NULL;
+  test_id = res->oid;
+  host = res->ip_address;
+  hostname = res->hostname;
+  port = res->port;
+
+  /* Add report host if it doesn't exist. */
+  manage_report_host_add (rep_aux->report, host, 0, 0);
+  if (!strcmp (port, "general/Host_Details"))
+    {
+      gchar *hash_value = NULL;
+      if (!check_host_detail_exists (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     &hash_value,
+                                     rep_aux->hash_hostdetails))
+        {
+          insert_report_host_detail (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     hash_value);
+        }
+      desc = res->message;
+      g_free (hash_value);
+      g_free (type);
+      return;
+    }
+  else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
+    {
+      nvt_id = g_strdup (test_id);
+      severity_str = nvt_severity (test_id, type);
+      desc = res->message;
+    }
+  else
+    {
+      nvt_id = g_strdup (name);
+      desc = res->message;
+    }
+  qod_int = get_http_scanner_nvti_qod (test_id);
+  if (port && strcmp (port, "general/Host_Details") == 0)
+    {
+      /* TODO: This should probably be handled by the "Host Detail"
+       *        result type with extra source info in OSP.
+       */
+      if (manage_report_host_detail (rep_aux->report, host, desc,
+                                     rep_aux->hash_hostdetails))
+        g_warning ("%s: Failed to add report detail for host '%s': %s",
+                   __func__, host, desc);
+    }
+  else if (host && desc && (strcmp (type, "host_start") == 0))
+    {
+      set_scan_host_start_time_ctime (rep_aux->report, host, desc);
+    }
+  else if (host && desc && (strcmp (type, "host_end") == 0))
+    {
+      set_scan_host_end_time_ctime (rep_aux->report, host, desc);
+      add_assets_from_host_in_report (rep_aux->report, host);
+    }
+  else
+    {
+      char *hash_value;
+      if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
+                                             &hash_value, rep_aux->hash_results))
+        {
+          result = make_osp_result (rep_aux->task,
+                                    host ?: "",
+                                    hostname ?: "",
+                                    nvt_id ?: "",
+                                    type ?: "",
+                                    desc ?: "",
+                                    port ?: "",
+                                    severity_str ?: severity,
+                                    qod_int,
+                                    path ?: "",
+                                    hash_value);
+          g_array_append_val (rep_aux->results_array, result);
+        }
+      g_free (hash_value);
+    }
+
+  g_free (nvt_id);
+  g_free (type);
+
+  return;
+}
+
+/**
+ * @brief Parse http scanner results.
+ *
+ * @param[in]  task        Task.
+ * @param[in]  report      Report.
+ * @param[in]  results     http scanner results.
+ */
+void
+parse_http_scanner_report (task_t task, report_t report, GSList *results,
+                       time_t start_time, time_t end_time)
+{
+  char *defs_file = NULL;
+  gboolean has_results = FALSE;
+  GArray *results_array = NULL;
+  GHashTable *hashed_scanner_results = NULL;
+  GHashTable *hashed_host_details = NULL;
+  struct report_aux *rep_aux;
+
+  assert (task);
+  assert (report);
+
+  sql_begin_immediate ();
+  /* Set the report's start and end times. */
+
+  if (start_time)
+    set_scan_start_time_epoch (report, start_time);
+
+  if (end_time)
+    set_scan_end_time_epoch (report, end_time);
+
+  if (results == NULL)
+    {
+      sql_commit ();
+      return;
+    }
+
+  hashed_scanner_results = g_hash_table_new_full (g_str_hash,
+                                              g_str_equal,
+                                              g_free,
+                                              NULL);
+
+  hashed_host_details = g_hash_table_new_full (g_str_hash,
+                                               g_str_equal,
+                                               g_free,
+                                               NULL);
+
+  has_results = TRUE;
+
+  defs_file = task_definitions_file (task);
+
+  results_array = g_array_new(TRUE, TRUE, sizeof(result_t));
+  rep_aux = g_malloc0 (sizeof (struct report_aux));
+  rep_aux->report = report;
+  rep_aux->task = task;
+  rep_aux->results_array = results_array;
+  rep_aux->hash_results = hashed_scanner_results;
+  rep_aux->hash_hostdetails = hashed_host_details;
+
+  g_slist_foreach(results, (GFunc) add_http_scanner_result_to_report, &rep_aux);
+
+  if (has_results)
+    {
+      sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
+           report);
+      report_add_results_array (report, results_array);
+    }
+
+  sql_commit ();
+  if (results_array && has_results)
+    g_array_free (results_array, TRUE);
+
+  g_hash_table_destroy (hashed_scanner_results);
+  g_hash_table_destroy (hashed_host_details);
+  g_free (defs_file);
+  g_free (rep_aux);
+}
+#endif

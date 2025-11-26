@@ -61,19 +61,121 @@ Ensure (manage_sql, validate_results_port_validates)
   FAIL ("udp");
 }
 
+/* ensure_term_has_qod_and_overrides */
+
+Ensure (manage_sql, ensure_term_has_qod_and_overrides_adds_defaults)
+{
+  gchar *term;
+
+  // Test with NULL input
+  term = ensure_term_has_qod_and_overrides (NULL);
+  assert_that (term, contains_string ("min_qod="));
+  assert_that (term, contains_string ("apply_overrides="));
+  g_free (term);
+
+  // Test with empty string
+  term = ensure_term_has_qod_and_overrides (g_strdup (""));
+  assert_that (term, contains_string ("min_qod="));
+  assert_that (term, contains_string ("apply_overrides="));
+  g_free (term);
+
+  // Test with existing filter but no min_qod or apply_overrides
+  term = ensure_term_has_qod_and_overrides (g_strdup ("severity>5"));
+  assert_that (term, contains_string ("min_qod="));
+  assert_that (term, contains_string ("apply_overrides="));
+  assert_that (term, contains_string ("severity>5"));
+  g_free (term);
+
+  // Test with existing min_qod but no apply_overrides
+  term = ensure_term_has_qod_and_overrides (g_strdup ("min_qod=50"));
+  assert_that (term, contains_string ("min_qod=50"));
+  assert_that (term, contains_string ("apply_overrides="));
+  g_free (term);
+
+  // Test with existing apply_overrides but no min_qod
+  term = ensure_term_has_qod_and_overrides (g_strdup ("apply_overrides=1"));
+  assert_that (term, contains_string ("apply_overrides=1"));
+  assert_that (term, contains_string ("min_qod="));
+  g_free (term);
+
+  // Test with both min_qod and apply_overrides already present
+  term = g_strdup ("min_qod=70 apply_overrides=0");
+  term = ensure_term_has_qod_and_overrides (term);
+  assert_that (term, contains_string ("min_qod=70"));
+  assert_that (term, contains_string ("apply_overrides=0"));
+  // Should not add defaults again
+  assert_that (term, is_equal_to_string ("min_qod=70 apply_overrides=0"));
+  g_free (term);
+}
+
+/* print_report_clean_filter */
+
+static int
+dummy_setting_value (const char *uuid, char **value)
+{
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  *value = g_strdup ("abc");
+  return 0;
+}
+
+static int
+dummy_setting_value_int (const char *uuid, int *value)
+{
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  *value = 10;
+  return 0;
+}
+
+Ensure (manage_sql, print_report_clean_filter_handles_null_term)
+{
+  get_data_t get;
+  gchar *term;
+
+  init_manage_settings_funcs (dummy_setting_value, dummy_setting_value_int);
+
+  // Test with NULL term and NULL get->filter
+  get.filter = NULL;
+  get.ignore_max_rows_per_page = 0;
+  term = NULL;
+  print_report_clean_filter (&term, &get);
+  assert_that (term, is_not_equal_to (NULL));
+  g_free (term);
+
+  // Test with NULL term but valid get->filter
+  get.filter = "severity>5";
+  term = NULL;
+  print_report_clean_filter (&term, &get);
+  assert_that (term, is_not_equal_to (NULL));
+  assert_that (term, contains_string ("severity>5"));
+  g_free (term);
+}
+
 /* Test suite. */
 
 int
 main (int argc, char **argv)
 {
+  int ret;
   TestSuite *suite;
 
   suite = create_test_suite ();
 
   add_test_with_context (suite, manage_sql, validate_results_port_validates);
+  add_test_with_context (suite, manage_sql,
+                         ensure_term_has_qod_and_overrides_adds_defaults);
+  add_test_with_context (suite, manage_sql,
+                         print_report_clean_filter_handles_null_term);
 
   if (argc > 1)
-    return run_single_test (suite, argv[1], create_text_reporter ());
+    ret = run_single_test (suite, argv[1], create_text_reporter ());
+  else
+    ret = run_test_suite (suite, create_text_reporter ());
 
-  return run_test_suite (suite, create_text_reporter ());
+  destroy_test_suite (suite);
+
+  return ret;
 }

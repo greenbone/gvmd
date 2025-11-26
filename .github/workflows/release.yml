@@ -1,0 +1,82 @@
+name: Release gvmd
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      release-type:
+        type: choice
+        description: What kind of release do you want to do?
+        options:
+          - patch
+          - minor
+          - major
+      release-version:
+        type: string
+        description: Set an explicit version, that will overwrite release-type. Fails if version is not compliant.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Create a new release
+    # If the event is a workflow_dispatch or on of the labels 'pre release',
+    # 'patch release', 'minor release' or 'major release' is set and PR is
+    # closed because of a merge
+    # NOTE: priority of set labes will be alpha > release-candidate > patch > minor > major,
+    #       so if 'major' and 'patch' labes are set, it will create a patch release.
+    if: |
+      ( github.event_name == 'workflow_dispatch') || (
+        ( contains(github.event.pull_request.labels.*.name, 'alpha release') ||
+          contains(github.event.pull_request.labels.*.name, 'rc release') ||
+          contains(github.event.pull_request.labels.*.name, 'patch release') ||
+          contains(github.event.pull_request.labels.*.name, 'minor release') ||
+          contains(github.event.pull_request.labels.*.name, 'major release')) &&
+          github.event.pull_request.merged == true )
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Selecting the Release type
+        id: release-type
+        uses: greenbone/actions/release-type@v3
+        with:
+          release-type-input: ${{ inputs.release-type }}
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # for conventional commits and getting all git tags
+          persist-credentials: false
+          ref: ${{ steps.release-type.outputs.release-ref }}
+      - name: Determine release version
+        id: release-version
+        uses: greenbone/actions/release-version@v3
+        with:
+          release-type: ${{ steps.release-type.outputs.release-type }}
+          release-version: ${{ inputs.release-version }}
+          versioning-scheme: "semver"
+      - name: Install git-cliff
+        uses: greenbone/actions/uv@v3
+        with:
+          install: git-cliff
+      - name: Determine changelog
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git-cliff -v --strip header -o /tmp/changelog.md --unreleased --tag ${{ steps.release-version.outputs.release-version }} ${{ steps.release-version.outputs.last-release-version }}..HEAD
+      - name: Release with release action
+        id: release
+        uses: greenbone/actions/release@v3
+        with:
+          github-user: ${{ secrets.GREENBONE_BOT }}
+          github-user-mail: ${{ secrets.GREENBONE_BOT_MAIL }}
+          github-user-token: ${{ secrets.GREENBONE_BOT_TOKEN }}
+          gpg-key: ${{ secrets.GPG_KEY }}
+          gpg-fingerprint: ${{ secrets.GPG_FINGERPRINT }}
+          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          release-version: ${{ steps.release-version.outputs.release-version }}
+          changelog: /tmp/changelog.md
+          ref: ${{ steps.release-type.outputs.release-ref }}
+          versioning-scheme: "semver"

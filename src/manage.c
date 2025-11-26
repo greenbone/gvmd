@@ -17,7 +17,7 @@
  */
 
 /**
- * @file  manage.c
+ * @file
  * @brief The Greenbone Vulnerability Manager management layer.
  *
  * This file defines a management layer, for implementing
@@ -51,11 +51,19 @@
 #include "ipc.h"
 #include "manage.h"
 #include "manage_acl.h"
+#include "manage_agent_installers.h"
+#include "manage_assets.h"
 #include "manage_configs.h"
+#include "manage_osp.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_scan_queue.h"
+#include "manage_oci_image_targets.h"
+#include "manage_http_scanner.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
+#include "manage_sql_assets.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
@@ -158,14 +166,9 @@
 #define CERT_TIMESTAMP_FILENAME GVM_CERT_DATA_DIR "/timestamp"
 
 /**
- * @brief Default for Scanner max_checks preference.
+ * @brief Maximum number of reports to process every SCHEDULE_PERIOD.
  */
-#define MAX_CHECKS_DEFAULT "4"
-
-/**
- * @brief Default for Scanner max_hosts preference.
- */
-#define MAX_HOSTS_DEFAULT "20"
+#define MAX_REPORTS_PER_TICK 10
 
 /**
  * @brief Number of minutes until the authentication cache is deleted
@@ -194,6 +197,16 @@ static int feed_lock_timeout = 0;
 static int max_concurrent_scan_updates = 0;
 
 /**
+ * @brief Maximum number of database connections.
+ */
+static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+
+/**
+ * @brief Maximum number of imported reports processed concurrently.
+ */
+static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
+
+/**
  * @brief Retries for waiting for memory to be available.
  */
 static int mem_wait_retries = 0;
@@ -207,11 +220,6 @@ static int min_mem_feed_update = 0;
  * @brief Path to the relay mapper executable, NULL to disable relays.
  */
 static gchar *relay_mapper_path = NULL;
-
-/**
- * @brief Whether to migrate sensors if relays do not match.
- */
-static int relay_migrate_sensors = 0;
 
 /**
  * @brief Number of minutes before overdue tasks timeout.
@@ -527,9 +535,12 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           gchar *buffer;
           gnutls_x509_crt_get_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
-          gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size);
-
-          if (escape_dns)
+          if (gnutls_x509_crt_get_dn (gnutls_cert, buffer, &buffer_size))
+            {
+              *subject = g_strdup ("");
+              g_free (buffer);
+            }
+          else if (escape_dns)
             {
               *subject = strescape_check_utf8 (buffer, NULL);
               g_free (buffer);
@@ -544,9 +555,12 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
           gchar *buffer;
           gnutls_x509_crt_get_issuer_dn (gnutls_cert, NULL, &buffer_size);
           buffer = g_malloc (buffer_size);
-          gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size);
-
-          if (escape_dns)
+          if (gnutls_x509_crt_get_issuer_dn (gnutls_cert, buffer, &buffer_size))
+            {
+              *issuer = g_strdup ("");
+              g_free (buffer);
+            }
+          else if (escape_dns)
             {
               *issuer = strescape_check_utf8 (buffer, NULL);
               g_free (buffer);
@@ -728,74 +742,6 @@ xml_escape_text_truncated (const char *string, size_t max_len,
 }
 
 /**
- * @brief Return the plural name of a resource type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Plural name of type.
- */
-const char *
-type_name_plural (const char* type)
-{
-  if (type == NULL)
-    return "ERROR";
-
-  if (strcasecmp (type, "cpe") == 0)
-    return "CPEs";
-  if (strcasecmp (type, "cve") == 0)
-    return "CVEs";
-  if (strcasecmp (type, "cert_bund_adv") == 0)
-    return "CERT-Bund Advisories";
-  if (strcasecmp (type, "dfn_cert_adv") == 0)
-    return "DFN-CERT Advisories";
-  if (strcasecmp (type, "nvt") == 0)
-    return "NVTs";
-
-  return "ERROR";
-}
-
-/**
- * @brief Return the name of a resource type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Name of type.
- */
-const char *
-type_name (const char* type)
-{
-  if (type == NULL)
-    return "ERROR";
-
-  if (strcasecmp (type, "cpe") == 0)
-    return "CPE";
-  if (strcasecmp (type, "cve") == 0)
-    return "CVE";
-  if (strcasecmp (type, "cert_bund_adv") == 0)
-    return "CERT-Bund Advisory";
-  if (strcasecmp (type, "dfn_cert_adv") == 0)
-    return "DFN-CERT Advisory";
-  if (strcasecmp (type, "nvt") == 0)
-    return "NVT";
-
-  return "ERROR";
-}
-
-/**
- * @brief Check if a type is a SCAP type.
- *
- * @param[in]  type  Resource type.
- *
- * @return Name of type.
- */
-int
-type_is_scap (const char* type)
-{
-  return (strcasecmp (type, "cpe") == 0)
-         || (strcasecmp (type, "cve") == 0);
-}
-
-/**
  * @brief Check whether a resource is available.
  *
  * @param[in]   type        Type.
@@ -847,6 +793,43 @@ scanner_type_valid (scanner_type_t scanner_type)
   return 0;
 }
 
+/**
+ * @brief Check if a scanner type supports UNIX sockets.
+ *
+ * @param[in]  scanner_type  Scanner type.
+ *
+ * @return 1 if unix sockets are supported, else 0.
+ */
+int
+scanner_type_supports_unix_sockets (scanner_type_t scanner_type)
+{
+  if (scanner_type == SCANNER_TYPE_OPENVAS
+      || scanner_type == SCANNER_TYPE_OSP_SENSOR)
+    return 1;
+  return 0;
+}
+
+/**
+ * @brief Gets the type of a scanner given its uuid.
+ *
+ * @param[in]  scanner_id  UUID of the scanner
+ *
+ * @return The scanner type or SCANNER_TYPE_NONE if scanner could not be found.
+ */
+scanner_type_t
+get_scanner_type_by_uuid (const char *scanner_id)
+{
+  scanner_t scanner;
+  if (scanner_id == NULL)
+    return SCANNER_TYPE_NONE;
+  if (find_resource_no_acl ("scanner", scanner_id, &scanner))
+    {
+      g_warning ("%s: Error finding scanner %s", __func__, scanner_id);
+      return SCANNER_TYPE_NONE;
+    }
+  return get_scanner_type (scanner);
+}
+
 
 /* Severity related functions. */
 
@@ -860,6 +843,8 @@ scanner_type_valid (scanner_type_t scanner_type)
 const char *
 threat_message_type (const char *threat)
 {
+  if (strcasecmp (threat, "Critical") == 0)
+    return "Alarm";
   if (strcasecmp (threat, "High") == 0)
     return "Alarm";
   if (strcasecmp (threat, "Medium") == 0)
@@ -886,8 +871,10 @@ threat_message_type (const char *threat)
 int
 severity_in_level (double severity, const char *level)
 {
-  if (strcmp (level, "high") == 0)
-    return severity >= 7 && severity <= 10;
+  if (strcmp (level, "critical") == 0)
+    return severity >= 9 && severity <= 10;
+  else if (strcmp (level, "high") == 0)
+    return severity >= 7 && severity < 9;
   else if (strcmp (level, "medium") == 0)
     return severity >= 4 && severity < 7;
   else if (strcmp (level, "low") == 0)
@@ -919,6 +906,8 @@ severity_to_level (double severity, int mode)
     {
       if (mode == 1)
         return "Alarm";
+      else if (severity_in_level (severity, "critical"))
+        return "Critical";
       else if (severity_in_level (severity, "high"))
         return "High";
       else if (severity_in_level (severity, "medium"))
@@ -962,7 +951,6 @@ severity_to_type (double severity)
     }
 }
 
-
 
 /* Encryption key management. */
 
@@ -978,7 +966,8 @@ int
 manage_create_encryption_key (GSList *log_config,
                               const db_conn_info_t *database)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.");
@@ -1042,7 +1031,8 @@ manage_set_encryption_key (GSList *log_config,
                            const db_conn_info_t *database,
                            const char *uid)
 {
-  int ret = manage_option_setup (log_config, database);
+  int ret = manage_option_setup (log_config, database,
+                                 0 /* avoid_db_check_inserts */);
   if (ret)
     {
       printf ("Error setting up log config or database connection.\n");
@@ -1067,7 +1057,6 @@ manage_set_encryption_key (GSList *log_config,
   manage_option_cleanup ();
   return 0;
 }
-
 
 
 /* Credentials. */
@@ -1298,11 +1287,18 @@ severity_data_range_count (const severity_data_t* severity_data,
  * @param[out] lows            The number of Low severity results.
  * @param[out] mediums         The number of Medium severity results.
  * @param[out] highs           The number of High severity results.
+ * @param[out] criticals       The number of Critical severity results.
  */
 void
 severity_data_level_counts (const severity_data_t *severity_data,
-                            int *errors, int *false_positives,
-                            int *logs, int *lows, int *mediums, int *highs)
+                            int *errors,
+                            int *false_positives,
+                            int *logs,
+                            int *lows,
+                            int *mediums,
+                            int *highs,
+                            int* criticals
+                           )
 {
   if (errors)
     *errors
@@ -1339,6 +1335,12 @@ severity_data_level_counts (const severity_data_t *severity_data,
       = severity_data_range_count (severity_data,
                                    level_min_severity ("high"),
                                    level_max_severity ("high"));
+
+  if (criticals)
+    *criticals
+      = severity_data_range_count (severity_data,
+                                   level_min_severity ("critical"),
+                                   level_max_severity ("critical"));
 }
 
 
@@ -1353,298 +1355,6 @@ task_t current_scanner_task = (task_t) 0;
  * @brief The report of the current task.
  */
 report_t global_current_report = (report_t) 0;
-
-
-/* Alerts. */
-
-/**
- * @brief Frees a alert_report_data_t struct, including contained data.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_free (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  alert_report_data_reset (data);
-  g_free (data);
-}
-
-/**
- * @brief Frees content of an alert_report_data_t, but not the struct itself.
- *
- * @param[in]  data   The struct to free.
- */
-void
-alert_report_data_reset (alert_report_data_t *data)
-{
-  if (data == NULL)
-    return;
-
-  g_free (data->content_type);
-  g_free (data->local_filename);
-  g_free (data->remote_filename);
-  g_free (data->report_format_name);
-
-  memset (data, 0, sizeof (alert_report_data_t));
-}
-
-/**
- * @brief Get the name of an alert condition.
- *
- * @param[in]  condition  Condition.
- *
- * @return The name of the condition (for example, "Always").
- */
-const char*
-alert_condition_name (alert_condition_t condition)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return "Always";
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        return "Filter count at least";
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return "Filter count changed";
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        return "Severity at least";
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        return "Severity changed";
-      default:
-        return "Internal Error";
-    }
-}
-
-/**
- * @brief Get the name of an alert event.
- *
- * @param[in]  event  Event.
- *
- * @return The name of the event (for example, "Run status changed").
- */
-const char*
-event_name (event_t event)
-{
-  switch (event)
-    {
-      case EVENT_TASK_RUN_STATUS_CHANGED: return "Task run status changed";
-      case EVENT_NEW_SECINFO:             return "New SecInfo arrived";
-      case EVENT_UPDATED_SECINFO:         return "Updated SecInfo arrived";
-      case EVENT_TICKET_RECEIVED:         return "Ticket received";
-      case EVENT_ASSIGNED_TICKET_CHANGED: return "Assigned ticket changed";
-      case EVENT_OWNED_TICKET_CHANGED:    return "Owned ticket changed";
-      default:                            return "Internal Error";
-    }
-}
-
-/**
- * @brief Get a description of an alert condition.
- *
- * @param[in]  condition  Condition.
- * @param[in]  alert  Alert.
- *
- * @return Freshly allocated description of condition.
- */
-gchar*
-alert_condition_description (alert_condition_t condition,
-                             alert_t alert)
-{
-  switch (condition)
-    {
-      case ALERT_CONDITION_ALWAYS:
-        return g_strdup ("Always");
-      case ALERT_CONDITION_FILTER_COUNT_AT_LEAST:
-        {
-          char *count;
-          gchar *ret;
-
-          count = alert_data (alert, "condition", "count");
-          ret = g_strdup_printf ("Filter count at least %s",
-                                 count ? count : "0");
-          free (count);
-          return ret;
-        }
-      case ALERT_CONDITION_FILTER_COUNT_CHANGED:
-        return g_strdup ("Filter count changed");
-      case ALERT_CONDITION_SEVERITY_AT_LEAST:
-        {
-          char *level = alert_data (alert, "condition", "severity");
-          gchar *ret = g_strdup_printf ("Task severity is at least '%s'",
-                                        level);
-          free (level);
-          return ret;
-        }
-      case ALERT_CONDITION_SEVERITY_CHANGED:
-        {
-          char *direction;
-          direction = alert_data (alert, "condition", "direction");
-          gchar *ret = g_strdup_printf ("Task severity %s", direction);
-          free (direction);
-          return ret;
-        }
-      default:
-        return g_strdup ("Internal Error");
-    }
-}
-
-/**
- * @brief Get a description of an alert event.
- *
- * @param[in]  event       Event.
- * @param[in]  event_data  Event data.
- * @param[in]  task_name   Name of task if required in description, else NULL.
- *
- * @return Freshly allocated description of event.
- */
-gchar*
-event_description (event_t event, const void *event_data, const char *task_name)
-{
-  switch (event)
-    {
-      case EVENT_TASK_RUN_STATUS_CHANGED:
-        if (task_name)
-          return g_strdup_printf
-                  ("The security scan task '%s' changed status to '%s'",
-                   task_name,
-                   run_status_name ((task_status_t) event_data));
-        return g_strdup_printf ("Task status changed to '%s'",
-                                run_status_name ((task_status_t) event_data));
-        break;
-      case EVENT_NEW_SECINFO:
-        return g_strdup_printf ("New SecInfo arrived");
-        break;
-      case EVENT_UPDATED_SECINFO:
-        return g_strdup_printf ("Updated SecInfo arrived");
-        break;
-      case EVENT_TICKET_RECEIVED:
-        return g_strdup_printf ("Ticket received");
-        break;
-      case EVENT_ASSIGNED_TICKET_CHANGED:
-        return g_strdup_printf ("Assigned ticket changed");
-        break;
-      case EVENT_OWNED_TICKET_CHANGED:
-        return g_strdup_printf ("Owned ticket changed");
-        break;
-      default:
-        return g_strdup ("Internal Error");
-    }
-}
-
-/**
- * @brief Get the name of an alert method.
- *
- * @param[in]  method  Method.
- *
- * @return The name of the method (for example, "Email" or "SNMP").
- */
-const char*
-alert_method_name (alert_method_t method)
-{
-  switch (method)
-    {
-      case ALERT_METHOD_EMAIL:       return "Email";
-      case ALERT_METHOD_HTTP_GET:    return "HTTP Get";
-      case ALERT_METHOD_SCP:         return "SCP";
-      case ALERT_METHOD_SEND:        return "Send";
-      case ALERT_METHOD_SMB:         return "SMB";
-      case ALERT_METHOD_SNMP:        return "SNMP";
-      case ALERT_METHOD_SOURCEFIRE:  return "Sourcefire Connector";
-      case ALERT_METHOD_START_TASK:  return "Start Task";
-      case ALERT_METHOD_SYSLOG:      return "Syslog";
-      case ALERT_METHOD_TIPPINGPOINT:return "TippingPoint SMS";
-      case ALERT_METHOD_VERINICE:    return "verinice Connector";
-      case ALERT_METHOD_VFIRE:       return "Alemba vFire";
-      default:                       return "Internal Error";
-    }
-}
-
-/**
- * @brief Get an alert condition from a name.
- *
- * @param[in]  name  Condition name.
- *
- * @return The condition.
- */
-alert_condition_t
-alert_condition_from_name (const char* name)
-{
-  if (strcasecmp (name, "Always") == 0)
-    return ALERT_CONDITION_ALWAYS;
-  if (strcasecmp (name, "Filter count at least") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_AT_LEAST;
-  if (strcasecmp (name, "Filter count changed") == 0)
-    return ALERT_CONDITION_FILTER_COUNT_CHANGED;
-  if (strcasecmp (name, "Severity at least") == 0)
-    return ALERT_CONDITION_SEVERITY_AT_LEAST;
-  if (strcasecmp (name, "Severity changed") == 0)
-    return ALERT_CONDITION_SEVERITY_CHANGED;
-  return ALERT_CONDITION_ERROR;
-}
-
-/**
- * @brief Get an event from a name.
- *
- * @param[in]  name  Event name.
- *
- * @return The event.
- */
-event_t
-event_from_name (const char* name)
-{
-  if (strcasecmp (name, "Task run status changed") == 0)
-    return EVENT_TASK_RUN_STATUS_CHANGED;
-  if (strcasecmp (name, "New SecInfo arrived") == 0)
-    return EVENT_NEW_SECINFO;
-  if (strcasecmp (name, "Updated SecInfo arrived") == 0)
-    return EVENT_UPDATED_SECINFO;
-  if (strcasecmp (name, "Ticket received") == 0)
-    return EVENT_TICKET_RECEIVED;
-  if (strcasecmp (name, "Assigned ticket changed") == 0)
-    return EVENT_ASSIGNED_TICKET_CHANGED;
-  if (strcasecmp (name, "Owned ticket changed") == 0)
-    return EVENT_OWNED_TICKET_CHANGED;
-  return EVENT_ERROR;
-}
-
-/**
- * @brief Get an alert method from a name.
- *
- * @param[in]  name  Method name.
- *
- * @return The method.
- */
-alert_method_t
-alert_method_from_name (const char* name)
-{
-  if (strcasecmp (name, "Email") == 0)
-    return ALERT_METHOD_EMAIL;
-  if (strcasecmp (name, "HTTP Get") == 0)
-    return ALERT_METHOD_HTTP_GET;
-  if (strcasecmp (name, "SCP") == 0)
-    return ALERT_METHOD_SCP;
-  if (strcasecmp (name, "Send") == 0)
-    return ALERT_METHOD_SEND;
-  if (strcasecmp (name, "SMB") == 0)
-    return ALERT_METHOD_SMB;
-  if (strcasecmp (name, "SNMP") == 0)
-    return ALERT_METHOD_SNMP;
-  if (strcasecmp (name, "Sourcefire Connector") == 0)
-    return ALERT_METHOD_SOURCEFIRE;
-  if (strcasecmp (name, "Start Task") == 0)
-    return ALERT_METHOD_START_TASK;
-  if (strcasecmp (name, "Syslog") == 0)
-    return ALERT_METHOD_SYSLOG;
-  if (strcasecmp (name, "TippingPoint SMS") == 0)
-    return ALERT_METHOD_TIPPINGPOINT;
-  if (strcasecmp (name, "verinice Connector") == 0)
-    return ALERT_METHOD_VERINICE;
-  if (strcasecmp (name, "Alemba vFire") == 0)
-    return ALERT_METHOD_VFIRE;
-  return ALERT_METHOD_ERROR;
-}
 
 
 /* General task facilities. */
@@ -1750,1164 +1460,11 @@ set_task_interrupted (task_t task, const gchar *message)
 /* OSP tasks. */
 
 /**
- * @brief Delete an OSP scan.
- *
- * @param[in]   report_id   Report ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
- */
-static void
-delete_osp_scan (const char *report_id, const char *host, int port,
-                 const char *ca_pub, const char *key_pub, const char *key_priv)
-{
-  osp_connection_t *connection;
-
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
-  if (!connection)
-    {
-      return;
-    }
-  osp_delete_scan (connection, report_id);
-  osp_connection_close (connection);
-}
-
-/**
- * @brief Get an OSP scan's report.
- *
- * @param[in]   scan_id     Scan ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
- * @param[in]   details     1 for detailed report, 0 otherwise.
- * @param[in]   pop_results 1 to pop results, 0 to leave results intact.
- * @param[out]  report_xml  Scan report.
- *
- * @return -1 on connection error, -2 on fail to find scan,
- *         progress value between 0 and 100 on success.
- */
-static int
-get_osp_scan_report (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub, const char
-                     *key_priv, int details, int pop_results,
-                     char **report_xml)
-{
-  osp_connection_t *connection;
-  int progress;
-  char *error = NULL;
-
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
-  if (!connection)
-    {
-      return -1;
-    }
-  progress = osp_get_scan_pop (connection, scan_id, report_xml, details,
-                               pop_results, &error);
-  if (progress > 100 || progress < 0)
-    {
-      if (g_strrstr (error, "Failed to find scan") != NULL)
-        progress = -2; // Scan already deleted
-      else
-        progress = -1; // connection error. Should retry.
-      g_warning ("OSP get_scan %s: %s", scan_id, error);
-      g_free (error);
-
-    }
-
-  osp_connection_close (connection);
-  return progress;
-}
-
-
-/**
- * @brief Get an OSP scan's status.
- *
- * @param[in]   scan_id     Scan ID.
- * @param[in]   host        Scanner host.
- * @param[in]   port        Scanner port.
- * @param[in]   ca_pub      CA Certificate.
- * @param[in]   key_pub     Certificate.
- * @param[in]   key_priv    Private key.
- *
- * @return 0 in success, -1 otherwise.
- */
-static osp_scan_status_t
-get_osp_scan_status (const char *scan_id, const char *host, int port,
-                     const char *ca_pub, const char *key_pub, const char
-                     *key_priv)
-{
-  osp_connection_t *connection;
-  char *error = NULL;
-  osp_get_scan_status_opts_t get_scan_opts;
-  osp_scan_status_t status = OSP_SCAN_STATUS_ERROR;
-
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
-  if (!connection)
-    {
-      return status;
-    }
-
-  get_scan_opts.scan_id = scan_id;
-  status = osp_get_scan_status_ext (connection, get_scan_opts, &error);
-  if (status == OSP_SCAN_STATUS_ERROR)
-    {
-      g_warning ("OSP %s %s: %s", __func__, scan_id, error);
-      g_free (error);
-      return status;
-    }
-
-  osp_connection_close (connection);
-  return status;
-}
-
-/**
- * @brief Handles the semaphore for the end of an OSP scan update.
- *
- * @param[in]  add_result_on_error  Whether to create an OSP result on error.
- * @param[in]  task   The current task (for error result).
- * @param[in]  report The current report (for error result).
- *
- * @return 0 success, -1 error.
- */
-static int
-osp_scan_semaphore_update_end (int add_result_on_error,
-                               task_t task, report_t report)
-{
-  if (max_concurrent_scan_updates == 0)
-    return 0;
-
-  if (semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0))
-    {
-      g_warning ("%s: error signaling scan update semaphore",
-                __func__);
-      if (add_result_on_error)
-        {
-          result_t result = make_osp_result
-            (task, "", "", "",
-              threat_message_type ("Error"),
-              "Error signaling scan update semaphore", "", "",
-              QOD_DEFAULT, NULL, NULL);
-          report_add_result (report, result);
-        }
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Handle an ongoing OSP scan, until success or failure.
- *
- * @param[in]   task      The task.
- * @param[in]   report    The report.
- * @param[in]   scan_id   The UUID of the scan on the scanner.
- *
- * @return 0 if success, -1 if error, -2 if scan was stopped,
- *         -3 if the scan was interrupted, -4 already stopped.
- */
-static int
-handle_osp_scan (task_t task, report_t report, const char *scan_id)
-{
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int rc, port;
-  scanner_t scanner;
-  gboolean started, queued_status_updated;
-  int retry, connection_retry;
-
-  scanner = task_scanner (task);
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
-  started = FALSE;
-  queued_status_updated = FALSE;
-  connection_retry = get_scanner_connection_retry ();
-
-  retry = connection_retry;
-  rc = -1;
-  while (retry >= 0)
-    {
-      int sem_op_ret, run_status, progress;
-      osp_scan_status_t osp_scan_status;
-
-      run_status = task_run_status (task);
-      if (run_status == TASK_STATUS_STOPPED
-          || run_status == TASK_STATUS_STOP_REQUESTED)
-        {
-          rc = -4;
-          break;
-        }
-
-      if (max_concurrent_scan_updates)
-        {
-          sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
-          if (sem_op_ret == 1)
-            continue;
-          else if (sem_op_ret)
-            {
-              g_warning ("%s: error waiting for scan update semaphore",
-                        __func__);
-              result_t result = make_osp_result
-                (task, "", "", "",
-                  threat_message_type ("Error"),
-                  "Error waiting for scan update semaphore", "", "",
-                  QOD_DEFAULT, NULL, NULL);
-              report_add_result (report, result);
-              delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                key_priv);
-              rc = -3;
-              break;
-            }
-        }
-
-      /* Get only the progress, without results and details. */
-      progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                      key_priv, 0, 0, NULL);
-
-      if (progress < 0 || progress > 100)
-        {
-          if (retry > 0 && progress == -1)
-            {
-              retry--;
-              g_warning ("Connection lost with the scanner at %s. "
-                         "Trying again in 1 second.", host);
-              gvm_sleep (1);
-              if (osp_scan_semaphore_update_end (TRUE, task, report))
-                {
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
-                  rc = -3;
-                  break;
-                }
-              continue;
-            }
-          else if (progress == -2)
-            {
-              osp_scan_semaphore_update_end (FALSE, task, report);
-              rc = -2;
-              break;
-            }
-          result_t result = make_osp_result
-                             (task, "", "", "",
-                              threat_message_type ("Error"),
-                              "Erroneous scan progress value", "", "",
-                              QOD_DEFAULT, NULL, NULL);
-          report_add_result (report, result);
-          osp_scan_semaphore_update_end (FALSE, task, report);
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv);
-          rc = -1;
-          break;
-        }
-      else
-        {
-          /* Get the full OSP report. */
-          char *report_xml = NULL;
-          progress = get_osp_scan_report (scan_id, host, port, ca_pub, key_pub,
-                                          key_priv, 1, 1, &report_xml);
-          if (progress < 0 || progress > 100)
-            {
-              if (retry > 0 && progress == -1)
-                {
-                  retry--;
-                  g_warning ("Connection lost with the scanner at %s. "
-                             "Trying again in 1 second.", host);
-                  if (osp_scan_semaphore_update_end (TRUE, task, report))
-                    {
-                      delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                       key_priv);
-                      rc = -3;
-                      break;
-                    }
-                  gvm_sleep (1);
-                  continue;
-                }
-              else if (progress == -2)
-                {
-                  osp_scan_semaphore_update_end (FALSE, task, report);
-                  rc = -2;
-                  break;
-                }
-              g_free (report_xml);
-              result_t result = make_osp_result
-                                 (task, "", "", "",
-                                  threat_message_type ("Error"),
-                                  "Erroneous scan progress value", "", "",
-                                  QOD_DEFAULT, NULL, NULL);
-              report_add_result (report, result);
-              osp_scan_semaphore_update_end (FALSE, task, report);
-              rc = -1;
-              break;
-            }
-          else
-            {
-              set_report_slave_progress (report, progress);
-              parse_osp_report (task, report, report_xml);
-              g_free (report_xml);
-
-              osp_scan_status = get_osp_scan_status (scan_id, host, port,
-                                                     ca_pub, key_pub, key_priv);
-
-              if (osp_scan_status == OSP_SCAN_STATUS_QUEUED)
-                {
-                  if (queued_status_updated == FALSE)
-                    {
-                      set_task_run_status (task, TASK_STATUS_QUEUED);
-                      set_report_scan_run_status (global_current_report,
-                                                  TASK_STATUS_QUEUED);
-                      queued_status_updated = TRUE;
-                    }
-                }
-              else if (osp_scan_status == OSP_SCAN_STATUS_INTERRUPTED)
-                {
-                  result_t result = make_osp_result
-                    (task, "", "", "",
-                     threat_message_type ("Error"),
-                     "Task interrupted unexpectedly", "", "",
-                     QOD_DEFAULT, NULL, NULL);
-                  report_add_result (report, result);
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
-                  osp_scan_semaphore_update_end (FALSE, task, report);
-                  rc = -3;
-                  break;
-                }
-              else if (progress >= 0 && progress < 100
-                  && osp_scan_status == OSP_SCAN_STATUS_STOPPED)
-                {
-                  if (retry > 0)
-                    {
-                      retry--;
-                      g_warning ("Connection lost with the scanner at %s. "
-                                 "Trying again in 1 second.", host);
-                      if (osp_scan_semaphore_update_end (TRUE, task, report))
-                        {
-                          delete_osp_scan (scan_id, host, port, ca_pub,
-                                           key_pub, key_priv);
-                          rc = -3;
-                          break;
-                        }
-                      gvm_sleep (1);
-                      continue;
-                    }
-
-                  result_t result = make_osp_result
-                    (task, "", "", "",
-                     threat_message_type ("Error"),
-                     "Scan stopped unexpectedly by the server", "", "",
-                     QOD_DEFAULT, NULL, NULL);
-                  report_add_result (report, result);
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
-                  osp_scan_semaphore_update_end (FALSE, task, report);
-                  rc = -1;
-                  break;
-                }
-              else if (progress == 100
-                       && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
-                {
-                  delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                                   key_priv);
-                  osp_scan_semaphore_update_end (FALSE, task, report);
-                  rc = 0;
-                  break;
-                }
-              else if (osp_scan_status == OSP_SCAN_STATUS_RUNNING
-                       && started == FALSE)
-                {
-                  set_task_run_status (task, TASK_STATUS_RUNNING);
-                  set_report_scan_run_status (global_current_report,
-                                              TASK_STATUS_RUNNING);
-                  started = TRUE;
-                }
-            }
-        }
-
-      if (osp_scan_semaphore_update_end (TRUE, task, report))
-        {
-          delete_osp_scan (scan_id, host, port, ca_pub, key_pub,
-                           key_priv);
-          rc = -3;
-          break;
-        }
-
-      retry = connection_retry;
-      gvm_sleep (5);
-    }
-
-  g_free (host);
-  g_free (ca_pub);
-  g_free (key_pub);
-  g_free (key_priv);
-  return rc;
-}
-
-/**
- * @brief Get the SSH credential of a target as an osp_credential_t
- *
- * @param[in]  target  The target to get the credential from.
- *
- * @return  Pointer to a newly allocated osp_credential_t
- */
-static osp_credential_t *
-target_osp_ssh_credential (target_t target)
-{
-  credential_t credential, ssh_elevate_credential;
-  credential = target_ssh_credential (target);
-  ssh_elevate_credential = target_ssh_elevate_credential (target);
-
-  if (credential)
-    {
-      iterator_t iter, ssh_elevate_iter;
-      const char *type;
-      char *ssh_port;
-      osp_credential_t *osp_credential;
-
-      init_credential_iterator_one (&iter, credential);
-
-      if (!next (&iter))
-        {
-          g_warning ("%s: SSH Credential not found.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      type = credential_iterator_type (&iter);
-      if (strcmp (type, "up") && strcmp (type, "usk"))
-        {
-          g_warning ("%s: SSH Credential not a user/pass pair"
-                     " or user/ssh key.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-
-      ssh_port = target_ssh_port (target);
-      osp_credential = osp_credential_new (type, "ssh", ssh_port);
-      free (ssh_port);
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    credential_iterator_login (&iter));
-      osp_credential_set_auth_data (osp_credential,
-                                    "password",
-                                    credential_iterator_password (&iter));
-
-      if (strcmp (type, "usk") == 0)
-        {
-          const char *private_key = credential_iterator_private_key (&iter);
-          gchar *base64 = g_base64_encode ((guchar *) private_key,
-                                           strlen (private_key));
-          osp_credential_set_auth_data (osp_credential,
-                                        "private", base64);
-          g_free (base64);
-        }
-
-      if(ssh_elevate_credential)
-        {
-          const char *elevate_type;
-
-          init_credential_iterator_one (&ssh_elevate_iter,
-                                        ssh_elevate_credential);
-          if (!next (&ssh_elevate_iter))
-            {
-              g_warning ("%s: SSH Elevate Credential not found.", __func__);
-              cleanup_iterator (&ssh_elevate_iter);
-              osp_credential_free(osp_credential);
-              return NULL;
-            }
-          elevate_type = credential_iterator_type (&ssh_elevate_iter);
-          if (strcmp (elevate_type, "up"))
-            {
-              g_warning ("%s: SSH Elevate Credential not of type up", __func__);
-              cleanup_iterator (&ssh_elevate_iter);
-              osp_credential_free(osp_credential);
-              return NULL;
-            }
-          osp_credential_set_auth_data (osp_credential,
-                                        "priv_username",
-                                        credential_iterator_login
-                                          (&ssh_elevate_iter));
-          osp_credential_set_auth_data (osp_credential,
-                                        "priv_password",
-                                        credential_iterator_password
-                                          (&ssh_elevate_iter));
-          cleanup_iterator (&ssh_elevate_iter);
-        }
-
-      cleanup_iterator (&iter);
-      return osp_credential;
-    }
-  return NULL;
-}
-
-/**
- * @brief Get the SMB credential of a target as an osp_credential_t
- *
- * @param[in]  target  The target to get the credential from.
- *
- * @return  Pointer to a newly allocated osp_credential_t
- */
-static osp_credential_t *
-target_osp_smb_credential (target_t target)
-{
-  credential_t credential;
-  credential = target_smb_credential (target);
-  if (credential)
-    {
-      iterator_t iter;
-      osp_credential_t *osp_credential;
-
-      init_credential_iterator_one (&iter, credential);
-      if (!next (&iter))
-        {
-          g_warning ("%s: SMB Credential not found.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      if (strcmp (credential_iterator_type (&iter), "up"))
-        {
-          g_warning ("%s: SMB Credential not a user/pass pair.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-
-      osp_credential = osp_credential_new ("up", "smb", NULL);
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    credential_iterator_login (&iter));
-      osp_credential_set_auth_data (osp_credential,
-                                    "password",
-                                    credential_iterator_password (&iter));
-      cleanup_iterator (&iter);
-      return osp_credential;
-    }
-  return NULL;
-}
-
-/**
- * @brief Get the SMB credential of a target as an osp_credential_t
- *
- * @param[in]  target  The target to get the credential from.
- *
- * @return  Pointer to a newly allocated osp_credential_t
- */
-static osp_credential_t *
-target_osp_esxi_credential (target_t target)
-{
-  credential_t credential;
-  credential = target_esxi_credential (target);
-  if (credential)
-    {
-      iterator_t iter;
-      osp_credential_t *osp_credential;
-
-      init_credential_iterator_one (&iter, credential);
-      if (!next (&iter))
-        {
-          g_warning ("%s: ESXi Credential not found.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      if (strcmp (credential_iterator_type (&iter), "up"))
-        {
-          g_warning ("%s: ESXi Credential not a user/pass pair.",
-                     __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-
-      osp_credential = osp_credential_new ("up", "esxi", NULL);
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    credential_iterator_login (&iter));
-      osp_credential_set_auth_data (osp_credential,
-                                    "password",
-                                    credential_iterator_password (&iter));
-      cleanup_iterator (&iter);
-      return osp_credential;
-    }
-  return NULL;
-}
-
-/**
- * @brief Get the SMB credential of a target as an osp_credential_t
- *
- * @param[in]  target  The target to get the credential from.
- *
- * @return  Pointer to a newly allocated osp_credential_t
- */
-static osp_credential_t *
-target_osp_snmp_credential (target_t target)
-{
-  credential_t credential;
-  credential = target_credential (target, "snmp");
-  if (credential)
-    {
-      iterator_t iter;
-      osp_credential_t *osp_credential;
-
-      init_credential_iterator_one (&iter, credential);
-      if (!next (&iter))
-        {
-          g_warning ("%s: SNMP Credential not found.", __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-      if (strcmp (credential_iterator_type (&iter), "snmp"))
-        {
-          g_warning ("%s: SNMP Credential not of type 'snmp'.",
-                     __func__);
-          cleanup_iterator (&iter);
-          return NULL;
-        }
-
-      osp_credential = osp_credential_new ("snmp", "snmp", NULL);
-      osp_credential_set_auth_data (osp_credential,
-                                    "username",
-                                    credential_iterator_login (&iter)
-                                      ?: "");
-      osp_credential_set_auth_data (osp_credential,
-                                    "password",
-                                    credential_iterator_password (&iter)
-                                      ?: "");
-      osp_credential_set_auth_data (osp_credential,
-                                    "community",
-                                    credential_iterator_community (&iter)
-                                      ?: "");
-      osp_credential_set_auth_data (osp_credential,
-                                    "auth_algorithm",
-                                    credential_iterator_auth_algorithm (&iter)
-                                      ?: "");
-      osp_credential_set_auth_data (osp_credential,
-                                    "privacy_algorithm",
-                                    credential_iterator_privacy_algorithm
-                                      (&iter) ?: "");
-      osp_credential_set_auth_data (osp_credential,
-                                    "privacy_password",
-                                    credential_iterator_privacy_password
-                                      (&iter) ?: "");
-      cleanup_iterator (&iter);
-      return osp_credential;
-    }
-  return NULL;
-}
-
-/**
- * @brief Prepare a report for resuming an OSP scan
- *
- * @param[in]  task     The task of the scan.
- * @param[in]  scan_id  The scan uuid.
- * @param[out] error    Error return.
- *
- * @return 0 scan finished or still running,
- *         1 scan must be started,
- *         -1 error
- */
-static int
-prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
-{
-  osp_connection_t *connection;
-  osp_get_scan_status_opts_t status_opts;
-  osp_scan_status_t status;
-
-  assert (task);
-  assert (scan_id);
-  assert (global_current_report);
-  assert (error);
-
-  status_opts.scan_id = scan_id;
-
-  connection = osp_scanner_connect (task_scanner (task));
-  if (!connection)
-    {
-      *error = g_strdup ("Could not connect to Scanner");
-      return -1;
-    }
-  status = osp_get_scan_status_ext (connection, status_opts, error);
-
-  /* Reset connection. */
-  osp_connection_close (connection);
-  connection = osp_scanner_connect (task_scanner (task));
-  if (!connection)
-    {
-      *error = g_strdup ("Could not connect to Scanner");
-      return -1;
-    }
-
-  if (status == OSP_SCAN_STATUS_ERROR)
-    {
-      if (g_str_has_prefix (*error, "Failed to find scan"))
-        {
-          g_debug ("%s: Scan %s not found", __func__, scan_id);
-          g_free (*error);
-          *error = NULL;
-          osp_connection_close (connection);
-          trim_partial_report (global_current_report);
-          return 1;
-        }
-      else
-        {
-          g_warning ("%s: Error getting status of scan %s: %s",
-                     __func__, scan_id, *error);
-          osp_connection_close (connection);
-          return -1;
-        }
-    }
-  else if (status == OSP_SCAN_STATUS_RUNNING
-           || status == OSP_SCAN_STATUS_QUEUED)
-    {
-      g_debug ("%s: Scan %s queued or running", __func__, scan_id);
-      /* It would be possible to simply continue getting the results
-       * from the scanner, but gvmd may have crashed while receiving
-       * or storing the results, so some may be missing. */
-      if (osp_stop_scan (connection, scan_id, error))
-        {
-          osp_connection_close (connection);
-          return -1;
-        }
-      if (osp_delete_scan (connection, scan_id))
-        {
-          *error = g_strdup ("Failed to delete old report");
-          osp_connection_close (connection);
-          return -1;
-        }
-      osp_connection_close (connection);
-      trim_partial_report (global_current_report);
-      return 1;
-    }
-  else if (status == OSP_SCAN_STATUS_FINISHED)
-    {
-      /* OSP can't stop an already finished/interrupted scan,
-       * but it must be delete to be resumed. */
-      g_debug ("%s: Scan %s finished", __func__, scan_id);
-      if (osp_delete_scan (connection, scan_id))
-        {
-          *error = g_strdup ("Failed to delete old report");
-          osp_connection_close (connection);
-          return -1;
-        }
-      osp_connection_close (connection);
-      trim_partial_report (global_current_report);
-      return 1;
-    }
-  else if (status == OSP_SCAN_STATUS_STOPPED
-           || status == OSP_SCAN_STATUS_INTERRUPTED)
-    {
-      g_debug ("%s: Scan %s stopped or interrupted",
-               __func__, scan_id);
-      if (osp_delete_scan (connection, scan_id))
-        {
-          *error = g_strdup ("Failed to delete old report");
-          osp_connection_close (connection);
-          return -1;
-        }
-      osp_connection_close (connection);
-      trim_partial_report (global_current_report);
-      return 1;
-    }
-
-  g_warning ("%s: Unexpected scanner status %d", __func__, status);
-  *error = g_strdup_printf ("Unexpected scanner status %d", status);
-  osp_connection_close (connection);
-  return -1;
-}
-
-/**
- * @brief Add OSP preferences for limiting hosts for users.
- *
- * @param[in]  scanner_options  The scanner preferences table to add to.
- */
-static void
-add_user_scan_preferences (GHashTable *scanner_options)
-{
-  gchar *hosts, *name;
-  int hosts_allow;
-
-  // Limit access to hosts
-  hosts = user_hosts (current_credentials.uuid);
-  hosts_allow = user_hosts_allow (current_credentials.uuid);
-
-  if (hosts_allow == 1)
-    name = g_strdup ("hosts_allow");
-  else if (hosts_allow == 0)
-    name = g_strdup ("hosts_deny");
-  else
-    name = NULL;
-
-  if (name
-      && (hosts_allow || (hosts && strlen (hosts))))
-    g_hash_table_replace (scanner_options,
-                          name,
-                          hosts ? hosts : g_strdup (""));
-  else
-    g_free (hosts);
-}
-
-/**
- * @brief Launch an OpenVAS via OSP task.
- *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[in]   scan_id     The scan uuid.
- * @param[in]   from        0 start from beginning, 1 continue from stopped,
- *                          2 continue if stopped else start from beginning.
- * @param[out]  error       Error return.
- *
- * @return 0 success, -1 if error.
- */
-static int
-launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
-                         int from, char **error)
-{
-  osp_connection_t *connection;
-  char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
-  gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
-  int alive_test, reverse_lookup_only, reverse_lookup_unify;
-  osp_target_t *osp_target;
-  GSList *osp_targets, *vts;
-  GHashTable *vts_hash_table;
-  osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
-  osp_credential_t *snmp_credential;
-  gchar *max_checks, *max_hosts, *hosts_ordering;
-  GHashTable *scanner_options;
-  int ret, empty;
-  config_t config;
-  iterator_t scanner_prefs_iter, families, prefs;
-  osp_start_scan_opts_t start_scan_opts;
-
-  config = task_config (task);
-
-  connection = NULL;
-
-  alive_test = 0;
-  reverse_lookup_unify = 0;
-  reverse_lookup_only = 0;
-
-  /* Prepare the report */
-  if (from)
-    {
-      ret = prepare_osp_scan_for_resume (task, scan_id, error);
-      if (ret == 0)
-        return 0;
-      else if (ret == -1)
-        return -1;
-      finished_hosts_str = report_finished_hosts_str (global_current_report);
-      clean_finished_hosts_str = clean_hosts_string (finished_hosts_str);
-    }
-  else
-    {
-      finished_hosts_str = NULL;
-      clean_finished_hosts_str = NULL;
-    }
-
-  /* Set up target(s) */
-  hosts_str = target_hosts (target);
-  ports_str = target_port_range (target);
-  exclude_hosts_str = target_exclude_hosts (target);
-
-  clean_hosts = clean_hosts_string (hosts_str);
-  clean_exclude_hosts = clean_hosts_string (exclude_hosts_str);
-
-  if (target_alive_tests (target) > 0)
-   alive_test = target_alive_tests (target);
-
-  if (target_reverse_lookup_only (target) != NULL)
-    reverse_lookup_only = atoi (target_reverse_lookup_only (target));
-
-  if (target_reverse_lookup_unify (target) != NULL)
-    reverse_lookup_unify = atoi (target_reverse_lookup_unify (target));
-
-  if (finished_hosts_str)
-    {
-      gchar *new_exclude_hosts;
-
-      new_exclude_hosts = g_strdup_printf ("%s,%s",
-                                           clean_exclude_hosts,
-                                           clean_finished_hosts_str);
-      free (clean_exclude_hosts);
-      clean_exclude_hosts = new_exclude_hosts;
-    }
-
-  osp_target = osp_target_new (clean_hosts, ports_str, clean_exclude_hosts,
-                               alive_test, reverse_lookup_unify,
-                               reverse_lookup_only);
-  if (finished_hosts_str)
-    osp_target_set_finished_hosts (osp_target, finished_hosts_str);
-
-  free (hosts_str);
-  free (ports_str);
-  free (exclude_hosts_str);
-  free (finished_hosts_str);
-  g_free (clean_hosts);
-  g_free (clean_exclude_hosts);
-  g_free (clean_finished_hosts_str);
-  osp_targets = g_slist_append (NULL, osp_target);
-
-  ssh_credential = target_osp_ssh_credential (target);
-  if (ssh_credential)
-    osp_target_add_credential (osp_target, ssh_credential);
-
-  smb_credential = target_osp_smb_credential (target);
-  if (smb_credential)
-    osp_target_add_credential (osp_target, smb_credential);
-
-  esxi_credential = target_osp_esxi_credential (target);
-  if (esxi_credential)
-    osp_target_add_credential (osp_target, esxi_credential);
-
-  snmp_credential = target_osp_snmp_credential (target);
-  if (snmp_credential)
-    osp_target_add_credential (osp_target, snmp_credential);
-
-  /* Initialize vts table for vulnerability tests and their preferences */
-  vts = NULL;
-  vts_hash_table
-    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
-                             /* Value is freed in vts list. */
-                             NULL);
-
-  /*  Setup of vulnerability tests (without preferences) */
-  init_family_iterator (&families, 0, NULL, 1);
-  empty = 1;
-  while (next (&families))
-    {
-      const char *family = family_iterator_name (&families);
-      if (family)
-        {
-          iterator_t nvts;
-          init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
-          while (next (&nvts))
-            {
-              const char *oid;
-              osp_vt_single_t *new_vt;
-
-              empty = 0;
-              oid = nvt_iterator_oid (&nvts);
-              new_vt = osp_vt_single_new (oid);
-
-              vts = g_slist_prepend (vts, new_vt);
-              g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
-            }
-          cleanup_iterator (&nvts);
-        }
-    }
-  cleanup_iterator (&families);
-
-  if (empty) {
-    if (error)
-      *error = g_strdup ("Exiting because VT list is empty (e.g. feed not synced yet)");
-    g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
-    // Credentials are freed with target
-    g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
-    return -1;
-  }
-
-  /* Setup general scanner preferences */
-  scanner_options
-    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
-  while (next (&scanner_prefs_iter))
-    {
-      const char *name, *value;
-      name = preference_iterator_name (&scanner_prefs_iter);
-      value = preference_iterator_value (&scanner_prefs_iter);
-      if (name && value && !g_str_has_prefix (name, "timeout."))
-        {
-          const char *osp_value;
-
-          // Workaround for boolean scanner preferences
-          if (strcmp (value, "yes") == 0)
-            osp_value = "1";
-          else if (strcmp (value, "no") == 0)
-            osp_value = "0";
-          else
-            osp_value = value;
-          g_hash_table_replace (scanner_options,
-                                g_strdup (name),
-                                g_strdup (osp_value));
-        }
-      /* Timeouts are stored as SERVER_PREFS, but are actually
-         script preferences. This prefs is converted into a
-         script preference to be sent to the scanner. */
-      else if (name && value && g_str_has_prefix (name, "timeout."))
-        {
-          char **oid = NULL;
-          osp_vt_single_t *osp_vt = NULL;
-
-          oid = g_strsplit (name, ".", 2);
-          osp_vt = g_hash_table_lookup (vts_hash_table, oid[1]);
-          if (osp_vt)
-            osp_vt_single_add_value (osp_vt, "0", value);
-          g_strfreev (oid);
-        }
-
-    }
-  cleanup_iterator (&scanner_prefs_iter);
-
-  /* Setup user-specific scanner preference */
-  add_user_scan_preferences (scanner_options);
-
-  /* Setup general task preferences */
-  max_checks = task_preference_value (task, "max_checks");
-  g_hash_table_insert (scanner_options, g_strdup ("max_checks"),
-                       max_checks ? max_checks : g_strdup (MAX_CHECKS_DEFAULT));
-
-  max_hosts = task_preference_value (task, "max_hosts");
-  g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
-                       max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
-
-  hosts_ordering = task_hosts_ordering (task);
-  if (hosts_ordering)
-    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
-                         hosts_ordering);
-
-  /* Setup VT preferences */
-  init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
-  while (next (&prefs))
-    {
-      const char *full_name, *value;
-      osp_vt_single_t *osp_vt;
-      gchar **split_name;
-
-      full_name = preference_iterator_name (&prefs);
-      value = preference_iterator_value (&prefs);
-      split_name = g_strsplit (full_name, ":", 4);
-
-      osp_vt = NULL;
-      if (split_name && split_name[0] && split_name[1] && split_name[2])
-        {
-          const char *oid = split_name[0];
-          const char *pref_id = split_name[1];
-          const char *type = split_name[2];
-          gchar *osp_value = NULL;
-
-          if (strcmp (type, "checkbox") == 0)
-            {
-              if (strcmp (value, "yes") == 0)
-                osp_value = g_strdup ("1");
-              else
-                osp_value = g_strdup ("0");
-            }
-          else if (strcmp (type, "radio") == 0)
-            {
-              gchar** split_value;
-              split_value = g_strsplit (value, ";", 2);
-              osp_value = g_strdup (split_value[0]);
-              g_strfreev (split_value);
-            }
-          else if (strcmp (type, "file") == 0)
-            osp_value = g_base64_encode ((guchar*) value, strlen (value));
-
-          osp_vt = g_hash_table_lookup (vts_hash_table, oid);
-          if (osp_vt)
-            osp_vt_single_add_value (osp_vt, pref_id,
-                                     osp_value ? osp_value : value);
-          g_free (osp_value);
-        }
-
-      g_strfreev (split_name);
-    }
-  cleanup_iterator (&prefs);
-  g_hash_table_destroy (vts_hash_table);
-
-  /* Start the scan */
-  connection = osp_scanner_connect (task_scanner (task));
-  if (!connection)
-    {
-      if (error)
-        *error = g_strdup ("Could not connect to Scanner");
-      g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
-      // Credentials are freed with target
-      g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
-      g_hash_table_destroy (scanner_options);
-      return -1;
-    }
-
-  start_scan_opts.targets = osp_targets;
-  start_scan_opts.vt_groups = NULL;
-  start_scan_opts.vts = vts;
-  start_scan_opts.scanner_params = scanner_options;
-  start_scan_opts.scan_id = scan_id;
-
-  ret = osp_start_scan_ext (connection,
-                            start_scan_opts,
-                            error);
-
-  osp_connection_close (connection);
-  g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
-  // Credentials are freed with target
-  g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
-  g_hash_table_destroy (scanner_options);
-  return ret;
-}
-
-/**
- * @brief Get the last stopped report or a new one for an OSP scan.
- *
- * @param[in]   task      The task.
- * @param[in]   from      0 start from beginning, 1 continue from stopped,
- *                        2 continue if stopped else start from beginning.
- * @param[out]  report_id UUID of the report.
- *
- * @return 0 success, -1 error
- */
-static int
-run_osp_scan_get_report (task_t task, int from, char **report_id)
-{
-  report_t resume_report;
-
-  resume_report = 0;
-  *report_id = NULL;
-
-  if (from && task_last_resumable_report (task, &resume_report))
-    {
-      g_warning ("%s: error getting report to resume", __func__);
-      return -1;
-    }
-
-  if (resume_report)
-    {
-      // Report to resume found
-      if (global_current_report)
-        {
-           g_warning ("%s: global_current_report already set", __func__);
-          return -1;
-        }
-      global_current_report = resume_report;
-      *report_id = report_uuid (resume_report);
-
-      /* Ensure the report is marked as requested. */
-      set_report_scan_run_status (resume_report, TASK_STATUS_REQUESTED);
-
-      /* Clear the end times of the task and partial report. */
-      set_task_start_time_epoch (task,
-                                 scan_start_time_epoch (resume_report));
-      set_task_end_time (task, NULL);
-      set_scan_end_time (resume_report, NULL);
-    }
-  else if (from == 1)
-    // No report to resume and starting a new one is not allowed
-    return -1;
-
-  // Try starting a new report
-  if (resume_report == 0
-      && create_current_report (task, report_id, TASK_STATUS_REQUESTED))
-    {
-      g_debug ("   %s: failed to create report", __func__);
-      return -1;
-    }
-
-  return 0;
-}
-
-/**
  * @brief Fork a child to handle an OSP scan's fetching and inserting.
  *
  * @param[in]   task       The task.
  * @param[in]   target     The target.
- * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ * @param[in]   start_from 0 start from beginning, 1 continue from stopped,
  *                         2 continue if stopped else start from beginning.
  * @param[out]  report_id_return   UUID of the report.
  *
@@ -2915,10 +1472,10 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
  *         doesn't return and simply exits.
  */
 static int
-fork_osp_scan_handler (task_t task, target_t target, int from,
+fork_osp_scan_handler (task_t task, target_t target, int start_from,
                        char **report_id_return)
 {
-  char *report_id, *error = NULL;
+  char *report_id = NULL;
   int rc;
 
   assert (task);
@@ -2927,7 +1484,7 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   if (report_id_return)
     *report_id_return = NULL;
 
-  if (run_osp_scan_get_report (task, from, &report_id))
+  if (run_osp_scan_get_report (task, start_from, &report_id))
     return -1;
 
   current_scanner_task = task;
@@ -2971,23 +1528,8 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  rc = launch_osp_openvas_task (task, target, report_id, from, &error);
-
-  if (rc)
+  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE))
     {
-      result_t result;
-
-      g_warning ("OSP start_scan %s: %s", report_id, error);
-      result = make_osp_result (task, "", "", "",
-                                threat_message_type ("Error"),
-                                error, "", "", QOD_DEFAULT, NULL, NULL);
-      report_add_result (global_current_report, result);
-      set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
-      set_task_end_time_epoch (task, time (NULL));
-      set_scan_end_time_epoch (global_current_report, time (NULL));
-
-      g_free (error);
       g_free (report_id);
       gvm_close_sentry ();
       exit (-1);
@@ -2995,52 +1537,57 @@ fork_osp_scan_handler (task_t task, target_t target, int from,
 
   setproctitle ("OSP: Handling scan %s", report_id);
 
-  rc = handle_osp_scan (task, global_current_report, report_id);
+  rc = handle_osp_scan (task, global_current_report, report_id, 0);
   g_free (report_id);
-  if (rc == 0)
-    {
-      set_task_run_status (task, TASK_STATUS_PROCESSING);
-      set_report_scan_run_status (global_current_report,
-                                  TASK_STATUS_PROCESSING);
-
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
-      hosts_set_identifiers (global_current_report);
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
-
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
-      hosts_set_max_severity (global_current_report, NULL, NULL);
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
-
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 0);
-      hosts_set_details (global_current_report);
-      if (max_concurrent_scan_updates)
-        semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
-
-      set_task_run_status (task, TASK_STATUS_DONE);
-      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
-    }
-  else if (rc == -1 || rc == -2)
-    {
-      set_task_run_status (task, TASK_STATUS_STOPPED);
-      set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
-    }
-  else if (rc == -3)
-    {
-      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
-      set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
-    }
-
-  set_task_end_time_epoch (task, time (NULL));
-  set_scan_end_time_epoch (global_current_report, time (NULL));
-  global_current_report = 0;
-  current_scanner_task = (task_t) 0;
+  rc = handle_osp_scan_end (task, rc);
   gvm_close_sentry ();
   exit (rc);
+}
+
+/**
+ * @brief Prepare an OSP scan and add it to the gvmd scan queue.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   start_from 0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
+ * @param[out]  report_id_return   UUID of the report.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+queue_osp_task (task_t task, int start_from, char **report_id_return)
+{
+  char *report_id = NULL;
+  report_t report = 0;
+
+  if (report_id_return)
+    *report_id_return = NULL;
+
+  if (run_osp_scan_get_report (task, start_from, &report_id))
+    return -1;
+
+  if (find_resource_no_acl ("report", report_id, &report))
+    {
+      g_warning ("%s: error getting report '%s'",
+                 __func__, report_id);
+      g_free (report_id);
+      return -1;
+    }
+  else if (report == 0)
+    {
+      g_warning ("%s: could not find report '%s'",
+                 __func__, report_id);
+      g_free (report_id);
+      return -1;
+    }
+
+  scan_queue_add (report);
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+  set_report_scan_run_status (report, TASK_STATUS_REQUESTED);
+  g_debug ("%s: report %s (%llu) added to scan queue",
+           __func__, report_id, report);
+  g_free (report_id);
+  return 0;
 }
 
 /**
@@ -3075,11 +1622,23 @@ run_osp_task (task_t task, int from, char **report_id)
         return 99;
     }
 
-  if (fork_osp_scan_handler (task, target, from, report_id))
+  if (get_use_scan_queue ())
     {
-      g_warning ("Couldn't fork OSP scan handler");
-      return -1;
+      if (queue_osp_task (task, from, report_id))
+        {
+          g_warning ("Couldn't queue OSP scan");
+          return -1;
+        }
     }
+  else
+    {
+      if (fork_osp_scan_handler (task, target, from, report_id))
+        {
+          g_warning ("Couldn't fork OSP scan handler");
+          return -1;
+        }
+    }
+
   return 0;
 }
 
@@ -3184,16 +1743,16 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
   while (next (&cpe_match_ranges))
     {
       iterator_t cpe_host_details_products;
-      gchar *range_fs_cpe;
+      gchar *range_uri_cpe;
       gchar *range_uri_product;
       gchar *vsi, *vse, *vei, *vee;
-      range_fs_cpe = vsi = vse = vei = vee = NULL;
-      range_fs_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
+      range_uri_cpe = vsi = vse = vei = vee = NULL;
+      range_uri_cpe = g_strdup (cpe_match_string_iterator_criteria (&cpe_match_ranges));
       vsi = g_strdup (cpe_match_string_iterator_version_start_incl (&cpe_match_ranges));
       vse = g_strdup (cpe_match_string_iterator_version_start_excl (&cpe_match_ranges));
       vei = g_strdup (cpe_match_string_iterator_version_end_incl (&cpe_match_ranges));
       vee = g_strdup (cpe_match_string_iterator_version_end_excl (&cpe_match_ranges));
-      range_uri_product = fs_cpe_to_uri_product (range_fs_cpe);
+      range_uri_product = uri_cpe_to_uri_product (range_uri_cpe);
       init_host_details_cpe_product_iterator (&cpe_host_details_products, range_uri_product, report_host);
       while (next (&cpe_host_details_products))
         {
@@ -3203,7 +1762,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           host_details_cpe = host_details_cpe_product_iterator_value (&cpe_host_details_products);
           cpe_struct_init (&source);
           cpe_struct_init (&target);
-          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (range_uri_cpe, &source);
           uri_cpe_to_cpe_struct (host_details_cpe, &target);
           matches = cpe_struct_match (&source, &target);
           if (matches)
@@ -3221,7 +1780,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_t source, target;
           cpe_struct_init (&source);
           cpe_struct_init (&target);
-          fs_cpe_to_cpe_struct (range_fs_cpe, &source);
+          uri_cpe_to_cpe_struct (range_uri_cpe, &source);
           uri_cpe_to_cpe_struct (host_cpe, &target);
           if (cpe_struct_match (&source, &target))
             *vulnerable = TRUE;
@@ -3229,7 +1788,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_free (&target);
         }
       g_free (range_uri_product);
-      g_free (range_fs_cpe);
+      g_free (range_uri_cpe);
       g_free (vsi);
       g_free (vse);
       g_free (vei);
@@ -3275,7 +1834,7 @@ cve_scan_report_host_json (task_t task,
       double severity;
 
       host_cpe = host_details_cpe_iterator_cpe (&host_details_cpe);
-      cpe_product = uri_cpe_to_fs_product (host_cpe);
+      cpe_product = uri_cpe_to_uri_product (host_cpe);
       init_cpe_match_nodes_iterator (&cpe_match_root_node, cpe_product);
       while (next (&cpe_match_root_node))
         {
@@ -3389,11 +1948,18 @@ cve_scan_report_host_json (task_t task,
  * @param[in]  task      Task.
  * @param[in]  report    The report to add the host, results and details to.
  * @param[in]  gvm_host  Host.
+ * @param[in]  matching_version  The CPE-CVE matching version (0 or 1) to use.
+ *
+ * With version 0 matching, CPEs are only compared to the affected products
+ *  lists of CVEs.
+ * With version 1 matching, CPEs are matched by evaluating the match criteria
+ *  for the CVEs.
  *
  * @return 0 success, 1 failed to get nthlast report for a host.
  */
 static int
-cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
+cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host,
+               int matching_version)
 {
   report_host_t report_host;
   gchar *ip, *host;
@@ -3439,7 +2005,8 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host)
           start_time = time (NULL);
           prognosis_report_host = 0;
 
-          if (sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
+          if (matching_version == 1 &&
+              sql_int64_0 ("SELECT count(1) FROM information_schema.tables"
                            " WHERE table_schema = 'scap'"
                            " AND table_name = 'cpe_match_nodes';") > 0)
             {
@@ -3672,12 +2239,12 @@ fork_cve_scan_handler (task_t task, target_t target)
 
   gvm_hosts = gvm_hosts_new (hosts);
   free (hosts);
-  
+
   if (gvm_hosts_exclude (gvm_hosts, exclude_hosts ?: "") < 0)
     {
       set_task_interrupted (task,
                               "Failed to exclude hosts."
-                              "  Interrupting scan.");      
+                              "  Interrupting scan.");
       set_report_scan_run_status (global_current_report, TASK_STATUS_INTERRUPTED);
       gvm_hosts_free (gvm_hosts);
       free (exclude_hosts);
@@ -3686,8 +2253,11 @@ fork_cve_scan_handler (task_t task, target_t target)
     }
   free (exclude_hosts);
 
+  int matching_version;
+  setting_value_int(SETTING_UUID_CVE_CPE_MATCHING_VERSION, &matching_version);
+
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, global_current_report, gvm_host))
+    if (cve_scan_host (task, global_current_report, gvm_host, matching_version))
       {
         set_task_interrupted (task,
                               "Failed to get nthlast report."
@@ -3772,28 +2342,6 @@ set_relay_mapper_path (const char *new_path)
 {
   g_free (relay_mapper_path);
   relay_mapper_path = new_path ? g_strdup (new_path) : NULL;
-}
-
-/**
- * @brief Gets whether to migrate sensors if relays do not match.
- *
- * @return Whether to migrate sensors if relays do not match.
- */
-int
-get_relay_migrate_sensors ()
-{
-  return relay_migrate_sensors;
-}
-
-/**
- * @brief Sets whether to migrate sensors if relays do not match.
- *
- * @param[in]  new_value  The new value.
- */
-void
-set_relay_migrate_sensors (int new_value)
-{
-  relay_migrate_sensors = new_value;
 }
 
 /**
@@ -4016,6 +2564,18 @@ slave_get_relay (const char *original_host,
   return ret;
 }
 
+#if OPENVASD
+/* Prototype */
+static int
+run_openvasd_task (task_t task, int from, char **report_id);
+#endif
+
+#if ENABLE_AGENTS
+/* Prototype */
+static int
+run_agent_control_task (task_t task, char **report_id);
+#endif
+
 /**
  * @brief Start or resume a task.
  *
@@ -4078,6 +2638,28 @@ run_task (const char *task_id, char **report_id, int from)
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, from, report_id);
 
+#if OPENVASD
+  if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD
+    || scanner_type (scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
+    return run_openvasd_task (task, from, report_id);
+#endif
+
+#if ENABLE_AGENTS
+  if (scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER
+    || scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      if (from == 1)
+        // Resume task is not supported by agent controller
+        return 4;
+      return run_agent_control_task (task, report_id);
+    }
+#endif
+
+#if ENABLE_CONTAINER_SCANNING
+  if (scanner_type (scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
+    return run_container_image_task (task, from, report_id);
+#endif
+
   return -1; // Unknown scanner type
 }
 
@@ -4127,10 +2709,13 @@ stop_osp_task (task_t task)
   task_t previous_task;
   report_t previous_report;
 
+  scan_report = task_running_report (task);
+  if (!scan_report)
+    return 0;
+
   previous_task = current_scanner_task;
   previous_report = global_current_report;
 
-  scan_report = task_running_report (task);
   scan_id = report_uuid (scan_report);
   if (!scan_id)
     goto end_stop_osp;
@@ -4204,6 +2789,11 @@ stop_task_internal (task_t task)
   return 0;
 }
 
+#if OPENVASD
+static int
+stop_openvasd_task (task_t task);
+#endif
+
 /**
  * @brief Initiate stopping a task.
  *
@@ -4229,6 +2819,17 @@ stop_task (const char *task_id)
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
+
+#if OPENVASD
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
+      || scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD_SENSOR)
+    return stop_openvasd_task (task);
+#endif
+
+#if ENABLE_CONTAINER_SCANNING
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_CONTAINER_IMAGE)
+    return stop_container_image_task (task);
+#endif
 
   return stop_task_internal (task);
 }
@@ -4416,6 +3017,20 @@ credential_full_type (const char* abbreviation)
     return NULL;
   else if (strcasecmp (abbreviation, "cc") == 0)
     return "client certificate";
+#if ENABLE_CREDENTIAL_STORES
+  else if (strcasecmp (abbreviation, "cs_krb5") ==0)
+    return "Credential store Kerberos 5";
+  else if (strcasecmp (abbreviation, "cs_pw") == 0)
+    return "Credential store password only";
+  else if (strcasecmp (abbreviation, "cs_snmp") == 0)
+    return "Credential store SNMP";
+  else if (strcasecmp (abbreviation, "cs_up") == 0)
+    return "Credential store username + password";
+  else if (strcasecmp (abbreviation, "cs_usk") == 0)
+    return "Credential store username + SSH key";
+#endif
+  else if (strcasecmp (abbreviation, "krb5") == 0)
+    return "Kerberos 5";
   else if (strcasecmp (abbreviation, "pw") == 0)
     return "password only";
   else if (strcasecmp (abbreviation, "snmp") == 0)
@@ -4449,32 +3064,50 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
-  char *host, *ca_pub, *key_pub, *key_priv;
-  int port;
-  osp_connection_t *connection = NULL;
-  osp_get_performance_opts_t opts;
-  int connection_retry, return_value;
+#if OPENVASD
+  http_scanner_connector_t connector;
+  int err;
+  openvasd_get_performance_opts_t opts;
 
-  host = scanner_host (scanner);
-  port = scanner_port (scanner);
-  ca_pub = scanner_ca_pub (scanner);
-  key_pub = scanner_key_pub (scanner);
-  key_priv = scanner_key_priv (scanner);
+  connector = http_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      *error = g_strdup ("Could not connect to scanner");
+      return 6;
+    }
+
+  opts.start = start;
+  opts.end = end;
+  opts.titles = titles;
+
+  err = openvasd_parsed_performance (connector, opts, performance_str, error);
+  if (err)
+    {
+      g_warning ("Error getting openvasd performance report: %s", *error);
+      http_scanner_connector_free (connector);
+      return 6;
+    }
+
+  http_scanner_connector_free (connector);
+#else
+  osp_connect_data_t *conn_data;
+  int return_value;
+  osp_connection_t *connection = NULL;
+  int connection_retry;
+  osp_get_performance_opts_t opts;
+
+  conn_data = osp_connect_data_from_scanner (scanner);
 
   connection_retry = get_scanner_connection_retry ();
-  connection = osp_connect_with_data (host, port, ca_pub, key_pub, key_priv);
+  connection = osp_connect_with_data (conn_data);
   while (connection == NULL && connection_retry > 0)
     {
       sleep(1);
-      connection = osp_connect_with_data (host, port,
-                                          ca_pub, key_pub, key_priv);
+      connection = osp_connect_with_data (conn_data);
       connection_retry--;
     }
 
-  free (host);
-  free (ca_pub);
-  free (key_pub);
-  free (key_priv);
+  osp_connect_data_free (conn_data);
 
   if (connection == NULL)
     {
@@ -4499,6 +3132,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
 
   osp_connection_close (connection);
   g_free (opts.titles);
+#endif
 
   return 0;
 }
@@ -5469,10 +4103,28 @@ feed_sync_required ()
         break;
     }
 
-  if (nvts_feed_version_status () == 1)
+  if (!feature_enabled (FEATURE_ID_VT_METADATA))
     {
-      g_debug ("%s: NVTs need to be updated", __func__);
-      return TRUE;
+      if (nvts_feed_version_status_from_scanner () == 1)
+        {
+          g_debug ("%s: NVTs need to be updated", __func__);
+          return TRUE;
+        }
+    }
+  else
+    {
+      feed_status_ret = nvts_feed_version_status_from_timestamp ();
+      switch (feed_status_ret)
+        {
+        case 1:
+        case 2:
+        case 3:
+          g_debug ("%s: NVTs need to be updated (status %d)",
+                   __func__, feed_status_ret);
+          return TRUE;
+        default:
+          break;
+        }
     }
 
   return FALSE;
@@ -5480,12 +4132,12 @@ feed_sync_required ()
 
 /**
  * @brief Wait for memory
- * 
+ *
  * @param[in]  check_func  Function to check memory, should return 1 if enough.
  * @param[in]  retries     Number of retries.
  * @param[in]  min_mem     Minimum memory in MiB, for logging only
  * @param[in]  action      Short descriptor of action waiting for memory.
- * 
+ *
  * @return 0 if enough memory is available, 1 gave up
  */
 static int
@@ -5571,7 +4223,11 @@ manage_sync (sigset_t *sigmask_current,
   if (try_gvmd_data_sync
       && (should_sync_configs ()
           || should_sync_port_lists ()
-          || should_sync_report_formats ()))
+          || should_sync_report_formats ()
+#if ENABLE_AGENTS
+          || should_sync_agent_installers ()
+#endif /* ENABLE_AGENTS */
+          ))
     {
       if (wait_for_mem (check_min_mem_feed_update,
                         mem_wait_retries,
@@ -5579,6 +4235,18 @@ manage_sync (sigset_t *sigmask_current,
                         "data objects feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
+#if ENABLE_AGENTS
+          if (feature_enabled (FEATURE_ID_AGENTS))
+            {
+              manage_sync_agent_installers ();
+            }
+          else
+            {
+              g_debug (
+                "%s: AGENTS runtime flag is disabled; skipping agent installers sync",
+                __func__);
+            }
+#endif /* ENABLE_AGENTS */
           manage_sync_configs ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
@@ -5586,6 +4254,152 @@ manage_sync (sigset_t *sigmask_current,
           lockfile_unlock (&lockfile);
         }
     }
+}
+
+/**
+ * @brief Handle queued task actions like the scan queue or report processing.
+ */
+void
+manage_queued_task_actions ()
+{
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+  
+  setproctitle ("Manage process report imports");
+  manage_process_report_imports ();
+  setproctitle ("Manage scan queue");
+  manage_handle_scan_queue ();
+}
+
+/**
+ * @brief Perform any processing of imported reports that is due.
+ *
+ * In gvmd, periodically called from the main daemon loop.
+ */
+void
+manage_process_report_imports ()
+{
+  lockfile_t lockfile;
+  iterator_t reports;
+  report_t report;
+  int pid, ret;
+  struct sigaction action;
+
+  init_report_awaiting_processing_iterator (&reports, MAX_REPORTS_PER_TICK);
+
+  while (next (&reports))
+    {
+      report = iterator_int64 (&reports, 0);
+
+      gchar *lockfile_path =
+        g_build_filename (GVMD_STATE_DIR,
+                          g_strdup_printf ("gvm-process-report-%llu", report),
+                          NULL);
+      ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
+      if (ret > 0)
+        {
+          g_debug ("%s: Report %llu is already being processed", 
+                   __func__,
+                   report);
+          continue;
+        }
+      if (ret < 0)
+        {
+          g_critical ("%s: Error getting lock for report %llu",
+                      __func__,
+                      report);
+          cleanup_iterator (&reports);
+          return;
+        }
+
+      pid = fork ();
+      switch (pid)
+        {
+          case 0:
+            /* Child.   */
+
+            init_sentry ();
+            setproctitle ("process report import");
+
+            if (semaphore_op (SEMAPHORE_REPORTS_PROCESSING, -1, 1))
+              {
+                g_debug ("%s: Failed to signal reports processing semaphore",
+                         __func__);
+                exit (EXIT_SUCCESS);
+              }
+
+            // Reset SIGCHLD handler to default so the process can
+            // use common functions to wait for its own child processes.
+            memset (&action, '\0', sizeof (action));
+            sigemptyset (&action.sa_mask);
+            action.sa_handler = SIG_DFL;
+            action.sa_flags = 0;
+            if (sigaction (SIGCHLD, &action, NULL) == -1)
+              {
+                g_critical ("%s: failed to set SIGCHLD handler: %s",
+                            __func__,
+                            strerror (errno));
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+              }
+
+            /* Clean up the process. */
+            cleanup_manage_process (FALSE);
+
+            init_sentry ();
+            reinit_manage_process ();
+
+            if (process_report_import (report))
+              {
+                lockfile_unlock (&lockfile);
+                if (unlink (lockfile_path))
+                  g_warning ("%s: Failed to delete lock file %s: %s",
+                            __func__,
+                            lockfile_path,
+                            strerror (errno));
+                g_free (lockfile_path);
+                set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
+                g_warning ("%s: failed to process imported report %llu",
+                           __func__,
+                           report);
+                gvm_close_sentry ();
+                semaphore_op (SEMAPHORE_REPORTS_PROCESSING, +1, 0);
+                exit (EXIT_FAILURE);
+              }
+
+            lockfile_unlock (&lockfile);
+            if (unlink (lockfile_path))
+              g_warning ("%s: Failed to delete lock file %s: %s",
+                         __func__,
+                         lockfile_path,
+                         strerror (errno));
+            g_free (lockfile_path);
+            semaphore_op (SEMAPHORE_REPORTS_PROCESSING, +1, 0);
+
+            cleanup_manage_process (TRUE);
+            gvm_close_sentry ();
+            exit (EXIT_SUCCESS);
+
+          case -1:
+            /* Parent when error. */
+            g_warning ("%s: fork: %s", __func__, strerror (errno));
+            lockfile_unlock (&lockfile);
+            if (unlink (lockfile_path))
+              g_warning ("%s: Failed to delete lock file %s: %s",
+                         __func__,
+                         lockfile_path,
+                         strerror (errno));
+            g_free (lockfile_path);
+            cleanup_iterator (&reports);
+            return;
+    
+          default:
+            /* Parent. */
+            g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            continue;
+          }
+    }
+  cleanup_iterator (&reports);
 }
 
 /**
@@ -5707,7 +4521,8 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       return -1;
     }
 
-  ret = manage_option_setup (log_config, database);
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
   if (ret)
     {
       if (error_msg)
@@ -6451,7 +5266,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                              timeout ? timeout : "",
                              default_timeout ? default_timeout : "");
 
-          init_nvt_preference_iterator (&prefs, nvt_oid);
+          init_nvt_preference_iterator (&prefs, nvt_oid, FALSE);
           while (next (&prefs))
             buffer_config_preference_xml (buffer, &prefs, config, 1);
           cleanup_iterator (&prefs);
@@ -6462,7 +5277,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
       if (nvt_iterator_epss_cve (nvts))
         {
-          buffer_xml_append_printf 
+          buffer_xml_append_printf
              (buffer,
               "<epss>"
               "<max_severity>"
@@ -6475,7 +5290,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_epss_severity (nvts));
@@ -6495,7 +5310,7 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
 
           if (nvt_iterator_has_max_epss_severity (nvts))
             {
-              buffer_xml_append_printf 
+              buffer_xml_append_printf
                  (buffer,
                   "<severity>%0.1f</severity>",
                   nvt_iterator_max_epss_severity (nvts));
@@ -6726,6 +5541,10 @@ gboolean
 manage_gvmd_data_feed_dirs_exist ()
 {
   return gvm_file_is_readable (GVMD_FEED_DIR)
+#if ENABLE_AGENTS
+// TODO: Add this check once the agent installers are added to the feed
+//         && agent_installers_feed_metadata_file_exists ()
+#endif
          && configs_feed_dir_exists ()
          && port_lists_feed_dir_exists ()
          && report_formats_feed_dir_exists ();
@@ -6860,7 +5679,7 @@ set_mem_wait_retries (int new_retries)
 
 /**
  * @brief Check if the minimum memory for feed updates is available
- * 
+ *
  * @return 1 if minimum memory amount is available, 0 if not
  */
 int
@@ -6921,6 +5740,28 @@ get_max_concurrent_scan_updates ()
 }
 
 /**
+ * @brief Get the maximum number of database connections.
+ *
+ * @return The current maximum number of database connections.
+ */
+int
+get_max_database_connections ()
+{
+  return max_database_connections;
+}
+
+/**
+ * @brief Get the maximum number of reports to be processed concurrently.
+ *
+ * @return The current maximum number of reports to be processed concurrently.
+ */
+int
+get_max_concurrent_report_processing ()
+{
+  return max_concurrent_report_processing;
+}
+
+/**
  * @brief Set the maximum number of concurrent scan updates.
  *
  * @param new_max The new maximum number of concurrent scan updates.
@@ -6932,6 +5773,34 @@ set_max_concurrent_scan_updates (int new_max)
     max_concurrent_scan_updates = 0;
   else
     max_concurrent_scan_updates = new_max;
+}
+
+/**
+ * @brief Set the maximum number of database connections.
+ *
+ * @param new_max The current maximum number of database connections. 
+ */
+void
+set_max_database_connections (int new_max)
+{
+  if (new_max <= 0)
+    max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  else
+    max_database_connections = new_max;
+}
+
+/**
+ * @brief Set the maximum number of concurrent imported report processing.
+ *
+ * @param new_max The current maximum number of concurrent report processing.
+ */
+void
+set_max_concurrent_report_processing (int new_max)
+{
+  if (new_max <= 0)
+  max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
+  else
+  max_concurrent_report_processing = new_max;
 }
 
 /**
@@ -7434,11 +6303,30 @@ int
 nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
                 gchar **feed_home)
 {
-  return nvts_feed_info_internal (get_osp_vt_update_socket (),
-                                  vts_version,
-                                  feed_name,
-                                  feed_vendor,
-                                  feed_home);
+  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+  switch (sc_type)
+  {
+    case SCANNER_TYPE_OPENVAS:
+      return nvts_feed_info_internal (get_osp_vt_update_socket (),
+                                      vts_version,
+                                      feed_name,
+                                      feed_vendor,
+                                      feed_home);
+    case SCANNER_TYPE_OPENVASD:
+#if OPENVASD == 1
+      return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+                                                    vts_version);
+#else
+      g_critical ("%s: Default scanner is an openvasd one,"
+                  " but gvmd is not built to support this.",
+                  __func__);
+      return -1;
+#endif
+    default:
+      g_critical ("%s: scanner type %d is not supported as default",
+                  __func__, sc_type);
+      return -1;
+  }
 }
 
 /**
@@ -7498,10 +6386,45 @@ nvts_check_feed (int *lockfile_in_use,
                  int *self_test_exit_error,
                  char **self_test_error_msg)
 {
-  return nvts_check_feed_internal (get_osp_vt_update_socket (),
-                                   lockfile_in_use,
-                                   self_test_exit_error,
-                                   self_test_error_msg);
+  scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+  switch (sc_type)
+  {
+    case SCANNER_TYPE_OPENVAS:
+      return nvts_check_feed_internal (get_osp_vt_update_socket (),
+                                       lockfile_in_use,
+                                       self_test_exit_error,
+                                       self_test_error_msg);
+    case SCANNER_TYPE_OPENVASD:
+#if OPENVASD == 1
+      {
+        int ret = 0;
+        char *vts_version = NULL;
+
+        ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+                                                     &vts_version);
+        self_test_exit_error = 0;
+        *self_test_error_msg = NULL;
+        if (ret == 0 && vts_version)
+          lockfile_in_use = 0;
+        else if (ret == 2)
+          {
+            ret = 0;
+            *lockfile_in_use = 1;
+          }
+
+        return ret;
+      }
+#else
+      g_critical ("%s: Default scanner is an openvasd one,"
+                  " but gvmd is not built to support this.",
+                  __func__);
+      return -1;
+#endif
+    default:
+      g_critical ("%s: scanner type %d is not supported as default",
+                  __func__, sc_type);
+      return -1;
+  }
 }
 
 /**
@@ -7539,19 +6462,6 @@ gvm_migrate_secinfo (int feed_type)
   feed_lockfile_unlock (&lockfile);
 
   return ret;
-}
-
-/**
- * @brief Update NVT cache using OSP.
- *
- * @param[in]  update_socket  Socket to use to contact ospd-openvas scanner.
- *
- * @return 0 success, -1 error, 1 VT integrity check failed.
- */
-int
-manage_update_nvts_osp (const gchar *update_socket)
-{
-  return manage_update_nvt_cache_osp (update_socket);
 }
 
 
@@ -8192,12 +7102,1016 @@ manage_run_wizard (const gchar *wizard_name,
 int
 delete_resource (const char *type, const char *resource_id, int ultimate)
 {
+#if ENABLE_CONTAINER_SCANNING
+  if (strcasecmp (type, "oci_image_target") == 0)
+    return delete_oci_image_target (resource_id, ultimate);
+#endif /* ENABLE_CONTAINER_SCANNING */
   if (strcasecmp (type, "report_config") == 0)
     return delete_report_config (resource_id, ultimate);
   if (strcasecmp (type, "ticket") == 0)
     return delete_ticket (resource_id, ultimate);
+#if ENABLE_AGENTS
+  if (strcasecmp (type, "agent_group") == 0)
+    return delete_agent_group (resource_id, ultimate);
+#endif
   if (strcasecmp (type, "tls_certificate") == 0)
     return delete_tls_certificate (resource_id, ultimate);
   assert (0);
   return -1;
 }
+
+#if OPENVASD
+/* openvasd */
+
+/**
+ * @brief Stop an openvasd task.
+ *
+ * @param[in]   task  The task.
+ *
+ * @return 0 on success, else -1.
+ */
+static int
+stop_openvasd_task (task_t task)
+{
+  int ret = 0;
+  report_t scan_report;
+  char *scan_id;
+  task_t previous_task;
+  report_t previous_report;
+
+  scanner_t scanner;
+  http_scanner_resp_t response;
+  http_scanner_connector_t connector = NULL;
+
+  scan_report = task_running_report (task);
+  if (!scan_report)
+    return 0;
+
+  previous_task = current_scanner_task;
+  previous_report = global_current_report;
+
+  scan_id = report_uuid (scan_report);
+  if (!scan_id)
+    {
+      ret = -1;
+      goto end_stop_openvasd;
+    }
+  scanner = task_scanner (task);
+  connector = http_scanner_connect (scanner, scan_id);
+  if (!connector)
+    {
+      ret = -1;
+      goto end_stop_openvasd;
+    }
+
+  current_scanner_task = task;
+  global_current_report = task_running_report (task);
+  set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+  response = http_scanner_stop_scan (connector);
+  if (response->code < 0)
+    {
+      ret = -1;
+      http_scanner_response_cleanup (response);
+      g_free (scan_id);
+      goto end_stop_openvasd;
+    }
+  http_scanner_response_cleanup (response);
+  response = http_scanner_delete_scan (connector);
+  http_scanner_response_cleanup (response);
+  g_free (scan_id);
+end_stop_openvasd:
+  http_scanner_connector_free (connector);
+  set_task_end_time_epoch (task, time (NULL));
+  set_task_run_status (task, TASK_STATUS_STOPPED);
+  if (scan_report)
+    {
+      set_scan_end_time_epoch (scan_report, time (NULL));
+      set_report_scan_run_status (scan_report, TASK_STATUS_STOPPED);
+    }
+  current_scanner_task = previous_task;
+  global_current_report = previous_report;
+
+  return ret;
+}
+
+/**
+ * @brief Prepare a report for resuming an OSP scan
+ *
+ * @param[in]  task     The task of the scan.
+ * @param[in]  scan_id  The scan uuid.
+ * @param[out] error    Error return.
+ *
+ * @return 0 scan finished or still running,
+ *         1 scan must be started,
+ *         -1 error
+ */
+static int
+prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
+                                  char **error)
+{
+  http_scanner_connector_t connection;
+  int ret;
+
+  assert (task);
+  assert (scan_id);
+  assert (global_current_report);
+  assert (error);
+
+  connection = http_scanner_connect (task_scanner (task), scan_id);
+  if (!connection)
+    {
+      *error = g_strdup ("Could not connect to openvasd Scanner");
+      return -1;
+    }
+
+  g_debug ("%s: Preparing scan %s for resume", __func__, scan_id);
+
+  ret = prepare_http_scanner_scan_for_resume (connection, error);
+
+  if (ret == 1)
+    trim_partial_report (global_current_report);
+
+  return ret;
+}
+
+/**
+ * @brief Launch an OpenVAS via openvasd task.
+ *
+ * @param[in]   task        The task.
+ * @param[in]   target      The target.
+ * @param[in]   scan_id     The scan uuid.
+ * @param[in]   from        0 start from beginning, 1 continue from stopped,
+ *                          2 continue if stopped else start from beginning.
+ * @param[out]  error       Error return.
+ *
+ * @return An http code on success, -1 if error.
+ */
+static int
+launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
+                         int from, char **error)
+{
+  http_scanner_connector_t connection;
+  char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
+  gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
+  int alive_test, reverse_lookup_only, reverse_lookup_unify;
+  int arp = 0, icmp = 0, tcp_ack = 0, tcp_syn = 0, consider_alive = 0;
+  openvasd_target_t *openvasd_target;
+  GSList *openvasd_targets, *vts;
+  GHashTable *vts_hash_table;
+  openvasd_credential_t *snmp_credential;
+  gchar *max_checks, *max_hosts, *hosts_ordering;
+  GHashTable *scanner_options;
+  http_scanner_resp_t response;
+  int ret, empty;
+  config_t config;
+  iterator_t scanner_prefs_iter, families, prefs;
+
+  connection = NULL;
+  config = task_config (task);
+
+  alive_test = 0;
+  reverse_lookup_unify = 0;
+  reverse_lookup_only = 0;
+
+  /* Prepare the report */
+  if (from)
+    {
+      ret = prepare_openvasd_scan_for_resume (task, scan_id, error);
+      if (ret == 0)
+        return 0;
+      else if (ret == -1)
+        return -1;
+      finished_hosts_str = report_finished_hosts_str (global_current_report);
+      clean_finished_hosts_str = clean_hosts_string (finished_hosts_str);
+    }
+  else
+    {
+      finished_hosts_str = NULL;
+      clean_finished_hosts_str = NULL;
+    }
+
+  /* Set up target(s) */
+  hosts_str = target_hosts (target);
+  ports_str = target_port_range (target);
+  exclude_hosts_str = target_exclude_hosts (target);
+
+  clean_hosts = clean_hosts_string (hosts_str);
+  clean_exclude_hosts = clean_hosts_string (exclude_hosts_str);
+
+  alive_test = 0;
+  if (target_alive_tests (target) > 0)
+    alive_test = target_alive_tests (target);
+
+  if (target_reverse_lookup_only (target) != NULL)
+    reverse_lookup_only = atoi (target_reverse_lookup_only (target));
+
+  if (target_reverse_lookup_unify (target) != NULL)
+    reverse_lookup_unify = atoi (target_reverse_lookup_unify (target));
+
+  if (finished_hosts_str)
+    {
+      gchar *new_exclude_hosts;
+
+      new_exclude_hosts = g_strdup_printf ("%s,%s",
+                                           clean_exclude_hosts,
+                                           clean_finished_hosts_str);
+      free (clean_exclude_hosts);
+      clean_exclude_hosts = new_exclude_hosts;
+    }
+
+  openvasd_target = openvasd_target_new (scan_id, clean_hosts, ports_str,
+                                         clean_exclude_hosts,
+                                         reverse_lookup_unify,
+                                         reverse_lookup_only);
+  if (finished_hosts_str)
+    openvasd_target_set_finished_hosts (openvasd_target, finished_hosts_str);
+
+  if (alive_test & ALIVE_TEST_ARP)
+    arp = 1;
+  if (alive_test & ALIVE_TEST_ICMP)
+    icmp = 1;
+  if (alive_test & ALIVE_TEST_TCP_ACK_SERVICE)
+    tcp_ack = 1;
+  if (alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+    tcp_syn = 1;
+  if (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
+    consider_alive = 1;
+
+  openvasd_target_add_alive_test_methods (openvasd_target, icmp, tcp_syn,
+                                          tcp_ack, arp, consider_alive);
+
+  free (hosts_str);
+  free (ports_str);
+  free (exclude_hosts_str);
+  free (finished_hosts_str);
+  g_free (clean_hosts);
+  g_free (clean_exclude_hosts);
+  g_free (clean_finished_hosts_str);
+  openvasd_targets = g_slist_append (NULL, openvasd_target);
+
+#if ENABLE_CREDENTIAL_STORES == 0
+
+  openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+
+  ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
+  if (ssh_credential)
+    openvasd_target_add_credential (openvasd_target, ssh_credential);
+
+  smb_credential = (openvasd_credential_t *) target_osp_smb_credential_db (target);
+  if (smb_credential)
+    openvasd_target_add_credential (openvasd_target, smb_credential);
+
+  esxi_credential =
+    (openvasd_credential_t *) target_osp_esxi_credential_db (target);
+  if (esxi_credential)
+    openvasd_target_add_credential (openvasd_target, esxi_credential);
+#endif
+
+  snmp_credential =
+    (openvasd_credential_t *) target_osp_snmp_credential (target);
+  if (snmp_credential)
+    openvasd_target_add_credential (openvasd_target, snmp_credential);
+
+  /* Initialize vts table for vulnerability tests and their preferences */
+  vts = NULL;
+  vts_hash_table
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                             /* Value is freed in vts list. */
+                             NULL);
+
+  /*  Setup of vulnerability tests (without preferences) */
+  init_family_iterator (&families, 0, NULL, 1);
+  empty = 1;
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (family)
+        {
+          iterator_t nvts;
+          init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
+          while (next (&nvts))
+            {
+              const char *oid;
+              openvasd_vt_single_t *new_vt;
+
+              empty = 0;
+              oid = nvt_iterator_oid (&nvts);
+              new_vt = openvasd_vt_single_new (oid);
+
+              vts = g_slist_prepend (vts, new_vt);
+              g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
+            }
+          cleanup_iterator (&nvts);
+        }
+    }
+  cleanup_iterator (&families);
+
+  if (empty) {
+    if (error)
+      *error = g_strdup ("Exiting because VT list is empty "
+                         "(e.g. feed not synced yet)");
+    g_slist_free_full (openvasd_targets, (GDestroyNotify) openvasd_target_free);
+    // Credentials are freed with target
+    g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
+    return -1;
+  }
+
+  /* Setup general scanner preferences */
+  scanner_options
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+  init_preference_iterator (&scanner_prefs_iter, config, "SERVER_PREFS");
+  while (next (&scanner_prefs_iter))
+    {
+      const char *name, *value;
+      name = preference_iterator_name (&scanner_prefs_iter);
+      value = preference_iterator_value (&scanner_prefs_iter);
+      if (name && value && !g_str_has_prefix (name, "timeout."))
+        {
+          const char *openvasd_value;
+
+          // Workaround for boolean scanner preferences
+          if (strcmp (value, "no") == 0)
+            openvasd_value = "0";
+          else if (strcmp (value, "yes") == 0)
+            openvasd_value = "1";
+          else
+            openvasd_value = value;
+          g_hash_table_replace (scanner_options, g_strdup (name),
+                                g_strdup (openvasd_value));
+        }
+      /* Timeouts are stored as SERVER_PREFS, but are actually
+         script preferences. This prefs is converted into a
+         script preference to be sent to the scanner. */
+      else if (name && value && g_str_has_prefix (name, "timeout."))
+        {
+          char **oid = NULL;
+          openvasd_vt_single_t *openvasd_vt = NULL;
+
+          oid = g_strsplit (name, ".", 2);
+          openvasd_vt = g_hash_table_lookup (vts_hash_table, oid[1]);
+          if (openvasd_vt)
+            openvasd_vt_single_add_value (openvasd_vt, "0", value);
+          g_strfreev (oid);
+        }
+    }
+  cleanup_iterator (&scanner_prefs_iter);
+
+  /* Setup user-specific scanner preference */
+  add_user_scan_preferences (scanner_options);
+
+  /* Setup general task preferences */
+  max_checks = task_preference_value (task, "max_checks");
+  g_hash_table_insert (scanner_options, g_strdup ("max_checks"),
+                       max_checks ? max_checks : g_strdup (MAX_CHECKS_DEFAULT));
+
+  max_hosts = task_preference_value (task, "max_hosts");
+  g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
+                       max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
+
+  hosts_ordering = task_hosts_ordering (task);
+  if (hosts_ordering)
+    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
+                         hosts_ordering);
+
+  /* Setup VT preferences */
+  init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
+  while (next (&prefs))
+    {
+      const char *full_name, *value;
+      openvasd_vt_single_t *openvasd_vt;
+      gchar **split_name;
+
+      full_name = preference_iterator_name (&prefs);
+      value = preference_iterator_value (&prefs);
+      split_name = g_strsplit (full_name, ":", 4);
+
+      openvasd_vt = NULL;
+      if (split_name && split_name[0] && split_name[1] && split_name[2])
+        {
+          const char *oid = split_name[0];
+          const char *pref_id = split_name[1];
+          const char *type = split_name[2];
+          gchar *openvasd_value = NULL;
+
+          if (strcmp (type, "checkbox") == 0)
+            {
+              if (strcmp (value, "yes") == 0)
+                openvasd_value = g_strdup ("1");
+              else
+                openvasd_value = g_strdup ("0");
+            }
+          else if (strcmp (type, "radio") == 0)
+            {
+              gchar** split_value;
+              split_value = g_strsplit (value, ";", 2);
+              openvasd_value = g_strdup (split_value[0]);
+              g_strfreev (split_value);
+            }
+          else if (strcmp (type, "file") == 0)
+            openvasd_value = g_base64_encode ((guchar*) value, strlen (value));
+
+          openvasd_vt = g_hash_table_lookup (vts_hash_table, oid);
+          if (openvasd_vt)
+            openvasd_vt_single_add_value (openvasd_vt, pref_id,
+                                     openvasd_value ? openvasd_value : value);
+          g_free (openvasd_value);
+        }
+
+      g_strfreev (split_name);
+    }
+  cleanup_iterator (&prefs);
+  g_hash_table_destroy (vts_hash_table);
+
+  /* Start the scan */
+  connection = http_scanner_connect (task_scanner (task), scan_id);
+  if (!connection)
+    {
+      if (error)
+        *error = g_strdup ("Could not connect to Scanner");
+      g_slist_free_full (openvasd_targets,
+                         (GDestroyNotify) openvasd_target_free);
+      // Credentials are freed with target
+      g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
+      g_hash_table_destroy (scanner_options);
+      return -1;
+    }
+
+  gchar *scan_config = NULL;
+  scan_config =
+    openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
+
+  response = http_scanner_create_scan (connection, scan_config);
+  if (response->code == 201)
+    {
+      http_scanner_response_cleanup (response);
+      response = http_scanner_start_scan (connection);
+    }
+  else
+    g_warning ("%s: Failed to create scan: %ld", __func__, response->code);
+
+  openvasd_target_free(openvasd_target);
+  // Credentials are freed with target
+  g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
+  g_hash_table_destroy (scanner_options);
+  ret = response->code;
+  http_scanner_response_cleanup (response);
+
+  return ret;
+}
+
+/**
+ * @brief Handle an ongoing openvasd scan, until success or failure.
+ *
+ * @param[in]   task      The task.
+ * @param[in]   report    The report.
+ * @param[in]   scan_id   The UUID of the scan on the scanner.
+ *
+ * @return 0 if success, -1 if error, -2 if scan was stopped,
+ *         -3 if the scan was interrupted, -4 already stopped.
+ */
+static int
+handle_openvasd_scan (task_t task, report_t report, const char *scan_id)
+{
+  scanner_t scanner;
+  http_scanner_connector_t connector;
+  int ret;
+
+  scanner = task_scanner (task);
+  connector = http_scanner_connect (scanner, scan_id);
+
+  if (!connector)
+    {
+      g_warning ("%s: Could not connect to openvasd scanner", __func__);
+      return -1;
+    }
+
+  ret = handle_http_scanner_scan (connector, task, report,
+                                  parse_http_scanner_report);
+
+  http_scanner_connector_free (connector);
+
+  return ret;
+
+}
+
+/**
+ * @brief Fork a child to handle an openvasd scan's fetching and inserting.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   target     The target.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
+ * @param[out]  report_id_return   UUID of the report.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_openvasd_scan_handler (task_t task, target_t target, int from,
+                       char **report_id_return)
+{
+  char *report_id, *error = NULL;
+  int rc;
+
+  assert (task);
+  assert (target);
+
+  if (report_id_return)
+    *report_id_return = NULL;
+
+  if (run_osp_scan_get_report (task, from, &report_id))
+    return -1;
+
+  current_scanner_task = task;
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
+
+  switch (fork ())
+    {
+      case 0:
+        init_sentry ();
+        break;
+      case -1:
+        /* Parent, failed to fork. */
+        global_current_report = 0;
+        g_warning ("%s: Failed to fork: %s",
+                   __func__,
+                   strerror (errno));
+        set_task_interrupted (task,
+                              "Error forking scan handler."
+                              "  Interrupting scan.");
+        set_report_scan_run_status (global_current_report,
+                                    TASK_STATUS_INTERRUPTED);
+        global_current_report = (report_t) 0;
+        current_scanner_task = 0;
+        g_free (report_id);
+        return -9;
+      default:
+        /* Parent, successfully forked. */
+        global_current_report = 0;
+        current_scanner_task = 0;
+        if (report_id_return)
+          *report_id_return = report_id;
+        else
+          g_free (report_id);
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
+  rc = launch_openvasd_openvas_task (task, target, report_id, from, &error);
+
+  if (rc < 0)
+    {
+      result_t result;
+
+      g_warning ("openvasd start_scan %s: %s", report_id, error);
+      result = make_osp_result (task, "", "", "",
+                                threat_message_type ("Error"),
+                                error, "", "", QOD_DEFAULT, NULL, NULL);
+      report_add_result (global_current_report, result);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      set_task_end_time_epoch (task, time (NULL));
+      set_scan_end_time_epoch (global_current_report, time (NULL));
+
+      g_free (error);
+      g_free (report_id);
+      gvm_close_sentry ();
+      exit (-1);
+    }
+
+  setproctitle ("openvasd: Handling scan %s", report_id);
+
+  rc = handle_openvasd_scan (task, global_current_report, report_id);
+  g_free (report_id);
+
+  if (rc >= 0)
+    {
+      set_task_run_status (task, TASK_STATUS_PROCESSING);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_PROCESSING);
+      hosts_set_identifiers (global_current_report);
+      hosts_set_max_severity (global_current_report, NULL, NULL);
+      hosts_set_details (global_current_report);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+    }
+  else if (rc == -1 || rc == -2)
+    {
+      set_task_run_status (task, TASK_STATUS_STOPPED);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_STOPPED);
+    }
+  else if (rc == -3)
+    {
+      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_INTERRUPTED);
+    }
+
+  set_task_end_time_epoch (task, time (NULL));
+  set_scan_end_time_epoch (global_current_report, time (NULL));
+  global_current_report = 0;
+  current_scanner_task = (task_t) 0;
+  gvm_close_sentry ();
+  exit (rc);
+}
+
+/**
+ * @brief Start a task on an openvasd scanner.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   from       0 start from beginning, 1 continue from stopped,
+ *                         2 continue if stopped else start from beginning.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+static int
+run_openvasd_task (task_t task, int from, char **report_id)
+{
+  target_t target;
+
+  target = task_target (task);
+  if (target)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = target_uuid (target);
+      if (find_target_with_permission (uuid, &found, "get_targets"))
+        {
+          g_free (uuid);
+          return -1;
+        }
+      g_free (uuid);
+      if (found == 0)
+        return 99;
+    }
+
+  if (fork_openvasd_scan_handler (task, target, from, report_id))
+    {
+      g_warning ("Couldn't fork openvasd scan handler");
+      return -1;
+    }
+  return 0;
+}
+#endif
+
+#if ENABLE_AGENTS
+
+/**
+ * @brief Handle an agent controller scan, retrieving the scan result.
+ *
+ * @param[in]  task     The task.
+ * @param[in]  report   The report.
+ * @param[in]  scan_id  The UUID of the scan on the scanner.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+handle_agent_controller_scan (task_t task, report_t report, const char *scan_id)
+{
+  scanner_t scanner = 0;
+  http_scanner_connector_t connector = NULL;
+  GSList *results = NULL;
+
+  if (!task || !report || !scan_id || !*scan_id)
+    return -1;
+
+  scanner = task_scanner (task);
+  if (scanner == 0)
+    {
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          "Agent Controller: no scanner associated with task", "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      return -1;
+    }
+
+  connector = http_scanner_connect (scanner, scan_id);
+  if (!connector)
+    {
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          "Agent Controller: failed to connect to scanner", "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      return -1;
+    }
+
+  int http_status = http_scanner_parsed_results (connector, 0, 0, &results);
+  if (http_status != 200)
+    {
+      gchar *msg = g_strdup_printf (
+          "Agent Controller: failed to fetch results (HTTP %d)", http_status);
+      result_t r = make_osp_result (
+          task, "", "", "",
+          threat_message_type ("Error"),
+          msg, "", "",
+          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, r);
+      g_free (msg);
+
+      http_scanner_connector_free (connector);
+      return -1;
+    }
+
+  /* Parse and import into the report */
+  // Expect: agent controller results should be the same as openvasd result
+  parse_http_scanner_report (task, report, results, time (NULL), time (NULL));
+
+  if (results)
+    g_slist_free_full (results, (GDestroyNotify) http_scanner_result_free);
+
+  http_scanner_connector_free (connector);
+  return 0;
+}
+
+/**
+ * @brief Launch an agent controller scan for the given task/group.
+ *        Initialize the new report with the scan_id
+ *
+ * @param[in]  task        Task handle for which the scan should be launched.
+ * @param[in]  agent_group Agent group containing the agents to scan.
+ * @param[out] report_id   On success, set to newly allocated report ID string.
+ *                         Caller must free with g_free. Set to NULL on failure.
+ * @param[out] error       On failure, optionally set to a newly allocated error
+ *                         string (caller must g_free). Ignored if NULL.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+launch_agent_control_task (task_t task,
+                           agent_group_t agent_group,
+                           char **report_id,
+                           gchar **error)
+{
+  http_scanner_connector_t connection = NULL;
+  agent_controller_agent_list_t agent_control_list = NULL;
+  agent_uuid_list_t agent_uuids = NULL;
+  http_scanner_resp_t http_scanner_resp = NULL;
+  gchar *payload = NULL;
+  scanner_t scanner = 0;
+  int ret = -1;
+
+  if (report_id) *report_id = NULL;
+
+  // Get scanner
+  scanner = task_scanner (task);
+  if (scanner == 0)
+    {
+      if (error) *error = g_strdup ("Scanner is not found");
+      goto make_report;
+    }
+
+  // Connect HTTP scanner
+  connection = http_scanner_connect (scanner, NULL);
+  if (!connection)
+    {
+      if (error) *error = g_strdup ("Could not connect to Scanner");
+      goto make_report;
+    }
+
+  // Build agent UUID list from group
+  agent_uuids = agent_uuid_list_from_group (agent_group);
+  if (!agent_uuids || agent_uuids->count <= 0)
+    {
+      if (error) *error = g_strdup ("No Agents found");
+      goto make_report;
+    }
+
+  // Map UUIDs to agent controller entries
+  agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
+  if (!agent_control_list)
+    {
+      if (error) *error = g_strdup ("Allocation failure (agent list)");
+      goto make_report;
+    }
+
+  if (get_agent_controller_agents_from_uuids (scanner, agent_uuids, agent_control_list) != 0)
+    {
+      if (error) *error = g_strdup ("Could not get Agents from database");
+      goto make_report;
+    }
+
+  // Build create-scan payload
+  payload = agent_controller_build_create_scan_payload (agent_control_list);
+  if (!payload)
+    {
+      if (error) *error = g_strdup ("Could not create scan payload");
+      goto make_report;
+    }
+
+  // Create scan
+  http_scanner_resp = http_scanner_create_scan (connection, payload);
+  if (!http_scanner_resp || http_scanner_resp->code != 201)
+    {
+      if (error) *error = g_strdup ("Scanner failed to create the scan");
+      goto make_report;
+    }
+
+  // Extract scan id
+  {
+    gchar *scan_id = agent_controller_get_scan_id (http_scanner_resp->body);
+    if (!scan_id)
+      {
+        if (error) *error = g_strdup ("Could not get scan id from response");
+        goto make_report;
+      }
+
+    if (report_id) *report_id = g_strdup (scan_id);
+    g_free (scan_id);
+  }
+
+  /* success */
+  ret = 0;
+
+make_report:
+  // Always create a report with TASK_STATUS_REQUESTED
+  {
+    int report_resp = create_current_report (task, report_id, TASK_STATUS_REQUESTED);
+    if (report_resp != 0)
+      {
+        if (error && !*error) *error = g_strdup ("Could not create current report");
+        ret = -1;
+      }
+    goto cleanUp;
+  }
+
+cleanUp:
+  if (http_scanner_resp)
+    http_scanner_response_cleanup (http_scanner_resp);
+  if (agent_control_list)
+    agent_controller_agent_list_free (agent_control_list);
+  if (agent_uuids)
+    agent_uuid_list_free (agent_uuids);
+  if (connection)
+    http_scanner_connector_free (connection);
+
+  g_free (payload);
+
+  return ret;
+}
+
+/**
+ * @brief Fork a child to handle an agent controller scan's fetching and inserting.
+ *
+ * @param[in]   task       The task.
+ * @param[in]   agent_group     The Agent group.
+ * @param[out]  report_id_return   UUID of the report.
+ *
+ * @return Parent returns with 0 if success, -1 if failure. Child process
+ *         doesn't return and simply exits.
+ */
+static int
+fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
+                       char **report_id_return)
+{
+  char *report_id, *error = NULL;
+  int rc;
+
+  assert (task);
+  assert (agent_group);
+
+  if (report_id_return)
+    *report_id_return = NULL;
+
+  current_scanner_task = task;
+  set_task_run_status (task, TASK_STATUS_DONE);
+
+  switch (fork ())
+    {
+      case 0:
+        init_sentry ();
+        break;
+      case -1:
+        /* Parent, failed to fork. */
+        global_current_report = 0;
+        g_warning ("%s: Failed to fork: %s",
+                   __func__,
+                   strerror (errno));
+        set_task_interrupted (task,
+                              "Error forking scan handler."
+                              "  Interrupting scan.");
+        set_report_scan_run_status (global_current_report,
+                                    TASK_STATUS_INTERRUPTED);
+        global_current_report = (report_t) 0;
+        current_scanner_task = 0;
+        return -9;
+      default:
+        /* Parent, successfully forked. */
+        global_current_report = 0;
+        current_scanner_task = 0;
+        return 0;
+    }
+
+  /* Child: Re-open DB after fork and periodically check scan progress.
+   * If progress == 100%: Parse the report results and other info then exit(0).
+   * Else, exit(1) in error cases like connection to scanner failure.
+   */
+  reinit_manage_process ();
+  manage_session_init (current_credentials.uuid);
+
+  rc = launch_agent_control_task (task, agent_group, &report_id , &error);
+
+  if (rc < 0)
+    {
+      result_t result;
+
+      g_warning ("Agent Controller start_scan %s: %s", report_id, error);
+      result = make_osp_result (task, "", "", "",
+                                threat_message_type ("Error"),
+                                error, "", "", QOD_DEFAULT, NULL, NULL);
+      report_add_result (global_current_report, result);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      set_task_end_time_epoch (task, time (NULL));
+      set_scan_end_time_epoch (global_current_report, time (NULL));
+
+      g_free (error);
+      g_free (report_id);
+      gvm_close_sentry ();
+      exit (-1);
+    }
+
+  setproctitle ("Agent Controller: Handling scan %s", report_id);
+
+  rc = handle_agent_controller_scan (task, global_current_report, report_id);
+  g_free (report_id);
+
+  if (rc >= 0)
+    {
+      set_task_run_status (task, TASK_STATUS_PROCESSING);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_PROCESSING);
+      hosts_set_identifiers (global_current_report);
+      hosts_set_max_severity (global_current_report, NULL, NULL);
+      hosts_set_details (global_current_report);
+      set_task_run_status (task, TASK_STATUS_DONE);
+      set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+    }
+  else if (rc == -1)
+    {
+      set_task_run_status (task, TASK_STATUS_INTERRUPTED);
+      set_report_scan_run_status (global_current_report,
+                                  TASK_STATUS_INTERRUPTED);
+    }
+
+  set_task_end_time_epoch (task, time (NULL));
+  set_scan_end_time_epoch (global_current_report, time (NULL));
+  global_current_report = 0;
+  current_scanner_task = (task_t) 0;
+  gvm_close_sentry ();
+  exit (rc);
+}
+
+/**
+ * @brief Start a task on an agent control scanner.
+ *
+ * @param[in]   task       The task.
+ * @param[out]  report_id  The report ID.
+ *
+ * @return 0 success, 99 permission denied, -1 error.
+ */
+static int
+run_agent_control_task (task_t task, char **report_id)
+{
+  agent_group_t agent_group;
+
+  agent_group = task_agent_group (task);
+  if (agent_group)
+    {
+      char *uuid;
+      target_t found;
+
+      uuid = agent_group_uuid (agent_group);
+      if (find_resource_with_permission ("agent_group", uuid, &found,
+                                         "get_agent_groups", 0))
+        {
+          g_free (uuid);
+          return -1;
+        }
+
+      g_free (uuid);
+
+      if (found == 0)
+        return 99;
+    }
+
+  if (fork_agent_controller_scan_handler (task, agent_group, report_id))
+    {
+      g_warning ("Couldn't fork agent-controller scan handler");
+      return -1;
+    }
+  return 0;
+}
+
+#endif

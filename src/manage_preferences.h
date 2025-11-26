@@ -17,7 +17,7 @@
  */
 
 /*
- * @file manage_preferences.h
+ * @file
  * @brief Headers for Greenbone Vulnerability Manager: Manage lib: Preferences.
  */
 
