@@ -17512,6 +17512,21 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
 }
 
 /**
+ * @brief Context info for print_report_xml_start.
+ */
+struct print_report_context
+{
+  gchar *tz;              ///< TZ.
+  gchar *zone;            ///< Zone.
+  char *old_tz_override;  ///< Old TZ.
+};
+
+/**
+ * @brief Context type for print_report_xml_start.
+ */
+typedef struct print_report_context print_report_context_t;
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17559,8 +17574,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
   int search_phrase_exact, apply_overrides, count_filtered;
   double severity, f_severity;
-  gchar *tz, *zone;
-  char *old_tz_override;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
@@ -17573,12 +17586,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
+  print_report_context_t ctx = {0};
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
   compliance_levels = NULL;
-  zone = NULL;
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
@@ -17651,7 +17664,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &min_qod, &levels, &compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes,
-                                     &overrides, &apply_overrides, &zone);
+                                     &overrides, &apply_overrides, &ctx.zone);
     }
   else
     {
@@ -17663,7 +17676,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &min_qod, &levels, &compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
-                                     &apply_overrides, &zone);
+                                     &apply_overrides, &ctx.zone);
     }
 
   max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
@@ -17681,26 +17694,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       return -1;
     }
 
-  if (zone && strlen (zone))
+  if (ctx.zone && strlen (ctx.zone))
     {
       gchar *quoted_zone;
       /* Store current TZ. */
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+      ctx.tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
 
-      if (setenv ("TZ", zone, 1) == -1)
+      if (setenv ("TZ", ctx.zone, 1) == -1)
         {
           g_warning ("%s: Failed to switch to timezone", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          g_free (zone);
+          if (ctx.tz != NULL)
+            setenv ("TZ", ctx.tz, 1);
+          g_free (ctx.tz);
+          g_free (ctx.zone);
           return -1;
         }
 
-      old_tz_override = sql_string ("SELECT current_setting"
-                                    "        ('gvmd.tz_override');");
+      ctx.old_tz_override = sql_string ("SELECT current_setting"
+                                         "        ('gvmd.tz_override');");
 
-      quoted_zone = sql_insert (zone);
+      quoted_zone = sql_insert (ctx.zone);
       sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
       g_free (quoted_zone);
 
@@ -17709,8 +17722,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     {
       /* Keep compiler quiet. */
-      tz = NULL;
-      old_tz_override = NULL;
+      ctx.tz = NULL;
+      ctx.old_tz_override = NULL;
     }
 
   if (delta && report)
@@ -17750,7 +17763,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (search_phrase);
           g_free (min_qod);
           g_free (delta_states);
-          tz_revert (zone, tz, old_tz_override);
+          tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
           return -1;
         }
       PRINT (out,
@@ -18155,7 +18168,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       free (uuid);
       g_free (term);
-      tz_revert (zone, tz, old_tz_override);
+      tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
       return -1;
     }
   free (uuid);
@@ -18177,8 +18190,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
     start_time_epoch = scan_start_time_epoch (report);
     abbrev = NULL;
-    if (zone && strlen (zone))
-      report_zone = g_strdup (zone);
+    if (ctx.zone && strlen (ctx.zone))
+      report_zone = g_strdup (ctx.zone);
     else
       report_zone = setting_timezone ();
     iso_time_tz (&start_time_epoch, report_zone, &abbrev);
@@ -18209,7 +18222,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  sort_order, sort_field, f_host_ports, &results))
         {
           g_free (term);
-          tz_revert (zone, tz, old_tz_override);
+          tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
           g_hash_table_destroy (f_host_ports);
           return -1;
         }
@@ -18784,7 +18797,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 {
                   fclose (out);
                   cleanup_iterator (&hosts);
-                  tz_revert (zone, tz, old_tz_override);
+                  tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
                   return -1;
                 }
             }
@@ -18812,7 +18825,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               fclose (out);
               cleanup_iterator (&hosts);
-              tz_revert (zone, tz, old_tz_override);
+              tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
               return -1;
             }
         }
@@ -18828,7 +18841,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta == 0 && print_report_errors_xml (report, out))
     {
-      tz_revert (zone, tz, old_tz_override);
+      tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
       if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
       return -1;
@@ -18867,7 +18880,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    tz_revert (zone, tz, old_tz_override);
+    tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
