@@ -3327,12 +3327,12 @@ migrate_258_to_259 ()
 
   // Add relay_host and relay_port fields to scanners
 
-  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;"); 
-  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;"); 
+  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;");
+  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;");
 
-  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;");
   sql ("ALTER TABLE scanners_trash ADD COLUMN relay_port integer;");
- 
+
   // Set base values for new relay fields
 
   sql ("UPDATE scanners SET relay_host = '', relay_port = 0;");
@@ -3371,7 +3371,7 @@ migrate_259_to_260 ()
 
   sql ("ALTER TABLE reports ADD COLUMN processing_required integer DEFAULT 0;");
   sql ("ALTER TABLE reports ADD COLUMN in_assets integer;");
- 
+
   /* Set the database version to 260. */
 
   set_db_version (260);

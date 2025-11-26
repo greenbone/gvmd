@@ -5140,7 +5140,7 @@ stop_active_tasks ()
 
   /* Clear the scan queue */
   scan_queue_clear ();
-  
+
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
@@ -6718,7 +6718,7 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
-  return sql_int ("SELECT oci_image_target_location = " 
+  return sql_int ("SELECT oci_image_target_location = "
                   G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE id = %llu;",
                   task);
@@ -9775,7 +9775,7 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
- * @brief Maximum number of COPY statements per transaction, 
+ * @brief Maximum number of COPY statements per transaction,
  *        when uploading report.
  */
 #define CREATE_REPORT_COPY_CHUNK_SIZE 3000
@@ -9798,7 +9798,7 @@ insert_report_host_detail (report_t report, const char *host,
 /**
  * @brief Set whether processing of a report is required
  *        and whether to add it to assets.
- * 
+ *
  * @param[in]  report               The report to set the flags.
  * @param[in]  processing_required  Whether processing is required.
  * @param[in]  in_assets            Whether to add to assets.
@@ -9816,7 +9816,7 @@ report_set_processing_required (report_t report,
 
 /**
  * @brief Process imported report.
- * 
+ *
  * Adds TLS certificates to the database and creates assets from the report.
  *
  * @param[in]  report  Report to process.
@@ -9868,7 +9868,7 @@ process_report_import (report_t report)
     {
       if (create_asset_report (report_uuid (report), ""))
         {
-          g_warning ("%s: failed to create assets from report %llu", 
+          g_warning ("%s: failed to create assets from report %llu",
                      __func__,
                      report);
           set_task_run_status (task, TASK_STATUS_INTERRUPTED);
@@ -10339,7 +10339,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
             {
               db_copy_buffer_cleanup (&copy_buffer);
               return -1;
-            }            
+            }
             sql_commit ();
             gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
             sql_begin_immediate ();
@@ -20809,7 +20809,7 @@ modify_task (const gchar *task_id, const gchar *name,
     return 1;
 
 
-  if ((task_target (task) == 0 
+  if ((task_target (task) == 0
        && (agent_group_id == NULL)
        && (oci_image_target_id == NULL))
       && (alerts->len || schedule_id))
@@ -20863,7 +20863,7 @@ modify_task (const gchar *task_id, const gchar *name,
   else
     type_of_scanner = scanner_type (scanner);
 
-  if (config_id 
+  if (config_id
       && (type_of_scanner != SCANNER_TYPE_CVE)
       && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
     {
@@ -21796,7 +21796,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential)
     {
       gchar *type = credential_type (ssh_elevate_credential);
-      if (strcmp (type, "up") 
+      if (strcmp (type, "up")
 #if ENABLE_CREDENTIAL_STORES
           && strcmp (type, "cs_up")
 #endif
@@ -24176,7 +24176,7 @@ validate_credential_realm_format (const char *realm)
  * @param[in]  kdc             Kerberos KDC (key distribution centers).
  * @param[in]  kdcs            List of Kerberos KDCs.
  * @param[in]  realm           Kerberos realm.
- * @param[in]  credential_store_id Credential store ID, or NULL 
+ * @param[in]  credential_store_id Credential store ID, or NULL
  *                                 (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  vault_id         Vault ID, or NULL.
  *                              (if ENABLE_CREDENTIAL_STORES).
@@ -24201,7 +24201,7 @@ validate_credential_realm_format (const char *realm)
  *         23 credential store ID missing and no default store available,
  *            (if ENABLE_CREDENTIAL_STORES),
  *         24 credential store cannot be found (if ENABLE_CREDENTIAL_STORES),
- *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES), 
+ *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES),
  *         26 host identifier missing (if ENABLE_CREDENTIAL_STORES),
  *         99 permission denied, -1 error.
  */
@@ -24504,7 +24504,7 @@ create_credential (const char* name, const char* comment, const char* login,
       if (credential_store_id)
         set_credential_data (new_credential,
                              "credential_store_id", credential_store_id);
-      else 
+      else
         set_credential_data (new_credential,
                              "credential_store_id", get_default_credential_store_id ());
       if (vault_id)
@@ -24805,7 +24805,7 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   kdc                 Kerberos KDC (key distribution centers).
  * @param[in]   kdcs                List of Kerberos KDCs.
  * @param[in]   realm               Kerberos realm.
- * @param[in]   credential_store_id Credential store ID, or NULL 
+ * @param[in]   credential_store_id Credential store ID, or NULL
  *                                   (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   vault_id            Vault ID, or NULL.
  *                                  (if ENABLE_CREDENTIAL_STORES).
@@ -26234,7 +26234,7 @@ DEF_ACCESS (credential_iterator_realm,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Credential store UUID, or NULL if iteration is complete. 
+ * @return Credential store UUID, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_credential_store_uuid,
@@ -26245,7 +26245,7 @@ DEF_ACCESS (credential_iterator_credential_store_uuid,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Vault ID, or NULL if iteration is complete. 
+ * @return Vault ID, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_vault_id,
@@ -26256,7 +26256,7 @@ DEF_ACCESS (credential_iterator_vault_id,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Host identifier, or NULL if iteration is complete. 
+ * @return Host identifier, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_host_identifier,
@@ -29418,7 +29418,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case CREATE_SCANNER_INVALID_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner port must be a valid port number (1 - 65535)"
                  " if host is not a UNIX socket path.\n");
         break;
@@ -29428,7 +29428,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                  " IP address or UNIX socket path.\n");
         break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
                  " if relay host is not a UNIX socket path.\n");
         break;
@@ -29738,7 +29738,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case MODIFY_SCANNER_INVALID_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner port must be a valid port number (1 - 65535)"
                  " if host is not a UNIX socket path.\n");
         break;
@@ -29748,7 +29748,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                  " IP address or UNIX socket path.\n");
         break;
       case MODIFY_SCANNER_INVALID_RELAY_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
                  " if relay host is not a UNIX socket path.\n");
         break;
@@ -29976,7 +29976,7 @@ create_scanner (const char* name, const char *comment, const char *host,
     {
       ca_pub = NULL;
       iport = 0;
-      
+
       if (! scanner_type_supports_unix_sockets (itype))
         {
           sql_rollback ();
@@ -30220,7 +30220,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         }
     }
 
-  if (unix_socket == 0 
+  if (unix_socket == 0
       && (gvm_get_host_type (used_host) == -1))
     {
       sql_rollback ();
@@ -31008,7 +31008,7 @@ scanner_uuid_default ()
  * @brief Return whether the scanner has a relay host defined.
  *
  * @param[in]  scanner    Scanner.
- * 
+ *
  * @return TRUE if a relay host is defined, FALSE otherwise.
  */
 gboolean

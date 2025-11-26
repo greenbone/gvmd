@@ -130,7 +130,7 @@ init_semaphore_set ()
         }
     }
 
-  semaphore_set 
+  semaphore_set
     = semget (semaphore_set_key, SEMAPHORE_SET_SIZE, 0660 | IPC_CREAT);
 
   if (semaphore_set < 0)

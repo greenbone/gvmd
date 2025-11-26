@@ -26,13 +26,13 @@
 
 /**
  * @brief Handle a OSP scan in the gvmd scan queue.
- * 
+ *
  * @param[in]  scan_id    UUID of the scan / report to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
  * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.
- * 
+ *
  * @return 0 scan finished, 2 scan running,
  *         -1 if error, -2 if scan was stopped,
  *         -3 if the scan was interrupted, -4 already stopped.
@@ -42,7 +42,7 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
                         task_t task, int start_from)
 {
   task_status_t status = task_run_status (task);
-  
+
   switch (status)
     {
       case TASK_STATUS_REQUESTED:
@@ -60,12 +60,12 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
           return ret;
         }
     }
-  
+
 }
 
 /**
  * @brief Handle a scan in the gvmd scan queue.
- * 
+ *
  * @param[in]  scan_id    UUID of the scan / report to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
@@ -101,7 +101,7 @@ handle_queued_scan (const char *scan_id, report_t report, task_t task,
 
 /**
  * @brief Handle a scan defined a by a queue entry.
- * 
+ *
  * @param[in]  scan_id    UUID of the scan / report to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
@@ -162,7 +162,7 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
         {
           gchar *in_assets;
           int in_assets_int;
-          
+
           in_assets = task_preference_value (task, "in_assets");
           in_assets_int = atoi (in_assets);
           g_free (in_assets);
@@ -176,7 +176,7 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
 
 /**
  * @brief Fork a new handler process for a given scan queue entry.
- * 
+ *
  * @param[in]  report_id  UUID of the scan to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
@@ -298,13 +298,13 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 g_warning ("%s: Could not read handler PID from pipe:"
                            " received %d bytes, expected %zu",
                            __func__, nbytes, sizeof (grandchild_pid));
-          
+
               close (pipe_fds[0]); // Close input side of pipe
               return -1;
             }
-          
+
           close (pipe_fds[0]); // Close input side of pipe
-          
+
           /*  Wait to prevent zombie, then return. */
           while (waitpid (child_pid, &status, 0) < 0)
             {
