@@ -54,7 +54,7 @@
 #include "manage_http_scanner.h"
 #endif
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
 
