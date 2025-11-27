@@ -807,7 +807,7 @@ scanner_type_valid (scanner_type_t scanner_type)
  *            but the Container scanning feature is disabled.
  */
 int
-scanner_feature_enabled (scanner_type_t scanner_type)
+check_scanner_feature (scanner_type_t scanner_type)
 {
   if (scanner_type == SCANNER_TYPE_OPENVASD
       || scanner_type == SCANNER_TYPE_OPENVASD_SENSOR)
@@ -6362,7 +6362,12 @@ nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
         }
       else
         {
-          g_critical ("%s: Default scanner is an openvasd one,"
+          if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but openvasd runtime flag is disabled.",
+                      __func__);
+          else
+            g_critical ("%s: Default scanner is an openvasd one,"
                       " but gvmd is not built to support this.",
                       __func__);
           return -1;
@@ -6461,7 +6466,12 @@ nvts_check_feed (int *lockfile_in_use,
         }
       else
         {
-          g_critical ("%s: Default scanner is an openvasd one,"
+          if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but openvasd runtime flag is disabled.",
+                      __func__);
+          else
+            g_critical ("%s: Default scanner is an openvasd one,"
                       " but gvmd is not built to support this.",
                       __func__);
           return -1;
