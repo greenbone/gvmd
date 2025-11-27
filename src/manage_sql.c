@@ -30002,20 +30002,21 @@ create_scanner (const char* name, const char *comment, const char *host,
       return CREATE_SCANNER_INVALID_TYPE;
     }
 
-  int feature_res = check_scanner_feature ((scanner_type_t) itype);
-  if (feature_res == 1)
+  scanner_feature_status_t feature_res = check_scanner_feature (
+    (scanner_type_t) itype);
+  if (feature_res == SCANNER_FEATURE_OPENVASD_DISABLED)
     {
       /* openvasd feature disabled */
       sql_rollback ();
       return CREATE_SCANNER_OPENVASD_DISABLED;
     }
-  else if (feature_res == 2)
+  else if (feature_res == SCANNER_FEATURE_AGENTS_DISABLED)
     {
       /* Agent feature disabled */
       sql_rollback ();
       return CREATE_SCANNER_AGENT_DISABLED;
     }
-  else if (feature_res == 3)
+  else if (feature_res == SCANNER_FEATURE_CONTAINER_DISABLED)
     {
       /* Container scanning feature disabled */
       sql_rollback ();
@@ -30211,20 +30212,21 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   else
     itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
 
-  int feature_res = check_scanner_feature ((scanner_type_t) itype);
-  if (feature_res == 1)
+  scanner_feature_status_t feature_res = check_scanner_feature (
+    (scanner_type_t) itype);
+  if (feature_res == SCANNER_FEATURE_OPENVASD_DISABLED)
     {
       /* openvasd feature disabled */
       sql_rollback ();
       return MODIFY_SCANNER_OPENVASD_DISABLED;
     }
-  else if (feature_res == 2)
+  else if (feature_res == SCANNER_FEATURE_AGENTS_DISABLED)
     {
       /* Agent feature disabled */
       sql_rollback ();
       return MODIFY_SCANNER_AGENT_DISABLED;
     }
-  else if (feature_res == 3)
+  else if (feature_res == SCANNER_FEATURE_CONTAINER_DISABLED)
     {
       /* Container scanning feature disabled */
       sql_rollback ();
