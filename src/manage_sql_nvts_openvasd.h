@@ -21,7 +21,6 @@
  * @brief Manager Manage library: openvasd SQL backend headers.
  */
 
-#if OPENVASD
 #ifndef MANAGE_NVTS_OPENVASD_H
 #define MANAGE_NVTS_OPENVASD_H
 
@@ -45,4 +44,3 @@ int
 update_scanner_preferences_openvasd (scanner_t scanner);
 
 #endif //MANAGE_NVTS_OPENVASD_H
-#endif

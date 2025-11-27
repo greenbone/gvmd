@@ -67,11 +67,11 @@ jobs:
           - build:
               name: "with openvasd"
               container: stable
-              flags: "-DOPENVASD=1"
+              flags: "-DENABLE_OPENVASD=1"
           - build:
               name: "with container scanning"
               container: stable
-              flags: "-DOPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
+              flags: "-DENABLE_OPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
     container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.build.container }}
     steps:
       - uses: actions/checkout@v6

@@ -2,7 +2,7 @@ ARG GVM_LIBS_VERSION=stable
 ARG DEBIAN_FRONTEND=noninteractive
 # when set it will added to the cmake command
 # As an example:
-# FEATURE_TOGGLES="-DOPENVASD=1"
+# FEATURE_TOGGLES="-DENABLE_OPENVASD=1"
 # enables openvasd feature toggle.
 ARG FEATURE_TOGGLE=""
 
