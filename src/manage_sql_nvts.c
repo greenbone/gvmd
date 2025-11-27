@@ -1224,14 +1224,13 @@ nvts_feed_version_status_from_scanner ()
                                                     NULL,
                                                     NULL);
     case SCANNER_TYPE_OPENVASD:
-#if OPENVASD
-      return nvts_feed_version_status_internal_openvasd (NULL, NULL);
-#else
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        return nvts_feed_version_status_internal_openvasd (NULL, NULL);
       g_critical ("%s: Default scanner is an openvasd one,"
                   " but gvmd is not built to support this.",
                   __func__);
       return -1;
-#endif
+
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
@@ -1267,11 +1266,10 @@ manage_sync_nvts (int (*fork_update_nvt_cache) (pid_t*))
 int
 update_or_rebuild_nvts (int update)
 {
-#if OPENVASD
-   return update_or_rebuild_nvts_openvasd (update);
-#else
-   return update_or_rebuild_nvts_osp (update);
-#endif
+  if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    return update_or_rebuild_nvts_openvasd (update);
+  else
+    return update_or_rebuild_nvts_osp (update);
 }
 
 /**
@@ -1776,7 +1774,7 @@ update_scanner_preferences ()
       }
     case SCANNER_TYPE_OPENVASD:
       {
-#if OPENVASD
+#if ENABLE_HTTP_SCANNER
         scanner_t scanner;
 
         if (find_resource_no_acl ("scanner", SCANNER_UUID_DEFAULT, &scanner))

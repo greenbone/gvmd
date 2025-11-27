@@ -73,7 +73,7 @@ Ensure (manage_runtime_flags, default_flags_no_config_no_env)
                is_equal_to (0));
 #endif
 
-#if OPENVASD
+#if ENABLE_OPENVASD
   assert_that (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER),
                is_equal_to (1));
   assert_that (feature_enabled (FEATURE_ID_OPENVASD_SCANNER), is_equal_to (0));
