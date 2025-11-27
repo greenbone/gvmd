@@ -552,7 +552,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
-  osp_credential_t *snmp_credential, *krb5_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   int ret, empty;
@@ -642,10 +641,13 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 #else
 
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  osp_credential_t *snmp_credential, *krb5_credential;
 
   ssh_credential = target_osp_ssh_credential_db (target);
   smb_credential = target_osp_smb_credential_db (target);
   esxi_credential = target_osp_esxi_credential_db (target);
+  snmp_credential = target_osp_snmp_credential_db (target);
+  krb5_credential = target_osp_krb5_credential_db (target);
 
   if (ssh_credential)
     osp_target_add_credential (osp_target, ssh_credential);
@@ -653,16 +655,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     osp_target_add_credential (osp_target, smb_credential);
   if (esxi_credential)
     osp_target_add_credential (osp_target, esxi_credential);
-
-#endif
-
-  snmp_credential = target_osp_snmp_credential (target);
   if (snmp_credential)
     osp_target_add_credential (osp_target, snmp_credential);
-
-  krb5_credential = target_osp_krb5_credential (target);
   if (krb5_credential)
     osp_target_add_credential (osp_target, krb5_credential);
+
+#endif
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
