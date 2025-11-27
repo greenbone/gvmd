@@ -365,7 +365,7 @@ scanner_type_t
 get_scanner_type (scanner_t);
 
 int
-scanner_feature_enabled (scanner_type_t);
+check_scanner_feature (scanner_type_t);
 
 scanner_type_t
 get_scanner_type_by_uuid (const char *);

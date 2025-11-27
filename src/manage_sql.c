@@ -30002,7 +30002,7 @@ create_scanner (const char* name, const char *comment, const char *host,
       return CREATE_SCANNER_INVALID_TYPE;
     }
 
-  int feature_res = scanner_feature_enabled ((scanner_type_t) itype);
+  int feature_res = check_scanner_feature ((scanner_type_t) itype);
   if (feature_res == 1)
     {
       /* openvasd feature disabled */
@@ -30211,7 +30211,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   else
     itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
 
-  int feature_res = scanner_feature_enabled ((scanner_type_t) itype);
+  int feature_res = check_scanner_feature ((scanner_type_t) itype);
   if (feature_res == 1)
     {
       /* openvasd feature disabled */

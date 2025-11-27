@@ -1206,9 +1206,15 @@ update_nvt_cache_retry ()
                   }
                 else
                   {
-                    g_critical ("%s: Default scanner is an openvasd one,"
+                    if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+                      g_critical ("%s: Default scanner is an openvasd one,"
+                                " but openvasd runtime flag is disabled.",
+                                __func__);
+                    else
+                      g_critical ("%s: Default scanner is an openvasd one,"
                                 " but gvmd is not built to support this.",
                                 __func__);
+
                     exit (EXIT_FAILURE);
                   }
               }
