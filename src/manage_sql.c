@@ -4167,7 +4167,7 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
-#if OPENVASD
+#if ENABLE_OPENVASD
       sql ("INSERT INTO scanners"
            " (uuid, owner, name, host, port, type, ca_pub, credential,"
            "  creation_time, modification_time)"
@@ -31402,7 +31402,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   return 0;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /**
  * @brief Get an openvasd Scanner's get_scanner_preferences info.
  *

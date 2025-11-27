@@ -13510,7 +13510,7 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
-    compiled_in, enabled, "OPENVASD");
+    compiled_in, enabled, "ENABLE_OPENVASD");
 
   /* CONTAINER_SCANNING */
   compiled_in = feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
@@ -17443,7 +17443,7 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
           g_slist_free (params);
         }
         break;
-#if OPENVASD
+#if ENABLE_OPENVASD
       case SCANNER_TYPE_OPENVASD:
       case SCANNER_TYPE_OPENVASD_SENSOR:
         {

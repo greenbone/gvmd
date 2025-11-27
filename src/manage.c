@@ -2604,7 +2604,7 @@ slave_get_relay (const char *original_host,
   return ret;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /* Prototype */
 static int
 run_openvasd_task (task_t task, int from, char **report_id);
@@ -2678,7 +2678,7 @@ run_task (const char *task_id, char **report_id, int from)
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, from, report_id);
 
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD
     || scanner_type (scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     return run_openvasd_task (task, from, report_id);
@@ -2829,7 +2829,7 @@ stop_task_internal (task_t task)
   return 0;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 static int
 stop_openvasd_task (task_t task);
 #endif
@@ -2860,7 +2860,7 @@ stop_task (const char *task_id)
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD_SENSOR)
     return stop_openvasd_task (task);
@@ -3104,7 +3104,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
   http_scanner_connector_t connector;
   int err;
   openvasd_get_performance_opts_t opts;
@@ -7174,7 +7174,7 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
   return -1;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /* openvasd */
 
 /**

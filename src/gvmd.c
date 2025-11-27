@@ -2800,7 +2800,7 @@ gvmd (int argc, char** argv, char *env[])
           else
             printf ("Sentry support disabled\n");
         }
-#if OPENVASD == 1
+#if ENABLE_OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
 #if ENABLE_AGENTS == 1

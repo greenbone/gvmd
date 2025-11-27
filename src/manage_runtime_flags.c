@@ -69,7 +69,7 @@ static feature_state_t feature_container_scanning =
   {ENABLE_CONTAINER_SCANNING, 0};
 
 static feature_state_t feature_openvasd =
-  {OPENVASD, 0};
+  {ENABLE_OPENVASD, 0};
 
 static feature_state_t feature_credential_stores =
   {ENABLE_CREDENTIAL_STORES, 0};

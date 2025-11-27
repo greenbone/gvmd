@@ -52,7 +52,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /**
  * @brief Max number of rows inserted per statement.
  */
@@ -316,7 +316,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
   return 0;
 }
-#endif /* OPENVASD */
+#endif /* ENABLE_OPENVASD */
 
 /**
  * @brief Update scanner preferences via openvasd.
@@ -342,7 +342,7 @@ update_scanner_preferences_openvasd (scanner_t scan)
                  SCANNER_UUID_DEFAULT);
       return -1;
     }
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
       http_scanner_resp_t resp;
@@ -448,7 +448,7 @@ int
 update_nvt_cache_openvasd (gchar *db_feed_version,
                            gchar *scanner_feed_version, int rebuild)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
       g_warning ("%s: openvasd runtime flag is disabled", __func__);
@@ -519,7 +519,7 @@ int
 nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
                                        gchar **vts_version)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
   scanner_t scan;
   http_scanner_connector_t connector = NULL;
   http_scanner_resp_t resp = NULL;
@@ -573,7 +573,7 @@ int
 nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
                                             gchar **scanner_feed_version_out)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
       g_warning ("%s: openvasd runtime flag is disabled", __func__);
@@ -633,7 +633,7 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
 int
 manage_update_nvt_cache_openvasd ()
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
 
   gchar *db_feed_version, *scanner_feed_version;
   int ret;
@@ -677,7 +677,7 @@ manage_update_nvt_cache_openvasd ()
 int
 update_or_rebuild_nvts_openvasd (int update)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
 
   gchar *db_feed_version = NULL;
   gchar *scanner_feed_version = NULL;
