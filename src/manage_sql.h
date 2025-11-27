@@ -291,6 +291,9 @@ int
 create_current_report (task_t, char **, task_status_t);
 
 int
+create_agent_task_current_report (task_t, char **, task_status_t);
+
+int
 init_task_schedule_iterator (iterator_t *);
 
 void
