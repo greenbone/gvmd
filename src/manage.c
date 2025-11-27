@@ -8001,7 +8001,8 @@ launch_agent_control_task (task_t task,
 make_report:
   // Always create a report with TASK_STATUS_REQUESTED
   {
-    int report_resp = create_current_report (task, report_id, TASK_STATUS_REQUESTED);
+    int report_resp = create_agent_task_current_report (
+      task, report_id, TASK_STATUS_REQUESTED);
     if (report_resp != 0)
       {
         if (error && !*error) *error = g_strdup ("Could not create current report");
