@@ -798,41 +798,39 @@ scanner_type_valid (scanner_type_t scanner_type)
  *
  * @param scanner_type  Scanner type.
  *
- * @return 0  if no feature is required, or the required feature is enabled.
- *         1  if an openvasd scanner type is used
- *            but the openvasd feature is disabled.
- *         2  if an Agent Controller scanner type is used
- *            but the Agents feature is disabled.
- *         3  if an Container image scanner type is used
- *            but the Container scanning feature is disabled.
+ * @return SCANNER_FEATURE_OK
+ *         if no feature is required, or the required feature is enabled.
+ *
+ *         Otherwise, the value indicating that the feature required
+ *         for the given scanner type is disabled.
  */
-int
+scanner_feature_status_t
 check_scanner_feature (scanner_type_t scanner_type)
 {
   if (scanner_type == SCANNER_TYPE_OPENVASD
       || scanner_type == SCANNER_TYPE_OPENVASD_SENSOR)
     {
       if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
-        return 1;
-      return 0;
+        return SCANNER_FEATURE_OPENVASD_DISABLED;
+      return SCANNER_FEATURE_OK;
     }
 
   if (scanner_type == SCANNER_TYPE_AGENT_CONTROLLER
       || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     {
       if (!feature_enabled (FEATURE_ID_AGENTS))
-        return 2;
-      return 0;
+        return SCANNER_FEATURE_AGENTS_DISABLED;
+      return SCANNER_FEATURE_OK;
     }
 
   if (scanner_type == SCANNER_TYPE_CONTAINER_IMAGE)
     {
       if (!feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
-        return 3;
-      return 0;
+        return SCANNER_FEATURE_CONTAINER_DISABLED;
+      return SCANNER_FEATURE_OK;
     }
 
-  return 0;
+  return SCANNER_FEATURE_OK;
 }
 
 /**

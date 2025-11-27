@@ -355,6 +355,20 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX = 11,
 } scanner_type_t;
 
+/**
+ * @brief Scanner feature status.
+ *
+ * These numbers are indicating whether the required feature
+ * for a given scanner type is available.
+ */
+typedef enum
+{
+ SCANNER_FEATURE_OK = 0,
+ SCANNER_FEATURE_OPENVASD_DISABLED = 1,
+ SCANNER_FEATURE_AGENTS_DISABLED = 2,
+ SCANNER_FEATURE_CONTAINER_DISABLED = 3
+} scanner_feature_status_t;
+
 int
 scanner_type_valid (scanner_type_t);
 
@@ -364,7 +378,7 @@ scanner_type_supports_unix_sockets (scanner_type_t);
 scanner_type_t
 get_scanner_type (scanner_t);
 
-int
+scanner_feature_status_t
 check_scanner_feature (scanner_type_t);
 
 scanner_type_t
