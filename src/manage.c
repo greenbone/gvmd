@@ -7317,7 +7317,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
-  openvasd_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   http_scanner_resp_t response;
@@ -7411,6 +7410,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 #if ENABLE_CREDENTIAL_STORES == 0
 
   openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  openvasd_credential_t *snmp_credential;
 
   ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
   if (ssh_credential)
@@ -7424,12 +7424,13 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
     (openvasd_credential_t *) target_osp_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
-#endif
 
   snmp_credential =
-    (openvasd_credential_t *) target_osp_snmp_credential (target);
+    (openvasd_credential_t *) target_osp_snmp_credential_db (target);
   if (snmp_credential)
     openvasd_target_add_credential (openvasd_target, snmp_credential);
+
+ #endif
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;

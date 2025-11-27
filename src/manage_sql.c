@@ -21919,7 +21919,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (krb5_credential)
     {
       gchar *type = credential_type (krb5_credential);
-      if (strcmp (type, "krb5"))
+      if (strcmp (type, "krb5")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_krb5")
+#endif
+         )
         {
           sql_rollback ();
           g_free (type);
@@ -24225,6 +24229,8 @@ validate_credential_realm_format (const char *realm)
  *                              (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  host_identifier  Host identifier, or NULL.
  *                              (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]  privacy_host_identifier  SNMP Privacy host identifier, or NULL.
+ *                              (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
  * @param[out] credential      Created Credential.
@@ -24258,6 +24264,7 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* kdc, array_t* kdcs, const char *realm,
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
+                   const char* privacy_host_identifier,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -24333,8 +24340,6 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
-  else if (credential_store_id || (vault_id && host_identifier))
-    quoted_type = g_strdup ("cs");
   else if (login && key_private == NULL && given_password == NULL)
     quoted_type = g_strdup ("usk"); /* auto-generate */
   else
@@ -24355,7 +24360,7 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-          || g_str_has_prefix (quoted_type, "cs_") == 0
+          || g_str_has_prefix (quoted_type, "cs_")
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
@@ -24387,7 +24392,9 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
-  else if (strcmp (quoted_type, "krb5") == 0)
+  else if ((strcmp (quoted_type, "krb5") == 0)
+           || (feature_enabled (FEATURE_ID_CREDENTIAL_STORES)
+               && strcmp (quoted_type, "cs_krb5") == 0))
     {
       if (kdcs && kdcs->len > 0)
         {
@@ -24448,7 +24455,28 @@ create_credential (const char* name, const char* comment, const char* login,
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
     }
-  else if (g_str_has_prefix (quoted_type, "cs_"))
+  else if (strcmp (quoted_type, "cs_snmp") == 0
+           && feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+    {
+      if (auth_algorithm == NULL)
+        ret = 12;
+      else if ((privacy_algorithm == NULL
+                || strcmp (privacy_algorithm, "") == 0)
+               && privacy_host_identifier
+               && strcmp (privacy_host_identifier, ""))
+        ret = 14;
+      else if (auth_algorithm
+               && strcmp (auth_algorithm, "md5")
+               && strcmp (auth_algorithm, "sha1"))
+        ret = 15;
+      else if (privacy_algorithm
+               && strcmp (privacy_algorithm, "")
+               && strcmp (privacy_algorithm, "aes")
+               && strcmp (privacy_algorithm, "des"))
+        ret = 16;
+    }
+
+  if (g_str_has_prefix (quoted_type, "cs_") && ret == 0)
     {
       credential_store_t store;
       if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
@@ -24556,6 +24584,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (host_identifier)
         set_credential_data (new_credential,
                              "host_identifier", host_identifier);
+      if (privacy_host_identifier)
+        set_credential_data (new_credential,
+                             "privacy_host_identifier", privacy_host_identifier);
       if (credential)
         *credential = new_credential;
 
@@ -24854,6 +24885,8 @@ copy_credential (const char* name, const char* comment,
  *                                  (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   host_identifier     Host identifier, or NULL.
  *                                  (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]   privacy_host_identifier  SNMP Privacy host identifier, or NULL.
+ *                                  (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
@@ -24868,7 +24901,8 @@ copy_credential (const char* name, const char* comment,
  *            (if ENABLE_CREDENTIAL_STORES),
  *         14 invalid vault ID (if ENABLE_CREDENTIAL_STORES),
  *         15 invalid host identifier (if ENABLE_CREDENTIAL_STORES),
- *         16 value cannot be modified for credential store type,
+ *         16 invalid privacy host identifier (if ENABLE_CREDENTIAL_STORES),
+ *         17 value cannot be modified for credential store type,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -24884,6 +24918,7 @@ modify_credential (const char *credential_id,
                    const char* realm,
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
+                   const char* privacy_host_identifier,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -24947,12 +24982,13 @@ modify_credential (const char *credential_id,
 
   ret = 0;
 
-  if ((credential_store_id || vault_id || host_identifier)
+  if ((credential_store_id || vault_id || host_identifier
+      || privacy_host_identifier)
       && (login || password || privacy_password || key_private
           || key_public ||certificate || community))
     {
       sql_rollback ();
-      return 16;
+      return 17;
     }
 
   if (login && ret == 0)
@@ -25045,6 +25081,28 @@ modify_credential (const char *credential_id,
       const char *key_private_to_use;
       const char *type = credential_iterator_type (&iterator);
 
+      if (strcmp (type, "cc") && strcmp (type, "up")
+          && strcmp (type, "pw") && strcmp (type, "usk")
+          && strcmp (type, "snmp") && strcmp (type, "pgp")
+          && strcmp (type, "smime") && strcmp (type, "krb5")
+          && !g_str_has_prefix (type, "cs_"))
+        {
+          g_warning ("%s: Unknown credential type: %s", __func__, type);
+          sql_rollback ();
+          cleanup_iterator (&iterator);
+          return -1;
+        }
+
+      if (g_str_has_prefix (type, "cs_")
+          && !feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+        {
+          sql_rollback ();
+          cleanup_iterator (&iterator);
+          g_debug ("%s: Credential stores feature not enabled",
+                    __func__);
+          return -1;
+        }
+
       if (key_private)
         {
           char *generated_key_public = NULL;
@@ -25125,9 +25183,10 @@ modify_credential (const char *credential_id,
                   : credential_iterator_password (&iterator));
             }
         }
-      else if (strcmp (type, "snmp") == 0)
+      else if ((strcmp (type, "snmp") == 0)
+               || (strcmp (type, "cs_snmp") == 0))
         {
-          if (privacy_password)
+          if (privacy_password || privacy_host_identifier)
             {
               const char *used_algorithm;
 
@@ -25137,9 +25196,13 @@ modify_credential (const char *credential_id,
               if (used_algorithm == NULL)
                 used_algorithm = "";
 
-              // privacy password must be empty if algorithm is empty
+              /*
+              privacy password and host identifier
+              must be empty if algorithm is empty
+              */
               if (strcmp (used_algorithm, "") == 0
-                  && strcmp (privacy_password, ""))
+                  && (strcmp (privacy_password, "")
+                      || strcmp (privacy_host_identifier, "")))
                 {
                   sql_rollback ();
                   cleanup_iterator (&iterator);
@@ -25147,7 +25210,8 @@ modify_credential (const char *credential_id,
                 }
             }
 
-          if (community || password || privacy_password)
+          if (strcmp (type, "snmp") == 0
+              && (community || password || privacy_password))
             {
               set_credential_snmp_secret
                 (credential,
@@ -25167,9 +25231,10 @@ modify_credential (const char *credential_id,
         {
           set_credential_data (credential, "secret", "");
         }
-      else if (strcmp (type, "krb5") == 0)
+      else if ((strcmp (type, "krb5") == 0)
+               || (strcmp (type, "cs_krb5") == 0))
         {
-          if (password)
+          if (password && strcmp (type, "krb5") == 0)
             set_credential_password (credential, password);
           if (kdcs)
             {
@@ -25207,14 +25272,8 @@ modify_credential (const char *credential_id,
             }
         }
 
-      else if (g_str_has_prefix (type, "cs_"))
+      if (g_str_has_prefix (type, "cs_"))
         {
-          if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
-            {
-              sql_rollback ();
-              cleanup_iterator (&iterator);
-              return -1;
-            }
           if (credential_store_id)
             {
               credential_store_t store;
@@ -25254,16 +25313,19 @@ modify_credential (const char *credential_id,
                                    "host_identifier",
                                    host_identifier);
             }
+          if (privacy_host_identifier)
+            {
+              if (!*privacy_host_identifier)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  return 16;
+                }
+              set_credential_data (credential,
+                                   "privacy_host_identifier",
+                                   privacy_host_identifier);
+            }
         }
-      else
-        {
-          g_warning ("%s: Unknown credential type: %s", __func__, type);
-          sql_rollback ();
-          cleanup_iterator (&iterator);
-          g_free (key_private_truncated);
-          return -1;
-        }
-
       g_free (key_private_truncated);
     }
   else
@@ -25500,6 +25562,11 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'host_identifier')",      \
      "host_identifier",                                                       \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id"                                     \
+     " AND type = 'privacy_host_identifier')",                                \
+     "privacy_host_identifier",                                               \
      KEYWORD_TYPE_STRING },                                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
@@ -26304,6 +26371,18 @@ DEF_ACCESS (credential_iterator_vault_id,
  */
 DEF_ACCESS (credential_iterator_host_identifier,
             GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
+ * @brief Get the SNMP privacy host identifier from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SNMP privacy host identifier, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+
+DEF_ACCESS (credential_iterator_privacy_host_identifier,
+            GET_ITERATOR_COLUMN_COUNT + 17);
 
 #endif
 
