@@ -179,6 +179,7 @@ set(
   manage_filter_utils.c
   manage_commands.c
   manage_get.c
+  manage_groups.c
   manage_http_scanner.c
   manage_license.c
   manage_openvas.c
@@ -221,6 +222,7 @@ set(
   manage_sql_credential_stores.c
   manage_sql_events.c
   manage_sql_filters.c
+  manage_sql_groups.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -680,6 +682,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
@@ -692,6 +695,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_assets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_filters.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"

@@ -39,6 +39,7 @@
 #include "manage_alerts.h"
 #include "manage_assets.h"
 #include "manage_filters.h"
+#include "manage_groups.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
 #include "manage_runtime_flags.h"
@@ -33308,20 +33309,6 @@ delete_group (const char *group_id, int ultimate)
 }
 
 /**
- * @brief Return the UUID of a group.
- *
- * @param[in]  group  Group.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-group_uuid (group_t group)
-{
-  return sql_string ("SELECT uuid FROM groups WHERE id = %llu;",
-                     group);
-}
-
-/**
  * @brief Gets users of group as a string.
  *
  * @param[in]  group  Group.
@@ -33338,58 +33325,6 @@ group_users (group_t group)
                      "       GROUP BY users.name)"
                      "      AS sub;",
                      group);
-}
-
-/**
- * @brief Check whether a group is writable.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-group_writable (group_t group)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan group is writable.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_group_writable (group_t group)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a group is in use.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-group_in_use (group_t group)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan group is in use.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_group_in_use (group_t group)
-{
-  return 0;
 }
 
 /**
