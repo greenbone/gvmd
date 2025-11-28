@@ -40,6 +40,7 @@
 #include "manage_sql_assets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_filters.h"
+#include "manage_sql_groups.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
@@ -239,9 +240,6 @@ static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
-
-static gboolean
-find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
 vulns_extra_where (int);
@@ -32992,242 +32990,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 /* Groups. */
 
 /**
- * @brief Find a group for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of group.
- * @param[out]  group       Group return, 0 if successfully failed to find group.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find group), TRUE on error.
- */
-static gboolean
-find_group_with_permission (const char* uuid, group_t* group,
-                            const char *permission)
-{
-  return find_resource_with_permission ("group", uuid, group, permission, 0);
-}
-
-/**
- * @brief Add users to a group.
- *
- * Caller must take care of transaction.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Group or role.
- * @param[in]  users     List of users.
- *
- * @return 0 success, 2 failed to find user, 4 user name validation failed,
- *         99 permission denied, -1 error.
- */
-static int
-add_users (const gchar *type, resource_t resource, const char *users)
-{
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
-
-      /* Add each user. */
-
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 2;
-            }
-
-          if (find_user_by_name (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              if (validate_username (name))
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return 4;
-                }
-
-              uuid = user_uuid_any_method (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users"
-                       " (uuid, name, creation_time, modification_time)"
-                       " VALUES"
-                       " ('%s', '%s', m_now (), m_now ());",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sql_last_insert_id ();
-                }
-              else
-                {
-                  /* find_user_by_name should have found it. */
-                  assert (0);
-                  g_free (uuid);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              g_free (uuid);
-            }
-
-          if (find_user_by_name_with_permission (name, &user, "get_users"))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 99;
-            }
-
-          sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
-               type,
-               type,
-               resource,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Create a group.
- *
- * @param[in]   group_name       Group name.
- * @param[in]   comment          Comment on group.
- * @param[in]   users            Users group applies to.
- * @param[in]   special_full     Whether to give group super on itself (full
- *                               sharing between members).
- * @param[out]  group            Group return.
- *
- * @return 0 success, 1 group exists already, 2 failed to find user, 4 user
- *         name validation failed, 99 permission denied, -1 error.
- */
-int
-create_group (const char *group_name, const char *comment, const char *users,
-              int special_full, group_t* group)
-{
-  int ret;
-  gchar *quoted_group_name, *quoted_comment;
-
-  assert (current_credentials.uuid);
-  assert (group_name);
-  assert (group);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (group_name, "group", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  quoted_group_name = sql_quote (group_name);
-  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
-  sql ("INSERT INTO groups"
-       " (uuid, name, owner, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  '%s', m_now (), m_now ());",
-       quoted_group_name,
-       current_credentials.uuid,
-       quoted_comment);
-  g_free (quoted_comment);
-  g_free (quoted_group_name);
-
-  *group = sql_last_insert_id ();
-  ret = add_users ("group", *group, users);
-
-  if (ret)
-    sql_rollback ();
-  else
-    {
-      if (special_full)
-        {
-          char *group_id;
-
-          group_id = group_uuid (*group);
-          ret = create_permission_internal (1, "Super", NULL, "group", group_id,
-                                            "group", group_id, NULL);
-          g_free (group_id);
-          if (ret)
-            {
-              sql_rollback ();
-              return ret;
-            }
-        }
-      sql_commit ();
-    }
-
-  return ret;
-}
-
-/**
  * @brief Delete a group.
  *
  * @param[in]  group_id  UUID of group.
@@ -39126,6 +38888,148 @@ manage_default_ca_cert ()
 
 
 /* Users. */
+
+/**
+ * @brief Add users to a group or role.
+ *
+ * Caller must take care of transaction.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  resource  Group or role.
+ * @param[in]  users     List of users.
+ *
+ * @return 0 success, 2 failed to find user, 4 user name validation failed,
+ *         99 permission denied, -1 error.
+ */
+int
+add_users (const gchar *type, resource_t resource, const char *users)
+{
+  if (users)
+    {
+      gchar **split, **point;
+      GList *added;
+
+      /* Add each user. */
+
+      added = NULL;
+      split = g_strsplit_set (users, " ,", 0);
+      point = split;
+
+      while (*point)
+        {
+          user_t user;
+          gchar *name;
+
+          name = *point;
+
+          g_strstrip (name);
+
+          if (strcmp (name, "") == 0)
+            {
+              point++;
+              continue;
+            }
+
+          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
+            {
+              point++;
+              continue;
+            }
+
+          added = g_list_prepend (added, name);
+
+          if (user_exists (name) == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return 2;
+            }
+
+          if (find_user_by_name (name, &user))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              gchar *uuid;
+
+              if (validate_username (name))
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return 4;
+                }
+
+              uuid = user_uuid_any_method (name);
+
+              if (uuid == NULL)
+                {
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+
+              if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
+                           uuid)
+                  == 0)
+                {
+                  gchar *quoted_name;
+                  quoted_name = sql_quote (name);
+                  sql ("INSERT INTO users"
+                       " (uuid, name, creation_time, modification_time)"
+                       " VALUES"
+                       " ('%s', '%s', m_now (), m_now ());",
+                       uuid,
+                       quoted_name);
+                  g_free (quoted_name);
+
+                  user = sql_last_insert_id ();
+                }
+              else
+                {
+                  /* find_user_by_name should have found it. */
+                  assert (0);
+                  g_free (uuid);
+                  g_list_free (added);
+                  g_strfreev (split);
+                  return -1;
+                }
+
+              g_free (uuid);
+            }
+
+          if (find_user_by_name_with_permission (name, &user, "get_users"))
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return -1;
+            }
+
+          if (user == 0)
+            {
+              g_list_free (added);
+              g_strfreev (split);
+              return 99;
+            }
+
+          sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
+               type,
+               type,
+               resource,
+               user);
+
+          point++;
+        }
+
+      g_list_free (added);
+      g_strfreev (split);
+    }
+
+  return 0;
+}
 
 /**
  * @brief Create the given user.
