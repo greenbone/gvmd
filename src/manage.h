@@ -2864,9 +2864,6 @@ int
 init_group_iterator (iterator_t *, get_data_t *);
 
 int
-copy_group (const char *, const char *, const char *, group_t *);
-
-int
 create_group (const char *, const char *, const char *, int, group_t *);
 
 int
