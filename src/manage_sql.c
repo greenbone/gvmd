@@ -39,6 +39,7 @@
 #include "manage_alerts.h"
 #include "manage_assets.h"
 #include "manage_filters.h"
+#include "manage_groups.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
 #include "manage_runtime_flags.h"
@@ -33305,20 +33306,6 @@ delete_group (const char *group_id, int ultimate)
 
   sql_commit ();
   return 0;
-}
-
-/**
- * @brief Return the UUID of a group.
- *
- * @param[in]  group  Group.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-group_uuid (group_t group)
-{
-  return sql_string ("SELECT uuid FROM groups WHERE id = %llu;",
-                     group);
 }
 
 /**

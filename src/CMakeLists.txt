@@ -221,6 +221,7 @@ set(
   manage_sql_credential_stores.c
   manage_sql_events.c
   manage_sql_filters.c
+  manage_sql_groups.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
@@ -692,6 +693,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_assets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_filters.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
