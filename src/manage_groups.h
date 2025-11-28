@@ -12,6 +12,9 @@ char*
 group_uuid (group_t);
 
 int
+copy_group (const char *, const char *, const char *, group_t *);
+
+int
 trash_group_in_use (group_t);
 
 int
