@@ -2885,18 +2885,6 @@ gchar *
 group_users (group_t);
 
 int
-trash_group_in_use (group_t);
-
-int
-group_in_use (group_t);
-
-int
-trash_group_writable (group_t);
-
-int
-group_writable (group_t);
-
-int
 group_count (const get_data_t*);
 
 int
