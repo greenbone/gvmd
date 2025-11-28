@@ -16,7 +16,7 @@
 
 /**
  * @brief Default maximum number of active scan handlers
- */ 
+ */
 #define DEFAULT_MAX_ACTIVE_SCAN_HANDLERS 3
 
 void

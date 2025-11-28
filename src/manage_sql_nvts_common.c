@@ -655,7 +655,7 @@ update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
 }
 
 /**
- * @brief Updates report counts cache, config preferences and whole-only 
+ * @brief Updates report counts cache, config preferences and whole-only
  *        families after NVT sync.
  *
  * @param[in] old_nvts_last_modified  Time NVTs considered to be modified after.

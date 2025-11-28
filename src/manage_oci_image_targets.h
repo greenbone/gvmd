@@ -42,7 +42,7 @@ create_oci_image_target (const char*, const char*, const char*,
                          const char*, oci_image_target_t*, gchar**);
 
 int
-copy_oci_image_target (const char*, const char*, 
+copy_oci_image_target (const char*, const char*,
                        const char*, oci_image_target_t*);
 
 int

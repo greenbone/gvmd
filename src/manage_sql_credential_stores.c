@@ -145,9 +145,9 @@ init_credential_store_preference_iterator (
 
 /**
  * @brief Create a credential preference structure from an iterator.
- * 
+ *
  * @param[in]  iterator  The iterator to get data from.
- * 
+ *
  * @return The newly allocated preference.
  */
 credential_store_preference_data_t *
@@ -232,7 +232,7 @@ DEF_ACCESS (credential_store_preference_iterator_pattern, 3);
 
 /**
  * @brief Get the value from a credential store preference iterator.
- * 
+ *
  * This function will return NULL for encrypted preferences.
  *
  * @param[in]  iterator  Iterator.
@@ -250,7 +250,7 @@ credential_store_preference_iterator_value (iterator_t *iterator)
 
 /**
  * @brief Get the decrypted value from a credential store preference iterator.
- * 
+ *
  * This function will also return the value for non-encrypted preferences.
  *
  * @param[in]  iterator  Iterator.
@@ -327,9 +327,9 @@ init_credential_store_selector_iterator (iterator_t *iterator,
 
 /**
  * @brief Create a credential selector structure from an iterator.
- * 
+ *
  * @param[in]  iterator  The iterator to get data from.
- * 
+ *
  * @return The newly allocated selector.
  */
 credential_store_selector_data_t *
@@ -483,9 +483,9 @@ credential_store_writable (credential_store_t credential_store)
 
 /**
  * @brief Get the "active" status of a credential store.
- * 
+ *
  * @param[in]  credential_store  The credential store to check.
- * 
+ *
  * @return TRUE if active, FALSE if not.
  */
 gboolean
@@ -497,9 +497,9 @@ credential_store_active (credential_store_t credential_store)
 
 /**
  * @brief Get the host of a credential store.
- * 
+ *
  * @param[in]  credential_store  The credential store to check.
- * 
+ *
  * @return The host of the credential store. Caller must freed.
  */
 char *
@@ -511,9 +511,9 @@ credential_store_host (credential_store_t credential_store)
 
 /**
  * @brief Get the path of a credential store.
- * 
+ *
  * @param[in]  credential_store  The credential store to check.
- * 
+ *
  * @return The path of the credential store. Caller must freed.
  */
 char *
@@ -594,7 +594,7 @@ credential_store_path_valid (const char *path,
 
 /**
  * @brief Check if binary data of a credential store preference value is valid.
- * 
+ *
  * @param[in]  name       Name of the preference
  * @param[in]  bin_value  The value as a gnutls datum
  * @param[in]  type       The data type of the value
@@ -708,7 +708,7 @@ credential_store_preference_binary_value_is_valid (
           }
         gnutls_x509_privkey_deinit (privkey);
         gnutls_pkcs12_deinit (pkcs12);
-        
+
         if (ret != GNUTLS_E_SUCCESS)
           {
             *message = g_strdup_printf("could not get key and certificates"
@@ -725,7 +725,7 @@ credential_store_preference_binary_value_is_valid (
 
 /**
  * @brief Check if a credential store preference value is valid.
- * 
+ *
  * @param[in]  name       Name of the preference (for error messages).
  * @param[in]  value      Value to check the validity of.
  * @param[in]  type       Data type of the preference to check.
@@ -915,7 +915,7 @@ credential_store_get_preferences_hashtable (credential_store_t credential_store)
 
 /**
  * @brief Update the preferences of a credential store.
- * 
+ *
  * @param[in]  preference_values  Collection of preference values to update.
  * @param[in]  credential_store   Credential store the preferences belong to.
  * @param[out] message            Output of error message if check fails.
@@ -978,7 +978,7 @@ credential_store_update_preferences (GHashTable *preference_values,
       else
         passphrase = NULL;
 
-      if (value != NULL 
+      if (value != NULL
             && credential_store_preference_value_valid (name,
                                                         value,
                                                         preference->type,
@@ -1136,7 +1136,7 @@ modify_credential_store (const char *credential_store_id,
 
 /**
  * @brief Create or update the base data of a credential store.
- * 
+ *
  * If the credential store already exists, fields that can be modified by
  * users will only be overwritten by defaults if the current values are no
  * longer valid.
@@ -1225,10 +1225,10 @@ create_or_update_credential_store_base (const char *credential_store_id,
 
 /**
  * @brief Create or update a credential store preference
- * 
+ *
  * To set the value of a preference to one given by a user, use
  *  credential_store_set_preference.
- * 
+ *
  * If the preference already exists, the value will only be overwritten
  *  by the default if the current value is no longer valid.
  *
@@ -1332,8 +1332,8 @@ create_or_update_credential_store_preference (
       char *encryption_key_uid = current_encryption_key_uid (TRUE);
       crypt_ctx = lsc_crypt_new (encryption_key_uid);
       free (encryption_key_uid);
-      
-      credential_store_set_preference (credential_store, 
+
+      credential_store_set_preference (credential_store,
                                        reset_preference->name,
                                        reset_preference->value,
                                        crypt_ctx);
@@ -1344,7 +1344,7 @@ create_or_update_credential_store_preference (
 
 /**
  * @brief Create or update a credential store selector.
- * 
+ *
  * @param[in]  credential_store     Rowid of the credential store
  * @param[in]  new_selector         The new selector data to set
  */
@@ -1499,10 +1499,10 @@ create_or_update_credential_store (const char *credential_store_id,
 
 /**
  * @brief Verifies the connection of a credential store.
- * 
+ *
  * @param[in]  credential_store_id  The UUID of the credential store to verify.
  * @param[out] message              Error message output.
- * 
+ *
  * @return A verify_credential_store_return_t return code.
  */
 verify_credential_store_return_t
@@ -1518,7 +1518,7 @@ verify_credential_store (const char *credential_store_id,
 
   if (credential_store_id == NULL || strcmp (credential_store_id, "") == 0)
     return VERIFY_CREDENTIAL_STORE_MISSING_ID;
-  
+
   if (acl_user_may ("verify_credential_store") == 0)
     {
       return VERIFY_CREDENTIAL_STORE_PERMISSION_DENIED;

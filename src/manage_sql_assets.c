@@ -398,7 +398,7 @@ manage_report_host_add (report_t report, const char *host, time_t start,
 {
   char *quoted_host = sql_quote (host);
   resource_t report_host;
-  
+
   sql ("INSERT INTO report_hosts"
        " (report, host, start_time, end_time, current_port, max_port)"
        " SELECT %llu, '%s', %lld, %lld, 0, 0"

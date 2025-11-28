@@ -66,7 +66,7 @@ get_credential_stores_start (const gchar **attribute_names,
 #if ENABLE_CREDENTIAL_STORES
 /**
  * @brief Send a credential store preference to the GMP client.
- * 
+ *
  * @param[in]  gmp_parser       The GMP parser
  * @param[out] error            Output pointer for errors
  * @param[in]  prefs_iterator   Preferences iterator to get data from

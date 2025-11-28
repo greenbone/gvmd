@@ -54,7 +54,7 @@ Ensure (manage_agent_installers, rejects_invalid_installer_file)
   if (mkdtemp (tmp_dir) == NULL)
     fail_test ("could not init temp dir");
   agent_installer_feed_path = tmp_dir;
-  
+
   full_path = g_build_filename (tmp_dir, "test.txt", NULL);
   message = NULL;
   g_file_set_contents (full_path, INVALID_DATA, strlen (INVALID_DATA), &error);
