@@ -179,6 +179,7 @@ set(
   manage_filter_utils.c
   manage_commands.c
   manage_get.c
+  manage_groups.c
   manage_http_scanner.c
   manage_license.c
   manage_openvas.c
@@ -681,6 +682,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"

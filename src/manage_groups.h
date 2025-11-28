@@ -11,4 +11,16 @@
 char*
 group_uuid (group_t);
 
+int
+trash_group_in_use (group_t);
+
+int
+group_in_use (group_t);
+
+int
+trash_group_writable (group_t);
+
+int
+group_writable (group_t);
+
 #endif /* not _GVMD_MANAGE_GROUPS_H */
