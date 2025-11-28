@@ -31,7 +31,7 @@ static gboolean use_scan_queue = 0;
  *
  * Handlers will keep getting results of running scans for this time before
  *  exiting, allowing the next queued scan handler to run.
- * 
+ *
  * Note that handlers can remain active for longer in some situations like
  *  waiting for scanner responses, especially when starting a scan, or
  *  post-processing that is not delegated to a dedicated process.
@@ -45,7 +45,7 @@ static int max_active_scan_handlers = DEFAULT_MAX_ACTIVE_SCAN_HANDLERS;
 
 /**
  * @brief Sets a new value for the option whether to use the scan queue.
- * 
+ *
  * @param[in]  new_use_scan_queue  The new value to set.
  */
 void
@@ -56,7 +56,7 @@ set_use_scan_queue (gboolean new_use_scan_queue)
 
 /**
  * @brief Gets whether to use the scan queue.
- * 
+ *
  * @return The current value of the option.
  */
 gboolean
@@ -67,7 +67,7 @@ get_use_scan_queue ()
 
 /**
  * @brief Sets a new minimum active time for scan handlers.
- * 
+ *
  * @param[in]  new_active_time  The new value to set.
  */
 void
@@ -78,7 +78,7 @@ set_scan_handler_active_time (int new_active_time)
 
 /**
  * @brief Gets the minimum active time for scan handlers.
- * 
+ *
  * @return The current value of the option.
  */
 int
@@ -90,7 +90,7 @@ get_scan_handler_active_time ()
 /**
  * @brief Sets a new maxmimum number of concurrently active scan handlers
  *         handled by the queue.
- * 
+ *
  * @param[in]  new_max  The new value to set.
  */
 void
@@ -102,7 +102,7 @@ set_max_active_scan_handlers (int new_max)
 /**
  * @brief Gets the maxmimum number of concurrently active scan handlers
  *         handled by the queue.
- * 
+ *
  * @return The current value of the option.
  */
 int
@@ -119,17 +119,17 @@ manage_handle_scan_queue ()
 {
   iterator_t queue_iterator;
   int active_count = 0;
-  
+
   if (use_scan_queue == 0)
     return;
 
   init_scan_queue_iterator (&queue_iterator);
-  
+
   while (next (&queue_iterator))
     {
       pid_t handler_pid;
       report_t report;
-      
+
       if (max_active_scan_handlers && active_count >= max_active_scan_handlers)
         {
           g_debug ("%s: one or more scans are waiting", __func__);
@@ -163,7 +163,7 @@ manage_handle_scan_queue ()
             = scan_queue_iterator_owner (&queue_iterator);
           int start_from
             = scan_queue_iterator_start_from (&queue_iterator);
-            
+
           new_handler_pid = fork_scan_handler (report_id, report, task, owner,
                                                start_from);
           if (new_handler_pid >= 0)
@@ -176,7 +176,7 @@ manage_handle_scan_queue ()
               scan_queue_move_to_end (report);
             }
         }
-      
+
     }
-  
+
 }

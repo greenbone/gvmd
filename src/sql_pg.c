@@ -891,7 +891,7 @@ sql_cancel_internal ()
  *
  * @param[in]  str  The string to transfer.
  * @param[in]  len  Length of the string to write, -1 to use strlen.
- * 
+ *
  * @return 0 success, -1 error.
  */
 int
@@ -957,7 +957,7 @@ sql_copy_end ()
  * @brief Escapes a string for tab-delimited data of TEXT type COPY statements.
  *
  * @param[in]  str  The string to escape.
- * 
+ *
  * @return The newly allocated, escaped copy of the string.
  */
 gchar *

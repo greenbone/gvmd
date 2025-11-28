@@ -22,7 +22,7 @@
 
 /**
  * @brief Frees an osp_connect_data_t struct and its fields.
- * 
+ *
  * @param[in] conn_data  Connection data struct to free.
  */
 void
@@ -37,7 +37,7 @@ osp_connect_data_free (osp_connect_data_t *conn_data)
 
 /**
  * @brief Get OSP connection data from a scanner.
- * 
+ *
  * If a relay is defined in the scanners table, the struct will contain the
  *  relay host and port and .
  *
@@ -77,7 +77,7 @@ osp_connect_data_from_scanner (scanner_t scanner)
 
 /**
  * @brief Get OSP connection data from a scanner iterator.
- * 
+ *
  * Fields are expected to be cleaned up by the iterator.
  *
  * @param[in]  iterator  The scanner iterator to get the data from.
@@ -88,7 +88,7 @@ osp_connect_data_from_scanner_iterator (iterator_t *iterator,
                                         osp_connect_data_t *conn_data)
 {
   gboolean has_relay;
-  
+
   assert (iterator);
 
   has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
@@ -353,7 +353,7 @@ osp_scan_semaphore_update_start (int add_result_on_error,
 {
   if (get_max_concurrent_scan_updates () == 0)
     return 0;
-  
+
   int sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
   if (sem_op_ret == 1)
     return 1;
@@ -898,14 +898,14 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
 
 /**
  * @brief Update the status and results of an OSP scan.
- * 
+ *
  * @param[in]  task       The task of the OSP scan
  * @param[in]  report     Row id of the scan report
  * @param[in]  scan_id    UUID of the scan report
  * @param[in]  conn_data   Data used to connect to the scanner.
  * @param[in,out]  queued_status_updated  Whether the "queued" status was set.
  * @param[in,out]  started                Whether the scan was started.
- * 
+ *
  * @return 0 if scan finished, 1 if caller should retry if appropriate,
  *         2 if scan is running or queued by the scanner,
  *         -1 if error, -2 if scan was stopped,
@@ -1075,7 +1075,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
 
 /**
  * @brief Handle the start of an OSP scan.
- * 
+ *
  * @param[in]  task       The task of the OSP scan
  * @param[in]  target     The target of the scan task
  * @param[in]  scan_id    UUID of the scan / report
@@ -1165,7 +1165,7 @@ handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
               rc = -3;
               break;
             }
-          
+
           // Exit loop if scan is queued or started
           if (rc == 2)
             break;
@@ -1258,7 +1258,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
           break;
         }
 
-      if (yield_time 
+      if (yield_time
           && time (NULL) >= yield_time
           && scan_queue_length () > max_active_scans)
         break;
@@ -1273,10 +1273,10 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
 
 /**
  * @brief Handle the end of an OSP scan.
- * 
+ *
  * @param[in]  task                 The task of the scan
  * @param[in]  handle_progress_rc   Return code from handle_osp_scan
- * 
+ *
  * @return The given handle_osp_scan return code.
  */
 int

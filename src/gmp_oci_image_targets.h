@@ -57,7 +57,7 @@ void
 modify_oci_image_target_start (gmp_parser_t *,
                                const gchar **,
                                const gchar **);
-    
+
 void modify_oci_image_target_element_start (gmp_parser_t *,
                                             const gchar *,
                                             const gchar **,

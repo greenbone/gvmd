@@ -66,7 +66,7 @@ setting_value_int (const char *uuid, int *value)
 
 /**
  * @brief Initialize functions of the manage_settings submodule.
- * 
+ *
  * @param[in] setting_value_f      Function for getting setting string values.
  * @param[in] setting_value_int_f  Function for getting setting int values.
  */
