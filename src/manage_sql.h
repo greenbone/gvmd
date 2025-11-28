@@ -579,4 +579,7 @@ convert_http_scanner_type_to_osp_type (const char *);
 int
 vector_find_filter (const gchar **, const gchar *);
 
+int
+add_users (const gchar *, resource_t, const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
