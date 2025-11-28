@@ -9714,32 +9714,25 @@ create_current_report (task_t task, char **report_id, task_status_t status)
  * @brief Create the current report for an agent task.
  *
  * @param[in]   task       The agent task.
- * @param[out]  report_id  Report ID.
+ * @param[in]   report_id  Report ID.
  * @param[in]   status     Run status of scan associated with report.
  *
- * @return 0 success, -1 global_current_report is already set, -2 failed to
- *         generate ID.
+ * @return 0 success, -1 global_current_report is already set, -2 failed if
+ *         there is no report ID.
  */
 int
-create_agent_task_current_report (task_t task, char **report_id, task_status_t status)
+create_agent_task_current_report (task_t task, char *report_id, task_status_t status)
 {
-  char *id;
 
   assert (global_current_report == (report_t) 0);
 
   if (global_current_report) return -1;
 
-  if (report_id == NULL) report_id = &id;
-
-  if (*report_id == NULL)
-    /* Generate report UUID. */
-    *report_id = gvm_uuid_make ();
-
-  if (*report_id == NULL) return -2;
+  if (report_id == NULL) return -2;
 
   /* Create the report. */
 
-  global_current_report = make_report (task, *report_id, status);
+  global_current_report = make_report (task, report_id, status);
 
   set_report_scheduled (global_current_report);
 
