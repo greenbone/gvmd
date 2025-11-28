@@ -9711,6 +9711,35 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 }
 
 /**
+ * @brief Create the current report for an agent task.
+ *
+ * @param[in]   task       The agent task.
+ * @param[in]   report_id  Report ID.
+ * @param[in]   status     Run status of scan associated with report.
+ *
+ * @return 0 success, -1 global_current_report is already set, -2 failed if
+ *         there is no report ID.
+ */
+int
+create_agent_task_current_report (task_t task, char *report_id, task_status_t status)
+{
+
+  assert (global_current_report == (report_t) 0);
+
+  if (global_current_report) return -1;
+
+  if (report_id == NULL) return -2;
+
+  /* Create the report. */
+
+  global_current_report = make_report (task, report_id, status);
+
+  set_report_scheduled (global_current_report);
+
+  return 0;
+}
+
+/**
  * @brief Free a host detail.
  *
  * @param[in]  detail  Host detail.
