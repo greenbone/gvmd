@@ -21,8 +21,12 @@
 #include <cgreen/cgreen.h>
 
 Describe (manage);
-BeforeEach (manage) {}
-AfterEach (manage) {}
+BeforeEach (manage)
+{
+}
+AfterEach (manage)
+{
+}
 
 /* truncate_certificate */
 
@@ -61,6 +65,47 @@ Ensure (manage, truncate_certificate_given_truncated)
 
   truncated = truncate_certificate (given);
   assert_that (truncated, is_equal_to_string (given));
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_empty_string)
+{
+  const gchar *given;
+  gchar *truncated;
+
+  given = "";
+
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_null);
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_invalid_certificate)
+{
+  const gchar *given;
+  gchar *truncated;
+
+  given = "foo bar baz";
+
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_null);
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_extra_data)
+{
+  const gchar *given, *expected;
+  gchar *truncated;
+  given = "-----BEGIN CERTIFICATE-----\n"
+          "MIIEjTCCAvWgAwIBAgIMWtd9bxgrX+9SgEHXMA0GCSqGSIb3DQEBCwUAMGIxKjAo\n"
+          "-----END CERTIFICATE-----\n"
+          "u1UuTizi5guqzOf+57s4o7Q=\n";
+  expected =
+    "-----BEGIN CERTIFICATE-----\n"
+    "MIIEjTCCAvWgAwIBAgIMWtd9bxgrX+9SgEHXMA0GCSqGSIb3DQEBCwUAMGIxKjAo\n"
+    "-----END CERTIFICATE-----\n";
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_equal_to_string (expected));
   g_free (truncated);
 }
 
@@ -119,8 +164,7 @@ Ensure (manage, truncate_text_skips_suffix)
                  /* Too little space for suffix. */
                  strlen (suffix) - 1,
                  /* Not XML. */
-                 0,
-                 suffix);
+                 0, suffix);
   assert_that (given, is_equal_to_string ("12"));
   g_free (given);
 }
@@ -160,6 +204,10 @@ main (int argc, char **argv)
   suite = create_test_suite ();
 
   add_test_with_context (suite, manage, truncate_certificate_given_truncated);
+  add_test_with_context (suite, manage, truncate_certificate_empty_string);
+  add_test_with_context (suite, manage,
+                         truncate_certificate_invalid_certificate);
+  add_test_with_context (suite, manage, truncate_certificate_extra_data);
 
   add_test_with_context (suite, manage, truncate_text_truncates);
   add_test_with_context (suite, manage, truncate_text_does_not_truncate);
