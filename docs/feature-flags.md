@@ -67,4 +67,69 @@ Order of priority:
 
 **NOTE**: After changing the config file or environment variables, restart **gvmd** to apply the changes.
 
+## Disabled Commands
+
+When a feature is disabled, gvmd automatically removes related commands from the protocol.
+
+### Agents disabled - these commands are hidden
+
+```
+get_agents
+modify_agent
+delete_agent
+modify_agent_control_scan_config
+get_agent_groups
+create_agent_group
+modify_agent_group
+delete_agent_group
+get_agent_installers
+get_agent_installer_file
+```
+
+### Container scanning disabled - these commands are hidden
+
+```
+get_oci_image_targets
+create_oci_image_target
+modify_oci_image_target
+delete_oci_image_target
+```
+
+### Credential store disabled - these commands are hidden
+
+```
+get_credential_stores
+modify_credential_store
+verify_credential_store
+```
+
+## Extended get_features Response
+
+To help clients understand which features are compiled-in and enabled at runtime, the `get_features` command now returns both fields:
+
+**compiled_in**: whether gvmd binary was built with the feature
+
+**enabled**: final runtime result after applying environment + config
+
+Exact example response:
+
+```
+<get_features_response status="200" status_text="OK">
+  <feature compiled_in="1" enabled="0">
+  <name>ENABLE_OPENVASD</name>
+  </feature>
+  <feature compiled_in="1" enabled="0">
+  <name>ENABLE_CONTAINER_SCANNING</name>
+  </feature>
+  <feature compiled_in="1" enabled="0">
+  <name>ENABLE_AGENTS</name>
+  </feature>
+  <feature compiled_in="0" enabled="0">
+  <name>ENABLE_CREDENTIAL_STORES</name>
+  </feature>
+  <feature compiled_in="1" enabled="0">
+  <name>FEED_VT_METADATA</name>
+  </feature>
+</get_features_response>
+```
 ---
