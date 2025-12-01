@@ -25196,10 +25196,8 @@ modify_credential (const char *credential_id,
               if (used_algorithm == NULL)
                 used_algorithm = "";
 
-              /*
-              privacy password and host identifier
-              must be empty if algorithm is empty
-              */
+              /* privacy password and host identifier
+               * must be empty if algorithm is empty */
               if (strcmp (used_algorithm, "") == 0
                   && (strcmp (privacy_password, "")
                       || strcmp (privacy_host_identifier, "")))

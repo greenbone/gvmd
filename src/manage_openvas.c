@@ -425,6 +425,8 @@ set_auth_data_snmp_from_credential_store (iterator_t *iter,
       g_debug ("%s: Error retrieving SNMP username and password from"
                " CyberArk credential store '%s'.",
                __func__, cred_store_uuid);
+      g_free (login);
+      g_free (password);
       return 1;
     }
 
@@ -437,6 +439,9 @@ set_auth_data_snmp_from_credential_store (iterator_t *iter,
       g_debug ("%s: Error retrieving SNMP privacy password from"
                " CyberArk credential store '%s'.",
                __func__, cred_store_uuid);
+      g_free (login);
+      g_free (password);
+      g_free (privacy_password);
       return 1;
     }
 
@@ -883,10 +888,6 @@ target_osp_snmp_credential (target_t target,
           osp_credential_set_auth_data (osp_credential,
                                         "privacy_algorithm",
                                         credential_iterator_privacy_algorithm
-                                          (&iter) ?: "");
-          osp_credential_set_auth_data (osp_credential,
-                                        "privacy_password",
-                                        credential_iterator_privacy_password
                                           (&iter) ?: "");
         }
       else
