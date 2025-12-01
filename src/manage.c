@@ -7430,7 +7430,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   if (snmp_credential)
     openvasd_target_add_credential (openvasd_target, snmp_credential);
 
- #endif
+#endif
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
