@@ -17527,6 +17527,44 @@ struct print_report_context
 typedef struct print_report_context print_report_context_t;
 
 /**
+ * @brief Init zone info for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_init_zone (print_report_context_t *ctx)
+{
+  if (ctx->zone && strlen (ctx->zone))
+    {
+      gchar *quoted_zone;
+      /* Store current TZ. */
+      ctx->tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", ctx->zone, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to timezone", __func__);
+          if (ctx->tz)
+            setenv ("TZ", ctx->tz, 1);
+          g_free (ctx->tz);
+          ctx->tz = NULL;
+          return -1;
+        }
+
+      ctx->old_tz_override = sql_string ("SELECT current_setting"
+                                         "        ('gvmd.tz_override');");
+
+      quoted_zone = sql_insert (ctx->zone);
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
+      g_free (quoted_zone);
+
+      tzset ();
+    }
+  return 0;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17694,36 +17732,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       return -1;
     }
 
-  if (ctx.zone && strlen (ctx.zone))
+  if (print_report_init_zone (&ctx))
     {
-      gchar *quoted_zone;
-      /* Store current TZ. */
-      ctx.tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      if (setenv ("TZ", ctx.zone, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to timezone", __func__);
-          if (ctx.tz != NULL)
-            setenv ("TZ", ctx.tz, 1);
-          g_free (ctx.tz);
-          g_free (ctx.zone);
-          return -1;
-        }
-
-      ctx.old_tz_override = sql_string ("SELECT current_setting"
-                                         "        ('gvmd.tz_override');");
-
-      quoted_zone = sql_insert (ctx.zone);
-      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
-      g_free (quoted_zone);
-
-      tzset ();
-    }
-  else
-    {
-      /* Keep compiler quiet. */
-      ctx.tz = NULL;
-      ctx.old_tz_override = NULL;
+      g_free (ctx.zone);
+      return -1;
     }
 
   if (delta && report)
