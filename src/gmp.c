@@ -132,6 +132,7 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/tlsutils.h>
 #include <gvm/util/cpeutils.h>
 
 #undef G_LOG_DOMAIN
@@ -12777,7 +12778,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *login, *type, *cert;
+      const char *login, *type, *cert, *private_key, *password;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -12794,6 +12795,9 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       login = credential_iterator_login (&credentials);
       type = credential_iterator_type (&credentials);
       cert = credential_iterator_certificate (&credentials);
+      private_key = credential_iterator_private_key (&credentials);
+      password = credential_iterator_password (&credentials);
+
 
       SENDF_TO_CLIENT_OR_FAIL
        ("<allow_insecure>%d</allow_insecure>"
@@ -12924,6 +12928,23 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           g_free (issuer);
         }
 
+      if (private_key && get_credentials_data->get.details)
+        {
+          const char *key_type;
+          char *sha256_hash;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<private_key_info>");
+          if (gvm_ssh_private_key_info (private_key, password,
+                                        &key_type, &sha256_hash) == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
+                                       "<sha256_hash>%s</sha256_hash>",
+                                       key_type, sha256_hash);
+              g_free (sha256_hash);
+            }
+          SENDF_TO_CLIENT_OR_FAIL ("</private_key_info>");
+        }
+
       switch (format)
         {
           char *package;
@@ -12942,11 +12963,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
               else
                 {
                   char *pub;
-                  const char *pass, *private_key;
-
-                  private_key = credential_iterator_private_key (&credentials);
-                  pass = credential_iterator_password (&credentials);
-                  pub = gvm_ssh_public_from_private (private_key, pass);
+                  pub = gvm_ssh_public_from_private (private_key, password);
                   SENDF_TO_CLIENT_OR_FAIL
                     ("<public_key>%s</public_key>", pub ?: "");
                   g_free (pub);
