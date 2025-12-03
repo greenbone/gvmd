@@ -23781,7 +23781,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "TASK must be a container"));
+                                    "TASK must be a import task"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -6:
@@ -24987,7 +24987,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               && !is_agent_task
               && !is_container_scanning_task)
             {
-              /* Container task. */
+              /* Import task. */
 
               set_task_target (create_task_data->task, 0);
               set_task_usage_type (create_task_data->task,
@@ -27997,7 +27997,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 17:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
-                                      "For container tasks only name, comment"
+                                      "For import tasks only name, comment"
                                       " and observers can be modified"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
@@ -28796,7 +28796,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "started");
                   break;
                 case -2:
-                  /* Task lacks target.  This is true for container
+                  /* Task lacks target.  This is true for Import
                    * tasks. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("start_task",
