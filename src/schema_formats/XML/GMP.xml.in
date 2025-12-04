@@ -6407,7 +6407,7 @@ END:VCALENDAR
         imported must be in the XML format.
       </p>
       <p>
-        When creating a import task, the elements config, hosts_ordering,
+        When creating an import task, the elements config, hosts_ordering,
         scanner, alert, schedule, schedule_periods, observers and preferences
         are ignored.
       </p>
