@@ -6647,7 +6647,7 @@ END:VCALENDAR
       <summary>Create an import task, for importing reports</summary>
       <request>
         <create_task>
-          <name>Container Example</name>
+          <name>Import Example</name>
           <comment>This task provides for importing reports</comment>
           <target id="0"/>
         </create_task>
