@@ -6401,13 +6401,13 @@ END:VCALENDAR
       </p>
       <p>
         When given a target with an id of 0, the command creates a
-        "container" task.  This kind of task can not be run, but it
+        "import" task.  This kind of task can not be run, but it
         is possible to import reports into the task.  Importing is
         done using the create_report command.  The report being
         imported must be in the XML format.
       </p>
       <p>
-        When creating a container task, the elements config, hosts_ordering,
+        When creating a import task, the elements config, hosts_ordering,
         scanner, alert, schedule, schedule_periods, observers and preferences
         are ignored.
       </p>
@@ -6644,7 +6644,7 @@ END:VCALENDAR
       </response>
     </example>
     <example>
-      <summary>Create a container task, for importing reports</summary>
+      <summary>Create an import task, for importing reports</summary>
       <request>
         <create_task>
           <name>Container Example</name>
@@ -25898,9 +25898,9 @@ END:VCALENDAR
         that the manager applied when selecting the tasks.
       </p>
       <p>
-        A task may be a "container" task.  This means the task may not be
+        A task may be a "import" task.  This means the task may not be
         run, but reports may be uploaded to the task with the command
-        create_report.  Container tasks are identified by having an empty
+        create_report.  Import tasks are identified by having an empty
         id attribute in the target element.
       </p>
     </description>
@@ -26442,7 +26442,7 @@ END:VCALENDAR
               <name>id</name>
               <type>uuid</type>
               <required>1</required>
-              <summary>ID of target.  Empty for container tasks</summary>
+              <summary>ID of target.  Empty for import tasks</summary>
             </attrib>
             <e>name</e>
             <o><e>permissions</e></o>
@@ -27185,7 +27185,7 @@ END:VCALENDAR
       </response>
     </example>
     <example>
-      <summary>Get a single container task</summary>
+      <summary>Get a single import task</summary>
       <request>
         <get_tasks task_id="f404781f-6d2b-420c-b7a1-0d3f27f1a43b">
         </get_tasks>
