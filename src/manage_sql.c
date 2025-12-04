@@ -9940,7 +9940,7 @@ process_report_import (report_t report)
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
  *         -3 task_id is NULL, -4 failed to find task, -5 task must be
- *         container, -6 permission to create assets denied.
+ *         import task, -6 permission to create assets denied.
  */
 int
 create_report (array_t *results, const char *task_id, const char *in_assets,

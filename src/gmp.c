@@ -23781,7 +23781,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "TASK must be a import task"));
+                                    "TASK must be an import task"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -6:
