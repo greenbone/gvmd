@@ -6400,7 +6400,7 @@ END:VCALENDAR
         The client uses the create_task command to create a new task.
       </p>
       <p>
-        When given a target with an id of 0, the command creates a
+        When given a target with an id of 0, the command creates an
         "import" task.  This kind of task can not be run, but it
         is possible to import reports into the task.  Importing is
         done using the create_report command.  The report being
@@ -25898,7 +25898,7 @@ END:VCALENDAR
         that the manager applied when selecting the tasks.
       </p>
       <p>
-        A task may be a "import" task.  This means the task may not be
+        A task may be an "import" task.  This means the task may not be
         run, but reports may be uploaded to the task with the command
         create_report.  Import tasks are identified by having an empty
         id attribute in the target element.
