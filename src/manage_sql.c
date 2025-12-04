@@ -7828,7 +7828,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* Container task. */)
+      || task_target (task) == 0 /* import task. */)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -9927,7 +9927,7 @@ process_report_import (report_t report)
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
- * @param[in]   task_id       UUID of container task, or NULL to create new one.
+ * @param[in]   task_id       UUID of import task, or NULL to create new one.
  * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
@@ -20820,7 +20820,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         alterable state, 10 failed to find group, 11 failed to find schedule,
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
- *         16 status must be new to edit target, 17 for container tasks only
+ *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
            19 failed to find OCI image target, -1 error.
  */

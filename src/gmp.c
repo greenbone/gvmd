@@ -759,7 +759,7 @@ typedef struct
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
-  char *task_id;                  ///< ID of container task.
+  char *task_id;                  ///< ID of import task.
   char *type;                     ///< Type of report.
   int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
@@ -19859,7 +19859,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
           else
             {
-              /* Container tasks have no associated scanner. */
+              /* Import tasks have no associated scanner. */
               task_scanner_uuid = g_strdup ("");
               task_scanner_name = g_strdup ("");
               task_scanner_type = 0;
