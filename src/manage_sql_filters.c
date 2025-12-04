@@ -1175,9 +1175,15 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "  (CASE WHEN (SELECT "
+                  "               ( "
+                  "                  target = 0 "
+                  "                  and COALESCE( agent_group, 0) = 0 "
+                  "                  and COALESCE( oci_image_target, 0) = 0"
+                  "               ) "
+                  "              FROM tasks"
                   "              WHERE tasks.id = task)"
-                  "    THEN 'Container'"
+                  "    THEN '0'"
                   "    ELSE run_status_name (scan_run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
                   "                    || CAST (temp / 10 AS text)"
@@ -1191,8 +1197,11 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN target = 0"
-                  "    THEN 'Container'"
+                  "  (CASE WHEN ( target = 0 "
+                  "               and COALESCE( agent_group, 0) = 0 "
+                  "               and COALESCE( oci_image_target, 0) = 0"
+                  "             ) "
+                  "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
                   "                    || CAST (temp / 10 AS text)"
@@ -1371,9 +1380,15 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN (SELECT target = 0 FROM tasks"
+                  "  (CASE WHEN (SELECT "
+                  "               ( "
+                  "                  target = 0 "
+                  "                  and COALESCE( agent_group, 0) = 0 "
+                  "                  and COALESCE( oci_image_target, 0) = 0"
+                  "               ) "
+                  "              FROM tasks"
                   "              WHERE tasks.id = task)"
-                  "    THEN 'Container'"
+                  "    THEN '0'"
                   "    ELSE run_status_name (scan_run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
                   "                    || CAST (temp / 10 AS text)"
@@ -1387,8 +1402,11 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN target = 0"
-                  "    THEN 'Container'"
+                  "  (CASE WHEN ( target = 0 "
+                  "               and COALESCE( agent_group, 0) = 0 "
+                  "               and COALESCE( oci_image_target, 0) = 0"
+                  "             ) "
+                  "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
                   "                    || CAST (temp / 10 AS text)"
