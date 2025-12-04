@@ -17775,8 +17775,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (search_phrase);
           g_free (min_qod);
           g_free (delta_states);
-          tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
-          return -1;
+          goto fail;
         }
       PRINT (out,
              "<timestamp>%s</timestamp>",
@@ -18180,8 +18179,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       free (uuid);
       g_free (term);
-      tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
-      return -1;
+      goto fail;
     }
   free (uuid);
   PRINT (out,
@@ -18234,9 +18232,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  sort_order, sort_field, f_host_ports, &results))
         {
           g_free (term);
-          tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
           g_hash_table_destroy (f_host_ports);
-          return -1;
+          goto fail;
         }
     }
 
@@ -18307,7 +18304,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           g_free (term);
           g_hash_table_destroy (f_host_ports);
-          return -1;
+          goto fail;
         }
     }
   else if (get->details)
@@ -18322,7 +18319,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (res)
             {
               g_hash_table_destroy (f_host_ports);
-              return -1;
+              goto fail;
             }
         }
     }
@@ -18807,10 +18804,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                                          result_host,
                                                          out))
                 {
-                  fclose (out);
                   cleanup_iterator (&hosts);
-                  tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
-                  return -1;
+                  goto fail;
                 }
             }
           cleanup_iterator (&hosts);
@@ -18835,10 +18830,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                                      host,
                                                      out))
             {
-              fclose (out);
               cleanup_iterator (&hosts);
-              tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
-              return -1;
+              goto fail;
             }
         }
       cleanup_iterator (&hosts);
@@ -18853,10 +18846,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta == 0 && print_report_errors_xml (report, out))
     {
-      tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
       if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-      return -1;
+      goto fail;
     }
 
   g_free (sort_field);
@@ -18881,7 +18873,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   return 0;
 
   failed_delta_report:
-    fclose (out);
     g_free (sort_field);
     g_free (levels);
     g_free (search_phrase);
@@ -18892,7 +18883,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
@@ -18912,6 +18902,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         g_hash_table_destroy (f_host_logs);
         g_hash_table_destroy (f_host_false_positives);
       }
+  fail:
+    tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
+    fclose (out);
     return -1;
 }
 
