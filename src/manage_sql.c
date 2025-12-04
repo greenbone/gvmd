@@ -7828,7 +7828,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* Container task. */)
+      || task_target (task) == 0 /* import task. */)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -9927,7 +9927,7 @@ process_report_import (report_t report)
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
- * @param[in]   task_id       UUID of container task, or NULL to create new one.
+ * @param[in]   task_id       UUID of import task, or NULL to create new one.
  * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
@@ -9940,7 +9940,7 @@ process_report_import (report_t report)
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
  *         -3 task_id is NULL, -4 failed to find task, -5 task must be
- *         container, -6 permission to create assets denied.
+ *         import task, -6 permission to create assets denied.
  */
 int
 create_report (array_t *results, const char *task_id, const char *in_assets,
@@ -20832,7 +20832,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         alterable state, 10 failed to find group, 11 failed to find schedule,
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
- *         16 status must be new to edit target, 17 for container tasks only
+ *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
            19 failed to find OCI image target, -1 error.
  */
@@ -24364,7 +24364,8 @@ create_credential (const char* name, const char* comment, const char* login,
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
                    && (key_public == NULL) && (certificate == NULL)
-                   && (community == NULL));
+                   && (community == NULL)
+                   && !g_str_has_prefix (quoted_type, "cs_"));
   ret = 0;
 
   if (auto_generate
@@ -24372,7 +24373,6 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-          || g_str_has_prefix (quoted_type, "cs_")
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 

@@ -1513,7 +1513,7 @@ manage_create_sql_functions ()
            /*  Get trend only for authenticated users. */
            "   WHEN gvmd_user () = 0"
            "   THEN RETURN ''::text;"
-           /*  Skip running and container tasks. */
+           /*  Skip running and import tasks. */
            "   WHEN (SELECT run_status = %u OR target = 0"
            "         FROM tasks WHERE id = $1)"
            "   THEN RETURN ''::text;"
