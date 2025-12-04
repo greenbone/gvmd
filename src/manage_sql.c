@@ -24352,7 +24352,8 @@ create_credential (const char* name, const char* comment, const char* login,
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
                    && (key_public == NULL) && (certificate == NULL)
-                   && (community == NULL));
+                   && (community == NULL)
+                   && !g_str_has_prefix (quoted_type, "cs_"));
   ret = 0;
 
   if (auto_generate
@@ -24360,7 +24361,6 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-          || g_str_has_prefix (quoted_type, "cs_")
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
