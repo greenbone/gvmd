@@ -4168,24 +4168,56 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
-#if ENABLE_OPENVASD
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           SCANNER_TYPE_OPENVASD);
-#else
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '%s', 0, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           OPENVAS_DEFAULT_SOCKET,
-           SCANNER_TYPE_OPENVAS);
-#endif
+      /* Create default scanner */
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " 'localhost', 3000, %d, NULL, NULL, m_now (), m_now ());",
+               SCANNER_TYPE_OPENVASD);
+        }
+      else
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " '%s', 0, %d, NULL, NULL, m_now (), m_now ());",
+               OPENVAS_DEFAULT_SOCKET,
+               SCANNER_TYPE_OPENVAS);
+        }
+    }
+  else
+    {
+      /* Check existing default scanner against runtime feature flag */
+      scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          /* Runtime: openvasd scanner should be used */
+          if (sc_type != SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("Default scanner with UUID %s already exists, "
+                         "but the openvasd scanner feature is enabled. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
+      else
+        {
+          /* Runtime: openvas scanner should be used */
+          if (sc_type == SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("Default scanner with UUID %s is of type openvasd, "
+                         "but the openvasd scanner feature is disabled. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
     }
 
 #if ENABLE_CONTAINER_SCANNING
