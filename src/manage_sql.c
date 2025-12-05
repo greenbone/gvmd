@@ -4199,8 +4199,8 @@ check_db_scanners ()
           /* Runtime: openvasd scanner should be used */
           if (sc_type != SCANNER_TYPE_OPENVASD)
             {
-              g_warning ("Default scanner with UUID %s already exists, "
-                         "but the openvasd scanner feature is enabled. "
+              g_warning ("The openvasd scanner feature is enabled, but the "
+                         "default scanner with UUID %s uses a different type. "
                          "Not updating the scanner automatically; please adjust "
                          "the scanner configuration manually if needed.",
                          SCANNER_UUID_DEFAULT);
@@ -4208,7 +4208,7 @@ check_db_scanners ()
         }
       else
         {
-          /* Runtime: openvas scanner should be used */
+          /* Runtime: ospd-openvas scanner should be used */
           if (sc_type == SCANNER_TYPE_OPENVASD)
             {
               g_warning ("Default scanner with UUID %s is of type openvasd, "
