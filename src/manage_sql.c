@@ -4168,24 +4168,56 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
-#if ENABLE_OPENVASD
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           SCANNER_TYPE_OPENVASD);
-#else
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '%s', 0, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           OPENVAS_DEFAULT_SOCKET,
-           SCANNER_TYPE_OPENVAS);
-#endif
+      /* Create default scanner */
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " 'localhost', 3000, %d, NULL, NULL, m_now (), m_now ());",
+               SCANNER_TYPE_OPENVASD);
+        }
+      else
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " '%s', 0, %d, NULL, NULL, m_now (), m_now ());",
+               OPENVAS_DEFAULT_SOCKET,
+               SCANNER_TYPE_OPENVAS);
+        }
+    }
+  else
+    {
+      /* Check existing default scanner against runtime feature flag */
+      scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          /* Runtime: openvasd scanner should be used */
+          if (sc_type != SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("The openvasd scanner feature is enabled, but the "
+                         "default scanner with UUID %s uses a different type. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
+      else
+        {
+          /* Runtime: ospd-openvas scanner should be used */
+          if (sc_type == SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("Default scanner with UUID %s is of type openvasd, "
+                         "but the openvasd scanner feature is disabled. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
     }
 
 #if ENABLE_CONTAINER_SCANNING
@@ -7828,7 +7860,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* Container task. */)
+      || task_target (task) == 0 /* import task. */)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -9927,7 +9959,7 @@ process_report_import (report_t report)
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
- * @param[in]   task_id       UUID of container task, or NULL to create new one.
+ * @param[in]   task_id       UUID of import task, or NULL to create new one.
  * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
@@ -9940,7 +9972,7 @@ process_report_import (report_t report)
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
  *         -3 task_id is NULL, -4 failed to find task, -5 task must be
- *         container, -6 permission to create assets denied.
+ *         import task, -6 permission to create assets denied.
  */
 int
 create_report (array_t *results, const char *task_id, const char *in_assets,
@@ -17527,6 +17559,44 @@ struct print_report_context
 typedef struct print_report_context print_report_context_t;
 
 /**
+ * @brief Init zone info for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_init_zone (print_report_context_t *ctx)
+{
+  if (ctx->zone && strlen (ctx->zone))
+    {
+      gchar *quoted_zone;
+      /* Store current TZ. */
+      ctx->tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", ctx->zone, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to timezone", __func__);
+          if (ctx->tz)
+            setenv ("TZ", ctx->tz, 1);
+          g_free (ctx->tz);
+          ctx->tz = NULL;
+          return -1;
+        }
+
+      ctx->old_tz_override = sql_string ("SELECT current_setting"
+                                         "        ('gvmd.tz_override');");
+
+      quoted_zone = sql_insert (ctx->zone);
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
+      g_free (quoted_zone);
+
+      tzset ();
+    }
+  return 0;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17694,36 +17764,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       return -1;
     }
 
-  if (ctx.zone && strlen (ctx.zone))
+  if (print_report_init_zone (&ctx))
     {
-      gchar *quoted_zone;
-      /* Store current TZ. */
-      ctx.tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      if (setenv ("TZ", ctx.zone, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to timezone", __func__);
-          if (ctx.tz != NULL)
-            setenv ("TZ", ctx.tz, 1);
-          g_free (ctx.tz);
-          g_free (ctx.zone);
-          return -1;
-        }
-
-      ctx.old_tz_override = sql_string ("SELECT current_setting"
-                                         "        ('gvmd.tz_override');");
-
-      quoted_zone = sql_insert (ctx.zone);
-      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
-      g_free (quoted_zone);
-
-      tzset ();
-    }
-  else
-    {
-      /* Keep compiler quiet. */
-      ctx.tz = NULL;
-      ctx.old_tz_override = NULL;
+      g_free (ctx.zone);
+      return -1;
     }
 
   if (delta && report)
@@ -20820,7 +20864,7 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         alterable state, 10 failed to find group, 11 failed to find schedule,
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
- *         16 status must be new to edit target, 17 for container tasks only
+ *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
            19 failed to find OCI image target, -1 error.
  */
@@ -24352,7 +24396,8 @@ create_credential (const char* name, const char* comment, const char* login,
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
                    && (key_public == NULL) && (certificate == NULL)
-                   && (community == NULL));
+                   && (community == NULL)
+                   && !g_str_has_prefix (quoted_type, "cs_"));
   ret = 0;
 
   if (auto_generate
@@ -24360,7 +24405,6 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-          || g_str_has_prefix (quoted_type, "cs_")
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
