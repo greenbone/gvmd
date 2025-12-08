@@ -24913,7 +24913,7 @@ copy_credential (const char* name, const char* comment,
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
  *         exists, 3 credential_id required, 4 invalid login name,
- *         5 invalid certificate, 6 invalid auth_algorithm,
+ *         5 invalid certificate [DEPRECATED], 6 invalid auth_algorithm,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
@@ -25032,13 +25032,12 @@ modify_credential (const char *credential_id,
       // Truncate certificate which also validates it.
       gchar *certificate_truncated;
       certificate_truncated = truncate_certificate (certificate);
+
+      set_credential_certificate (credential, certificate_truncated);
       if (certificate_truncated)
         {
-          set_credential_certificate (credential, certificate_truncated);
           g_free (certificate_truncated);
         }
-      else
-        ret = 5;
     }
 
   if (auth_algorithm && ret == 0)
@@ -25132,34 +25131,33 @@ modify_credential (const char *credential_id,
            * public key anyway, in case it's a key type that
            * truncate_private_key does not understand. */
           key_private_truncated = truncate_private_key (key_private);
-          key_private_to_use = key_private_truncated ? key_private_truncated
-                                                     : key_private;
+          key_private_to_use =
+            key_private_truncated ? key_private_truncated : key_private;
 
-          if (strcmp (type, "cc") == 0)
+          if (!g_str_equal (key_private_to_use, ""))
             {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               NULL);
-            }
-          else if (strcmp (type, "usk") == 0)
-            {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               password
-                                ? password
-                                : credential_iterator_password (&iterator));
-            }
+              if (strcmp (type, "cc") == 0)
+                {
+                  generated_key_public =
+                    gvm_ssh_public_from_private (key_private_to_use, NULL);
+                }
+              else if (strcmp (type, "usk") == 0)
+                {
+                  generated_key_public = gvm_ssh_public_from_private (
+                    key_private_to_use,
+                    password ? password
+                             : credential_iterator_password (&iterator));
+                }
 
-          if (generated_key_public == NULL)
-            {
-              sql_rollback ();
-              cleanup_iterator (&iterator);
+              if (generated_key_public == NULL)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  g_free (generated_key_public);
+                  return 8;
+                }
               g_free (generated_key_public);
-              return 8;
             }
-          g_free (generated_key_public);
         }
       else
         key_private_to_use = NULL;
@@ -25167,9 +25165,14 @@ modify_credential (const char *credential_id,
       if (strcmp (type, "cc") == 0)
         {
           if (key_private_to_use)
-            set_credential_private_key (credential,
-                                        key_private_to_use,
-                                        NULL);
+            {
+              if (g_str_equal (key_private_to_use, ""))
+                {
+                  key_private_to_use = NULL;
+                }
+
+              set_credential_private_key (credential, key_private_to_use, NULL);
+            }
         }
       else if (strcmp (type, "up") == 0
                || strcmp (type, "pw") == 0)
