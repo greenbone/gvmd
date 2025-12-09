@@ -44,6 +44,9 @@ int
 sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
 
 int
+sql_prepare_ps_internal (int, int, const char*, va_list, sql_stmt_t **);
+
+int
 sql_exec_internal (int, sql_stmt_t *);
 
 void
@@ -190,16 +193,27 @@ sql_insert (const char *string)
 /**
  * @brief Perform an SQL statement.
  *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
  * @param[in]  retry  Whether to keep retrying while database is busy or locked.
- * @param[in]  sql    Format string for SQL statement.
- * @param[in]  args   Arguments for format string.
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement.
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
  *
  * @return 0 success, 1 gave up (even when retry given),
  *         2 reserved (lock unavailable), 3 unique constraint violation,
  *         4 deadlock, -1 error.
  */
 int
-sqlv (int retry, char* sql, va_list args)
+sqlv (int retry, int syntax, char* sql, va_list args)
 {
   while (1)
     {
@@ -211,7 +225,10 @@ sqlv (int retry, char* sql, va_list args)
        * Copy args for this because a va_list can only be used once.
        */
       va_copy (args_copy, args);
-      ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
+      if (syntax)
+        ret = sql_prepare_ps_internal (retry, 1, sql, args_copy, &stmt);
+      else
+        ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
       va_end (args_copy);
       if (ret == -1)
         g_warning ("%s: sql_prepare_internal failed", __func__);
@@ -242,21 +259,29 @@ sqlv (int retry, char* sql, va_list args)
 /**
  * @brief Perform an SQL statement, retrying if database is busy or locked.
  *
- * @param[in]  sql    Format string for SQL statement.
- * @param[in]  ...    Arguments for format string.
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
  */
-void
-sql (char* sql, ...)
+static void
+sql_internal (int syntax, char* sql, va_list args)
 {
   unsigned int deadlock_amount =  0;
   while (1)
     {
-      va_list args;
       int ret;
 
-      va_start (args, sql);
-      ret = sqlv (1, sql, args);
-      va_end (args);
+      ret = sqlv (1, syntax, sql, args);
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
@@ -279,6 +304,82 @@ sql (char* sql, ...)
 /**
  * @brief Perform an SQL statement, retrying if database is busy or locked.
  *
+ * @param[in]  sql    Format string for SQL statement.
+ * @param[in]  ...    Arguments for format string.
+ */
+void
+sql (char* sql, ...)
+{
+  va_list args;
+  va_start (args, sql);
+  sql_internal (FALSE, sql, args);
+  va_end (args);
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ */
+void
+sql_ps (char* sql, ...)
+{
+  va_list args;
+  va_start (args, sql);
+  sql_internal (TRUE, sql, args);
+  va_end (args);
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * Return on error, instead of aborting.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
+ * @return 0 success, 2 reserved (lock unavailable),
+ *         3 unique constraint violation, -1 error.
+ */
+static int
+sql_error_internal (int syntax, char* sql, va_list args)
+{
+  int ret;
+
+  while (1)
+    {
+      ret = sqlv (1, syntax, sql, args);
+      if (ret == 1)
+        /* Gave up with statement reset. */
+        continue;
+      if (ret == -4)
+        return 3;
+      break;
+    }
+
+  return ret;
+}
+
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
  * Return on error, instead of aborting.
  *
  * @param[in]  sql    Format string for SQL statement.
@@ -291,21 +392,66 @@ int
 sql_error (char* sql, ...)
 {
   int ret;
+  va_list args;
+  va_start (args, sql);
+  ret = sql_error_internal (FALSE, sql, args);
+  va_end (args);
+  return ret;
+}
 
-  while (1)
-    {
-      va_list args;
-      va_start (args, sql);
-      ret = sqlv (1, sql, args);
-      va_end (args);
-      if (ret == 1)
-        /* Gave up with statement reset. */
-        continue;
-      if (ret == -4)
-        return 3;
-      break;
-    }
+/**
+ * @brief Perform an SQL statement, retrying if database is busy or locked.
+ *
+ * Return on error, instead of aborting.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return 0 success, 2 reserved (lock unavailable),
+ *         3 unique constraint violation, -1 error.
+ */
+int
+sql_error_ps (char* sql, ...)
+{
+  int ret;
+  va_list args;
+  va_start (args, sql);
+  ret = sql_error_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
 
+/**
+ * @brief Perform an SQL statement, giving up if database is busy or locked.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
+ * @return 0 success, 1 gave up,
+ *         2 reserved (lock unavailable), 3 unique constraint violation,
+ *         -1 error.
+ */
+static int
+sql_giveup_internal (int syntax, char* sql, va_list args)
+{
+  int ret;
+  ret = sqlv (0, syntax, sql, args);
   return ret;
 }
 
@@ -324,24 +470,60 @@ sql_giveup (char* sql, ...)
 {
   int ret;
   va_list args;
-
   va_start (args, sql);
-  ret = sqlv (0, sql, args);
+  ret = sql_giveup_internal (FALSE, sql, args);
   va_end (args);
   return ret;
 }
 
 /**
- * @brief Get a particular cell from a SQL query.
+ * @brief Perform an SQL statement, giving up if database is busy or locked.
  *
- * @param[in]   sql          Format string for SQL query.
- * @param[in]   args         Arguments for format string.
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return 0 success, 1 gave up,
+ *         2 reserved (lock unavailable), 3 unique constraint violation,
+ *         -1 error.
+ */
+int
+sql_giveup_ps (char* sql, ...)
+{
+  int ret;
+  va_list args;
+  va_start (args, sql);
+  ret = sql_giveup_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Prepare and execute an SQL statement.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]   syntax       Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]   sql          SQL statement template / format string.
+ * @param[in]   args         Arguments to bind to template / format string.
  * @param[out]  stmt_return  Return from statement.
  *
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
+sql_x (int syntax, char* sql, va_list args, sql_stmt_t** stmt_return)
 {
   int ret;
   unsigned int deadlock_amount =  0;
@@ -355,7 +537,10 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
        */
       va_list args_copy;
       va_copy (args_copy, args);
-      ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
+      if (syntax)
+        ret = sql_prepare_ps_internal (1, 1, sql, args_copy, stmt_return);
+      else
+        ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
       va_end (args_copy);
 
       if (ret)
@@ -400,7 +585,49 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 }
 
 /**
- * @brief Get the first value from a SQL query, as a double.
+ * @brief Get the first column of first row from a SQL query, as a double.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
+ * @return Result of the query as an integer.
+ */
+double
+sql_double_internal (int syntax, char* sql, va_list args)
+{
+  sql_stmt_t* stmt;
+  double ret;
+
+  int sql_x_ret;
+  sql_x_ret = sql_x (syntax, sql, args, &stmt);
+  if (sql_x_ret)
+    {
+      sql_finalize (stmt);
+      abort ();
+    }
+  ret = sql_column_double (stmt, 0);
+  sql_finalize (stmt);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as a double.
  *
  * @warning Aborts on invalid queries.
  *
@@ -415,26 +642,89 @@ sql_x (char* sql, va_list args, sql_stmt_t** stmt_return)
 double
 sql_double (char* sql, ...)
 {
-  sql_stmt_t* stmt;
   va_list args;
   double ret;
 
-  int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (sql, args, &stmt);
+  ret = sql_double_internal (FALSE, sql, args);
   va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as a double.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return Result of the query as an integer.
+ */
+double
+sql_double_ps (char* sql, ...)
+{
+  va_list args;
+  double ret;
+
+  va_start (args, sql);
+  ret = sql_double_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as an int.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
+ * @return Result of the query as an integer.
+ */
+static int
+sql_int_internal (int syntax, char* sql, va_list args)
+{
+  sql_stmt_t* stmt;
+  int ret;
+
+  int sql_x_ret;
+  sql_x_ret = sql_x (syntax, sql, args, &stmt);
   if (sql_x_ret)
     {
       sql_finalize (stmt);
       abort ();
     }
-  ret = sql_column_double (stmt, 0);
+  ret = sql_column_int (stmt, 0);
   sql_finalize (stmt);
   return ret;
 }
 
 /**
- * @brief Get a particular cell from a SQL query, as an int.
+ * @brief Get the first column of first row from a SQL query, as an int.
  *
  * @warning Aborts on invalid queries.
  *
@@ -449,46 +739,75 @@ sql_double (char* sql, ...)
 int
 sql_int (char* sql, ...)
 {
-  sql_stmt_t* stmt;
   va_list args;
   int ret;
 
-  int sql_x_ret;
   va_start (args, sql);
-  sql_x_ret = sql_x (sql, args, &stmt);
+  ret = sql_int_internal (FALSE, sql, args);
   va_end (args);
-  if (sql_x_ret)
-    {
-      sql_finalize (stmt);
-      abort ();
-    }
-  ret = sql_column_int (stmt, 0);
-  sql_finalize (stmt);
   return ret;
 }
 
 /**
- * @brief Get a particular cell from a SQL query, as an string.
+ * @brief Get the first column of first row from a SQL query, as an int.
  *
- * @param[in]  sql    Format string for SQL query.
- * @param[in]  ...    Arguments for format string.
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @warning Aborts on invalid queries.
+ *
+ * @warning Aborts when the query returns fewer rows than \p row.  The
+ *          caller must ensure that the query will return sufficient rows.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return Result of the query as an integer.
+ */
+int
+sql_int_ps (char* sql, ...)
+{
+  va_list args;
+  int ret;
+
+  va_start (args, sql);
+  ret = sql_int_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as a string.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
  *
  * @return Freshly allocated string containing the result, NULL otherwise.
  *         NULL means that either the selected value was NULL or there were
  *         no rows in the result.
  */
 char*
-sql_string (char* sql, ...)
+sql_string_internal (int syntax, char* sql, va_list args)
 {
   sql_stmt_t* stmt;
   const char* ret2;
   char* ret;
   int sql_x_ret;
 
-  va_list args;
-  va_start (args, sql);
-  sql_x_ret = sql_x (sql, args, &stmt);
-  va_end (args);
+  sql_x_ret = sql_x (syntax, sql, args, &stmt);
   if (sql_x_ret)
     {
       sql_finalize (stmt);
@@ -501,24 +820,82 @@ sql_string (char* sql, ...)
 }
 
 /**
- * @brief Get a particular cell from a SQL query, as an int64.
+ * @brief Get a the first value from a SQL query, as an string.
  *
- * @param[in]  ret    Return value.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
+ * @return Freshly allocated string containing the result, NULL otherwise.
+ *         NULL means that either the selected value was NULL or there were
+ *         no rows in the result.
+ */
+char*
+sql_string (char* sql, ...)
+{
+  va_list args;
+  char* ret;
+
+  va_start (args, sql);
+  ret = sql_string_internal (FALSE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as a string.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return Freshly allocated string containing the result, NULL otherwise.
+ *         NULL means that either the selected value was NULL or there were
+ *         no rows in the result.
+ */
+char*
+sql_string_ps (char* sql, ...)
+{
+  va_list args;
+  char* ret;
+
+  va_start (args, sql);
+  ret = sql_string_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as an int64.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  ret    Return value.
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
  * @return 0 success, 1 too few rows, -1 error.
  */
-int
-sql_int64 (long long int* ret, char* sql, ...)
+static int
+sql_int64_internal (int syntax, long long int* ret, char* sql,
+                    va_list args)
 {
   sql_stmt_t* stmt;
   int sql_x_ret;
-  va_list args;
 
-  va_start (args, sql);
-  sql_x_ret = sql_x (sql, args, &stmt);
-  va_end (args);
+  sql_x_ret = sql_x (syntax, sql, args, &stmt);
   switch (sql_x_ret)
     {
       case  0:
@@ -541,26 +918,81 @@ sql_int64 (long long int* ret, char* sql, ...)
 }
 
 /**
- * @brief Get a first column of first row from a SQL query, as an int64.
+ * @brief Get the first column of first row from a SQL query, as an int64.
  *
- * Return 0 on error.
- *
+ * @param[in]  ret    Return value.
  * @param[in]  sql    Format string for SQL query.
  * @param[in]  ...    Arguments for format string.
  *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
+sql_int64 (long long int *ret, char *sql, ...)
+{
+  va_list args;
+  int ret2;
+
+  va_start (args, sql);
+  ret2 = sql_int64_internal (FALSE, ret, sql, args);
+  va_end (args);
+  return ret2;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as an int64.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  ret    Return value.
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return 0 success, 1 too few rows, -1 error.
+ */
+int
+sql_int64_ps (long long int *ret, char *sql, ...)
+{
+  va_list args;
+  int ret2;
+
+  va_start (args, sql);
+  ret2 = sql_int64_internal (TRUE, ret, sql, args);
+  va_end (args);
+  return ret2;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as an int64.
+ *
+ * Return 0 on error.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ *
  * @return Column value.  0 if no row.
  */
-long long int
-sql_int64_0 (char* sql, ...)
+static long long int
+sql_int64_0_internal (int syntax, char* sql, va_list args)
 {
   sql_stmt_t* stmt;
   int sql_x_ret;
   long long int ret;
-  va_list args;
 
-  va_start (args, sql);
-  sql_x_ret = sql_x (sql, args, &stmt);
-  va_end (args);
+  sql_x_ret = sql_x (syntax, sql, args, &stmt);
   if (sql_x_ret)
     {
       sql_finalize (stmt);
@@ -571,8 +1003,96 @@ sql_int64_0 (char* sql, ...)
   return ret;
 }
 
-
+/**
+ * @brief Get the first column of first row from a SQL query, as an int64.
+ *
+ * Return 0 on error.
+ *
+ * @param[in]  sql    Format string for SQL query.
+ * @param[in]  ...    Arguments for format string.
+ *
+ * @return Column value.  0 if no row.
+ */
+long long int
+sql_int64_0 (char *sql, ...)
+{
+  va_list args;
+  long long int ret;
+
+  va_start (args, sql);
+  ret = sql_int64_0_internal (FALSE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+/**
+ * @brief Get the first column of first row from a SQL query, as an int64.
+ *
+ * Return 0 on error.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
+ *
+ * @return Column value.  0 if no row.
+ */
+long long int
+sql_int64_0_ps (char *sql, ...)
+{
+  va_list args;
+  long long int ret;
+
+  va_start (args, sql);
+  ret = sql_int64_0_internal (TRUE, sql, args);
+  va_end (args);
+  return ret;
+}
+
+
 /* Iterators. */
+
+/**
+ * @brief Initialise an iterator.
+ *
+ * If syntax set to 1, the sql template is expected to be in prepared
+ * statement syntax and the parameters must be passed as sql_param_t
+ * pointers with a NULL sentinel at the end.
+ *
+ * Otherwise the template should be a printf syntax format string with the
+ * parameter values passed in directly.
+ *
+ * @see sql_param_t for more info about passing the parameters when
+ *      using prepared statement syntax.
+ *
+ * @param[in]  syntax    Expected syntax: 0 printf, 1 prepared statement
+ * @param[in]  sql    SQL statement template / format string.
+ * @param[in]  args   Arguments to bind to template / format string.
+ */
+static void
+init_iterator_internal (int syntax, iterator_t* iterator,
+                        const char* sql, va_list args)
+{
+  int ret;
+  sql_stmt_t* stmt;
+
+  iterator->done = FALSE;
+  iterator->crypt_ctx = NULL;
+
+  if (syntax)
+    ret = sql_prepare_ps_internal (1, 1, sql, args, &stmt);
+  else
+    ret = sql_prepare_internal (1, 1, sql, args, &stmt);
+  if (ret)
+    {
+      g_warning ("%s: sql_prepare failed", __func__);
+      abort ();
+    }
+  iterator->stmt = stmt;
+}
 
 /**
  * @brief Initialise an iterator.
@@ -583,22 +1103,31 @@ sql_int64_0 (char* sql, ...)
 void
 init_iterator (iterator_t* iterator, const char* sql, ...)
 {
-  int ret;
-  sql_stmt_t* stmt;
   va_list args;
-
-  iterator->done = FALSE;
-  iterator->crypt_ctx = NULL;
-
   va_start (args, sql);
-  ret = sql_prepare_internal (1, 1, sql, args, &stmt);
+  init_iterator_internal (FALSE, iterator, sql, args);
   va_end (args);
-  if (ret)
-    {
-      g_warning ("%s: sql_prepare failed", __func__);
-      abort ();
-    }
-  iterator->stmt = stmt;
+}
+
+/**
+ * @brief Initialise an iterator using prepared statement syntax.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  sql       SQL template using prepared statement syntex.
+ * @param[in]  ...       Statement parameters, terminated with NULL sentinel.
+ */
+void
+init_ps_iterator (iterator_t* iterator, const char* sql, ...)
+{
+  va_list args;
+  va_start (args, sql);
+  init_iterator_internal (TRUE, iterator, sql, args);
+  va_end (args);
 }
 
 /**

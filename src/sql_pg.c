@@ -36,7 +36,7 @@
 /* Headers of sql.c symbols used only here. */
 
 int
-sql_x (char*, va_list args, sql_stmt_t**);
+sql_x (gboolean ps_syntax, char*, va_list args, sql_stmt_t**);
 
 
 /* Types. */
@@ -462,6 +462,93 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
 
   if (log)
     g_debug ("   sql: %s", (*stmt)->sql);
+
+  return 0;
+}
+
+/**
+ * @brief Prepare a statement in prepared statement syntax.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  retry  Whether to keep retrying while database is busy or locked.
+ * @param[in]  log    Whether to keep retrying while database is busy or locked.
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  args   Parameters passed as a va_list.
+ * @param[out] stmt   Statement return.
+ *
+ * @return 0 success, 1 gave up, -1 error.
+ */
+int
+sql_prepare_ps_internal (int retry, int log, const char* sql, va_list args,
+                         sql_stmt_t **stmt)
+{
+  assert (stmt);
+  va_list args_copy;
+  sql_param_t *param;
+  int n_params = 0;
+
+  *stmt = (sql_stmt_t*) g_malloc (sizeof (sql_stmt_t));
+  sql_stmt_init (*stmt);
+  (*stmt)->sql = g_strdup (sql);
+
+  if (log)
+    g_debug ("   sql: %s", (*stmt)->sql);
+
+  va_copy (args_copy, args);
+  while ((param = va_arg (args_copy, sql_param_t*)) != NULL)
+    n_params ++;
+
+  g_ptr_array_set_size ((*stmt)->param_values, n_params);
+  g_array_set_size ((*stmt)->param_formats, n_params);
+  g_array_set_size ((*stmt)->param_lengths, n_params);
+
+  va_copy (args_copy, args);
+  for (int i = 0; i < n_params; i++)
+    {
+      gchar *pq_value = NULL;
+      param = va_arg (args_copy, sql_param_t*);
+
+      switch (param->type)
+      {
+        case SQL_PARAM_TYPE_NULL:
+          // Send a null pointer for null values
+          if (log)
+            g_debug ("sql param $%d (null)", i+1);
+          break;
+        case SQL_PARAM_TYPE_DOUBLE:
+          pq_value = g_strdup_printf ("%lg", param->value.double_value);
+          if (log)
+            g_debug ("sql param $%d (double) = %lg",
+                     i+1, param->value.double_value);
+          break;
+        case SQL_PARAM_TYPE_INT:
+          pq_value = g_strdup_printf ("%d", param->value.int_value);
+          if (log)
+            g_debug ("sql param $%d (int) = %d",
+                     i+1, param->value.int_value);
+          break;
+        case SQL_PARAM_TYPE_STRING:
+          pq_value = g_strdup (param->value.str_value ?: "");
+          if (log)
+            g_debug ("sql param $%d (string) = %s",
+                     i+1, param->value.str_value);
+          break;
+        case SQL_PARAM_TYPE_RESOURCE:
+          pq_value = g_strdup_printf ("%llu", param->value.resource_value);
+          if (log)
+            g_debug ("sql param $%d (resource) = %llu",
+                     i+1, param->value.resource_value);
+          break;
+      }
+
+      (*stmt)->param_values->pdata[i] = pq_value;
+      if (pq_value)
+        (*stmt)->param_lengths->data[i] = strlen (pq_value);
+    }
 
   return 0;
 }
