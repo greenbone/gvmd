@@ -16759,9 +16759,6 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
           if (setenv ("TZ", tz, 1) == -1)
             {
               g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              g_free (zone);
-              free (old_tz_override);
               return -1;
             }
         }
@@ -16772,11 +16769,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
       sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
-
-      free (old_tz_override);
-      g_free (tz);
     }
-  g_free (zone);
   return 0;
 }
 
@@ -17532,6 +17525,19 @@ struct print_report_context
  * @brief Context type for print_report_xml_start.
  */
 typedef struct print_report_context print_report_context_t;
+
+/**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+}
 
 /**
  * @brief Init zone info for print_report_xml_start.
@@ -18872,6 +18878,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
 
+  print_report_context_cleanup (&ctx);
+
   if (fclose (out))
     {
       g_warning ("%s: fclose failed: %s",
@@ -18914,6 +18922,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       }
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
+    print_report_context_cleanup (&ctx);
     fclose (out);
     return -1;
 }
