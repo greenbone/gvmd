@@ -27,6 +27,92 @@ typedef struct
   time_t semaphore_timeout; ///< Semaphore timeout for database connections
 } db_conn_info_t;
 
+/**
+ * @brief Enum for defining the type of SQL prepared statement parameters.
+ */
+typedef enum
+{
+  SQL_PARAM_TYPE_NULL = 0,  ///< null value
+  SQL_PARAM_TYPE_DOUBLE,    ///< double precision floating point number
+  SQL_PARAM_TYPE_INT,       ///< integer
+  SQL_PARAM_TYPE_STRING,    ///< string
+  SQL_PARAM_TYPE_RESOURCE,  ///< resource rowid (resource_t)
+} sql_param_type_t;
+
+/**
+ * @brief Union type for SQL prepared statement parameters values.
+ */
+typedef union
+{
+  double      double_value;   ///< double precision floating point value
+  int         int_value;      ///< integer value
+  char        *str_value;     ///< string value
+  resource_t  resource_value; ///< resource rowid (resource_t) value
+} sql_param_value_t;
+
+/**
+ * @brief Struct type for defining SQL prepared statement parameters.
+ *
+ * This struct type encapsulates the data type and value of a parameter
+ * to be bound to an SQL prepared statement.
+ *
+ * SQL template strings using the dollar sign + number syntax (e.g. "$1"),
+ * do not contain any type information unlike printf-style template / format
+ * string, where it is contained in the placeholders (e.g. "%s" for strings).
+ *
+ * Therefore this type is used to pass both the value and data type of
+ * paramaters to generic functions using the SQL prepared statement syntax.
+ * Most of them will expect pointers to sql_param_t structs as variadic
+ * arguments list with a NULL sentinel at the end.
+ * This sentinel is different from null values, which are represented by
+ * structs with the type set to SQL_PARAM_TYPE_NULL.
+ *
+ * To keep the code shorter and to ensure consistency between type and value,
+ * sql_param_t* literals can be generated with macros using the pattern
+ * "SQL_{TYPE}_PARAM (value)", e.g." SQL_INT_PARAM (123)".
+ */
+typedef struct
+{
+  sql_param_type_t  type;   ///< The data type of the parameter
+  sql_param_value_t value;  ///< The value of the parameter
+} sql_param_t;
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a null value.
+ */
+#define SQL_NULL_PARAM &((sql_param_t)                                \
+  {.type = SQL_PARAM_TYPE_NULL}                                       \
+)
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a double value.
+ */
+#define SQL_DOUBLE_PARAM(p_value) &((sql_param_t)                     \
+  {.type = SQL_PARAM_TYPE_DOUBLE, .value.double_value = p_value}      \
+)
+
+/**
+ * @brief Macro for a sql_param_t* literal representing an int value.
+ */
+#define SQL_INT_PARAM(p_value) &((sql_param_t)                        \
+  {.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value}            \
+)
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a string value.
+ */
+#define SQL_STR_PARAM(p_value) &((sql_param_t)                        \
+  {.type = SQL_PARAM_TYPE_STRING, .value.str_value = p_value}         \
+)
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a resource_t value.
+ */
+#define SQL_RESOURCE_PARAM(p_value) &((sql_param_t)                   \
+  {.type = SQL_PARAM_TYPE_RESOURCE, .value.resource_value = p_value}  \
+)
+
+
 /* Helpers. */
 
 const char *
@@ -86,26 +172,50 @@ sql_insert (const char *);
 void
 sql (char *sql, ...);
 
+void
+sql_ps (char *sql, ...);
+
 int
 sql_error (char *sql, ...);
 
 int
+sql_error_ps (char *sql, ...);
+
+int
 sql_giveup (char *sql, ...);
+
+int
+sql_giveup_ps (char *sql, ...);
 
 double
 sql_double (char *sql, ...);
 
+double
+sql_double_ps (char *sql, ...);
+
 int
 sql_int (char *, ...);
+
+int
+sql_int_ps (char *, ...);
 
 char *
 sql_string (char *, ...);
 
+char *
+sql_string_ps (char *, ...);
+
 int
 sql_int64 (long long int *ret, char *, ...);
 
+int
+sql_int64_ps (long long int *ret, char *, ...);
+
 long long int
 sql_int64_0 (char *sql, ...);
+
+long long int
+sql_int64_0_ps (char *sql, ...);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
@@ -137,6 +247,9 @@ sql_table_lock_wait (const char *, int);
 
 void
 init_iterator (iterator_t *, const char *, ...);
+
+void
+init_ps_iterator (iterator_t *, const char *, ...) __attribute__ ((sentinel));
 
 void
 iterator_rewind (iterator_t *iterator);
