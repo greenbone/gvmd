@@ -25144,13 +25144,9 @@ modify_credential (const char *credential_id,
               key_private_to_use =
                 key_private_truncated ? key_private_truncated : key_private;
 
-              if (g_str_equal (type, "cc") || g_str_equal (type, "usk"))
-                {
-                  generated_key_public = gvm_ssh_public_from_private (
-                    key_private_to_use,
-                    password ? password
-                             : credential_iterator_password (&iterator));
-                }
+              generated_key_public = gvm_ssh_public_from_private (
+                key_private_to_use,
+                password ? password : credential_iterator_password (&iterator));
 
               if (generated_key_public == NULL)
                 {
