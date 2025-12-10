@@ -522,26 +522,22 @@ sql_prepare_ps_internal (int retry, int log, const char* sql, va_list args,
         case SQL_PARAM_TYPE_DOUBLE:
           pq_value = g_strdup_printf ("%lg", param->value.double_value);
           if (log)
-            g_debug ("sql param $%d (double) = %lg",
-                     i+1, param->value.double_value);
+            g_debug ("sql param $%d (double) = %s", i+1, pq_value);
           break;
         case SQL_PARAM_TYPE_INT:
           pq_value = g_strdup_printf ("%d", param->value.int_value);
           if (log)
-            g_debug ("sql param $%d (int) = %d",
-                     i+1, param->value.int_value);
+            g_debug ("sql param $%d (int) = %s", i+1, pq_value);
           break;
         case SQL_PARAM_TYPE_STRING:
           pq_value = g_strdup (param->value.str_value ?: "");
           if (log)
-            g_debug ("sql param $%d (string) = %s",
-                     i+1, param->value.str_value);
+            g_debug ("sql param $%d (string) = %s", i+1, pq_value);
           break;
         case SQL_PARAM_TYPE_RESOURCE:
           pq_value = g_strdup_printf ("%llu", param->value.resource_value);
           if (log)
-            g_debug ("sql param $%d (resource) = %llu",
-                     i+1, param->value.resource_value);
+            g_debug ("sql param $%d (resource) = %s", i+1, pq_value);
           break;
       }
 
