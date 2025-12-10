@@ -24913,7 +24913,7 @@ copy_credential (const char* name, const char* comment,
  *
  * @return 0 success, 1 failed to find credential, 2 credential with new name
  *         exists, 3 credential_id required, 4 invalid login name,
- *         5 invalid certificate [DEPRECATED], 6 invalid auth_algorithm,
+ *         5 invalid certificate, 6 invalid auth_algorithm,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
@@ -25029,14 +25029,22 @@ modify_credential (const char *credential_id,
 
   if (certificate && ret == 0)
     {
-      // Truncate certificate which also validates it.
-      gchar *certificate_truncated;
-      certificate_truncated = truncate_certificate (certificate);
-
-      set_credential_certificate (credential, certificate_truncated);
-      if (certificate_truncated)
+      if (g_str_equal (certificate, ""))
         {
-          g_free (certificate_truncated);
+          set_credential_certificate (credential, NULL);
+        }
+      else
+        {
+          // Truncate certificate which also validates it.
+          gchar *certificate_truncated;
+          certificate_truncated = truncate_certificate (certificate);
+          if (certificate_truncated)
+            {
+              set_credential_certificate (credential, certificate_truncated);
+              g_free (certificate_truncated);
+            }
+          else
+            ret = 5;
         }
     }
 
@@ -25126,16 +25134,16 @@ modify_credential (const char *credential_id,
 
       if (key_private)
         {
-          char *generated_key_public = NULL;
-          /* Try truncate the private key, but if that fails try get the
-           * public key anyway, in case it's a key type that
-           * truncate_private_key does not understand. */
-          key_private_truncated = truncate_private_key (key_private);
-          key_private_to_use =
-            key_private_truncated ? key_private_truncated : key_private;
-
-          if (!g_str_equal (key_private_to_use, ""))
+          if (!g_str_equal (key_private, ""))
             {
+              char *generated_key_public = NULL;
+              /* Try truncate the private key, but if that fails try get the
+               * public key anyway, in case it's a key type that
+               * truncate_private_key does not understand. */
+              key_private_truncated = truncate_private_key (key_private);
+              key_private_to_use =
+                key_private_truncated ? key_private_truncated : key_private;
+
               if (strcmp (type, "cc") == 0)
                 {
                   generated_key_public =
@@ -25158,54 +25166,43 @@ modify_credential (const char *credential_id,
                 }
               g_free (generated_key_public);
             }
+          else
+            key_private_to_use = key_private;
         }
       else
         key_private_to_use = NULL;
 
-      if (strcmp (type, "cc") == 0)
-        {
-          if (key_private_to_use)
-            {
-              if (g_str_equal (key_private_to_use, ""))
-                {
-                  key_private_to_use = NULL;
-                }
-
-              set_credential_private_key (credential, key_private_to_use, NULL);
-            }
-        }
-      else if (strcmp (type, "up") == 0
+      if (strcmp (type, "up") == 0
                || strcmp (type, "pw") == 0)
         {
           if (password)
             set_credential_password (credential, password);
         }
-      else if (strcmp (type, "usk") == 0)
+      else if (g_str_equal (type, "usk") || g_str_equal (type, "cc"))
         {
           if (key_private_to_use || password)
             {
-              if (check_private_key (key_private_to_use
-                                      ? key_private_to_use
-                                      : credential_iterator_private_key
-                                         (&iterator),
-                                     password
-                                      ? password
-                                      : credential_iterator_password
-                                         (&iterator)))
+              if (g_str_equal (type, "usk"))
                 {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 8;
+                  if (check_private_key (
+                        key_private_to_use
+                          ? key_private_to_use
+                          : credential_iterator_private_key (&iterator),
+                        password ? password
+                                 : credential_iterator_password (&iterator)))
+                    {
+                      sql_rollback ();
+                      cleanup_iterator (&iterator);
+                      return 8;
+                    }
                 }
 
-              set_credential_private_key
-                (credential,
-                 key_private_to_use
+              set_credential_private_key (
+                credential,
+                key_private_to_use
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                 password
-                  ? password
-                  : credential_iterator_password (&iterator));
+                password ? password : credential_iterator_password (&iterator));
             }
         }
       else if ((strcmp (type, "snmp") == 0)
@@ -26050,31 +26047,39 @@ set_credential_password (credential_t credential, const char *password)
  * @param[in]  passphrase      Passphrase.
  */
 static void
-set_credential_private_key (credential_t credential,
-                            const char *private_key, const char *passphrase)
+set_credential_private_key (credential_t credential, const char *private_key,
+                            const char *passphrase)
 {
   lsc_crypt_ctx_t crypt_ctx;
 
   if (!disable_encrypted_credentials)
     {
-      gchar *encrypted_blob;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
-                                          "private_key", private_key,
-                                          "password", passphrase,
-                                          NULL);
-      if (!encrypted_blob)
+      if (!g_str_equal (private_key, ""))
         {
-          g_critical ("%s: encryption failed", G_STRFUNC);
+          gchar *encrypted_blob;
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+          encrypted_blob = lsc_crypt_encrypt (crypt_ctx, "password", passphrase,
+                                              "private_key", private_key, NULL);
+          if (!encrypted_blob)
+            {
+              g_critical ("%s: encryption failed", G_STRFUNC);
+              lsc_crypt_release (crypt_ctx);
+              return;
+            }
+          set_credential_data (credential, "secret", encrypted_blob);
+
+          g_free (encrypted_blob);
           lsc_crypt_release (crypt_ctx);
-          return;
         }
-      set_credential_data (credential, "secret", encrypted_blob);
+      else
+        {
+          set_credential_data (credential, "secret", NULL);
+        }
+
       set_credential_data (credential, "password", NULL);
       set_credential_data (credential, "private_key", NULL);
-      g_free (encrypted_blob);
     }
   else
     {
@@ -26087,7 +26092,6 @@ set_credential_private_key (credential_t credential,
   sql ("UPDATE credentials SET modification_time = m_now ()"
        " WHERE id = %llu;",
        credential);
-  lsc_crypt_release (crypt_ctx);
 }
 
 /**
