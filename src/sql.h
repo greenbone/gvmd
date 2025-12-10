@@ -164,52 +164,52 @@ gchar *
 sql_insert (const char *);
 
 void
-sql (char *sql, ...);
+sql (const char *sql, ...);
 
 void
-sql_ps (char *sql, ...);
+sql_ps (const char *sql, ...);
 
 int
-sql_error (char *sql, ...);
+sql_error (const char *sql, ...);
 
 int
-sql_error_ps (char *sql, ...);
+sql_error_ps (const char *sql, ...);
 
 int
-sql_giveup (char *sql, ...);
+sql_giveup (const char *sql, ...);
 
 int
-sql_giveup_ps (char *sql, ...);
+sql_giveup_ps (const char *sql, ...);
 
 double
-sql_double (char *sql, ...);
+sql_double (const char *sql, ...);
 
 double
-sql_double_ps (char *sql, ...);
+sql_double_ps (const char *sql, ...);
 
 int
-sql_int (char *, ...);
+sql_int (const char *, ...);
 
 int
-sql_int_ps (char *, ...);
+sql_int_ps (const char *, ...);
 
 char *
-sql_string (char *, ...);
+sql_string (const char *, ...);
 
 char *
-sql_string_ps (char *, ...);
+sql_string_ps (const char *, ...);
 
 int
-sql_int64 (long long int *ret, char *, ...);
+sql_int64 (long long int *ret, const char *, ...);
 
 int
-sql_int64_ps (long long int *ret, char *, ...);
+sql_int64_ps (long long int *ret, const char *, ...);
 
 long long int
-sql_int64_0 (char *sql, ...);
+sql_int64_0 (const char *sql, ...);
 
 long long int
-sql_int64_0_ps (char *sql, ...);
+sql_int64_0_ps (const char *sql, ...);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);

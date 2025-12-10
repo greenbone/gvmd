@@ -215,7 +215,7 @@ sql_insert (const char *string)
  *         4 deadlock, -1 error.
  */
 int
-sqlv (int retry, int syntax, char *sql, va_list args)
+sqlv (int retry, int syntax, const char *sql, va_list args)
 {
   while (1)
     {
@@ -277,7 +277,7 @@ sqlv (int retry, int syntax, char *sql, va_list args)
  * @param[in]  args   Arguments to bind to template / format string.
  */
 static void
-sql_internal (int syntax, char *sql, va_list args)
+sql_internal (int syntax, const char *sql, va_list args)
 {
   unsigned int deadlock_amount = 0;
   while (1)
@@ -311,7 +311,7 @@ sql_internal (int syntax, char *sql, va_list args)
  * @param[in]  ...    Arguments for format string.
  */
 void
-sql (char *sql, ...)
+sql (const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -331,7 +331,7 @@ sql (char *sql, ...)
  * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
  */
 void
-sql_ps (char *sql, ...)
+sql_ps (const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -362,7 +362,7 @@ sql_ps (char *sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 static int
-sql_error_internal (int syntax, char *sql, va_list args)
+sql_error_internal (int syntax, const char *sql, va_list args)
 {
   int ret;
 
@@ -392,7 +392,7 @@ sql_error_internal (int syntax, char *sql, va_list args)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error (char *sql, ...)
+sql_error (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -419,7 +419,7 @@ sql_error (char *sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error_ps (char *sql, ...)
+sql_error_ps (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -451,7 +451,7 @@ sql_error_ps (char *sql, ...)
  *         -1 error.
  */
 static int
-sql_giveup_internal (int syntax, char *sql, va_list args)
+sql_giveup_internal (int syntax, const char *sql, va_list args)
 {
   int ret;
   ret = sqlv (0, syntax, sql, args);
@@ -469,7 +469,7 @@ sql_giveup_internal (int syntax, char *sql, va_list args)
  *         -1 error.
  */
 int
-sql_giveup (char *sql, ...)
+sql_giveup (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -495,7 +495,7 @@ sql_giveup (char *sql, ...)
  *         -1 error.
  */
 int
-sql_giveup_ps (char *sql, ...)
+sql_giveup_ps (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -526,7 +526,7 @@ sql_giveup_ps (char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
+sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
 {
   int ret;
   unsigned int deadlock_amount = 0;
@@ -612,7 +612,7 @@ sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
  * @return Result of the query as an integer.
  */
 double
-sql_double_internal (int syntax, char *sql, va_list args)
+sql_double_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   double ret;
@@ -643,7 +643,7 @@ sql_double_internal (int syntax, char *sql, va_list args)
  * @return Result of the query as an integer.
  */
 double
-sql_double (char *sql, ...)
+sql_double (const char *sql, ...)
 {
   va_list args;
   double ret;
@@ -673,7 +673,7 @@ sql_double (char *sql, ...)
  * @return Result of the query as an integer.
  */
 double
-sql_double_ps (char *sql, ...)
+sql_double_ps (const char *sql, ...)
 {
   va_list args;
   double ret;
@@ -709,7 +709,7 @@ sql_double_ps (char *sql, ...)
  * @return Result of the query as an integer.
  */
 static int
-sql_int_internal (int syntax, char *sql, va_list args)
+sql_int_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   int ret;
@@ -740,7 +740,7 @@ sql_int_internal (int syntax, char *sql, va_list args)
  * @return Result of the query as an integer.
  */
 int
-sql_int (char *sql, ...)
+sql_int (const char *sql, ...)
 {
   va_list args;
   int ret;
@@ -770,7 +770,7 @@ sql_int (char *sql, ...)
  * @return Result of the query as an integer.
  */
 int
-sql_int_ps (char *sql, ...)
+sql_int_ps (const char *sql, ...)
 {
   va_list args;
   int ret;
@@ -803,7 +803,7 @@ sql_int_ps (char *sql, ...)
  *         no rows in the result.
  */
 char *
-sql_string_internal (int syntax, char *sql, va_list args)
+sql_string_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   const char *ret2;
@@ -833,7 +833,7 @@ sql_string_internal (int syntax, char *sql, va_list args)
  *         no rows in the result.
  */
 char *
-sql_string (char *sql, ...)
+sql_string (const char *sql, ...)
 {
   va_list args;
   char *ret;
@@ -860,7 +860,7 @@ sql_string (char *sql, ...)
  *         no rows in the result.
  */
 char *
-sql_string_ps (char *sql, ...)
+sql_string_ps (const char *sql, ...)
 {
   va_list args;
   char *ret;
@@ -892,7 +892,8 @@ sql_string_ps (char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_int64_internal (int syntax, long long int *ret, char *sql, va_list args)
+sql_int64_internal (int syntax, long long int *ret, const char *sql,
+                    va_list args)
 {
   sql_stmt_t *stmt;
   int sql_x_ret;
@@ -929,7 +930,7 @@ sql_int64_internal (int syntax, long long int *ret, char *sql, va_list args)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_int64 (long long int *ret, char *sql, ...)
+sql_int64 (long long int *ret, const char *sql, ...)
 {
   va_list args;
   int ret2;
@@ -955,7 +956,7 @@ sql_int64 (long long int *ret, char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_int64_ps (long long int *ret, char *sql, ...)
+sql_int64_ps (long long int *ret, const char *sql, ...)
 {
   va_list args;
   int ret2;
@@ -988,7 +989,7 @@ sql_int64_ps (long long int *ret, char *sql, ...)
  * @return Column value.  0 if no row.
  */
 static long long int
-sql_int64_0_internal (int syntax, char *sql, va_list args)
+sql_int64_0_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   int sql_x_ret;
@@ -1016,7 +1017,7 @@ sql_int64_0_internal (int syntax, char *sql, va_list args)
  * @return Column value.  0 if no row.
  */
 long long int
-sql_int64_0 (char *sql, ...)
+sql_int64_0 (const char *sql, ...)
 {
   va_list args;
   long long int ret;
@@ -1043,7 +1044,7 @@ sql_int64_0 (char *sql, ...)
  * @return Column value.  0 if no row.
  */
 long long int
-sql_int64_0_ps (char *sql, ...)
+sql_int64_0_ps (const char *sql, ...)
 {
   va_list args;
   long long int ret;
