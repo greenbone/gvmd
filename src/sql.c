@@ -15,6 +15,7 @@
  */
 
 #include "sql.h"
+
 #include "utils.h"
 
 #include <assert.h>
@@ -41,10 +42,10 @@
 /* Headers of internal symbols defined in backend files. */
 
 int
-sql_prepare_internal (int, int, const char*, va_list, sql_stmt_t **);
+sql_prepare_internal (int, int, const char *, va_list, sql_stmt_t **);
 
 int
-sql_prepare_ps_internal (int, int, const char*, va_list, sql_stmt_t **);
+sql_prepare_ps_internal (int, int, const char *, va_list, sql_stmt_t **);
 
 int
 sql_exec_internal (int, sql_stmt_t *);
@@ -88,8 +89,8 @@ int log_errors = 1;
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
-gchar*
-sql_nquote (const char* string, size_t length)
+gchar *
+sql_nquote (const char *string, size_t length)
 {
   gchar *new, *new_start;
   const gchar *start, *end;
@@ -100,7 +101,8 @@ sql_nquote (const char* string, size_t length)
   /* Count number of apostrophes. */
 
   start = string;
-  while ((start = strchr (start, '\''))) start++, count++;
+  while ((start = strchr (start, '\'')))
+    start++, count++;
 
   /* Allocate new string. */
 
@@ -110,13 +112,13 @@ sql_nquote (const char* string, size_t length)
 
   start = string;
   end = string + length;
-  for (; start < end; start++, new++)
+  for (; start < end; start++, new ++)
     {
       char ch = *start;
       if (ch == '\'')
         {
           *new = '\'';
-          new++;
+          new ++;
           *new = '\'';
         }
       else
@@ -133,8 +135,8 @@ sql_nquote (const char* string, size_t length)
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
-gchar*
-sql_quote (const char* string)
+gchar *
+sql_quote (const char *string)
 {
   assert (string);
   return sql_nquote (string, strlen (string));
@@ -151,8 +153,8 @@ sql_quote (const char* string)
  *
  * @return Freshly allocated, quoted string. Free with g_free.
  */
-gchar*
-sql_ascii_escape_and_quote (const char* string, const char* exceptions)
+gchar *
+sql_ascii_escape_and_quote (const char *string, const char *exceptions)
 {
   gchar *escaped_string;
   gchar *quoted_string;
@@ -213,12 +215,12 @@ sql_insert (const char *string)
  *         4 deadlock, -1 error.
  */
 int
-sqlv (int retry, int syntax, char* sql, va_list args)
+sqlv (int retry, int syntax, char *sql, va_list args)
 {
   while (1)
     {
       int ret;
-      sql_stmt_t* stmt;
+      sql_stmt_t *stmt;
       va_list args_copy;
 
       /* Prepare statement.
@@ -237,7 +239,8 @@ sqlv (int retry, int syntax, char* sql, va_list args)
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (retry, stmt)) == 1);
+      while ((ret = sql_exec_internal (retry, stmt)) == 1)
+        ;
       if ((ret == -1) && log_errors)
         g_warning ("%s: sql_exec_internal failed", __func__);
       sql_finalize (stmt);
@@ -274,9 +277,9 @@ sqlv (int retry, int syntax, char* sql, va_list args)
  * @param[in]  args   Arguments to bind to template / format string.
  */
 static void
-sql_internal (int syntax, char* sql, va_list args)
+sql_internal (int syntax, char *sql, va_list args)
 {
-  unsigned int deadlock_amount =  0;
+  unsigned int deadlock_amount = 0;
   while (1)
     {
       int ret;
@@ -289,14 +292,14 @@ sql_internal (int syntax, char* sql, va_list args)
         {
           if (deadlock_amount++ > DEADLOCK_THRESHOLD)
             {
-              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
-                        __func__, deadlock_amount, sql);
+              g_warning ("%s: %d deadlocks detected, waiting and retrying %s",
+                         __func__, deadlock_amount, sql);
             }
           gvm_usleep (DEADLOCK_SLEEP);
           continue;
         }
       else if (ret)
-        abort();
+        abort ();
       break;
     }
 }
@@ -308,7 +311,7 @@ sql_internal (int syntax, char* sql, va_list args)
  * @param[in]  ...    Arguments for format string.
  */
 void
-sql (char* sql, ...)
+sql (char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -328,7 +331,7 @@ sql (char* sql, ...)
  * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
  */
 void
-sql_ps (char* sql, ...)
+sql_ps (char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -359,7 +362,7 @@ sql_ps (char* sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 static int
-sql_error_internal (int syntax, char* sql, va_list args)
+sql_error_internal (int syntax, char *sql, va_list args)
 {
   int ret;
 
@@ -389,7 +392,7 @@ sql_error_internal (int syntax, char* sql, va_list args)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error (char* sql, ...)
+sql_error (char *sql, ...)
 {
   int ret;
   va_list args;
@@ -416,7 +419,7 @@ sql_error (char* sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error_ps (char* sql, ...)
+sql_error_ps (char *sql, ...)
 {
   int ret;
   va_list args;
@@ -448,7 +451,7 @@ sql_error_ps (char* sql, ...)
  *         -1 error.
  */
 static int
-sql_giveup_internal (int syntax, char* sql, va_list args)
+sql_giveup_internal (int syntax, char *sql, va_list args)
 {
   int ret;
   ret = sqlv (0, syntax, sql, args);
@@ -466,7 +469,7 @@ sql_giveup_internal (int syntax, char* sql, va_list args)
  *         -1 error.
  */
 int
-sql_giveup (char* sql, ...)
+sql_giveup (char *sql, ...)
 {
   int ret;
   va_list args;
@@ -492,7 +495,7 @@ sql_giveup (char* sql, ...)
  *         -1 error.
  */
 int
-sql_giveup_ps (char* sql, ...)
+sql_giveup_ps (char *sql, ...)
 {
   int ret;
   va_list args;
@@ -523,10 +526,10 @@ sql_giveup_ps (char* sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (int syntax, char* sql, va_list args, sql_stmt_t** stmt_return)
+sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
 {
   int ret;
-  unsigned int deadlock_amount =  0;
+  unsigned int deadlock_amount = 0;
 
   assert (stmt_return);
 
@@ -571,8 +574,8 @@ sql_x (int syntax, char* sql, va_list args, sql_stmt_t** stmt_return)
         {
           if (deadlock_amount++ > DEADLOCK_THRESHOLD)
             {
-              g_warning("%s: %d deadlocks detected, waiting and retrying %s",
-                        __func__, deadlock_amount, sql);
+              g_warning ("%s: %d deadlocks detected, waiting and retrying %s",
+                         __func__, deadlock_amount, sql);
             }
           gvm_usleep (DEADLOCK_SLEEP);
           continue;
@@ -609,9 +612,9 @@ sql_x (int syntax, char* sql, va_list args, sql_stmt_t** stmt_return)
  * @return Result of the query as an integer.
  */
 double
-sql_double_internal (int syntax, char* sql, va_list args)
+sql_double_internal (int syntax, char *sql, va_list args)
 {
-  sql_stmt_t* stmt;
+  sql_stmt_t *stmt;
   double ret;
 
   int sql_x_ret;
@@ -640,7 +643,7 @@ sql_double_internal (int syntax, char* sql, va_list args)
  * @return Result of the query as an integer.
  */
 double
-sql_double (char* sql, ...)
+sql_double (char *sql, ...)
 {
   va_list args;
   double ret;
@@ -670,7 +673,7 @@ sql_double (char* sql, ...)
  * @return Result of the query as an integer.
  */
 double
-sql_double_ps (char* sql, ...)
+sql_double_ps (char *sql, ...)
 {
   va_list args;
   double ret;
@@ -706,9 +709,9 @@ sql_double_ps (char* sql, ...)
  * @return Result of the query as an integer.
  */
 static int
-sql_int_internal (int syntax, char* sql, va_list args)
+sql_int_internal (int syntax, char *sql, va_list args)
 {
-  sql_stmt_t* stmt;
+  sql_stmt_t *stmt;
   int ret;
 
   int sql_x_ret;
@@ -737,7 +740,7 @@ sql_int_internal (int syntax, char* sql, va_list args)
  * @return Result of the query as an integer.
  */
 int
-sql_int (char* sql, ...)
+sql_int (char *sql, ...)
 {
   va_list args;
   int ret;
@@ -767,7 +770,7 @@ sql_int (char* sql, ...)
  * @return Result of the query as an integer.
  */
 int
-sql_int_ps (char* sql, ...)
+sql_int_ps (char *sql, ...)
 {
   va_list args;
   int ret;
@@ -799,12 +802,12 @@ sql_int_ps (char* sql, ...)
  *         NULL means that either the selected value was NULL or there were
  *         no rows in the result.
  */
-char*
-sql_string_internal (int syntax, char* sql, va_list args)
+char *
+sql_string_internal (int syntax, char *sql, va_list args)
 {
-  sql_stmt_t* stmt;
-  const char* ret2;
-  char* ret;
+  sql_stmt_t *stmt;
+  const char *ret2;
+  char *ret;
   int sql_x_ret;
 
   sql_x_ret = sql_x (syntax, sql, args, &stmt);
@@ -829,11 +832,11 @@ sql_string_internal (int syntax, char* sql, va_list args)
  *         NULL means that either the selected value was NULL or there were
  *         no rows in the result.
  */
-char*
-sql_string (char* sql, ...)
+char *
+sql_string (char *sql, ...)
 {
   va_list args;
-  char* ret;
+  char *ret;
 
   va_start (args, sql);
   ret = sql_string_internal (FALSE, sql, args);
@@ -856,11 +859,11 @@ sql_string (char* sql, ...)
  *         NULL means that either the selected value was NULL or there were
  *         no rows in the result.
  */
-char*
-sql_string_ps (char* sql, ...)
+char *
+sql_string_ps (char *sql, ...)
 {
   va_list args;
-  char* ret;
+  char *ret;
 
   va_start (args, sql);
   ret = sql_string_internal (TRUE, sql, args);
@@ -889,28 +892,27 @@ sql_string_ps (char* sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_int64_internal (int syntax, long long int* ret, char* sql,
-                    va_list args)
+sql_int64_internal (int syntax, long long int *ret, char *sql, va_list args)
 {
-  sql_stmt_t* stmt;
+  sql_stmt_t *stmt;
   int sql_x_ret;
 
   sql_x_ret = sql_x (syntax, sql, args, &stmt);
   switch (sql_x_ret)
     {
-      case  0:
-        break;
-      case  1:
-        sql_finalize (stmt);
-        return 1;
-        break;
-      default:
-        assert (0);
-        /* Fall through. */
-      case -1:
-        sql_finalize (stmt);
-        return -1;
-        break;
+    case 0:
+      break;
+    case 1:
+      sql_finalize (stmt);
+      return 1;
+      break;
+    default:
+      assert (0);
+      /* Fall through. */
+    case -1:
+      sql_finalize (stmt);
+      return -1;
+      break;
     }
   *ret = sql_column_int64 (stmt, 0);
   sql_finalize (stmt);
@@ -986,9 +988,9 @@ sql_int64_ps (long long int *ret, char *sql, ...)
  * @return Column value.  0 if no row.
  */
 static long long int
-sql_int64_0_internal (int syntax, char* sql, va_list args)
+sql_int64_0_internal (int syntax, char *sql, va_list args)
 {
-  sql_stmt_t* stmt;
+  sql_stmt_t *stmt;
   int sql_x_ret;
   long long int ret;
 
@@ -1052,7 +1054,7 @@ sql_int64_0_ps (char *sql, ...)
   return ret;
 }
 
-
+
 /* Iterators. */
 
 /**
@@ -1073,11 +1075,11 @@ sql_int64_0_ps (char *sql, ...)
  * @param[in]  args   Arguments to bind to template / format string.
  */
 static void
-init_iterator_internal (int syntax, iterator_t* iterator,
-                        const char* sql, va_list args)
+init_iterator_internal (int syntax, iterator_t *iterator, const char *sql,
+                        va_list args)
 {
   int ret;
-  sql_stmt_t* stmt;
+  sql_stmt_t *stmt;
 
   iterator->done = FALSE;
   iterator->crypt_ctx = NULL;
@@ -1101,7 +1103,7 @@ init_iterator_internal (int syntax, iterator_t* iterator,
  * @param[in]  sql       Format string for SQL.
  */
 void
-init_iterator (iterator_t* iterator, const char* sql, ...)
+init_iterator (iterator_t *iterator, const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -1122,7 +1124,7 @@ init_iterator (iterator_t* iterator, const char* sql, ...)
  * @param[in]  ...       Statement parameters, terminated with NULL sentinel.
  */
 void
-init_ps_iterator (iterator_t* iterator, const char* sql, ...)
+init_ps_iterator (iterator_t *iterator, const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -1139,9 +1141,10 @@ init_ps_iterator (iterator_t* iterator, const char* sql, ...)
  * @return Value of given column.
  */
 double
-iterator_double (iterator_t* iterator, int col)
+iterator_double (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sql_column_double (iterator->stmt, col);
 }
 
@@ -1154,9 +1157,10 @@ iterator_double (iterator_t* iterator, int col)
  * @return Value of given column.
  */
 int
-iterator_int (iterator_t* iterator, int col)
+iterator_int (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sql_column_int (iterator->stmt, col);
 }
 
@@ -1169,9 +1173,10 @@ iterator_int (iterator_t* iterator, int col)
  * @return Value of given column.
  */
 long long int
-iterator_int64 (iterator_t* iterator, int col)
+iterator_int64 (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sql_column_int64 (iterator->stmt, col);
 }
 
@@ -1183,10 +1188,11 @@ iterator_int64 (iterator_t* iterator, int col)
  *
  * @return Value of given column.
  */
-const char*
-iterator_string (iterator_t* iterator, int col)
+const char *
+iterator_string (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sql_column_text (iterator->stmt, col);
 }
 
@@ -1203,9 +1209,10 @@ iterator_string (iterator_t* iterator, int col)
  * @return Value of given column.
  */
 gchar **
-iterator_array (iterator_t* iterator, int col)
+iterator_array (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   return sql_column_array (iterator->stmt, col);
 }
 
@@ -1215,7 +1222,7 @@ iterator_array (iterator_t* iterator, int col)
  * @param[in]  iterator  Iterator.
  */
 void
-cleanup_iterator (iterator_t* iterator)
+cleanup_iterator (iterator_t *iterator)
 {
   if (iterator == NULL)
     {
@@ -1239,11 +1246,12 @@ cleanup_iterator (iterator_t* iterator)
  * @return TRUE if there was a next item, else FALSE.
  */
 gboolean
-next (iterator_t* iterator)
+next (iterator_t *iterator)
 {
   int ret;
 
-  if (iterator->done) return FALSE;
+  if (iterator->done)
+    return FALSE;
 
   if (iterator->crypt_ctx)
     lsc_crypt_flush (iterator->crypt_ctx);

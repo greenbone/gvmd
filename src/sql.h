@@ -32,11 +32,11 @@ typedef struct
  */
 typedef enum
 {
-  SQL_PARAM_TYPE_NULL = 0,  ///< null value
-  SQL_PARAM_TYPE_DOUBLE,    ///< double precision floating point number
-  SQL_PARAM_TYPE_INT,       ///< integer
-  SQL_PARAM_TYPE_STRING,    ///< string
-  SQL_PARAM_TYPE_RESOURCE,  ///< resource row id (resource_t)
+  SQL_PARAM_TYPE_NULL = 0, ///< null value
+  SQL_PARAM_TYPE_DOUBLE,   ///< double precision floating point number
+  SQL_PARAM_TYPE_INT,      ///< integer
+  SQL_PARAM_TYPE_STRING,   ///< string
+  SQL_PARAM_TYPE_RESOURCE, ///< resource row id (resource_t)
 } sql_param_type_t;
 
 /**
@@ -44,10 +44,10 @@ typedef enum
  */
 typedef union
 {
-  double      double_value;   ///< double precision floating point value
-  int         int_value;      ///< integer value
-  char        *str_value;     ///< string value
-  resource_t  resource_value; ///< resource row id (resource_t) value
+  double double_value;       ///< double precision floating point value
+  int int_value;             ///< integer value
+  char *str_value;           ///< string value
+  resource_t resource_value; ///< resource row id (resource_t) value
 } sql_param_value_t;
 
 /**
@@ -73,45 +73,39 @@ typedef union
  */
 typedef struct
 {
-  sql_param_type_t  type;   ///< The data type of the parameter
-  sql_param_value_t value;  ///< The value of the parameter
+  sql_param_type_t type;   ///< The data type of the parameter
+  sql_param_value_t value; ///< The value of the parameter
 } sql_param_t;
 
 /**
  * @brief Macro for a sql_param_t* literal representing a null value.
  */
-#define SQL_NULL_PARAM &((sql_param_t)                                \
-  {.type = SQL_PARAM_TYPE_NULL}                                       \
-)
+#define SQL_NULL_PARAM &((sql_param_t){.type = SQL_PARAM_TYPE_NULL})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a double value.
  */
-#define SQL_DOUBLE_PARAM(p_value) &((sql_param_t)                     \
-  {.type = SQL_PARAM_TYPE_DOUBLE, .value.double_value = p_value}      \
-)
+#define SQL_DOUBLE_PARAM(p_value) \
+  &((sql_param_t){.type = SQL_PARAM_TYPE_DOUBLE, .value.double_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing an int value.
  */
-#define SQL_INT_PARAM(p_value) &((sql_param_t)                        \
-  {.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value}            \
-)
+#define SQL_INT_PARAM(p_value) \
+  &((sql_param_t){.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a string value.
  */
-#define SQL_STR_PARAM(p_value) &((sql_param_t)                        \
-  {.type = SQL_PARAM_TYPE_STRING, .value.str_value = p_value}         \
-)
+#define SQL_STR_PARAM(p_value) \
+  &((sql_param_t){.type = SQL_PARAM_TYPE_STRING, .value.str_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a resource_t value.
  */
-#define SQL_RESOURCE_PARAM(p_value) &((sql_param_t)                   \
-  {.type = SQL_PARAM_TYPE_RESOURCE, .value.resource_value = p_value}  \
-)
-
+#define SQL_RESOURCE_PARAM(p_value)                \
+  &((sql_param_t){.type = SQL_PARAM_TYPE_RESOURCE, \
+                  .value.resource_value = p_value})
 
 /* Helpers. */
 
