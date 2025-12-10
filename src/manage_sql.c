@@ -18118,6 +18118,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (oci_uuid);
           g_free (oci_name);
           g_free (oci_comment);
+
+          g_free (progress_xml);
+          progress_xml = g_strdup_printf ("%i", report_progress (report));
         }
 #endif /* ENABLE_CONTAINER_SCANNING */
       PRINT (out, "<progress>%s</progress>", progress_xml);
