@@ -36,7 +36,7 @@ typedef enum
   SQL_PARAM_TYPE_DOUBLE,    ///< double precision floating point number
   SQL_PARAM_TYPE_INT,       ///< integer
   SQL_PARAM_TYPE_STRING,    ///< string
-  SQL_PARAM_TYPE_RESOURCE,  ///< resource rowid (resource_t)
+  SQL_PARAM_TYPE_RESOURCE,  ///< resource row id (resource_t)
 } sql_param_type_t;
 
 /**
@@ -47,7 +47,7 @@ typedef union
   double      double_value;   ///< double precision floating point value
   int         int_value;      ///< integer value
   char        *str_value;     ///< string value
-  resource_t  resource_value; ///< resource rowid (resource_t) value
+  resource_t  resource_value; ///< resource row id (resource_t) value
 } sql_param_value_t;
 
 /**

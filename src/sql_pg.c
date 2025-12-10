@@ -501,6 +501,7 @@ sql_prepare_ps_internal (int retry, int log, const char* sql, va_list args,
   va_copy (args_copy, args);
   while ((param = va_arg (args_copy, sql_param_t*)) != NULL)
     n_params ++;
+  va_end (args_copy);
 
   g_ptr_array_set_size ((*stmt)->param_values, n_params);
   g_array_set_size ((*stmt)->param_formats, n_params);
@@ -545,6 +546,7 @@ sql_prepare_ps_internal (int retry, int log, const char* sql, va_list args,
       if (pq_value)
         (*stmt)->param_lengths->data[i] = strlen (pq_value);
     }
+  va_end (args_copy);
 
   return 0;
 }
