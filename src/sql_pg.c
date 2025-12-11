@@ -546,7 +546,7 @@ sql_prepare_ps_internal (int log, const char *sql, va_list args,
  *         -3 lock unavailable, -4 unique constraint violation.
  */
 int
-sql_exec_internal (int retry, sql_stmt_t *stmt)
+sql_exec_internal (sql_stmt_t *stmt)
 {
   PGresult *result;
 
