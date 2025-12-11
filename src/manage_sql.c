@@ -1320,27 +1320,28 @@ resource_name (const char *type, const char *uuid, int location, char **name)
     return 1;
 
   if (strcasecmp (type, "note") == 0)
-    *name = sql_string ("SELECT 'Note for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = notes%s.nvt)"
-                        " FROM notes%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    *name =
+      sql_string_ps ("SELECT 'Note for: '"
+                     " || (SELECT name"
+                     "     FROM nvts"
+                     "     WHERE nvts.uuid = notes$1.nvt)"
+                     " FROM notes$1"
+                     " WHERE uuid = '$2';",
+                     SQL_STR_PARAM (location == LOCATION_TABLE ? "" : "_trash"),
+                     SQL_STR_PARAM (location == LOCATION_TABLE ? "" : "_trash"),
+                     SQL_STR_PARAM (uuid), NULL);
   else if (strcasecmp (type, "override") == 0)
-    *name = sql_string ("SELECT 'Override for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = overrides%s.nvt)"
-                        " FROM overrides%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    *name =
+      sql_string_ps ("SELECT 'Override for: '"
+                     " || (SELECT name"
+                     "     FROM nvts"
+                     "     WHERE nvts.uuid = overrides$1.nvt)"
+                     " FROM overrides$1"
+                     " WHERE uuid = '$2';",
+                     SQL_STR_PARAM (location == LOCATION_TABLE ? "" : "_trash"),
+                     SQL_STR_PARAM (uuid), NULL);
   else if (strcasecmp (type, "report") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
+    *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
                         " || ' - '"
                         " || (SELECT"
                         "       CASE (SELECT end_time FROM tasks"
@@ -1350,36 +1351,35 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                         "             FROM tasks WHERE id = task)"
                         "    END)"
                         " FROM reports"
-                        " WHERE uuid = '%s';",
-                        uuid);
+                        " WHERE uuid = '$1';",
+                        SQL_STR_PARAM(uuid), NULL);
   else if (strcasecmp (type, "result") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT name FROM nvts WHERE oid = nvt)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM results"
-                        " WHERE uuid = '%s';",
-                        uuid);
+    *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                           " || ' - '"
+                           " || (SELECT name FROM nvts WHERE oid = nvt)"
+                           " || ' - '"
+                           " || (SELECT"
+                           "       CASE (SELECT end_time FROM tasks"
+                           "             WHERE id = task)"
+                           "       WHEN 0 THEN 'N/A'"
+                           "       ELSE (SELECT iso_time (end_time)"
+                           "             FROM tasks WHERE id = task)"
+                           "    END)"
+                           " FROM results"
+                           " WHERE uuid = '$1';",
+                           SQL_STR_PARAM (uuid), NULL);
   else if (location == LOCATION_TABLE)
-    *name = sql_string ("SELECT name"
-                        " FROM %ss"
-                        " WHERE uuid = '%s';",
-                        type,
-                        uuid);
+    *name = sql_string_ps ("SELECT name"
+                           " FROM $1s"
+                           " WHERE uuid = '$2';",
+                           SQL_STR_PARAM (type), SQL_STR_PARAM (uuid), NULL);
   else if (type_has_trash (type))
-    *name = sql_string ("SELECT name"
-                        " FROM %ss%s"
-                        " WHERE uuid = '%s';",
-                        type,
-                        strcmp (type, "task") ? "_trash" : "",
-                        uuid);
+    *name = sql_string_ps ("SELECT name"
+                        " FROM $1s$2"
+                        " WHERE uuid = '$3';",
+                        SQL_STR_PARAM(type),
+                        SQL_STR_PARAM(strcmp (type, "task") ? "_trash" : ""),
+                        SQL_STR_PARAM(uuid), NULL);
   else
     *name = NULL;
 
