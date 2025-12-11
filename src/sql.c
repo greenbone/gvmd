@@ -48,7 +48,7 @@ void
 sql_prepare_ps_internal (int, const char *, va_list, sql_stmt_t **);
 
 int
-sql_exec_internal (int, sql_stmt_t *);
+sql_exec_internal (sql_stmt_t *);
 
 void
 sql_finalize (sql_stmt_t *);
@@ -205,7 +205,6 @@ sql_insert (const char *string)
  * @see sql_param_t for more info about passing the parameters when
  *      using prepared statement syntax.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement.
  * @param[in]  sql    SQL statement template / format string.
  * @param[in]  args   Arguments to bind to template / format string.
@@ -214,8 +213,8 @@ sql_insert (const char *string)
  *         2 reserved (lock unavailable), 3 unique constraint violation,
  *         4 deadlock, -1 error.
  */
-int
-sqlv (int retry, int syntax, const char *sql, va_list args)
+static int
+sqlv (int syntax, const char *sql, va_list args)
 {
   while (1)
     {
@@ -235,7 +234,7 @@ sqlv (int retry, int syntax, const char *sql, va_list args)
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (retry, stmt)) == 1)
+      while ((ret = sql_exec_internal (stmt)) == 1)
         ;
       if ((ret == -1) && log_errors)
         g_warning ("%s: sql_exec_internal failed", __func__);
@@ -280,7 +279,7 @@ sql_internal (int syntax, const char *sql, va_list args)
     {
       int ret;
 
-      ret = sqlv (1, syntax, sql, args);
+      ret = sqlv (syntax, sql, args);
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
@@ -364,7 +363,7 @@ sql_error_internal (int syntax, const char *sql, va_list args)
 
   while (1)
     {
-      ret = sqlv (1, syntax, sql, args);
+      ret = sqlv (syntax, sql, args);
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
@@ -450,7 +449,7 @@ static int
 sql_giveup_internal (int syntax, const char *sql, va_list args)
 {
   int ret;
-  ret = sqlv (0, syntax, sql, args);
+  ret = sqlv (syntax, sql, args);
   return ret;
 }
 
@@ -544,7 +543,7 @@ sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
 
       /* Run statement. */
 
-      ret = sql_exec_internal (1, *stmt_return);
+      ret = sql_exec_internal (*stmt_return);
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
@@ -1243,7 +1242,7 @@ next (iterator_t *iterator)
     lsc_crypt_flush (iterator->crypt_ctx);
   while (1)
     {
-      ret = sql_exec_internal (1, iterator->stmt);
+      ret = sql_exec_internal (iterator->stmt);
       if (ret == 0)
         {
           iterator->done = TRUE;
