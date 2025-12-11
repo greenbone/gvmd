@@ -434,17 +434,15 @@ sql_last_insert_id ()
 /**
  * @brief Prepare a statement.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
- * @param[in]  log    Whether to keep retrying while database is busy or locked.
+ * @param[in]  log    Whether to log SQL statements as debug messages.
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
  * @param[out] stmt   Statement return.
  *
  * @return 0 success, 1 gave up, -1 error.
  */
-int
-sql_prepare_internal (int retry, int log, const char *sql, va_list args,
-                      sql_stmt_t **stmt)
+void
+sql_prepare_internal (int log, const char *sql, va_list args, sql_stmt_t **stmt)
 {
   assert (stmt);
 
@@ -454,8 +452,6 @@ sql_prepare_internal (int retry, int log, const char *sql, va_list args,
 
   if (log)
     g_debug ("   sql: %s", (*stmt)->sql);
-
-  return 0;
 }
 
 /**
@@ -466,16 +462,15 @@ sql_prepare_internal (int retry, int log, const char *sql, va_list args,
  *
  * @see sql_param_t for more info about passing the parameters.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
- * @param[in]  log    Whether to keep retrying while database is busy or locked.
+ * @param[in]  log    Whether to log SQL statements as debug messages.
  * @param[in]  sql    SQL statement template in prepared statement syntax.
  * @param[in]  args   Parameters passed as a va_list.
  * @param[out] stmt   Statement return.
  *
  * @return 0 success, 1 gave up, -1 error.
  */
-int
-sql_prepare_ps_internal (int retry, int log, const char *sql, va_list args,
+void
+sql_prepare_ps_internal (int log, const char *sql, va_list args,
                          sql_stmt_t **stmt)
 {
   assert (stmt);
@@ -539,8 +534,6 @@ sql_prepare_ps_internal (int retry, int log, const char *sql, va_list args,
         (*stmt)->param_lengths->data[i] = strlen (pq_value);
     }
   va_end (args_copy);
-
-  return 0;
 }
 
 /**

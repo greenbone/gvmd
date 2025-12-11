@@ -41,11 +41,11 @@
 
 /* Headers of internal symbols defined in backend files. */
 
-int
-sql_prepare_internal (int, int, const char *, va_list, sql_stmt_t **);
+void
+sql_prepare_internal (int, const char *, va_list, sql_stmt_t **);
 
-int
-sql_prepare_ps_internal (int, int, const char *, va_list, sql_stmt_t **);
+void
+sql_prepare_ps_internal (int, const char *, va_list, sql_stmt_t **);
 
 int
 sql_exec_internal (int, sql_stmt_t *);
@@ -228,14 +228,10 @@ sqlv (int retry, int syntax, const char *sql, va_list args)
        */
       va_copy (args_copy, args);
       if (syntax)
-        ret = sql_prepare_ps_internal (retry, 1, sql, args_copy, &stmt);
+        sql_prepare_ps_internal (1, sql, args_copy, &stmt);
       else
-        ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
+        sql_prepare_internal (1, sql, args_copy, &stmt);
       va_end (args_copy);
-      if (ret == -1)
-        g_warning ("%s: sql_prepare_internal failed", __func__);
-      if (ret)
-        return ret;
 
       /* Run statement. */
 
@@ -541,16 +537,10 @@ sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
       va_list args_copy;
       va_copy (args_copy, args);
       if (syntax)
-        ret = sql_prepare_ps_internal (1, 1, sql, args_copy, stmt_return);
+        sql_prepare_ps_internal (1, sql, args_copy, stmt_return);
       else
-        ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
+        sql_prepare_internal (1, sql, args_copy, stmt_return);
       va_end (args_copy);
-
-      if (ret)
-        {
-          g_warning ("%s: sql_prepare failed", __func__);
-          return -1;
-        }
 
       /* Run statement. */
 
@@ -1079,21 +1069,16 @@ static void
 init_iterator_internal (int syntax, iterator_t *iterator, const char *sql,
                         va_list args)
 {
-  int ret;
   sql_stmt_t *stmt;
 
   iterator->done = FALSE;
   iterator->crypt_ctx = NULL;
 
   if (syntax)
-    ret = sql_prepare_ps_internal (1, 1, sql, args, &stmt);
+    sql_prepare_ps_internal (1, sql, args, &stmt);
   else
-    ret = sql_prepare_internal (1, 1, sql, args, &stmt);
-  if (ret)
-    {
-      g_warning ("%s: sql_prepare failed", __func__);
-      abort ();
-    }
+    sql_prepare_internal (1, sql, args, &stmt);
+
   iterator->stmt = stmt;
 }
 
