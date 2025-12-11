@@ -1342,17 +1342,17 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                      SQL_STR_PARAM (uuid), NULL);
   else if (strcasecmp (type, "report") == 0)
     *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM reports"
-                        " WHERE uuid = '$1';",
-                        SQL_STR_PARAM(uuid), NULL);
+                           " || ' - '"
+                           " || (SELECT"
+                           "       CASE (SELECT end_time FROM tasks"
+                           "             WHERE id = task)"
+                           "       WHEN 0 THEN 'N/A'"
+                           "       ELSE (SELECT iso_time (end_time)"
+                           "             FROM tasks WHERE id = task)"
+                           "    END)"
+                           " FROM reports"
+                           " WHERE uuid = '$1';",
+                           SQL_STR_PARAM (uuid), NULL);
   else if (strcasecmp (type, "result") == 0)
     *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
                            " || ' - '"
@@ -1374,12 +1374,13 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                            " WHERE uuid = '$2';",
                            SQL_STR_PARAM (type), SQL_STR_PARAM (uuid), NULL);
   else if (type_has_trash (type))
-    *name = sql_string_ps ("SELECT name"
-                        " FROM $1s$2"
-                        " WHERE uuid = '$3';",
-                        SQL_STR_PARAM(type),
-                        SQL_STR_PARAM(strcmp (type, "task") ? "_trash" : ""),
-                        SQL_STR_PARAM(uuid), NULL);
+    *name =
+      sql_string_ps ("SELECT name"
+                     " FROM $1s$2"
+                     " WHERE uuid = '$3';",
+                     SQL_STR_PARAM (type),
+                     SQL_STR_PARAM (strcmp (type, "task") ? "_trash" : ""),
+                     SQL_STR_PARAM (uuid), NULL);
   else
     *name = NULL;
 
