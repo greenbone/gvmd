@@ -80,35 +80,34 @@ typedef struct
 /**
  * @brief Macro for a sql_param_t* literal representing a null value.
  */
-#define SQL_NULL_PARAM &((const sql_param_t) {.type = SQL_PARAM_TYPE_NULL})
+#define SQL_NULL_PARAM &((const sql_param_t){.type = SQL_PARAM_TYPE_NULL})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a double value.
  */
-#define SQL_DOUBLE_PARAM(p_value)                       \
-  &((const sql_param_t) {.type = SQL_PARAM_TYPE_DOUBLE, \
-                         .value.double_value = p_value})
+#define SQL_DOUBLE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_DOUBLE, \
+                        .value.double_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing an int value.
  */
-#define SQL_INT_PARAM(p_value)                       \
-  &((const sql_param_t) {.type = SQL_PARAM_TYPE_INT, \
-                         .value.int_value = p_value})
+#define SQL_INT_PARAM(p_value) \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a string value.
  */
-#define SQL_STR_PARAM(p_value)                          \
-  &((const sql_param_t) {.type = SQL_PARAM_TYPE_STRING, \
-                         .value.str_value = p_value})
+#define SQL_STR_PARAM(p_value)                         \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_STRING, \
+                        .value.str_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a resource_t value.
  */
-#define SQL_RESOURCE_PARAM(p_value)                       \
-  &((const sql_param_t) {.type = SQL_PARAM_TYPE_RESOURCE, \
-                         .value.resource_value = p_value})
+#define SQL_RESOURCE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_RESOURCE, \
+                        .value.resource_value = p_value})
 
 /* Helpers. */
 
