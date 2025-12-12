@@ -1327,8 +1327,8 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                        "SELECT 'Note for: '"
                        " || (SELECT name"
                        "     FROM nvts"
-                       "     WHERE nvts.uuid = tn.nvt)"
-                       " FROM notes%s AS tn"
+                       "     WHERE nvts.uuid = tnotes.nvt)"
+                       " FROM notes%s AS tnotes"
                        " WHERE uuid = $1;",
                        location == LOCATION_TABLE ? "" : "_trash");
 
@@ -1340,8 +1340,8 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                        "SELECT 'Override for: '"
                        " || (SELECT name"
                        "     FROM nvts"
-                       "     WHERE nvts.uuid = to.nvt)"
-                       " FROM overrides%s AS to"
+                       "     WHERE nvts.uuid = tovrr.nvt)"
+                       " FROM overrides%s AS tovrr"
                        " WHERE uuid = $1;",
                        location == LOCATION_TABLE ? "" : "_trash");
 
