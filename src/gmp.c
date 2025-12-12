@@ -25072,6 +25072,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               set_task_oci_image_target (create_task_data->task,
                                          oci_image_target);
+
+              clear_task_asset_preferences (create_task_data->task);
             }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
@@ -25278,6 +25280,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Auto Delete count out of range"
                                       " (must be from %d to %d)"),
                     AUTO_DELETE_KEEP_MIN, AUTO_DELETE_KEEP_MAX);
+                  goto create_task_fail;
+                case 3:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Scanning tasks"));
                   goto create_task_fail;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -28118,6 +28126,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+                case 20:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Image tasks"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");

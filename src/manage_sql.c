@@ -6759,6 +6759,31 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
        task);
 }
 
+/**
+ * @brief Clear default asset preferences if set.
+ *
+ * @param[in]  task  Task.
+ */
+void
+clear_task_asset_preferences (task_t task)
+{
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'in_assets';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'in_assets';",
+          task);
+
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'assets_apply_overrides';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'assets_apply_overrides';",
+          task);
+}
+
 #endif
 
 /**
@@ -20812,7 +20837,9 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
-           19 failed to find OCI image target, -1 error.
+           19 failed to find OCI image target,
+           20 cannot set asset preferences for container image task,
+           -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -21062,6 +21089,8 @@ modify_task (const gchar *task_id, const gchar *name,
           return 13;
         case 2:
           return 14;
+        case 3:
+          return 20;
         default:
           return -1;
       }
