@@ -660,6 +660,9 @@ task_oci_image_target_in_trash (task_t);
 void
 set_task_oci_image_target (task_t, oci_image_target_t);
 
+void
+clear_task_asset_preferences (task_t);
+
 #endif /* ENABLE_CONTAINER_SCANNING */
 
 void
