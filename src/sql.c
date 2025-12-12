@@ -41,14 +41,14 @@
 
 /* Headers of internal symbols defined in backend files. */
 
-int
-sql_prepare_internal (int, int, const char *, va_list, sql_stmt_t **);
+void
+sql_prepare_internal (int, const char *, va_list, sql_stmt_t **);
+
+void
+sql_prepare_ps_internal (int, const char *, va_list, sql_stmt_t **);
 
 int
-sql_prepare_ps_internal (int, int, const char *, va_list, sql_stmt_t **);
-
-int
-sql_exec_internal (int, sql_stmt_t *);
+sql_exec_internal (sql_stmt_t *);
 
 void
 sql_finalize (sql_stmt_t *);
@@ -205,7 +205,6 @@ sql_insert (const char *string)
  * @see sql_param_t for more info about passing the parameters when
  *      using prepared statement syntax.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  syntax Expected syntax: 0 printf, 1 prepared statement.
  * @param[in]  sql    SQL statement template / format string.
  * @param[in]  args   Arguments to bind to template / format string.
@@ -214,8 +213,8 @@ sql_insert (const char *string)
  *         2 reserved (lock unavailable), 3 unique constraint violation,
  *         4 deadlock, -1 error.
  */
-int
-sqlv (int retry, int syntax, char *sql, va_list args)
+static int
+sqlv (int syntax, const char *sql, va_list args)
 {
   while (1)
     {
@@ -228,18 +227,14 @@ sqlv (int retry, int syntax, char *sql, va_list args)
        */
       va_copy (args_copy, args);
       if (syntax)
-        ret = sql_prepare_ps_internal (retry, 1, sql, args_copy, &stmt);
+        sql_prepare_ps_internal (1, sql, args_copy, &stmt);
       else
-        ret = sql_prepare_internal (retry, 1, sql, args_copy, &stmt);
+        sql_prepare_internal (1, sql, args_copy, &stmt);
       va_end (args_copy);
-      if (ret == -1)
-        g_warning ("%s: sql_prepare_internal failed", __func__);
-      if (ret)
-        return ret;
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (retry, stmt)) == 1)
+      while ((ret = sql_exec_internal (stmt)) == 1)
         ;
       if ((ret == -1) && log_errors)
         g_warning ("%s: sql_exec_internal failed", __func__);
@@ -277,14 +272,14 @@ sqlv (int retry, int syntax, char *sql, va_list args)
  * @param[in]  args   Arguments to bind to template / format string.
  */
 static void
-sql_internal (int syntax, char *sql, va_list args)
+sql_internal (int syntax, const char *sql, va_list args)
 {
   unsigned int deadlock_amount = 0;
   while (1)
     {
       int ret;
 
-      ret = sqlv (1, syntax, sql, args);
+      ret = sqlv (syntax, sql, args);
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
@@ -311,7 +306,7 @@ sql_internal (int syntax, char *sql, va_list args)
  * @param[in]  ...    Arguments for format string.
  */
 void
-sql (char *sql, ...)
+sql (const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -331,7 +326,7 @@ sql (char *sql, ...)
  * @param[in]  ...    Statement parameters, terminated with NULL sentinel.
  */
 void
-sql_ps (char *sql, ...)
+sql_ps (const char *sql, ...)
 {
   va_list args;
   va_start (args, sql);
@@ -362,13 +357,13 @@ sql_ps (char *sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 static int
-sql_error_internal (int syntax, char *sql, va_list args)
+sql_error_internal (int syntax, const char *sql, va_list args)
 {
   int ret;
 
   while (1)
     {
-      ret = sqlv (1, syntax, sql, args);
+      ret = sqlv (syntax, sql, args);
       if (ret == 1)
         /* Gave up with statement reset. */
         continue;
@@ -392,7 +387,7 @@ sql_error_internal (int syntax, char *sql, va_list args)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error (char *sql, ...)
+sql_error (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -419,7 +414,7 @@ sql_error (char *sql, ...)
  *         3 unique constraint violation, -1 error.
  */
 int
-sql_error_ps (char *sql, ...)
+sql_error_ps (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -451,10 +446,10 @@ sql_error_ps (char *sql, ...)
  *         -1 error.
  */
 static int
-sql_giveup_internal (int syntax, char *sql, va_list args)
+sql_giveup_internal (int syntax, const char *sql, va_list args)
 {
   int ret;
-  ret = sqlv (0, syntax, sql, args);
+  ret = sqlv (syntax, sql, args);
   return ret;
 }
 
@@ -469,7 +464,7 @@ sql_giveup_internal (int syntax, char *sql, va_list args)
  *         -1 error.
  */
 int
-sql_giveup (char *sql, ...)
+sql_giveup (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -495,7 +490,7 @@ sql_giveup (char *sql, ...)
  *         -1 error.
  */
 int
-sql_giveup_ps (char *sql, ...)
+sql_giveup_ps (const char *sql, ...)
 {
   int ret;
   va_list args;
@@ -526,7 +521,7 @@ sql_giveup_ps (char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
+sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
 {
   int ret;
   unsigned int deadlock_amount = 0;
@@ -541,20 +536,14 @@ sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
       va_list args_copy;
       va_copy (args_copy, args);
       if (syntax)
-        ret = sql_prepare_ps_internal (1, 1, sql, args_copy, stmt_return);
+        sql_prepare_ps_internal (1, sql, args_copy, stmt_return);
       else
-        ret = sql_prepare_internal (1, 1, sql, args_copy, stmt_return);
+        sql_prepare_internal (1, sql, args_copy, stmt_return);
       va_end (args_copy);
-
-      if (ret)
-        {
-          g_warning ("%s: sql_prepare failed", __func__);
-          return -1;
-        }
 
       /* Run statement. */
 
-      ret = sql_exec_internal (1, *stmt_return);
+      ret = sql_exec_internal (*stmt_return);
       if (ret == -1 || ret == -4)
         {
           if (log_errors)
@@ -612,7 +601,7 @@ sql_x (int syntax, char *sql, va_list args, sql_stmt_t **stmt_return)
  * @return Result of the query as an integer.
  */
 double
-sql_double_internal (int syntax, char *sql, va_list args)
+sql_double_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   double ret;
@@ -643,7 +632,7 @@ sql_double_internal (int syntax, char *sql, va_list args)
  * @return Result of the query as an integer.
  */
 double
-sql_double (char *sql, ...)
+sql_double (const char *sql, ...)
 {
   va_list args;
   double ret;
@@ -673,7 +662,7 @@ sql_double (char *sql, ...)
  * @return Result of the query as an integer.
  */
 double
-sql_double_ps (char *sql, ...)
+sql_double_ps (const char *sql, ...)
 {
   va_list args;
   double ret;
@@ -709,7 +698,7 @@ sql_double_ps (char *sql, ...)
  * @return Result of the query as an integer.
  */
 static int
-sql_int_internal (int syntax, char *sql, va_list args)
+sql_int_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   int ret;
@@ -740,7 +729,7 @@ sql_int_internal (int syntax, char *sql, va_list args)
  * @return Result of the query as an integer.
  */
 int
-sql_int (char *sql, ...)
+sql_int (const char *sql, ...)
 {
   va_list args;
   int ret;
@@ -770,7 +759,7 @@ sql_int (char *sql, ...)
  * @return Result of the query as an integer.
  */
 int
-sql_int_ps (char *sql, ...)
+sql_int_ps (const char *sql, ...)
 {
   va_list args;
   int ret;
@@ -803,7 +792,7 @@ sql_int_ps (char *sql, ...)
  *         no rows in the result.
  */
 char *
-sql_string_internal (int syntax, char *sql, va_list args)
+sql_string_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   const char *ret2;
@@ -833,7 +822,7 @@ sql_string_internal (int syntax, char *sql, va_list args)
  *         no rows in the result.
  */
 char *
-sql_string (char *sql, ...)
+sql_string (const char *sql, ...)
 {
   va_list args;
   char *ret;
@@ -860,7 +849,7 @@ sql_string (char *sql, ...)
  *         no rows in the result.
  */
 char *
-sql_string_ps (char *sql, ...)
+sql_string_ps (const char *sql, ...)
 {
   va_list args;
   char *ret;
@@ -892,7 +881,8 @@ sql_string_ps (char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 static int
-sql_int64_internal (int syntax, long long int *ret, char *sql, va_list args)
+sql_int64_internal (int syntax, long long int *ret, const char *sql,
+                    va_list args)
 {
   sql_stmt_t *stmt;
   int sql_x_ret;
@@ -929,7 +919,7 @@ sql_int64_internal (int syntax, long long int *ret, char *sql, va_list args)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_int64 (long long int *ret, char *sql, ...)
+sql_int64 (long long int *ret, const char *sql, ...)
 {
   va_list args;
   int ret2;
@@ -955,7 +945,7 @@ sql_int64 (long long int *ret, char *sql, ...)
  * @return 0 success, 1 too few rows, -1 error.
  */
 int
-sql_int64_ps (long long int *ret, char *sql, ...)
+sql_int64_ps (long long int *ret, const char *sql, ...)
 {
   va_list args;
   int ret2;
@@ -988,7 +978,7 @@ sql_int64_ps (long long int *ret, char *sql, ...)
  * @return Column value.  0 if no row.
  */
 static long long int
-sql_int64_0_internal (int syntax, char *sql, va_list args)
+sql_int64_0_internal (int syntax, const char *sql, va_list args)
 {
   sql_stmt_t *stmt;
   int sql_x_ret;
@@ -1016,7 +1006,7 @@ sql_int64_0_internal (int syntax, char *sql, va_list args)
  * @return Column value.  0 if no row.
  */
 long long int
-sql_int64_0 (char *sql, ...)
+sql_int64_0 (const char *sql, ...)
 {
   va_list args;
   long long int ret;
@@ -1043,7 +1033,7 @@ sql_int64_0 (char *sql, ...)
  * @return Column value.  0 if no row.
  */
 long long int
-sql_int64_0_ps (char *sql, ...)
+sql_int64_0_ps (const char *sql, ...)
 {
   va_list args;
   long long int ret;
@@ -1078,21 +1068,16 @@ static void
 init_iterator_internal (int syntax, iterator_t *iterator, const char *sql,
                         va_list args)
 {
-  int ret;
   sql_stmt_t *stmt;
 
   iterator->done = FALSE;
   iterator->crypt_ctx = NULL;
 
   if (syntax)
-    ret = sql_prepare_ps_internal (1, 1, sql, args, &stmt);
+    sql_prepare_ps_internal (1, sql, args, &stmt);
   else
-    ret = sql_prepare_internal (1, 1, sql, args, &stmt);
-  if (ret)
-    {
-      g_warning ("%s: sql_prepare failed", __func__);
-      abort ();
-    }
+    sql_prepare_internal (1, sql, args, &stmt);
+
   iterator->stmt = stmt;
 }
 
@@ -1257,7 +1242,7 @@ next (iterator_t *iterator)
     lsc_crypt_flush (iterator->crypt_ctx);
   while (1)
     {
-      ret = sql_exec_internal (1, iterator->stmt);
+      ret = sql_exec_internal (iterator->stmt);
       if (ret == 0)
         {
           iterator->done = TRUE;
