@@ -12925,6 +12925,7 @@ END:VCALENDAR
           <o><e>privacy</e></o>
           <o><e>certificate_info</e></o>
           <o><e>private_key_info</e></o>
+          <o><e>public_key_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
           @IF_ENABLE_CONTAINER_SCANNNING@
@@ -13164,6 +13165,20 @@ END:VCALENDAR
           <ele>
             <name>sha256_hash</name>
             <summary>SHA-256 hash of the key if it is valid</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>public_key_info</name>
+          <summary>
+            Info about the public key if one is set.
+          </summary>
+          <pattern>
+            <o><e>fingerprint</e></o>
+          </pattern>
+          <ele>
+            <name>fingerprint</name>
+            <summary>The key fingerprint if the key is valid</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
