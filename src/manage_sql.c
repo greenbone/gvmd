@@ -13656,78 +13656,43 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
 {
   if (report)
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE id = %llu"
-                       " AND report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " (SELECT uuid FROM hosts"
+                        "  WHERE id = (SELECT host FROM host_identifiers"
+                        "              WHERE source_type = 'Report Host'"
+                        "              AND name = 'ip'"
+                        "              AND source_id = (SELECT uuid"
+                        "                               FROM reports"
+                        "                               WHERE id = report)"
+                        "              AND value = report_hosts.host"
+                        "              LIMIT 1))"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND report = $2"
+                        "   AND ($3::text IS NULL OR host = $3)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        SQL_RESOURCE_PARAM (report),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
   else
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts WHERE id = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       host ? " WHERE host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " ''"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND ($2::text IS NULL OR host = $2)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
 }
 
