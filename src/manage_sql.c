@@ -546,16 +546,18 @@ array_find_string (array_t *array, const gchar *string)
  *
  * @return The string from the vector if found, else NULL.
  */
-static const gchar*
+const gchar *
 vector_find_string (const gchar **vector, const gchar *string)
 {
   if (vector == NULL)
     return NULL;
   while (*vector)
-    if (strcmp (*vector, string) == 0)
-      return *vector;
-    else
+    {
+      if (strcmp (*vector, string) == 0)
+        return *vector;
+
       vector++;
+    }
   return NULL;
 }
 

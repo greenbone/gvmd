@@ -576,6 +576,9 @@ char *
 convert_http_scanner_type_to_osp_type (const char *);
 #endif
 
+const gchar*
+vector_find_string (const gchar **, const gchar *);
+
 int
 vector_find_filter (const gchar **, const gchar *);
 

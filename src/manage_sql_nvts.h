@@ -115,6 +115,38 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
+#define NVT_VALID_SORTBY_COLUMNS \
+  {"id",                         \
+   "uuid",                       \
+   "oid",                        \
+   "name",                       \
+   "comment",                    \
+   "summary",                    \
+   "insight",                    \
+   "affected",                   \
+   "impact",                     \
+   "cve",                        \
+   "tag",                        \
+   "category",                   \
+   "family",                     \
+   "cvss_base",                  \
+   "creation_time",              \
+   "modification_time",          \
+   "solution",                   \
+   "solution_type",              \
+   "solution_method",            \
+   "detection",                  \
+   "qod",                        \
+   "qod_type",                   \
+   "epss_cve",                   \
+   "epss_score",                 \
+   "epss_percentile",            \
+   "epss_severity",              \
+   "max_epss_cve",               \
+   "max_epss_score",             \
+   "max_epss_percentile",        \
+   "max_epss_severity", NULL}
+
 void
 set_skip_update_nvti_cache (gboolean);
 
@@ -153,5 +185,8 @@ nvts_feed_version_status_from_timestamp ();
 
 void
 manage_discovery_nvts ();
+
+int
+validate_nvts_sort_field (const char*);
 
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */
