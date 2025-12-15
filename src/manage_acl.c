@@ -166,25 +166,22 @@ acl_user_may (const char *operation)
 int
 acl_role_can_super_everyone (const char *role_id)
 {
-  gchar *quoted_role_id;
-  quoted_role_id = sql_quote (role_id);
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND (resource = 0)"
-               "                AND subject_location"
-               "                    = " G_STRINGIFY (LOCATION_TABLE)
-               "                AND (subject_type = 'role'"
-               "                     AND subject"
-               "                         = (SELECT id"
-               "                            FROM roles"
-               "                            WHERE uuid = '%s')));",
-               role_id))
+  if (sql_int_ps (
+        " SELECT EXISTS (SELECT * FROM permissions"
+        "                WHERE name = 'Super'"
+        /*                    Super on everyone. */
+        "                AND (resource = 0)"
+        "                AND subject_location"
+        "                    = " G_STRINGIFY (
+          LOCATION_TABLE) "                AND (subject_type = 'role'"
+                          "                     AND subject"
+                          "                         = (SELECT id"
+                          "                            FROM roles"
+                          "                            WHERE uuid = $1)));",
+        SQL_STR_PARAM (role_id), NULL))
     {
-      g_free (quoted_role_id);
       return 1;
     }
-  g_free (quoted_role_id);
   return 0;
 }
 
