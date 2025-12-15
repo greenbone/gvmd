@@ -44,10 +44,10 @@ typedef enum
  */
 typedef union
 {
-  double double_value;       ///< double precision floating point value
-  int int_value;             ///< integer value
-  char *str_value;           ///< string value
-  resource_t resource_value; ///< resource row id (resource_t) value
+  const double double_value;       ///< double precision floating point value
+  const int int_value;             ///< integer value
+  const char *str_value;           ///< string value
+  const resource_t resource_value; ///< resource row id (resource_t) value
 } sql_param_value_t;
 
 /**
@@ -80,32 +80,34 @@ typedef struct
 /**
  * @brief Macro for a sql_param_t* literal representing a null value.
  */
-#define SQL_NULL_PARAM &((sql_param_t){.type = SQL_PARAM_TYPE_NULL})
+#define SQL_NULL_PARAM &((const sql_param_t){.type = SQL_PARAM_TYPE_NULL})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a double value.
  */
-#define SQL_DOUBLE_PARAM(p_value) \
-  &((sql_param_t){.type = SQL_PARAM_TYPE_DOUBLE, .value.double_value = p_value})
+#define SQL_DOUBLE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_DOUBLE, \
+                        .value.double_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing an int value.
  */
 #define SQL_INT_PARAM(p_value) \
-  &((sql_param_t){.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value})
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a string value.
  */
-#define SQL_STR_PARAM(p_value) \
-  &((sql_param_t){.type = SQL_PARAM_TYPE_STRING, .value.str_value = p_value})
+#define SQL_STR_PARAM(p_value)                         \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_STRING, \
+                        .value.str_value = p_value})
 
 /**
  * @brief Macro for a sql_param_t* literal representing a resource_t value.
  */
-#define SQL_RESOURCE_PARAM(p_value)                \
-  &((sql_param_t){.type = SQL_PARAM_TYPE_RESOURCE, \
-                  .value.resource_value = p_value})
+#define SQL_RESOURCE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_RESOURCE, \
+                        .value.resource_value = p_value})
 
 /* Helpers. */
 
@@ -164,52 +166,52 @@ gchar *
 sql_insert (const char *);
 
 void
-sql (char *sql, ...);
+sql (const char *sql, ...);
 
 void
-sql_ps (char *sql, ...);
+sql_ps (const char *sql, ...);
 
 int
-sql_error (char *sql, ...);
+sql_error (const char *sql, ...);
 
 int
-sql_error_ps (char *sql, ...);
+sql_error_ps (const char *sql, ...);
 
 int
-sql_giveup (char *sql, ...);
+sql_giveup (const char *sql, ...);
 
 int
-sql_giveup_ps (char *sql, ...);
+sql_giveup_ps (const char *sql, ...);
 
 double
-sql_double (char *sql, ...);
+sql_double (const char *sql, ...);
 
 double
-sql_double_ps (char *sql, ...);
+sql_double_ps (const char *sql, ...);
 
 int
-sql_int (char *, ...);
+sql_int (const char *, ...);
 
 int
-sql_int_ps (char *, ...);
+sql_int_ps (const char *, ...);
 
 char *
-sql_string (char *, ...);
+sql_string (const char *, ...);
 
 char *
-sql_string_ps (char *, ...);
+sql_string_ps (const char *, ...);
 
 int
-sql_int64 (long long int *ret, char *, ...);
+sql_int64 (long long int *ret, const char *, ...);
 
 int
-sql_int64_ps (long long int *ret, char *, ...);
+sql_int64_ps (long long int *ret, const char *, ...);
 
 long long int
-sql_int64_0 (char *sql, ...);
+sql_int64_0 (const char *sql, ...);
 
 long long int
-sql_int64_0_ps (char *sql, ...);
+sql_int64_0_ps (const char *sql, ...);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);

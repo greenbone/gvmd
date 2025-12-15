@@ -6542,6 +6542,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CERTIFICATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->certificate);
+            gvm_append_string (&modify_credential_data->certificate, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
           }
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
@@ -6619,10 +6621,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_private);
+            gvm_append_string (&modify_credential_data->key_private, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
           }
         else if (strcasecmp ("PUBLIC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_public);
+            gvm_append_string (&modify_credential_data->key_public, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
           }
         ELSE_READ_OVER;

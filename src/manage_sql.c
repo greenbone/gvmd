@@ -13656,78 +13656,43 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
 {
   if (report)
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE id = %llu"
-                       " AND report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " (SELECT uuid FROM hosts"
+                        "  WHERE id = (SELECT host FROM host_identifiers"
+                        "              WHERE source_type = 'Report Host'"
+                        "              AND name = 'ip'"
+                        "              AND source_id = (SELECT uuid"
+                        "                               FROM reports"
+                        "                               WHERE id = report)"
+                        "              AND value = report_hosts.host"
+                        "              LIMIT 1))"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND report = $2"
+                        "   AND ($3::text IS NULL OR host = $3)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        SQL_RESOURCE_PARAM (report),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
   else
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts WHERE id = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       host ? " WHERE host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " ''"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND ($2::text IS NULL OR host = $2)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
 }
 
@@ -25032,16 +24997,23 @@ modify_credential (const char *credential_id,
 
   if (certificate && ret == 0)
     {
-      // Truncate certificate which also validates it.
-      gchar *certificate_truncated;
-      certificate_truncated = truncate_certificate (certificate);
-      if (certificate_truncated)
+      if (g_str_equal (certificate, ""))
         {
-          set_credential_certificate (credential, certificate_truncated);
-          g_free (certificate_truncated);
+          set_credential_certificate (credential, NULL);
         }
       else
-        ret = 5;
+        {
+          // Truncate certificate which also validates it.
+          gchar *certificate_truncated;
+          certificate_truncated = truncate_certificate (certificate);
+          if (certificate_truncated)
+            {
+              set_credential_certificate (credential, certificate_truncated);
+              g_free (certificate_truncated);
+            }
+          else
+            ret = 5;
+        }
     }
 
   if (auth_algorithm && ret == 0)
@@ -25130,82 +25102,66 @@ modify_credential (const char *credential_id,
 
       if (key_private)
         {
-          char *generated_key_public = NULL;
-          /* Try truncate the private key, but if that fails try get the
-           * public key anyway, in case it's a key type that
-           * truncate_private_key does not understand. */
-          key_private_truncated = truncate_private_key (key_private);
-          key_private_to_use = key_private_truncated ? key_private_truncated
-                                                     : key_private;
+          if (!g_str_equal (key_private, ""))
+            {
+              char *generated_key_public = NULL;
+              /* Try truncate the private key, but if that fails try get the
+               * public key anyway, in case it's a key type that
+               * truncate_private_key does not understand. */
+              key_private_truncated = truncate_private_key (key_private);
+              key_private_to_use =
+                key_private_truncated ? key_private_truncated : key_private;
 
-          if (strcmp (type, "cc") == 0)
-            {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               NULL);
-            }
-          else if (strcmp (type, "usk") == 0)
-            {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               password
-                                ? password
-                                : credential_iterator_password (&iterator));
-            }
+              generated_key_public = gvm_ssh_public_from_private (
+                key_private_to_use,
+                password ? password : credential_iterator_password (&iterator));
 
-          if (generated_key_public == NULL)
-            {
-              sql_rollback ();
-              cleanup_iterator (&iterator);
+              if (generated_key_public == NULL)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  g_free (generated_key_public);
+                  return 8;
+                }
               g_free (generated_key_public);
-              return 8;
             }
-          g_free (generated_key_public);
+          else
+            key_private_to_use = key_private;
         }
       else
         key_private_to_use = NULL;
 
-      if (strcmp (type, "cc") == 0)
-        {
-          if (key_private_to_use)
-            set_credential_private_key (credential,
-                                        key_private_to_use,
-                                        NULL);
-        }
-      else if (strcmp (type, "up") == 0
+      if (strcmp (type, "up") == 0
                || strcmp (type, "pw") == 0)
         {
           if (password)
             set_credential_password (credential, password);
         }
-      else if (strcmp (type, "usk") == 0)
+      else if (g_str_equal (type, "usk") || g_str_equal (type, "cc"))
         {
           if (key_private_to_use || password)
             {
-              if (check_private_key (key_private_to_use
-                                      ? key_private_to_use
-                                      : credential_iterator_private_key
-                                         (&iterator),
-                                     password
-                                      ? password
-                                      : credential_iterator_password
-                                         (&iterator)))
+              if (g_str_equal (type, "usk"))
                 {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 8;
+                  if (check_private_key (
+                        key_private_to_use
+                          ? key_private_to_use
+                          : credential_iterator_private_key (&iterator),
+                        password ? password
+                                 : credential_iterator_password (&iterator)))
+                    {
+                      sql_rollback ();
+                      cleanup_iterator (&iterator);
+                      return 8;
+                    }
                 }
 
-              set_credential_private_key
-                (credential,
-                 key_private_to_use
+              set_credential_private_key (
+                credential,
+                key_private_to_use
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                 password
-                  ? password
-                  : credential_iterator_password (&iterator));
+                password ? password : credential_iterator_password (&iterator));
             }
         }
       else if ((strcmp (type, "snmp") == 0)
@@ -26050,31 +26006,39 @@ set_credential_password (credential_t credential, const char *password)
  * @param[in]  passphrase      Passphrase.
  */
 static void
-set_credential_private_key (credential_t credential,
-                            const char *private_key, const char *passphrase)
+set_credential_private_key (credential_t credential, const char *private_key,
+                            const char *passphrase)
 {
   lsc_crypt_ctx_t crypt_ctx;
 
   if (!disable_encrypted_credentials)
     {
-      gchar *encrypted_blob;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
-                                          "private_key", private_key,
-                                          "password", passphrase,
-                                          NULL);
-      if (!encrypted_blob)
+      if (!g_str_equal (private_key, ""))
         {
-          g_critical ("%s: encryption failed", G_STRFUNC);
+          gchar *encrypted_blob;
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+          encrypted_blob = lsc_crypt_encrypt (crypt_ctx, "password", passphrase,
+                                              "private_key", private_key, NULL);
+          if (!encrypted_blob)
+            {
+              g_critical ("%s: encryption failed", G_STRFUNC);
+              lsc_crypt_release (crypt_ctx);
+              return;
+            }
+          set_credential_data (credential, "secret", encrypted_blob);
+
+          g_free (encrypted_blob);
           lsc_crypt_release (crypt_ctx);
-          return;
         }
-      set_credential_data (credential, "secret", encrypted_blob);
+      else
+        {
+          set_credential_data (credential, "secret", NULL);
+        }
+
       set_credential_data (credential, "password", NULL);
       set_credential_data (credential, "private_key", NULL);
-      g_free (encrypted_blob);
     }
   else
     {
@@ -26087,7 +26051,6 @@ set_credential_private_key (credential_t credential,
   sql ("UPDATE credentials SET modification_time = m_now ()"
        " WHERE id = %llu;",
        credential);
-  lsc_crypt_release (crypt_ctx);
 }
 
 /**
