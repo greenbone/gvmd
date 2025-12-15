@@ -275,11 +275,11 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
   int ret = 0;
   gpgme_ctx_t ctx;
   char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
-  const gpgme_data_type_t openpgp_types_ptr[2] = {GPGME_DATA_TYPE_X509_CERT,
-                                                  GPGME_DATA_TYPE_PGP_KEY};
-  const gpgme_data_type_t cms_types_ptr[3] = {GPGME_DATA_TYPE_X509_CERT,
-                                              GPGME_DATA_TYPE_CMS_OTHER,
+  const gpgme_data_type_t openpgp_types[2] = {GPGME_DATA_TYPE_X509_CERT,
                                               GPGME_DATA_TYPE_PGP_KEY};
+  const gpgme_data_type_t cms_types[3] = {GPGME_DATA_TYPE_X509_CERT,
+                                          GPGME_DATA_TYPE_CMS_OTHER,
+                                          GPGME_DATA_TYPE_PGP_KEY};
 
   GArray *key_types;
   gpgme_error_t err;
@@ -300,7 +300,7 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
   key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
   g_array_append_vals (key_types,
                        protocol == GPGME_PROTOCOL_CMS
-                        ? cms_types_ptr : openpgp_types_ptr,
+                        ? cms_types : openpgp_types,
                        protocol == GPGME_PROTOCOL_CMS
                         ? 3 : 2);
   ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
@@ -309,6 +309,7 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
   if (ret)
     {
       gpgme_release (ctx);
+      gvm_file_remove_recurse (gpg_temp_dir);
       return -1;
     }
 
@@ -323,6 +324,7 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
 
   gpgme_op_keylist_end (ctx);
   gpgme_release (ctx);
+  gvm_file_remove_recurse (gpg_temp_dir);
   return ret;
 }
 
