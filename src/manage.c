@@ -4275,6 +4275,8 @@ manage_sync (sigset_t *sigmask_current,
             }
 #endif /* ENABLE_AGENTS */
           manage_sync_configs ();
+          /* After config sync, update discovery nvts */
+          manage_discovery_nvts ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
 
@@ -5350,6 +5352,12 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
               "</epss>");
         }
 
+      /* add discovery value */
+      buffer_xml_append_printf
+        (buffer,
+         "<discovery>%d</discovery>",
+         nvt_iterator_discovery (nvts));
+
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
     }
@@ -5360,22 +5368,26 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                       get_iterator_resource (nvts),
                                       1);
 
+      GString *buffer = g_string_new (NULL);
+
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\"><name>%s</name>",
+                                oid, name_text);
+
+      /* optional tags */
       if (tag_count)
-        {
-          msg = g_strdup_printf
-                 ("<nvt oid=\"%s\"><name>%s</name>"
-                  "<user_tags><count>%i</count></user_tags>%s",
-                  oid, name_text,
-                  tag_count,
-                  close_tag ? "</nvt>" : "");
-        }
-      else
-        {
-          msg = g_strdup_printf
-                 ("<nvt oid=\"%s\"><name>%s</name>%s",
-                  oid, name_text,
-                  close_tag ? "</nvt>" : "");
-        }
+        buffer_xml_append_printf (buffer,
+                                  "<user_tags><count>%i</count></user_tags>",
+                                  tag_count);
+
+      /* add discovery value */
+      buffer_xml_append_printf (buffer,
+                                "<discovery>%d</discovery>",
+                                nvt_iterator_discovery (nvts));
+
+      /* close */
+      xml_string_append (buffer, close_tag ? "</nvt>" : "");
+      msg = g_string_free (buffer, FALSE);
     }
   g_free (name_text);
   return msg;

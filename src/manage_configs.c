@@ -638,3 +638,57 @@ scanner_type_requires_config (int scanner_type)
       return TRUE;
     }
 }
+
+/**
+ * @brief Retrieves all NVT OIDs associated with a given scan config UUID.
+ *
+ * @param[in]  config_id  The UUID of the scan configuration.
+ * @param[out] oids       Pointer to a GSList* that will be populated with the
+ *                        retrieved OID strings. The caller is responsible for
+ *                        freeing the resulting list.
+ */
+void
+get_nvt_oids_from_config_uuid (const gchar *config_id, GSList **oids)
+{
+  config_t config;
+
+  if (find_config_no_acl (config_id, &config)
+      || config == 0)
+    return;
+  get_nvt_oids_from_config (config, oids);
+}
+
+/**
+ * @brief Collects all NVT OIDs from the given scan config.
+ *
+ * @param[in]  config  The scan configuration handle.
+ * @param[out] oids    Pointer to a GSList* that will be populated with
+ *                     duplicated OID strings. The caller is responsible
+ *                     for freeing the resulting list.
+ */
+void
+get_nvt_oids_from_config (config_t config, GSList **oids)
+{
+  iterator_t families, nvts;
+
+  if (!oids)
+    return;
+
+  init_family_iterator (&families, 0, NULL, 1);
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (!family)
+        continue;
+
+      init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
+      while (next (&nvts))
+        {
+          const char *oid = nvt_iterator_oid (&nvts);
+          if (oid)
+            *oids = g_slist_prepend (*oids, g_strdup (oid));
+        }
+      cleanup_iterator (&nvts);
+    }
+  cleanup_iterator (&families);
+}

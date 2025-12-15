@@ -22,7 +22,7 @@
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
    "qod_type", "solution_type", "solution", "summary", "insight",           \
    "affected", "impact", "detection", "solution_method", "epss_score",      \
-   "epss_percentile", "max_epss_score", "max_epss_percentile",              \
+   "epss_percentile", "max_epss_score", "max_epss_percentile", "discovery", \
    NULL }
 
 /**
@@ -66,6 +66,7 @@
      KEYWORD_TYPE_DOUBLE },                                                 \
    { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
    { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+   { "discovery", NULL, KEYWORD_TYPE_INTEGER },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -110,6 +111,7 @@
      KEYWORD_TYPE_DOUBLE },                                                 \
    { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
    { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+   { "discovery", NULL, KEYWORD_TYPE_INTEGER },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -149,5 +151,7 @@ manage_update_nvts_from_feed (gboolean);
 int
 nvts_feed_version_status_from_timestamp ();
 
+void
+manage_discovery_nvts ();
 
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */
