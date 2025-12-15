@@ -156,4 +156,10 @@ should_sync_configs ();
 gboolean
 scanner_type_requires_config (int scanner_type);
 
+void
+get_nvt_oids_from_config (config_t, GSList **);
+
+void
+get_nvt_oids_from_config_uuid (const gchar *, GSList **);
+
 #endif /* not _GVMD_MANAGE_CONFIGS_H */

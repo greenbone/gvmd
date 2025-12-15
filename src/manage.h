@@ -1933,6 +1933,9 @@ nvt_iterator_max_epss_severity (iterator_t*);
 gboolean
 nvt_iterator_has_max_epss_severity (iterator_t*);
 
+int
+nvt_iterator_discovery (iterator_t*);
+
 char*
 nvt_default_timeout (const char *);
 

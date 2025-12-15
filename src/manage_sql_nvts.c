@@ -1051,6 +1051,22 @@ nvt_iterator_has_max_epss_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the Discovery from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Discovery.
+ */
+int
+nvt_iterator_discovery (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 29);
+  return ret;
+}
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1338,7 +1354,10 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     }
 
   if (ret == 0)
-    update_scap_extra ();
+    {
+      update_scap_extra ();
+      manage_discovery_nvts ();
+    }
 
   feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
@@ -1907,4 +1926,83 @@ manage_update_nvts_from_feed (gboolean reset_nvts_db)
   g_free (nvts_feed_file_version);
   g_info ("%s: Updating NVTs from feed done", __func__);
   return ret;
+}
+
+/**
+ * @brief Marks the given NVTs as discovery NVTs based on their OIDs.
+ *
+ * @param[in] oids  GSList of char* OID strings to be marked as discovery NVTs.
+ */
+static void
+manage_mark_discovery_nvts_from_oid (GSList *oids)
+{
+  if (!oids)
+    return;
+
+  GString *in_clause = g_string_new (NULL);
+  GSList *iter;
+
+  for (iter = oids; iter; iter = iter->next)
+    {
+      const char *oid = iter->data;
+      if (!oid)
+        continue;
+
+      gchar *quoted_oid = sql_insert (oid);
+
+      if (in_clause->len > 0)
+        g_string_append (in_clause, ",");
+
+      g_string_append (in_clause, quoted_oid);
+      g_free (quoted_oid);
+    }
+
+  if (in_clause->len > 0)
+    {
+      sql_begin_immediate ();
+      sql ("UPDATE nvts "
+           "   SET discovery = 1 "
+           " WHERE oid IN (%s);",
+           in_clause->str);
+      sql_commit ();
+    }
+
+  g_string_free (in_clause, TRUE);
+}
+
+/**
+ * @brief Marks all NVTs of a given configuration UUID as discovery NVTs.
+ *
+ * The allocated OID list is freed before returning.
+ *
+ * @param[in] config_uuid  The UUID of the scan configuration whose NVTs
+ *                         should be marked as discovery.
+ */
+static void
+manage_discovery_for_config_uuid (const char *config_uuid)
+{
+  GSList *oids = NULL;
+
+  get_nvt_oids_from_config_uuid (config_uuid, &oids);
+  if (!oids)
+    return;
+
+  manage_mark_discovery_nvts_from_oid (oids);
+  g_slist_free_full (oids, g_free);
+}
+
+/**
+ * @brief Updates discovery flags for NVTs in the predefined discovery configs.
+ *
+ */
+void
+manage_discovery_nvts ()
+{
+  g_info ("%s: Updating Discovery NVTs", __func__);
+
+  manage_discovery_for_config_uuid (CONFIG_UUID_DISCOVERY);
+  manage_discovery_for_config_uuid (CONFIG_UUID_HOST_DISCOVERY);
+  manage_discovery_for_config_uuid (CONFIG_UUID_SYSTEM_DISCOVERY);
+
+  g_info ("%s: Updating Discovery NVTs done", __func__);
 }
