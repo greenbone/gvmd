@@ -2017,8 +2017,6 @@ validate_nvts_sort_field (const char* sort_field)
 {
   static const gchar* nvt_sort_fields[] = NVT_VALID_SORTBY_COLUMNS;
 
-  g_warning("VALIDATING SORT_FIELD: %s", sort_field);
-
   if (vector_find_string (nvt_sort_fields, sort_field))
     return 0;
 
