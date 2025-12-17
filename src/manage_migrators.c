@@ -3469,6 +3469,39 @@ migrate_262_to_263 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 263 to version 264.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_263_to_264 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 263. */
+
+  if (manage_db_version () != 263)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add discovery field to reports
+
+  sql ("ALTER TABLE reports ADD COLUMN discovery integer DEFAULT 0;");
+
+  /* Set the database version to 260. */
+
+  set_db_version (264);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3538,6 +3571,7 @@ static migrator_t database_migrators[] = {
   {261, migrate_260_to_261},
   {262, migrate_261_to_262},
   {263, migrate_262_to_263},
+  {264, migrate_263_to_264},
   /* End marker. */
   {-1, NULL}};
 

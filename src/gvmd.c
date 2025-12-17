@@ -3901,6 +3901,10 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+
+  /* Load discovery OID cache once in the parent, before forking children. */
+  nvts_discovery_oid_cache_reload ();
+
   if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
       if (check_osp_vt_update_socket ())

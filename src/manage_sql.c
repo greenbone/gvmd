@@ -9887,6 +9887,32 @@ report_set_processing_required (report_t report,
 }
 
 /**
+ * @brief Set Discovery flag to the report.
+ *
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  discovery            Discovery flag for validating Scan config.
+ */
+void
+report_set_discovery (report_t report, gboolean discovery)
+{
+  sql ("UPDATE reports SET discovery = %d"
+       " WHERE id = %llu;",
+       discovery ? 1 : 0,
+       report);
+}
+
+/**
+ * @brief Check Discovery flag from the report.
+ *
+ * @param[in]  report  The report to check the flags.
+ */
+gboolean
+check_report_discovery (report_t report)
+{
+  return sql_int ("SELECT discovery FROM reports WHERE id = %llu;", report);
+}
+
+/**
  * @brief Process imported report.
  *
  * Adds TLS certificates to the database and creates assets from the report.
@@ -9951,6 +9977,15 @@ process_report_import (report_t report)
   sql ("UPDATE reports SET processing_required = 0"
        " WHERE id = %llu;",
        report);
+
+  /* Store reports host identifies to the asset snapshot. */
+  int resp = asset_snapshot_collect_report_identifiers (report_uuid (report));
+  if (resp != 0)
+    {
+      g_warning ("%s: unable to collect host identifiers with (resp=%d)",
+                 __func__, resp);
+    }
+  asset_snapshots_target (report, task, check_report_discovery (report));
 
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
@@ -45155,6 +45190,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   if (!strcmp (port, "general/Host_Details"))
     {
       gchar *hash_value = NULL;
+      gchar *r_uuid = report_uuid (rep_aux->report);
       if (!check_host_detail_exists (rep_aux->report, host,
                                      res->detail_source_type,
                                      res->detail_source_name,
@@ -45172,9 +45208,16 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
                                      res->detail_value,
                                      hash_value);
         }
+      /* Add host identifiers to asset snapshot array */
+      asset_snapshot_add_report_host_identifier (host,
+                                                  res->detail_name,
+                                                  res->detail_value,
+                                                  r_uuid,
+                                                  res->detail_source_name);
       desc = res->message;
       g_free (hash_value);
       g_free (type);
+      g_free (r_uuid);
       return;
     }
   else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
@@ -45193,6 +45236,10 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
     {
       /* TODO: This should probably be handled by the "Host Detail"
        *        result type with extra source info in OSP.
+       *
+       * TODO: 17.12.2025 ozgen - For openvasd scans, host details do not pass through
+       *       manage_report_host_detail(). When "in_assets" is enabled, this may
+       *       prevent host identifiers from being added as assets.
        */
       if (manage_report_host_detail (rep_aux->report, host, desc,
                                      rep_aux->hash_hostdetails))
