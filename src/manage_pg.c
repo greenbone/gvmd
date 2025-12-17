@@ -3173,6 +3173,22 @@ create_tables ()
        "  value text,"
        "  hash_value text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS asset_snapshots"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid text UNIQUE NOT NULL,"
+     "  task_id integer,"   /* not a FK: keep snapshots after task deletion */
+     "  report_id integer," /* not a FK: keep snapshots after report deletion */
+     "  asset_type integer NOT NULL,"
+     "  ip_address text,"
+     "  hostname text,"
+     "  mac_address text,"
+     "  agent_id text,"
+     "  container_digest text,"
+     "  asset_key text,"
+     "  creation_time integer NOT NULL,"
+     "  modification_time integer NOT NULL"
+     ");");
+
   create_tables_nvt ("");
 
   sql ("CREATE TABLE IF NOT EXISTS notes"

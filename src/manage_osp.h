@@ -46,12 +46,12 @@ int
 run_osp_scan_get_report (task_t, int, char **);
 
 int
-handle_osp_scan_start (task_t, target_t, const char *, int, gboolean);
+handle_osp_scan_start (task_t, target_t, const char *, int, gboolean, gboolean*);
 
 int
 handle_osp_scan (task_t, report_t, const char *, time_t);
 
 int
-handle_osp_scan_end (task_t, int);
+handle_osp_scan_end (task_t, int, gboolean);
 
 #endif /* _GVMD_MANAGE_OSP_H */

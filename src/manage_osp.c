@@ -13,6 +13,7 @@
 #include "manage_assets.h"
 #include "manage_scan_queue.h"
 #include "manage_sql.h"
+#include "manage_sql_nvts.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -532,18 +533,20 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
 /**
  * @brief Launch an OpenVAS via OSP task.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[in]   scan_id     The scan uuid.
- * @param[in]   from        0 start from beginning, 1 continue from stopped,
- *                          2 continue if stopped else start from beginning.
- * @param[out]  error       Error return.
+ * @param[in]   task           The task.
+ * @param[in]   target         The target.
+ * @param[in]   scan_id        The scan uuid.
+ * @param[in]   from           0 start from beginning, 1 continue from stopped,
+ *                             2 continue if stopped else start from beginning.
+ * @param[out]   error         Error return.
+ * @param[out]  discovery_out  Returns TRUE if all OIDs are labeled
+ *                             as discovery in the used scan config.
  *
  * @return 0 success, -1 if error.
  */
 static int
 launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
-                         int from, char **error)
+                         int from, char **error, gboolean *discovery_out)
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
@@ -671,6 +674,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  GSList *oids = NULL;
   empty = 1;
   while (next (&families))
     {
@@ -687,6 +691,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
               empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = osp_vt_single_new (oid);
+              oids = g_slist_prepend (oids, g_strdup (oid));
 
               vts = g_slist_prepend (vts, new_vt);
               g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
@@ -695,6 +700,11 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  /* check oids are discovery or not */
+  *discovery_out = nvts_oids_all_discovery_cached (oids);
+  /* clean up oids list */
+  g_slist_free_full (oids, g_free);
 
   if (empty) {
     if (error)
@@ -1081,17 +1091,20 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
  *                        2 continue if stopped else start from beginning.
  * @param[in]  wait_until_active  Whether to wait until scan is queued or
  *                                running
+ * @param[out] discovery_out  Discovery flag for scan config.
  *
  * @return 0 success, -1 if error.
  */
 int
 handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
-                       int start_from, gboolean wait_until_active)
+                       int start_from, gboolean wait_until_active,
+                       gboolean *discovery_out)
 {
   char *error = NULL;
   int rc;
 
-  rc = launch_osp_openvas_task (task, target, scan_id, start_from, &error);
+  rc = launch_osp_openvas_task (task, target, scan_id, start_from, &error,
+                                discovery_out);
   if (rc)
     {
       result_t result;
@@ -1274,11 +1287,12 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
  *
  * @param[in]  task                 The task of the scan
  * @param[in]  handle_progress_rc   Return code from handle_osp_scan
+ * @param[in] discovery             Discovery flag for scan config.
  *
  * @return The given handle_osp_scan return code.
  */
 int
-handle_osp_scan_end (task_t task, int handle_progress_rc)
+handle_osp_scan_end (task_t task, int handle_progress_rc, gboolean discovery)
 {
   if (handle_progress_rc == 0)
     {
@@ -1305,6 +1319,7 @@ handle_osp_scan_end (task_t task, int handle_progress_rc)
       if (max_concurrent_scan_updates)
         semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
 
+      asset_snapshots_target (global_current_report, task, discovery);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }

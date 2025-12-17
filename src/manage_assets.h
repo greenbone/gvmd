@@ -8,6 +8,16 @@
 
 #include "manage_get.h"
 
+/**
+ * @brief Types of assets represented in asset snapshots.
+ */
+typedef enum
+{
+ ASSET_TYPE_TARGET = 0,
+ ASSET_TYPE_AGENT = 1,
+ ASSET_TYPE_CONTAINER_IMAGE = 2
+} asset_type_t;
+
 char*
 host_uuid (resource_t);
 
@@ -133,5 +143,17 @@ host_routes_xml (host_t);
 
 int
 add_assets_from_host_in_report (report_t, const char *);
+
+void
+asset_snapshots_target(report_t, task_t, gboolean);
+
+void
+asset_snapshot_add_report_host_identifier(const gchar*,
+                                          const gchar*,
+                                          const gchar*,
+                                          const gchar*,
+                                          const gchar*);
+int
+asset_snapshot_collect_report_identifiers (const char *);
 
 #endif /* not _GVMD_MANAGE_ASSETS_H */

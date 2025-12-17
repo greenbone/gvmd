@@ -42,6 +42,7 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
                         task_t task, int start_from)
 {
   task_status_t status = task_run_status (task);
+  gboolean discovery_scan = FALSE;
 
   switch (status)
     {
@@ -50,7 +51,9 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
           int rc;
           target_t target = task_target (task);
           rc = handle_osp_scan_start (task, target, scan_id, start_from,
-                                      TRUE);
+                                      TRUE, &discovery_scan);
+          /* Set discovery flag to the report */
+          report_set_discovery (report, discovery_scan);
           return (rc == 0) ? 2 : rc;
         }
       default:

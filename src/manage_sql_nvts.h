@@ -154,4 +154,10 @@ nvts_feed_version_status_from_timestamp ();
 void
 manage_discovery_nvts ();
 
+void
+nvts_discovery_oid_cache_reload ();
+
+gboolean
+nvts_oids_all_discovery_cached (GSList *oids);
+
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */
