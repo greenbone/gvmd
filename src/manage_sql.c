@@ -17564,10 +17564,11 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
  */
 struct print_report_context
 {
-  int count_filtered;     ///< Whether to count filtered results.
-  gchar *tz;              ///< TZ.
-  gchar *zone;            ///< Zone.
-  char *old_tz_override;  ///< Old TZ.
+  int count_filtered;         ///< Whether to count filtered results.
+  int filtered_result_count;  ///< Filtered result count.
+  gchar *tz;                  ///< TZ.
+  gchar *zone;                ///< Zone.
+  char *old_tz_override;      ///< Old TZ.
 };
 
 /**
@@ -17664,7 +17665,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count;
+  int total_result_count;
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
@@ -17695,7 +17696,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
-  total_result_count = filtered_result_count = 0;
+  total_result_count = 0;
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
@@ -17895,7 +17896,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               /* We're getting all the filtered results, so we can count them as we
               * print them, to save time. */
 
-              filtered_result_count = 0;
+              ctx.filtered_result_count = 0;
             }
           else
             {
@@ -17904,8 +17905,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
                                 &false_positives, NULL, get, NULL);
 
-              filtered_result_count = criticals + holes + infos + logs + warnings
-                                      + false_positives;
+              ctx.filtered_result_count = criticals + holes + infos + logs
+                                          + warnings + false_positives;
 
             }
         }
@@ -18442,7 +18443,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   overrides_details, sort_order,
                                   sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
-                                  &filtered_result_count,
+                                  &ctx.filtered_result_count,
                                   &orig_f_criticals, &f_criticals,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
@@ -18699,8 +18700,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       else
         {
           if (ctx.count_filtered)
-            filtered_result_count = f_criticals + f_holes + f_infos + f_logs
-                                    + f_warnings + f_false_positives;
+            ctx.filtered_result_count = f_criticals + f_holes + f_infos + f_logs
+                                        + f_warnings + f_false_positives;
 
           PRINT (out,
                 "<result_count>"
@@ -18725,7 +18726,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "</result_count>",
                 total_result_count,
                 total_result_count,
-                filtered_result_count,
+                ctx.filtered_result_count,
                 criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
                 holes,
