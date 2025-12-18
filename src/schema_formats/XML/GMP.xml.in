@@ -12925,6 +12925,7 @@ END:VCALENDAR
           <o><e>privacy</e></o>
           <o><e>certificate_info</e></o>
           <o><e>private_key_info</e></o>
+          <o><e>public_key_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
           @IF_ENABLE_CONTAINER_SCANNNING@
@@ -13164,6 +13165,20 @@ END:VCALENDAR
           <ele>
             <name>sha256_hash</name>
             <summary>SHA-256 hash of the key if it is valid</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>public_key_info</name>
+          <summary>
+            Info about the public key if one is set.
+          </summary>
+          <pattern>
+            <o><e>fingerprint</e></o>
+          </pattern>
+          <ele>
+            <name>fingerprint</name>
+            <summary>The key fingerprint if the key is valid</summary>
             <pattern>text</pattern>
           </ele>
         </ele>
@@ -17162,6 +17177,7 @@ END:VCALENDAR
           </attrib>
           <e>name</e>
           <o><e>user_tags</e></o>
+          <o><e>discovery</e></o>
           <o>
             <g>
               <e>creation_time</e>
@@ -17345,6 +17361,11 @@ END:VCALENDAR
           <name>tags</name>
           <summary>The tags of the NVT, separated by vertical bars</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>discovery</name>
+          <summary>Whether the NVT is marked as a discovery NVT</summary>
+          <pattern><t>integer</t></pattern>
         </ele>
         <ele>
           <name>preference_count</name>
@@ -17606,6 +17627,7 @@ END:VCALENDAR
               </preference>
               <truncated>...</truncated>
             </preferences>
+            <discovery>1</discovery>
           </nvt>
           <nvt oid="1.3.6.1.4.1.25623.1.7.13006">
             <name>FooBar 21</name>
@@ -17614,6 +17636,7 @@ END:VCALENDAR
             <category>3</category>
             <description>This script detects whether the FooBar 2.1 XSS vulnerability is present.</description>
             <truncated>...</truncated>
+            <discovery>0</discovery>
           </nvt>
           <truncated>...</truncated>
         </get_nvts_response>
@@ -17629,6 +17652,7 @@ END:VCALENDAR
         <get_nvts_response status="200" status_text="OK">
           <nvt oid="1.3.6.1.4.1.25623.1.0.10330">
             <name>Services</name>
+            <discovery>0</discovery>
           </nvt>
         </get_nvts_response>
       </response>

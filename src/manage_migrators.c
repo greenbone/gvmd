@@ -3436,6 +3436,39 @@ migrate_261_to_262 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 262 to version 263.
+ *
+ * Adds a discovery flag to the nvts table.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_262_to_263 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 262. */
+
+  if (manage_db_version () != 262)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE nvts ADD COLUMN discovery INTEGER NOT NULL DEFAULT 0;");
+
+  /* Set the database version to 263. */
+
+  set_db_version (263);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3504,6 +3537,7 @@ static migrator_t database_migrators[] = {
   {260, migrate_259_to_260},
   {261, migrate_260_to_261},
   {262, migrate_261_to_262},
+  {263, migrate_262_to_263},
   /* End marker. */
   {-1, NULL}};
 

@@ -13,18 +13,17 @@
 #include "ipc.h"
 #include "sql.h"
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <endian.h>
 #include <errno.h>
-#include <arpa/inet.h>
 #include <glib.h>
+#include <gvm/base/array.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <postgresql/libpq-fe.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <gvm/base/array.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -36,7 +35,7 @@
 /* Headers of sql.c symbols used only here. */
 
 int
-sql_x (char*, va_list args, sql_stmt_t**);
+sql_x (gboolean ps_syntax, char *, va_list args, sql_stmt_t **);
 
 
 /* Types. */
@@ -46,13 +45,13 @@ sql_x (char*, va_list args, sql_stmt_t**);
  */
 struct sql_stmt
 {
-  gchar *sql;             ///< SQL statement.
-  PGresult *result;       ///< Result set.
-  int current_row;        ///< Row position in results.
-  int executed;           ///< Whether statement has been executed.
-  array_t *param_values;  ///< Parameter values.
-  GArray *param_lengths;  ///< Parameter lengths (int's).
-  GArray *param_formats;  ///< Parameter formats (int's).
+  gchar *sql;            ///< SQL statement.
+  PGresult *result;      ///< Result set.
+  int current_row;       ///< Row position in results.
+  int executed;          ///< Whether statement has been executed.
+  array_t *param_values; ///< Parameter values.
+  GArray *param_lengths; ///< Parameter lengths (int's).
+  GArray *param_formats; ///< Parameter formats (int's).
 };
 
 
@@ -191,7 +190,8 @@ log_notice (void *arg, const PGresult *result)
 #ifndef NDEBUG
   char *verbose;
 
-  verbose = PQresultVerboseErrorMessage (result, PQERRORS_VERBOSE, PQSHOW_CONTEXT_ALWAYS);
+  verbose = PQresultVerboseErrorMessage (result, PQERRORS_VERBOSE,
+                                         PQSHOW_CONTEXT_ALWAYS);
   g_debug ("PQ notice: verbose: %s", verbose);
   PQfreemem (verbose);
 #endif
@@ -265,23 +265,19 @@ sql_open (const db_conn_info_t *database)
   PostgresPollingStatusType poll_status;
   int socket;
 
-  conn_info = g_strdup_printf ("dbname='%s'"
-                               " host='%s'"
-                               " port='%s'"
-                               " user='%s'"
-                               " application_name='%s'",
-                               database->name
-                                ? database->name
-                                : sql_default_database (),
-                               database->host ? database->host : "",
-                               database->port ? database->port : "",
-                               database->user ? database->user : "",
-                               "gvmd");
+  conn_info = g_strdup_printf (
+    "dbname='%s'"
+    " host='%s'"
+    " port='%s'"
+    " user='%s'"
+    " application_name='%s'",
+    database->name ? database->name : sql_default_database (),
+    database->host ? database->host : "", database->port ? database->port : "",
+    database->user ? database->user : "", "gvmd");
 
   if (semaphore_op (SEMAPHORE_DB_CONNECTIONS, -1, database->semaphore_timeout))
     {
-      g_warning ("%s: error signaling database connection semaphore",
-                 __func__);
+      g_warning ("%s: error signaling database connection semaphore", __func__);
       g_free (conn_info);
       return -1;
     }
@@ -289,15 +285,13 @@ sql_open (const db_conn_info_t *database)
   g_free (conn_info);
   if (conn == NULL)
     {
-      g_warning ("%s: PQconnectStart failed to allocate conn",
-                 __func__);
+      g_warning ("%s: PQconnectStart failed to allocate conn", __func__);
       semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
       return -1;
     }
   if (PQstatus (conn) == CONNECTION_BAD)
     {
-      g_warning ("%s: PQconnectStart to '%s' failed: %s",
-                 __func__,
+      g_warning ("%s: PQconnectStart to '%s' failed: %s", __func__,
                  database->name ? database->name : sql_default_database (),
                  PQerrorMessage (conn));
       goto fail;
@@ -329,8 +323,8 @@ sql_open (const db_conn_info_t *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: write select failed: %s",
-                         __func__, strerror (errno));
+              g_warning ("%s: write select failed: %s", __func__,
+                         strerror (errno));
               goto fail;
             }
           /* Poll again. */
@@ -348,16 +342,15 @@ sql_open (const db_conn_info_t *database)
             continue;
           if (ret < 0)
             {
-              g_warning ("%s: read select failed: %s",
-                         __func__, strerror (errno));
+              g_warning ("%s: read select failed: %s", __func__,
+                         strerror (errno));
               goto fail;
             }
           /* Poll again. */
         }
       else if (poll_status == PGRES_POLLING_FAILED)
         {
-          g_warning ("%s: PQconnectPoll failed",
-                     __func__);
+          g_warning ("%s: PQconnectPoll failed", __func__);
           g_warning ("%s: PQerrorMessage (conn): %s", __func__,
                      PQerrorMessage (conn));
           goto fail;
@@ -382,14 +375,13 @@ sql_open (const db_conn_info_t *database)
     {
       g_warning ("%s: PostgreSQL version 9.6 (90600) or higher is required",
                  __func__);
-      g_warning ("%s: Current version is %i", __func__,
-                 PQserverVersion (conn));
+      g_warning ("%s: Current version is %i", __func__, PQserverVersion (conn));
       goto fail;
     }
 
   return 0;
 
- fail:
+fail:
   PQfinish (conn);
   conn = NULL;
   semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
@@ -442,28 +434,106 @@ sql_last_insert_id ()
 /**
  * @brief Prepare a statement.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
- * @param[in]  log    Whether to keep retrying while database is busy or locked.
+ * @param[in]  log    Whether to log SQL statements as debug messages.
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
  * @param[out] stmt   Statement return.
  *
  * @return 0 success, 1 gave up, -1 error.
  */
-int
-sql_prepare_internal (int retry, int log, const char* sql, va_list args,
-                      sql_stmt_t **stmt)
+void
+sql_prepare_internal (int log, const char *sql, va_list args, sql_stmt_t **stmt)
 {
   assert (stmt);
 
-  *stmt = (sql_stmt_t*) g_malloc (sizeof (sql_stmt_t));
+  *stmt = (sql_stmt_t *) g_malloc (sizeof (sql_stmt_t));
   sql_stmt_init (*stmt);
   (*stmt)->sql = g_strdup_vprintf (sql, args);
 
   if (log)
     g_debug ("   sql: %s", (*stmt)->sql);
+}
 
-  return 0;
+/**
+ * @brief Prepare a statement in prepared statement syntax.
+ *
+ * The list of parameter values must be passed as pointers to
+ *  sql_param_t structs and include a NULL sentinel at the end.
+ *
+ * @see sql_param_t for more info about passing the parameters.
+ *
+ * @param[in]  log    Whether to log SQL statements as debug messages.
+ * @param[in]  sql    SQL statement template in prepared statement syntax.
+ * @param[in]  args   Parameters passed as a va_list.
+ * @param[out] stmt   Statement return.
+ *
+ * @return 0 success, 1 gave up, -1 error.
+ */
+void
+sql_prepare_ps_internal (int log, const char *sql, va_list args,
+                         sql_stmt_t **stmt)
+{
+  assert (stmt);
+  va_list args_copy;
+  sql_param_t *param;
+  int n_params = 0;
+
+  *stmt = (sql_stmt_t *) g_malloc (sizeof (sql_stmt_t));
+  sql_stmt_init (*stmt);
+  (*stmt)->sql = g_strdup (sql);
+
+  if (log)
+    g_debug ("   sql: %s", (*stmt)->sql);
+
+  va_copy (args_copy, args);
+  while ((param = va_arg (args_copy, sql_param_t *)) != NULL)
+    n_params++;
+  va_end (args_copy);
+
+  g_ptr_array_set_size ((*stmt)->param_values, n_params);
+  g_array_set_size ((*stmt)->param_formats, n_params);
+  g_array_set_size ((*stmt)->param_lengths, n_params);
+
+  va_copy (args_copy, args);
+  for (int i = 0; i < n_params; i++)
+    {
+      gchar *pq_value = NULL;
+      param = va_arg (args_copy, sql_param_t *);
+
+      switch (param->type)
+        {
+        case SQL_PARAM_TYPE_NULL:
+          // Send a null pointer for null values
+          if (log)
+            g_debug ("sql param $%d (null)", i + 1);
+          break;
+        case SQL_PARAM_TYPE_DOUBLE:
+          pq_value = g_strdup_printf ("%lg", param->value.double_value);
+          if (log)
+            g_debug ("sql param $%d (double) = %s", i + 1, pq_value);
+          break;
+        case SQL_PARAM_TYPE_INT:
+          pq_value = g_strdup_printf ("%d", param->value.int_value);
+          if (log)
+            g_debug ("sql param $%d (int) = %s", i + 1, pq_value);
+          break;
+        case SQL_PARAM_TYPE_STRING:
+          pq_value = g_strdup (param->value.str_value ?: "");
+          if (log)
+            g_debug ("sql param $%d (string) = %s", i + 1, pq_value);
+          break;
+        case SQL_PARAM_TYPE_RESOURCE:
+          pq_value = g_strdup_printf ("%llu", param->value.resource_value);
+          if (log)
+            g_debug ("sql param $%d (resource) = %s", i + 1, pq_value);
+          break;
+        }
+
+      (*stmt)->param_values->pdata[i] = pq_value;
+      if (pq_value)
+        (*stmt)->param_lengths->data[i] = strlen (pq_value);
+    }
+  va_end (args_copy);
 }
 
 /**
@@ -476,7 +546,7 @@ sql_prepare_internal (int retry, int log, const char* sql, va_list args,
  *         -3 lock unavailable, -4 unique constraint violation.
  */
 int
-sql_exec_internal (int retry, sql_stmt_t *stmt)
+sql_exec_internal (sql_stmt_t *stmt)
 {
   PGresult *result;
 
@@ -484,18 +554,15 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
 
   if (stmt->executed == 0)
     {
-      result = PQexecParams (conn,
-                             stmt->sql,
-                             stmt->param_values->len,
-                             NULL,                 /* Default param types. */
-                             (const char* const*) stmt->param_values->pdata,
-                             (const int*) stmt->param_lengths->data,
-                             (const int*) stmt->param_formats->data,
-                             0);                   /* Results as text. */
+      result = PQexecParams (conn, stmt->sql, stmt->param_values->len,
+                             NULL, /* Default param types. */
+                             (const char *const *) stmt->param_values->pdata,
+                             (const int *) stmt->param_lengths->data,
+                             (const int *) stmt->param_formats->data,
+                             0); /* Results as text. */
       ExecStatusType status = PQresultStatus (result);
 
-      if (status != PGRES_TUPLES_OK
-          && status != PGRES_COMMAND_OK
+      if (status != PGRES_TUPLES_OK && status != PGRES_COMMAND_OK
           && status != PGRES_COPY_IN)
         {
           char *sqlstate;
@@ -511,35 +578,30 @@ sql_exec_internal (int retry, sql_stmt_t *stmt)
           else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
             {
               /* lock_not_available */
-              g_debug ("%s: lock unavailable: %s",
-                       __func__,
-                       PQresultErrorMessage(result));
+              g_debug ("%s: lock unavailable: %s", __func__,
+                       PQresultErrorMessage (result));
               return -3;
             }
           else if (sqlstate && (strcmp (sqlstate, "23505") == 0))
             {
               /* unique_violation */
-              g_warning ("%s: constraint violation: %s",
-                         __func__,
+              g_warning ("%s: constraint violation: %s", __func__,
                          PQresultErrorMessage (result));
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
               return -4;
             }
-            else if (sqlstate && (strcmp (sqlstate, "40P01") == 0))
-              {
-                /* deadlock_detected */
-                g_debug ("%s: deadlock: %s",
-                         __func__,
-                         PQresultErrorMessage (result));
-                g_debug ("%s: SQL: %s", __func__, stmt->sql);
-                return -5;
-              }
+          else if (sqlstate && (strcmp (sqlstate, "40P01") == 0))
+            {
+              /* deadlock_detected */
+              g_debug ("%s: deadlock: %s", __func__,
+                       PQresultErrorMessage (result));
+              g_debug ("%s: SQL: %s", __func__, stmt->sql);
+              return -5;
+            }
           if (log_errors)
             {
-              g_warning ("%s: PQexec failed: %s (%i)",
-                         __func__,
-                         PQresultErrorMessage (result),
-                         status);
+              g_warning ("%s: PQexec failed: %s (%i)", __func__,
+                         PQresultErrorMessage (result), status);
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
           return -1;
@@ -637,9 +699,10 @@ sql_table_lock_wait (const char *table, int lock_timeout)
  * @return 1 if NULL, else 0.
  */
 int
-iterator_null (iterator_t* iterator, int col)
+iterator_null (iterator_t *iterator, int col)
 {
-  if (iterator->done) abort ();
+  if (iterator->done)
+    abort ();
   assert (iterator->stmt->result);
   return PQgetisnull (iterator->stmt->result, iterator->stmt->current_row, col);
 }
@@ -652,7 +715,7 @@ iterator_null (iterator_t* iterator, int col)
  * @param[in]  iterator  Iterator.
  */
 void
-iterator_rewind (iterator_t* iterator)
+iterator_rewind (iterator_t *iterator)
 {
   iterator->done = FALSE;
   iterator->stmt->current_row = -1;
@@ -712,7 +775,7 @@ sql_column_text (sql_stmt_t *stmt, int position)
   if (PQgetisnull (stmt->result, stmt->current_row, position))
     return NULL;
 
-  return (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
+  return (const char *) PQgetvalue (stmt->result, stmt->current_row, position);
 }
 
 /**
@@ -737,11 +800,11 @@ sql_column_int (sql_stmt_t *stmt, int position)
 
   switch (PQftype (stmt->result, position))
     {
-      case 16:  /* BOOLOID */
-        return strcmp (cell, "f") ? 1 : 0;
+    case 16: /* BOOLOID */
+      return strcmp (cell, "f") ? 1 : 0;
 
-      default:
-        return atoi (cell);
+    default:
+      return atoi (cell);
     }
 }
 
@@ -767,11 +830,11 @@ sql_column_int64 (sql_stmt_t *stmt, int position)
 
   switch (PQftype (stmt->result, position))
     {
-      case 16:  /* BOOLOID */
-        return strcmp (cell, "f") ? 1 : 0;
+    case 16: /* BOOLOID */
+      return strcmp (cell, "f") ? 1 : 0;
 
-      default:
-        return atol (cell);
+    default:
+      return atol (cell);
     }
 }
 
@@ -795,7 +858,7 @@ sql_column_array (sql_stmt_t *stmt, int position)
 
   /* {DFN-CERT-2017-1238,DFN-CERT-2014-1366,DFN-CERT-2014-1354} */
 
-  text = (const char*) PQgetvalue (stmt->result, stmt->current_row, position);
+  text = (const char *) PQgetvalue (stmt->result, stmt->current_row, position);
   if (text && text[0] == '{')
     {
       gchar **array, **point, **last;
@@ -832,8 +895,7 @@ sql_column_array (sql_stmt_t *stmt, int position)
 
   /* This shouldn't happen. */
   assert (0);
-  g_warning ("%s: array column not NULL and does not contain array",
-             __func__);
+  g_warning ("%s: array column not NULL and does not contain array", __func__);
   return NULL;
 }
 
@@ -884,9 +946,8 @@ sql_cancel_internal ()
 int
 sql_copy_write_str (const char *str, int len)
 {
-  int put_copy_data_ret = PQputCopyData(conn,
-                                        str,
-                                        len >= 0 ? len : strlen(str));
+  int put_copy_data_ret =
+    PQputCopyData (conn, str, len >= 0 ? len : strlen (str));
   if (put_copy_data_ret == 0)
     {
       g_warning ("%s: could not send data: queue blocked", __func__);
@@ -894,8 +955,8 @@ sql_copy_write_str (const char *str, int len)
     }
   else if (put_copy_data_ret != 1)
     {
-      g_warning ("%s: could not send data: %s",
-                 __func__, PQerrorMessage(conn));
+      g_warning ("%s: could not send data: %s", __func__,
+                 PQerrorMessage (conn));
     }
 
   return 0;
@@ -920,18 +981,16 @@ sql_copy_end ()
     }
   else if (put_copy_end_ret != 1)
     {
-      g_warning ("%s: could not send end of data: %s",
-                 __func__, PQerrorMessage(conn));
+      g_warning ("%s: could not send end of data: %s", __func__,
+                 PQerrorMessage (conn));
       return -1;
     }
 
   result = PQgetResult (conn);
   if (PQresultStatus (result) != PGRES_COMMAND_OK)
     {
-      g_warning ("%s: PQexec failed: %s (%i)",
-                  __func__,
-                  PQresultErrorMessage (result),
-                  PQresultStatus (result));
+      g_warning ("%s: PQexec failed: %s (%i)", __func__,
+                 PQresultErrorMessage (result), PQresultStatus (result));
       PQclear (result);
       return -1;
     }
@@ -957,9 +1016,10 @@ sql_copy_escape (const char *str)
   gssize len = strlen (str);
   GString *escaped = g_string_sized_new (len);
 
-  for (i = 0; i < len; i++) {
-    switch (str[i])
-      {
+  for (i = 0; i < len; i++)
+    {
+      switch (str[i])
+        {
         case '\\':
           g_string_append (escaped, "\\\\");
           break;
@@ -983,7 +1043,7 @@ sql_copy_escape (const char *str)
           break;
         default:
           g_string_append_c (escaped, str[i]);
-      }
-  }
+        }
+    }
   return g_string_free (escaped, FALSE);
 }

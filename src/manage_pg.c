@@ -2114,7 +2114,8 @@ create_tables_nvt (const gchar *suffix)
        "  max_epss_cve TEXT,"
        "  max_epss_score DOUBLE PRECISION,"
        "  max_epss_percentile DOUBLE PRECISION,"
-       "  max_epss_severity DOUBLE PRECISION"
+       "  max_epss_severity DOUBLE PRECISION,"
+       "  discovery INTEGER NOT NULL DEFAULT 0"
        ");",
        suffix);
 }

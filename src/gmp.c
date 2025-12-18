@@ -260,6 +260,75 @@ check_certificate_smime (const char *cert_str)
 }
 
 /**
+ * @brief Get PGP or S/MIME public key info.
+ *
+ * @param[in]  key_str      The PEM-encoded key as a string.
+ * @param[in]  protocol     The prococol, should be either OpenPGP or CMS.
+ * @param[out] fingerprint  Output of the fingerprint.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
+                         gchar **fingerprint)
+{
+  int ret = 0;
+  gpgme_ctx_t ctx;
+  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
+  const gpgme_data_type_t openpgp_types[2] = {GPGME_DATA_TYPE_X509_CERT,
+                                              GPGME_DATA_TYPE_PGP_KEY};
+  const gpgme_data_type_t cms_types[3] = {GPGME_DATA_TYPE_X509_CERT,
+                                          GPGME_DATA_TYPE_CMS_OTHER,
+                                          GPGME_DATA_TYPE_PGP_KEY};
+
+  GArray *key_types;
+  gpgme_error_t err;
+  gpgme_key_t key;
+
+  *fingerprint = NULL;
+
+  if (mkdtemp (gpg_temp_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed", __func__);
+      return -1;
+    }
+
+  gpgme_new (&ctx);
+  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
+  gpgme_set_protocol (ctx, protocol);
+
+  key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+  g_array_append_vals (key_types,
+                       protocol == GPGME_PROTOCOL_CMS
+                        ? cms_types : openpgp_types,
+                       protocol == GPGME_PROTOCOL_CMS
+                        ? 3 : 2);
+  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
+  g_array_free (key_types, TRUE);
+
+  if (ret)
+    {
+      gpgme_release (ctx);
+      gvm_file_remove_recurse (gpg_temp_dir);
+      return -1;
+    }
+
+  gpgme_op_keylist_start (ctx, "*", 0);
+  if (!(err = gpgme_op_keylist_next (ctx, &key)))
+    {
+      ret = 0;
+      *fingerprint = g_strdup (key->fpr);
+    }
+  else
+    ret = -1;
+
+  gpgme_op_keylist_end (ctx);
+  gpgme_release (ctx);
+  gvm_file_remove_recurse (gpg_temp_dir);
+  return ret;
+}
+
+/**
  * @brief Check that a string represents a valid certificate.
  *
  * The type of certificate accepted depends on the credential_type.
@@ -6542,6 +6611,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CERTIFICATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->certificate);
+            gvm_append_string (&modify_credential_data->certificate, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
           }
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
@@ -6619,10 +6690,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_private);
+            gvm_append_string (&modify_credential_data->key_private, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
           }
         else if (strcasecmp ("PUBLIC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_public);
+            gvm_append_string (&modify_credential_data->key_public, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
           }
         ELSE_READ_OVER;
@@ -12778,7 +12853,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *login, *type, *cert, *private_key, *password;
+      const char *login, *type, *cert, *private_key, *password, *public_key;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -12797,7 +12872,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       cert = credential_iterator_certificate (&credentials);
       private_key = credential_iterator_private_key (&credentials);
       password = credential_iterator_password (&credentials);
-
+      public_key = credential_iterator_public_key (&credentials);
 
       SENDF_TO_CLIENT_OR_FAIL
        ("<allow_insecure>%d</allow_insecure>"
@@ -12945,16 +13020,30 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL ("</private_key_info>");
         }
 
+      if (public_key && get_credentials_data->get.details)
+        {
+          gpgme_protocol_t protocol = GPGME_PROTOCOL_OpenPGP;
+          gchar *fingerprint = NULL;
+          SENDF_TO_CLIENT_OR_FAIL ("<public_key_info>");
+
+          if (type && strcmp (type, "smime") == 0)
+            protocol = GPGME_PROTOCOL_CMS;
+
+          if (get_pgp_public_key_info (public_key, protocol, &fingerprint) == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<fingerprint>%s</fingerprint>",
+                                       fingerprint);
+              g_free (fingerprint);
+            }
+          SENDF_TO_CLIENT_OR_FAIL ("</public_key_info>");
+        }
+
       switch (format)
         {
           char *package;
 
           case CREDENTIAL_FORMAT_KEY:
             {
-              const char *public_key;
-
-              public_key = credential_iterator_public_key (&credentials);
-
               if (public_key && strcmp (public_key, ""))
                 {
                   SENDF_TO_CLIENT_OR_FAIL
@@ -24983,6 +25072,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               set_task_oci_image_target (create_task_data->task,
                                          oci_image_target);
+
+              clear_task_asset_preferences (create_task_data->task);
             }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
@@ -25189,6 +25280,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Auto Delete count out of range"
                                       " (must be from %d to %d)"),
                     AUTO_DELETE_KEEP_MIN, AUTO_DELETE_KEEP_MAX);
+                  goto create_task_fail;
+                case 3:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Scanning tasks"));
                   goto create_task_fail;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -28029,6 +28126,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+                case 20:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Image tasks"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");

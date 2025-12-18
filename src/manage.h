@@ -660,6 +660,9 @@ task_oci_image_target_in_trash (task_t);
 void
 set_task_oci_image_target (task_t, oci_image_target_t);
 
+void
+clear_task_asset_preferences (task_t);
+
 #endif /* ENABLE_CONTAINER_SCANNING */
 
 void
@@ -1932,6 +1935,9 @@ nvt_iterator_max_epss_severity (iterator_t*);
 
 gboolean
 nvt_iterator_has_max_epss_severity (iterator_t*);
+
+int
+nvt_iterator_discovery (iterator_t*);
 
 char*
 nvt_default_timeout (const char *);

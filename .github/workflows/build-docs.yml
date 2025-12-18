@@ -33,7 +33,7 @@ jobs:
           cmake -DSKIP_SRC=1 ..
           make doc-gmp
       - name: Upload GMP documentation artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: gmp.html
           path: build/doc/gmp.html
