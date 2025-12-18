@@ -172,12 +172,12 @@ acl_role_can_super_everyone (const char *role_id)
         /*                    Super on everyone. */
         "                AND (resource = 0)"
         "                AND subject_location"
-        "                    = " G_STRINGIFY (
-          LOCATION_TABLE) "                AND (subject_type = 'role'"
-                          "                     AND subject"
-                          "                         = (SELECT id"
-                          "                            FROM roles"
-                          "                            WHERE uuid = $1)));",
+        "                    = " G_STRINGIFY (LOCATION_TABLE)
+        "                AND (subject_type = 'role'"
+        "                     AND subject"
+        "                         = (SELECT id"
+        "                            FROM roles"
+        "                            WHERE uuid = $1)));",
         SQL_STR_PARAM (role_id), NULL))
     {
       return 1;
