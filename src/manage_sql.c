@@ -17564,6 +17564,7 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
  */
 struct print_report_context
 {
+  int count_filtered;     ///< Whether to count filtered results.
   gchar *tz;              ///< TZ.
   gchar *zone;            ///< Zone.
   char *old_tz_override;  ///< Old TZ.
@@ -17671,7 +17672,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_criticals = 0, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact, apply_overrides, count_filtered;
+  int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   GHashTable *f_host_ports;
@@ -17860,7 +17861,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta || (ignore_pagination && get->details));
+  ctx.count_filtered = (delta || (ignore_pagination && get->details));
 
   if (report)
     {
@@ -17889,7 +17890,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
           /* Get total counts of filtered results. */
 
-          if (count_filtered)
+          if (ctx.count_filtered)
             {
               /* We're getting all the filtered results, so we can count them as we
               * print them, to save time. */
@@ -18319,7 +18320,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       f_compliance_yes = f_compliance_no = 0;
       f_compliance_incomplete = f_compliance_undefined = 0;
 
-       if (count_filtered == 0)
+       if (ctx.count_filtered == 0)
          {
            report_compliance_f_counts (report,
                                        get,
@@ -18336,7 +18337,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-      if (count_filtered)
+      if (ctx.count_filtered)
         {
           /* We're getting all the filtered results, so we can count them as we
           * print them, to save time. */
@@ -18499,25 +18500,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (compliance, "yes") == 0)
                 {
                   f_host_result_counts = f_host_compliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_yes++;
                 }
               else if (strcasecmp (compliance, "no") == 0)
                 {
                   f_host_result_counts = f_host_notcompliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_no++;
                 }
               else if (strcasecmp (compliance, "incomplete") == 0)
                 {
                   f_host_result_counts = f_host_incomplete;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_incomplete++;
                 }
               else if (strcasecmp (compliance, "undefined") == 0)
                 {
                   f_host_result_counts = f_host_undefined;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_undefined++;
                 }
               else
@@ -18550,37 +18551,37 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (level, "log") == 0)
                 {
                   f_host_result_counts = f_host_logs;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_logs++;
                 }
               else if (strcasecmp (level, "critical") == 0)
                 {
                   f_host_result_counts = f_host_criticals;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
                   f_host_result_counts = f_host_holes;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_holes++;
                 }
               else if (strcasecmp (level, "medium") == 0)
                 {
                   f_host_result_counts = f_host_warnings;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_warnings++;
                 }
               else if (strcasecmp (level, "low") == 0)
                 {
                   f_host_result_counts = f_host_infos;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_infos++;
                 }
               else if (strcasecmp (level, "false positive") == 0)
                 {
                   f_host_result_counts = f_host_false_positives;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_false_positives++;
                 }
               else
@@ -18624,7 +18625,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
       else
         {
-          if (count_filtered)
+          if (ctx.count_filtered)
             f_compliance_count = f_compliance_yes
                                   + f_compliance_no
                                   + f_compliance_incomplete
@@ -18697,7 +18698,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (levels, 'f') ? orig_f_false_positives : 0));
       else
         {
-          if (count_filtered)
+          if (ctx.count_filtered)
             filtered_result_count = f_criticals + f_holes + f_infos + f_logs
                                     + f_warnings + f_false_positives;
 
