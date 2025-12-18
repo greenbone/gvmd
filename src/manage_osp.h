@@ -46,7 +46,8 @@ int
 run_osp_scan_get_report (task_t, int, char **);
 
 int
-handle_osp_scan_start (task_t, target_t, const char *, int, gboolean, gboolean*);
+handle_osp_scan_start(task_t, target_t, const char *, int, gboolean,
+                      gboolean *);
 
 int
 handle_osp_scan (task_t, report_t, const char *, time_t);
