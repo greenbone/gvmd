@@ -8,6 +8,9 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_filters.h"
+#if ENABLE_AGENTS
+#include "manage_groups.h"
+#endif
 #include "manage_sql.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
@@ -1403,6 +1406,62 @@ asset_snapshots_target (report_t report, task_t task, gboolean discovery)
   /* Set asset_key for asset_snapshots  */
   asset_snapshots_set_asset_keys (report, task);
 }
+
+#if ENABLE_AGENTS
+/**
+ * @brief Create agent asset snapshots for a completed report.
+ *
+ * @param[in]  report  Report the snapshot belongs to.
+ * @param[in]  task    Task that produced the report.
+ * @param[in]  group   Agent group.
+ */
+void
+asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
+{
+  agent_uuid_list_t agent_uuids;
+
+  agent_uuids = agent_uuid_list_from_group (group);
+  if (agent_uuids == NULL || agent_uuids->count <= 0 || agent_uuids->agent_uuids == NULL)
+    {
+      if (agent_uuids)
+        agent_uuid_list_free (agent_uuids);
+      return;
+    }
+
+  for (int i = 0; i < agent_uuids->count; i++)
+    {
+      const gchar *agent_uuid = agent_uuids->agent_uuids[i];
+      gchar *agent_id = NULL;
+      gchar *q_agent_id = NULL;
+
+      if (agent_uuid == NULL || *agent_uuid == '\0')
+        continue;
+
+      agent_id = agent_id_by_uuid (agent_uuid);
+      if (agent_id == NULL || *agent_id == '\0')
+        {
+          g_free (agent_id);
+          continue;
+        }
+
+      q_agent_id   = sql_quote (agent_id);
+
+      sql ("INSERT INTO asset_snapshots"
+           " (uuid, task_id, report_id, asset_type,"
+           "  asset_key, agent_id,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
+           task, report, ASSET_TYPE_AGENT,
+           agent_uuid, q_agent_id);
+
+      g_free (q_agent_id);
+      g_free (agent_id);
+    }
+
+  agent_uuid_list_free (agent_uuids);
+}
+#endif /* ENABLE_AGENTS */
 
 /**
  * @brief Setup hosts and their identifiers after a scan, from host details.
