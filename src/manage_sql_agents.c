@@ -781,6 +781,22 @@ agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id,
 }
 
 /**
+ * @brief Get an agent ID by agent UUID.
+ *
+ * @param[in]  agent_uuid  Agent UUID to look up.
+ *
+ * @return Newly allocated agent_id string (caller frees), or NULL.
+ */
+gchar *
+agent_id_by_uuid (const gchar *agent_uuid)
+{
+  g_return_val_if_fail (agent_uuid != NULL, NULL);
+
+  return sql_string ("SELECT agent_id FROM agents WHERE uuid = '%s';",
+                     agent_uuid);
+}
+
+/**
  * @brief Check if an agent is authorized.
  *
  * @param[in] agent_uuid   The UUID of the agent.

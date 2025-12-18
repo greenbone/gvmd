@@ -8134,6 +8134,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
+      asset_snapshots_agent (global_current_report, task, agent_group);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
