@@ -465,11 +465,13 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
 }
 
 /**
- * @brief Return whether a host-detail name should be recorded for snapshot usage.
+ * @brief Return whether a host-detail name should be recorded
+ *        for snapshot usage.
  *
  * @param[in] name  Host detail name (e.g. "hostname", "MAC").
  *
- * @return TRUE if the identifier should be added to scan_* arrays, FALSE otherwise.
+ * @return TRUE if the identifier should be added to scan_* arrays,
+ *         FALSE otherwise.
  */
 static gboolean
 check_snapshot_identifier_name (const gchar *name)
@@ -482,8 +484,8 @@ check_snapshot_identifier_name (const gchar *name)
 /**
  * @brief Add a single host identifier record to the given identifier arrays.
  *
- * @param[in,out] ids         Pointer to identifier array (array_t*), created if NULL.
- * @param[in,out] hosts       Pointer to host IP array (array_t*), created if NULL.
+ * @param[in,out] ids         Pointer to identifier array, created if NULL.
+ * @param[in,out] hosts       Pointer to host IP array, created if NULL.
  * @param[in]     ip          Host IP address.
  * @param[in]     name        Identifier name (e.g. "hostname", "MAC", "OS").
  * @param[in]     value       Identifier value.
@@ -523,7 +525,8 @@ add_host_identifier_to_arrays (array_t **ids, array_t **hosts,
 }
 
 /**
- * @brief Add a report host identifier into "snapshot" arrays and/or legacy arrays.
+ * @brief Add a report host identifier into "snapshot" arrays
+ *        and/or legacy arrays.
  *
  * @param[in] ip            Host IP address.
  * @param[in] name          Identifier name.
@@ -539,7 +542,8 @@ asset_snapshot_add_report_host_identifier (const gchar *ip,
                                            const gchar *source_name)
 {
   if (check_snapshot_identifier_name (name))
-    /* These are freed by asset_snapshots_insert_target or asset_snapshots_target. */
+    /* These are freed by asset_snapshots_insert_target
+     *  or asset_snapshots_target. */
     add_host_identifier_to_arrays (&snapshot_identifiers,
                                    &snapshot_identifier_hosts,
                                    ip, name, value,
@@ -954,7 +958,8 @@ create_asset_report (const char *report_id, const char *term)
  *
  * @param[in] report_id  Report UUID string.
  *
- * @return 0 on success, 1 if report not found, 99 permission denied, -1 on error.
+ * @return 0 on success, 1 if report not found, 99 permission denied,
+ *         -1 on error.
  */
 int
 asset_snapshot_collect_report_identifiers (const char *report_id)
@@ -1008,11 +1013,12 @@ asset_snapshot_collect_report_identifiers (const char *report_id)
           const char *src_name = report_host_details_iterator_source_name (&details);
 
           /* Fills snapshot_* . */
-          asset_snapshot_add_report_host_identifier (host,
-                                                    name,
-                                                    value,
-                                                    report_id,
-                                                    src_name);
+          asset_snapshot_add_report_host_identifier (
+            host,
+            name,
+            value,
+            report_id,
+            src_name);
         }
       cleanup_iterator (&details);
     }
@@ -1222,8 +1228,9 @@ asset_snapshots_set_asset_keys (report_t report, task_t task)
 
       gchar *asset_key = NULL;
 
-      // todo: 16.12.2025 ozgen - Update this merge algorithm once the final approach is defined
-
+      /** TODO: 16.12.2025 ozgen - Update this merge algorithm
+       *                           once the final approach is defined.
+       */
       /* MAC */
       if (mac && *mac)
         asset_key = get_asset_key_by_mac (mac);
@@ -1289,7 +1296,8 @@ asset_snapshots_insert_target (report_t report, task_t task)
       goto cleanup;
     }
 
-  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
 
   for (guint host_index = 0;
        snapshot_identifier_hosts && host_index < snapshot_identifier_hosts->len;
