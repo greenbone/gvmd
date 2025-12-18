@@ -12,6 +12,9 @@
 #include "manage_groups.h"
 #endif
 #include "manage_sql.h"
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_sql_oci_image_targets.h"
+#endif
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
@@ -1462,6 +1465,55 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
   agent_uuid_list_free (agent_uuids);
 }
 #endif /* ENABLE_AGENTS */
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Create container scanning asset snapshots for a completed report.
+ *
+ * @param[in]  report  Report the snapshot belongs to.
+ * @param[in]  task    Task that produced the report.
+ */
+void
+asset_snapshots_container_image (report_t report, task_t task)
+{
+  oci_image_target_t image_target;
+  gchar *image_ref = NULL;
+  gchar *image_uuid = NULL;
+  gchar *q_image_ref = NULL;
+
+  image_target = task_oci_image_target (task);
+  if (image_target == 0)
+    return;
+  /**
+   * TODO: 18.12.2025 ozgen - container digest must be included in the scan
+   *                          results and should be used instead of
+   *                          image references for asset_key/stable identity
+   */
+  image_ref = oci_image_target_image_references (image_target);
+  image_uuid = oci_image_target_uuid (image_target);
+
+  if (image_uuid == NULL || *image_uuid == '\0')
+    goto cleanup;
+
+  if (image_ref && *image_ref)
+    q_image_ref = sql_quote (image_ref);
+
+  sql ("INSERT INTO asset_snapshots"
+       " (uuid, task_id, report_id, asset_type,"
+       "  asset_key, container_digest,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
+       task, report, ASSET_TYPE_CONTAINER_IMAGE,
+       image_uuid,
+       q_image_ref ? q_image_ref : "NULL");
+
+  cleanup:
+    g_free (q_image_ref);
+  g_free (image_ref);
+  g_free (image_uuid);
+}
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 /**
  * @brief Setup hosts and their identifiers after a scan, from host details.
