@@ -161,4 +161,9 @@ void
 asset_snapshots_agent (report_t, task_t, agent_group_t);
 #endif
 
+#if ENABLE_CONTAINER_SCANNING
+void
+asset_snapshots_container_image (report_t report, task_t task);
+#endif
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

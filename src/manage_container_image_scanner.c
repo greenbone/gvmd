@@ -663,6 +663,7 @@ fork_container_image_scan_handler (task_t task,
                                 threat_message_type ("Error"),
                                 error, "", "", QOD_DEFAULT, NULL, NULL);
       report_add_result (global_current_report, result);
+      asset_snapshots_container_image (global_current_report, task);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       set_task_end_time_epoch (task, time (NULL));
