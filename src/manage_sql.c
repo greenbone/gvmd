@@ -18705,7 +18705,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           if (count_filtered)
             filtered_result_count = f_criticals + f_holes + f_infos + f_logs
-                                    + f_warnings + false_positives;
+                                    + f_warnings + f_false_positives;
 
           PRINT (out,
                 "<result_count>"
