@@ -6622,6 +6622,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("KDC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->kdc);
+            gvm_append_string (&modify_credential_data->kdc, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
           }
         else if (strcasecmp ("KDCS", element_name) == 0)
@@ -6650,6 +6652,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("REALM", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->realm);
+            gvm_append_string (&modify_credential_data->realm, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
           }
 #if ENABLE_CREDENTIAL_STORES
@@ -6659,14 +6663,21 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VAULT_ID", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->vault_id);
+            gvm_append_string (&modify_credential_data->vault_id, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
           }
         else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->host_identifier);
+            gvm_append_string (&modify_credential_data->host_identifier, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
           }
         else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->privacy_host_identifier);
+            gvm_append_string (&modify_credential_data->privacy_host_identifier,
+                               "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
           }
 #endif
@@ -26312,7 +26323,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 11:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kdc value(s)"));
+                                    "Invalid or empty kdc value(s)"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26320,7 +26331,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kerberos realm value"));
+                                    "Invalid or empty kerberos realm value"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26337,7 +26348,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid Vault ID"));
+                                    "Vault ID is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26345,15 +26356,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 15:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid host identifier"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 16:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid privacy host identifier"));
+                                    "Host identifier is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");

@@ -24971,14 +24971,13 @@ copy_credential (const char* name, const char* comment,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
- *         11 invalid key distribution center,
- *         12 invalid kerberos realm,
+ *         11 invalid or empty key distribution center,
+ *         12 invalid or empty kerberos realm,
  *         13 credential store cannot be found,
  *            (if ENABLE_CREDENTIAL_STORES),
- *         14 invalid vault ID (if ENABLE_CREDENTIAL_STORES),
- *         15 invalid host identifier (if ENABLE_CREDENTIAL_STORES),
- *         16 invalid privacy host identifier (if ENABLE_CREDENTIAL_STORES),
- *         17 value cannot be modified for credential store type,
+ *         14 vault ID is required (if ENABLE_CREDENTIAL_STORES),
+ *         15 host identifier is required (if ENABLE_CREDENTIAL_STORES),
+  *         17 value cannot be modified for credential store type,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -25380,15 +25379,14 @@ modify_credential (const char *credential_id,
             }
           if (privacy_host_identifier)
             {
-              if (!*privacy_host_identifier)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 16;
-                }
-              set_credential_data (credential,
-                                   "privacy_host_identifier",
-                                   privacy_host_identifier);
+              if (g_str_equal (privacy_host_identifier, ""))
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    NULL);
+              else
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    privacy_host_identifier);
             }
         }
       g_free (key_private_truncated);
