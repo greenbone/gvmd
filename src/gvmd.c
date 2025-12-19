@@ -1299,6 +1299,10 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             update_nvt_cache_retry ();
           }
 
+        /* Reinitialize DB/session again: feed update may close/reset DB state;
+         * required before discovery labeling. */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
         manage_discovery_nvts ();
 
         /* Exit. */
