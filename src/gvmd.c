@@ -1299,6 +1299,8 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             update_nvt_cache_retry ();
           }
 
+        manage_discovery_nvts ();
+
         /* Exit. */
 
         cleanup_manage_process (FALSE);
