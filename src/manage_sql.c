@@ -218,9 +218,6 @@ user_ensure_in_db (const gchar *, const gchar *);
 static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
-static void
-permissions_set_subjects (const char *, resource_t, resource_t, int);
-
 static resource_t
 permission_resource (permission_t);
 
@@ -264,9 +261,6 @@ permission_name (permission_t);
 
 static void
 cache_permissions_for_resource (const char *, resource_t, GArray*);
-
-static void
-cache_all_permissions_for_users (GArray*);
 
 static void
 report_cache_counts (report_t, int, int, const char*);
@@ -33041,168 +33035,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 /* Groups. */
 
 /**
- * @brief Delete a group.
- *
- * @param[in]  group_id  UUID of group.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a permission refers to the group, 2 failed
- *         to find group, 3 predefined group, 99 permission denied, -1 error.
- */
-int
-delete_group (const char *group_id, int ultimate)
-{
-  group_t group = 0;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_group_with_permission (group_id, &group, "delete_group"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (group == 0)
-    {
-      if (find_trash ("group", group_id, &group))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (group == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      if (trash_group_in_use (group))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-
-      tags_remove_resource ("group", group, LOCATION_TRASH);
-
-      sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", group);
-      sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
-      sql_commit ();
-      return 0;
-    }
-
-  if (group_in_use (group))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (ultimate == 0)
-    {
-      group_t trash_group;
-
-      sql ("INSERT INTO groups_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time,"
-           "  modification_time"
-           " FROM groups WHERE id = %llu;",
-           group);
-
-      trash_group = sql_last_insert_id ();
-
-      sql ("INSERT INTO group_users_trash"
-           " (\"group\", \"user\")"
-           " SELECT %llu, \"user\""
-           " FROM group_users WHERE \"group\" = %llu;",
-           trash_group,
-           group);
-
-      permissions_set_locations ("group", group, trash_group, LOCATION_TRASH);
-      tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
-      permissions_set_subjects ("group", group, trash_group, LOCATION_TRASH);
-    }
-  else
-    {
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           group);
-    }
-
-  tags_remove_resource ("group", group, LOCATION_TABLE);
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                  "SELECT \"user\" FROM group_users"
-                  " WHERE \"group\" = %llu",
-                  group);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
-  sql ("DELETE FROM groups WHERE id = %llu;", group);
-
-  cache_all_permissions_for_users (affected_users);
-  g_array_free (affected_users, TRUE);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
  * @brief Gets users of group as a string.
  *
  * @param[in]  group  Group.
@@ -33493,7 +33325,7 @@ permissions_set_orphans (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 permissions_set_subjects (const char *type, resource_t old, resource_t new,
                           int to)
 {
@@ -44429,7 +44261,7 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
  * @param[in]  cache_users  GArray of users to create cache for.  NULL means
  *                          all users.
  */
-static void
+void
 cache_all_permissions_for_users (GArray *cache_users)
 {
   int free_users;

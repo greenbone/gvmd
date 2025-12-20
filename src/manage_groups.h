@@ -29,4 +29,7 @@ group_writable (group_t);
 int
 create_group (const char *, const char *, const char *, int, group_t *);
 
+int
+delete_group (const char *, int);
+
 #endif /* not _GVMD_MANAGE_GROUPS_H */
