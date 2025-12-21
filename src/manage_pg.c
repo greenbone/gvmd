@@ -79,6 +79,49 @@ manage_db_empty ()
          == 0;
 }
 
+/**
+ * @brief Get list of all column names from a table
+ *
+ * @param table_name Name of the table to fetch column names from
+ * @return A glib style string vector on success, NULL on error
+ */
+gchar **
+get_db_table_column_names (const gchar *table_name)
+{
+  GPtrArray *column_names = g_ptr_array_new ();
+
+  const gchar *schema = sql_string_ps ("SELECT table_schema"
+                                       " FROM information_schema.tables"
+                                       " WHERE table_name = $1;",
+                                       SQL_STR_PARAM (table_name), NULL);
+  if (!schema)
+    {
+      g_warning ("Tried to fetch column names for invalid table '%s'",
+                 table_name);
+      g_ptr_array_free (column_names, TRUE);
+      return NULL;
+    }
+
+  iterator_t column_it;
+  init_ps_iterator (&column_it,
+                    "SELECT column_name"
+                    " FROM information_schema.columns"
+                    " WHERE table_schema = $1"
+                    " AND table_name = $2;",
+                    SQL_STR_PARAM (schema), SQL_STR_PARAM (table_name), NULL);
+
+  while (next (&column_it))
+    {
+      g_ptr_array_add (column_names,
+                       g_strdup (iterator_string (&column_it, 0)));
+    }
+  g_ptr_array_add (column_names, NULL);
+
+  cleanup_iterator (&column_it);
+  g_free ((gpointer) schema);
+  return (gchar **) g_ptr_array_free (column_names, FALSE);
+}
+
 
 /* SCAP. */
 
