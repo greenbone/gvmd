@@ -1321,70 +1321,89 @@ resource_name (const char *type, const char *uuid, int location, char **name)
   if (valid_db_resource_type (type) == 0)
     return 1;
 
+  GString *query = g_string_new ("");
+
   if (strcasecmp (type, "note") == 0)
-    *name = sql_string ("SELECT 'Note for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = notes%s.nvt)"
-                        " FROM notes%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT 'Note for: '"
+                       " || (SELECT name"
+                       "     FROM nvts"
+                       "     WHERE nvts.uuid = tnotes.nvt)"
+                       " FROM notes%s AS tnotes"
+                       " WHERE uuid = $1;",
+                       location == LOCATION_TABLE ? "" : "_trash");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "override") == 0)
-    *name = sql_string ("SELECT 'Override for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = overrides%s.nvt)"
-                        " FROM overrides%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT 'Override for: '"
+                       " || (SELECT name"
+                       "     FROM nvts"
+                       "     WHERE nvts.uuid = tovrr.nvt)"
+                       " FROM overrides%s AS tovrr"
+                       " WHERE uuid = $1;",
+                       location == LOCATION_TABLE ? "" : "_trash");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "report") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM reports"
-                        " WHERE uuid = '%s';",
-                        uuid);
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM reports"
+                             " WHERE uuid = '$1';",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "result") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT name FROM nvts WHERE oid = nvt)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM results"
-                        " WHERE uuid = '%s';",
-                        uuid);
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT name FROM nvts WHERE oid = nvt)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM results"
+                             " WHERE uuid = '$1';",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
   else if (location == LOCATION_TABLE)
-    *name = sql_string ("SELECT name"
-                        " FROM %ss"
-                        " WHERE uuid = '%s';",
-                        type,
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT name"
+                       " FROM %ss"
+                       " WHERE uuid = $1;",
+                       type);
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (type_has_trash (type))
-    *name = sql_string ("SELECT name"
-                        " FROM %ss%s"
-                        " WHERE uuid = '%s';",
-                        type,
-                        strcmp (type, "task") ? "_trash" : "",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT name"
+                       " FROM %ss%s"
+                       " WHERE uuid = $1;",
+                       type, strcmp (type, "task") ? "_trash" : "");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else
     *name = NULL;
 
+  g_string_free (query, TRUE);
   return 0;
 }
 
@@ -6761,6 +6780,31 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
        task);
 }
 
+/**
+ * @brief Clear default asset preferences if set.
+ *
+ * @param[in]  task  Task.
+ */
+void
+clear_task_asset_preferences (task_t task)
+{
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'in_assets';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'in_assets';",
+          task);
+
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'assets_apply_overrides';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'assets_apply_overrides';",
+          task);
+}
+
 #endif
 
 /**
@@ -9864,6 +9908,32 @@ report_set_processing_required (report_t report,
 }
 
 /**
+ * @brief Set Discovery flag to the report.
+ *
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  discovery            Discovery flag for validating Scan config.
+ */
+void
+report_set_discovery (report_t report, gboolean discovery)
+{
+  sql ("UPDATE reports SET discovery = %d"
+       " WHERE id = %llu;",
+       discovery ? 1 : 0,
+       report);
+}
+
+/**
+ * @brief Check Discovery flag from the report.
+ *
+ * @param[in]  report  The report to check the flags.
+ */
+gboolean
+check_report_discovery (report_t report)
+{
+  return sql_int ("SELECT discovery FROM reports WHERE id = %llu;", report);
+}
+
+/**
  * @brief Process imported report.
  *
  * Adds TLS certificates to the database and creates assets from the report.
@@ -9928,6 +9998,15 @@ process_report_import (report_t report)
   sql ("UPDATE reports SET processing_required = 0"
        " WHERE id = %llu;",
        report);
+
+  /* Store reports host identifies to the asset snapshot. */
+  int resp = asset_snapshot_collect_report_identifiers (report_uuid (report));
+  if (resp != 0)
+    {
+      g_warning ("%s: unable to collect host identifiers with (resp=%d)",
+                 __func__, resp);
+    }
+  asset_snapshots_target (report, task, check_report_discovery (report));
 
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
@@ -16736,9 +16815,6 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
           if (setenv ("TZ", tz, 1) == -1)
             {
               g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              g_free (zone);
-              free (old_tz_override);
               return -1;
             }
         }
@@ -16749,11 +16825,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
       sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
-
-      free (old_tz_override);
-      g_free (tz);
     }
-  g_free (zone);
   return 0;
 }
 
@@ -17509,6 +17581,19 @@ struct print_report_context
  * @brief Context type for print_report_xml_start.
  */
 typedef struct print_report_context print_report_context_t;
+
+/**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+}
 
 /**
  * @brief Init zone info for print_report_xml_start.
@@ -18849,6 +18934,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
 
+  print_report_context_cleanup (&ctx);
+
   if (fclose (out))
     {
       g_warning ("%s: fclose failed: %s",
@@ -18891,6 +18978,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       }
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
+    print_report_context_cleanup (&ctx);
     fclose (out);
     return -1;
 }
@@ -20814,7 +20902,9 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
-           19 failed to find OCI image target, -1 error.
+           19 failed to find OCI image target,
+           20 cannot set asset preferences for container image task,
+           -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -21064,6 +21154,8 @@ modify_task (const gchar *task_id, const gchar *name,
           return 13;
         case 2:
           return 14;
+        case 3:
+          return 20;
         default:
           return -1;
       }
@@ -45119,6 +45211,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   if (!strcmp (port, "general/Host_Details"))
     {
       gchar *hash_value = NULL;
+      gchar *r_uuid = report_uuid (rep_aux->report);
       if (!check_host_detail_exists (rep_aux->report, host,
                                      res->detail_source_type,
                                      res->detail_source_name,
@@ -45136,9 +45229,16 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
                                      res->detail_value,
                                      hash_value);
         }
+      /* Add host identifiers to asset snapshot array */
+      asset_snapshot_add_report_host_identifier (host,
+                                                  res->detail_name,
+                                                  res->detail_value,
+                                                  r_uuid,
+                                                  res->detail_source_name);
       desc = res->message;
       g_free (hash_value);
       g_free (type);
+      g_free (r_uuid);
       return;
     }
   else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
@@ -45157,6 +45257,10 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
     {
       /* TODO: This should probably be handled by the "Host Detail"
        *        result type with extra source info in OSP.
+       *
+       * TODO: 17.12.2025 ozgen - For openvasd scans, host details do not pass through
+       *       manage_report_host_detail(). When "in_assets" is enabled, this may
+       *       prevent host identifiers from being added as assets.
        */
       if (manage_report_host_detail (rep_aux->report, host, desc,
                                      rep_aux->hash_hostdetails))

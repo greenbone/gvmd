@@ -1503,6 +1503,7 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
                        char **report_id_return)
 {
   char *report_id = NULL;
+  gboolean discovery_scan = FALSE;
   int rc;
 
   assert (task);
@@ -1555,7 +1556,8 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE))
+  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE,
+                             &discovery_scan))
     {
       g_free (report_id);
       gvm_close_sentry ();
@@ -1566,7 +1568,7 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
 
   rc = handle_osp_scan (task, global_current_report, report_id, 0);
   g_free (report_id);
-  rc = handle_osp_scan_end (task, rc);
+  rc = handle_osp_scan_end (task, rc, discovery_scan);
   gvm_close_sentry ();
   exit (rc);
 }
@@ -7295,18 +7297,20 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
 /**
  * @brief Launch an OpenVAS via openvasd task.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[in]   scan_id     The scan uuid.
- * @param[in]   from        0 start from beginning, 1 continue from stopped,
- *                          2 continue if stopped else start from beginning.
- * @param[out]  error       Error return.
+ * @param[in]   task           The task.
+ * @param[in]   target         The target.
+ * @param[in]   scan_id        The scan uuid.
+ * @param[in]   from           0 start from beginning, 1 continue from stopped,
+ *                             2 continue if stopped else start from beginning.
+ * @param[out]  error          Error return.
+ * @param[out]  discovery_out  Returns TRUE if all OIDs are labeled
+ *                             as discovery in the used scan config.
  *
  * @return An http code on success, -1 if error.
  */
 static int
 launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
-                         int from, char **error)
+                         int from, char **error, gboolean *discovery_out)
 {
   http_scanner_connector_t connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
@@ -7440,6 +7444,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  GSList *oids = NULL;
   empty = 1;
   while (next (&families))
     {
@@ -7456,6 +7461,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
               empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = openvasd_vt_single_new (oid);
+              oids = g_slist_prepend (oids, g_strdup (oid));
 
               vts = g_slist_prepend (vts, new_vt);
               g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
@@ -7464,6 +7470,11 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  /* check oids are discovery or not */
+  *discovery_out = nvts_oids_all_discovery_cached (oids);
+  /* clean up oids list */
+  g_slist_free_full (oids, g_free);
 
   if (empty) {
     if (error)
@@ -7670,6 +7681,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
                        char **report_id_return)
 {
   char *report_id, *error = NULL;
+  gboolean discovery_scan = FALSE;
   int rc;
 
   assert (task);
@@ -7722,7 +7734,8 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  rc = launch_openvasd_openvas_task (task, target, report_id, from, &error);
+  rc = launch_openvasd_openvas_task (task, target, report_id, from, &error,
+                                     &discovery_scan);
 
   if (rc < 0)
     {
@@ -7754,6 +7767,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
       set_task_run_status (task, TASK_STATUS_PROCESSING);
       set_report_scan_run_status (global_current_report,
                                   TASK_STATUS_PROCESSING);
+      asset_snapshots_target (global_current_report, task, discovery_scan);
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
@@ -8120,6 +8134,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
+      asset_snapshots_agent (global_current_report, task, agent_group);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }

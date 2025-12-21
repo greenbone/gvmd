@@ -51,6 +51,12 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Cache of Discovery NVT OIDs
+ */
+static GHashTable *nvts_discovery_oid_cache = NULL;
+static GMutex nvts_discovery_oid_cache_lock;
+
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -636,7 +642,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
  *                         Overridden by \arg config.
  * @param[in]  category    Category to limit selection to.  NULL for all.
  * @param[in]  ascending   Whether to sort ascending or descending.
- * @param[in]  sort_field  Field to sort on, or NULL for "name".
+ * @param[in]  sort_field  Field to sort on, or NULL for "id".
  */
 void
 init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
@@ -1992,8 +1998,52 @@ manage_discovery_for_config_uuid (const char *config_uuid)
 }
 
 /**
- * @brief Updates discovery flags for NVTs in the predefined discovery configs.
+ * @brief Build the in-memory cache of Discovery NVT OIDs from the database.
  *
+ * @return Newly created hash table containing OID strings.
+ */
+static GHashTable *
+build_ntvs_discovery_cache_from_db ()
+{
+  iterator_t nvts_iter;
+  GHashTable *t = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  init_iterator (&nvts_iter, "SELECT oid FROM nvts WHERE discovery = 1;");
+  while (next (&nvts_iter))
+    {
+      const char *oid = iterator_string (&nvts_iter, 0);
+      if (oid && *oid)
+        g_hash_table_add (t, g_strdup (oid));
+    }
+  cleanup_iterator (&nvts_iter);
+
+  return t;
+}
+
+/**
+ * @brief Reload the global Discovery NVT OID cache from the database.
+ */
+void
+nvts_discovery_oid_cache_reload ()
+{
+  GHashTable *new_cache = build_ntvs_discovery_cache_from_db ();
+
+  g_mutex_lock (&nvts_discovery_oid_cache_lock);
+  GHashTable *old = nvts_discovery_oid_cache;
+  nvts_discovery_oid_cache = new_cache;
+  g_mutex_unlock (&nvts_discovery_oid_cache_lock);
+
+  if (old)
+    g_hash_table_destroy (old);
+
+  int size = g_hash_table_size (nvts_discovery_oid_cache);
+  g_debug ("%s: NVTs discovery oid cache loaded with size: %d",
+           __func__,
+           size);
+}
+
+/**
+ * @brief Updates discovery flags for NVTs in the predefined discovery configs.
  */
 void
 manage_discovery_nvts ()
@@ -2004,8 +2054,45 @@ manage_discovery_nvts ()
   manage_discovery_for_config_uuid (CONFIG_UUID_HOST_DISCOVERY);
   manage_discovery_for_config_uuid (CONFIG_UUID_SYSTEM_DISCOVERY);
 
+  nvts_discovery_oid_cache_reload ();
+
   g_info ("%s: Updating Discovery NVTs done", __func__);
 }
+
+/**
+ * @brief Check whether all given OIDs are marked as discovery
+ *        in the loaded cache.
+ *
+ * @param[in] oids GSList of NVT OID strings (const char*).
+ *
+ * @return TRUE if all OIDs are present in the discovery cache, otherwise FALSE.
+ */
+gboolean
+nvts_oids_all_discovery_cached (GSList *oids)
+{
+  if (!oids)
+    return TRUE; /* empty */
+
+  g_mutex_lock (&nvts_discovery_oid_cache_lock);
+  GHashTable *t = nvts_discovery_oid_cache;
+  g_mutex_unlock (&nvts_discovery_oid_cache_lock);
+
+  if (!t)
+    return FALSE; /* cache not initialized */
+
+  for (GSList *it = oids; it; it = it->next)
+    {
+      const char *oid = it->data;
+      if (!oid || !*oid)
+        return FALSE;
+
+      if (!g_hash_table_contains (t, oid))
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
 
 /**
  * @brief Validates sort_field for nvts table

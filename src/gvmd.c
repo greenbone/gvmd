@@ -1299,6 +1299,12 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             update_nvt_cache_retry ();
           }
 
+        /* Reinitialize DB/session again: feed update may close/reset DB state;
+         * required before discovery labeling. */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+        manage_discovery_nvts ();
+
         /* Exit. */
 
         cleanup_manage_process (FALSE);
@@ -3901,6 +3907,10 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+
+  /* Load discovery OID cache once in the parent, before forking children. */
+  nvts_discovery_oid_cache_reload ();
+
   if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
       if (check_osp_vt_update_socket ())

@@ -553,6 +553,12 @@ drop_indexes_cve ();
 void
 report_set_processing_required (report_t, int, int);
 
+void
+report_set_discovery (report_t, gboolean);
+
+gboolean
+check_report_discovery (report_t);
+
 int
 process_report_import (report_t);
 

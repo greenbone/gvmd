@@ -8,7 +8,13 @@
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_filters.h"
+#if ENABLE_AGENTS
+#include "manage_groups.h"
+#endif
 #include "manage_sql.h"
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_sql_oci_image_targets.h"
+#endif
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
@@ -121,6 +127,39 @@ array_t *identifiers = NULL;
  * @brief Unique hosts listed in host_identifiers.
  */
 array_t *identifier_hosts = NULL;
+
+/**
+ * @brief Host identifiers collected during report parsing.
+ *
+ * Used to create snapshots or other post-processing that must not depend on
+ * the task preference "in_assets".
+ */
+array_t *snapshot_identifiers = NULL;
+
+/**
+ * @brief Unique hosts listed in scan_identifiers.
+ */
+array_t *snapshot_identifier_hosts = NULL;
+
+/**
+ * @brief Column indices that match init_asset_snapshot_iterator().
+ */
+typedef enum
+{
+  AS_COL_ID = 0,
+  AS_COL_UUID = 1,
+  AS_COL_TASK_ID = 2,
+  AS_COL_REPORT_ID = 3,
+  AS_COL_ASSET_TYPE = 4,
+  AS_COL_IP_ADDRESS = 5,
+  AS_COL_HOSTNAME = 6,
+  AS_COL_MAC_ADDRESS = 7,
+  AS_COL_AGENT_ID = 8,
+  AS_COL_CONTAINER_DIGEST = 9,
+  AS_COL_ASSET_KEY = 10,
+  AS_COL_CREATION_TIME = 11,
+  AS_COL_MODIFICATION_TIME = 12
+} asset_snapshot_col_t;
 
 static int
 report_host_dead (report_host_t);
@@ -432,6 +471,94 @@ report_host_set_end_time (report_host_t report_host, time_t end_time)
 }
 
 /**
+ * @brief Return whether a host-detail name should be recorded
+ *        for snapshot usage.
+ *
+ * @param[in] name  Host detail name (e.g. "hostname", "MAC").
+ *
+ * @return TRUE if the identifier should be added to scan_* arrays,
+ *         FALSE otherwise.
+ */
+static gboolean
+check_snapshot_identifier_name (const gchar *name)
+{
+  return name
+         && (strcmp (name, "hostname") == 0
+             || strcmp (name, "MAC") == 0);
+}
+
+/**
+ * @brief Add a single host identifier record to the given identifier arrays.
+ *
+ * @param[in,out] ids         Pointer to identifier array, created if NULL.
+ * @param[in,out] hosts       Pointer to host IP array, created if NULL.
+ * @param[in]     ip          Host IP address.
+ * @param[in]     name        Identifier name (e.g. "hostname", "MAC", "OS").
+ * @param[in]     value       Identifier value.
+ * @param[in]     source_id   Identifier source id.
+ * @param[in]     source_type Identifier source type label.
+ * @param[in]     source_data Identifier source data label.
+ */
+static void
+add_host_identifier_to_arrays (array_t **ids, array_t **hosts,
+                               const gchar *ip,
+                               const gchar *name,
+                               const gchar *value,
+                               const gchar *source_id,
+                               const gchar *source_type,
+                               const gchar *source_data)
+{
+  identifier_t *identifier;
+
+  if (!ip || !*ip || !name || !*name || !value || !*value)
+    return;
+
+  if (*ids == NULL)
+    *ids = make_array ();
+  if (*hosts == NULL)
+    *hosts = make_array ();
+
+  identifier = g_malloc (sizeof (*identifier));
+  identifier->ip = g_strdup (ip);
+  identifier->name = g_strdup (name);
+  identifier->value = g_strdup (value);
+  identifier->source_id = g_strdup (source_id);
+  identifier->source_type = g_strdup (source_type);
+  identifier->source_data = g_strdup (source_data);
+
+  array_add (*ids, identifier);
+  array_add_new_string (*hosts, g_strdup (ip));
+}
+
+/**
+ * @brief Add a report host identifier into "snapshot" arrays
+ *        and/or legacy arrays.
+ *
+ * @param[in] ip            Host IP address.
+ * @param[in] name          Identifier name.
+ * @param[in] value         Identifier value.
+ * @param[in] report_uuid   UUID of the report (used as source_id).
+ * @param[in] source_name   Name of the identifier source (used as source_data).
+ */
+void
+asset_snapshot_add_report_host_identifier (const gchar *ip,
+                                           const gchar *name,
+                                           const gchar *value,
+                                           const gchar *report_uuid,
+                                           const gchar *source_name)
+{
+  if (check_snapshot_identifier_name (name))
+    /* These are freed by asset_snapshots_insert_target
+     *  or asset_snapshots_target. */
+    add_host_identifier_to_arrays (&snapshot_identifiers,
+                                   &snapshot_identifier_hosts,
+                                   ip, name, value,
+                                   report_uuid,
+                                   "Report Host Detail",
+                                   source_name);
+}
+
+/**
  * @brief Add host details to a report host.
  *
  * @param[in]  report  UUID of resource.
@@ -488,6 +615,14 @@ manage_report_host_details (report_t report, const char *ip,
           value = entity_child (detail, "value");
           if (value == NULL)
             goto error;
+
+          /* Always collect snapshot identifiers. */
+          asset_snapshot_add_report_host_identifier (
+            ip,
+            entity_text (name),
+            entity_text (value),
+            uuid,
+            entity_text (source_name));
 
           if (!check_host_detail_exists (report, ip, entity_text (source_type),
                                          entity_text (source_name),
@@ -578,12 +713,12 @@ manage_report_host_details (report_t report, const char *ip,
         }
       details = next_entities (details);
     }
-  free (uuid);
+  g_free (uuid);
 
   return 0;
 
  error:
-  free (uuid);
+  g_free (uuid);
   return -1;
 }
 
@@ -825,6 +960,82 @@ create_asset_report (const char *report_id, const char *term)
 }
 
 /**
+ * @brief Collect asset snapshot host identifiers from a report.
+ *
+ * @param[in] report_id  Report UUID string.
+ *
+ * @return 0 on success, 1 if report not found, 99 permission denied,
+ *         -1 on error.
+ */
+int
+asset_snapshot_collect_report_identifiers (const char *report_id)
+{
+  resource_t r = 0;
+  iterator_t hosts;
+
+  if (!report_id)
+    return -1;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("get_reports") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_report_with_permission (report_id, &r, "get_reports"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (r == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  /* Iterate report hosts and their host details from DB. */
+  init_report_host_iterator (&hosts, r, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *host;
+      report_host_t report_host;
+      iterator_t details;
+
+      host = host_iterator_host (&hosts);
+      report_host = host_iterator_report_host (&hosts);
+
+      if (report_host_dead (report_host)
+          || report_host_result_count (report_host) == 0)
+        continue;
+
+      init_report_host_details_iterator (&details, report_host);
+      while (next (&details))
+        {
+          const char *name = report_host_details_iterator_name (&details);
+          const char *value = report_host_details_iterator_value (&details);
+          const char *src_name = report_host_details_iterator_source_name (&details);
+
+          /* Fills snapshot_* . */
+          asset_snapshot_add_report_host_identifier (
+            host,
+            name,
+            value,
+            report_id,
+            src_name);
+        }
+      cleanup_iterator (&details);
+    }
+  cleanup_iterator (&hosts);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
  * @brief Free an identifier.
  *
  * @param[in]  identifier  Identifier.
@@ -842,6 +1053,467 @@ identifier_free (identifier_t *identifier)
       g_free (identifier->source_data);
     }
 }
+
+/**
+ * @brief Initialize iterator for asset_snapshots filtered by task/report.
+ *
+ * @param[out] iterator          Iterator to initialize.
+ * @param[in]  task              Filter by task_id (0 means "any task").
+ * @param[in]  report            Filter by report_id (0 means "any report").
+ * @param[in]  only_missing_key  If true, only rows with asset_key IS NULL.
+ */
+static void
+init_asset_snapshot_iterator (iterator_t *iterator,
+                              task_t task,
+                              report_t report,
+                              gboolean only_missing_key)
+{
+  g_return_if_fail (iterator);
+
+  GString *where = g_string_new (" WHERE 1=1");
+
+  if (task)
+    g_string_append_printf (where, " AND task_id = %llu", task);
+
+  if (report)
+    g_string_append_printf (where, " AND report_id = %llu", report);
+
+  if (only_missing_key)
+    g_string_append (where, " AND asset_key IS NULL");
+
+  gchar *query = g_strdup_printf (
+    "SELECT id, uuid, task_id, report_id, asset_type,"
+    "       ip_address, hostname, mac_address, agent_id,"
+    "       container_digest, asset_key, creation_time, modification_time"
+    "  FROM asset_snapshots"
+    "%s"
+    " ORDER BY id ASC;",
+    where->str);
+
+  init_iterator (iterator, "%s", query);
+
+  g_free (query);
+  g_string_free (where, TRUE);
+}
+
+/**
+ * @brief Return the current asset snapshot ID from an iterator row.
+ *
+ * @param it Iterator positioned on an asset_snapshot row.
+ *
+ * @return Asset snapshot ID, or 0 if @p it is done.
+ */
+static asset_snapshot_t
+asset_snapshot_iterator_id (iterator_t *it)
+{
+  if (it->done) return 0;
+  return iterator_int64 (it, AS_COL_ID);
+}
+
+/** @brief Get the asset snapshot UUID from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_uuid, AS_COL_UUID)
+
+/** @brief Get the IP address from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_ip_address, AS_COL_IP_ADDRESS);
+
+/** @brief Get the hostname from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_hostname, AS_COL_HOSTNAME);
+
+/** @brief Get the MAC address from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_mac_address, AS_COL_MAC_ADDRESS);
+
+/** @brief Get the agent ID from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_agent_id, AS_COL_AGENT_ID);
+
+/** @brief Get the container digest from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_container_digest, AS_COL_CONTAINER_DIGEST);
+
+/** @brief Get the asset key from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_asset_key, AS_COL_ASSET_KEY);
+
+/**
+ * @brief Get most recent asset_key for a given MAC address.
+ *
+ * @param[in] mac  MAC address string.
+ *
+ * @return Newly allocated asset_key string, or NULL if none found / input empty.
+ */
+static gchar *
+get_asset_key_by_mac (const gchar *mac)
+{
+  if (!mac || !*mac)
+    return NULL;
+
+  gchar *q_mac = sql_quote (mac);
+  gchar *key = sql_string (
+    "SELECT asset_key FROM asset_snapshots"
+    " WHERE mac_address = '%s'"
+    "   AND asset_key IS NOT NULL"
+    " ORDER BY modification_time DESC LIMIT 1;",
+    q_mac);
+
+  g_free (q_mac);
+  return key;
+}
+
+/**
+* @brief Get most recent asset_key for a given hostname.
+ *
+ * @param[in] hostname  Hostname string.
+ *
+ * @return Newly allocated asset_key string, or NULL if none found / input empty.
+ */
+static gchar *
+get_asset_key_by_hostname (const gchar *hostname)
+{
+  if (!hostname || !*hostname)
+    return NULL;
+
+  gchar *q_hn = sql_quote (hostname);
+  gchar *key = sql_string (
+    "SELECT asset_key FROM asset_snapshots"
+    " WHERE hostname = '%s'"
+    "   AND asset_key IS NOT NULL"
+    " ORDER BY modification_time DESC LIMIT 1;",
+    q_hn);
+
+  g_free (q_hn);
+  return key;
+}
+
+/**
+* @brief Get most recent asset_key for a given IP address.
+ *
+ * @param[in] ip  IP address string.
+ *
+ * @return Newly allocated asset_key string, or NULL if none found / input empty.
+ */
+static gchar *
+get_asset_key_by_ip (const gchar *ip)
+{
+  if (!ip || !*ip)
+    return NULL;
+
+  gchar *q_ip = sql_quote (ip);
+  gchar *key = sql_string (
+    "SELECT asset_key FROM asset_snapshots"
+    " WHERE ip_address = '%s'"
+    "   AND asset_key IS NOT NULL"
+    " ORDER BY modification_time DESC LIMIT 1;",
+    q_ip);
+
+  g_free (q_ip);
+  return key;
+}
+
+/**
+ * @brief Set asset_key for asset_snapshots rows of a report.
+ *
+ * Priority:
+ *   1) MAC address: same MAC use same asset_key
+ *   2) Hostname:    same hostname use same asset_key (even across IPs)
+ *   3) IP:     if hostname/mac missing, reuse most recent key for that IP
+ *
+ * @param[in] report  Report the snapshot rows belong to (0 means any report).
+ * @param[in] task    Task the snapshot rows belong to (0 means any task).
+ */
+static void
+asset_snapshots_set_asset_keys (report_t report, task_t task)
+{
+  iterator_t it;
+
+  /* iterate only rows that still need a key */
+  init_asset_snapshot_iterator (&it, task, report, TRUE);
+
+  while (next (&it))
+    {
+      asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
+      const char *ip = asset_snapshot_iterator_ip_address (&it);
+      const char *hostname = asset_snapshot_iterator_hostname (&it);
+      const char *mac = asset_snapshot_iterator_mac_address (&it);
+
+      gchar *asset_key = NULL;
+
+      /** TODO: 16.12.2025 ozgen - Update this merge algorithm
+       *                           once the final approach is defined.
+       */
+      /* MAC */
+      if (mac && *mac)
+        asset_key = get_asset_key_by_mac (mac);
+
+      /* Hostname */
+      if ((asset_key == NULL || *asset_key == '\0') && hostname && *hostname)
+        {
+          g_free (asset_key);
+          asset_key = get_asset_key_by_hostname (hostname);
+        }
+
+      /* IP fallback */
+      if ((asset_key == NULL || *asset_key == '\0')
+          && ip && *ip
+          && (!hostname || !*hostname)
+          && (!mac || !*mac))
+        {
+          g_free (asset_key);
+          asset_key = get_asset_key_by_ip (ip);
+        }
+
+      if (asset_key && *asset_key)
+        {
+          gchar *insert_key = sql_insert (asset_key);
+          sql ("UPDATE asset_snapshots"
+               "   SET asset_key = %s,"
+               "       modification_time = m_now()"
+               " WHERE id = %llu;",
+               insert_key,
+               row_id);
+          g_free (insert_key);
+        }
+      else
+        {
+          /* no match found anywhere, create new stable key */
+          sql ("UPDATE asset_snapshots"
+               "   SET asset_key = make_uuid(),"
+               "       modification_time = m_now()"
+               " WHERE id = %llu;",
+               row_id);
+        }
+
+      g_free (asset_key);
+    }
+
+  cleanup_iterator (&it);
+}
+
+/**
+ * @brief Insert one asset snapshot per host from snapshot host identifiers.
+ *
+ * @param[in]  report     Report that the host identifiers come from.
+ * @param[in]  task       Task that produced the report.
+ */
+static void
+asset_snapshots_insert_target (report_t report, task_t task)
+{
+  if (!snapshot_identifier_hosts || snapshot_identifier_hosts->len == 0)
+    {
+      g_debug (
+        "%s: skip: snapshot_identifier_hosts empty (task=%llu report=%llu)",
+        __func__, task, report);
+      goto cleanup;
+    }
+
+  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
+
+  for (guint host_index = 0;
+       snapshot_identifier_hosts && host_index < snapshot_identifier_hosts->len;
+       host_index++)
+    {
+      const gchar *ip = g_ptr_array_index (snapshot_identifier_hosts, host_index);
+      if (!ip || !*ip)
+          continue;
+
+      if (report_host_noticeable (report, ip) == 0)
+          continue;
+
+      if (g_hash_table_contains (seen, ip))
+          continue;
+
+      g_hash_table_add (seen, g_strdup (ip));
+
+      const gchar *hostname = NULL;
+      const gchar *mac = NULL;
+
+      if (snapshot_identifiers && snapshot_identifiers->len > 0)
+        {
+          for (guint i = 0; i < snapshot_identifiers->len; i++)
+            {
+              identifier_t *id = g_ptr_array_index (snapshot_identifiers, i);
+              if (!id || !id->ip || g_strcmp0 (id->ip, ip) != 0)
+                continue;
+
+              if (id->name && id->value && strcmp (id->name, "hostname") == 0)
+                hostname = id->value;
+              else if (id->name && id->value && strcmp (id->name, "MAC") == 0)
+                mac = id->value;
+
+              if (hostname && mac)
+                break;
+            }
+        }
+
+      gchar *insert_ip = sql_insert (ip);
+
+      gchar *insert_hostname = hostname ? sql_insert (hostname) : g_strdup ("NULL");
+      gchar *insert_mac      = mac      ? sql_insert (mac)      : g_strdup ("NULL");
+
+      sql ("INSERT INTO asset_snapshots"
+           " (uuid, task_id, report_id, asset_type,"
+           "  ip_address, hostname, mac_address,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), %llu, %llu, %d, %s, %s, %s, m_now (), m_now ());",
+           task, report, ASSET_TYPE_TARGET,
+           insert_ip, insert_hostname, insert_mac);
+
+      g_free (insert_ip);
+      g_free (insert_hostname);
+      g_free (insert_mac);
+    }
+
+  g_hash_table_destroy (seen);
+
+cleanup:
+  /* Consume snapshot arrays: terminate then free. */
+  if (snapshot_identifiers)
+    {
+      array_terminate (snapshot_identifiers);
+      snapshot_identifiers = NULL;
+    }
+  if (snapshot_identifier_hosts)
+    {
+      array_terminate (snapshot_identifier_hosts);
+      snapshot_identifier_hosts = NULL;
+    }
+}
+
+/**
+ * @brief Create target asset snapshots for a report, unless it is a discovery scan.
+ *
+ * @param[in]  report     Report that the host identifiers come from.
+ * @param[in]  task       Task that produced the report.
+ * @param[in]  discovery  Whether the report is a discovery scan.
+ */
+void
+asset_snapshots_target (report_t report, task_t task, gboolean discovery)
+{
+  if (discovery)
+    {
+      g_debug ("%s: Discovery scan assets will not stored for counting",
+               __func__);
+      /* Terminate and free snapshot arrays. */
+      if (snapshot_identifiers)
+        {
+          array_terminate (snapshot_identifiers);
+          snapshot_identifiers = NULL;
+        }
+      if (snapshot_identifier_hosts)
+        {
+          array_terminate (snapshot_identifier_hosts);
+          snapshot_identifier_hosts = NULL;
+        }
+      return;
+    }
+  /* Store asset snapshot without asset_key*/
+  asset_snapshots_insert_target (report, task);
+  /* Set asset_key for asset_snapshots  */
+  asset_snapshots_set_asset_keys (report, task);
+}
+
+#if ENABLE_AGENTS
+/**
+ * @brief Create agent asset snapshots for a completed report.
+ *
+ * @param[in]  report  Report the snapshot belongs to.
+ * @param[in]  task    Task that produced the report.
+ * @param[in]  group   Agent group.
+ */
+void
+asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
+{
+  agent_uuid_list_t agent_uuids;
+
+  agent_uuids = agent_uuid_list_from_group (group);
+  if (agent_uuids == NULL || agent_uuids->count <= 0 || agent_uuids->agent_uuids == NULL)
+    {
+      if (agent_uuids)
+        agent_uuid_list_free (agent_uuids);
+      return;
+    }
+
+  for (int i = 0; i < agent_uuids->count; i++)
+    {
+      const gchar *agent_uuid = agent_uuids->agent_uuids[i];
+      gchar *agent_id = NULL;
+      gchar *q_agent_id = NULL;
+
+      if (agent_uuid == NULL || *agent_uuid == '\0')
+        continue;
+
+      agent_id = agent_id_by_uuid (agent_uuid);
+      if (agent_id == NULL || *agent_id == '\0')
+        {
+          g_free (agent_id);
+          continue;
+        }
+
+      q_agent_id   = sql_quote (agent_id);
+
+      sql ("INSERT INTO asset_snapshots"
+           " (uuid, task_id, report_id, asset_type,"
+           "  asset_key, agent_id,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
+           task, report, ASSET_TYPE_AGENT,
+           agent_uuid, q_agent_id);
+
+      g_free (q_agent_id);
+      g_free (agent_id);
+    }
+
+  agent_uuid_list_free (agent_uuids);
+}
+#endif /* ENABLE_AGENTS */
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Create container scanning asset snapshots for a completed report.
+ *
+ * @param[in]  report  Report the snapshot belongs to.
+ * @param[in]  task    Task that produced the report.
+ */
+void
+asset_snapshots_container_image (report_t report, task_t task)
+{
+  oci_image_target_t image_target;
+  gchar *image_ref = NULL;
+  gchar *image_uuid = NULL;
+  gchar *q_image_ref = NULL;
+
+  image_target = task_oci_image_target (task);
+  if (image_target == 0)
+    return;
+  /**
+   * TODO: 18.12.2025 ozgen - container digest must be included in the scan
+   *                          results and should be used instead of
+   *                          image references for asset_key/stable identity
+   */
+  image_ref = oci_image_target_image_references (image_target);
+  image_uuid = oci_image_target_uuid (image_target);
+
+  if (image_uuid == NULL || *image_uuid == '\0')
+    goto cleanup;
+
+  if (image_ref && *image_ref)
+    q_image_ref = sql_quote (image_ref);
+
+  sql ("INSERT INTO asset_snapshots"
+       " (uuid, task_id, report_id, asset_type,"
+       "  asset_key, container_digest,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
+       task, report, ASSET_TYPE_CONTAINER_IMAGE,
+       image_uuid,
+       q_image_ref ? q_image_ref : "NULL");
+
+  cleanup:
+    g_free (q_image_ref);
+  g_free (image_ref);
+  g_free (image_uuid);
+}
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 /**
  * @brief Setup hosts and their identifiers after a scan, from host details.

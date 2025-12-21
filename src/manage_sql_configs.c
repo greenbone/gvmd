@@ -2000,7 +2000,7 @@ task_preference_value (task_t task, const char *name)
  * @param[in]  preferences  Preferences.
  *
  * @return 0 success, 1 invalid auto_delete value, 2 auto_delete_data out of
- *         range.
+ *         range, 3 in_assets cannot be set for Container Image scanners.
  */
 int
 set_task_preferences (task_t task, array_t *preferences)
@@ -2035,9 +2035,12 @@ set_task_preferences (task_t task, array_t *preferences)
                           || keep > AUTO_DELETE_KEEP_MAX)
                         return 2;
                     }
-
+                  int type = scanner_type (task_scanner (task));
                   if ((strcmp (pair->name, "in_assets") == 0)
-                      && scanner_type (task_scanner (task)) == SCANNER_TYPE_CVE)
+                      && type == SCANNER_TYPE_CONTAINER_IMAGE)
+                      return 3;
+                  else if ((strcmp (pair->name, "in_assets") == 0)
+                      && type == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");
                   else
                     quoted_value = sql_quote (pair->value);

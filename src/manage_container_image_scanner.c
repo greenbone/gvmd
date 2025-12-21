@@ -12,6 +12,7 @@
 #if ENABLE_CONTAINER_SCANNING
 
 #include "debug_utils.h"
+#include "manage_assets.h"
 #include "manage_container_image_scanner.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
@@ -134,7 +135,11 @@ add_container_image_scan_result (http_scanner_result_t res,
 
   type = convert_http_scanner_type_to_osp_type (res->type);
   test_id = res->oid;
-  host = res->ip_address;
+  // hostname is used as host since there is no IP
+  if (res->hostname && g_str_has_prefix (res->hostname, "oci://"))
+    host = res->hostname + strlen ("oci://");
+  else
+    host = res->hostname;
   hostname = res->hostname;
   port = res->port;
 
@@ -142,6 +147,9 @@ add_container_image_scan_result (http_scanner_result_t res,
   severity_str = nvt_severity (test_id, type);
   desc = res->message;
   qod_int = get_http_scanner_nvti_qod (test_id);
+
+  if (host)
+    manage_report_host_add (rep_aux->report, host, 0, 0);
 
   char *hash_value;
   if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
@@ -679,6 +687,7 @@ fork_container_image_scan_handler (task_t task,
       set_task_run_status (task, TASK_STATUS_PROCESSING);
       set_report_scan_run_status (global_current_report,
                                   TASK_STATUS_PROCESSING);
+      asset_snapshots_container_image (global_current_report, task);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
