@@ -17569,6 +17569,13 @@ struct print_report_context
   gchar *tz;                  ///< TZ.
   gchar *zone;                ///< Zone.
   char *old_tz_override;      ///< Old TZ.
+  // Counts.
+  int criticals;              ///< Number of criticals.
+  int holes;                  ///< Number of holes.
+  int infos;                  ///< Number of infos.
+  int logs;                   ///< Number of logs.
+  int warnings;               ///< Number of warnings.
+  int false_positives;        ///< Number of false positives.
 };
 
 /**
@@ -17669,7 +17676,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int criticals = 0, holes, infos, logs, warnings, false_positives;
   int f_criticals = 0, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
@@ -17902,11 +17908,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             {
               /* Beware, we're using the full variables temporarily here, but
               * report_counts_id counts the filtered results. */
-              report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
-                                &false_positives, NULL, get, NULL);
+              report_counts_id (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs, &ctx.warnings,
+                                &ctx.false_positives, NULL, get, NULL);
 
-              ctx.filtered_result_count = criticals + holes + infos + logs
-                                          + warnings + false_positives;
+              ctx.filtered_result_count = ctx.criticals + ctx.holes + ctx.infos + ctx.logs
+                                          + ctx.warnings + ctx.false_positives;
 
             }
         }
@@ -18342,8 +18348,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           /* We're getting all the filtered results, so we can count them as we
           * print them, to save time. */
-          report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                                 &warnings, &false_positives, &severity,
+          report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                                 &ctx.warnings, &ctx.false_positives, &severity,
                                  get, NULL, NULL, NULL, NULL, NULL,
                                  NULL, NULL, NULL);
 
@@ -18351,8 +18357,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           f_false_positives = f_severity = 0;
         }
     else
-      report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                             &warnings, &false_positives, &severity,
+      report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                             &ctx.warnings, &ctx.false_positives, &severity,
                              get, NULL,
                              &f_criticals, &f_holes, &f_infos, &f_logs,
                              &f_warnings, &f_false_positives, &f_severity);
@@ -18727,23 +18733,23 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 total_result_count,
                 total_result_count,
                 ctx.filtered_result_count,
-                criticals,
+                ctx.criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                logs,
+                ctx.logs,
                 (strchr (levels, 'g') ? f_logs : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                false_positives,
+                ctx.false_positives,
                 (strchr (levels, 'f') ? f_false_positives : 0));
 
           PRINT (out,
