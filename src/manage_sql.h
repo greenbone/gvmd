@@ -188,7 +188,10 @@ int
 manage_db_empty ();
 
 gchar**
-get_db_table_column_names (const gchar*);
+get_db_table_column_names (const gchar*, const gchar*);
+
+int
+db_table_has_column(const gchar*, const gchar*, const gchar*);
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);

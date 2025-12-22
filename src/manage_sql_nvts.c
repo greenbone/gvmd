@@ -57,11 +57,6 @@
 static GHashTable *nvts_discovery_oid_cache = NULL;
 static GMutex nvts_discovery_oid_cache_lock;
 
-/**
- * @brief Cache of column names for 'nvts' table
- */
-static gchar **nvts_column_names = NULL;
-
 
 /* Headers from backend specific manage_xxx.c file. */
 
@@ -143,30 +138,7 @@ set_vt_sev_insert_size (int new_size)
 }
 
 /**
- * @brief Fetch column names from 'nvts' table and store result as
- *        glib style vector in static variable 'nvts_column_names'
- */
-void
-fetch_nvts_column_names ()
-{
-  // Free any existing memory
-  if (nvts_column_names)
-    {
-      gchar **col = nvts_column_names;
-      while (*col)
-        {
-          g_free (*col);
-          col++;
-        }
-      g_free (nvts_column_names);
-    }
-
-  nvts_column_names = get_db_table_column_names ("nvts");
-}
-
-/**
- * @brief Ensures the sanity of nvts cache in DB and fetches column names for
- *        nvts table.
+ * @brief Ensures the sanity of nvts cache in DB.
  */
 void
 check_db_nvts ()
@@ -181,8 +153,6 @@ check_db_nvts ()
     sql ("INSERT INTO %s.meta (name, value)"
          " VALUES ('update_nvti_cache', 0);",
          sql_schema ());
-
-  fetch_nvts_column_names ();
 }
 
 /**
@@ -2123,7 +2093,6 @@ nvts_oids_all_discovery_cached (GSList *oids)
   return TRUE;
 }
 
-
 /**
  * @brief Validates sort_field for nvts table
  *
@@ -2132,8 +2101,5 @@ nvts_oids_all_discovery_cached (GSList *oids)
 int
 validate_nvts_sort_field (const char* sort_field)
 {
-  if (vector_find_string ((const gchar **)nvts_column_names, sort_field))
-    return 0;
-
-  return -1;
+  return !db_table_has_column ("public", "nvts", sort_field);
 }
