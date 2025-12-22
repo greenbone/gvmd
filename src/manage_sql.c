@@ -17641,6 +17641,58 @@ print_report_init_zone (print_report_context_t *ctx)
 }
 
 /**
+ * @brief Get result count totals for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_get_totals (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit"))
+    {
+      if (ctx->delta == 0)
+        {
+          int total_criticals = 0, total_holes, total_infos, total_logs;
+          int total_warnings, total_false_positives;
+          get_data_t *all_results_get;
+
+          all_results_get = report_results_get_data (1, -1, 0, 0);
+
+          report_counts_id (ctx->report, &total_criticals, &total_holes,
+                            &total_infos, &total_logs, &total_warnings,
+                            &total_false_positives, NULL, all_results_get,
+                            NULL);
+
+          ctx->total_result_count = total_criticals + total_holes
+                                    + total_infos + total_logs
+                                    + total_warnings + total_false_positives;
+          get_data_reset (all_results_get);
+          free (all_results_get);
+        }
+
+      /* Get total counts of filtered results. */
+
+      if (ctx->count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+           * print them, to save time. */
+          ctx->filtered_result_count = 0;
+        }
+      else
+        {
+          /* Beware, we're using the full variables temporarily here, but
+           * report_counts_id counts the filtered results. */
+          report_counts_id (ctx->report, &ctx->criticals, &ctx->holes, &ctx->infos, &ctx->logs, &ctx->warnings,
+                            &ctx->false_positives, NULL, ctx->get, NULL);
+
+          ctx->filtered_result_count = ctx->criticals + ctx->holes + ctx->infos + ctx->logs
+                                       + ctx->warnings + ctx->false_positives;
+
+        }
+    }
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17880,51 +17932,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (report)
     {
       /* Get total counts of full results. */
-      if (strcmp (ctx.tsk_usage_type, "audit"))
-        {
-          if (delta == 0)
-            {
-              int total_criticals = 0, total_holes, total_infos, total_logs;
-              int total_warnings, total_false_positives;
-              get_data_t *all_results_get;
+      print_report_get_totals (&ctx);
 
-              all_results_get = report_results_get_data (1, -1, 0, 0);
-
-              report_counts_id (report, &total_criticals, &total_holes,
-                                &total_infos, &total_logs, &total_warnings,
-                                &total_false_positives, NULL, all_results_get,
-                                NULL);
-
-              ctx.total_result_count = total_criticals + total_holes
-                                       + total_infos + total_logs
-                                       + total_warnings + total_false_positives;
-              get_data_reset (all_results_get);
-              free (all_results_get);
-            }
-
-          /* Get total counts of filtered results. */
-
-          if (ctx.count_filtered)
-            {
-              /* We're getting all the filtered results, so we can count them as we
-              * print them, to save time. */
-
-              ctx.filtered_result_count = 0;
-            }
-          else
-            {
-              /* Beware, we're using the full variables temporarily here, but
-              * report_counts_id counts the filtered results. */
-              report_counts_id (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs, &ctx.warnings,
-                                &ctx.false_positives, NULL, get, NULL);
-
-              ctx.filtered_result_count = ctx.criticals + ctx.holes + ctx.infos + ctx.logs
-                                          + ctx.warnings + ctx.false_positives;
-
-            }
-        }
       /* Get report run status. */
-
       report_scan_run_status (report, &run_status);
     }
 
