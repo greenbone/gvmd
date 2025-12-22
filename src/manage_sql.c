@@ -17569,6 +17569,7 @@ struct print_report_context
   gchar *tz;                  ///< TZ.
   gchar *zone;                ///< Zone.
   char *old_tz_override;      ///< Old TZ.
+  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
   // Counts.
   int criticals;              ///< Number of criticals.
   int holes;                  ///< Number of holes.
@@ -17592,6 +17593,7 @@ typedef struct print_report_context print_report_context_t;
 static void
 print_report_context_cleanup (print_report_context_t *ctx)
 {
+  g_free (ctx->tsk_usage_type);
   g_free (ctx->tz);
   g_free (ctx->zone);
   free (ctx->old_tz_override);
@@ -17689,7 +17691,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable  *f_host_incomplete, *f_host_undefined;
   GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
-  gchar *tsk_usage_type = NULL;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
@@ -17789,7 +17790,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   levels = levels ? levels : g_strdup ("chmlgdf");
 
-  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
+  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type (task, &ctx.tsk_usage_type)))
     {
       fclose (out);
       g_free (term);
@@ -17872,7 +17873,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (report)
     {
       /* Get total counts of full results. */
-      if (strcmp (tsk_usage_type, "audit"))
+      if (strcmp (ctx.tsk_usage_type, "audit"))
         {
           if (delta == 0)
             {
@@ -17933,7 +17934,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   filters_extra_buffer = g_string_new ("");
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
 
@@ -17991,7 +17992,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      const char *report_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *report_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                  ? "audit_report"
                                  : "report";
       int tag_count = resource_tag_count (report_type, report, 1);
@@ -18073,7 +18074,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       gchar *progress_xml;
       iterator_t tags;
 
-      const char *task_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *task_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                ? "audit"
                                : "task";
       int task_tag_count = resource_tag_count (task_type, task, 1);
@@ -18313,7 +18314,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int compliance_incomplete = 0, compliance_undefined = 0;
   int total_compliance_count = 0;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       report_compliance_counts (report, get, &compliance_yes, &compliance_no,
                                 &compliance_incomplete, &compliance_undefined);
@@ -18411,7 +18412,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                 g_free, NULL);
@@ -18498,7 +18499,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
 
-          if (strcmp (tsk_usage_type, "audit") == 0)
+          if (strcmp (ctx.tsk_usage_type, "audit") == 0)
             {
               const char* compliance;
               compliance = result_iterator_compliance (&results);
@@ -18613,7 +18614,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Print result counts and severity. */
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       if (delta)
         PRINT (out,
@@ -18787,7 +18788,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (print_report_host_xml (out,
                                          &hosts,
                                          result_host,
-                                         tsk_usage_type,
+                                         ctx.tsk_usage_type,
                                          lean,
                                          host_summary_buffer,
                                          f_host_ports,
@@ -18817,7 +18818,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (print_report_host_xml (out,
                                      &hosts,
                                      NULL,
-                                     tsk_usage_type,
+                                     ctx.tsk_usage_type,
                                      lean,
                                      host_summary_buffer,
                                      f_host_ports,
@@ -18836,7 +18837,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         }
       cleanup_iterator (&hosts);
     }
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       g_hash_table_destroy (f_host_compliant);
       g_hash_table_destroy (f_host_notcompliant);
@@ -18928,7 +18929,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (min_qod);
   g_free (delta_states);
   g_free (compliance_levels);
-  g_free (tsk_usage_type);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
@@ -18959,7 +18959,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
-    if (strcmp (tsk_usage_type, "audit") == 0)
+    if (strcmp (ctx.tsk_usage_type, "audit") == 0)
       {
         g_hash_table_destroy (f_host_compliant);
         g_hash_table_destroy (f_host_notcompliant);
