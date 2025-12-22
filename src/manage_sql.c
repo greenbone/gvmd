@@ -17565,10 +17565,13 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
 struct print_report_context
 {
   int count_filtered;         ///< Whether to count filtered results.
+  report_t delta;             ///< Report to compare with.
   int filtered_result_count;  ///< Filtered result count.
+  const get_data_t *get;      ///< GET command data.
   gchar *tz;                  ///< TZ.
   gchar *zone;                ///< Zone.
   char *old_tz_override;      ///< Old TZ.
+  report_t report;            ///< Report.
   gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
   // Counts.
   int criticals;              ///< Number of criticals.
@@ -17718,6 +17721,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_notcompliant = NULL;
   f_host_incomplete = NULL;
   f_host_undefined = NULL;
+
+  ctx.delta = delta;
+  ctx.get = get;
+  ctx.report = report;
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
