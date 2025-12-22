@@ -17576,6 +17576,7 @@ struct print_report_context
   int logs;                   ///< Number of logs.
   int warnings;               ///< Number of warnings.
   int false_positives;        ///< Number of false positives.
+  int total_result_count;     ///< Total number of results.
 };
 
 /**
@@ -17672,7 +17673,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count;
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
@@ -17702,7 +17702,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
-  total_result_count = 0;
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
@@ -17888,9 +17887,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                 &total_false_positives, NULL, all_results_get,
                                 NULL);
 
-              total_result_count = total_criticals + total_holes + total_infos
-                                  + total_logs + total_warnings
-                                  + total_false_positives;
+              ctx.total_result_count = total_criticals + total_holes
+                                       + total_infos + total_logs
+                                       + total_warnings + total_false_positives;
               get_data_reset (all_results_get);
               free (all_results_get);
             }
@@ -18730,8 +18729,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "<filtered>%i</filtered>"
                 "</false_positive>"
                 "</result_count>",
-                total_result_count,
-                total_result_count,
+                ctx.total_result_count,
+                ctx.total_result_count,
                 ctx.filtered_result_count,
                 ctx.criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
