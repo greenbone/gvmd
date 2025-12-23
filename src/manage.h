@@ -2869,9 +2869,6 @@ set_schedule_timeout (int);
 int
 init_group_iterator (iterator_t *, get_data_t *);
 
-gchar *
-group_users (group_t);
-
 int
 group_count (const get_data_t*);
 

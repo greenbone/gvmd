@@ -30,6 +30,25 @@ group_uuid (group_t group)
 }
 
 /**
+ * @brief Gets users of group as a string.
+ *
+ * @param[in]  group  Group.
+ *
+ * @return Users.
+ */
+gchar *
+group_users (group_t group)
+{
+  return sql_string ("SELECT group_concat (name, ', ')"
+                     " FROM (SELECT users.name FROM users, group_users"
+                     "       WHERE group_users.\"group\" = %llu"
+                     "       AND group_users.user = users.id"
+                     "       GROUP BY users.name)"
+                     "      AS sub;",
+                     group);
+}
+
+/**
  * @brief Create a group from an existing group.
  *
  * @param[in]  name       Name of new group.  NULL to copy from existing.

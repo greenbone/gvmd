@@ -11,6 +11,9 @@
 char*
 group_uuid (group_t);
 
+gchar *
+group_users (group_t);
+
 int
 copy_group (const char *, const char *, const char *, group_t *);
 
