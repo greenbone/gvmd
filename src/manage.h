@@ -2864,12 +2864,6 @@ void
 set_schedule_timeout (int);
 
 
-/* Groups. */
-
-int
-modify_group (const char *, const char *, const char *, const char *);
-
-
 /* Permissions. */
 
 int
