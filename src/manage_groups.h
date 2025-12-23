@@ -37,6 +37,9 @@ int
 delete_group (const char *, int);
 
 int
+modify_group (const char *, const char *, const char *, const char *);
+
+int
 init_group_iterator (iterator_t *, get_data_t *);
 
 int
