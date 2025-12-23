@@ -33035,25 +33035,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 /* Groups. */
 
 /**
- * @brief Gets users of group as a string.
- *
- * @param[in]  group  Group.
- *
- * @return Users.
- */
-gchar *
-group_users (group_t group)
-{
-  return sql_string ("SELECT group_concat (name, ', ')"
-                     " FROM (SELECT users.name FROM users, group_users"
-                     "       WHERE group_users.\"group\" = %llu"
-                     "       AND group_users.user = users.id"
-                     "       GROUP BY users.name)"
-                     "      AS sub;",
-                     group);
-}
-
-/**
  * @brief Filter columns for group iterator.
  */
 #define GROUP_ITERATOR_FILTER_COLUMNS                                         \
