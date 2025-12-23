@@ -4,6 +4,7 @@
  */
 
 #include "manage_groups.h"
+#include "manage_sql_groups.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "sql.h"
@@ -342,4 +343,49 @@ delete_group (const char *group_id, int ultimate)
 
   sql_commit ();
   return 0;
+}
+
+/**
+ * @brief Count number of groups.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of groups in grouped set.
+ */
+int
+group_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
+  return count ("group", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Initialise a group iterator, including observed groups.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
+ *         -1 error.
+ */
+int
+init_group_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "group",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
 }
