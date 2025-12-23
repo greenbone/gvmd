@@ -2867,12 +2867,6 @@ set_schedule_timeout (int);
 /* Groups. */
 
 int
-init_group_iterator (iterator_t *, get_data_t *);
-
-int
-group_count (const get_data_t*);
-
-int
 modify_group (const char *, const char *, const char *, const char *);
 
 
