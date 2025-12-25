@@ -614,7 +614,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
   index = 0;
   while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
     {
-      gchar *contents, *file, *full_file_name;
+      gchar *contents, *file, *full_file_name, *canonicalized_filename;
       gsize contents_size;
       GError *error;
       int ret;
@@ -636,6 +636,23 @@ save_report_format_files (const gchar *report_id, array_t *files,
         }
 
       full_file_name = g_build_filename (dir, file_name, NULL);
+
+      // Detect path traversal
+      canonicalized_filename = g_canonicalize_filename (full_file_name, NULL);
+      if (!g_str_has_prefix (canonicalized_filename, dir))
+        {
+          g_warning ("Potential path traversal attack detected."
+                     " File '%s' breaks out of base directory '%s'",
+                     full_file_name, dir);
+
+          gvm_file_remove_recurse (dir);
+          g_free (canonicalized_filename);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+      g_free (canonicalized_filename);
+      canonicalized_filename = NULL;
 
       error = NULL;
       g_file_set_contents (full_file_name, contents, contents_size, &error);
