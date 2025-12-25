@@ -17564,9 +17564,23 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
  */
 struct print_report_context
 {
-  gchar *tz;              ///< TZ.
-  gchar *zone;            ///< Zone.
-  char *old_tz_override;  ///< Old TZ.
+  int count_filtered;         ///< Whether to count filtered results.
+  report_t delta;             ///< Report to compare with.
+  int filtered_result_count;  ///< Filtered result count.
+  const get_data_t *get;      ///< GET command data.
+  gchar *tz;                  ///< TZ.
+  gchar *zone;                ///< Zone.
+  char *old_tz_override;      ///< Old TZ.
+  report_t report;            ///< Report.
+  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+  // Counts.
+  int criticals;              ///< Number of criticals.
+  int holes;                  ///< Number of holes.
+  int infos;                  ///< Number of infos.
+  int logs;                   ///< Number of logs.
+  int warnings;               ///< Number of warnings.
+  int false_positives;        ///< Number of false positives.
+  int total_result_count;     ///< Total number of results.
 };
 
 /**
@@ -17582,6 +17596,7 @@ typedef struct print_report_context print_report_context_t;
 static void
 print_report_context_cleanup (print_report_context_t *ctx)
 {
+  g_free (ctx->tsk_usage_type);
   g_free (ctx->tz);
   g_free (ctx->zone);
   free (ctx->old_tz_override);
@@ -17626,6 +17641,58 @@ print_report_init_zone (print_report_context_t *ctx)
 }
 
 /**
+ * @brief Get result count totals for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_get_totals (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit"))
+    {
+      if (ctx->delta == 0)
+        {
+          int total_criticals = 0, total_holes, total_infos, total_logs;
+          int total_warnings, total_false_positives;
+          get_data_t *all_results_get;
+
+          all_results_get = report_results_get_data (1, -1, 0, 0);
+
+          report_counts_id (ctx->report, &total_criticals, &total_holes,
+                            &total_infos, &total_logs, &total_warnings,
+                            &total_false_positives, NULL, all_results_get,
+                            NULL);
+
+          ctx->total_result_count = total_criticals + total_holes
+                                    + total_infos + total_logs
+                                    + total_warnings + total_false_positives;
+          get_data_reset (all_results_get);
+          free (all_results_get);
+        }
+
+      /* Get total counts of filtered results. */
+
+      if (ctx->count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+           * print them, to save time. */
+          ctx->filtered_result_count = 0;
+        }
+      else
+        {
+          /* Beware, we're using the full variables temporarily here, but
+           * report_counts_id counts the filtered results. */
+          report_counts_id (ctx->report, &ctx->criticals, &ctx->holes, &ctx->infos, &ctx->logs, &ctx->warnings,
+                            &ctx->false_positives, NULL, ctx->get, NULL);
+
+          ctx->filtered_result_count = ctx->criticals + ctx->holes + ctx->infos + ctx->logs
+                                       + ctx->warnings + ctx->false_positives;
+
+        }
+    }
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17663,15 +17730,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count;
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int criticals = 0, holes, infos, logs, warnings, false_positives;
   int f_criticals = 0, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact, apply_overrides, count_filtered;
+  int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   GHashTable *f_host_ports;
@@ -17681,7 +17746,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable  *f_host_incomplete, *f_host_undefined;
   GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
-  gchar *tsk_usage_type = NULL;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
@@ -17694,7 +17758,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
-  total_result_count = filtered_result_count = 0;
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
@@ -17710,6 +17773,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_notcompliant = NULL;
   f_host_incomplete = NULL;
   f_host_undefined = NULL;
+
+  ctx.delta = delta;
+  ctx.get = get;
+  ctx.report = report;
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
@@ -17782,7 +17849,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   levels = levels ? levels : g_strdup ("chmlgdf");
 
-  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
+  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type (task, &ctx.tsk_usage_type)))
     {
       fclose (out);
       g_free (term);
@@ -17860,56 +17927,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta || (ignore_pagination && get->details));
+  ctx.count_filtered = (delta || (ignore_pagination && get->details));
 
   if (report)
     {
       /* Get total counts of full results. */
-      if (strcmp (tsk_usage_type, "audit"))
-        {
-          if (delta == 0)
-            {
-              int total_criticals = 0, total_holes, total_infos, total_logs;
-              int total_warnings, total_false_positives;
-              get_data_t *all_results_get;
+      print_report_get_totals (&ctx);
 
-              all_results_get = report_results_get_data (1, -1, 0, 0);
-
-              report_counts_id (report, &total_criticals, &total_holes,
-                                &total_infos, &total_logs, &total_warnings,
-                                &total_false_positives, NULL, all_results_get,
-                                NULL);
-
-              total_result_count = total_criticals + total_holes + total_infos
-                                  + total_logs + total_warnings
-                                  + total_false_positives;
-              get_data_reset (all_results_get);
-              free (all_results_get);
-            }
-
-          /* Get total counts of filtered results. */
-
-          if (count_filtered)
-            {
-              /* We're getting all the filtered results, so we can count them as we
-              * print them, to save time. */
-
-              filtered_result_count = 0;
-            }
-          else
-            {
-              /* Beware, we're using the full variables temporarily here, but
-              * report_counts_id counts the filtered results. */
-              report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
-                                &false_positives, NULL, get, NULL);
-
-              filtered_result_count = criticals + holes + infos + logs + warnings
-                                      + false_positives;
-
-            }
-        }
       /* Get report run status. */
-
       report_scan_run_status (report, &run_status);
     }
 
@@ -17926,7 +17951,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   filters_extra_buffer = g_string_new ("");
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
 
@@ -17984,7 +18009,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      const char *report_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *report_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                  ? "audit_report"
                                  : "report";
       int tag_count = resource_tag_count (report_type, report, 1);
@@ -18066,7 +18091,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       gchar *progress_xml;
       iterator_t tags;
 
-      const char *task_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *task_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                ? "audit"
                                : "task";
       int task_tag_count = resource_tag_count (task_type, task, 1);
@@ -18306,7 +18331,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int compliance_incomplete = 0, compliance_undefined = 0;
   int total_compliance_count = 0;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       report_compliance_counts (report, get, &compliance_yes, &compliance_no,
                                 &compliance_incomplete, &compliance_undefined);
@@ -18319,7 +18344,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       f_compliance_yes = f_compliance_no = 0;
       f_compliance_incomplete = f_compliance_undefined = 0;
 
-       if (count_filtered == 0)
+       if (ctx.count_filtered == 0)
          {
            report_compliance_f_counts (report,
                                        get,
@@ -18336,12 +18361,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-      if (count_filtered)
+      if (ctx.count_filtered)
         {
           /* We're getting all the filtered results, so we can count them as we
           * print them, to save time. */
-          report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                                 &warnings, &false_positives, &severity,
+          report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                                 &ctx.warnings, &ctx.false_positives, &severity,
                                  get, NULL, NULL, NULL, NULL, NULL,
                                  NULL, NULL, NULL);
 
@@ -18349,8 +18374,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           f_false_positives = f_severity = 0;
         }
     else
-      report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                             &warnings, &false_positives, &severity,
+      report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                             &ctx.warnings, &ctx.false_positives, &severity,
                              get, NULL,
                              &f_criticals, &f_holes, &f_infos, &f_logs,
                              &f_warnings, &f_false_positives, &f_severity);
@@ -18404,7 +18429,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                 g_free, NULL);
@@ -18441,7 +18466,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   overrides_details, sort_order,
                                   sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
-                                  &filtered_result_count,
+                                  &ctx.filtered_result_count,
                                   &orig_f_criticals, &f_criticals,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
@@ -18491,7 +18516,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
 
-          if (strcmp (tsk_usage_type, "audit") == 0)
+          if (strcmp (ctx.tsk_usage_type, "audit") == 0)
             {
               const char* compliance;
               compliance = result_iterator_compliance (&results);
@@ -18499,25 +18524,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (compliance, "yes") == 0)
                 {
                   f_host_result_counts = f_host_compliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_yes++;
                 }
               else if (strcasecmp (compliance, "no") == 0)
                 {
                   f_host_result_counts = f_host_notcompliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_no++;
                 }
               else if (strcasecmp (compliance, "incomplete") == 0)
                 {
                   f_host_result_counts = f_host_incomplete;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_incomplete++;
                 }
               else if (strcasecmp (compliance, "undefined") == 0)
                 {
                   f_host_result_counts = f_host_undefined;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_undefined++;
                 }
               else
@@ -18550,37 +18575,37 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (level, "log") == 0)
                 {
                   f_host_result_counts = f_host_logs;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_logs++;
                 }
               else if (strcasecmp (level, "critical") == 0)
                 {
                   f_host_result_counts = f_host_criticals;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
                   f_host_result_counts = f_host_holes;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_holes++;
                 }
               else if (strcasecmp (level, "medium") == 0)
                 {
                   f_host_result_counts = f_host_warnings;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_warnings++;
                 }
               else if (strcasecmp (level, "low") == 0)
                 {
                   f_host_result_counts = f_host_infos;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_infos++;
                 }
               else if (strcasecmp (level, "false positive") == 0)
                 {
                   f_host_result_counts = f_host_false_positives;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_false_positives++;
                 }
               else
@@ -18606,7 +18631,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Print result counts and severity. */
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       if (delta)
         PRINT (out,
@@ -18624,7 +18649,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
       else
         {
-          if (count_filtered)
+          if (ctx.count_filtered)
             f_compliance_count = f_compliance_yes
                                   + f_compliance_no
                                   + f_compliance_incomplete
@@ -18697,9 +18722,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (levels, 'f') ? orig_f_false_positives : 0));
       else
         {
-          if (count_filtered)
-            filtered_result_count = f_criticals + f_holes + f_infos + f_logs
-                                    + f_warnings + f_false_positives;
+          if (ctx.count_filtered)
+            ctx.filtered_result_count = f_criticals + f_holes + f_infos + f_logs
+                                        + f_warnings + f_false_positives;
 
           PRINT (out,
                 "<result_count>"
@@ -18722,26 +18747,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "<filtered>%i</filtered>"
                 "</false_positive>"
                 "</result_count>",
-                total_result_count,
-                total_result_count,
-                filtered_result_count,
-                criticals,
+                ctx.total_result_count,
+                ctx.total_result_count,
+                ctx.filtered_result_count,
+                ctx.criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                logs,
+                ctx.logs,
                 (strchr (levels, 'g') ? f_logs : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                false_positives,
+                ctx.false_positives,
                 (strchr (levels, 'f') ? f_false_positives : 0));
 
           PRINT (out,
@@ -18780,7 +18805,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (print_report_host_xml (out,
                                          &hosts,
                                          result_host,
-                                         tsk_usage_type,
+                                         ctx.tsk_usage_type,
                                          lean,
                                          host_summary_buffer,
                                          f_host_ports,
@@ -18810,7 +18835,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (print_report_host_xml (out,
                                      &hosts,
                                      NULL,
-                                     tsk_usage_type,
+                                     ctx.tsk_usage_type,
                                      lean,
                                      host_summary_buffer,
                                      f_host_ports,
@@ -18829,7 +18854,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         }
       cleanup_iterator (&hosts);
     }
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       g_hash_table_destroy (f_host_compliant);
       g_hash_table_destroy (f_host_notcompliant);
@@ -18921,7 +18946,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (min_qod);
   g_free (delta_states);
   g_free (compliance_levels);
-  g_free (tsk_usage_type);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
@@ -18952,7 +18976,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
-    if (strcmp (tsk_usage_type, "audit") == 0)
+    if (strcmp (ctx.tsk_usage_type, "audit") == 0)
       {
         g_hash_table_destroy (f_host_compliant);
         g_hash_table_destroy (f_host_notcompliant);
