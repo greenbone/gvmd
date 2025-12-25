@@ -187,6 +187,12 @@ typedef long long int rowid_t;
 int
 manage_db_empty ();
 
+gchar**
+get_db_table_column_names (const gchar*, const gchar*);
+
+int
+db_table_has_column(const gchar*, const gchar*, const gchar*);
+
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
@@ -587,6 +593,9 @@ get_http_scanner_nvti_qod (const char *);
 char *
 convert_http_scanner_type_to_osp_type (const char *);
 #endif
+
+const gchar*
+vector_find_string (const gchar **, const gchar *);
 
 int
 vector_find_filter (const gchar **, const gchar *);
