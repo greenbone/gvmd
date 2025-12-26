@@ -435,7 +435,7 @@ agent_installer_in_use (agent_installer_t agent_installer)
 /**
  * @brief Return whether an agent installer in the trashcan is in use.
  *
- * @param[in]  agent_installer  Agent Installer.
+ * @param[in]  installer  Agent Installer.
  *
  * @return 1 if in use, else 0.
  */
@@ -448,7 +448,7 @@ trash_agent_installer_in_use (agent_installer_t installer)
 /**
  * @brief Return whether an agent installer is writable.
  *
- * @param[in]  target  Target.
+ * @param[in]  installer  Agent installer.
  *
  * @return 1 if writable, else 0.
  */
@@ -461,7 +461,7 @@ agent_installer_writable (agent_installer_t installer)
 /**
  * @brief Return whether a trashcan agent installer is writable.
  *
- * @param[in]  target  Target.
+ * @param[in]  installer  Agent installer.
  *
  * @return 1 if writable, else 0.
  */

@@ -10,6 +10,9 @@
  * Non-SQL generic command handling code for the GVM management layer.
  */
 
+/**
+ * @brief Enable extra GNU functions.
+ */
 #define _GNU_SOURCE
 
 #include <assert.h>

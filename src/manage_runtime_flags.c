@@ -22,19 +22,31 @@
 #define G_LOG_DOMAIN "md   manage"
 
 #ifndef ENABLE_AGENTS
-#  define ENABLE_AGENTS 0
+/**
+ * @brief Whether to enable agents.
+ */
+#define ENABLE_AGENTS 0
 #endif
 
 #ifndef ENABLE_CONTAINER_SCANNING
-#  define ENABLE_CONTAINER_SCANNING 0
+/**
+ * @brief Whether to enable container scanning.
+ */
+#define ENABLE_CONTAINER_SCANNING 0
 #endif
 
 #ifndef OPENVASD
-#  define OPENVASD 0
+/**
+ * @brief Whether to enable openvasd scanners.
+ */
+#define OPENVASD 0
 #endif
 
 #ifndef ENABLE_CREDENTIAL_STORES
-#  define ENABLE_CREDENTIAL_STORES 0
+/**
+ * @brief Whether to enable credential stores.
+ */
+#define ENABLE_CREDENTIAL_STORES 0
 #endif
 
 /**
@@ -54,26 +66,32 @@ get_sysconf_gvmd_config (void)
 }
 
 /**
- * @brief State of a single feature (compile-time and runtime).
- *
- * @var feature_state_t::compiled_in
- * Whether the feature is compiled into this binary (non-zero if yes).
- *
- * @var feature_state_t::enabled
- * Whether the feature is currently enabled at runtime (non-zero if yes).
+ * @brief State of a single feature.
  */
 static feature_state_t feature_agents =
   {ENABLE_AGENTS, 0};
 
+/**
+ * @brief State of a single feature.
+ */
 static feature_state_t feature_container_scanning =
   {ENABLE_CONTAINER_SCANNING, 0};
 
+/**
+ * @brief State of a single feature.
+ */
 static feature_state_t feature_openvasd =
   {ENABLE_OPENVASD, 0};
 
+/**
+ * @brief State of a single feature.
+ */
 static feature_state_t feature_credential_stores =
   {ENABLE_CREDENTIAL_STORES, 0};
 
+/**
+ * @brief State of a single feature.
+ */
 static feature_state_t feature_vt_metadata =
   {1, 0};
 
@@ -162,20 +180,20 @@ read_env_bool (const char *env_name, int *out)
  */
 struct conf_feature_flags
 {
-  int has_agents;
-  int agents;
+  int has_agents;              ///< Whether flag is present.
+  int agents;                  ///< Value of flag.
 
-  int has_container_scanning;
-  int container_scanning;
+  int has_container_scanning;  ///< Whether flag is present.
+  int container_scanning;      ///< Value of flag.
 
-  int has_openvasd;
-  int openvasd;
+  int has_openvasd;            ///< Whether flag is present.
+  int openvasd;                ///< Value of flag.
 
-  int has_credential_store;
-  int credential_store;
+  int has_credential_store;    ///< Whether flag is present.
+  int credential_store;        ///< Value of flag.
 
-  int has_vt_metadata;
-  int vt_metadata;
+  int has_vt_metadata;         ///< Whether flag is present.
+  int vt_metadata;             ///< Value of flag.
 };
 
 /**

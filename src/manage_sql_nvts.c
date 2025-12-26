@@ -14,6 +14,9 @@
  * @brief Enable extra GNU functions.
  */
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
+/**
+ * @brief Enable large file support.
+ */
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 
@@ -55,6 +58,10 @@
  * @brief Cache of Discovery NVT OIDs
  */
 static GHashTable *nvts_discovery_oid_cache = NULL;
+
+/**
+ * @brief Cache lock.
+ */
 static GMutex nvts_discovery_oid_cache_lock;
 
 

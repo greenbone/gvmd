@@ -1697,9 +1697,9 @@ set_last_run_time (time_t *last, time_t now)
 /**
  * @brief Run scheduler management if due; updates last timestamp only on work.
  *
- * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * On fatal error this exits the process.
  *
- * @return void. On fatal error, exits the process.
+ * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
  */
 static void
 run_schedule (periodic_times_t *t)

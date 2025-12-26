@@ -23,12 +23,11 @@
 /* GET_CREDENTIAL_STORES */
 
 /**
- * @struct get_credential_stores_t
  * @brief Parser callback data struct type for get_credential_stores command
  */
 typedef struct
 {
-  get_data_t get;
+  get_data_t get;    ///< Get args.
 } get_credential_stores_t;
 
 /**
@@ -296,12 +295,11 @@ get_credential_stores_run (gmp_parser_t *gmp_parser, GError **error)
 /* MODIFY_credential_store */
 
 /**
- * @struct modify_credential_store_data_t
  * @brief Parser callback struct type for modify_credential_store command
  */
 typedef struct
 {
-  context_data_t *context;
+  context_data_t *context;     ///< XML parser context.
 } modify_credential_store_data_t;
 
 /**
@@ -593,13 +591,12 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 /* VERIFY_credential_store */
 
 /**
- * @struct verify_credential_store_data_t
  * @brief Parser callback struct type for verify_credential_store command
  */
 typedef struct
 {
-  context_data_t *context;
-  gchar *credential_store_id;
+  context_data_t *context;     ///< XML parser context.
+  gchar *credential_store_id;  ///< Credential store ID.
 } verify_credential_store_data_t;
 
 /**

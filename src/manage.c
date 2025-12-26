@@ -1697,6 +1697,18 @@ set_scanner_connection_retry (int new_retry)
 
 /* CVE tasks. */
 
+/**
+ * @brief Check if version is in a given range.
+ *
+ * @param  target      Target version.
+ * @param  start_incl  Start of range (inclusive), or NULL.
+ * @param  start_excl  Start of range (exclusive), or NULL.
+ * @param  end_incl    End of range (inclusive), or NULL.
+ * @param  end_excl    End of range (exclusive), or NULL.
+ *
+ * @return 0 target is within given range, 1 target is outside given range,
+ *         -1 result is undefined.
+ */
 static int
 check_version (const gchar *target, const gchar *start_incl, const gchar *start_excl, const gchar *end_incl, const gchar *end_excl)
 {
@@ -1748,6 +1760,15 @@ check_version (const gchar *target, const gchar *start_incl, const gchar *start_
   return (1);
 }
 
+/**
+ * @brief Check CPE rule match.
+ *
+ * @param[in]  node         CPE match node.
+ * @param[out] match        TRUE if matched.
+ * @param[out] vulnerable   TRUE if vulnerable.
+ * @param[in]  report_host  Report host to get CPEs from.
+ * @param[in]  host_cpe     CPE being checked.
+ */
 static void
 check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable, report_host_t report_host, const char *host_cpe)
 {

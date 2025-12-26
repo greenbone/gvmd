@@ -438,8 +438,6 @@ sql_last_insert_id ()
  * @param[in]  sql    Format string for SQL statement.
  * @param[in]  args   Arguments for format string.
  * @param[out] stmt   Statement return.
- *
- * @return 0 success, 1 gave up, -1 error.
  */
 void
 sql_prepare_internal (int log, const char *sql, va_list args, sql_stmt_t **stmt)
@@ -466,8 +464,6 @@ sql_prepare_internal (int log, const char *sql, va_list args, sql_stmt_t **stmt)
  * @param[in]  sql    SQL statement template in prepared statement syntax.
  * @param[in]  args   Parameters passed as a va_list.
  * @param[out] stmt   Statement return.
- *
- * @return 0 success, 1 gave up, -1 error.
  */
 void
 sql_prepare_ps_internal (int log, const char *sql, va_list args,
@@ -539,7 +535,6 @@ sql_prepare_ps_internal (int log, const char *sql, va_list args,
 /**
  * @brief Execute a statement.
  *
- * @param[in]  retry  Whether to keep retrying while database is busy or locked.
  * @param[in]  stmt   Statement.
  *
  * @return 0 complete, 1 row available in results, -1 error, -2 gave up,
