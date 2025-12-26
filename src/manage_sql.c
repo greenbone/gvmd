@@ -24238,7 +24238,7 @@ validate_credential_kdc_format (const char *kdc_input)
  *                         The caller is responsible for freeing
  *                         the returned string using g_free().
  *
- * @return TRUE if all KDC entries are valid and @joined_out is set; FALSE otherwise.
+ * @return TRUE if all KDC entries are valid and @p joined_out is set; FALSE otherwise.
  */
 static gboolean
 validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
@@ -24282,7 +24282,7 @@ validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
 /**
  * @brief Validate the format of a Kerberos realm string.
  *
- * This function checks whether the given @realm is non-empty and does not
+ * This function checks whether the given @p realm is non-empty and does not
  * contain any whitespace characters.
  *
  * @param[in] realm  A string representing the Kerberos realm.
