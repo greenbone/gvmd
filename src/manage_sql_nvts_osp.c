@@ -764,7 +764,7 @@ update_scanner_preferences_osp (const gchar *update_socket)
 /**
  * @brief Update VTs via OSP.
  *
- * @param[in]  osp_uuid         UUID of ospd-openvas to connect to.
+ * @param[in]  update_socket         Socket to connect to.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
  * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.

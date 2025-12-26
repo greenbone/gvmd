@@ -22,8 +22,12 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-// prefer stack rather than heap so that we use the defaults on usage failure
-// rather than having to check and fail.
+/**
+ * @brief PBA settings.
+ *
+ * Prefer stack rather than heap so that we use the defaults on usage failure
+ * rather than having to check and fail.
+ */
 struct PBASettings settings = {{0}, COUNT_DEFAULT, PREFIX_DEFAULT};
 
 /**

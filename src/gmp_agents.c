@@ -21,12 +21,14 @@
 #include "manage_acl.h"
 
 #undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
 #define G_LOG_DOMAIN "md    gmp"
 
 /* GET_AGENTS. */
 
 /**
- * @struct get_agents_t
  * @brief Structure for storing data related to the <get_agents> GMP command.
  *
  * This structure holds generic data needed for handling agent retrieval
@@ -34,13 +36,17 @@
  */
 typedef struct
 {
-  get_data_t get;
+  get_data_t get;  ///< Get args.
 } get_agents_t;
 
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
 static get_agents_t get_agents_data;
 
 /**
- * @struct modify_agent_data_t
  * @brief Structure for storing context related to the <modify_agent> GMP
  * command.
  *
@@ -52,10 +58,14 @@ typedef struct
   context_data_t *context; ///< XML parsing context for <modify_agent> input.
 } modify_agent_data_t;
 
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
 static modify_agent_data_t modify_agent_data;
 
 /**
- * @struct delete_agent_data_t
  * @brief Structure for storing context related to the <delete_agent> GMP
  * command.
  */
@@ -64,6 +74,11 @@ typedef struct
   context_data_t *context; ///< XML parsing context for <delete_agent> input.
 } delete_agent_data_t;
 
+/**
+ * @brief Parser callback data.
+ *
+ * This is initially 0 because it's a global variable.
+ */
 static delete_agent_data_t delete_agent_data;
 
 /**

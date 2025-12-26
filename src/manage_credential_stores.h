@@ -17,6 +17,9 @@
 #include "manage_resources.h"
 #include <gnutls/gnutls.h>
 
+/**
+ * @brief UUID of Cyberark credential store.
+ */
 #define CREDENTIAL_STORE_UUID_CYBERARK "94e74cbe-0504-4ab1-b96f-0739f786f57c"
 
 /**

@@ -161,14 +161,17 @@
  */
 #define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
 
-/* Struct to be sent as user data to the GFunc for adding results */
+/**
+ * @brief Struct to be sent as user data to the GFunc for adding results
+ */
 struct report_aux {
-  GArray *results_array;
-  report_t report;
-  task_t task;
-  GHashTable *hash_results;
-  GHashTable *hash_hostdetails;
+  GArray *results_array;         ///< Results.
+  report_t report;               ///< Report.
+  task_t task;                   ///< Task.
+  GHashTable *hash_results;      ///< Hash.
+  GHashTable *hash_hostdetails;  ///< Hash.
 };
+
 
 /* Variables */
 

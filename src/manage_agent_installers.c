@@ -323,6 +323,13 @@ agent_installers_json_skip_to_installers (gvm_json_pull_parser_t *parser,
   return 0;
 }
 
+
+/**
+ * @brief Get a field for get_agent_installer_data_from_json.
+ *
+ * @param[in] struct_field  Field in data.
+ * @param[in] json_field    Field in JSON.
+ */
 #define GET_AGENT_INSTALLER_JSON_STR(struct_field, json_field)          \
   data->struct_field = gvm_json_obj_str (json, json_field);             \
   if (data->struct_field == NULL)                                       \
@@ -446,7 +453,7 @@ agent_installers_json_handle_entry (cJSON *entry, gboolean rebuild)
  * The JSON parser is expected to be at the start of the list.
  *
  * @param[in]  parser   The JSON parser.
- * @param[in]  parser   The JSON parser event data structure.
+ * @param[in]  event    The JSON parser event data structure.
  * @param[in]  rebuild  Whether to also update installers with old timestamps.
  *
  * @return 0 success, -1 error.

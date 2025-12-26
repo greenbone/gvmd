@@ -8,8 +8,12 @@
  * @brief The Greenbone Vulnerability Manager management library.
  */
 
-/* For strptime in time.h. */
 #undef _XOPEN_SOURCE
+/**
+ * @brief Enable extra functions.
+ *
+ * For strptime in time.h.
+ */
 #define _XOPEN_SOURCE
 
 /**
@@ -3274,9 +3278,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
+/**
+ * @brief Severity columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #define SEVERITY_FILTER_COLUMNS \
   "false_positive", "log", "low", "medium", "high", "critical"
 
+/**
+ * @brief Agent group columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
 #else
@@ -3296,6 +3306,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
     TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
     NULL}
 
+/**
+ * @brief Group columns for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
     ,{                                                                        \
@@ -3314,6 +3327,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
 
+/**
+ * @brief Query for TASK_SEV_CASE_GUARD.
+ */
 #if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
   #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
 #elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
@@ -3324,6 +3340,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_NO_TARGET_CTX "(target IS NULL)"
 #endif
 
+/**
+ * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #define TASK_SEV_CASE_GUARD "(" TASK_NO_TARGET_CTX " OR opts.ignore_severity != 0)"
 
 /**
@@ -9925,6 +9944,8 @@ report_set_discovery (report_t report, gboolean discovery)
  * @brief Check Discovery flag from the report.
  *
  * @param[in]  report  The report to check the flags.
+ *
+ * @return TRUE if report is from discovery scan.
  */
 gboolean
 check_report_discovery (report_t report)
@@ -17310,7 +17331,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  filtered_result_count       Result count.
  * @param[in]  orig_f_criticals            Result count.
  * @param[in]  f_criticals                 Result count.
- * @param[in]  orig_f_infos                Result count.
+ * @param[in]  orig_f_holes                Result count.
  * @param[in]  f_holes                     Result count.
  * @param[in]  orig_f_infos                Result count.
  * @param[in]  f_infos                     Result count.
@@ -21674,15 +21695,16 @@ target_login_port (target_t target, const char* type)
  * @param[in]   ssh_credential  SSH credential.
  * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
- * @param[in]   smb_credential  SMB credential.
- * @param[in]   esxi_credential ESXi credential.
- * @param[in]   snmp_credential SNMP credential.
+ * @param[in]   smb_credential        SMB credential.
+ * @param[in]   esxi_credential       ESXi credential.
+ * @param[in]   snmp_credential       SNMP credential.
+ * @param[in]   krb5_credential       Kerberos credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests array.
- * @param[in]   alive_test_str  Legacy alive tests string.
+ * @param[in]   alive_tests             Alive tests array.
+ * @param[in]   alive_test_str          Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
- * @param[out]  target          Created target.
+ * @param[out]  target                  Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -22220,7 +22242,8 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests         Alive tests array.
+ * @param[in]   alive_tests            Alive tests array.
+ * @param[in]   alive_test_str         Alive test string.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -41478,6 +41501,8 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  cacert           CA certificate.  NULL to keep current value.
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
+ *
+ * @return 0 success, -1 error.
  */
 int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,

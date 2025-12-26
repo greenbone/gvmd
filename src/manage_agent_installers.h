@@ -19,29 +19,41 @@
 #include <gvm/util/streamvalidator.h>
 #include <stdio.h>
 
+/**
+ * @brief Buffer size to use when reading from agent installer files.
+ */
 #define AGENT_INSTALLER_READ_BUFFER_SIZE 4096
 
+/**
+ * @brief Base size for AGENT_INSTALLER_BASE64_WITH_BREAKS_BUFFER_SIZE
+ */
 #define AGENT_INSTALLER_BASE64_BUFFER_SIZE                \
         ((AGENT_INSTALLER_READ_BUFFER_SIZE / 3 + 2) * 4)
 
+/**
+ * @brief Buffer size for base64 agent installer buffers.
+ */
 #define AGENT_INSTALLER_BASE64_WITH_BREAKS_BUFFER_SIZE    \
         (AGENT_INSTALLER_BASE64_BUFFER_SIZE               \
          + AGENT_INSTALLER_BASE64_BUFFER_SIZE / 76 + 1)   \
 
 typedef resource_t agent_installer_t;
 
+/**
+ * @brief Agent installer data.
+ */
 typedef struct {
-  agent_installer_t row_id;
-  gchar *uuid;
-  gchar *name;
-  gchar *description;
-  gchar *content_type;
-  gchar *file_extension;
-  gchar *installer_path;
-  gchar *version;
-  gchar *checksum;
-  time_t creation_time;
-  time_t modification_time;
+  agent_installer_t row_id;  ///< The agent installer.
+  gchar *uuid;               ///< UUID.
+  gchar *name;               ///< Name.
+  gchar *description;        ///< Description.
+  gchar *content_type;       ///< Context type.
+  gchar *file_extension;     ///< File extension.
+  gchar *installer_path;     ///< Installer path.
+  gchar *version;            ///< Version.
+  gchar *checksum;           ///< Checksum.
+  time_t creation_time;      ///< Timestamp
+  time_t modification_time;  ///< Timestamp.
 } agent_installer_data_t;
 
 void

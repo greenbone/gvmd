@@ -23,13 +23,11 @@
 /* GET_AGENT_GROUPS */
 
 /**
- * @struct get_agent_groups_t
  * @brief data for <get_agent_groups> command
- *
  */
 typedef struct
 {
-    get_data_t get;
+  get_data_t get;  ///< Get args.
 } get_agent_groups_t;
 
 /**
@@ -37,6 +35,9 @@ typedef struct
  */
 static get_agent_groups_t get_agent_groups_data;
 
+/**
+ * @brief Reset command data.
+ */
 static void
 get_agent_groups_reset ()
 {
@@ -180,7 +181,7 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
  */
 typedef struct
 {
-  context_data_t *context;
+  context_data_t *context;     ///< XML parser context.
 } create_agent_group_t;
 
 /**
@@ -487,12 +488,11 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 /* MODIFY_AGENT_GROUP */
 
 /**
- * @struct modify_agent_group_data_t
  * @brief data for <modify_agent_group> command
  */
 typedef struct
 {
-    context_data_t *context;
+  context_data_t *context;     ///< XML parser context.
 } modify_agent_group_data_t;
 
 /**
@@ -500,6 +500,9 @@ typedef struct
  */
 static modify_agent_group_data_t modify_agent_group_data;
 
+/**
+ * @brief Reset command data.
+ */
 static void
 modify_agent_group_reset ()
 {

@@ -13,12 +13,18 @@
 
 #include <glib.h>
 
+/**
+ * @brief Feature state.
+ */
 typedef struct
 {
-  int compiled_in;
-  int enabled;
+  int compiled_in; ///< Whether feature is compiled into binary.
+  int enabled;     ///< Whether feature is currently enabled at runtime.
 } feature_state_t;
 
+/**
+ * @brief Feature ID.
+ */
 typedef enum
 {
   FEATURE_ID_AGENTS = 0,

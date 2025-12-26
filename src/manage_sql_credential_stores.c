@@ -328,7 +328,8 @@ init_credential_store_selector_iterator (iterator_t *iterator,
 /**
  * @brief Create a credential selector structure from an iterator.
  *
- * @param[in]  iterator  The iterator to get data from.
+ * @param[in]  iterator                  The iterator to get data from.
+ * @param[in]  include_credential_types  Whether to add credential types.
  *
  * @return The newly allocated selector.
  */
@@ -1013,6 +1014,8 @@ credential_store_update_preferences (GHashTable *preference_values,
  * @param[in]  comment      Comment to set or NULL to keep old one.
  * @param[in]  preference_values  Preference values to set.
  * @param[out] message      Output for error message.
+ *
+ * @return A member of the return enumeration, eg MODIFY_CREDENTIAL_STORE_OK.
  */
 modify_credential_store_return_t
 modify_credential_store (const char *credential_store_id,

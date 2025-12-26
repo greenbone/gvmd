@@ -13,6 +13,9 @@
 
 #include <time.h>
 
+/**
+ * @brief Semaphore indexes.
+ */
 typedef enum {
   SEMAPHORE_SCAN_UPDATE = 0,
   SEMAPHORE_DB_CONNECTIONS = 1,
