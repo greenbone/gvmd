@@ -29,7 +29,7 @@
 /* GET_AGENTS. */
 
 /**
- * @brief Structure for storing data related to the <get_agents> GMP command.
+ * @brief Structure for storing data related to the `<get_agents>` GMP command.
  *
  * This structure holds generic data needed for handling agent retrieval
  * operations.
@@ -47,7 +47,7 @@ typedef struct
 static get_agents_t get_agents_data;
 
 /**
- * @brief Structure for storing context related to the <modify_agent> GMP
+ * @brief Structure for storing context related to the `<modify_agent>` GMP
  * command.
  *
  * The context is used to accumulate and parse XML input data for modifying
@@ -55,7 +55,7 @@ static get_agents_t get_agents_data;
  */
 typedef struct
 {
-  context_data_t *context; ///< XML parsing context for <modify_agent> input.
+  context_data_t *context; ///< XML parsing context for `<modify_agent>` input.
 } modify_agent_data_t;
 
 /**
@@ -66,12 +66,12 @@ typedef struct
 static modify_agent_data_t modify_agent_data;
 
 /**
- * @brief Structure for storing context related to the <delete_agent> GMP
+ * @brief Structure for storing context related to the `<delete_agent>` GMP
  * command.
  */
 typedef struct
 {
-  context_data_t *context; ///< XML parsing context for <delete_agent> input.
+  context_data_t *context; ///< XML parsing context for `<delete_agent>` input.
 } delete_agent_data_t;
 
 /**
@@ -82,7 +82,7 @@ typedef struct
 static delete_agent_data_t delete_agent_data;
 
 /**
- * @brief Reset the internal state of the <get_agents> command.
+ * @brief Reset the internal state of the `<get_agents>` command.
  *
  */
 static void
@@ -93,7 +93,7 @@ get_agents_reset ()
 }
 
 /**
- * @brief Initialize the <get_agents> GMP command by parsing attributes.
+ * @brief Initialize the `<get_agents>` GMP command by parsing attributes.
  *
  * @param[in] attribute_names  Null-terminated array of attribute names.
  * @param[in] attribute_values Null-terminated array of corresponding attribute
@@ -107,7 +107,7 @@ get_agents_start (const gchar **attribute_names, const gchar **attribute_values)
 }
 
 /**
- * @brief Execute the <get_agents> GMP command.
+ * @brief Execute the `<get_agents>` GMP command.
  *
  * @param[in] gmp_parser Pointer to the GMP parser handling the current session.
  * @param[in] error      Location to store error information, if any occurs.
@@ -319,7 +319,7 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
 /* MODIFY_AGENT. */
 
 /**
- * @brief Reset the internal state for the <modify_agent> GMP command.
+ * @brief Reset the internal state for the `<modify_agent>` GMP command.
  *
  */
 static void
@@ -336,7 +336,7 @@ modify_agent_reset ()
 }
 
 /**
- * @brief Handle the start of an XML element within the <modify_agent> command.
+ * @brief Handle the start of an XML element within the `<modify_agent>` command.
  *
  * @param[in] gmp_parser        Pointer to the active GMP parser instance.
  * @param[in] name              Name of the XML element being parsed.
@@ -353,7 +353,7 @@ modify_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 }
 
 /**
- * @brief Initialize the <modify_agent> GMP command.
+ * @brief Initialize the `<modify_agent>` GMP command.
  *
  * @param[in] gmp_parser        Pointer to the GMP parser instance.
  * @param[in] attribute_names   Null-terminated array of attribute names.
@@ -372,7 +372,7 @@ modify_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
 }
 
 /**
- * @brief Handle the text content of an XML element within <modify_agent>.
+ * @brief Handle the text content of an XML element within `<modify_agent>`.
  *
  * @param[in] text      Pointer to the text content.
  * @param[in] text_len  Length of the text content.
@@ -384,7 +384,7 @@ modify_agent_element_text (const gchar *text, gsize text_len)
 }
 
 /**
- * @brief Handle the end of an XML element within the <modify_agent> command.
+ * @brief Handle the end of an XML element within the `<modify_agent>` command.
  *
  * @param gmp_parser  Pointer to the GMP parser handling the current session.
  * @param error       Location to store error information, if any.
@@ -407,7 +407,7 @@ modify_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
 }
 
 /**
- * @brief Execute the <modify_agent> GMP command.
+ * @brief Execute the `<modify_agent>` GMP command.
  *
  * @param[in] gmp_parser Pointer to the active GMP parser instance.
  * @param[in] error      Location to store error information, if any occurs.
@@ -627,7 +627,7 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
 /* DELETE_AGENT. */
 
 /**
- * @brief Reset the internal state for the <delete_agent> GMP command.
+ * @brief Reset the internal state for the `<delete_agent>` GMP command.
  *
  */
 static void
@@ -644,7 +644,7 @@ delete_agent_reset ()
 }
 
 /**
- * @brief Handle the start of an XML element within the <delete_agent> command.
+ * @brief Handle the start of an XML element within the `<delete_agent>` command.
  *
  * @param[in] gmp_parser        Pointer to the active GMP parser instance.
  * @param[in] name              Name of the XML element being parsed.
@@ -661,7 +661,7 @@ delete_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
 }
 
 /**
- * @brief Initialize the <delete_agent> GMP command.
+ * @brief Initialize the `<delete_agent>` GMP command.
  *
  * @param[in] gmp_parser        Pointer to the GMP parser handling the current
  * session.
@@ -681,7 +681,7 @@ delete_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
 }
 
 /**
- * @brief Handle the text content of an XML element within <delete_agent>.
+ * @brief Handle the text content of an XML element within `<delete_agent>`.
  *
  * @param[in] text      Pointer to the text content.
  * @param[in] text_len  Length of the text content.
@@ -693,14 +693,14 @@ delete_agent_element_text (const gchar *text, gsize text_len)
 }
 
 /**
- * @brief Handle the end of an XML element within the <delete_agent> command.
+ * @brief Handle the end of an XML element within the `<delete_agent>` command.
  *
  * @param[in] gmp_parser  Pointer to the GMP parser handling the current
  * session.
  * @param[in] error       Pointer to a GError to store error details, if any.
  * @param[in] name        Name of the XML element that just ended.
  *
- * @return 1 if the full <delete_agent> command has been parsed and executed,
+ * @return 1 if the full `<delete_agent>` command has been parsed and executed,
  *         0 otherwise.
  */
 int
@@ -719,7 +719,7 @@ delete_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
 }
 
 /**
- * @brief Execute the <delete_agent> GMP command.
+ * @brief Execute the `<delete_agent>` GMP command.
  *
  * @param[in] gmp_parser Pointer to the GMP parser handling the current session.
  * @param[in] error      Pointer to a GError to store error information, if any
