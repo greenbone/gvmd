@@ -23,7 +23,7 @@
 /* GET_AGENT_GROUPS */
 
 /**
- * @brief data for <get_agent_groups> command
+ * @brief data for `<get_agent_groups>` command
  */
 typedef struct
 {
@@ -31,7 +31,7 @@ typedef struct
 } get_agent_groups_t;
 
 /**
- * @brief Parser <get_agent_groups> callback data.
+ * @brief Parser `<get_agent_groups>` callback data.
  */
 static get_agent_groups_t get_agent_groups_data;
 
@@ -488,7 +488,7 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 /* MODIFY_AGENT_GROUP */
 
 /**
- * @brief data for <modify_agent_group> command
+ * @brief data for `<modify_agent_group>` command
  */
 typedef struct
 {
@@ -496,7 +496,7 @@ typedef struct
 } modify_agent_group_data_t;
 
 /**
- * @brief Parser <modify_agent_group> callback data.
+ * @brief Parser `<modify_agent_group>` callback data.
  */
 static modify_agent_group_data_t modify_agent_group_data;
 
@@ -517,7 +517,7 @@ modify_agent_group_reset ()
 }
 
 /**
- * @brief Start the element in the <modify_agent_group> command.
+ * @brief Start the element in the `<modify_agent_group>` command.
  *
  * @param[in] gmp_parser       Active GMP parser instance.
  * @param[in] name             Name of the XML element being parsed.
@@ -537,7 +537,7 @@ modify_agent_group_element_start (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Initialize the <modify_agent_group> GMP command.
+ * @brief Initialize the ``<modify_agent_group>`` GMP command.
  *
  * @param[in] gmp_parser        Active GMP parser instance.
  * @param[in] attribute_names   Null-terminated array of attribute names.
@@ -568,7 +568,7 @@ modify_agent_group_element_text (const gchar *text, gsize text_len)
 }
 
 /**
- * @brief End the XML element within the <modify_agent_group> command.
+ * @brief End the XML element within the `<modify_agent_group>` command.
  *
  * @param[in] gmp_parser  Active GMP parser instance
  * @param[in] error       The errors, if any
@@ -590,7 +590,7 @@ modify_agent_group_element_end (gmp_parser_t *gmp_parser, GError **error,
 }
 
 /**
- * @brief Execute the <modify_agent_group> GMP command.
+ * @brief Execute the `<modify_agent_group>` GMP command.
  *
  * @param[in] gmp_parser  Active GMP parser instance.
  * @param[in] error       the errors, if any.
