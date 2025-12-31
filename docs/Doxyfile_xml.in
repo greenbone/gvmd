@@ -822,7 +822,7 @@ EXCLUDE_SYMBOLS        = DEF_ACCESS
 # command).
 
 EXAMPLE_PATH           = @CMAKE_SOURCE_DIR@ \
-                         @CMAKE_SOURCE_DIR@/doc
+                         @CMAKE_SOURCE_DIR@/docs
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp and
