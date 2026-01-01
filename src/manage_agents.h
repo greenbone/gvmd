@@ -24,7 +24,6 @@
 #include <agent_controller/agent_controller.h>
 
 /**
- * @struct agent_ip_data
  * @brief Represents a single IP address associated with an agent.
  */
 struct agent_ip_data
@@ -34,7 +33,6 @@ struct agent_ip_data
 typedef struct agent_ip_data *agent_ip_data_t;
 
 /**
- * @struct agent_ip_data_list
  * @brief Represents a list of IP addresses for an agent.
  */
 struct agent_ip_data_list
@@ -45,7 +43,6 @@ struct agent_ip_data_list
 typedef struct agent_ip_data_list *agent_ip_data_list_t;
 
 /**
- * @struct agent_data
  * @brief Represents metadata and configuration details for a single agent.
  */
 struct agent_data
@@ -76,7 +73,6 @@ struct agent_data
 typedef struct agent_data *agent_data_t;
 
 /**
- * @struct agent_data_list
  * @brief A collection of agent data.
  */
 struct agent_data_list

@@ -23,7 +23,6 @@
 #include "manage_resources.h"
 
 /**
- * @struct agent_group_data
  * @brief Represents an agent group and its metadata.
  */
 struct agent_group_data
