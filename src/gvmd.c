@@ -50,7 +50,7 @@
 
 /**
  * \page manpage gvmd
- * \htmlinclude doc/gvmd.html
+ * \htmlinclude docs/gvmd.html
  */
 
 #include <locale.h>
