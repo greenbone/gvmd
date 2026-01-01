@@ -30097,6 +30097,13 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
                                         0);
 }
 
+/**
+ * @brief Get the type of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Type.
+ */
 scanner_type_t
 get_scanner_type (scanner_t scanner)
 {
