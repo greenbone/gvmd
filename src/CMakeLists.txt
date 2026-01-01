@@ -176,6 +176,7 @@ set(
   manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
+  manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
   manage_settings.c
@@ -216,6 +217,7 @@ set(
   manage_sql_configs.c
   manage_sql_report_configs.c
   manage_sql_report_formats.c
+  manage_sql_roles.c
   manage_sql_tickets.c
   manage_sql_tls_certificates.c
   manage_sql_nvts_osp.c
@@ -675,6 +677,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
@@ -688,6 +691,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
