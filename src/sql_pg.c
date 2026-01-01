@@ -32,12 +32,6 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-/* Headers of sql.c symbols used only here. */
-
-int
-sql_x (gboolean ps_syntax, char *, va_list args, sql_stmt_t **);
-
-
 /* Types. */
 
 /**
