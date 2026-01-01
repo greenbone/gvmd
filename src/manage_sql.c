@@ -270,7 +270,7 @@ static void
 report_cache_counts (report_t, int, int, const char*);
 
 static gchar *
-reports_extra_where (int, const char *, const char *);
+reports_extra_where (int, const gchar *, const char *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
