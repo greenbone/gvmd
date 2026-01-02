@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: OSP NVT logic
+ * @brief GVM management layer: OSP NVT SQL logic
  *
- * NVT logic specific to OSP in the GVM management layer.
+ * NVT SQL logic specific to OSP in the GVM management layer.
  */
 
 #include "manage_sql_nvts_osp.h"

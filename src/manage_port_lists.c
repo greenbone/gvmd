@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: Port list SQL
+ * @brief GVM management layer: Port lists.
  *
- * The Port List SQL for the GVM management layer.
+ * General functions for managing Port Lists.
  */
 
 #include "manage_port_lists.h"

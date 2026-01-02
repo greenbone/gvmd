@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: SecInfo
+ * @brief GVM management layer: SecInfo SQL
  *
- * The SecInfo parts of the GVM management layer.
+ * The SecInfo SQL parts of the GVM management layer.
  */
 
 /**
