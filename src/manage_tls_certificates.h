@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief GVM management layer: TLS Certificates SQL headers
+ * @brief GVM management layer: TLS Certificates headers
  *
  * Headers for TLS Certificates SQL for the GVM management layer.
  */

@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: NVTs
+ * @brief GVM management layer: NVT SQL
  *
- * The NVT parts of the GVM management layer.
+ * The NVT SQL parts of the GVM management layer.
  */
 
 /**

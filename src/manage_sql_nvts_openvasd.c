@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: openvasd NVT logic
+ * @brief GVM management layer: openvasd NVT SQL logic
  *
- * NVT logic specific to openvasd in the GVM management layer.
+ * NVT SQL logic specific to openvasd in the GVM management layer.
  */
 
 /**
