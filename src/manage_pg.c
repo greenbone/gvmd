@@ -80,42 +80,11 @@ manage_db_empty ()
 }
 
 /**
- * @brief Get list of all column names from a table
- *
- * @param schema The schema the table is located in (e.g. "public")
- * @param table_name Name of the table to fetch column names from
- * @return A glib style string vector on success, NULL on error
- */
-gchar **
-get_db_table_column_names (const gchar* schema, const gchar *table_name)
-{
-  GPtrArray *column_names = g_ptr_array_new ();
-
-  iterator_t column_it;
-  init_ps_iterator (&column_it,
-                    "SELECT column_name"
-                    " FROM information_schema.columns"
-                    " WHERE table_schema = $1"
-                    " AND table_name = $2;",
-                    SQL_STR_PARAM (schema), SQL_STR_PARAM (table_name), NULL);
-
-  while (next (&column_it))
-    {
-      g_ptr_array_add (column_names,
-                       g_strdup (iterator_string (&column_it, 0)));
-    }
-  g_ptr_array_add (column_names, NULL);
-  cleanup_iterator (&column_it);
-
-  return (gchar **) g_ptr_array_free (column_names, FALSE);
-}
-
-/**
  * @brief Check whether a given table has a certain column
  *
  * @param schema The schema the table is located in (e.g. "public")
  * @param table Name of the table to check column for
- * @param column The column o check for existence
+ * @param column The column to check for existence
  * @return 1 if column is present, else 0.
  */
 int

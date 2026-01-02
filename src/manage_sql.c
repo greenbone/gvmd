@@ -546,7 +546,7 @@ array_find_string (array_t *array, const gchar *string)
  *
  * @return The string from the vector if found, else NULL.
  */
-const gchar *
+static const gchar *
 vector_find_string (const gchar **vector, const gchar *string)
 {
   if (vector == NULL)
