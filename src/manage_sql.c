@@ -5989,6 +5989,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 {
   int ret;
   gchar *hash;
+  gboolean use_cache = TRUE;
 
   sql_begin_immediate ();
 
@@ -5997,7 +5998,9 @@ authenticate_any_method (const gchar *username, const gchar *password,
     {
       sql_rollback ();
       g_warning ("%s: Failed to acquire auth_cache lock", __func__);
-      return -1;
+      use_cache = FALSE;
+      // this begin is needed for other queries.
+      sql_begin_immediate ();
     }
 
   if (gvm_auth_ldap_enabled ()
@@ -6010,7 +6013,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       /* Search the LDAP authentication cache first. */
-      if (auth_cache_find (username, password, 0) == 0)
+      if (use_cache && auth_cache_find (username, password, 0) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -6028,7 +6031,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 0);
+          if (use_cache)
+            auth_cache_insert (username, password, 0);
           sql_commit ();
         }
       else
@@ -6044,7 +6048,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       char *key = NULL, *host = NULL;
 
       *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
-      if (auth_cache_find (username, password, 1) == 0)
+      if (use_cache && auth_cache_find (username, password, 1) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -6057,7 +6061,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
       g_free (key);
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 1);
+          if (use_cache)
+            auth_cache_insert (username, password, 1);
           sql_commit ();
         }
       else
@@ -6067,7 +6072,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
-  if (auth_cache_find (username, password, 2) == 0)
+  if (use_cache && auth_cache_find (username, password, 2) == 0)
     {
       auth_cache_refresh (username);
       sql_commit ();
@@ -6085,11 +6090,13 @@ authenticate_any_method (const gchar *username, const gchar *password,
       hash = manage_authentication_hash (password);
       sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
            hash, username);
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     case GMA_SUCCESS:
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     default:
