@@ -50,7 +50,7 @@
 
 /**
  * \page manpage gvmd
- * \htmlinclude doc/gvmd.html
+ * \htmlinclude docs/gvmd.html
  */
 
 #include <locale.h>
@@ -95,6 +95,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_runtime_flags.h"
+#include "manage_roles.h"
 #include "manage_scan_queue.h"
 #include "gmpd.h"
 #include "utils.h"
@@ -1697,9 +1698,9 @@ set_last_run_time (time_t *last, time_t now)
 /**
  * @brief Run scheduler management if due; updates last timestamp only on work.
  *
- * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * On fatal error this exits the process.
  *
- * @return void. On fatal error, exits the process.
+ * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
  */
 static void
 run_schedule (periodic_times_t *t)

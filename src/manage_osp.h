@@ -16,6 +16,9 @@
 #include "manage_openvas.h"
 #include "manage_resources.h"
 
+/**
+ * @brief Connection data.
+ */
 typedef struct
 {
   char *host;               ///< Hostname, IP or socket path of the scanner

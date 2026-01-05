@@ -241,6 +241,8 @@ get_agent_installer_file_start (const gchar **attribute_names,
  * @param[in]  validator   The validator to check validity of the file.
  * @param[out] message     Message to return in case of an error.
  * @param[out] error       GError output.
+ *
+ * @return 0 success, -1 error.
  */
 int
 read_agent_installer_file_and_send_base64 (gmp_parser_t *gmp_parser,

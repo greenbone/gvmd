@@ -2952,9 +2952,6 @@ delete_permissions_cache_for_user (user_t);
 /* Roles. */
 
 int
-manage_get_roles (GSList *, const db_conn_info_t *, int);
-
-int
 init_role_iterator (iterator_t *, get_data_t *);
 
 int
@@ -2971,12 +2968,6 @@ role_uuid (role_t);
 
 gchar *
 role_users (role_t);
-
-int
-trash_role_in_use (role_t);
-
-int
-role_in_use (role_t);
 
 int
 trash_role_writable (role_t);

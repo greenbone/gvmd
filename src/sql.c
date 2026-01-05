@@ -1061,8 +1061,9 @@ sql_int64_0_ps (const char *sql, ...)
  *      using prepared statement syntax.
  *
  * @param[in]  syntax    Expected syntax: 0 printf, 1 prepared statement
- * @param[in]  sql    SQL statement template / format string.
- * @param[in]  args   Arguments to bind to template / format string.
+ * @param[in]  iterator  Iterator.
+ * @param[in]  sql       SQL statement template / format string.
+ * @param[in]  args      Arguments to bind to template / format string.
  */
 static void
 init_iterator_internal (int syntax, iterator_t *iterator, const char *sql,

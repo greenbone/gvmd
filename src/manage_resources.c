@@ -75,7 +75,7 @@ valid_type (const char* type)
 /**
  * @brief Check whether a resource subtype name is valid.
  *
- * @param[in]  subtype  Subtype of resource.
+ * @param[in]  type  Subtype of resource.
  *
  * @return 1 yes, 0 no.
  */

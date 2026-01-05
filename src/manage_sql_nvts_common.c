@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: Common NVT logic
+ * @brief GVM management layer: Common NVT SQL logic
  *
- * Shared NVT logic for the GVM management layer.
+ * Shared NVT SQL logic for the GVM management layer.
  */
 
 #include "iterator.h"

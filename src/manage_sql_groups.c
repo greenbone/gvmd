@@ -11,9 +11,9 @@
 
 /**
  * @file
- * @brief GVM management layer: Asset SQL
+ * @brief GVM management layer: Group SQL
  *
- * The Asset SQL for the GVM management layer.
+ * The Group SQL for the GVM management layer.
  */
 
 /**
