@@ -12886,15 +12886,28 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       password = credential_iterator_password (&credentials);
       public_key = credential_iterator_public_key (&credentials);
 
-      SENDF_TO_CLIENT_OR_FAIL
-       ("<allow_insecure>%d</allow_insecure>"
-        "<login>%s</login>"
-        "<type>%s</type>"
-        "<full_type>%s</full_type>",
-        credential_iterator_allow_insecure (&credentials),
-        login ? login : "",
-        type ? type : "",
-        type ? credential_full_type (type) : "");
+      if (login)
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<login>%s</login>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            login,
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
+      else
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
 
       formats_xml = credential_iterator_formats_xml (&credentials);
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
