@@ -33,6 +33,7 @@
 #include "manage_groups.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_credential_stores.h"
 #include "manage_sql_copy.h"
@@ -35105,43 +35106,6 @@ clean_feed_role_permissions (const char *type,
 /* Roles. */
 
 /**
- * @brief List roles.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- * @param[in]  verbose     Whether to print UUID.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_get_roles (GSList *log_config, const db_conn_info_t *database,
-                  int verbose)
-{
-  iterator_t roles;
-  int ret;
-
-  g_info ("   Getting roles.");
-
-  ret = manage_option_setup (log_config, database,
-                             0 /* avoid_db_check_inserts */);
-  if (ret)
-    return ret;
-
-  init_iterator (&roles, "SELECT name, uuid FROM roles;");
-  while (next (&roles))
-    if (verbose)
-      printf ("%s %s\n", iterator_string (&roles, 0), iterator_string (&roles, 1));
-    else
-      printf ("%s\n", iterator_string (&roles, 0));
-
-  cleanup_iterator (&roles);
-
-  manage_option_cleanup ();
-
-  return 0;
-}
-
-/**
  * @brief Create a role from an existing role.
  *
  * @param[in]  name       Name of new role.  NULL to copy from existing.
@@ -35558,32 +35522,6 @@ int
 trash_role_writable (role_t role)
 {
   return 1;
-}
-
-/**
- * @brief Check whether a role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-role_in_use (role_t role)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_role_in_use (role_t role)
-{
-  return 0;
 }
 
 /**
