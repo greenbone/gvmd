@@ -82,12 +82,13 @@ manage_db_empty ()
 /**
  * @brief Check whether a given table has a certain column
  *
- * @param schema The schema the table is located in (e.g. "public")
- * @param table Name of the table to check column for
- * @param column The column to check for existence
+ * @param  schema  The schema the table is located in (e.g. "public")
+ * @param  table   Name of the table to check column for
+ * @param  column  The column to check for existence
+ *
  * @return 1 if column is present, else 0.
  */
-int
+gboolean
 db_table_has_column (const gchar *schema, const gchar *table,
                      const gchar *column)
 {

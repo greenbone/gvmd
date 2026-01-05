@@ -3126,6 +3126,17 @@ set_current_encryption_key_uid (const char *new_uid)
   g_free (quoted_new_uid);
 }
 
+/**
+ * @brief Validates sort_field for nvts table
+ *
+ * @return 1 success, 0 invalid
+ */
+gboolean
+validate_sort_field (const gchar *table, const gchar *sort_field)
+{
+  return db_table_has_column ("public", table, sort_field);
+}
+
 
 /* Task subject iterators. */
 

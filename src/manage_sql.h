@@ -187,8 +187,8 @@ typedef long long int rowid_t;
 int
 manage_db_empty ();
 
-int
-db_table_has_column(const gchar*, const gchar*, const gchar*);
+gboolean
+db_table_has_column (const gchar *, const gchar *, const gchar *);
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);

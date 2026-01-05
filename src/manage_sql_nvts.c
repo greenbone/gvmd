@@ -2092,14 +2092,3 @@ nvts_oids_all_discovery_cached (GSList *oids)
 
   return TRUE;
 }
-
-/**
- * @brief Validates sort_field for nvts table
- *
- * @return 0 success, -1 invalid
- */
-int
-validate_nvts_sort_field (const char* sort_field)
-{
-  return !db_table_has_column ("public", "nvts", sort_field);
-}

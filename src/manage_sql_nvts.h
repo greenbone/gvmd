@@ -160,7 +160,4 @@ nvts_discovery_oid_cache_reload ();
 gboolean
 nvts_oids_all_discovery_cached (GSList *oids);
 
-int
-validate_nvts_sort_field (const char*);
-
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */

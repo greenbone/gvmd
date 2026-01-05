@@ -103,7 +103,6 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_runtime_flags.h"
-#include "manage_sql_nvts.h"
 #include "manage_tls_certificates.h"
 #include "sql.h"
 #include "utils.h"
@@ -14887,7 +14886,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->sort_field
-               && validate_nvts_sort_field (get_nvts_data->sort_field))
+               && !validate_sort_field ("nvts", get_nvts_data->sort_field))
         {
           SEND_TO_CLIENT_OR_FAIL (
             XML_ERROR_SYNTAX ("get_nvts", "Invalid sort field"));
