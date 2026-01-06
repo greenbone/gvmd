@@ -1030,12 +1030,20 @@ http_get (const char *url)
 
   g_debug ("   HTTP_GET %s", url);
 
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
+  if (g_str_has_prefix (url, "https://") == FALSE
+      && g_str_has_prefix (url, "http://") == FALSE)
+    {
+      g_warning ("%s: %s is not a valid HTTP(S) URL", __func__, url);
+      return -1;
+    }
+
+  cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
   cmd[0] = g_strdup ("/usr/bin/wget");
   cmd[1] = g_strdup ("-O");
   cmd[2] = g_strdup ("-");
-  cmd[3] = g_strdup (url);
-  cmd[4] = NULL;
+  cmd[3] = g_strdup ("--");
+  cmd[4] = g_strdup (url);
+  cmd[5] = NULL;
   g_debug ("%s: Spawning in /tmp/: %s %s %s %s",
            __func__, cmd[0], cmd[1], cmd[2], cmd[3]);
   if ((g_spawn_sync ("/tmp/",
@@ -1074,6 +1082,7 @@ http_get (const char *url)
   g_free (cmd[2]);
   g_free (cmd[3]);
   g_free (cmd[4]);
+  g_free (cmd[5]);
   g_free (cmd);
   g_free (standard_out);
   g_free (standard_err);
