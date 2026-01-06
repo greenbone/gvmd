@@ -1069,12 +1069,8 @@ gboolean
 path_is_in_directory (const gchar *path, const gchar *directory)
 {
   gchar *canonicalized_path = g_canonicalize_filename (path, NULL);
-  if (!g_str_has_prefix (canonicalized_path, directory))
-    {
-      g_free (canonicalized_path);
-      return FALSE;
-    }
+  gboolean is_in_dir = g_str_has_prefix (canonicalized_path, directory);
 
   g_free (canonicalized_path);
-  return TRUE;
+  return is_in_dir;
 }
