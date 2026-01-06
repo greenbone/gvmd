@@ -4,6 +4,7 @@
  */
 
 #include "manage_roles.h"
+#include "manage_sql_roles.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "sql.h"
@@ -211,4 +212,34 @@ role_is_predefined_id (const char *uuid)
                   || (strcmp (uuid, ROLE_UUID_USER) == 0)
                   || (strcmp (uuid, ROLE_UUID_SUPER_ADMIN) == 0)
                   || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
+}
+
+/**
+ * @brief Find a role for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of role.
+ * @param[out]  role        Role return, 0 if successfully failed to find role.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find role), TRUE on error.
+ */
+gboolean
+find_role_with_permission (const char* uuid, role_t* role,
+                           const char *permission)
+{
+  return find_resource_with_permission ("role", uuid, role, permission, 0);
+}
+
+/**
+ * @brief Find a role given a name.
+ *
+ * @param[in]   name  A role name.
+ * @param[out]  role  Role return, 0 if successfully failed to find role.
+ *
+ * @return FALSE on success (including if failed to find role), TRUE on error.
+ */
+gboolean
+find_role_by_name (const char* name, role_t *role)
+{
+  return find_resource_by_name ("role", name, role);
 }

@@ -25,4 +25,7 @@ copy_role (const char *, const char *, const char *, role_t *);
 int
 create_role (const char *, const char *, const char *, role_t *);
 
+gboolean
+find_role_with_permission (const char *, role_t *, const char *);
+
 #endif /* not _GVMD_MANAGE_ROLES_H */
