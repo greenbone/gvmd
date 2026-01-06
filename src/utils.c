@@ -1063,8 +1063,7 @@ array_add_new_string (array_t *array, const gchar *string)
  * @param[in]  path       The path to check
  * @param[in]  directory  The base directory that path should point to
  *
- * @return 1 if path points to some file/folder within base_directory
- *         0 otherwise
+ * @return 1 if path points to some file/folder within directory, 0 otherwise
  */
 gboolean
 path_is_in_directory (const gchar *path, const gchar *directory)
