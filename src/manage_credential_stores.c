@@ -58,7 +58,8 @@ credential_store_preference_type_name (credential_store_preference_type_t type)
  * @param[in]  type           The data type of the preference
  * @param[in]  pattern        The regex pattern for string preferences
  * @param[in]  value          The current value of the preference
- * @param[in]  default_value  The default value of the preference
+ * @param[in]  default_value    The default value of the preference
+ * @param[in]  passphrase_name  Passphrase name.
  *
  * @return The newly allocated preference data structure.
  */
@@ -127,6 +128,7 @@ credential_store_preference_is_set
  * @param[in]  name           Name of the selector
  * @param[in]  pattern        The regex pattern for selector strings
  * @param[in]  default_value  The default value of the selector
+ * @param[in]  rowid          The credential store selector.
  *
  * @return The newly allocated preference data structure.
  */
@@ -331,7 +333,6 @@ eval_privkey_credential_store_preference (credential_store_preference_data_t
  *  the data preference can be decoded and parsed.
  *
  * @param[in]  preference       The preference to evaluate
- * @param[in]  passphrase       Optional Passphrase to decrypt PKCS12 file
  * @param[out] certs_out        Optional certificate list output
  * @param[out] message          Error message output
  *

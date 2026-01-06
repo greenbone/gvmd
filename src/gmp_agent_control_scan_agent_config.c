@@ -21,7 +21,6 @@
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "md gmp"
 
-/* ---------- MODIFY_AGENT_CONTROL_SCAN_CONFIG ---------- */
 /**
  * @brief The modify_agent_control_scan_config command.
  */

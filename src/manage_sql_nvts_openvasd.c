@@ -5,15 +5,18 @@
 
 /**
  * @file
- * @brief GVM management layer: openvasd NVT logic
+ * @brief GVM management layer: openvasd NVT SQL logic
  *
- * NVT logic specific to openvasd in the GVM management layer.
+ * NVT SQL logic specific to openvasd in the GVM management layer.
  */
 
 /**
  * @brief Enable extra GNU functions.
  */
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
+/**
+ * @brief Enable large file support.
+ */
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 

@@ -181,6 +181,7 @@ internal_error_send_to_client (GError** error)
  * @param[in]   id          Resource id.
  * @param[in]   action      Action done.
  * @param[in]   fail        Whether it is a fail event.
+ * @param[in]   plural      Whether type is plural (eg "tasks" vs "task")
  */
 static void
 log_event_internal (const char *type, const char *type_name, const char *id,

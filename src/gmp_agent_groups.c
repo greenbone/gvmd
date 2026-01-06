@@ -23,20 +23,21 @@
 /* GET_AGENT_GROUPS */
 
 /**
- * @struct get_agent_groups_t
- * @brief data for <get_agent_groups> command
- *
+ * @brief data for `<get_agent_groups>` command
  */
 typedef struct
 {
-    get_data_t get;
+  get_data_t get;  ///< Get args.
 } get_agent_groups_t;
 
 /**
- * @brief Parser <get_agent_groups> callback data.
+ * @brief Parser `<get_agent_groups>` callback data.
  */
 static get_agent_groups_t get_agent_groups_data;
 
+/**
+ * @brief Reset command data.
+ */
 static void
 get_agent_groups_reset ()
 {
@@ -180,7 +181,7 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
  */
 typedef struct
 {
-  context_data_t *context;
+  context_data_t *context;     ///< XML parser context.
 } create_agent_group_t;
 
 /**
@@ -487,19 +488,21 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 /* MODIFY_AGENT_GROUP */
 
 /**
- * @struct modify_agent_group_data_t
- * @brief data for <modify_agent_group> command
+ * @brief data for `<modify_agent_group>` command
  */
 typedef struct
 {
-    context_data_t *context;
+  context_data_t *context;     ///< XML parser context.
 } modify_agent_group_data_t;
 
 /**
- * @brief Parser <modify_agent_group> callback data.
+ * @brief Parser `<modify_agent_group>` callback data.
  */
 static modify_agent_group_data_t modify_agent_group_data;
 
+/**
+ * @brief Reset command data.
+ */
 static void
 modify_agent_group_reset ()
 {
@@ -514,7 +517,7 @@ modify_agent_group_reset ()
 }
 
 /**
- * @brief Start the element in the <modify_agent_group> command.
+ * @brief Start the element in the `<modify_agent_group>` command.
  *
  * @param[in] gmp_parser       Active GMP parser instance.
  * @param[in] name             Name of the XML element being parsed.
@@ -534,7 +537,7 @@ modify_agent_group_element_start (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Initialize the <modify_agent_group> GMP command.
+ * @brief Initialize the ``<modify_agent_group>`` GMP command.
  *
  * @param[in] gmp_parser        Active GMP parser instance.
  * @param[in] attribute_names   Null-terminated array of attribute names.
@@ -565,7 +568,7 @@ modify_agent_group_element_text (const gchar *text, gsize text_len)
 }
 
 /**
- * @brief End the XML element within the <modify_agent_group> command.
+ * @brief End the XML element within the `<modify_agent_group>` command.
  *
  * @param[in] gmp_parser  Active GMP parser instance
  * @param[in] error       The errors, if any
@@ -587,7 +590,7 @@ modify_agent_group_element_end (gmp_parser_t *gmp_parser, GError **error,
 }
 
 /**
- * @brief Execute the <modify_agent_group> GMP command.
+ * @brief Execute the `<modify_agent_group>` GMP command.
  *
  * @param[in] gmp_parser  Active GMP parser instance.
  * @param[in] error       the errors, if any.

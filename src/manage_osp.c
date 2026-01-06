@@ -910,7 +910,8 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
  * @param[in]  task       The task of the OSP scan
  * @param[in]  report     Row id of the scan report
  * @param[in]  scan_id    UUID of the scan report
- * @param[in]  conn_data   Data used to connect to the scanner.
+ * @param[in]  conn_data  Data used to connect to the scanner.
+ * @param[in,out]  retry_ptr              How many times to retry.
  * @param[in,out]  queued_status_updated  Whether the "queued" status was set.
  * @param[in,out]  started                Whether the scan was started.
  *

@@ -102,6 +102,7 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_tls_certificates.h"
 #include "sql.h"
@@ -6622,6 +6623,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("KDC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->kdc);
+            gvm_append_string (&modify_credential_data->kdc, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
           }
         else if (strcasecmp ("KDCS", element_name) == 0)
@@ -6650,6 +6653,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("REALM", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->realm);
+            gvm_append_string (&modify_credential_data->realm, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
           }
 #if ENABLE_CREDENTIAL_STORES
@@ -6659,14 +6664,21 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VAULT_ID", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->vault_id);
+            gvm_append_string (&modify_credential_data->vault_id, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
           }
         else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->host_identifier);
+            gvm_append_string (&modify_credential_data->host_identifier, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
           }
         else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->privacy_host_identifier);
+            gvm_append_string (&modify_credential_data->privacy_host_identifier,
+                               "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
           }
 #endif
@@ -12874,15 +12886,28 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       password = credential_iterator_password (&credentials);
       public_key = credential_iterator_public_key (&credentials);
 
-      SENDF_TO_CLIENT_OR_FAIL
-       ("<allow_insecure>%d</allow_insecure>"
-        "<login>%s</login>"
-        "<type>%s</type>"
-        "<full_type>%s</full_type>",
-        credential_iterator_allow_insecure (&credentials),
-        login ? login : "",
-        type ? type : "",
-        type ? credential_full_type (type) : "");
+      if (login)
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<login>%s</login>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            login,
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
+      else
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
 
       formats_xml = credential_iterator_formats_xml (&credentials);
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
@@ -26312,7 +26337,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 11:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kdc value(s)"));
+                                    "Invalid or empty kdc value(s)"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26320,7 +26345,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kerberos realm value"));
+                                    "Invalid or empty kerberos realm value"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26337,7 +26362,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid Vault ID"));
+                                    "Vault ID is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26345,15 +26370,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 15:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid host identifier"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 16:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid privacy host identifier"));
+                                    "Host identifier is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");

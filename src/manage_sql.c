@@ -8,8 +8,12 @@
  * @brief The Greenbone Vulnerability Manager management library.
  */
 
-/* For strptime in time.h. */
 #undef _XOPEN_SOURCE
+/**
+ * @brief Enable extra functions.
+ *
+ * For strptime in time.h.
+ */
 #define _XOPEN_SOURCE
 
 /**
@@ -29,6 +33,7 @@
 #include "manage_groups.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
+#include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_credential_stores.h"
 #include "manage_sql_copy.h"
@@ -266,7 +271,7 @@ static void
 report_cache_counts (report_t, int, int, const char*);
 
 static gchar *
-reports_extra_where (int, const char *, const char *);
+reports_extra_where (int, const gchar *, const char *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -3274,9 +3279,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
+/**
+ * @brief Severity columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #define SEVERITY_FILTER_COLUMNS \
   "false_positive", "log", "low", "medium", "high", "critical"
 
+/**
+ * @brief Agent group columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
 #else
@@ -3296,6 +3307,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
     TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
     NULL}
 
+/**
+ * @brief Group columns for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
     ,{                                                                        \
@@ -3314,6 +3328,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
 
+/**
+ * @brief Query for TASK_SEV_CASE_GUARD.
+ */
 #if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
   #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
 #elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
@@ -3324,6 +3341,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_NO_TARGET_CTX "(target IS NULL)"
 #endif
 
+/**
+ * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #define TASK_SEV_CASE_GUARD "(" TASK_NO_TARGET_CTX " OR opts.ignore_severity != 0)"
 
 /**
@@ -5989,6 +6009,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 {
   int ret;
   gchar *hash;
+  gboolean use_cache = TRUE;
 
   sql_begin_immediate ();
 
@@ -5997,7 +6018,9 @@ authenticate_any_method (const gchar *username, const gchar *password,
     {
       sql_rollback ();
       g_warning ("%s: Failed to acquire auth_cache lock", __func__);
-      return -1;
+      use_cache = FALSE;
+      // this begin is needed for other queries.
+      sql_begin_immediate ();
     }
 
   if (gvm_auth_ldap_enabled ()
@@ -6010,7 +6033,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       /* Search the LDAP authentication cache first. */
-      if (auth_cache_find (username, password, 0) == 0)
+      if (use_cache && auth_cache_find (username, password, 0) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -6028,7 +6051,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 0);
+          if (use_cache)
+            auth_cache_insert (username, password, 0);
           sql_commit ();
         }
       else
@@ -6044,7 +6068,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       char *key = NULL, *host = NULL;
 
       *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
-      if (auth_cache_find (username, password, 1) == 0)
+      if (use_cache && auth_cache_find (username, password, 1) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -6057,7 +6081,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
       g_free (key);
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 1);
+          if (use_cache)
+            auth_cache_insert (username, password, 1);
           sql_commit ();
         }
       else
@@ -6067,7 +6092,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
-  if (auth_cache_find (username, password, 2) == 0)
+  if (use_cache && auth_cache_find (username, password, 2) == 0)
     {
       auth_cache_refresh (username);
       sql_commit ();
@@ -6085,11 +6110,13 @@ authenticate_any_method (const gchar *username, const gchar *password,
       hash = manage_authentication_hash (password);
       sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
            hash, username);
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     case GMA_SUCCESS:
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     default:
@@ -9918,6 +9945,8 @@ report_set_discovery (report_t report, gboolean discovery)
  * @brief Check Discovery flag from the report.
  *
  * @param[in]  report  The report to check the flags.
+ *
+ * @return TRUE if report is from discovery scan.
  */
 gboolean
 check_report_discovery (report_t report)
@@ -17303,7 +17332,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  filtered_result_count       Result count.
  * @param[in]  orig_f_criticals            Result count.
  * @param[in]  f_criticals                 Result count.
- * @param[in]  orig_f_infos                Result count.
+ * @param[in]  orig_f_holes                Result count.
  * @param[in]  f_holes                     Result count.
  * @param[in]  orig_f_infos                Result count.
  * @param[in]  f_infos                     Result count.
@@ -21691,15 +21720,16 @@ target_login_port (target_t target, const char* type)
  * @param[in]   ssh_credential  SSH credential.
  * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
- * @param[in]   smb_credential  SMB credential.
- * @param[in]   esxi_credential ESXi credential.
- * @param[in]   snmp_credential SNMP credential.
+ * @param[in]   smb_credential        SMB credential.
+ * @param[in]   esxi_credential       ESXi credential.
+ * @param[in]   snmp_credential       SNMP credential.
+ * @param[in]   krb5_credential       Kerberos credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests array.
- * @param[in]   alive_test_str  Legacy alive tests string.
+ * @param[in]   alive_tests             Alive tests array.
+ * @param[in]   alive_test_str          Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
- * @param[out]  target          Created target.
+ * @param[out]  target                  Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -22237,7 +22267,8 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests         Alive tests array.
+ * @param[in]   alive_tests            Alive tests array.
+ * @param[in]   alive_test_str         Alive test string.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -24232,7 +24263,7 @@ validate_credential_kdc_format (const char *kdc_input)
  *                         The caller is responsible for freeing
  *                         the returned string using g_free().
  *
- * @return TRUE if all KDC entries are valid and @joined_out is set; FALSE otherwise.
+ * @return TRUE if all KDC entries are valid and @p joined_out is set; FALSE otherwise.
  */
 static gboolean
 validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
@@ -24276,7 +24307,7 @@ validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
 /**
  * @brief Validate the format of a Kerberos realm string.
  *
- * This function checks whether the given @realm is non-empty and does not
+ * This function checks whether the given @p realm is non-empty and does not
  * contain any whitespace characters.
  *
  * @param[in] realm  A string representing the Kerberos realm.
@@ -24995,14 +25026,13 @@ copy_credential (const char* name, const char* comment,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
- *         11 invalid key distribution center,
- *         12 invalid kerberos realm,
+ *         11 invalid or empty key distribution center,
+ *         12 invalid or empty kerberos realm,
  *         13 credential store cannot be found,
  *            (if ENABLE_CREDENTIAL_STORES),
- *         14 invalid vault ID (if ENABLE_CREDENTIAL_STORES),
- *         15 invalid host identifier (if ENABLE_CREDENTIAL_STORES),
- *         16 invalid privacy host identifier (if ENABLE_CREDENTIAL_STORES),
- *         17 value cannot be modified for credential store type,
+ *         14 vault ID is required (if ENABLE_CREDENTIAL_STORES),
+ *         15 host identifier is required (if ENABLE_CREDENTIAL_STORES),
+  *         17 value cannot be modified for credential store type,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -25404,15 +25434,14 @@ modify_credential (const char *credential_id,
             }
           if (privacy_host_identifier)
             {
-              if (!*privacy_host_identifier)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 16;
-                }
-              set_credential_data (credential,
-                                   "privacy_host_identifier",
-                                   privacy_host_identifier);
+              if (g_str_equal (privacy_host_identifier, ""))
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    NULL);
+              else
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    privacy_host_identifier);
             }
         }
       g_free (key_private_truncated);
@@ -30093,6 +30122,13 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
                                         0);
 }
 
+/**
+ * @brief Get the type of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Type.
+ */
 scanner_type_t
 get_scanner_type (scanner_t scanner)
 {
@@ -33056,235 +33092,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 }
 
 
-/* Groups. */
-
-/**
- * @brief Gets users of group as a string.
- *
- * @param[in]  group  Group.
- *
- * @return Users.
- */
-gchar *
-group_users (group_t group)
-{
-  return sql_string ("SELECT group_concat (name, ', ')"
-                     " FROM (SELECT users.name FROM users, group_users"
-                     "       WHERE group_users.\"group\" = %llu"
-                     "       AND group_users.user = users.id"
-                     "       GROUP BY users.name)"
-                     "      AS sub;",
-                     group);
-}
-
-/**
- * @brief Filter columns for group iterator.
- */
-#define GROUP_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
-
-/**
- * @brief Group iterator columns.
- */
-#define GROUP_ITERATOR_COLUMNS                                                \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (groups),                                             \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Group iterator columns for trash case.
- */
-#define GROUP_ITERATOR_TRASH_COLUMNS                                          \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (groups_trash),                                       \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Count number of groups.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of groups in grouped set.
- */
-int
-group_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
-  return count ("group", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a group iterator, including observed groups.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
- *         -1 error.
- */
-int
-init_group_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "group",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Modify a group.
- *
- * @param[in]   group_id       UUID of group.
- * @param[in]   name           Name of group.
- * @param[in]   comment        Comment on group.
- * @param[in]   users          Group users.
- *
- * @return 0 success, 1 failed to find group, 2 failed to find user, 3 group_id
- *         required, 4 user name validation failed, 5 group with new name
- *         exists, 99 permission denied, -1 internal error.
- */
-int
-modify_group (const char *group_id, const char *name, const char *comment,
-              const char *users)
-{
-  int ret;
-  gchar *quoted_name, *quoted_comment;
-  group_t group;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  assert (current_credentials.uuid);
-
-  if (group_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("modify_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  group = 0;
-
-  if (find_group_with_permission (group_id, &group, "modify_group"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (group == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether a group with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "group", group))
-        {
-          sql_rollback ();
-          return 5;
-        }
-    }
-
-  quoted_name = sql_quote(name ?: "");
-  quoted_comment = sql_quote (comment ? comment : "");
-
-  sql ("UPDATE groups SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       group);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM group_users"
-                 " WHERE \"group\" = %llu",
-                 group);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
-
-  ret = add_users ("group", group, users);
-
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM group_users"
-                 " WHERE \"group\" = %llu",
-                 group);
-
-  // users not looked for in this above loop were removed
-  //  -> possible permissions change
-  while (next (&users_iter))
-    {
-      int index, found_user;
-      user_t user = iterator_int64 (&users_iter, 0);
-
-      found_user = 0;
-      for (index = 0; index < affected_users->len && found_user == 0; index++)
-        {
-          if (g_array_index (affected_users, user_t, index) == user)
-            {
-              found_user = 1;
-              break;
-            }
-        }
-
-      if (found_user)
-        {
-          // users found here stay in the group -> no change in permissions
-          g_array_remove_index_fast (affected_users, index);
-        }
-      else
-        {
-          // user added to group -> possible permissions change
-          g_array_append_val (affected_users, user);
-        }
-    }
-
-  cleanup_iterator (&users_iter);
-
-  cache_all_permissions_for_users (affected_users);
-
-  g_array_free (affected_users, TRUE);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-
 /* Permissions. */
 
 /**
@@ -35323,43 +35130,6 @@ clean_feed_role_permissions (const char *type,
 /* Roles. */
 
 /**
- * @brief List roles.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- * @param[in]  verbose     Whether to print UUID.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_get_roles (GSList *log_config, const db_conn_info_t *database,
-                  int verbose)
-{
-  iterator_t roles;
-  int ret;
-
-  g_info ("   Getting roles.");
-
-  ret = manage_option_setup (log_config, database,
-                             0 /* avoid_db_check_inserts */);
-  if (ret)
-    return ret;
-
-  init_iterator (&roles, "SELECT name, uuid FROM roles;");
-  while (next (&roles))
-    if (verbose)
-      printf ("%s %s\n", iterator_string (&roles, 0), iterator_string (&roles, 1));
-    else
-      printf ("%s\n", iterator_string (&roles, 0));
-
-  cleanup_iterator (&roles);
-
-  manage_option_cleanup ();
-
-  return 0;
-}
-
-/**
  * @brief Create a role from an existing role.
  *
  * @param[in]  name       Name of new role.  NULL to copy from existing.
@@ -35776,32 +35546,6 @@ int
 trash_role_writable (role_t role)
 {
   return 1;
-}
-
-/**
- * @brief Check whether a role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-role_in_use (role_t role)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_role_in_use (role_t role)
-{
-  return 0;
 }
 
 /**
@@ -41726,6 +41470,8 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  cacert           CA certificate.  NULL to keep current value.
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
+ *
+ * @return 0 success, -1 error.
  */
 int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,

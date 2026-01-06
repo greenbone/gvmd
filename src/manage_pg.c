@@ -2122,8 +2122,6 @@ create_tables_nvt (const gchar *suffix)
 
 /**
  * @brief Create NVT related indexes.
- *
- * @param[in]  suffix  String to append to table names.
  */
 void
 create_indexes_nvt ()
