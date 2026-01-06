@@ -1044,8 +1044,8 @@ http_get (const char *url)
   cmd[3] = g_strdup ("--");
   cmd[4] = g_strdup (url);
   cmd[5] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s",
-           __func__, cmd[0], cmd[1], cmd[2], cmd[3]);
+  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s",
+           __func__, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
   if ((g_spawn_sync ("/tmp/",
                      cmd,
                      NULL,                  /* Environment. */
