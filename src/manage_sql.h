@@ -191,6 +191,9 @@ int
 manage_db_empty ();
 
 gboolean
+db_table_has_column (const gchar *, const gchar *, const gchar *);
+
+gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
 
 report_host_t

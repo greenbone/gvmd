@@ -247,6 +247,9 @@ current_encryption_key_uid (gboolean);
 void
 set_current_encryption_key_uid (const char *new_uid);
 
+int
+validate_sort_field (const gchar*, const gchar*);
+
 void
 manage_session_set_timezone (const char *);
 
