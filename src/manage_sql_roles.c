@@ -170,3 +170,45 @@ create_role (const char *role_name, const char *comment, const char *users,
 
   return ret;
 }
+
+/**
+ * @brief Return whether a role is predefined.
+ *
+ * @param[in]  role  Role.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+role_is_predefined (role_t role)
+{
+  return sql_int ("SELECT COUNT (*) FROM roles"
+                  " WHERE id = %llu"
+                  " AND (uuid = '" ROLE_UUID_ADMIN "'"
+                  "      OR uuid = '" ROLE_UUID_GUEST "'"
+                  "      OR uuid = '" ROLE_UUID_MONITOR "'"
+                  "      OR uuid = '" ROLE_UUID_INFO "'"
+                  "      OR uuid = '" ROLE_UUID_USER "'"
+                  "      OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
+                  "      OR uuid = '" ROLE_UUID_OBSERVER "');",
+                  role)
+         != 0;
+}
+
+/**
+ * @brief Return whether a role is predefined.
+ *
+ * @param[in]  uuid  UUID of role.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+role_is_predefined_id (const char *uuid)
+{
+  return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
+                  || (strcmp (uuid, ROLE_UUID_GUEST) == 0)
+                  || (strcmp (uuid, ROLE_UUID_MONITOR) == 0)
+                  || (strcmp (uuid, ROLE_UUID_INFO) == 0)
+                  || (strcmp (uuid, ROLE_UUID_USER) == 0)
+                  || (strcmp (uuid, ROLE_UUID_SUPER_ADMIN) == 0)
+                  || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
+}
