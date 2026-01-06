@@ -22,4 +22,7 @@ role_in_use (role_t);
 int
 copy_role (const char *, const char *, const char *, role_t *);
 
+int
+create_role (const char *, const char *, const char *, role_t *);
+
 #endif /* not _GVMD_MANAGE_ROLES_H */
