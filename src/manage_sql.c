@@ -215,9 +215,6 @@ clean_hosts (const char *, int*);
 static gboolean
 find_user_by_name (const char *, user_t *user);
 
-static gboolean
-find_role_with_permission (const char *, role_t *, const char *);
-
 static int
 user_ensure_in_db (const gchar *, const gchar *);
 
@@ -944,7 +941,7 @@ find_resource_with_permission (const char* type, const char* uuid,
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-static gboolean
+gboolean
 find_resource_by_name (const char* type, const char* name, resource_t *resource)
 {
   gchar *quoted_name;
@@ -35278,36 +35275,6 @@ delete_role (const char *role_id, int ultimate)
 
   sql_commit ();
   return 0;
-}
-
-/**
- * @brief Find a role for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of role.
- * @param[out]  role        Role return, 0 if successfully failed to find role.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find role), TRUE on error.
- */
-static gboolean
-find_role_with_permission (const char* uuid, role_t* role,
-                           const char *permission)
-{
-  return find_resource_with_permission ("role", uuid, role, permission, 0);
-}
-
-/**
- * @brief Find a role given a name.
- *
- * @param[in]   name  A role name.
- * @param[out]  role  Role return, 0 if successfully failed to find role.
- *
- * @return FALSE on success (including if failed to find role), TRUE on error.
- */
-static gboolean
-find_role_by_name (const char* name, role_t *role)
-{
-  return find_resource_by_name ("role", name, role);
 }
 
 /**
