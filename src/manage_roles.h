@@ -28,4 +28,7 @@ create_role (const char *, const char *, const char *, role_t *);
 gboolean
 find_role_with_permission (const char *, role_t *, const char *);
 
+int
+delete_role (const char *, int);
+
 #endif /* not _GVMD_MANAGE_ROLES_H */
