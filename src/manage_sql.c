@@ -545,16 +545,18 @@ array_find_string (array_t *array, const gchar *string)
  *
  * @return The string from the vector if found, else NULL.
  */
-static const gchar*
+static const gchar *
 vector_find_string (const gchar **vector, const gchar *string)
 {
   if (vector == NULL)
     return NULL;
   while (*vector)
-    if (strcmp (*vector, string) == 0)
-      return *vector;
-    else
+    {
+      if (strcmp (*vector, string) == 0)
+        return *vector;
+
       vector++;
+    }
   return NULL;
 }
 
@@ -3127,6 +3129,17 @@ set_current_encryption_key_uid (const char *new_uid)
        quoted_new_uid);
 
   g_free (quoted_new_uid);
+}
+
+/**
+ * @brief Validates sort_field for nvts table
+ *
+ * @return 0 success, 1 invalid
+ */
+int
+validate_sort_field (const gchar *table, const gchar *sort_field)
+{
+  return !db_table_has_column ("public", table, sort_field);
 }
 
 

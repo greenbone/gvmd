@@ -79,6 +79,28 @@ manage_db_empty ()
          == 0;
 }
 
+/**
+ * @brief Check whether a given table has a certain column
+ *
+ * @param  schema  The schema the table is located in (e.g. "public")
+ * @param  table   Name of the table to check column for
+ * @param  column  The column to check for existence
+ *
+ * @return 1 if column is present, else 0.
+ */
+gboolean
+db_table_has_column (const gchar *schema, const gchar *table,
+                     const gchar *column)
+{
+  return !!sql_int_ps ("SELECT EXISTS (SELECT * FROM information_schema.columns"
+                       "               WHERE table_schema = $1"
+                       "               AND table_name = $2"
+                       "               AND column_name = $3)"
+                       " ::integer;",
+                       SQL_STR_PARAM (schema), SQL_STR_PARAM (table),
+                       SQL_STR_PARAM (column), NULL);
+}
+
 
 /* SCAP. */
 
