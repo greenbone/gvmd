@@ -1055,3 +1055,27 @@ array_add_new_string (array_t *array, const gchar *string)
       return;
   array_add (array, g_strdup (string));
 }
+
+/**
+ * @brief Ensure given path (after resolving/canonicalization) has base
+ *        directory as a prefix
+ *
+ * @param[in]  path       The path to check
+ * @param[in]  directory  The base directory that path should point to
+ *
+ * @return 1 if path points to some file/folder within base_directory
+ *         0 otherwise
+ */
+gboolean
+path_is_in_directory (const gchar *path, const gchar *directory)
+{
+  gchar *canonicalized_path = g_canonicalize_filename (path, NULL);
+  if (!g_str_has_prefix (canonicalized_path, directory))
+    {
+      g_free (canonicalized_path);
+      return FALSE;
+    }
+
+  g_free (canonicalized_path);
+  return TRUE;
+}
