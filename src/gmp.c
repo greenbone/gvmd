@@ -14900,7 +14900,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       else if (get_nvts_data->sort_field
-               && !validate_sort_field ("nvts", get_nvts_data->sort_field))
+               && validate_sort_field ("nvts", get_nvts_data->sort_field))
         {
           SEND_TO_CLIENT_OR_FAIL (
             XML_ERROR_SYNTAX ("get_nvts", "Invalid sort field"));

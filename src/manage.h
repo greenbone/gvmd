@@ -247,7 +247,7 @@ current_encryption_key_uid (gboolean);
 void
 set_current_encryption_key_uid (const char *new_uid);
 
-gboolean
+int
 validate_sort_field (const gchar*, const gchar*);
 
 void
