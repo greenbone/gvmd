@@ -50,6 +50,7 @@
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_roles.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
@@ -231,12 +232,6 @@ permission_subject (permission_t);
 
 static char *
 permission_subject_type (permission_t);
-
-static int
-role_is_predefined (role_t);
-
-static int
-role_is_predefined_id (const char *);
 
 static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
@@ -35117,48 +35112,6 @@ clean_feed_role_permissions (const char *type,
 
 
 /* Roles. */
-
-/**
- * @brief Return whether a role is predefined.
- *
- * @param[in]  role  Role.
- *
- * @return 1 if predefined, else 0.
- */
-static int
-role_is_predefined (role_t role)
-{
-  return sql_int ("SELECT COUNT (*) FROM roles"
-                  " WHERE id = %llu"
-                  " AND (uuid = '" ROLE_UUID_ADMIN "'"
-                  "      OR uuid = '" ROLE_UUID_GUEST "'"
-                  "      OR uuid = '" ROLE_UUID_MONITOR "'"
-                  "      OR uuid = '" ROLE_UUID_INFO "'"
-                  "      OR uuid = '" ROLE_UUID_USER "'"
-                  "      OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
-                  "      OR uuid = '" ROLE_UUID_OBSERVER "');",
-                  role)
-         != 0;
-}
-
-/**
- * @brief Return whether a role is predefined.
- *
- * @param[in]  uuid  UUID of role.
- *
- * @return 1 if predefined, else 0.
- */
-static int
-role_is_predefined_id (const char *uuid)
-{
-  return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
-                  || (strcmp (uuid, ROLE_UUID_GUEST) == 0)
-                  || (strcmp (uuid, ROLE_UUID_MONITOR) == 0)
-                  || (strcmp (uuid, ROLE_UUID_INFO) == 0)
-                  || (strcmp (uuid, ROLE_UUID_USER) == 0)
-                  || (strcmp (uuid, ROLE_UUID_SUPER_ADMIN) == 0)
-                  || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
-}
 
 /**
  * @brief Delete a role.
