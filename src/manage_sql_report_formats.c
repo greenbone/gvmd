@@ -614,7 +614,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
   index = 0;
   while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
     {
-      gchar *contents, *file, *full_file_name, *canonicalized_filename;
+      gchar *contents, *file, *full_file_name;
       gsize contents_size;
       GError *error;
       int ret;
@@ -638,7 +638,8 @@ save_report_format_files (const gchar *report_id, array_t *files,
       full_file_name = g_build_filename (dir, file_name, NULL);
 
       // Detect path traversal
-      canonicalized_filename = g_canonicalize_filename (full_file_name, NULL);
+      gchar *canonicalized_filename =
+        g_canonicalize_filename (full_file_name, NULL);
       if (!g_str_has_prefix (canonicalized_filename, dir))
         {
           g_warning ("Potential path traversal attack detected."
