@@ -35119,67 +35119,6 @@ clean_feed_role_permissions (const char *type,
 /* Roles. */
 
 /**
- * @brief Create a role.
- *
- * @param[in]   role_name        Role name.
- * @param[in]   comment          Comment on role.
- * @param[in]   users            Users role applies to.
- * @param[in]   role             Role return.
- *
- * @return 0 success, 1 role exists already, 2 failed to find user, 4 user
- *         name validation failed, 99 permission denied, -1 error.
- */
-int
-create_role (const char *role_name, const char *comment, const char *users,
-             role_t* role)
-{
-  int ret;
-  gchar *quoted_role_name, *quoted_comment;
-
-  assert (current_credentials.uuid);
-  assert (role_name);
-  assert (role);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_role") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (role_name, "role", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  quoted_role_name = sql_quote (role_name);
-  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
-  sql ("INSERT INTO roles"
-       " (uuid, name, owner, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', m_now (), m_now ());",
-       quoted_role_name,
-       current_credentials.uuid,
-       quoted_comment);
-  g_free (quoted_comment);
-  g_free (quoted_role_name);
-
-  *role = sql_last_insert_id ();
-  ret = add_users ("role", *role, users);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-/**
  * @brief Return whether a role is predefined.
  *
  * @param[in]  role  Role.
