@@ -20,6 +20,7 @@
 #if ENABLE_AGENTS
 typedef resource_t agent_t;
 typedef resource_t agent_group_t;
+typedef resource_t agent_installer_t;
 #endif
 typedef resource_t alert_t;
 typedef resource_t asset_snapshot_t;
@@ -43,6 +44,7 @@ typedef resource_t report_format_param_t;
 typedef resource_t role_t;
 typedef resource_t note_t;
 typedef resource_t nvt_t;
+typedef resource_t oci_image_target_t;
 typedef resource_t override_t;
 typedef resource_t permission_t;
 typedef resource_t port_list_t;

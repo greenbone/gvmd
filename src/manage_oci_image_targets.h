@@ -18,8 +18,6 @@
 #include "iterator.h"
 #include "manage_get.h"
 
-typedef resource_t oci_image_target_t;
-
 gboolean
 find_oci_image_target_with_permission (const char*,
                                        oci_image_target_t*,
