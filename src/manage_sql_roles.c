@@ -243,3 +243,170 @@ find_role_by_name (const char* name, role_t *role)
 {
   return find_resource_by_name ("role", name, role);
 }
+
+/**
+ * @brief Delete a role.
+ *
+ * @param[in]  role_id   UUID of role.
+ * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 1 fail because a task refers to the role, 2 failed
+ *         to find role, 3 predefined role, -1 error.
+ */
+int
+delete_role (const char *role_id, int ultimate)
+{
+  role_t role = 0;
+  GArray *affected_users;
+  iterator_t users_iter;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_role") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_role_with_permission (role_id, &role, "delete_role"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (role == 0)
+    {
+      if (find_trash ("role", role_id, &role))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (role == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      if (trash_role_in_use (role))
+        {
+          sql_rollback ();
+          return 1;
+        }
+
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+
+      tags_remove_resource ("role", role, LOCATION_TRASH);
+
+      sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
+      sql ("DELETE FROM roles_trash WHERE id = %llu;", role);
+      sql_commit ();
+      return 0;
+    }
+
+  if (role_is_predefined (role))
+    {
+      sql_rollback ();
+      return 3;
+    }
+
+  if (role_in_use (role))
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  if (ultimate == 0)
+    {
+      role_t trash_role;
+
+      sql ("INSERT INTO roles_trash"
+           " (uuid, owner, name, comment, creation_time, modification_time)"
+           " SELECT uuid, owner, name, comment, creation_time,"
+           "        modification_time"
+           " FROM roles WHERE id = %llu;",
+           role);
+
+      trash_role = sql_last_insert_id ();
+
+      sql ("INSERT INTO role_users_trash"
+           " (\"role\", \"user\")"
+           " SELECT %llu, \"user\""
+           " FROM role_users WHERE \"role\" = %llu;",
+           trash_role,
+           role);
+
+      permissions_set_locations ("role", role, trash_role, LOCATION_TRASH);
+      tags_set_locations ("role", role, trash_role, LOCATION_TRASH);
+      permissions_set_subjects ("role", role, trash_role, LOCATION_TRASH);
+    }
+  else
+    {
+      sql ("DELETE FROM permissions"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE resource_type = 'role'"
+           " AND resource = %llu"
+           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           role);
+      sql ("DELETE FROM permissions"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           role);
+      sql ("DELETE FROM permissions_trash"
+           " WHERE subject_type = 'role'"
+           " AND subject = %llu"
+           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           role);
+      tags_remove_resource ("role", role, LOCATION_TABLE);
+    }
+
+  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  init_iterator (&users_iter,
+                  "SELECT \"user\" FROM role_users"
+                  " WHERE \"role\" = %llu",
+                  role);
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (affected_users, user);
+    }
+  cleanup_iterator (&users_iter);
+
+  sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
+  sql ("DELETE FROM roles WHERE id = %llu;", role);
+
+  cache_all_permissions_for_users (affected_users);
+  g_array_free (affected_users, TRUE);
+
+  sql_commit ();
+  return 0;
+}
