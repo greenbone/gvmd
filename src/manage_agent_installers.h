@@ -37,8 +37,6 @@
         (AGENT_INSTALLER_BASE64_BUFFER_SIZE               \
          + AGENT_INSTALLER_BASE64_BUFFER_SIZE / 76 + 1)   \
 
-typedef resource_t agent_installer_t;
-
 /**
  * @brief Agent installer data.
  */
