@@ -34,4 +34,7 @@ init_role_iterator (iterator_t *, get_data_t *);
 int
 role_count (const get_data_t *);
 
+int
+modify_role (const char *, const char *, const char *, const char *);
+
 #endif /* not _GVMD_MANAGE_ROLES_H */
