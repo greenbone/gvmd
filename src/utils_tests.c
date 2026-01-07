@@ -132,6 +132,34 @@ Ensure (utils, strescape_check_utf_8_with_exceptions)
   g_free (output);
 }
 
+Ensure (utils, path_is_in_directory_returns_true_if_path_is_in_dir)
+{
+  const gchar *directory = "/home/gvmd";
+  const gchar *path1 = "/home/gvmd/abc/";
+  const gchar *path2 = "/home/gvmd/abc/.././def";
+  const gchar *path3 = "/home/gvmd";
+  const gchar *path4 = "/home/gvmd/../gvmd/../gvmd/i_am_a_file.json";
+
+  assert_that (path_is_in_directory (path1, directory), is_true);
+  assert_that (path_is_in_directory (path2, directory), is_true);
+  assert_that (path_is_in_directory (path3, directory), is_true);
+  assert_that (path_is_in_directory (path4, directory), is_true);
+}
+
+Ensure (utils, path_is_in_directory_returns_false_if_path_is_not_in_dir)
+{
+  const gchar *directory = "/home/gvmd";
+  const gchar *path1 = "/opt/gvmd";
+  const gchar *path2 = "/home/gvmd/.././../var";
+  const gchar *path3 = "/home/";
+  const gchar *path4 = "/home/gvmd/../gvmd/../gvmd/../i_am_a_file.json";
+
+  assert_that (path_is_in_directory (path1, directory), is_false);
+  assert_that (path_is_in_directory (path2, directory), is_false);
+  assert_that (path_is_in_directory (path3, directory), is_false);
+  assert_that (path_is_in_directory (path4, directory), is_false);
+}
+
 /* Test suite. */
 
 int
@@ -155,6 +183,11 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, utils, strescape_check_utf_8_no_exceptions);
   add_test_with_context (suite, utils, strescape_check_utf_8_with_exceptions);
+
+  add_test_with_context (suite, utils,
+                         path_is_in_directory_returns_true_if_path_is_in_dir);
+  add_test_with_context (
+    suite, utils, path_is_in_directory_returns_false_if_path_is_not_in_dir);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

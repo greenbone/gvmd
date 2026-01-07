@@ -637,6 +637,19 @@ save_report_format_files (const gchar *report_id, array_t *files,
 
       full_file_name = g_build_filename (dir, file_name, NULL);
 
+      // Detect path traversal
+      if (!path_is_in_directory (full_file_name, dir))
+        {
+          g_warning ("Potential path traversal attack detected."
+                     " File '%s' breaks out of base directory '%s'",
+                     full_file_name, dir);
+
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
+
       error = NULL;
       g_file_set_contents (full_file_name, contents, contents_size, &error);
       g_free (contents);

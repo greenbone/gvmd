@@ -106,4 +106,7 @@ phys_mem_total ();
 void
 array_add_new_string (array_t *, const gchar *);
 
+gboolean
+path_is_in_directory (const gchar *, const gchar *);
+
 #endif /* not _GVMD_UTILS_H */
