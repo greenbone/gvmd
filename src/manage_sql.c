@@ -35108,70 +35108,6 @@ clean_feed_role_permissions (const char *type,
 }
 
 
-/* Roles. */
-
-/**
- * @brief Gets UUID of role.
- *
- * @param[in]  role  Role.
- *
- * @return Users.
- */
-gchar *
-role_uuid (role_t role)
-{
-  return sql_string ("SELECT uuid FROM roles WHERE id = %llu;",
-                     role);
-}
-
-/**
- * @brief Gets users of role as a string.
- *
- * @param[in]  role  Role.
- *
- * @return Users.
- */
-gchar *
-role_users (role_t role)
-{
-  return sql_string ("SELECT group_concat (name, ', ')"
-                     " FROM (SELECT users.name FROM users, role_users"
-                     "       WHERE role_users.role = %llu"
-                     "       AND role_users.user = users.id"
-                     "       GROUP BY users.name)"
-                     "      AS sub;",
-                     role);
-}
-
-/**
- * @brief Check whether a role is writable.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-role_writable (role_t role)
-{
-  if (role_is_predefined (role))
-    return 0;
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan role is writable.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_role_writable (role_t role)
-{
-  return 1;
-}
-
-
 /* Schema. */
 
 /**

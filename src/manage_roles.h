@@ -37,4 +37,16 @@ role_count (const get_data_t *);
 int
 modify_role (const char *, const char *, const char *, const char *);
 
+char*
+role_uuid (role_t);
+
+gchar *
+role_users (role_t);
+
+int
+trash_role_writable (role_t);
+
+int
+role_writable (role_t);
+
 #endif /* not _GVMD_MANAGE_ROLES_H */

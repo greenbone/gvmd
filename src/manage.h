@@ -2949,21 +2949,6 @@ void
 delete_permissions_cache_for_user (user_t);
 
 
-/* Roles. */
-
-char*
-role_uuid (role_t);
-
-gchar *
-role_users (role_t);
-
-int
-trash_role_writable (role_t);
-
-int
-role_writable (role_t);
-
-
 /* Schema. */
 
 int
