@@ -158,7 +158,6 @@ Ensure (utils, path_is_in_directory_returns_false_if_path_is_not_in_dir)
   assert_that (path_is_in_directory (path2, directory), is_false);
   assert_that (path_is_in_directory (path3, directory), is_false);
   assert_that (path_is_in_directory (path4, directory), is_false);
-
 }
 
 /* Test suite. */
