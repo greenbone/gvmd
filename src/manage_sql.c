@@ -35309,75 +35309,6 @@ modify_role (const char *role_id, const char *name, const char *comment,
   return ret;
 }
 
-/**
- * @brief Filter columns for role iterator.
- */
-#define ROLE_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
-
-/**
- * @brief Role iterator columns.
- */
-#define ROLE_ITERATOR_COLUMNS                                                \
- {                                                                           \
-   GET_ITERATOR_COLUMNS (roles),                                             \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
- }
-
-/**
- * @brief Role iterator columns for trash case.
- */
-#define ROLE_ITERATOR_TRASH_COLUMNS                                          \
- {                                                                           \
-   GET_ITERATOR_COLUMNS (roles_trash),                                       \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
- }
-
-/**
- * @brief Count number of roles.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of roles in roleed set.
- */
-int
-role_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
-  return count ("role", get, columns, trash_columns, extra_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a role iterator, including observed roles.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find role, 2 failed to find role (filt_id),
- *         -1 error.
- */
-int
-init_role_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "role",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
 
 /* Schema. */
 
