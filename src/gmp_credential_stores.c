@@ -11,6 +11,7 @@
  */
 
 #include "gmp_credential_stores.h"
+#include "gmp_get.h"
 #include "manage_credential_stores.h"
 #include "manage.h"
 

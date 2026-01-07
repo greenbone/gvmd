@@ -10,6 +10,8 @@
  * General management headers of agent installers.
  */
 
+#if ENABLE_AGENTS
+
 #ifndef _GVMD_MANAGE_AGENT_INSTALLERS_H
 #define _GVMD_MANAGE_AGENT_INSTALLERS_H
 
@@ -134,5 +136,6 @@ agent_installer_writable (agent_installer_t);
 int
 trash_agent_installer_writable(agent_installer_t);
 
-
 #endif /* not _GVMD_MANAGE_AGENT_INSTALLERS_H */
+
+#endif /* ENABLE_AGENTS */
