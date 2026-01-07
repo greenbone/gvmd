@@ -2951,9 +2951,6 @@ delete_permissions_cache_for_user (user_t);
 
 /* Roles. */
 
-int
-init_role_iterator (iterator_t *, get_data_t *);
-
 char*
 role_uuid (role_t);
 
@@ -2965,9 +2962,6 @@ trash_role_writable (role_t);
 
 int
 role_writable (role_t);
-
-int
-role_count (const get_data_t*);
 
 int
 modify_role (const char *, const char *, const char *, const char *);
