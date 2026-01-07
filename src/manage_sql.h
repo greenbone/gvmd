@@ -362,7 +362,10 @@ resource_uuid (const gchar *, resource_t);
 
 gboolean
 find_resource_with_permission (const char *, const char *,
-                                        resource_t *, const char *, int);
+                               resource_t *, const char *, int);
+
+gboolean
+find_resource_by_name (const char *, const char *, resource_t *);
 
 int
 resource_predefined (const gchar *, resource_t);
