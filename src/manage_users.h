@@ -14,4 +14,16 @@ user_name (const char *);
 char *
 user_uuid (user_t);
 
+int
+user_in_use (user_t);
+
+int
+trash_user_in_use (user_t);
+
+int
+user_writable (user_t);
+
+int
+trash_user_writable (user_t);
+
 #endif /* not _GVMD_MANAGE_USERS_H */

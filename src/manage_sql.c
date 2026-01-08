@@ -39843,58 +39843,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 }
 
 /**
- * @brief Check whether a user is in use.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-user_in_use (user_t user)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan user is in use.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_user_in_use (user_t user)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a user is writable.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-user_writable (user_t user)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan user is writable.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_user_writable (user_t user)
-{
-  return 1;
-}
-
-/**
  * @brief Return the hosts of a user.
  *
  * @param[in]  uuid  UUID of user.
