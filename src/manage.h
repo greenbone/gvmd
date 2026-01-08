@@ -3277,18 +3277,6 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              gchar **);
 
 int
-user_in_use (user_t);
-
-int
-trash_user_in_use (user_t);
-
-int
-user_writable (user_t);
-
-int
-trash_user_writable (user_t);
-
-int
 user_count (const get_data_t*);
 
 gchar*
