@@ -3291,9 +3291,6 @@ trash_user_writable (user_t);
 int
 user_count (const get_data_t*);
 
-gchar*
-user_name (const char *);
-
 char*
 user_uuid (user_t);
 

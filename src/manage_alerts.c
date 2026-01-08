@@ -20,6 +20,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_tickets.h"
+#include "manage_users.h"
 
 #include <bsd/unistd.h>
 #include <glib/gstdio.h>

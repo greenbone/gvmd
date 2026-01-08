@@ -13,6 +13,7 @@
 #include "gmp_base.h"
 #include "manage_agent_installers.h"
 #include "manage_sql_agent_installers.h"
+#include "manage_users.h"
 
 #include <gvm/util/jsonpull.h>
 #include <gvm/util/fileutils.h>
