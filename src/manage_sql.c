@@ -39843,22 +39843,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 }
 
 /**
- * @brief Return the UUID of a user.
- *
- * Warning: this is only safe for users that are known to be in the db.
- *
- * @param[in]  user  User.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-user_uuid (user_t user)
-{
-  return sql_string ("SELECT uuid FROM users WHERE id = %llu;",
-                     user);
-}
-
-/**
  * @brief Check whether a user is in use.
  *
  * @param[in]  user  User.

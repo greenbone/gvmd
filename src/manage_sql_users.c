@@ -33,3 +33,19 @@ user_name (const char *uuid)
   g_free (quoted_uuid);
   return name;
 }
+
+/**
+ * @brief Return the UUID of a user.
+ *
+ * Warning: this is only safe for users that are known to be in the db.
+ *
+ * @param[in]  user  User.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+user_uuid (user_t user)
+{
+  return sql_string ("SELECT uuid FROM users WHERE id = %llu;",
+                     user);
+}
