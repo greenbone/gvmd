@@ -26,4 +26,10 @@ user_writable (user_t);
 int
 trash_user_writable (user_t);
 
+gchar *
+user_hosts (const char *);
+
+int
+user_hosts_allow (const char *);
+
 #endif /* not _GVMD_MANAGE_USERS_H */
