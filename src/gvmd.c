@@ -1609,7 +1609,10 @@ fork_agents_sync ()
           while (next (&scanner_iterator))
             {
               scanner_t scanner = get_iterator_resource (&scanner_iterator);
-              if (scanner && scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+              if (scanner && (scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER
+                              || scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER_SENSOR))
                 {
                   gvmd_agent_connector_t connector =
                     gvmd_agent_connector_new_from_scanner (scanner);
