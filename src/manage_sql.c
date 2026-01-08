@@ -39843,45 +39843,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 }
 
 /**
- * @brief Return the hosts of a user.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return Newly allocated hosts value if available, else NULL.
- */
-gchar*
-user_hosts (const char *uuid)
-{
-  gchar *name, *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  name = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
-                     quoted_uuid);
-  g_free (quoted_uuid);
-  return name;
-}
-
-/**
- * @brief Return whether hosts value of a user denotes allowed.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return 1 if allow, else 0.
- */
-int
-user_hosts_allow (const char *uuid)
-{
-  gchar *quoted_uuid;
-  int allow;
-
-  quoted_uuid = sql_quote (uuid);
-  allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
-                   quoted_uuid);
-  g_free (quoted_uuid);
-  return allow;
-}
-
-/**
  * @brief User columns for user iterator.
  */
 #define USER_ITERATOR_FILTER_COLUMNS                                  \

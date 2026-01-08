@@ -3279,12 +3279,6 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
 int
 user_count (const get_data_t*);
 
-gchar*
-user_hosts (const char *);
-
-int
-user_hosts_allow (const char *);
-
 int
 init_vuln_iterator (iterator_t*, const get_data_t*);
 

@@ -10,6 +10,7 @@
 
 #include "manage_openvas.h"
 #include "manage_sql.h"
+#include "manage_users.h"
 
 #undef G_LOG_DOMAIN
 /**
