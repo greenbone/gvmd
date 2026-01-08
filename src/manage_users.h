@@ -11,4 +11,7 @@
 gchar *
 user_name (const char *);
 
+char *
+user_uuid (user_t);
+
 #endif /* not _GVMD_MANAGE_USERS_H */
