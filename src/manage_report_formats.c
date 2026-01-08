@@ -15,6 +15,7 @@
 #include "manage.h"
 #include "manage_sql.h"
 #include "manage_sql_report_formats.h"
+#include "manage_users.h"
 #include "utils.h"
 
 #include <assert.h>

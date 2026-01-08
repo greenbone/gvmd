@@ -13,6 +13,7 @@
 #include "manage_sql.h"
 #include "manage_sql_scan_queue.h"
 #include "manage_scan_handler.h"
+#include "manage_users.h"
 #include <gvm/base/gvm_sentry.h>
 #include <unistd.h>
 #include <signal.h>

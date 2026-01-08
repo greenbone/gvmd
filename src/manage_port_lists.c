@@ -14,6 +14,7 @@
 #include "gmp_port_lists.h"
 #include "manage.h"
 #include "manage_sql_port_lists.h"
+#include "manage_users.h"
 #include "utils.h"
 
 #include <gvm/util/fileutils.h>

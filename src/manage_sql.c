@@ -57,6 +57,7 @@
 #include "manage_commands.h"
 #include "manage_authentication.h"
 #include "manage_oci_image_targets.h"
+#include "manage_users.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -39839,25 +39840,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
     }
 
   return 0;
-}
-
-/**
- * @brief Return the name of a user.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return Newly allocated name if available, else NULL.
- */
-gchar*
-user_name (const char *uuid)
-{
-  gchar *name, *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  name = sql_string ("SELECT name FROM users WHERE uuid = '%s';",
-                     quoted_uuid);
-  g_free (quoted_uuid);
-  return name;
 }
 
 /**
