@@ -3190,9 +3190,6 @@ manage_default_ca_cert ();
 
 /* Users. */
 
-gboolean
-find_user_by_name_with_permission (const char *, user_t *, const char *);
-
 int
 manage_create_user (GSList *, const db_conn_info_t *, const gchar *,
                     const gchar *, const gchar *);
