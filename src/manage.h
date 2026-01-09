@@ -3224,45 +3224,6 @@ gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
 int
-init_user_iterator (iterator_t*, get_data_t*);
-
-const char*
-user_iterator_role (iterator_t*);
-
-const char*
-user_iterator_method (iterator_t*);
-
-const char*
-user_iterator_hosts (iterator_t*);
-
-int
-user_iterator_hosts_allow (iterator_t*);
-
-void
-init_user_group_iterator (iterator_t *, user_t);
-
-const char*
-user_group_iterator_uuid (iterator_t*);
-
-const char*
-user_group_iterator_name (iterator_t*);
-
-int
-user_group_iterator_readable (iterator_t*);
-
-void
-init_user_role_iterator (iterator_t *, user_t);
-
-const char*
-user_role_iterator_uuid (iterator_t*);
-
-const char*
-user_role_iterator_name (iterator_t*);
-
-int
-user_role_iterator_readable (iterator_t*);
-
-int
 create_user (const gchar *, const gchar *, const gchar *, const gchar *,
              int, const array_t *, array_t *, gchar **,
              array_t *, gchar **, gchar **, user_t *, int);
