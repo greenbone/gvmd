@@ -3530,6 +3530,9 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
+int
+manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
+
 
 /* Wizards. */
 

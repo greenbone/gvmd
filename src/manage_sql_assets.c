@@ -1516,6 +1516,73 @@ asset_snapshots_container_image (report_t report, task_t task)
 #endif /* ENABLE_CONTAINER_SCANNING */
 
 /**
+ * @brief Dump the string for Asset Snapshot counts to stdout.
+ *
+ * @param[in]  log_config  Log configuration.
+ * @param[in]  database    Location of manage database.
+ *
+ * @return 0 success, -1 error, -2 database is too old,
+ *         -3 database needs to be initialised from server,
+ *         -5 database is too new.
+ */
+int
+manage_dump_asset_snapshot_counts (GSList *log_config,
+                                   const db_conn_info_t *database)
+{
+  int ret;
+
+  int total_count = 0;
+  int target_count = 0;
+  int agent_count = 0;
+  int container_image_count = 0;
+
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
+  if (ret)
+    return ret;
+
+  total_count = sql_int (
+    "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots;");
+
+  target_count = sql_int (
+    "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
+    " WHERE asset_type = %d;",
+    ASSET_TYPE_TARGET);
+
+  agent_count = sql_int (
+    "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
+    " WHERE asset_type = %d;",
+    ASSET_TYPE_AGENT);
+
+  container_image_count = sql_int (
+    "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
+    " WHERE asset_type = %d;",
+    ASSET_TYPE_CONTAINER_IMAGE);
+
+  GString *out = g_string_new (NULL);
+
+  g_string_append (out, "Asset Snapshot Counts (distinct asset_key)\n");
+  g_string_append_printf (
+    out, "  Total:                     %d\n", total_count);
+  g_string_append_printf (
+    out, "  Targets (type=%d):          %d\n",
+    ASSET_TYPE_TARGET, target_count);
+  g_string_append_printf (
+    out, "  Agents  (type=%d):          %d\n",
+    ASSET_TYPE_AGENT, agent_count);
+  g_string_append_printf (
+    out, "  Container images (type=%d): %d\n",
+    ASSET_TYPE_CONTAINER_IMAGE, container_image_count);
+
+  printf ("%s", out->str);
+
+  g_string_free (out, TRUE);
+
+  manage_option_cleanup ();
+  return 0;
+}
+
+/**
  * @brief Setup hosts and their identifiers after a scan, from host details.
  *
  * At the end of a scan this revises the decision about which asset host to use
