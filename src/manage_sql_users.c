@@ -302,3 +302,49 @@ user_role_iterator_readable (iterator_t* iterator)
   if (iterator->done) return 0;
   return iterator_int (iterator, 4);
 }
+
+/**
+ * @brief Find a user for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of user.
+ * @param[out]  user        User return, 0 if successfully failed to find user.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user_with_permission (const char* uuid, user_t* user,
+                           const char *permission)
+{
+  return find_resource_with_permission ("user", uuid, user, permission, 0);
+}
+
+/**
+ * @brief Find a user given a name.
+ *
+ * @param[in]   name  A user name.
+ * @param[out]  user  User return, 0 if successfully failed to find user.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user_by_name_with_permission (const char* name, user_t *user,
+                                   const char *permission)
+{
+  return find_resource_by_name_with_permission ("user", name, user, permission);
+}
+
+/**
+ * @brief Find a user given a name.
+ *
+ * @param[in]   name  A user name.
+ * @param[out]  user  User return, 0 if successfully failed to find user.
+ *
+ * @return FALSE on success (including if failed to find user), TRUE on error.
+ */
+gboolean
+find_user_by_name (const char* name, user_t *user)
+{
+  return find_resource_by_name ("user", name, user);
+}

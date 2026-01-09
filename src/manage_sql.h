@@ -367,6 +367,10 @@ find_resource_with_permission (const char *, const char *,
 gboolean
 find_resource_by_name (const char *, const char *, resource_t *);
 
+gboolean
+find_resource_by_name_with_permission (const char *, const char *,
+                                       resource_t *, const char *);
+
 int
 resource_predefined (const gchar *, resource_t);
 

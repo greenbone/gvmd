@@ -60,4 +60,13 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
  }
 
+gboolean
+find_user_with_permission (const char *, user_t *, const char *);
+
+gboolean
+find_user_by_name_with_permission (const char *, user_t *, const char *);
+
+gboolean
+find_user_by_name (const char *, user_t *);
+
 #endif //_GVMD_MANAGE_SQL_USERS_H
