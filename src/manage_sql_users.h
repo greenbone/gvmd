@@ -6,6 +6,8 @@
 #ifndef _GVMD_MANAGE_SQL_USERS_H
 #define _GVMD_MANAGE_SQL_USERS_H
 
+#include <gvm/util/authutils.h>
+
 /**
  * @brief User columns for user iterator.
  */
@@ -68,5 +70,22 @@ find_user_by_name_with_permission (const char *, user_t *, const char *);
 
 gboolean
 find_user_by_name (const char *, user_t *);
+
+int
+user_exists (const gchar *);
+
+int
+user_exists_method (const gchar *, auth_method_t);
+
+gchar *
+user_uuid_any_method (const gchar *);
+
+int
+add_users (const gchar *, resource_t, const char *);
+
+/* Defined in manage_users.c, but internal to libmanage. */
+
+int
+validate_username (const gchar *);
 
 #endif //_GVMD_MANAGE_SQL_USERS_H

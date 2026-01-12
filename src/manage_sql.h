@@ -605,6 +605,9 @@ int
 vector_find_filter (const gchar **, const gchar *);
 
 int
-add_users (const gchar *, resource_t, const char *);
+ldap_auth_enabled ();
+
+int
+radius_auth_enabled ();
 
 #endif /* not _GVMD_MANAGE_SQL_H */
