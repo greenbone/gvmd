@@ -194,9 +194,6 @@ int delete_reports (task_t);
 int
 stop_task_internal (task_t);
 
-int
-validate_username (const gchar *);
-
 
 /* Static headers. */
 
@@ -5667,34 +5664,11 @@ manage_user_hash (const gchar *username)
 }
 
 /**
- * @brief Get user uuid.
- *
- * @param[in]  username  User name.
- * @param[in]  method    Authentication method.
- *
- * @return UUID.
- */
-static gchar *
-user_uuid_method (const gchar *username, auth_method_t method)
-{
-  gchar *uuid, *quoted_username, *quoted_method;
-  quoted_username = sql_quote (username);
-  quoted_method = sql_quote (auth_method_name (method));
-  uuid = sql_string ("SELECT uuid FROM users"
-                     " WHERE name = '%s' AND method = '%s';",
-                     quoted_username,
-                     quoted_method);
-  g_free (quoted_username);
-  g_free (quoted_method);
-  return uuid;
-}
-
-/**
  * @brief Check whether LDAP is enabled.
  *
  * @return 0 no, else yes.
  */
-static int
+int
 ldap_auth_enabled ()
 {
   if (gvm_auth_ldap_enabled ())
@@ -5709,7 +5683,7 @@ ldap_auth_enabled ()
  *
  * @return 0 no, else yes.
  */
-static int
+int
 radius_auth_enabled ()
 {
   if (gvm_auth_radius_enabled ())
@@ -5717,54 +5691,6 @@ radius_auth_enabled ()
                     "                  WHERE name = 'radius_enable'),"
                     "                 0);");
   return 0;
-}
-
-
-/**
- * @brief Check if user exists.
- *
- * @param[in]  name    User name.
- * @param[in]  method  Auth method.
- *
- * @return 1 yes, 0 no.
- */
-static int
-user_exists_method (const gchar *name, auth_method_t method)
-{
-  gchar *quoted_name, *quoted_method;
-  int ret;
-
-  quoted_name = sql_quote (name);
-  quoted_method = sql_quote (auth_method_name (method));
-  ret = sql_int ("SELECT count (*) FROM users"
-                 " WHERE name = '%s' AND method = '%s';",
-                 quoted_name,
-                 quoted_method);
-  g_free (quoted_name);
-  g_free (quoted_method);
-
-  return ret;
-}
-
-/**
- * @brief Get user uuid, trying all authentication methods.
- *
- * @param[in]  name    User name.
- *
- * @return UUID.
- */
-static gchar *
-user_uuid_any_method (const gchar *name)
-{
-  if (ldap_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT);
-  if (radius_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT);
-  if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
-  return NULL;
 }
 
 /**
@@ -5815,25 +5741,6 @@ user_ensure_in_db (const gchar *name, const gchar *method)
   g_free (quoted_name);
 
   return 0;
-}
-
-/**
- * @brief Check if user exists.
- *
- * @param[in]  name    User name.
- *
- * @return 1 yes, 0 no.
- */
-static int
-user_exists (const gchar *name)
-{
-  if (ldap_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
-    return 1;
-  if (radius_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
-    return 1;
-  return user_exists_method (name, AUTHENTICATION_METHOD_FILE);
 }
 
 /**
@@ -37914,148 +37821,6 @@ manage_default_ca_cert ()
 
 
 /* Users. */
-
-/**
- * @brief Add users to a group or role.
- *
- * Caller must take care of transaction.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Group or role.
- * @param[in]  users     List of users.
- *
- * @return 0 success, 2 failed to find user, 4 user name validation failed,
- *         99 permission denied, -1 error.
- */
-int
-add_users (const gchar *type, resource_t resource, const char *users)
-{
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
-
-      /* Add each user. */
-
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 2;
-            }
-
-          if (find_user_by_name (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              if (validate_username (name))
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return 4;
-                }
-
-              uuid = user_uuid_any_method (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users"
-                       " (uuid, name, creation_time, modification_time)"
-                       " VALUES"
-                       " ('%s', '%s', m_now (), m_now ());",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sql_last_insert_id ();
-                }
-              else
-                {
-                  /* find_user_by_name should have found it. */
-                  assert (0);
-                  g_free (uuid);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              g_free (uuid);
-            }
-
-          if (find_user_by_name_with_permission (name, &user, "get_users"))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 99;
-            }
-
-          sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
-               type,
-               type,
-               resource,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  return 0;
-}
 
 /**
  * @brief Create the given user.

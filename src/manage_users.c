@@ -62,3 +62,20 @@ trash_user_writable (user_t user)
 {
   return 1;
 }
+
+/**
+ *
+ * @brief Validates a username.
+ *
+ * @param[in]  name  The name.
+ *
+ * @return 0 if the username is valid, 1 if not.
+ */
+int
+validate_username (const gchar *name)
+{
+  if (g_regex_match_simple ("^[[:alnum:]_.-]+$", name, 0, 0))
+    return 0;
+  else
+    return 1;
+}
