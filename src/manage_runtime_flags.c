@@ -35,11 +35,11 @@
 #define ENABLE_CONTAINER_SCANNING 0
 #endif
 
-#ifndef OPENVASD
+#ifndef ENABLE_OPENVASD
 /**
  * @brief Whether to enable openvasd scanners.
  */
-#define OPENVASD 0
+#define ENABLE_OPENVASD 0
 #endif
 
 #ifndef ENABLE_CREDENTIAL_STORES

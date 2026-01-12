@@ -14,6 +14,7 @@
 #include "manage_configs.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_users.h"
 #include "utils.h"
 
 #include <errno.h>

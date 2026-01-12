@@ -188,6 +188,7 @@ set(
   manage_scan_queue.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
+  manage_users.c
 )
 
 if(ENABLE_AGENTS)
@@ -220,6 +221,7 @@ set(
   manage_sql_roles.c
   manage_sql_tickets.c
   manage_sql_tls_certificates.c
+  manage_sql_users.c
   manage_sql_nvts_osp.c
   manage_sql_nvts_openvasd.c
   manage_sql_nvts_common.c
@@ -695,7 +697,9 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_users.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_users.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"

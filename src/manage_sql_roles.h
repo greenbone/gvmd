@@ -6,6 +6,30 @@
 #ifndef _GVMD_MANAGE_SQL_ROLES_H
 #define _GVMD_MANAGE_SQL_ROLES_H
 
+/**
+ * @brief Filter columns for role iterator.
+ */
+#define ROLE_ITERATOR_FILTER_COLUMNS                                         \
+ { GET_ITERATOR_FILTER_COLUMNS, NULL }
+
+/**
+ * @brief Role iterator columns.
+ */
+#define ROLE_ITERATOR_COLUMNS                                                \
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (roles),                                             \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+ }
+
+/**
+ * @brief Role iterator columns for trash case.
+ */
+#define ROLE_ITERATOR_TRASH_COLUMNS                                          \
+ {                                                                           \
+   GET_ITERATOR_COLUMNS (roles_trash),                                       \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
+ }
+
 int
 role_is_predefined (role_t);
 

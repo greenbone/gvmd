@@ -2949,30 +2949,6 @@ void
 delete_permissions_cache_for_user (user_t);
 
 
-/* Roles. */
-
-int
-init_role_iterator (iterator_t *, get_data_t *);
-
-char*
-role_uuid (role_t);
-
-gchar *
-role_users (role_t);
-
-int
-trash_role_writable (role_t);
-
-int
-role_writable (role_t);
-
-int
-role_count (const get_data_t*);
-
-int
-modify_role (const char *, const char *, const char *, const char *);
-
-
 /* Schema. */
 
 int
@@ -3214,9 +3190,6 @@ manage_default_ca_cert ();
 
 /* Users. */
 
-gboolean
-find_user_by_name_with_permission (const char *, user_t *, const char *);
-
 int
 manage_create_user (GSList *, const db_conn_info_t *, const gchar *,
                     const gchar *, const gchar *);
@@ -3248,45 +3221,6 @@ gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
 int
-init_user_iterator (iterator_t*, get_data_t*);
-
-const char*
-user_iterator_role (iterator_t*);
-
-const char*
-user_iterator_method (iterator_t*);
-
-const char*
-user_iterator_hosts (iterator_t*);
-
-int
-user_iterator_hosts_allow (iterator_t*);
-
-void
-init_user_group_iterator (iterator_t *, user_t);
-
-const char*
-user_group_iterator_uuid (iterator_t*);
-
-const char*
-user_group_iterator_name (iterator_t*);
-
-int
-user_group_iterator_readable (iterator_t*);
-
-void
-init_user_role_iterator (iterator_t *, user_t);
-
-const char*
-user_role_iterator_uuid (iterator_t*);
-
-const char*
-user_role_iterator_name (iterator_t*);
-
-int
-user_role_iterator_readable (iterator_t*);
-
-int
 create_user (const gchar *, const gchar *, const gchar *, const gchar *,
              int, const array_t *, array_t *, gchar **,
              array_t *, gchar **, gchar **, user_t *, int);
@@ -3301,31 +3235,7 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              gchar **);
 
 int
-user_in_use (user_t);
-
-int
-trash_user_in_use (user_t);
-
-int
-user_writable (user_t);
-
-int
-trash_user_writable (user_t);
-
-int
 user_count (const get_data_t*);
-
-gchar*
-user_name (const char *);
-
-char*
-user_uuid (user_t);
-
-gchar*
-user_hosts (const char *);
-
-int
-user_hosts_allow (const char *);
 
 int
 init_vuln_iterator (iterator_t*, const get_data_t*);
@@ -3619,6 +3529,9 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
+
+int
+manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */

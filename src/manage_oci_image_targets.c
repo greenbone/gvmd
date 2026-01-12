@@ -175,7 +175,7 @@ valid_oci_url (const gchar *oci_url)
   g_free (port);
 
   const gchar *url_component_regex = "^[a-zA-Z0-9_\\-.]+$";
-  const gchar *url_component_with_tag_regex = "^[a-zA-Z0-9_\\-.:]+$";
+  const gchar *url_component_with_tag_regex = "^[a-zA-Z0-9_\\-.:@]+$";
 
   for (int i = 1; i < parts_len; i++)
     {

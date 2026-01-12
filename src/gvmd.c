@@ -1609,7 +1609,10 @@ fork_agents_sync ()
           while (next (&scanner_iterator))
             {
               scanner_t scanner = get_iterator_resource (&scanner_iterator);
-              if (scanner && scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+              if (scanner && (scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER
+                              || scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER_SENSOR))
                 {
                   gvmd_agent_connector_t connector =
                     gvmd_agent_connector_new_from_scanner (scanner);
@@ -2220,6 +2223,7 @@ gvmd (int argc, char** argv, char *env[])
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
   static gboolean dump_vt_verification = FALSE;
+  static gboolean dump_asset_snapshot_counts = FALSE;
   static gchar *encryption_key_type = NULL;
   static int encryption_key_length = 0;
   static gchar *set_encryption_key = NULL;
@@ -2403,6 +2407,10 @@ gvmd (int argc, char** argv, char *env[])
         { "dump-vt-verification", '\0', 0, G_OPTION_ARG_NONE,
           &dump_vt_verification,
           "Dump the string the VTs verification hash is calculated from.",
+          NULL },
+        { "dump-asset-snapshot-counts", '\0', 0, G_OPTION_ARG_NONE,
+          &dump_asset_snapshot_counts,
+          "Dump the string the Asset snapshot counts are calculated from.",
           NULL },
         { "encryption-key-length", '\0', 0, G_OPTION_ARG_INT,
           &encryption_key_length,
@@ -3303,6 +3311,25 @@ gvmd (int argc, char** argv, char *env[])
       if (ret)
         {
           printf ("Failed to dump VT verification data.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+
+  if (dump_asset_snapshot_counts)
+    {
+      int ret;
+
+      setproctitle ("--dump-asset-snapshot-counts");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_dump_asset_snapshot_counts (log_config, &database);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to dump Asset snapshot counts.\n");
           return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;

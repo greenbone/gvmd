@@ -10,10 +10,13 @@
  * General management headers of agent installers.
  */
 
+#if ENABLE_AGENTS
+
 #ifndef _GVMD_MANAGE_AGENT_INSTALLERS_H
 #define _GVMD_MANAGE_AGENT_INSTALLERS_H
 
 #include "manage.h"
+#include "manage_resources.h"
 #include "iterator.h"
 #include "gmp_get.h"
 #include <gvm/util/streamvalidator.h>
@@ -36,8 +39,6 @@
 #define AGENT_INSTALLER_BASE64_WITH_BREAKS_BUFFER_SIZE    \
         (AGENT_INSTALLER_BASE64_BUFFER_SIZE               \
          + AGENT_INSTALLER_BASE64_BUFFER_SIZE / 76 + 1)   \
-
-typedef resource_t agent_installer_t;
 
 /**
  * @brief Agent installer data.
@@ -135,5 +136,6 @@ agent_installer_writable (agent_installer_t);
 int
 trash_agent_installer_writable(agent_installer_t);
 
-
 #endif /* not _GVMD_MANAGE_AGENT_INSTALLERS_H */
+
+#endif /* ENABLE_AGENTS */
