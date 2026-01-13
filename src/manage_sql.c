@@ -16719,6 +16719,7 @@ print_report_errors_xml (report_t report, FILE *stream)
 /**
  * @brief Print the XML for a report port summary to a file.
  *
+ * @param[in]  ctx              Printing context.
  * @param[in]  report           The report.
  * @param[in]  out              File stream.
  * @param[in]  get              Result get data.
@@ -16727,16 +16728,15 @@ print_report_errors_xml (report_t report, FILE *stream)
  * @param[in]  max_results      The maximum number of results returned.
  * @param[in]  sort_order       Whether to sort ascending or descending.
  * @param[in]  sort_field       Field to sort on.
- * @param[out] host_ports       Hash table for counting ports per host.
  * @param[in,out] results       Result iterator.  For caller to reuse.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
-                       int first_result, int max_results,
+print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
+                       const get_data_t *get, int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       GHashTable *host_ports, iterator_t *results)
+                       iterator_t *results)
 {
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
@@ -16846,8 +16846,10 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 
     while ((item = g_array_index (ports, result_buffer_t*, index++)))
       {
-        int host_port_count
-              = GPOINTER_TO_INT (g_hash_table_lookup (host_ports, item->host));
+        int port_count;
+
+        port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
+                                                           item->host));
 
         PRINT (out,
                "<port>"
@@ -16863,9 +16865,9 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 
         if (g_str_has_prefix(item->port, "general/") == FALSE)
           {
-            g_hash_table_replace (host_ports,
+            g_hash_table_replace (ctx->f_host_ports,
                                   g_strdup (item->host),
-                                  GINT_TO_POINTER (host_port_count + 1));
+                                  GINT_TO_POINTER (port_count + 1));
           }
         result_buffer_free (item);
       }
@@ -18365,9 +18367,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   if (get->details && (delta == 0))
     {
       reuse_result_iterator = 1;
-      if (print_report_port_xml (report, out, get, first_result, max_results,
-                                 sort_order, sort_field, ctx.f_host_ports,
-                                 &results))
+      if (print_report_port_xml (&ctx, report, out, get, first_result,
+                                 max_results, sort_order, sort_field, &results))
         {
           g_free (term);
           goto fail;
