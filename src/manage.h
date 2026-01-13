@@ -3208,12 +3208,6 @@ manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
 gchar *
 manage_user_hash (const gchar *);
 
-gchar *
-manage_user_uuid (const gchar *, auth_method_t);
-
-int
-manage_user_exists (const gchar *, auth_method_t);
-
 int
 copy_user (const char*, const char*, const char*, user_t*);
 
