@@ -72,4 +72,9 @@ user_role_iterator_name (iterator_t *);
 int
 user_role_iterator_readable (iterator_t *);
 
+int
+create_user (const gchar *, const gchar *, const gchar *, const gchar *,
+             int, const array_t *, array_t *, gchar **,
+             array_t *, gchar **, gchar **, user_t *, int);
+
 #endif /* not _GVMD_MANAGE_USERS_H */

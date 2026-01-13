@@ -497,6 +497,9 @@ copy_resource (const char *, const char *, const char *, const char *,
 gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
+gboolean
+resource_with_name_exists_global (const char *, const char *, resource_t);
+
 int
 create_permission_internal (int, const char *, const char *, const char *,
                             const char *, const char *, const char *,
@@ -609,5 +612,11 @@ ldap_auth_enabled ();
 
 int
 radius_auth_enabled ();
+
+void
+manage_set_max_hosts (int);
+
+gchar*
+clean_hosts (const char *, int *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */
