@@ -17707,6 +17707,43 @@ print_report_init_zone (print_report_context_t *ctx)
 }
 
 /**
+ * @brief Init the f_hosts_* hashtables.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_init_f_hosts (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit") == 0)
+    {
+      ctx->f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                        g_free, NULL);
+      ctx->f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                      g_free, NULL);
+      ctx->f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+    }
+  else
+    {
+      ctx->f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx->f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx->f_host_false_positives = g_hash_table_new_full (g_str_hash,
+                                                           g_str_equal,
+                                                           g_free, NULL);
+    }
+}
+
+/**
  * @brief Get result count totals for print_report_xml_start.
  *
  * @param[in]  ctx  Printing context.
@@ -18474,33 +18511,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-    {
-      ctx.f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-      ctx.f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                       g_free, NULL);
-      ctx.f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                     g_free, NULL);
-      ctx.f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-    }
-  else
-    {
-      ctx.f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-      ctx.f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      ctx.f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                   g_free, NULL);
-      ctx.f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      ctx.f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                               g_free, NULL);
-      ctx.f_host_false_positives = g_hash_table_new_full (g_str_hash,
-                                                          g_str_equal,
-                                                          g_free, NULL);
-    }
+  print_report_init_f_hosts (&ctx);
 
   if (delta && get->details)
     {
