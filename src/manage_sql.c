@@ -16267,6 +16267,87 @@ report_finished_container_images_str (report_t report)
 }
 
 /**
+ * @brief Context info for print_report_xml_start.
+ */
+struct print_report_context
+{
+  int count_filtered;         ///< Whether to count filtered results.
+  report_t delta;             ///< Report to compare with.
+  int filtered_result_count;  ///< Filtered result count.
+  const get_data_t *get;      ///< GET command data.
+  gchar *tz;                  ///< TZ.
+  gchar *zone;                ///< Zone.
+  char *old_tz_override;      ///< Old TZ.
+  report_t report;            ///< Report.
+  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+  // Counts.
+  int criticals;              ///< Number of criticals.
+  int holes;                  ///< Number of holes.
+  int infos;                  ///< Number of infos.
+  int logs;                   ///< Number of logs.
+  int warnings;               ///< Number of warnings.
+  int false_positives;        ///< Number of false positives.
+  int total_result_count;     ///< Total number of results.
+  // Filtered counts.
+  GHashTable *f_host_false_positives; ///< False positives per host.
+  GHashTable *f_host_holes;           ///< Holes per host.
+  GHashTable *f_host_infos;           ///< Infos per host.
+  GHashTable *f_host_logs;            ///< Logs per hosts.
+  GHashTable *f_host_ports;           ///< Ports per host.
+  GHashTable *f_host_warnings;        ///< Warnings per hosts.
+  // Filtered counts: audit.
+  GHashTable *f_host_criticals;       ///< Criticals per host.
+  GHashTable *f_host_compliant;       ///< Compliants per host.
+  GHashTable *f_host_incomplete;      ///< Incompletes per host.
+  GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
+  GHashTable *f_host_undefined;       ///< Undefineds per host.
+};
+
+/**
+ * @brief Context type for print_report_xml_start.
+ */
+typedef struct print_report_context print_report_context_t;
+
+/**
+ * @brief Free f_hosts_ field for print_report_context_cleanup.
+ *
+ * @param[in]  table  Hash table.
+ */
+static void
+free_f_host (GHashTable *table)
+{
+  if (table)
+    g_hash_table_destroy (table);
+}
+
+/**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->tsk_usage_type);
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+  // Filtered counts.
+  free_f_host (ctx->f_host_false_positives);
+  free_f_host (ctx->f_host_holes);
+  free_f_host (ctx->f_host_infos);
+  free_f_host (ctx->f_host_logs);
+  free_f_host (ctx->f_host_ports);
+  free_f_host (ctx->f_host_warnings);
+  // Filtered counts: audit.
+  free_f_host (ctx->f_host_compliant);
+  free_f_host (ctx->f_host_criticals);
+  free_f_host (ctx->f_host_incomplete);
+  free_f_host (ctx->f_host_notcompliant);
+  free_f_host (ctx->f_host_undefined);
+}
+
+/**
  * @brief Write report host detail to file stream.
  *
  * On error close stream.
@@ -17583,87 +17664,6 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
 
   g_free (*term);
   *term = ensure_term_has_qod_and_overrides (clean);
-}
-
-/**
- * @brief Context info for print_report_xml_start.
- */
-struct print_report_context
-{
-  int count_filtered;         ///< Whether to count filtered results.
-  report_t delta;             ///< Report to compare with.
-  int filtered_result_count;  ///< Filtered result count.
-  const get_data_t *get;      ///< GET command data.
-  gchar *tz;                  ///< TZ.
-  gchar *zone;                ///< Zone.
-  char *old_tz_override;      ///< Old TZ.
-  report_t report;            ///< Report.
-  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
-  // Counts.
-  int criticals;              ///< Number of criticals.
-  int holes;                  ///< Number of holes.
-  int infos;                  ///< Number of infos.
-  int logs;                   ///< Number of logs.
-  int warnings;               ///< Number of warnings.
-  int false_positives;        ///< Number of false positives.
-  int total_result_count;     ///< Total number of results.
-  // Filtered counts.
-  GHashTable *f_host_false_positives; ///< False positives per host.
-  GHashTable *f_host_holes;           ///< Holes per host.
-  GHashTable *f_host_infos;           ///< Infos per host.
-  GHashTable *f_host_logs;            ///< Logs per hosts.
-  GHashTable *f_host_ports;           ///< Ports per host.
-  GHashTable *f_host_warnings;        ///< Warnings per hosts.
-  // Filtered counts: audit.
-  GHashTable *f_host_criticals;       ///< Criticals per host.
-  GHashTable *f_host_compliant;       ///< Compliants per host.
-  GHashTable *f_host_incomplete;      ///< Incompletes per host.
-  GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
-  GHashTable *f_host_undefined;       ///< Undefineds per host.
-};
-
-/**
- * @brief Context type for print_report_xml_start.
- */
-typedef struct print_report_context print_report_context_t;
-
-/**
- * @brief Free f_hosts_ field for print_report_context_cleanup.
- *
- * @param[in]  table  Hash table.
- */
-static void
-free_f_host (GHashTable *table)
-{
-  if (table)
-    g_hash_table_destroy (table);
-}
-
-/**
- * @brief Free the members of a context.
- *
- * @param[in]  ctx  Printing context.
- */
-static void
-print_report_context_cleanup (print_report_context_t *ctx)
-{
-  g_free (ctx->tsk_usage_type);
-  g_free (ctx->tz);
-  g_free (ctx->zone);
-  free (ctx->old_tz_override);
-  // Filtered counts.
-  free_f_host (ctx->f_host_false_positives);
-  free_f_host (ctx->f_host_holes);
-  free_f_host (ctx->f_host_infos);
-  free_f_host (ctx->f_host_logs);
-  free_f_host (ctx->f_host_ports);
-  free_f_host (ctx->f_host_warnings);
-  // Filtered counts: audit.
-  free_f_host (ctx->f_host_compliant);
-  free_f_host (ctx->f_host_criticals);
-  free_f_host (ctx->f_host_incomplete);
-  free_f_host (ctx->f_host_notcompliant);
-  free_f_host (ctx->f_host_undefined);
 }
 
 /**
