@@ -31,16 +31,16 @@ scan_queue_clear ()
 
 /**
  * @brief Add a scan to the queue.
- * 
+ *
  * @param[in]  report  The report of the scan to add.
  */
 void
 scan_queue_add (report_t report)
 {
   struct timespec ts;
-  
+
   clock_gettime (CLOCK_REALTIME, &ts);
-  
+
   sql ("INSERT INTO scan_queue"
        " (report, queued_time_secs, queued_time_nano, handler_pid)"
        " VALUES (%llu, %ld, %ld, 0)",
@@ -49,7 +49,7 @@ scan_queue_add (report_t report)
 
 /**
  * @brief Move a scan to end of the queue and reset the pid to 0.
- * 
+ *
  * @param[in]  report  The report of the scan to move.
  */
 void
@@ -67,7 +67,7 @@ scan_queue_move_to_end (report_t report)
 
 /**
  * @brief Set the pid of a scan.
- * 
+ *
  * @param[in]  report  The report of the scan to update.
  * @param[in]  pid     The pid to set.
  */
@@ -82,7 +82,7 @@ scan_queue_set_handler_pid (report_t report, pid_t pid)
 
 /**
  * @brief Remove a scan from the queue.
- * 
+ *
  * @param[in]  report  The report of the scan to remove.
  */
 void
@@ -94,7 +94,7 @@ scan_queue_remove (report_t report)
 /**
  * @brief Gets the length of the gvmd scan queue.
  *
- * @return  The number of scans in the queue.
+ * @return The number of scans in the queue.
  */
 int
 scan_queue_length ()
@@ -103,10 +103,12 @@ scan_queue_length ()
 }
 
 /**
- * Initialize a scan queue iterator, with the reports and task sorted so
- *  the ones queued first are also returned first.
- * 
- * @param[in]  iterator The iterator to Initialize.
+ * @brief Initialize a scan queue iterator.
+ *
+ * The reports and task are sorted so the ones queued first are also returned
+ * first.
+ *
+ * @param[in]  iterator  The iterator to Initialize.
  */
 void
 init_scan_queue_iterator (iterator_t *iterator)
@@ -119,9 +121,11 @@ init_scan_queue_iterator (iterator_t *iterator)
 }
 
 /**
- * @brief Get the report row id from a scan queue iterator.
- * 
- * @return The report row id or 0 if iteration is finished.
+ * @brief Get the report from a scan queue iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The report or 0 if iteration is finished.
  */
 report_t
 scan_queue_iterator_report (iterator_t* iterator)
@@ -134,7 +138,9 @@ scan_queue_iterator_report (iterator_t* iterator)
 /**
  * @brief Get the PID of the current handler from a scan queue iterator or
  *        0 if there is no active handler.
- * 
+ *
+ * @param[in]  iterator  Iterator.
+ *
  * @return The handler PID or 0 if iteration is finished.
  */
 pid_t
@@ -147,7 +153,9 @@ scan_queue_iterator_handler_pid (iterator_t *iterator)
 
 /**
  * @brief Get where to start the scan from.
- * 
+ *
+ * @param[in]  iterator  Iterator.
+ *
  * @return 0 start from beginning, 1 continue from stopped,
  *         2 continue if stopped else start from beginning.
  */
@@ -161,15 +169,19 @@ scan_queue_iterator_start_from (iterator_t* iterator)
 
 /**
  * @brief Get the report UUID from a scan queue iterator.
- * 
+ *
+ * @param[in]  iterator  Iterator.
+ *
  * @return The report UUID or NULL if iteration is finished.
  */
 DEF_ACCESS (scan_queue_iterator_report_uuid, 3);
 
 /**
- * @brief Get the task row id from a scan queue iterator.
- * 
- * @return The task row id or 0 if iteration is finished.
+ * @brief Get the task from a scan queue iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The task or 0 if iteration is finished.
  */
 task_t
 scan_queue_iterator_task (iterator_t* iterator)
@@ -180,9 +192,11 @@ scan_queue_iterator_task (iterator_t* iterator)
 }
 
 /**
- * @brief Get the report's owner row id from a scan queue iterator.
- * 
- * @return The owner row id or 0 if iteration is finished.
+ * @brief Get the report's owner from a scan queue iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The owner or 0 if iteration is finished.
  */
 user_t
 scan_queue_iterator_owner (iterator_t* iterator)

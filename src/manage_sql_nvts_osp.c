@@ -1,26 +1,13 @@
 /* Copyright (C) 2010-2025 Greenbone AG
 *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
  * @file
- * @brief GVM management layer: OSP NVT logic
+ * @brief GVM management layer: OSP NVT SQL logic
  *
- * NVT logic specific to OSP in the GVM management layer.
+ * NVT SQL logic specific to OSP in the GVM management layer.
  */
 
 #include "manage_sql_nvts_osp.h"
@@ -777,7 +764,7 @@ update_scanner_preferences_osp (const gchar *update_socket)
 /**
  * @brief Update VTs via OSP.
  *
- * @param[in]  osp_uuid         UUID of ospd-openvas to connect to.
+ * @param[in]  update_socket         Socket to connect to.
  * @param[in]  db_feed_version       Feed version from meta table.
  * @param[in]  scanner_feed_version  Feed version from scanner.
  * @param[in]  rebuild               Whether to rebuild the NVT tables from scratch.

@@ -1,19 +1,6 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -21,8 +8,12 @@
  * @brief The Greenbone Vulnerability Manager management library.
  */
 
-/* For strptime in time.h. */
 #undef _XOPEN_SOURCE
+/**
+ * @brief Enable extra functions.
+ *
+ * For strptime in time.h.
+ */
 #define _XOPEN_SOURCE
 
 /**
@@ -39,11 +30,12 @@
 #include "manage_alerts.h"
 #include "manage_assets.h"
 #include "manage_filters.h"
+#include "manage_groups.h"
 #include "manage_port_lists.h"
 #include "manage_report_formats.h"
-#if ENABLE_CREDENTIAL_STORES
+#include "manage_roles.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql_credential_stores.h"
-#endif
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_nvts.h"
@@ -53,16 +45,20 @@
 #include "manage_sql_assets.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_filters.h"
+#include "manage_sql_groups.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_roles.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
+#include "manage_sql_users.h"
 #include "manage_acl.h"
 #include "manage_commands.h"
 #include "manage_authentication.h"
 #include "manage_oci_image_targets.h"
+#include "manage_users.h"
 #include "lsc_user.h"
 #include "sql.h"
 #include "utils.h"
@@ -198,9 +194,6 @@ int delete_reports (task_t);
 int
 stop_task_internal (task_t);
 
-int
-validate_username (const gchar *);
-
 
 /* Static headers. */
 
@@ -218,20 +211,11 @@ task_owner_uuid (task_t);
 gchar*
 clean_hosts (const char *, int*);
 
-static gboolean
-find_user_by_name (const char *, user_t *user);
-
-static gboolean
-find_role_with_permission (const char *, role_t *, const char *);
-
 static int
 user_ensure_in_db (const gchar *, const gchar *);
 
 static int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
-
-static void
-permissions_set_subjects (const char *, resource_t, resource_t, int);
 
 static resource_t
 permission_resource (permission_t);
@@ -243,18 +227,9 @@ static char *
 permission_subject_type (permission_t);
 
 static int
-role_is_predefined (role_t);
-
-static int
-role_is_predefined_id (const char *);
-
-static int
 report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
-
-static gboolean
-find_group_with_permission (const char *, group_t *, const char *);
 
 static gchar*
 vulns_extra_where (int);
@@ -281,13 +256,10 @@ static void
 cache_permissions_for_resource (const char *, resource_t, GArray*);
 
 static void
-cache_all_permissions_for_users (GArray*);
-
-static void
 report_cache_counts (report_t, int, int, const char*);
 
 static gchar *
-reports_extra_where (int, const char *, const char *);
+reports_extra_where (int, const gchar *, const char *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -561,16 +533,18 @@ array_find_string (array_t *array, const gchar *string)
  *
  * @return The string from the vector if found, else NULL.
  */
-static const gchar*
+static const gchar *
 vector_find_string (const gchar **vector, const gchar *string)
 {
   if (vector == NULL)
     return NULL;
   while (*vector)
-    if (strcmp (*vector, string) == 0)
-      return *vector;
-    else
+    {
+      if (strcmp (*vector, string) == 0)
+        return *vector;
+
       vector++;
+    }
   return NULL;
 }
 
@@ -963,7 +937,7 @@ find_resource_with_permission (const char* type, const char* uuid,
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-static gboolean
+gboolean
 find_resource_by_name (const char* type, const char* name, resource_t *resource)
 {
   gchar *quoted_name;
@@ -1004,7 +978,7 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
  * @return FALSE on success (including if failed to find resource), TRUE on
  *         error.
  */
-static gboolean
+gboolean
 find_resource_by_name_with_permission (const char *type, const char *name,
                                        resource_t *resource,
                                        const char *permission)
@@ -1334,70 +1308,89 @@ resource_name (const char *type, const char *uuid, int location, char **name)
   if (valid_db_resource_type (type) == 0)
     return 1;
 
+  GString *query = g_string_new ("");
+
   if (strcasecmp (type, "note") == 0)
-    *name = sql_string ("SELECT 'Note for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = notes%s.nvt)"
-                        " FROM notes%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT 'Note for: '"
+                       " || (SELECT name"
+                       "     FROM nvts"
+                       "     WHERE nvts.uuid = tnotes.nvt)"
+                       " FROM notes%s AS tnotes"
+                       " WHERE uuid = $1;",
+                       location == LOCATION_TABLE ? "" : "_trash");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "override") == 0)
-    *name = sql_string ("SELECT 'Override for: '"
-                        " || (SELECT name"
-                        "     FROM nvts"
-                        "     WHERE nvts.uuid = overrides%s.nvt)"
-                        " FROM overrides%s"
-                        " WHERE uuid = '%s';",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        location == LOCATION_TABLE ? "" : "_trash",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT 'Override for: '"
+                       " || (SELECT name"
+                       "     FROM nvts"
+                       "     WHERE nvts.uuid = tovrr.nvt)"
+                       " FROM overrides%s AS tovrr"
+                       " WHERE uuid = $1;",
+                       location == LOCATION_TABLE ? "" : "_trash");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "report") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM reports"
-                        " WHERE uuid = '%s';",
-                        uuid);
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM reports"
+                             " WHERE uuid = '$1';",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
   else if (strcasecmp (type, "result") == 0)
-    *name = sql_string ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                        " || ' - '"
-                        " || (SELECT name FROM nvts WHERE oid = nvt)"
-                        " || ' - '"
-                        " || (SELECT"
-                        "       CASE (SELECT end_time FROM tasks"
-                        "             WHERE id = task)"
-                        "       WHEN 0 THEN 'N/A'"
-                        "       ELSE (SELECT iso_time (end_time)"
-                        "             FROM tasks WHERE id = task)"
-                        "    END)"
-                        " FROM results"
-                        " WHERE uuid = '%s';",
-                        uuid);
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT name FROM nvts WHERE oid = nvt)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM results"
+                             " WHERE uuid = '$1';",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
   else if (location == LOCATION_TABLE)
-    *name = sql_string ("SELECT name"
-                        " FROM %ss"
-                        " WHERE uuid = '%s';",
-                        type,
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT name"
+                       " FROM %ss"
+                       " WHERE uuid = $1;",
+                       type);
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else if (type_has_trash (type))
-    *name = sql_string ("SELECT name"
-                        " FROM %ss%s"
-                        " WHERE uuid = '%s';",
-                        type,
-                        strcmp (type, "task") ? "_trash" : "",
-                        uuid);
+    {
+      g_string_printf (query,
+                       "SELECT name"
+                       " FROM %ss%s"
+                       " WHERE uuid = $1;",
+                       type, strcmp (type, "task") ? "_trash" : "");
+
+      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
+    }
   else
     *name = NULL;
 
+  g_string_free (query, TRUE);
   return 0;
 }
 
@@ -3126,6 +3119,17 @@ set_current_encryption_key_uid (const char *new_uid)
   g_free (quoted_new_uid);
 }
 
+/**
+ * @brief Validates sort_field for nvts table
+ *
+ * @return 0 success, 1 invalid
+ */
+int
+validate_sort_field (const gchar *table, const gchar *sort_field)
+{
+  return !db_table_has_column ("public", table, sort_field);
+}
+
 
 /* Task subject iterators. */
 
@@ -3276,9 +3280,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   g_free (quote);
 }
 
+/**
+ * @brief Severity columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #define SEVERITY_FILTER_COLUMNS \
   "false_positive", "log", "low", "medium", "high", "critical"
 
+/**
+ * @brief Agent group columns for TASK_ITERATOR_FILTER_COLUMNS.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_FILTER_COLUMNS "agent_group_id", "agent_group",
 #else
@@ -3298,6 +3308,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
     TASK_AGENT_GROUP_FILTER_COLUMNS                                          \
     NULL}
 
+/**
+ * @brief Group columns for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #if ENABLE_AGENTS
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
     ,{                                                                        \
@@ -3316,6 +3329,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS
 #endif
 
+/**
+ * @brief Query for TASK_SEV_CASE_GUARD.
+ */
 #if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
   #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
 #elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
@@ -3326,6 +3342,9 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_NO_TARGET_CTX "(target IS NULL)"
 #endif
 
+/**
+ * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
+ */
 #define TASK_SEV_CASE_GUARD "(" TASK_NO_TARGET_CTX " OR opts.ignore_severity != 0)"
 
 /**
@@ -4168,24 +4187,56 @@ check_db_scanners ()
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_DEFAULT) == 0)
     {
-#if OPENVASD
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " 'localhost', 3000, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           SCANNER_TYPE_OPENVASD);
-#else
-      sql ("INSERT INTO scanners"
-           " (uuid, owner, name, host, port, type, ca_pub, credential,"
-           "  creation_time, modification_time)"
-           " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
-           " '%s', 0, %d, NULL, NULL, m_now (),"
-           " m_now ());",
-           OPENVAS_DEFAULT_SOCKET,
-           SCANNER_TYPE_OPENVAS);
-#endif
+      /* Create default scanner */
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " 'localhost', 3000, %d, NULL, NULL, m_now (), m_now ());",
+               SCANNER_TYPE_OPENVASD);
+        }
+      else
+        {
+          sql ("INSERT INTO scanners"
+               " (uuid, owner, name, host, port, type, ca_pub, credential,"
+               "  creation_time, modification_time)"
+               " VALUES ('" SCANNER_UUID_DEFAULT "', NULL, 'OpenVAS Default',"
+               " '%s', 0, %d, NULL, NULL, m_now (), m_now ());",
+               OPENVAS_DEFAULT_SOCKET,
+               SCANNER_TYPE_OPENVAS);
+        }
+    }
+  else
+    {
+      /* Check existing default scanner against runtime feature flag */
+      scanner_type_t sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          /* Runtime: openvasd scanner should be used */
+          if (sc_type != SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("The openvasd scanner feature is enabled, but the "
+                         "default scanner with UUID %s uses a different type. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
+      else
+        {
+          /* Runtime: ospd-openvas scanner should be used */
+          if (sc_type == SCANNER_TYPE_OPENVASD)
+            {
+              g_warning ("Default scanner with UUID %s is of type openvasd, "
+                         "but the openvasd scanner feature is disabled. "
+                         "Not updating the scanner automatically; please adjust "
+                         "the scanner configuration manually if needed.",
+                         SCANNER_UUID_DEFAULT);
+            }
+        }
     }
 
 #if ENABLE_CONTAINER_SCANNING
@@ -5051,6 +5102,7 @@ check_db_credential_stores ()
     {
       g_message ("%s: No feed owner set, skipping credential store creation",
                __func__);
+      g_free (feed_owner_uuid);
       return;
     }
 
@@ -5064,7 +5116,6 @@ check_db_credential_stores ()
   current_credentials.uuid = old_user_uuid;
   current_credentials.username = old_username;
   g_free (feed_owner_uuid);
-  
 #endif /* ENABLE_CREDENTIAL_STORES */
 }
 
@@ -5141,7 +5192,7 @@ stop_active_tasks ()
 
   /* Clear the scan queue */
   scan_queue_clear ();
-  
+
   /* Set requested and running tasks to stopped. */
 
   assert (current_credentials.uuid == NULL);
@@ -5613,34 +5664,11 @@ manage_user_hash (const gchar *username)
 }
 
 /**
- * @brief Get user uuid.
- *
- * @param[in]  username  User name.
- * @param[in]  method    Authentication method.
- *
- * @return UUID.
- */
-static gchar *
-user_uuid_method (const gchar *username, auth_method_t method)
-{
-  gchar *uuid, *quoted_username, *quoted_method;
-  quoted_username = sql_quote (username);
-  quoted_method = sql_quote (auth_method_name (method));
-  uuid = sql_string ("SELECT uuid FROM users"
-                     " WHERE name = '%s' AND method = '%s';",
-                     quoted_username,
-                     quoted_method);
-  g_free (quoted_username);
-  g_free (quoted_method);
-  return uuid;
-}
-
-/**
  * @brief Check whether LDAP is enabled.
  *
  * @return 0 no, else yes.
  */
-static int
+int
 ldap_auth_enabled ()
 {
   if (gvm_auth_ldap_enabled ())
@@ -5655,7 +5683,7 @@ ldap_auth_enabled ()
  *
  * @return 0 no, else yes.
  */
-static int
+int
 radius_auth_enabled ()
 {
   if (gvm_auth_radius_enabled ())
@@ -5663,54 +5691,6 @@ radius_auth_enabled ()
                     "                  WHERE name = 'radius_enable'),"
                     "                 0);");
   return 0;
-}
-
-
-/**
- * @brief Check if user exists.
- *
- * @param[in]  name    User name.
- * @param[in]  method  Auth method.
- *
- * @return 1 yes, 0 no.
- */
-static int
-user_exists_method (const gchar *name, auth_method_t method)
-{
-  gchar *quoted_name, *quoted_method;
-  int ret;
-
-  quoted_name = sql_quote (name);
-  quoted_method = sql_quote (auth_method_name (method));
-  ret = sql_int ("SELECT count (*) FROM users"
-                 " WHERE name = '%s' AND method = '%s';",
-                 quoted_name,
-                 quoted_method);
-  g_free (quoted_name);
-  g_free (quoted_method);
-
-  return ret;
-}
-
-/**
- * @brief Get user uuid, trying all authentication methods.
- *
- * @param[in]  name    User name.
- *
- * @return UUID.
- */
-static gchar *
-user_uuid_any_method (const gchar *name)
-{
-  if (ldap_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT);
-  if (radius_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT);
-  if (user_exists_method (name, AUTHENTICATION_METHOD_FILE))
-    return user_uuid_method (name, AUTHENTICATION_METHOD_FILE);
-  return NULL;
 }
 
 /**
@@ -5761,25 +5741,6 @@ user_ensure_in_db (const gchar *name, const gchar *method)
   g_free (quoted_name);
 
   return 0;
-}
-
-/**
- * @brief Check if user exists.
- *
- * @param[in]  name    User name.
- *
- * @return 1 yes, 0 no.
- */
-static int
-user_exists (const gchar *name)
-{
-  if (ldap_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_LDAP_CONNECT))
-    return 1;
-  if (radius_auth_enabled ()
-      && user_exists_method (name, AUTHENTICATION_METHOD_RADIUS_CONNECT))
-    return 1;
-  return user_exists_method (name, AUTHENTICATION_METHOD_FILE);
 }
 
 /**
@@ -5959,6 +5920,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 {
   int ret;
   gchar *hash;
+  gboolean use_cache = TRUE;
 
   sql_begin_immediate ();
 
@@ -5967,7 +5929,9 @@ authenticate_any_method (const gchar *username, const gchar *password,
     {
       sql_rollback ();
       g_warning ("%s: Failed to acquire auth_cache lock", __func__);
-      return -1;
+      use_cache = FALSE;
+      // this begin is needed for other queries.
+      sql_begin_immediate ();
     }
 
   if (gvm_auth_ldap_enabled ()
@@ -5980,7 +5944,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       *auth_method = AUTHENTICATION_METHOD_LDAP_CONNECT;
       /* Search the LDAP authentication cache first. */
-      if (auth_cache_find (username, password, 0) == 0)
+      if (use_cache && auth_cache_find (username, password, 0) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -5998,7 +5962,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
 
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 0);
+          if (use_cache)
+            auth_cache_insert (username, password, 0);
           sql_commit ();
         }
       else
@@ -6014,7 +5979,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       char *key = NULL, *host = NULL;
 
       *auth_method = AUTHENTICATION_METHOD_RADIUS_CONNECT;
-      if (auth_cache_find (username, password, 1) == 0)
+      if (use_cache && auth_cache_find (username, password, 1) == 0)
         {
           auth_cache_refresh (username);
           sql_commit ();
@@ -6027,7 +5992,8 @@ authenticate_any_method (const gchar *username, const gchar *password,
       g_free (key);
       if (ret == 0)
         {
-          auth_cache_insert (username, password, 1);
+          if (use_cache)
+            auth_cache_insert (username, password, 1);
           sql_commit ();
         }
       else
@@ -6037,7 +6003,7 @@ authenticate_any_method (const gchar *username, const gchar *password,
       return ret;
     }
   *auth_method = AUTHENTICATION_METHOD_FILE;
-  if (auth_cache_find (username, password, 2) == 0)
+  if (use_cache && auth_cache_find (username, password, 2) == 0)
     {
       auth_cache_refresh (username);
       sql_commit ();
@@ -6055,11 +6021,13 @@ authenticate_any_method (const gchar *username, const gchar *password,
       hash = manage_authentication_hash (password);
       sql ("UPDATE users SET password = '%s', modification_time = m_now () WHERE name = '%s';",
            hash, username);
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     case GMA_SUCCESS:
-      auth_cache_insert (username, password, 2);
+      if(use_cache)
+        auth_cache_insert (username, password, 2);
       ret = 0;
       break;
     default:
@@ -6719,7 +6687,7 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
-  return sql_int ("SELECT oci_image_target_location = " 
+  return sql_int ("SELECT oci_image_target_location = "
                   G_STRINGIFY (LOCATION_TRASH)
                   " FROM tasks WHERE id = %llu;",
                   task);
@@ -6740,6 +6708,31 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
        " WHERE id = %llu;",
        oci_image_target,
        task);
+}
+
+/**
+ * @brief Clear default asset preferences if set.
+ *
+ * @param[in]  task  Task.
+ */
+void
+clear_task_asset_preferences (task_t task)
+{
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'in_assets';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'in_assets';",
+          task);
+
+  if (sql_int ("SELECT COUNT(*) FROM task_preferences"
+                " WHERE task = %llu AND name = 'assets_apply_overrides';",
+                task))
+    sql ("UPDATE task_preferences"
+          " SET value = 'no'"
+          " WHERE task = %llu AND name = 'assets_apply_overrides';",
+          task);
 }
 
 #endif
@@ -7828,7 +7821,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* Container task. */)
+      || task_target (task) == 0 /* import task. */)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -9712,6 +9705,35 @@ create_current_report (task_t task, char **report_id, task_status_t status)
 }
 
 /**
+ * @brief Create the current report for an agent task.
+ *
+ * @param[in]   task       The agent task.
+ * @param[in]   report_id  Report ID.
+ * @param[in]   status     Run status of scan associated with report.
+ *
+ * @return 0 success, -1 global_current_report is already set, -2 failed if
+ *         there is no report ID.
+ */
+int
+create_agent_task_current_report (task_t task, char *report_id, task_status_t status)
+{
+
+  assert (global_current_report == (report_t) 0);
+
+  if (global_current_report) return -1;
+
+  if (report_id == NULL) return -2;
+
+  /* Create the report. */
+
+  global_current_report = make_report (task, report_id, status);
+
+  set_report_scheduled (global_current_report);
+
+  return 0;
+}
+
+/**
  * @brief Free a host detail.
  *
  * @param[in]  detail  Host detail.
@@ -9776,7 +9798,7 @@ insert_report_host_detail (report_t report, const char *host,
 }
 
 /**
- * @brief Maximum number of COPY statements per transaction, 
+ * @brief Maximum number of COPY statements per transaction,
  *        when uploading report.
  */
 #define CREATE_REPORT_COPY_CHUNK_SIZE 3000
@@ -9799,7 +9821,7 @@ insert_report_host_detail (report_t report, const char *host,
 /**
  * @brief Set whether processing of a report is required
  *        and whether to add it to assets.
- * 
+ *
  * @param[in]  report               The report to set the flags.
  * @param[in]  processing_required  Whether processing is required.
  * @param[in]  in_assets            Whether to add to assets.
@@ -9816,8 +9838,36 @@ report_set_processing_required (report_t report,
 }
 
 /**
+ * @brief Set Discovery flag to the report.
+ *
+ * @param[in]  report               The report to set the flags.
+ * @param[in]  discovery            Discovery flag for validating Scan config.
+ */
+void
+report_set_discovery (report_t report, gboolean discovery)
+{
+  sql ("UPDATE reports SET discovery = %d"
+       " WHERE id = %llu;",
+       discovery ? 1 : 0,
+       report);
+}
+
+/**
+ * @brief Check Discovery flag from the report.
+ *
+ * @param[in]  report  The report to check the flags.
+ *
+ * @return TRUE if report is from discovery scan.
+ */
+gboolean
+check_report_discovery (report_t report)
+{
+  return sql_int ("SELECT discovery FROM reports WHERE id = %llu;", report);
+}
+
+/**
  * @brief Process imported report.
- * 
+ *
  * Adds TLS certificates to the database and creates assets from the report.
  *
  * @param[in]  report  Report to process.
@@ -9869,7 +9919,7 @@ process_report_import (report_t report)
     {
       if (create_asset_report (report_uuid (report), ""))
         {
-          g_warning ("%s: failed to create assets from report %llu", 
+          g_warning ("%s: failed to create assets from report %llu",
                      __func__,
                      report);
           set_task_run_status (task, TASK_STATUS_INTERRUPTED);
@@ -9880,6 +9930,15 @@ process_report_import (report_t report)
   sql ("UPDATE reports SET processing_required = 0"
        " WHERE id = %llu;",
        report);
+
+  /* Store reports host identifies to the asset snapshot. */
+  int resp = asset_snapshot_collect_report_identifiers (report_uuid (report));
+  if (resp != 0)
+    {
+      g_warning ("%s: unable to collect host identifiers with (resp=%d)",
+                 __func__, resp);
+    }
+  asset_snapshots_target (report, task, check_report_discovery (report));
 
   set_task_run_status (task, TASK_STATUS_DONE);
   current_scanner_task = 0;
@@ -9898,7 +9957,7 @@ process_report_import (report_t report)
  * @brief Create a report from an array of results.
  *
  * @param[in]   results       Array of create_report_result_t pointers.
- * @param[in]   task_id       UUID of container task, or NULL to create new one.
+ * @param[in]   task_id       UUID of import task, or NULL to create new one.
  * @param[in]   in_assets     Whether to create assets from the report.
  * @param[in]   scan_start    Scan start time text.
  * @param[in]   scan_end      Scan end time text.
@@ -9911,7 +9970,7 @@ process_report_import (report_t report)
  *
  * @return 0 success, 99 permission denied, -1 error, -2 failed to generate ID,
  *         -3 task_id is NULL, -4 failed to find task, -5 task must be
- *         container, -6 permission to create assets denied.
+ *         import task, -6 permission to create assets denied.
  */
 int
 create_report (array_t *results, const char *task_id, const char *in_assets,
@@ -10340,7 +10399,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
             {
               db_copy_buffer_cleanup (&copy_buffer);
               return -1;
-            }            
+            }
             sql_commit ();
             gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
             sql_begin_immediate ();
@@ -13610,78 +13669,43 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
 {
   if (report)
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE id = %llu"
-                       " AND report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " (SELECT uuid FROM hosts"
-                       "  WHERE id = (SELECT host FROM host_identifiers"
-                       "              WHERE source_type = 'Report Host'"
-                       "              AND name = 'ip'"
-                       "              AND source_id = (SELECT uuid"
-                       "                               FROM reports"
-                       "                               WHERE id = report)"
-                       "              AND value = report_hosts.host"
-                       "              LIMIT 1))"
-                       " FROM report_hosts WHERE report = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " (SELECT uuid FROM hosts"
+                        "  WHERE id = (SELECT host FROM host_identifiers"
+                        "              WHERE source_type = 'Report Host'"
+                        "              AND name = 'ip'"
+                        "              AND source_id = (SELECT uuid"
+                        "                               FROM reports"
+                        "                               WHERE id = report)"
+                        "              AND value = report_hosts.host"
+                        "              LIMIT 1))"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND report = $2"
+                        "   AND ($3::text IS NULL OR host = $3)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        SQL_RESOURCE_PARAM (report),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
   else
     {
-      if (report_host)
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts WHERE id = %llu"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       report_host,
-                       host ? " AND host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
-      else
-        init_iterator (iterator,
-                       "SELECT id, host, iso_time (start_time),"
-                       " iso_time (end_time), current_port, max_port, report,"
-                       " (SELECT uuid FROM reports WHERE id = report),"
-                       " ''"
-                       " FROM report_hosts"
-                       "%s%s%s"
-                       " ORDER BY order_inet (host);",
-                       host ? " WHERE host = '" : "",
-                       host ? host : "",
-                       host ? "'" : "");
+      init_ps_iterator (iterator,
+                        "SELECT id, host, iso_time (start_time),"
+                        " iso_time (end_time), current_port, max_port, report,"
+                        " (SELECT uuid FROM reports WHERE id = report),"
+                        " ''"
+                        " FROM report_hosts"
+                        " WHERE ($1 = 0 OR id = $1)"
+                        "   AND ($2::text IS NULL OR host = $2)"
+                        " ORDER BY order_inet (host);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
+                        NULL);
     }
 }
 
@@ -16723,9 +16747,6 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
           if (setenv ("TZ", tz, 1) == -1)
             {
               g_warning ("%s: Failed to switch to original TZ", __func__);
-              g_free (tz);
-              g_free (zone);
-              free (old_tz_override);
               return -1;
             }
         }
@@ -16736,11 +16757,7 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
       sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
-
-      free (old_tz_override);
-      g_free (tz);
     }
-  g_free (zone);
   return 0;
 }
 
@@ -17226,7 +17243,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
  * @param[in]  filtered_result_count       Result count.
  * @param[in]  orig_f_criticals            Result count.
  * @param[in]  f_criticals                 Result count.
- * @param[in]  orig_f_infos                Result count.
+ * @param[in]  orig_f_holes                Result count.
  * @param[in]  f_holes                     Result count.
  * @param[in]  orig_f_infos                Result count.
  * @param[in]  f_infos                     Result count.
@@ -17483,6 +17500,139 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
 }
 
 /**
+ * @brief Context info for print_report_xml_start.
+ */
+struct print_report_context
+{
+  int count_filtered;         ///< Whether to count filtered results.
+  report_t delta;             ///< Report to compare with.
+  int filtered_result_count;  ///< Filtered result count.
+  const get_data_t *get;      ///< GET command data.
+  gchar *tz;                  ///< TZ.
+  gchar *zone;                ///< Zone.
+  char *old_tz_override;      ///< Old TZ.
+  report_t report;            ///< Report.
+  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+  // Counts.
+  int criticals;              ///< Number of criticals.
+  int holes;                  ///< Number of holes.
+  int infos;                  ///< Number of infos.
+  int logs;                   ///< Number of logs.
+  int warnings;               ///< Number of warnings.
+  int false_positives;        ///< Number of false positives.
+  int total_result_count;     ///< Total number of results.
+};
+
+/**
+ * @brief Context type for print_report_xml_start.
+ */
+typedef struct print_report_context print_report_context_t;
+
+/**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->tsk_usage_type);
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+}
+
+/**
+ * @brief Init zone info for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_report_init_zone (print_report_context_t *ctx)
+{
+  if (ctx->zone && strlen (ctx->zone))
+    {
+      gchar *quoted_zone;
+      /* Store current TZ. */
+      ctx->tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
+
+      if (setenv ("TZ", ctx->zone, 1) == -1)
+        {
+          g_warning ("%s: Failed to switch to timezone", __func__);
+          if (ctx->tz)
+            setenv ("TZ", ctx->tz, 1);
+          g_free (ctx->tz);
+          ctx->tz = NULL;
+          return -1;
+        }
+
+      ctx->old_tz_override = sql_string ("SELECT current_setting"
+                                         "        ('gvmd.tz_override');");
+
+      quoted_zone = sql_insert (ctx->zone);
+      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
+      g_free (quoted_zone);
+
+      tzset ();
+    }
+  return 0;
+}
+
+/**
+ * @brief Get result count totals for print_report_xml_start.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_get_totals (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit"))
+    {
+      if (ctx->delta == 0)
+        {
+          int total_criticals = 0, total_holes, total_infos, total_logs;
+          int total_warnings, total_false_positives;
+          get_data_t *all_results_get;
+
+          all_results_get = report_results_get_data (1, -1, 0, 0);
+
+          report_counts_id (ctx->report, &total_criticals, &total_holes,
+                            &total_infos, &total_logs, &total_warnings,
+                            &total_false_positives, NULL, all_results_get,
+                            NULL);
+
+          ctx->total_result_count = total_criticals + total_holes
+                                    + total_infos + total_logs
+                                    + total_warnings + total_false_positives;
+          get_data_reset (all_results_get);
+          free (all_results_get);
+        }
+
+      /* Get total counts of filtered results. */
+
+      if (ctx->count_filtered)
+        {
+          /* We're getting all the filtered results, so we can count them as we
+           * print them, to save time. */
+          ctx->filtered_result_count = 0;
+        }
+      else
+        {
+          /* Beware, we're using the full variables temporarily here, but
+           * report_counts_id counts the filtered results. */
+          report_counts_id (ctx->report, &ctx->criticals, &ctx->holes, &ctx->infos, &ctx->logs, &ctx->warnings,
+                            &ctx->false_positives, NULL, ctx->get, NULL);
+
+          ctx->filtered_result_count = ctx->criticals + ctx->holes + ctx->infos + ctx->logs
+                                       + ctx->warnings + ctx->false_positives;
+
+        }
+    }
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -17520,18 +17670,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
-  int total_result_count, filtered_result_count;
   array_t *result_hosts;
   int reuse_result_iterator;
   iterator_t results, delta_results;
-  int criticals = 0, holes, infos, logs, warnings, false_positives;
   int f_criticals = 0, f_holes, f_infos, f_logs, f_warnings, f_false_positives;
   int orig_f_criticals, orig_f_holes, orig_f_infos, orig_f_logs;
   int orig_f_warnings, orig_f_false_positives, orig_filtered_result_count;
-  int search_phrase_exact, apply_overrides, count_filtered;
+  int search_phrase_exact, apply_overrides;
   double severity, f_severity;
-  gchar *tz, *zone;
-  char *old_tz_override;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
   GHashTable *f_host_ports;
   GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
@@ -17540,20 +17686,18 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   GHashTable  *f_host_incomplete, *f_host_undefined;
   GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
-  gchar *tsk_usage_type = NULL;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
+  print_report_context_t ctx = {0};
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
   compliance_levels = NULL;
-  zone = NULL;
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
-  total_result_count = filtered_result_count = 0;
   f_compliance_count = 0;
   orig_filtered_result_count = 0;
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
@@ -17569,6 +17713,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   f_host_notcompliant = NULL;
   f_host_incomplete = NULL;
   f_host_undefined = NULL;
+
+  ctx.delta = delta;
+  ctx.get = get;
+  ctx.report = report;
 
   /** @todo Leaks on error in PRINT and PRINT_XML.  The process normally exits
    *        then anyway. */
@@ -17622,7 +17770,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &min_qod, &levels, &compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes,
-                                     &overrides, &apply_overrides, &zone);
+                                     &overrides, &apply_overrides, &ctx.zone);
     }
   else
     {
@@ -17634,14 +17782,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      &min_qod, &levels, &compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
-                                     &apply_overrides, &zone);
+                                     &apply_overrides, &ctx.zone);
     }
 
   max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
 
   levels = levels ? levels : g_strdup ("chmlgdf");
 
-  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type(task, &tsk_usage_type)))
+  if (task && (task_uuid (task, &tsk_uuid) || task_usage_type (task, &ctx.tsk_usage_type)))
     {
       fclose (out);
       g_free (term);
@@ -17652,36 +17800,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       return -1;
     }
 
-  if (zone && strlen (zone))
+  if (print_report_init_zone (&ctx))
     {
-      gchar *quoted_zone;
-      /* Store current TZ. */
-      tz = getenv ("TZ") ? g_strdup (getenv ("TZ")) : NULL;
-
-      if (setenv ("TZ", zone, 1) == -1)
-        {
-          g_warning ("%s: Failed to switch to timezone", __func__);
-          if (tz != NULL)
-            setenv ("TZ", tz, 1);
-          g_free (tz);
-          g_free (zone);
-          return -1;
-        }
-
-      old_tz_override = sql_string ("SELECT current_setting"
-                                    "        ('gvmd.tz_override');");
-
-      quoted_zone = sql_insert (zone);
-      sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
-      g_free (quoted_zone);
-
-      tzset ();
-    }
-  else
-    {
-      /* Keep compiler quiet. */
-      tz = NULL;
-      old_tz_override = NULL;
+      g_free (ctx.zone);
+      return -1;
     }
 
   if (delta && report)
@@ -17721,8 +17843,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (search_phrase);
           g_free (min_qod);
           g_free (delta_states);
-          tz_revert (zone, tz, old_tz_override);
-          return -1;
+          goto fail;
         }
       PRINT (out,
              "<timestamp>%s</timestamp>",
@@ -17746,56 +17867,14 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "</delta>");
     }
 
-  count_filtered = (delta || (ignore_pagination && get->details));
+  ctx.count_filtered = (delta || (ignore_pagination && get->details));
 
   if (report)
     {
       /* Get total counts of full results. */
-      if (strcmp (tsk_usage_type, "audit"))
-        {
-          if (delta == 0)
-            {
-              int total_criticals = 0, total_holes, total_infos, total_logs;
-              int total_warnings, total_false_positives;
-              get_data_t *all_results_get;
+      print_report_get_totals (&ctx);
 
-              all_results_get = report_results_get_data (1, -1, 0, 0);
-
-              report_counts_id (report, &total_criticals, &total_holes,
-                                &total_infos, &total_logs, &total_warnings,
-                                &total_false_positives, NULL, all_results_get,
-                                NULL);
-
-              total_result_count = total_criticals + total_holes + total_infos
-                                  + total_logs + total_warnings
-                                  + total_false_positives;
-              get_data_reset (all_results_get);
-              free (all_results_get);
-            }
-
-          /* Get total counts of filtered results. */
-
-          if (count_filtered)
-            {
-              /* We're getting all the filtered results, so we can count them as we
-              * print them, to save time. */
-
-              filtered_result_count = 0;
-            }
-          else
-            {
-              /* Beware, we're using the full variables temporarily here, but
-              * report_counts_id counts the filtered results. */
-              report_counts_id (report, &criticals, &holes, &infos, &logs, &warnings,
-                                &false_positives, NULL, get, NULL);
-
-              filtered_result_count = criticals + holes + infos + logs + warnings
-                                      + false_positives;
-
-            }
-        }
       /* Get report run status. */
-
       report_scan_run_status (report, &run_status);
     }
 
@@ -17812,7 +17891,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   filters_extra_buffer = g_string_new ("");
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
 
@@ -17870,7 +17949,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (report)
     {
-      const char *report_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *report_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                  ? "audit_report"
                                  : "report";
       int tag_count = resource_tag_count (report_type, report, 1);
@@ -17952,7 +18031,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       gchar *progress_xml;
       iterator_t tags;
 
-      const char *task_type = (strcmp (tsk_usage_type, "audit") == 0)
+      const char *task_type = (strcmp (ctx.tsk_usage_type, "audit") == 0)
                                ? "audit"
                                : "task";
       int task_tag_count = resource_tag_count (task_type, task, 1);
@@ -18083,6 +18162,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           g_free (oci_uuid);
           g_free (oci_name);
           g_free (oci_comment);
+
+          g_free (progress_xml);
+          progress_xml = g_strdup_printf ("%i", report_progress (report));
         }
 #endif /* ENABLE_CONTAINER_SCANNING */
       PRINT (out, "<progress>%s</progress>", progress_xml);
@@ -18126,8 +18208,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       free (uuid);
       g_free (term);
-      tz_revert (zone, tz, old_tz_override);
-      return -1;
+      goto fail;
     }
   free (uuid);
   PRINT (out,
@@ -18148,8 +18229,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
     start_time_epoch = scan_start_time_epoch (report);
     abbrev = NULL;
-    if (zone && strlen (zone))
-      report_zone = g_strdup (zone);
+    if (ctx.zone && strlen (ctx.zone))
+      report_zone = g_strdup (ctx.zone);
     else
       report_zone = setting_timezone ();
     iso_time_tz (&start_time_epoch, report_zone, &abbrev);
@@ -18180,9 +18261,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  sort_order, sort_field, f_host_ports, &results))
         {
           g_free (term);
-          tz_revert (zone, tz, old_tz_override);
           g_hash_table_destroy (f_host_ports);
-          return -1;
+          goto fail;
         }
     }
 
@@ -18191,7 +18271,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int compliance_incomplete = 0, compliance_undefined = 0;
   int total_compliance_count = 0;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       report_compliance_counts (report, get, &compliance_yes, &compliance_no,
                                 &compliance_incomplete, &compliance_undefined);
@@ -18204,7 +18284,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       f_compliance_yes = f_compliance_no = 0;
       f_compliance_incomplete = f_compliance_undefined = 0;
 
-       if (count_filtered == 0)
+       if (ctx.count_filtered == 0)
          {
            report_compliance_f_counts (report,
                                        get,
@@ -18221,12 +18301,12 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     }
   else
     {
-      if (count_filtered)
+      if (ctx.count_filtered)
         {
           /* We're getting all the filtered results, so we can count them as we
           * print them, to save time. */
-          report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                                 &warnings, &false_positives, &severity,
+          report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                                 &ctx.warnings, &ctx.false_positives, &severity,
                                  get, NULL, NULL, NULL, NULL, NULL,
                                  NULL, NULL, NULL);
 
@@ -18234,8 +18314,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           f_false_positives = f_severity = 0;
         }
     else
-      report_counts_id_full (report, &criticals, &holes, &infos, &logs,
-                             &warnings, &false_positives, &severity,
+      report_counts_id_full (report, &ctx.criticals, &ctx.holes, &ctx.infos, &ctx.logs,
+                             &ctx.warnings, &ctx.false_positives, &severity,
                              get, NULL,
                              &f_criticals, &f_holes, &f_infos, &f_logs,
                              &f_warnings, &f_false_positives, &f_severity);
@@ -18253,7 +18333,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           g_free (term);
           g_hash_table_destroy (f_host_ports);
-          return -1;
+          goto fail;
         }
     }
   else if (get->details)
@@ -18268,7 +18348,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (res)
             {
               g_hash_table_destroy (f_host_ports);
-              return -1;
+              goto fail;
             }
         }
     }
@@ -18289,7 +18369,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                 g_free, NULL);
@@ -18326,7 +18406,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   overrides_details, sort_order,
                                   sort_field, result_hosts_only,
                                   &orig_filtered_result_count,
-                                  &filtered_result_count,
+                                  &ctx.filtered_result_count,
                                   &orig_f_criticals, &f_criticals,
                                   &orig_f_holes, &f_holes,
                                   &orig_f_infos, &f_infos,
@@ -18376,7 +18456,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
             array_add_new_string (result_hosts,
                                   result_iterator_host (&results));
 
-          if (strcmp (tsk_usage_type, "audit") == 0)
+          if (strcmp (ctx.tsk_usage_type, "audit") == 0)
             {
               const char* compliance;
               compliance = result_iterator_compliance (&results);
@@ -18384,25 +18464,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (compliance, "yes") == 0)
                 {
                   f_host_result_counts = f_host_compliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_yes++;
                 }
               else if (strcasecmp (compliance, "no") == 0)
                 {
                   f_host_result_counts = f_host_notcompliant;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_no++;
                 }
               else if (strcasecmp (compliance, "incomplete") == 0)
                 {
                   f_host_result_counts = f_host_incomplete;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_incomplete++;
                 }
               else if (strcasecmp (compliance, "undefined") == 0)
                 {
                   f_host_result_counts = f_host_undefined;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_compliance_undefined++;
                 }
               else
@@ -18435,37 +18515,37 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (strcasecmp (level, "log") == 0)
                 {
                   f_host_result_counts = f_host_logs;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_logs++;
                 }
               else if (strcasecmp (level, "critical") == 0)
                 {
                   f_host_result_counts = f_host_criticals;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
                   f_host_result_counts = f_host_holes;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_holes++;
                 }
               else if (strcasecmp (level, "medium") == 0)
                 {
                   f_host_result_counts = f_host_warnings;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_warnings++;
                 }
               else if (strcasecmp (level, "low") == 0)
                 {
                   f_host_result_counts = f_host_infos;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_infos++;
                 }
               else if (strcasecmp (level, "false positive") == 0)
                 {
                   f_host_result_counts = f_host_false_positives;
-                  if (count_filtered)
+                  if (ctx.count_filtered)
                     f_false_positives++;
                 }
               else
@@ -18491,7 +18571,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Print result counts and severity. */
 
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       if (delta)
         PRINT (out,
@@ -18509,7 +18589,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
       else
         {
-          if (count_filtered)
+          if (ctx.count_filtered)
             f_compliance_count = f_compliance_yes
                                   + f_compliance_no
                                   + f_compliance_incomplete
@@ -18582,9 +18662,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               (strchr (levels, 'f') ? orig_f_false_positives : 0));
       else
         {
-          if (count_filtered)
-            filtered_result_count = f_criticals + f_holes + f_infos + f_logs
-                                    + f_warnings + false_positives;
+          if (ctx.count_filtered)
+            ctx.filtered_result_count = f_criticals + f_holes + f_infos + f_logs
+                                        + f_warnings + f_false_positives;
 
           PRINT (out,
                 "<result_count>"
@@ -18607,26 +18687,26 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "<filtered>%i</filtered>"
                 "</false_positive>"
                 "</result_count>",
-                total_result_count,
-                total_result_count,
-                filtered_result_count,
-                criticals,
+                ctx.total_result_count,
+                ctx.total_result_count,
+                ctx.filtered_result_count,
+                ctx.criticals,
                 (strchr (levels, 'c') ? f_criticals : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                holes,
+                ctx.holes,
                 (strchr (levels, 'h') ? f_holes : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                infos,
+                ctx.infos,
                 (strchr (levels, 'l') ? f_infos : 0),
-                logs,
+                ctx.logs,
                 (strchr (levels, 'g') ? f_logs : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                warnings,
+                ctx.warnings,
                 (strchr (levels, 'm') ? f_warnings : 0),
-                false_positives,
+                ctx.false_positives,
                 (strchr (levels, 'f') ? f_false_positives : 0));
 
           PRINT (out,
@@ -18665,7 +18745,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               if (print_report_host_xml (out,
                                          &hosts,
                                          result_host,
-                                         tsk_usage_type,
+                                         ctx.tsk_usage_type,
                                          lean,
                                          host_summary_buffer,
                                          f_host_ports,
@@ -18695,7 +18775,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           if (print_report_host_xml (out,
                                      &hosts,
                                      NULL,
-                                     tsk_usage_type,
+                                     ctx.tsk_usage_type,
                                      lean,
                                      host_summary_buffer,
                                      f_host_ports,
@@ -18714,7 +18794,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         }
       cleanup_iterator (&hosts);
     }
-  if (strcmp (tsk_usage_type, "audit") == 0)
+  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
       g_hash_table_destroy (f_host_compliant);
       g_hash_table_destroy (f_host_notcompliant);
@@ -18753,10 +18833,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                                          result_host,
                                                          out))
                 {
-                  fclose (out);
                   cleanup_iterator (&hosts);
-                  tz_revert (zone, tz, old_tz_override);
-                  return -1;
+                  goto fail;
                 }
             }
           cleanup_iterator (&hosts);
@@ -18781,10 +18859,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                                      host,
                                                      out))
             {
-              fclose (out);
               cleanup_iterator (&hosts);
-              tz_revert (zone, tz, old_tz_override);
-              return -1;
+              goto fail;
             }
         }
       cleanup_iterator (&hosts);
@@ -18799,10 +18875,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (delta == 0 && print_report_errors_xml (report, out))
     {
-      tz_revert (zone, tz, old_tz_override);
       if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-      return -1;
+      goto fail;
     }
 
   g_free (sort_field);
@@ -18811,10 +18886,11 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (min_qod);
   g_free (delta_states);
   g_free (compliance_levels);
-  g_free (tsk_usage_type);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
+
+  print_report_context_cleanup (&ctx);
 
   if (fclose (out))
     {
@@ -18827,7 +18903,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   return 0;
 
   failed_delta_report:
-    fclose (out);
     g_free (sort_field);
     g_free (levels);
     g_free (search_phrase);
@@ -18838,11 +18913,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    tz_revert (zone, tz, old_tz_override);
     g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
-    if (strcmp (tsk_usage_type, "audit") == 0)
+    if (strcmp (ctx.tsk_usage_type, "audit") == 0)
       {
         g_hash_table_destroy (f_host_compliant);
         g_hash_table_destroy (f_host_notcompliant);
@@ -18858,6 +18932,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         g_hash_table_destroy (f_host_logs);
         g_hash_table_destroy (f_host_false_positives);
       }
+  fail:
+    tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
+    print_report_context_cleanup (&ctx);
+    fclose (out);
     return -1;
 }
 
@@ -20778,9 +20856,11 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         alterable state, 10 failed to find group, 11 failed to find schedule,
  *         12 failed to find target, 13 invalid auto_delete value, 14 auto
  *         delete count out of range, 15 config and scanner types mismatch,
- *         16 status must be new to edit target, 17 for container tasks only
+ *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
-           19 failed to find OCI image target, -1 error.
+           19 failed to find OCI image target,
+           20 cannot set asset preferences for container image task,
+           -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -20810,7 +20890,7 @@ modify_task (const gchar *task_id, const gchar *name,
     return 1;
 
 
-  if ((task_target (task) == 0 
+  if ((task_target (task) == 0
        && (agent_group_id == NULL)
        && (oci_image_target_id == NULL))
       && (alerts->len || schedule_id))
@@ -20864,7 +20944,7 @@ modify_task (const gchar *task_id, const gchar *name,
   else
     type_of_scanner = scanner_type (scanner);
 
-  if (config_id 
+  if (config_id
       && (type_of_scanner != SCANNER_TYPE_CVE)
       && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
     {
@@ -21030,6 +21110,8 @@ modify_task (const gchar *task_id, const gchar *name,
           return 13;
         case 2:
           return 14;
+        case 3:
+          return 20;
         default:
           return -1;
       }
@@ -21549,15 +21631,16 @@ target_login_port (target_t target, const char* type)
  * @param[in]   ssh_credential  SSH credential.
  * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
  * @param[in]   ssh_port        Port for SSH login.
- * @param[in]   smb_credential  SMB credential.
- * @param[in]   esxi_credential ESXi credential.
- * @param[in]   snmp_credential SNMP credential.
+ * @param[in]   smb_credential        SMB credential.
+ * @param[in]   esxi_credential       ESXi credential.
+ * @param[in]   snmp_credential       SNMP credential.
+ * @param[in]   krb5_credential       Kerberos credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests     Alive tests array.
- * @param[in]   alive_test_str  Legacy alive tests string.
+ * @param[in]   alive_tests             Alive tests array.
+ * @param[in]   alive_test_str          Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
- * @param[out]  target          Created target.
+ * @param[out]  target                  Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -21797,7 +21880,7 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (ssh_elevate_credential)
     {
       gchar *type = credential_type (ssh_elevate_credential);
-      if (strcmp (type, "up") 
+      if (strcmp (type, "up")
 #if ENABLE_CREDENTIAL_STORES
           && strcmp (type, "cs_up")
 #endif
@@ -21877,7 +21960,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   if (krb5_credential)
     {
       gchar *type = credential_type (krb5_credential);
-      if (strcmp (type, "krb5"))
+      if (strcmp (type, "krb5")
+#if ENABLE_CREDENTIAL_STORES
+          && strcmp (type, "cs_krb5")
+#endif
+         )
         {
           sql_rollback ();
           g_free (type);
@@ -22091,7 +22178,8 @@ delete_target (const char *target_id, int ultimate)
  * @param[in]   krb5_credential_id  Kerberos 5 credential.
  * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
  * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests         Alive tests array.
+ * @param[in]   alive_tests            Alive tests array.
+ * @param[in]   alive_test_str         Alive test string.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -24086,7 +24174,7 @@ validate_credential_kdc_format (const char *kdc_input)
  *                         The caller is responsible for freeing
  *                         the returned string using g_free().
  *
- * @return TRUE if all KDC entries are valid and @joined_out is set; FALSE otherwise.
+ * @return TRUE if all KDC entries are valid and @p joined_out is set; FALSE otherwise.
  */
 static gboolean
 validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
@@ -24130,7 +24218,7 @@ validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
 /**
  * @brief Validate the format of a Kerberos realm string.
  *
- * This function checks whether the given @realm is non-empty and does not
+ * This function checks whether the given @p realm is non-empty and does not
  * contain any whitespace characters.
  *
  * @param[in] realm  A string representing the Kerberos realm.
@@ -24177,11 +24265,13 @@ validate_credential_realm_format (const char *realm)
  * @param[in]  kdc             Kerberos KDC (key distribution centers).
  * @param[in]  kdcs            List of Kerberos KDCs.
  * @param[in]  realm           Kerberos realm.
- * @param[in]  credential_store_id Credential store ID, or NULL 
+ * @param[in]  credential_store_id Credential store ID, or NULL
  *                                 (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  vault_id         Vault ID, or NULL.
  *                              (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  host_identifier  Host identifier, or NULL.
+ *                              (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]  privacy_host_identifier  SNMP Privacy host identifier, or NULL.
  *                              (if ENABLE_CREDENTIAL_STORES).
  * @param[in]  given_type      Credential type or NULL.
  * @param[in]  allow_insecure  Whether to allow insecure uses.
@@ -24202,7 +24292,7 @@ validate_credential_realm_format (const char *realm)
  *         23 credential store ID missing and no default store available,
  *            (if ENABLE_CREDENTIAL_STORES),
  *         24 credential store cannot be found (if ENABLE_CREDENTIAL_STORES),
- *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES), 
+ *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES),
  *         26 host identifier missing (if ENABLE_CREDENTIAL_STORES),
  *         99 permission denied, -1 error.
  */
@@ -24214,10 +24304,9 @@ create_credential (const char* name, const char* comment, const char* login,
                    const char* auth_algorithm, const char* privacy_password,
                    const char* privacy_algorithm,
                    const char* kdc, array_t* kdcs, const char *realm,
-#if ENABLE_CREDENTIAL_STORES
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
-#endif
+                   const char* privacy_host_identifier,
                    const char* given_type, const char* allow_insecure,
                    credential_t *credential)
 {
@@ -24267,7 +24356,6 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "up")
           && strcmp (given_type, "usk")
           && strcmp (given_type, "krb5")
-#if ENABLE_CREDENTIAL_STORES
           && strcmp (given_type, "cs_pgp")
           && strcmp (given_type, "cs_pw")
           && strcmp (given_type, "cs_snmp")
@@ -24275,7 +24363,6 @@ create_credential (const char* name, const char* comment, const char* login,
           && strcmp (given_type, "cs_up")
           && strcmp (given_type, "cs_usk")
           && strcmp (given_type, "cs_krb5")
-#endif
       )
         {
           sql_rollback ();
@@ -24295,10 +24382,6 @@ create_credential (const char* name, const char* comment, const char* login,
     quoted_type = g_strdup ("krb5");
   else if (login && given_password)
     quoted_type = g_strdup ("up");
-#if ENABLE_CREDENTIAL_STORES
-  else if (credential_store_id || (vault_id && host_identifier))
-    quoted_type = g_strdup ("cs");
-#endif
   else if (login && key_private == NULL && given_password == NULL)
     quoted_type = g_strdup ("usk"); /* auto-generate */
   else
@@ -24311,7 +24394,8 @@ create_credential (const char* name, const char* comment, const char* login,
   /* Validate credential data */
   auto_generate = ((given_password == NULL) && (key_private == NULL)
                    && (key_public == NULL) && (certificate == NULL)
-                   && (community == NULL));
+                   && (community == NULL)
+                   && !g_str_has_prefix (quoted_type, "cs_"));
   ret = 0;
 
   if (auto_generate
@@ -24319,9 +24403,6 @@ create_credential (const char* name, const char* comment, const char* login,
           || strcmp (quoted_type, "pgp") == 0
           || strcmp (quoted_type, "smime") == 0
           || strcmp (quoted_type, "snmp") == 0
-#if ENABLE_CREDENTIAL_STORES
-          || g_str_has_prefix (quoted_type, "cs_") == 0
-#endif
           || strcmp (quoted_type, "krb5") == 0))
     ret = 10; // Type does not support autogenerate
 
@@ -24333,9 +24414,7 @@ create_credential (const char* name, const char* comment, const char* login,
       && strcmp (quoted_type, "pw")
       && strcmp (quoted_type, "smime")
       && strcmp (quoted_type, "snmp")
-#if ENABLE_CREDENTIAL_STORES
       && g_str_has_prefix (quoted_type, "cs_") == 0
-#endif
     )
     ret = 5;
   else if (given_password == NULL && auto_generate == 0
@@ -24355,7 +24434,9 @@ create_credential (const char* name, const char* comment, const char* login,
   else if (key_public == NULL && auto_generate == 0
            && strcmp (quoted_type, "pgp") == 0)
     ret = 9;
-  else if (strcmp (quoted_type, "krb5") == 0)
+  else if ((strcmp (quoted_type, "krb5") == 0)
+           || (feature_enabled (FEATURE_ID_CREDENTIAL_STORES)
+               && strcmp (quoted_type, "cs_krb5") == 0))
     {
       if (kdcs && kdcs->len > 0)
         {
@@ -24416,13 +24497,34 @@ create_credential (const char* name, const char* comment, const char* login,
                && strcmp (privacy_algorithm, "des"))
         ret = 16;
     }
-#if ENABLE_CREDENTIAL_STORES
-  else if (g_str_has_prefix (quoted_type, "cs_"))
+  else if (strcmp (quoted_type, "cs_snmp") == 0
+           && feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+    {
+      if (auth_algorithm == NULL)
+        ret = 12;
+      else if ((privacy_algorithm == NULL
+                || strcmp (privacy_algorithm, "") == 0)
+               && privacy_host_identifier
+               && strcmp (privacy_host_identifier, ""))
+        ret = 14;
+      else if (auth_algorithm
+               && strcmp (auth_algorithm, "md5")
+               && strcmp (auth_algorithm, "sha1"))
+        ret = 15;
+      else if (privacy_algorithm
+               && strcmp (privacy_algorithm, "")
+               && strcmp (privacy_algorithm, "aes")
+               && strcmp (privacy_algorithm, "des"))
+        ret = 16;
+    }
+
+  if (g_str_has_prefix (quoted_type, "cs_") && ret == 0)
     {
       credential_store_t store;
-
-      if (credential_store_id == NULL
-          && get_default_credential_store_id () == NULL)
+      if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+        ret = 4;
+      else if (credential_store_id == NULL
+               && get_default_credential_store_id () == NULL)
         ret = 23;
       else if (credential_store_id
                && (find_credential_store_no_acl (credential_store_id, &store)
@@ -24433,7 +24535,6 @@ create_credential (const char* name, const char* comment, const char* login,
       else if (host_identifier == NULL)
         ret = 26;
     }
-#endif
 
   if (ret)
     {
@@ -24511,13 +24612,12 @@ create_credential (const char* name, const char* comment, const char* login,
   if (realm)
     set_credential_data (new_credential, "realm", realm);
 
-#if ENABLE_CREDENTIAL_STORES
   if (g_str_has_prefix (quoted_type, "cs_"))
     {
       if (credential_store_id)
         set_credential_data (new_credential,
                              "credential_store_id", credential_store_id);
-      else 
+      else
         set_credential_data (new_credential,
                              "credential_store_id", get_default_credential_store_id ());
       if (vault_id)
@@ -24526,6 +24626,9 @@ create_credential (const char* name, const char* comment, const char* login,
       if (host_identifier)
         set_credential_data (new_credential,
                              "host_identifier", host_identifier);
+      if (privacy_host_identifier)
+        set_credential_data (new_credential,
+                             "privacy_host_identifier", privacy_host_identifier);
       if (credential)
         *credential = new_credential;
 
@@ -24533,7 +24636,6 @@ create_credential (const char* name, const char* comment, const char* login,
       sql_commit ();
       return 0;
     }
-#endif
 
   g_free (quoted_type);
 
@@ -24819,11 +24921,13 @@ copy_credential (const char* name, const char* comment,
  * @param[in]   kdc                 Kerberos KDC (key distribution centers).
  * @param[in]   kdcs                List of Kerberos KDCs.
  * @param[in]   realm               Kerberos realm.
- * @param[in]   credential_store_id Credential store ID, or NULL 
+ * @param[in]   credential_store_id Credential store ID, or NULL
  *                                   (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   vault_id            Vault ID, or NULL.
  *                                  (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   host_identifier     Host identifier, or NULL.
+ *                                  (if ENABLE_CREDENTIAL_STORES).
+ * @param[in]   privacy_host_identifier  SNMP Privacy host identifier, or NULL.
  *                                  (if ENABLE_CREDENTIAL_STORES).
  * @param[in]   allow_insecure      Whether to allow insecure use.
  *
@@ -24833,13 +24937,13 @@ copy_credential (const char* name, const char* comment,
  *         7 invalid privacy_algorithm, 8 invalid private key,
  *         9 invalid public key,
  *         10 privacy password must be empty if algorithm is empty
- *         11 invalid key distribution center,
- *         12 invalid kerberos realm,
+ *         11 invalid or empty key distribution center,
+ *         12 invalid or empty kerberos realm,
  *         13 credential store cannot be found,
  *            (if ENABLE_CREDENTIAL_STORES),
- *         14 invalid vault ID (if ENABLE_CREDENTIAL_STORES),
- *         15 invalid host identifier (if ENABLE_CREDENTIAL_STORES),
- *         16 value cannot be modified for credential store type,
+ *         14 vault ID is required (if ENABLE_CREDENTIAL_STORES),
+ *         15 host identifier is required (if ENABLE_CREDENTIAL_STORES),
+  *         17 value cannot be modified for credential store type,
  *         99 permission denied,
  *         -1 internal error.
  */
@@ -24853,10 +24957,9 @@ modify_credential (const char *credential_id,
                    const char* privacy_password, const char* privacy_algorithm,
                    const char* kdc, array_t* kdcs,
                    const char* realm,
-#if ENABLE_CREDENTIAL_STORES
                    const char* credential_store_id, const char* vault_id,
                    const char* host_identifier,
-#endif
+                   const char* privacy_host_identifier,
                    const char* allow_insecure)
 {
   credential_t credential;
@@ -24920,15 +25023,14 @@ modify_credential (const char *credential_id,
 
   ret = 0;
 
-#if ENABLE_CREDENTIAL_STORES
-  if ((credential_store_id || vault_id || host_identifier)
+  if ((credential_store_id || vault_id || host_identifier
+      || privacy_host_identifier)
       && (login || password || privacy_password || key_private
           || key_public ||certificate || community))
     {
       sql_rollback ();
-      return 16;
+      return 17;
     }
-#endif
 
   if (login && ret == 0)
     {
@@ -24946,16 +25048,23 @@ modify_credential (const char *credential_id,
 
   if (certificate && ret == 0)
     {
-      // Truncate certificate which also validates it.
-      gchar *certificate_truncated;
-      certificate_truncated = truncate_certificate (certificate);
-      if (certificate_truncated)
+      if (g_str_equal (certificate, ""))
         {
-          set_credential_certificate (credential, certificate_truncated);
-          g_free (certificate_truncated);
+          set_credential_certificate (credential, NULL);
         }
       else
-        ret = 5;
+        {
+          // Truncate certificate which also validates it.
+          gchar *certificate_truncated;
+          certificate_truncated = truncate_certificate (certificate);
+          if (certificate_truncated)
+            {
+              set_credential_certificate (credential, certificate_truncated);
+              g_free (certificate_truncated);
+            }
+          else
+            ret = 5;
+        }
     }
 
   if (auth_algorithm && ret == 0)
@@ -25020,89 +25129,96 @@ modify_credential (const char *credential_id,
       const char *key_private_to_use;
       const char *type = credential_iterator_type (&iterator);
 
+      if (strcmp (type, "cc") && strcmp (type, "up")
+          && strcmp (type, "pw") && strcmp (type, "usk")
+          && strcmp (type, "snmp") && strcmp (type, "pgp")
+          && strcmp (type, "smime") && strcmp (type, "krb5")
+          && !g_str_has_prefix (type, "cs_"))
+        {
+          g_warning ("%s: Unknown credential type: %s", __func__, type);
+          sql_rollback ();
+          cleanup_iterator (&iterator);
+          return -1;
+        }
+
+      if (g_str_has_prefix (type, "cs_")
+          && !feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
+        {
+          sql_rollback ();
+          cleanup_iterator (&iterator);
+          g_debug ("%s: Credential stores feature not enabled",
+                    __func__);
+          return -1;
+        }
+
       if (key_private)
         {
-          char *generated_key_public = NULL;
-          /* Try truncate the private key, but if that fails try get the
-           * public key anyway, in case it's a key type that
-           * truncate_private_key does not understand. */
-          key_private_truncated = truncate_private_key (key_private);
-          key_private_to_use = key_private_truncated ? key_private_truncated
-                                                     : key_private;
+          if (!g_str_equal (key_private, ""))
+            {
+              char *generated_key_public = NULL;
+              /* Try truncate the private key, but if that fails try get the
+               * public key anyway, in case it's a key type that
+               * truncate_private_key does not understand. */
+              key_private_truncated = truncate_private_key (key_private);
+              key_private_to_use =
+                key_private_truncated ? key_private_truncated : key_private;
 
-          if (strcmp (type, "cc") == 0)
-            {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               NULL);
-            }
-          else if (strcmp (type, "usk") == 0)
-            {
-              generated_key_public
-                  = gvm_ssh_public_from_private
-                              (key_private_to_use,
-                               password
-                                ? password
-                                : credential_iterator_password (&iterator));
-            }
+              generated_key_public = gvm_ssh_public_from_private (
+                key_private_to_use,
+                password ? password : credential_iterator_password (&iterator));
 
-          if (generated_key_public == NULL)
-            {
-              sql_rollback ();
-              cleanup_iterator (&iterator);
+              if (generated_key_public == NULL)
+                {
+                  sql_rollback ();
+                  cleanup_iterator (&iterator);
+                  g_free (generated_key_public);
+                  return 8;
+                }
               g_free (generated_key_public);
-              return 8;
             }
-          g_free (generated_key_public);
+          else
+            key_private_to_use = key_private;
         }
       else
         key_private_to_use = NULL;
 
-      if (strcmp (type, "cc") == 0)
-        {
-          if (key_private_to_use)
-            set_credential_private_key (credential,
-                                        key_private_to_use,
-                                        NULL);
-        }
-      else if (strcmp (type, "up") == 0
+      if (strcmp (type, "up") == 0
                || strcmp (type, "pw") == 0)
         {
           if (password)
             set_credential_password (credential, password);
         }
-      else if (strcmp (type, "usk") == 0)
+      else if (g_str_equal (type, "usk") || g_str_equal (type, "cc"))
         {
           if (key_private_to_use || password)
             {
-              if (check_private_key (key_private_to_use
-                                      ? key_private_to_use
-                                      : credential_iterator_private_key
-                                         (&iterator),
-                                     password
-                                      ? password
-                                      : credential_iterator_password
-                                         (&iterator)))
+              if (g_str_equal (type, "usk"))
                 {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 8;
+                  if (check_private_key (
+                        key_private_to_use
+                          ? key_private_to_use
+                          : credential_iterator_private_key (&iterator),
+                        password ? password
+                                 : credential_iterator_password (&iterator)))
+                    {
+                      sql_rollback ();
+                      cleanup_iterator (&iterator);
+                      return 8;
+                    }
                 }
 
-              set_credential_private_key
-                (credential,
-                 key_private_to_use
+              set_credential_private_key (
+                credential,
+                key_private_to_use
                   ? key_private_to_use
                   : credential_iterator_private_key (&iterator),
-                 password
-                  ? password
-                  : credential_iterator_password (&iterator));
+                password ? password : credential_iterator_password (&iterator));
             }
         }
-      else if (strcmp (type, "snmp") == 0)
+      else if ((strcmp (type, "snmp") == 0)
+               || (strcmp (type, "cs_snmp") == 0))
         {
-          if (privacy_password)
+          if (privacy_password || privacy_host_identifier)
             {
               const char *used_algorithm;
 
@@ -25112,9 +25228,11 @@ modify_credential (const char *credential_id,
               if (used_algorithm == NULL)
                 used_algorithm = "";
 
-              // privacy password must be empty if algorithm is empty
+              /* privacy password and host identifier
+               * must be empty if algorithm is empty */
               if (strcmp (used_algorithm, "") == 0
-                  && strcmp (privacy_password, ""))
+                  && (strcmp (privacy_password, "")
+                      || strcmp (privacy_host_identifier, "")))
                 {
                   sql_rollback ();
                   cleanup_iterator (&iterator);
@@ -25122,7 +25240,8 @@ modify_credential (const char *credential_id,
                 }
             }
 
-          if (community || password || privacy_password)
+          if (strcmp (type, "snmp") == 0
+              && (community || password || privacy_password))
             {
               set_credential_snmp_secret
                 (credential,
@@ -25142,9 +25261,10 @@ modify_credential (const char *credential_id,
         {
           set_credential_data (credential, "secret", "");
         }
-      else if (strcmp (type, "krb5") == 0)
+      else if ((strcmp (type, "krb5") == 0)
+               || (strcmp (type, "cs_krb5") == 0))
         {
-          if (password)
+          if (password && strcmp (type, "krb5") == 0)
             set_credential_password (credential, password);
           if (kdcs)
             {
@@ -25181,16 +25301,17 @@ modify_credential (const char *credential_id,
               set_credential_data (credential, "realm", realm);
             }
         }
-#if ENABLE_CREDENTIAL_STORES
-      else if (g_str_has_prefix (type, "cs_"))
+
+      if (g_str_has_prefix (type, "cs_"))
         {
           if (credential_store_id)
             {
               credential_store_t store;
               if (find_credential_store_no_acl (credential_store_id, &store)
-                   || store == 0)
+                  || store == 0)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 13;
                 }
 
@@ -25203,6 +25324,7 @@ modify_credential (const char *credential_id,
               if (!*vault_id)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 14;
                 }
               set_credential_data (credential,
@@ -25214,23 +25336,25 @@ modify_credential (const char *credential_id,
               if (!*host_identifier)
                 {
                   sql_rollback ();
+                  cleanup_iterator (&iterator);
                   return 15;
                 }
               set_credential_data (credential,
                                    "host_identifier",
                                    host_identifier);
             }
+          if (privacy_host_identifier)
+            {
+              if (g_str_equal (privacy_host_identifier, ""))
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    NULL);
+              else
+                set_credential_data (credential,
+                                    "privacy_host_identifier",
+                                    privacy_host_identifier);
+            }
         }
-#endif
-      else
-        {
-          g_warning ("%s: Unknown credential type: %s", __func__, type);
-          sql_rollback ();
-          cleanup_iterator (&iterator);
-          g_free (key_private_truncated);
-          return -1;
-        }
-
       g_free (key_private_truncated);
     }
   else
@@ -25467,6 +25591,11 @@ delete_credential (const char *credential_id, int ultimate)
    { "(SELECT value FROM credentials_data"                                    \
      " WHERE credential = credentials.id AND type = 'host_identifier')",      \
      "host_identifier",                                                       \
+     KEYWORD_TYPE_STRING },                                                   \
+   { "(SELECT value FROM credentials_data"                                    \
+     " WHERE credential = credentials.id"                                     \
+     " AND type = 'privacy_host_identifier')",                                \
+     "privacy_host_identifier",                                               \
      KEYWORD_TYPE_STRING },                                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
  }
@@ -25927,31 +26056,39 @@ set_credential_password (credential_t credential, const char *password)
  * @param[in]  passphrase      Passphrase.
  */
 static void
-set_credential_private_key (credential_t credential,
-                            const char *private_key, const char *passphrase)
+set_credential_private_key (credential_t credential, const char *private_key,
+                            const char *passphrase)
 {
   lsc_crypt_ctx_t crypt_ctx;
 
   if (!disable_encrypted_credentials)
     {
-      gchar *encrypted_blob;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
-                                          "private_key", private_key,
-                                          "password", passphrase,
-                                          NULL);
-      if (!encrypted_blob)
+      if (!g_str_equal (private_key, ""))
         {
-          g_critical ("%s: encryption failed", G_STRFUNC);
+          gchar *encrypted_blob;
+          char *encryption_key_uid = current_encryption_key_uid (TRUE);
+          crypt_ctx = lsc_crypt_new (encryption_key_uid);
+          free (encryption_key_uid);
+          encrypted_blob = lsc_crypt_encrypt (crypt_ctx, "password", passphrase,
+                                              "private_key", private_key, NULL);
+          if (!encrypted_blob)
+            {
+              g_critical ("%s: encryption failed", G_STRFUNC);
+              lsc_crypt_release (crypt_ctx);
+              return;
+            }
+          set_credential_data (credential, "secret", encrypted_blob);
+
+          g_free (encrypted_blob);
           lsc_crypt_release (crypt_ctx);
-          return;
         }
-      set_credential_data (credential, "secret", encrypted_blob);
+      else
+        {
+          set_credential_data (credential, "secret", NULL);
+        }
+
       set_credential_data (credential, "password", NULL);
       set_credential_data (credential, "private_key", NULL);
-      g_free (encrypted_blob);
     }
   else
     {
@@ -25964,7 +26101,6 @@ set_credential_private_key (credential_t credential,
   sql ("UPDATE credentials SET modification_time = m_now ()"
        " WHERE id = %llu;",
        credential);
-  lsc_crypt_release (crypt_ctx);
 }
 
 /**
@@ -26244,7 +26380,7 @@ DEF_ACCESS (credential_iterator_realm,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Credential store UUID, or NULL if iteration is complete. 
+ * @return Credential store UUID, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_credential_store_uuid,
@@ -26255,7 +26391,7 @@ DEF_ACCESS (credential_iterator_credential_store_uuid,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Vault ID, or NULL if iteration is complete. 
+ * @return Vault ID, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_vault_id,
@@ -26266,11 +26402,23 @@ DEF_ACCESS (credential_iterator_vault_id,
  *
  * @param[in]  iterator  Iterator.
  *
- * @return Host identifier, or NULL if iteration is complete. 
+ * @return Host identifier, or NULL if iteration is complete.
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_host_identifier,
             GET_ITERATOR_COLUMN_COUNT + 16);
+
+/**
+ * @brief Get the SNMP privacy host identifier from an LSC credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SNMP privacy host identifier, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+
+DEF_ACCESS (credential_iterator_privacy_host_identifier,
+            GET_ITERATOR_COLUMN_COUNT + 17);
 
 #endif
 
@@ -29428,7 +29576,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case CREATE_SCANNER_INVALID_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner port must be a valid port number (1 - 65535)"
                  " if host is not a UNIX socket path.\n");
         break;
@@ -29438,7 +29586,7 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                  " IP address or UNIX socket path.\n");
         break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
                  " if relay host is not a UNIX socket path.\n");
         break;
@@ -29449,6 +29597,21 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
         break;
       case CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED:
         fprintf (stderr, "Scanner type does not support UNIX sockets.\n");
+        break;
+      case CREATE_SCANNER_OPENVASD_DISABLED:
+        fprintf (stderr,
+                 "openvasd scanner type is not supported"
+                 " because the openvasd feature flag is disabled.\n");
+        break;
+      case CREATE_SCANNER_AGENT_DISABLED:
+        fprintf (stderr,
+                 "Agent controller scanner type is not supported"
+                 " because the Agents feature flag is disabled.\n");
+        break;
+      case CREATE_SCANNER_CONTAINER_SCANNING_DISABLED:
+        fprintf (stderr,
+                 "Container image scanner type is not supported"
+                 " because the Container scanning feature flag is disabled.\n");
         break;
       case CREATE_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
@@ -29748,7 +29911,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case MODIFY_SCANNER_INVALID_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner port must be a valid port number (1 - 65535)"
                  " if host is not a UNIX socket path.\n");
         break;
@@ -29758,7 +29921,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
                  " IP address or UNIX socket path.\n");
         break;
       case MODIFY_SCANNER_INVALID_RELAY_PORT:
-        fprintf (stderr, 
+        fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
                  " if relay host is not a UNIX socket path.\n");
         break;
@@ -29770,6 +29933,21 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
       case MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED:
         fprintf (stderr,
                  "Scanner type does not support UNIX sockets.\n");
+        break;
+      case MODIFY_SCANNER_OPENVASD_DISABLED:
+        fprintf (stderr,
+                 "openvasd scanner type is not supported"
+                 " because the openvasd feature flag is disabled.\n");
+        break;
+      case MODIFY_SCANNER_AGENT_DISABLED:
+        fprintf (stderr,
+                 "Agent controller scanner type is not supported"
+                 " because the Agents feature flag is disabled.\n");
+        break;
+      case MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED:
+        fprintf (stderr,
+                 "Container image scanner type is not supported"
+                 " because the Container scanning feature flag is disabled.\n");
         break;
       case MODIFY_SCANNER_PERMISSION_DENIED:
         fprintf (stderr, "Permission denied.\n");
@@ -29855,6 +30033,13 @@ find_scanner_with_permission (const char* uuid, scanner_t* scanner,
                                         0);
 }
 
+/**
+ * @brief Get the type of a scanner.
+ *
+ * @param[in]  scanner  Scanner.
+ *
+ * @return Type.
+ */
 scanner_type_t
 get_scanner_type (scanner_t scanner)
 {
@@ -29982,11 +30167,31 @@ create_scanner (const char* name, const char *comment, const char *host,
       return CREATE_SCANNER_INVALID_TYPE;
     }
 
+  scanner_feature_status_t feature_res = check_scanner_feature (
+    (scanner_type_t) itype);
+  if (feature_res == SCANNER_FEATURE_OPENVASD_DISABLED)
+    {
+      /* openvasd feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_OPENVASD_DISABLED;
+    }
+  else if (feature_res == SCANNER_FEATURE_AGENTS_DISABLED)
+    {
+      /* Agent feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_AGENT_DISABLED;
+    }
+  else if (feature_res == SCANNER_FEATURE_CONTAINER_DISABLED)
+    {
+      /* Container scanning feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_CONTAINER_SCANNING_DISABLED;
+    }
   if (unix_socket)
     {
       ca_pub = NULL;
       iport = 0;
-      
+
       if (! scanner_type_supports_unix_sockets (itype))
         {
           sql_rollback ();
@@ -30172,6 +30377,27 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   else
     itype = sql_int ("SELECT type FROM scanners WHERE id = %llu;", scanner);
 
+  scanner_feature_status_t feature_res = check_scanner_feature (
+    (scanner_type_t) itype);
+  if (feature_res == SCANNER_FEATURE_OPENVASD_DISABLED)
+    {
+      /* openvasd feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_OPENVASD_DISABLED;
+    }
+  else if (feature_res == SCANNER_FEATURE_AGENTS_DISABLED)
+    {
+      /* Agent feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_AGENT_DISABLED;
+    }
+  else if (feature_res == SCANNER_FEATURE_CONTAINER_DISABLED)
+    {
+      /* Container scanning feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED;
+    }
+
   if (port)
     iport = atoi (port);
   else
@@ -30230,7 +30456,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         }
     }
 
-  if (unix_socket == 0 
+  if (unix_socket == 0
       && (gvm_get_host_type (used_host) == -1))
     {
       sql_rollback ();
@@ -31018,7 +31244,7 @@ scanner_uuid_default ()
  * @brief Return whether the scanner has a relay host defined.
  *
  * @param[in]  scanner    Scanner.
- * 
+ *
  * @return TRUE if a relay host is defined, FALSE otherwise.
  */
 gboolean
@@ -31341,7 +31567,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
   return 0;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /**
  * @brief Get an openvasd Scanner's get_scanner_preferences info.
  *
@@ -32777,739 +33003,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 }
 
 
-/* Groups. */
-
-/**
- * @brief Find a group for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of group.
- * @param[out]  group       Group return, 0 if successfully failed to find group.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find group), TRUE on error.
- */
-static gboolean
-find_group_with_permission (const char* uuid, group_t* group,
-                            const char *permission)
-{
-  return find_resource_with_permission ("group", uuid, group, permission, 0);
-}
-
-/**
- * @brief Create a group from an existing group.
- *
- * @param[in]  name       Name of new group.  NULL to copy from existing.
- * @param[in]  comment    Comment on new group.  NULL to copy from existing.
- * @param[in]  group_id   UUID of existing group.
- * @param[out] new_group_return  New group.
- *
- * @return 0 success, 1 group exists already, 2 failed to find existing
- *         group, 99 permission denied, -1 error.
- */
-int
-copy_group (const char *name, const char *comment, const char *group_id,
-            group_t *new_group_return)
-{
-  int ret;
-  group_t new, old;
-
-  sql_begin_immediate ();
-
-  ret = copy_resource_lock ("group", name, comment, group_id, NULL, 1, &new,
-                            &old);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  sql ("INSERT INTO group_users (\"group\", \"user\")"
-       " SELECT %llu, \"user\" FROM group_users"
-       " WHERE \"group\" = %llu;",
-       new,
-       old);
-
-  sql_commit ();
-  if (new_group_return)
-    *new_group_return = new;
-  return 0;
-}
-
-/**
- * @brief Add users to a group.
- *
- * Caller must take care of transaction.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Group or role.
- * @param[in]  users     List of users.
- *
- * @return 0 success, 2 failed to find user, 4 user name validation failed,
- *         99 permission denied, -1 error.
- */
-static int
-add_users (const gchar *type, resource_t resource, const char *users)
-{
-  if (users)
-    {
-      gchar **split, **point;
-      GList *added;
-
-      /* Add each user. */
-
-      added = NULL;
-      split = g_strsplit_set (users, " ,", 0);
-      point = split;
-
-      while (*point)
-        {
-          user_t user;
-          gchar *name;
-
-          name = *point;
-
-          g_strstrip (name);
-
-          if (strcmp (name, "") == 0)
-            {
-              point++;
-              continue;
-            }
-
-          if (g_list_find_custom (added, name, (GCompareFunc) strcmp))
-            {
-              point++;
-              continue;
-            }
-
-          added = g_list_prepend (added, name);
-
-          if (user_exists (name) == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 2;
-            }
-
-          if (find_user_by_name (name, &user))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              gchar *uuid;
-
-              if (validate_username (name))
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return 4;
-                }
-
-              uuid = user_uuid_any_method (name);
-
-              if (uuid == NULL)
-                {
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              if (sql_int ("SELECT count(*) FROM users WHERE uuid = '%s';",
-                           uuid)
-                  == 0)
-                {
-                  gchar *quoted_name;
-                  quoted_name = sql_quote (name);
-                  sql ("INSERT INTO users"
-                       " (uuid, name, creation_time, modification_time)"
-                       " VALUES"
-                       " ('%s', '%s', m_now (), m_now ());",
-                       uuid,
-                       quoted_name);
-                  g_free (quoted_name);
-
-                  user = sql_last_insert_id ();
-                }
-              else
-                {
-                  /* find_user_by_name should have found it. */
-                  assert (0);
-                  g_free (uuid);
-                  g_list_free (added);
-                  g_strfreev (split);
-                  return -1;
-                }
-
-              g_free (uuid);
-            }
-
-          if (find_user_by_name_with_permission (name, &user, "get_users"))
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return -1;
-            }
-
-          if (user == 0)
-            {
-              g_list_free (added);
-              g_strfreev (split);
-              return 99;
-            }
-
-          sql ("INSERT INTO %s_users (\"%s\", \"user\") VALUES (%llu, %llu);",
-               type,
-               type,
-               resource,
-               user);
-
-          point++;
-        }
-
-      g_list_free (added);
-      g_strfreev (split);
-    }
-
-  return 0;
-}
-
-/**
- * @brief Create a group.
- *
- * @param[in]   group_name       Group name.
- * @param[in]   comment          Comment on group.
- * @param[in]   users            Users group applies to.
- * @param[in]   special_full     Whether to give group super on itself (full
- *                               sharing between members).
- * @param[out]  group            Group return.
- *
- * @return 0 success, 1 group exists already, 2 failed to find user, 4 user
- *         name validation failed, 99 permission denied, -1 error.
- */
-int
-create_group (const char *group_name, const char *comment, const char *users,
-              int special_full, group_t* group)
-{
-  int ret;
-  gchar *quoted_group_name, *quoted_comment;
-
-  assert (current_credentials.uuid);
-  assert (group_name);
-  assert (group);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (group_name, "group", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  quoted_group_name = sql_quote (group_name);
-  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
-  sql ("INSERT INTO groups"
-       " (uuid, name, owner, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  '%s', m_now (), m_now ());",
-       quoted_group_name,
-       current_credentials.uuid,
-       quoted_comment);
-  g_free (quoted_comment);
-  g_free (quoted_group_name);
-
-  *group = sql_last_insert_id ();
-  ret = add_users ("group", *group, users);
-
-  if (ret)
-    sql_rollback ();
-  else
-    {
-      if (special_full)
-        {
-          char *group_id;
-
-          group_id = group_uuid (*group);
-          ret = create_permission_internal (1, "Super", NULL, "group", group_id,
-                                            "group", group_id, NULL);
-          g_free (group_id);
-          if (ret)
-            {
-              sql_rollback ();
-              return ret;
-            }
-        }
-      sql_commit ();
-    }
-
-  return ret;
-}
-
-/**
- * @brief Delete a group.
- *
- * @param[in]  group_id  UUID of group.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a permission refers to the group, 2 failed
- *         to find group, 3 predefined group, 99 permission denied, -1 error.
- */
-int
-delete_group (const char *group_id, int ultimate)
-{
-  group_t group = 0;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_group_with_permission (group_id, &group, "delete_group"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (group == 0)
-    {
-      if (find_trash ("group", group_id, &group))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (group == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      if (trash_group_in_use (group))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-
-      tags_remove_resource ("group", group, LOCATION_TRASH);
-
-      sql ("DELETE FROM group_users_trash WHERE \"group\" = %llu;", group);
-      sql ("DELETE FROM groups_trash WHERE id = %llu;", group);
-      sql_commit ();
-      return 0;
-    }
-
-  if (group_in_use (group))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (ultimate == 0)
-    {
-      group_t trash_group;
-
-      sql ("INSERT INTO groups_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time,"
-           "  modification_time"
-           " FROM groups WHERE id = %llu;",
-           group);
-
-      trash_group = sql_last_insert_id ();
-
-      sql ("INSERT INTO group_users_trash"
-           " (\"group\", \"user\")"
-           " SELECT %llu, \"user\""
-           " FROM group_users WHERE \"group\" = %llu;",
-           trash_group,
-           group);
-
-      permissions_set_locations ("group", group, trash_group, LOCATION_TRASH);
-      tags_set_locations ("group", group, trash_group, LOCATION_TRASH);
-      permissions_set_subjects ("group", group, trash_group, LOCATION_TRASH);
-    }
-  else
-    {
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'group'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           group);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           group);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'group'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           group);
-    }
-
-  tags_remove_resource ("group", group, LOCATION_TABLE);
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                  "SELECT \"user\" FROM group_users"
-                  " WHERE \"group\" = %llu",
-                  group);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
-  sql ("DELETE FROM groups WHERE id = %llu;", group);
-
-  cache_all_permissions_for_users (affected_users);
-  g_array_free (affected_users, TRUE);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Return the UUID of a group.
- *
- * @param[in]  group  Group.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-group_uuid (group_t group)
-{
-  return sql_string ("SELECT uuid FROM groups WHERE id = %llu;",
-                     group);
-}
-
-/**
- * @brief Gets users of group as a string.
- *
- * @param[in]  group  Group.
- *
- * @return Users.
- */
-gchar *
-group_users (group_t group)
-{
-  return sql_string ("SELECT group_concat (name, ', ')"
-                     " FROM (SELECT users.name FROM users, group_users"
-                     "       WHERE group_users.\"group\" = %llu"
-                     "       AND group_users.user = users.id"
-                     "       GROUP BY users.name)"
-                     "      AS sub;",
-                     group);
-}
-
-/**
- * @brief Check whether a group is writable.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-group_writable (group_t group)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan group is writable.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_group_writable (group_t group)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a group is in use.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-group_in_use (group_t group)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan group is in use.
- *
- * @param[in]  group  Group.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_group_in_use (group_t group)
-{
-  return 0;
-}
-
-/**
- * @brief Filter columns for group iterator.
- */
-#define GROUP_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
-
-/**
- * @brief Group iterator columns.
- */
-#define GROUP_ITERATOR_COLUMNS                                                \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (groups),                                             \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Group iterator columns for trash case.
- */
-#define GROUP_ITERATOR_TRASH_COLUMNS                                          \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (groups_trash),                                       \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-
-/**
- * @brief Count number of groups.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of groups in grouped set.
- */
-int
-group_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
-  return count ("group", get, columns, trash_columns, filter_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a group iterator, including observed groups.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find group, 2 failed to find group (filt_id),
- *         -1 error.
- */
-int
-init_group_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = GROUP_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = GROUP_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = GROUP_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "group",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Modify a group.
- *
- * @param[in]   group_id       UUID of group.
- * @param[in]   name           Name of group.
- * @param[in]   comment        Comment on group.
- * @param[in]   users          Group users.
- *
- * @return 0 success, 1 failed to find group, 2 failed to find user, 3 group_id
- *         required, 4 user name validation failed, 5 group with new name
- *         exists, 99 permission denied, -1 internal error.
- */
-int
-modify_group (const char *group_id, const char *name, const char *comment,
-              const char *users)
-{
-  int ret;
-  gchar *quoted_name, *quoted_comment;
-  group_t group;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  assert (current_credentials.uuid);
-
-  if (group_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("modify_group") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  group = 0;
-
-  if (find_group_with_permission (group_id, &group, "modify_group"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (group == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether a group with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "group", group))
-        {
-          sql_rollback ();
-          return 5;
-        }
-    }
-
-  quoted_name = sql_quote(name ?: "");
-  quoted_comment = sql_quote (comment ? comment : "");
-
-  sql ("UPDATE groups SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       group);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM group_users"
-                 " WHERE \"group\" = %llu",
-                 group);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM group_users WHERE \"group\" = %llu;", group);
-
-  ret = add_users ("group", group, users);
-
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM group_users"
-                 " WHERE \"group\" = %llu",
-                 group);
-
-  // users not looked for in this above loop were removed
-  //  -> possible permissions change
-  while (next (&users_iter))
-    {
-      int index, found_user;
-      user_t user = iterator_int64 (&users_iter, 0);
-
-      found_user = 0;
-      for (index = 0; index < affected_users->len && found_user == 0; index++)
-        {
-          if (g_array_index (affected_users, user_t, index) == user)
-            {
-              found_user = 1;
-              break;
-            }
-        }
-
-      if (found_user)
-        {
-          // users found here stay in the group -> no change in permissions
-          g_array_remove_index_fast (affected_users, index);
-        }
-      else
-        {
-          // user added to group -> possible permissions change
-          g_array_append_val (affected_users, user);
-        }
-    }
-
-  cleanup_iterator (&users_iter);
-
-  cache_all_permissions_for_users (affected_users);
-
-  g_array_free (affected_users, TRUE);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-
 /* Permissions. */
 
 /**
@@ -33574,7 +33067,7 @@ permissions_set_orphans (const char *type, resource_t resource, int location)
  * @param[in]   new   Resource ID in new table.
  * @param[in]   to    Destination, trash or table.
  */
-static void
+void
 permissions_set_subjects (const char *type, resource_t old, resource_t new,
                           int to)
 {
@@ -35542,698 +35035,6 @@ clean_feed_role_permissions (const char *type,
   g_strfreev (roles);
 
   return;
-}
-
-
-/* Roles. */
-
-/**
- * @brief List roles.
- *
- * @param[in]  log_config  Log configuration.
- * @param[in]  database    Location of manage database.
- * @param[in]  verbose     Whether to print UUID.
- *
- * @return 0 success, -1 error.
- */
-int
-manage_get_roles (GSList *log_config, const db_conn_info_t *database,
-                  int verbose)
-{
-  iterator_t roles;
-  int ret;
-
-  g_info ("   Getting roles.");
-
-  ret = manage_option_setup (log_config, database,
-                             0 /* avoid_db_check_inserts */);
-  if (ret)
-    return ret;
-
-  init_iterator (&roles, "SELECT name, uuid FROM roles;");
-  while (next (&roles))
-    if (verbose)
-      printf ("%s %s\n", iterator_string (&roles, 0), iterator_string (&roles, 1));
-    else
-      printf ("%s\n", iterator_string (&roles, 0));
-
-  cleanup_iterator (&roles);
-
-  manage_option_cleanup ();
-
-  return 0;
-}
-
-/**
- * @brief Create a role from an existing role.
- *
- * @param[in]  name       Name of new role.  NULL to copy from existing.
- * @param[in]  comment    Comment on new role.  NULL to copy from existing.
- * @param[in]  role_id    UUID of existing role.
- * @param[out] new_role_return  New role.
- *
- * @return 0 success, 1 role exists already, 2 failed to find existing
- *         role, 99 permission denied, -1 error.
- */
-int
-copy_role (const char *name, const char *comment, const char *role_id,
-           role_t *new_role_return)
-{
-  int ret;
-  role_t new_role, old_role;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_role") == 0)
-    return 99;
-
-  if (acl_role_can_super_everyone (role_id))
-    return 99;
-
-  ret = copy_resource_lock ("role", name, comment, role_id, NULL, 1, &new_role,
-                            &old_role);
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  sql ("INSERT INTO permissions"
-       " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
-       "  resource_location, subject_type, subject, subject_location,"
-       "  creation_time, modification_time)"
-       " SELECT make_uuid (),"
-       "        (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "        name, comment, resource_type,"
-       "        resource_uuid, resource, resource_location, subject_type, %llu,"
-       "        subject_location, m_now (), m_now ()"
-       " FROM permissions"
-       " WHERE subject_type = 'role'"
-       " AND subject = %llu"
-       " AND subject_location = " G_STRINGIFY (LOCATION_TABLE)
-       " AND (resource = 0 OR owner IS NULL);",
-       current_credentials.uuid,
-       new_role,
-       old_role);
-
-  sql_commit ();
-  if (new_role_return)
-    *new_role_return = new_role;
-  return 0;
-}
-
-/**
- * @brief Create a role.
- *
- * @param[in]   role_name        Role name.
- * @param[in]   comment          Comment on role.
- * @param[in]   users            Users role applies to.
- * @param[in]   role             Role return.
- *
- * @return 0 success, 1 role exists already, 2 failed to find user, 4 user
- *         name validation failed, 99 permission denied, -1 error.
- */
-int
-create_role (const char *role_name, const char *comment, const char *users,
-             role_t* role)
-{
-  int ret;
-  gchar *quoted_role_name, *quoted_comment;
-
-  assert (current_credentials.uuid);
-  assert (role_name);
-  assert (role);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_role") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (role_name, "role", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  quoted_role_name = sql_quote (role_name);
-  quoted_comment = comment ? sql_quote (comment) : g_strdup ("");
-  sql ("INSERT INTO roles"
-       " (uuid, name, owner, comment, creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "  '%s', m_now (), m_now ());",
-       quoted_role_name,
-       current_credentials.uuid,
-       quoted_comment);
-  g_free (quoted_comment);
-  g_free (quoted_role_name);
-
-  *role = sql_last_insert_id ();
-  ret = add_users ("role", *role, users);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-/**
- * @brief Return whether a role is predefined.
- *
- * @param[in]  role  Role.
- *
- * @return 1 if predefined, else 0.
- */
-static int
-role_is_predefined (role_t role)
-{
-  return sql_int ("SELECT COUNT (*) FROM roles"
-                  " WHERE id = %llu"
-                  " AND (uuid = '" ROLE_UUID_ADMIN "'"
-                  "      OR uuid = '" ROLE_UUID_GUEST "'"
-                  "      OR uuid = '" ROLE_UUID_MONITOR "'"
-                  "      OR uuid = '" ROLE_UUID_INFO "'"
-                  "      OR uuid = '" ROLE_UUID_USER "'"
-                  "      OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
-                  "      OR uuid = '" ROLE_UUID_OBSERVER "');",
-                  role)
-         != 0;
-}
-
-/**
- * @brief Return whether a role is predefined.
- *
- * @param[in]  uuid  UUID of role.
- *
- * @return 1 if predefined, else 0.
- */
-static int
-role_is_predefined_id (const char *uuid)
-{
-  return uuid && ((strcmp (uuid, ROLE_UUID_ADMIN) == 0)
-                  || (strcmp (uuid, ROLE_UUID_GUEST) == 0)
-                  || (strcmp (uuid, ROLE_UUID_MONITOR) == 0)
-                  || (strcmp (uuid, ROLE_UUID_INFO) == 0)
-                  || (strcmp (uuid, ROLE_UUID_USER) == 0)
-                  || (strcmp (uuid, ROLE_UUID_SUPER_ADMIN) == 0)
-                  || (strcmp (uuid, ROLE_UUID_OBSERVER) == 0));
-}
-
-/**
- * @brief Delete a role.
- *
- * @param[in]  role_id   UUID of role.
- * @param[in]  ultimate  Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a task refers to the role, 2 failed
- *         to find role, 3 predefined role, -1 error.
- */
-int
-delete_role (const char *role_id, int ultimate)
-{
-  role_t role = 0;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_role") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_role_with_permission (role_id, &role, "delete_role"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (role == 0)
-    {
-      if (find_trash ("role", role_id, &role))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (role == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      if (trash_role_in_use (role))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'role'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'role'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'role'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'role'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-
-      tags_remove_resource ("role", role, LOCATION_TRASH);
-
-      sql ("DELETE FROM role_users_trash WHERE role = %llu;", role);
-      sql ("DELETE FROM roles_trash WHERE id = %llu;", role);
-      sql_commit ();
-      return 0;
-    }
-
-  if (role_is_predefined (role))
-    {
-      sql_rollback ();
-      return 3;
-    }
-
-  if (role_in_use (role))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (ultimate == 0)
-    {
-      role_t trash_role;
-
-      sql ("INSERT INTO roles_trash"
-           " (uuid, owner, name, comment, creation_time, modification_time)"
-           " SELECT uuid, owner, name, comment, creation_time,"
-           "        modification_time"
-           " FROM roles WHERE id = %llu;",
-           role);
-
-      trash_role = sql_last_insert_id ();
-
-      sql ("INSERT INTO role_users_trash"
-           " (\"role\", \"user\")"
-           " SELECT %llu, \"user\""
-           " FROM role_users WHERE \"role\" = %llu;",
-           trash_role,
-           role);
-
-      permissions_set_locations ("role", role, trash_role, LOCATION_TRASH);
-      tags_set_locations ("role", role, trash_role, LOCATION_TRASH);
-      permissions_set_subjects ("role", role, trash_role, LOCATION_TRASH);
-    }
-  else
-    {
-      sql ("DELETE FROM permissions"
-           " WHERE resource_type = 'role'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE resource_type = 'role'"
-           " AND resource = %llu"
-           " AND resource_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           role);
-      sql ("DELETE FROM permissions"
-           " WHERE subject_type = 'role'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           role);
-      sql ("DELETE FROM permissions_trash"
-           " WHERE subject_type = 'role'"
-           " AND subject = %llu"
-           " AND subject_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           role);
-      tags_remove_resource ("role", role, LOCATION_TABLE);
-    }
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                  "SELECT \"user\" FROM role_users"
-                  " WHERE \"role\" = %llu",
-                  role);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
-  sql ("DELETE FROM roles WHERE id = %llu;", role);
-
-  cache_all_permissions_for_users (affected_users);
-  g_array_free (affected_users, TRUE);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Find a role for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of role.
- * @param[out]  role        Role return, 0 if successfully failed to find role.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find role), TRUE on error.
- */
-static gboolean
-find_role_with_permission (const char* uuid, role_t* role,
-                           const char *permission)
-{
-  return find_resource_with_permission ("role", uuid, role, permission, 0);
-}
-
-/**
- * @brief Find a role given a name.
- *
- * @param[in]   name  A role name.
- * @param[out]  role  Role return, 0 if successfully failed to find role.
- *
- * @return FALSE on success (including if failed to find role), TRUE on error.
- */
-static gboolean
-find_role_by_name (const char* name, role_t *role)
-{
-  return find_resource_by_name ("role", name, role);
-}
-
-/**
- * @brief Gets UUID of role.
- *
- * @param[in]  role  Role.
- *
- * @return Users.
- */
-gchar *
-role_uuid (role_t role)
-{
-  return sql_string ("SELECT uuid FROM roles WHERE id = %llu;",
-                     role);
-}
-
-/**
- * @brief Gets users of role as a string.
- *
- * @param[in]  role  Role.
- *
- * @return Users.
- */
-gchar *
-role_users (role_t role)
-{
-  return sql_string ("SELECT group_concat (name, ', ')"
-                     " FROM (SELECT users.name FROM users, role_users"
-                     "       WHERE role_users.role = %llu"
-                     "       AND role_users.user = users.id"
-                     "       GROUP BY users.name)"
-                     "      AS sub;",
-                     role);
-}
-
-/**
- * @brief Check whether a role is writable.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-role_writable (role_t role)
-{
-  if (role_is_predefined (role))
-    return 0;
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan role is writable.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_role_writable (role_t role)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-role_in_use (role_t role)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan role is in use.
- *
- * @param[in]  role  Role.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_role_in_use (role_t role)
-{
-  return 0;
-}
-
-/**
- * @brief Modify a role.
- *
- * @param[in]   role_id  UUID of role.
- * @param[in]   name     Name of role.
- * @param[in]   comment  Comment on role.
- * @param[in]   users    Role users.
- *
- * @return 0 success, 1 failed to find role, 2 failed to find user, 3 role_id
- *         required, 4 user name validation failed, 5 role with new name
- *         exists, 99 permission denied, -1 internal error.
- */
-int
-modify_role (const char *role_id, const char *name, const char *comment,
-             const char *users)
-{
-  int ret;
-  gchar *quoted_name, *quoted_comment;
-  role_t role;
-  GArray *affected_users;
-  iterator_t users_iter;
-
-  assert (current_credentials.uuid);
-
-  if (role_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("modify_role") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  role = 0;
-
-  if (find_role_with_permission (role_id, &role, "modify_role"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (role == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether a role with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "role", role))
-        {
-          sql_rollback ();
-          return 5;
-        }
-    }
-
-  quoted_name = sql_quote (name ?: "");
-  quoted_comment = sql_quote (comment ?: "");
-
-  sql ("UPDATE roles SET"
-       " name = '%s',"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       role);
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-
-  affected_users = g_array_new (TRUE, TRUE, sizeof (user_t));
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM role_users"
-                 " WHERE \"role\" = %llu",
-                 role);
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (affected_users, user);
-    }
-  cleanup_iterator (&users_iter);
-
-  sql ("DELETE FROM role_users WHERE \"role\" = %llu;", role);
-
-  ret = add_users ("role", role, users);
-
-  init_iterator (&users_iter,
-                 "SELECT \"user\" FROM role_users"
-                 " WHERE \"role\" = %llu",
-                 role);
-
-  // users not looked for in this loop were removed
-  //  -> possible permissions change
-  while (next (&users_iter))
-    {
-      int index, found_user;
-      user_t user = iterator_int64 (&users_iter, 0);
-
-      found_user = 0;
-      for (index = 0; index < affected_users->len && found_user == 0; index++)
-        {
-          if (g_array_index (affected_users, user_t, index) == user)
-            {
-              found_user = 1;
-              break;
-            }
-        }
-
-      if (found_user)
-        {
-          // users found here stay in the role -> no change in permissions
-          g_array_remove_index_fast (affected_users, index);
-        }
-      else
-        {
-          // user added to role -> possible permissions change
-          g_array_append_val (affected_users, user);
-        }
-    }
-
-  cleanup_iterator (&users_iter);
-
-  cache_all_permissions_for_users (affected_users);
-
-  g_array_free (affected_users, TRUE);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-/**
- * @brief Filter columns for role iterator.
- */
-#define ROLE_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, NULL }
-
-/**
- * @brief Role iterator columns.
- */
-#define ROLE_ITERATOR_COLUMNS                                                \
- {                                                                           \
-   GET_ITERATOR_COLUMNS (roles),                                             \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
- }
-
-/**
- * @brief Role iterator columns for trash case.
- */
-#define ROLE_ITERATOR_TRASH_COLUMNS                                          \
- {                                                                           \
-   GET_ITERATOR_COLUMNS (roles_trash),                                       \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
- }
-
-/**
- * @brief Count number of roles.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of roles in roleed set.
- */
-int
-role_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
-  return count ("role", get, columns, trash_columns, extra_columns,
-                0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a role iterator, including observed roles.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find role, 2 failed to find role (filt_id),
- *         -1 error.
- */
-int
-init_role_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = ROLE_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = ROLE_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = ROLE_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "role",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
 }
 
 
@@ -39360,52 +38161,6 @@ manage_set_password (GSList *log_config, const db_conn_info_t *database,
 }
 
 /**
- * @brief Find a user for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of user.
- * @param[out]  user        User return, 0 if successfully failed to find user.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-static gboolean
-find_user_with_permission (const char* uuid, user_t* user,
-                           const char *permission)
-{
-  return find_resource_with_permission ("user", uuid, user, permission, 0);
-}
-
-/**
- * @brief Find a user given a name.
- *
- * @param[in]   name  A user name.
- * @param[out]  user  User return, 0 if successfully failed to find user.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-gboolean
-find_user_by_name_with_permission (const char* name, user_t *user,
-                                   const char *permission)
-{
-  return find_resource_by_name_with_permission ("user", name, user, permission);
-}
-
-/**
- * @brief Find a user given a name.
- *
- * @param[in]   name  A user name.
- * @param[out]  user  User return, 0 if successfully failed to find user.
- *
- * @return FALSE on success (including if failed to find user), TRUE on error.
- */
-static gboolean
-find_user_by_name (const char* name, user_t *user)
-{
-  return find_resource_by_name ("user", name, user);
-}
-
-/**
  * @brief Adds a new user to the GVM installation.
  *
  * @todo Adding users authenticating with certificates is not yet implemented.
@@ -40829,399 +39584,6 @@ modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
 }
 
 /**
- * @brief Return the name of a user.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return Newly allocated name if available, else NULL.
- */
-gchar*
-user_name (const char *uuid)
-{
-  gchar *name, *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  name = sql_string ("SELECT name FROM users WHERE uuid = '%s';",
-                     quoted_uuid);
-  g_free (quoted_uuid);
-  return name;
-}
-
-/**
- * @brief Return the UUID of a user.
- *
- * Warning: this is only safe for users that are known to be in the db.
- *
- * @param[in]  user  User.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-user_uuid (user_t user)
-{
-  return sql_string ("SELECT uuid FROM users WHERE id = %llu;",
-                     user);
-}
-
-/**
- * @brief Check whether a user is in use.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-user_in_use (user_t user)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a trashcan user is in use.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_user_in_use (user_t user)
-{
-  return 0;
-}
-
-/**
- * @brief Check whether a user is writable.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-user_writable (user_t user)
-{
-  return 1;
-}
-
-/**
- * @brief Check whether a trashcan user is writable.
- *
- * @param[in]  user  User.
- *
- * @return 1 yes, 0 no.
- */
-int
-trash_user_writable (user_t user)
-{
-  return 1;
-}
-
-/**
- * @brief Return the hosts of a user.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return Newly allocated hosts value if available, else NULL.
- */
-gchar*
-user_hosts (const char *uuid)
-{
-  gchar *name, *quoted_uuid;
-
-  quoted_uuid = sql_quote (uuid);
-  name = sql_string ("SELECT hosts FROM users WHERE uuid = '%s';",
-                     quoted_uuid);
-  g_free (quoted_uuid);
-  return name;
-}
-
-/**
- * @brief Return whether hosts value of a user denotes allowed.
- *
- * @param[in]  uuid  UUID of user.
- *
- * @return 1 if allow, else 0.
- */
-int
-user_hosts_allow (const char *uuid)
-{
-  gchar *quoted_uuid;
-  int allow;
-
-  quoted_uuid = sql_quote (uuid);
-  allow = sql_int ("SELECT hosts_allow FROM users WHERE uuid = '%s';",
-                   quoted_uuid);
-  g_free (quoted_uuid);
-  return allow;
-}
-
-/**
- * @brief User columns for user iterator.
- */
-#define USER_ITERATOR_FILTER_COLUMNS                                  \
- { GET_ITERATOR_FILTER_COLUMNS, "method", "roles", "groups", "hosts", \
-   NULL }
-
-/**
- * @brief User iterator columns.
- */
-#define USER_ITERATOR_COLUMNS                                              \
- {                                                                         \
-   GET_ITERATOR_COLUMNS (users),                                           \
-   { "method", NULL, KEYWORD_TYPE_STRING },                                \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "hosts_allow", NULL, KEYWORD_TYPE_INTEGER },                          \
-   {                                                                       \
-     "coalesce ((SELECT group_concat (name, ', ')"                         \
-     "           FROM (SELECT DISTINCT name, order_role (name)"            \
-     "                 FROM roles, role_users"                             \
-     "                 WHERE role_users.role = roles.id"                   \
-     "                 AND \"user\" = users.id"                            \
-     "                 ORDER BY order_role (roles.name) ASC)"              \
-     "                 AS user_iterator_sub),"                             \
-     "           '')",                                                     \
-     "roles",                                                              \
-     KEYWORD_TYPE_STRING                                                   \
-   },                                                                      \
-   {                                                                       \
-     "coalesce ((SELECT group_concat (name, ', ')"                         \
-     "           FROM (SELECT DISTINCT name FROM groups, group_users"      \
-     "                 WHERE group_users.\"group\" = groups.id"            \
-     "                 AND \"user\" = users.id"                            \
-     "                 ORDER BY groups.name ASC)"                          \
-     "                AS user_iterator_sub),"                              \
-     "           '')",                                                     \
-     "groups",                                                             \
-     KEYWORD_TYPE_STRING                                                   \
-   },                                                                      \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
- }
-
-/**
- * @brief User iterator columns for trash case.
- */
-#define USER_ITERATOR_TRASH_COLUMNS                                        \
- {                                                                         \
-   GET_ITERATOR_COLUMNS (users_trash),                                     \
-   { "method", NULL, KEYWORD_TYPE_STRING },                                \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                                 \
-   { "hosts_allow", NULL, KEYWORD_TYPE_INTEGER },                          \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                    \
- }
-
-/**
- * @brief Count number of users.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of users in usered set.
- */
-int
-user_count (const get_data_t *get)
-{
-  static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = USER_ITERATOR_COLUMNS;
-  return count ("user", get, columns, NULL, filter_columns,
-                  0, 0, 0, TRUE);
-}
-
-/**
- * @brief Initialise a user iterator, including observed users.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find user, 2 failed to find user (filt_id),
- *         -1 error.
- */
-int
-init_user_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = USER_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = USER_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = USER_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "user",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the method of the user from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Method of the user or NULL if iteration is complete.
- */
-DEF_ACCESS (user_iterator_method, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the hosts from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Hosts or NULL if iteration is complete.
- */
-DEF_ACCESS (user_iterator_hosts, GET_ITERATOR_COLUMN_COUNT + 1);
-
-/**
- * @brief Get the hosts allow value from a user iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Hosts allow.
- */
-int
-user_iterator_hosts_allow (iterator_t* iterator)
-{
-  if (iterator->done) return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
-}
-
-/**
- * @brief Initialise an info iterator.
- *
- * @param[in]  iterator        Iterator.
- * @param[in]  user            User.
- */
-void
-init_user_group_iterator (iterator_t *iterator, user_t user)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (user);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_groups"));
-  available = acl_where_owned ("group", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT DISTINCT id, uuid, name, %s FROM groups"
-                 " WHERE id IN (SELECT \"group\" FROM group_users"
-                 "              WHERE \"user\" = %llu)"
-                 " ORDER by name;",
-                 with_clause ? with_clause : "",
-                 available,
-                 user);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the UUID from a user group iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID or NULL if iteration is complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (user_group_iterator_uuid, 1);
-
-/**
- * @brief Get the NAME from a user group iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (user_group_iterator_name, 2);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-user_group_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 3);
-}
-
-/**
- * @brief Initialise an info iterator.
- *
- * @param[in]  iterator        Iterator.
- * @param[in]  user            User.
- */
-void
-init_user_role_iterator (iterator_t *iterator, user_t user)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (user);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_roles"));
-  available = acl_where_owned ("role", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT DISTINCT id, uuid, name, order_role (name), %s"
-                 " FROM roles"
-                 " WHERE id IN (SELECT role FROM role_users"
-                 "              WHERE \"user\" = %llu)"
-                 " ORDER by order_role (name);",
-                 with_clause ? with_clause : "",
-                 available,
-                 user);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the UUID from a user role iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID or NULL if iteration is complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (user_role_iterator_uuid, 1);
-
-/**
- * @brief Get the NAME from a user role iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return NAME or NULL if iteration is complete.  Freed by cleanup_iterator.
- */
-DEF_ACCESS (user_role_iterator_name, 2);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-user_role_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 4);
-}
-
-/**
  * @brief Check if a user still has resources that are in use.
  *
  * @param[in] user          The user to check.
@@ -41809,6 +40171,8 @@ manage_get_ldap_info (int *enabled, gchar **host, gchar **authdn,
  * @param[in]  cacert           CA certificate.  NULL to keep current value.
  * @param[in]  ldaps_only       Whether to try LDAPS auth only, -1 to
  *                              keep current value.
+ *
+ * @return 0 success, -1 error.
  */
 int
 manage_set_ldap_info (int enabled, gchar *host, gchar *authdn,
@@ -44368,7 +42732,7 @@ cache_permissions_for_users (const char *type, GArray *cache_users)
  * @param[in]  cache_users  GArray of users to create cache for.  NULL means
  *                          all users.
  */
-static void
+void
 cache_all_permissions_for_users (GArray *cache_users)
 {
   int free_users;
@@ -45148,6 +43512,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
   if (!strcmp (port, "general/Host_Details"))
     {
       gchar *hash_value = NULL;
+      gchar *r_uuid = report_uuid (rep_aux->report);
       if (!check_host_detail_exists (rep_aux->report, host,
                                      res->detail_source_type,
                                      res->detail_source_name,
@@ -45165,9 +43530,16 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
                                      res->detail_value,
                                      hash_value);
         }
+      /* Add host identifiers to asset snapshot array */
+      asset_snapshot_add_report_host_identifier (host,
+                                                  res->detail_name,
+                                                  res->detail_value,
+                                                  r_uuid,
+                                                  res->detail_source_name);
       desc = res->message;
       g_free (hash_value);
       g_free (type);
+      g_free (r_uuid);
       return;
     }
   else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
@@ -45186,6 +43558,10 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
     {
       /* TODO: This should probably be handled by the "Host Detail"
        *        result type with extra source info in OSP.
+       *
+       * TODO: 17.12.2025 ozgen - For openvasd scans, host details do not pass through
+       *       manage_report_host_detail(). When "in_assets" is enabled, this may
+       *       prevent host identifiers from being added as assets.
        */
       if (manage_report_host_detail (rep_aux->report, host, desc,
                                      rep_aux->hash_hostdetails))

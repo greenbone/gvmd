@@ -1,19 +1,6 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -110,12 +97,15 @@
 #include "manage_alerts.h"
 #include "manage_assets.h"
 #include "manage_filters.h"
+#include "manage_groups.h"
 #include "manage_oci_image_targets.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_tls_certificates.h"
+#include "manage_users.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -144,6 +134,7 @@
 #include <gvm/util/fileutils.h>
 #include <gvm/util/sshutils.h>
 #include <gvm/util/authutils.h>
+#include <gvm/util/tlsutils.h>
 #include <gvm/util/cpeutils.h>
 
 #undef G_LOG_DOMAIN
@@ -267,6 +258,75 @@ check_certificate_smime (const char *cert_str)
   ret = try_gpgme_import (cert_str, key_types, GPGME_PROTOCOL_CMS);
   g_array_free (key_types, TRUE);
 
+  return ret;
+}
+
+/**
+ * @brief Get PGP or S/MIME public key info.
+ *
+ * @param[in]  key_str      The PEM-encoded key as a string.
+ * @param[in]  protocol     The prococol, should be either OpenPGP or CMS.
+ * @param[out] fingerprint  Output of the fingerprint.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
+                         gchar **fingerprint)
+{
+  int ret = 0;
+  gpgme_ctx_t ctx;
+  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
+  const gpgme_data_type_t openpgp_types[2] = {GPGME_DATA_TYPE_X509_CERT,
+                                              GPGME_DATA_TYPE_PGP_KEY};
+  const gpgme_data_type_t cms_types[3] = {GPGME_DATA_TYPE_X509_CERT,
+                                          GPGME_DATA_TYPE_CMS_OTHER,
+                                          GPGME_DATA_TYPE_PGP_KEY};
+
+  GArray *key_types;
+  gpgme_error_t err;
+  gpgme_key_t key;
+
+  *fingerprint = NULL;
+
+  if (mkdtemp (gpg_temp_dir) == NULL)
+    {
+      g_warning ("%s: mkdtemp failed", __func__);
+      return -1;
+    }
+
+  gpgme_new (&ctx);
+  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
+  gpgme_set_protocol (ctx, protocol);
+
+  key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+  g_array_append_vals (key_types,
+                       protocol == GPGME_PROTOCOL_CMS
+                        ? cms_types : openpgp_types,
+                       protocol == GPGME_PROTOCOL_CMS
+                        ? 3 : 2);
+  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
+  g_array_free (key_types, TRUE);
+
+  if (ret)
+    {
+      gpgme_release (ctx);
+      gvm_file_remove_recurse (gpg_temp_dir);
+      return -1;
+    }
+
+  gpgme_op_keylist_start (ctx, "*", 0);
+  if (!(err = gpgme_op_keylist_next (ctx, &key)))
+    {
+      ret = 0;
+      *fingerprint = g_strdup (key->fpr);
+    }
+  else
+    ret = -1;
+
+  gpgme_op_keylist_end (ctx);
+  gpgme_release (ctx);
+  gvm_file_remove_recurse (gpg_temp_dir);
   return ret;
 }
 
@@ -482,6 +542,7 @@ typedef struct
   char *credential_store_id;   ///< Credential store UUID.
   char *vault_id;          ///< Credential store vault ID.
   char *host_identifier;     ///< Credential store item ID.
+  char *privacy_host_identifier; ///< SNMP Privacy credential store item ID.
   char *type;              ///< Type of credential.
 } create_credential_data_t;
 
@@ -512,6 +573,7 @@ create_credential_data_reset (create_credential_data_t *data)
   free (data->credential_store_id);
   free (data->vault_id);
   free (data->host_identifier);
+  free (data->privacy_host_identifier);
   free (data->type);
 
   memset (data, 0, sizeof (create_credential_data_t));
@@ -756,7 +818,7 @@ typedef struct
   array_t *results;               ///< All results.
   char *scan_end;                 ///< End time for a scan.
   char *scan_start;               ///< Start time for a scan.
-  char *task_id;                  ///< ID of container task.
+  char *task_id;                  ///< ID of import task.
   char *type;                     ///< Type of report.
   int wrapper;                    ///< Whether there was a wrapper REPORT.
 } create_report_data_t;
@@ -2571,6 +2633,7 @@ typedef struct
   char *credential_store_id;  ///< Credential store UUID.
   char *vault_id;             ///< Credential store vault ID.
   char *host_identifier;        ///< Credential store item ID.
+  char *privacy_host_identifier;  ///< SNMP Privacy credential store item ID.
 } modify_credential_data_t;
 
 /**
@@ -2601,6 +2664,7 @@ modify_credential_data_reset (modify_credential_data_t *data)
   free (data->credential_store_id);
   free (data->vault_id);
   free (data->host_identifier);
+  free (data->privacy_host_identifier);
   array_free (data->kdcs);
 
   memset (data, 0, sizeof (modify_credential_data_t));
@@ -4178,6 +4242,7 @@ typedef enum
   CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
   CLIENT_CREATE_CREDENTIAL_VAULT_ID,
   CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
+  CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
 #endif /* ENABLE_CREDENTIAL_STORES */
   CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
@@ -4549,6 +4614,7 @@ typedef enum
   CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID,
   CLIENT_MODIFY_CREDENTIAL_VAULT_ID,
   CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
+  CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
   CLIENT_MODIFY_CREDENTIAL_STORE,
 #endif
   CLIENT_MODIFY_FILTER,
@@ -6547,6 +6613,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CERTIFICATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->certificate);
+            gvm_append_string (&modify_credential_data->certificate, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
           }
         else if (strcasecmp ("COMMUNITY", element_name) == 0)
@@ -6556,6 +6624,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("KDC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->kdc);
+            gvm_append_string (&modify_credential_data->kdc, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
           }
         else if (strcasecmp ("KDCS", element_name) == 0)
@@ -6584,6 +6654,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("REALM", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->realm);
+            gvm_append_string (&modify_credential_data->realm, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
           }
 #if ENABLE_CREDENTIAL_STORES
@@ -6593,11 +6665,22 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("VAULT_ID", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->vault_id);
+            gvm_append_string (&modify_credential_data->vault_id, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
           }
         else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->host_identifier);
+            gvm_append_string (&modify_credential_data->host_identifier, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
+          }
+        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
+          {
+            gvm_free_string_var (&modify_credential_data->privacy_host_identifier);
+            gvm_append_string (&modify_credential_data->privacy_host_identifier,
+                               "");
+            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
           }
 #endif
         ELSE_READ_OVER;
@@ -6620,10 +6703,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("PRIVATE", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_private);
+            gvm_append_string (&modify_credential_data->key_private, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
           }
         else if (strcasecmp ("PUBLIC", element_name) == 0)
           {
+            gvm_free_string_var (&modify_credential_data->key_public);
+            gvm_append_string (&modify_credential_data->key_public, "");
             set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
           }
         ELSE_READ_OVER;
@@ -7363,6 +7450,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
           {
             set_client_state (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER);
+          }
+        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
+          {
+            set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
           }
 #endif
         ELSE_READ_OVER;
@@ -12775,7 +12866,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *login, *type, *cert;
+      const char *login, *type, *cert, *private_key, *password, *public_key;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -12792,23 +12883,40 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
       login = credential_iterator_login (&credentials);
       type = credential_iterator_type (&credentials);
       cert = credential_iterator_certificate (&credentials);
+      private_key = credential_iterator_private_key (&credentials);
+      password = credential_iterator_password (&credentials);
+      public_key = credential_iterator_public_key (&credentials);
 
-      SENDF_TO_CLIENT_OR_FAIL
-       ("<allow_insecure>%d</allow_insecure>"
-        "<login>%s</login>"
-        "<type>%s</type>"
-        "<full_type>%s</full_type>",
-        credential_iterator_allow_insecure (&credentials),
-        login ? login : "",
-        type ? type : "",
-        type ? credential_full_type (type) : "");
+      if (login)
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<login>%s</login>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            login,
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
+      else
+        {
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<allow_insecure>%d</allow_insecure>"
+            "<type>%s</type>"
+            "<full_type>%s</full_type>",
+            credential_iterator_allow_insecure (&credentials),
+            type ? type : "",
+            type ? credential_full_type (type) : "");
+        }
 
       formats_xml = credential_iterator_formats_xml (&credentials);
       SEND_TO_CLIENT_OR_FAIL (formats_xml);
       g_free (formats_xml);
 
 #if ENABLE_CREDENTIAL_STORES
-      if (type && g_str_has_prefix (type, "cs_"))
+      if (type && g_str_has_prefix (type, "cs_")
+          && feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
         {
           const char *credential_store_id, *vault_id, *host_identifier;
           credential_store_id
@@ -12819,15 +12927,27 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL (
             "<credential_store id=\"%s\">"
             "<vault_id>%s</vault_id>"
-            "<host_identifier>%s</host_identifier>"
-            "</credential_store>",
+            "<host_identifier>%s</host_identifier>",
             credential_store_id ? credential_store_id : "",
             vault_id ? vault_id : "",
             host_identifier ? host_identifier : "");
+
+          if (strcmp (type, "cs_snmp") == 0)
+            {
+              const char *privacy_host_identifier;
+              privacy_host_identifier
+                = credential_iterator_privacy_host_identifier (&credentials);
+              SENDF_TO_CLIENT_OR_FAIL (
+                "<privacy_host_identifier>%s</privacy_host_identifier>",
+                privacy_host_identifier ? privacy_host_identifier : "");
+            }
+
+          SENDF_TO_CLIENT_OR_FAIL ("</credential_store>");
         }
 #endif /* ENABLE_CREDENTIAL_STORES */
 
-      if (type && (strcmp (type, "krb5") == 0))
+      if (type && ((strcmp (type, "krb5") == 0)
+                   || (strcmp (type, "cs_krb5") == 0)))
         {
           const char *kdc, *realm;
           kdc = credential_iterator_kdc (&credentials);
@@ -12853,7 +12973,8 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL ("</kdcs>");
         }
 
-      if (type && (strcmp (type, "snmp") == 0))
+      if (type && ((strcmp (type, "snmp") == 0)
+                   || (strcmp (type, "cs_snmp") == 0)))
         {
           const char *auth_algorithm, *privacy_algorithm;
           auth_algorithm
@@ -12908,16 +13029,47 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           g_free (issuer);
         }
 
+      if (private_key && get_credentials_data->get.details)
+        {
+          const char *key_type;
+          char *sha256_hash;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<private_key_info>");
+          if (gvm_ssh_private_key_info (private_key, password,
+                                        &key_type, &sha256_hash) == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<type>%s</type>"
+                                       "<sha256_hash>%s</sha256_hash>",
+                                       key_type, sha256_hash);
+              g_free (sha256_hash);
+            }
+          SENDF_TO_CLIENT_OR_FAIL ("</private_key_info>");
+        }
+
+      if (public_key && get_credentials_data->get.details)
+        {
+          gpgme_protocol_t protocol = GPGME_PROTOCOL_OpenPGP;
+          gchar *fingerprint = NULL;
+          SENDF_TO_CLIENT_OR_FAIL ("<public_key_info>");
+
+          if (type && strcmp (type, "smime") == 0)
+            protocol = GPGME_PROTOCOL_CMS;
+
+          if (get_pgp_public_key_info (public_key, protocol, &fingerprint) == 0)
+            {
+              SENDF_TO_CLIENT_OR_FAIL ("<fingerprint>%s</fingerprint>",
+                                       fingerprint);
+              g_free (fingerprint);
+            }
+          SENDF_TO_CLIENT_OR_FAIL ("</public_key_info>");
+        }
+
       switch (format)
         {
           char *package;
 
           case CREDENTIAL_FORMAT_KEY:
             {
-              const char *public_key;
-
-              public_key = credential_iterator_public_key (&credentials);
-
               if (public_key && strcmp (public_key, ""))
                 {
                   SENDF_TO_CLIENT_OR_FAIL
@@ -12926,11 +13078,7 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
               else
                 {
                   char *pub;
-                  const char *pass, *private_key;
-
-                  private_key = credential_iterator_private_key (&credentials);
-                  pass = credential_iterator_password (&credentials);
-                  pub = gvm_ssh_public_from_private (private_key, pass);
+                  pub = gvm_ssh_public_from_private (private_key, password);
                   SENDF_TO_CLIENT_OR_FAIL
                     ("<public_key>%s</public_key>", pub ?: "");
                   g_free (pub);
@@ -13510,7 +13658,7 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
-    compiled_in, enabled, "OPENVASD");
+    compiled_in, enabled, "ENABLE_OPENVASD");
 
   /* CONTAINER_SCANNING */
   compiled_in = feature_compiled_in (FEATURE_ID_CONTAINER_SCANNING) ? 1 : 0;
@@ -14751,6 +14899,12 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
               error_send_to_client (error);
               return;
             }
+        }
+      else if (get_nvts_data->sort_field
+               && validate_sort_field ("nvts", get_nvts_data->sort_field))
+        {
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("get_nvts", "Invalid sort field"));
         }
       else
         {
@@ -17443,7 +17597,7 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
           g_slist_free (params);
         }
         break;
-#if OPENVASD
+#if ENABLE_OPENVASD
       case SCANNER_TYPE_OPENVASD:
       case SCANNER_TYPE_OPENVASD_SENSOR:
         {
@@ -18586,7 +18740,7 @@ handle_get_tags (gmp_parser_t *gmp_parser, GError **error)
  * @param[in]  alive_tests  The alive tests bitfield.
  * @param[in]  gmp_parser   GMP parser.
  * @param[in]  error        Error parameter.
- * 
+ *
  * @return 0 success, -1 error.
  */
 static int
@@ -19830,7 +19984,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
           else
             {
-              /* Container tasks have no associated scanner. */
+              /* Import tasks have no associated scanner. */
               task_scanner_uuid = g_strdup ("");
               task_scanner_name = g_strdup ("");
               task_scanner_type = 0;
@@ -20609,6 +20763,30 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
                             "Scanner type does not support UNIX sockets."));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
+      case CREATE_SCANNER_OPENVASD_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "openvasd scanner type is not supported "
+          "because the openvasd feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_AGENT_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "Agent controller scanner type is not supported "
+          "because the Agents feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_CONTAINER_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "Container image scanner type is not supported "
+          "because the Container scanning feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
       case CREATE_SCANNER_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
@@ -20755,6 +20933,33 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Scanner type does not support UNIX sockets."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_OPENVASD_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "openvasd scanner type is not supported "
+          "because the openvasd feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_AGENT_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "Agent controller scanner type is not supported "
+          "because the Agents feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "Container image scanner type is not supported "
+          "because the Container scanning feature flag is disabled."
+        ));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -22596,11 +22801,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          create_credential_data->kdc,
                          create_credential_data->kdcs,
                          create_credential_data->realm,
-#if ENABLE_CREDENTIAL_STORES
                          create_credential_data->credential_store_id,
                          create_credential_data->vault_id,
                          create_credential_data->host_identifier,
-#endif
+                         create_credential_data->privacy_host_identifier,
                          create_credential_data->type,
                          create_credential_data->allow_insecure,
                          &new_credential))
@@ -22798,6 +23002,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_CREDENTIAL, CREDENTIAL_STORE_ID);
       CLOSE (CLIENT_CREATE_CREDENTIAL, VAULT_ID);
       CLOSE (CLIENT_CREATE_CREDENTIAL, HOST_IDENTIFIER);
+      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
 #endif
       CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
 
@@ -23701,7 +23906,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -5:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_report",
-                                    "TASK must be a container"));
+                                    "TASK must be an import task"));
                 log_event_fail ("report", "Report", NULL, "created");
                 break;
               case -6:
@@ -24899,6 +25104,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 }
               set_task_oci_image_target (create_task_data->task,
                                          oci_image_target);
+
+              clear_task_asset_preferences (create_task_data->task);
             }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
@@ -24907,7 +25114,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               && !is_agent_task
               && !is_container_scanning_task)
             {
-              /* Container task. */
+              /* Import task. */
 
               set_task_target (create_task_data->task, 0);
               set_task_usage_type (create_task_data->task,
@@ -25105,6 +25312,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Auto Delete count out of range"
                                       " (must be from %d to %d)"),
                     AUTO_DELETE_KEEP_MIN, AUTO_DELETE_KEEP_MAX);
+                  goto create_task_fail;
+                case 3:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Scanning tasks"));
                   goto create_task_fail;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
@@ -26027,11 +26240,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     modify_credential_data->kdc,
                     modify_credential_data->kdcs,
                     modify_credential_data->realm,
-#if ENABLE_CREDENTIAL_STORES
                     modify_credential_data->credential_store_id,
                     modify_credential_data->vault_id,
                     modify_credential_data->host_identifier,
-#endif
+                    modify_credential_data->privacy_host_identifier,
                     modify_credential_data->allow_insecure))
             {
               case 0:
@@ -26132,7 +26344,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 11:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kdc value(s)"));
+                                    "Invalid or empty kdc value(s)"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26140,7 +26352,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 12:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid kerberos realm value"));
+                                    "Invalid or empty kerberos realm value"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26157,7 +26369,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 14:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid Vault ID"));
+                                    "Vault ID is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
@@ -26165,12 +26377,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 15:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid host identifier"));
+                                    "Host identifier is required"));
                 log_event_fail ("credential", "Credential",
                                 modify_credential_data->credential_id,
                                 "modified");
                 break;
-              case 16:
+              case 17:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_credential",
                     "Value cannot be modified for credential store type"));
@@ -26230,6 +26442,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_CREDENTIAL, CREDENTIAL_STORE_ID);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, VAULT_ID);
       CLOSE (CLIENT_MODIFY_CREDENTIAL, HOST_IDENTIFIER);
+      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
 
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         if (modify_credential_store_element_end (gmp_parser, error,
@@ -27909,7 +28122,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case 17:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
-                                      "For container tasks only name, comment"
+                                      "For import tasks only name, comment"
                                       " and observers can be modified"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
@@ -27937,6 +28150,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       error_send_to_client (error);
                       return;
                     }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+                case 20:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Asset preferences cannot be set for"
+                                      " Container Image tasks"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
@@ -28708,7 +28930,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "started");
                   break;
                 case -2:
-                  /* Task lacks target.  This is true for container
+                  /* Task lacks target.  This is true for Import
                    * tasks. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("start_task",
@@ -29037,6 +29259,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
               &modify_credential_data->host_identifier);
 
+      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
+              &modify_credential_data->privacy_host_identifier);
+
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         modify_credential_store_element_text (text, text_len);
         break;
@@ -29195,6 +29420,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
               &create_credential_data->host_identifier);
+
+      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
+              &create_credential_data->privacy_host_identifier);
 #endif
 
       APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,

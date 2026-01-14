@@ -1,32 +1,22 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
  * @file
- * @brief GVM management layer: NVTs
+ * @brief GVM management layer: NVT SQL
  *
- * The NVT parts of the GVM management layer.
+ * The NVT SQL parts of the GVM management layer.
  */
 
 /**
  * @brief Enable extra GNU functions.
  */
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
+/**
+ * @brief Enable large file support.
+ */
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 
@@ -63,6 +53,16 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
+
+/**
+ * @brief Cache of Discovery NVT OIDs
+ */
+static GHashTable *nvts_discovery_oid_cache = NULL;
+
+/**
+ * @brief Cache lock.
+ */
+static GMutex nvts_discovery_oid_cache_lock;
 
 
 /* Headers from backend specific manage_xxx.c file. */
@@ -1064,6 +1064,22 @@ nvt_iterator_has_max_epss_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the Discovery from an NVT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Discovery.
+ */
+int
+nvt_iterator_discovery (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 29);
+  return ret;
+}
+
+/**
  * @brief Get the default timeout of an NVT.
  *
  * @param[in]  oid  The OID of the NVT to get the timeout of.
@@ -1224,14 +1240,13 @@ nvts_feed_version_status_from_scanner ()
                                                     NULL,
                                                     NULL);
     case SCANNER_TYPE_OPENVASD:
-#if OPENVASD
-      return nvts_feed_version_status_internal_openvasd (NULL, NULL);
-#else
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        return nvts_feed_version_status_internal_openvasd (NULL, NULL);
       g_critical ("%s: Default scanner is an openvasd one,"
                   " but gvmd is not built to support this.",
                   __func__);
       return -1;
-#endif
+
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
@@ -1267,11 +1282,10 @@ manage_sync_nvts (int (*fork_update_nvt_cache) (pid_t*))
 int
 update_or_rebuild_nvts (int update)
 {
-#if OPENVASD
-   return update_or_rebuild_nvts_openvasd (update);
-#else
-   return update_or_rebuild_nvts_osp (update);
-#endif
+  if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    return update_or_rebuild_nvts_openvasd (update);
+  else
+    return update_or_rebuild_nvts_osp (update);
 }
 
 /**
@@ -1353,7 +1367,10 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     }
 
   if (ret == 0)
-    update_scap_extra ();
+    {
+      update_scap_extra ();
+      manage_discovery_nvts ();
+    }
 
   feed_lockfile_unlock (&lockfile);
   manage_option_cleanup ();
@@ -1578,7 +1595,7 @@ nvts_feed_version_status_from_timestamp ()
 
   if (feed_version_epoch == feed_info_timestamp)
     return 0;
-  
+
   if (feed_version_epoch > feed_info_timestamp)
     {
       g_warning ("%s: last nvts database update later than last feed update",
@@ -1592,9 +1609,9 @@ nvts_feed_version_status_from_timestamp ()
 
 /**
  * @brief Aborts NVTS update.
- * 
+ *
  * @param[in]  nvts_feed_file_version  NVTs feed file version.
- * 
+ *
  */
 static void
 abort_nvts_update (const gchar* nvts_feed_file_version)
@@ -1653,7 +1670,7 @@ update_nvts_from_json_file (const gchar *full_path,
                 strerror (errno));
       return -1;
     }
-  
+
   gvm_json_pull_parser_init_full (&parser, nvts_file,
                                   GVM_JSON_PULL_PARSE_BUFFER_LIMIT,
                                   GVM_JSON_PULL_READ_BUFFER_SIZE * 8);
@@ -1684,14 +1701,14 @@ update_nvts_from_json_file (const gchar *full_path,
               sql_rollback ();
               return -1;
             }
-            
+
           if (nvti_creation_time (nvti) > db_feed_version_epoch)
             count_new_vts += 1;
           else
             count_modified_vts += 1;
-          
+
           insert_nvt (nvti, 1, vt_refs_batch, vt_sevs_batch);
-          
+
           preferences = NULL;
           if (update_preferences_from_nvti (nvti, &preferences))
             {
@@ -1710,7 +1727,7 @@ update_nvts_from_json_file (const gchar *full_path,
       batch_end (vt_sevs_batch);
 
       g_info ("%s: Finalizing nvts insert", __func__);
-    
+
       finalize_nvts_insert (count_new_vts, count_modified_vts,
                             nvts_feed_file_version, 1);
       sql_commit ();
@@ -1776,7 +1793,7 @@ update_scanner_preferences ()
       }
     case SCANNER_TYPE_OPENVASD:
       {
-#if OPENVASD
+#if ENABLE_HTTP_SCANNER
         scanner_t scanner;
 
         if (find_resource_no_acl ("scanner", SCANNER_UUID_DEFAULT, &scanner))
@@ -1810,7 +1827,7 @@ update_scanner_preferences ()
 
 /**
  * @brief update NVTs from feed.
- * 
+ *
  * @param[in]  db_feed_version         Database feed version.
  * @param[in]  nvts_feed_file_version  JSON file feed version.
  *
@@ -1868,7 +1885,7 @@ update_nvts_from_feed (gchar *db_feed_version,
     }
 
   ret = update_scanner_preferences ();
-  
+
   if (ret)
     {
       g_warning ("%s: Failed to update scanner preferences", __func__);
@@ -1922,4 +1939,163 @@ manage_update_nvts_from_feed (gboolean reset_nvts_db)
   g_free (nvts_feed_file_version);
   g_info ("%s: Updating NVTs from feed done", __func__);
   return ret;
+}
+
+/**
+ * @brief Marks the given NVTs as discovery NVTs based on their OIDs.
+ *
+ * @param[in] oids  GSList of char* OID strings to be marked as discovery NVTs.
+ */
+static void
+manage_mark_discovery_nvts_from_oid (GSList *oids)
+{
+  if (!oids)
+    return;
+
+  GString *in_clause = g_string_new (NULL);
+  GSList *iter;
+
+  for (iter = oids; iter; iter = iter->next)
+    {
+      const char *oid = iter->data;
+      if (!oid)
+        continue;
+
+      gchar *quoted_oid = sql_insert (oid);
+
+      if (in_clause->len > 0)
+        g_string_append (in_clause, ",");
+
+      g_string_append (in_clause, quoted_oid);
+      g_free (quoted_oid);
+    }
+
+  if (in_clause->len > 0)
+    {
+      sql_begin_immediate ();
+      sql ("UPDATE nvts "
+           "   SET discovery = 1 "
+           " WHERE oid IN (%s);",
+           in_clause->str);
+      sql_commit ();
+    }
+
+  g_string_free (in_clause, TRUE);
+}
+
+/**
+ * @brief Marks all NVTs of a given configuration UUID as discovery NVTs.
+ *
+ * The allocated OID list is freed before returning.
+ *
+ * @param[in] config_uuid  The UUID of the scan configuration whose NVTs
+ *                         should be marked as discovery.
+ */
+static void
+manage_discovery_for_config_uuid (const char *config_uuid)
+{
+  GSList *oids = NULL;
+
+  get_nvt_oids_from_config_uuid (config_uuid, &oids);
+  if (!oids)
+    return;
+
+  manage_mark_discovery_nvts_from_oid (oids);
+  g_slist_free_full (oids, g_free);
+}
+
+/**
+ * @brief Build the in-memory cache of Discovery NVT OIDs from the database.
+ *
+ * @return Newly created hash table containing OID strings.
+ */
+static GHashTable *
+build_ntvs_discovery_cache_from_db ()
+{
+  iterator_t nvts_iter;
+  GHashTable *t = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  init_iterator (&nvts_iter, "SELECT oid FROM nvts WHERE discovery = 1;");
+  while (next (&nvts_iter))
+    {
+      const char *oid = iterator_string (&nvts_iter, 0);
+      if (oid && *oid)
+        g_hash_table_add (t, g_strdup (oid));
+    }
+  cleanup_iterator (&nvts_iter);
+
+  return t;
+}
+
+/**
+ * @brief Reload the global Discovery NVT OID cache from the database.
+ */
+void
+nvts_discovery_oid_cache_reload ()
+{
+  GHashTable *new_cache = build_ntvs_discovery_cache_from_db ();
+
+  g_mutex_lock (&nvts_discovery_oid_cache_lock);
+  GHashTable *old = nvts_discovery_oid_cache;
+  nvts_discovery_oid_cache = new_cache;
+  g_mutex_unlock (&nvts_discovery_oid_cache_lock);
+
+  if (old)
+    g_hash_table_destroy (old);
+
+  int size = g_hash_table_size (nvts_discovery_oid_cache);
+  g_debug ("%s: NVTs discovery oid cache loaded with size: %d",
+           __func__,
+           size);
+}
+
+/**
+ * @brief Updates discovery flags for NVTs in the predefined discovery configs.
+ */
+void
+manage_discovery_nvts ()
+{
+  g_info ("%s: Updating Discovery NVTs", __func__);
+
+  manage_discovery_for_config_uuid (CONFIG_UUID_DISCOVERY);
+  manage_discovery_for_config_uuid (CONFIG_UUID_HOST_DISCOVERY);
+  manage_discovery_for_config_uuid (CONFIG_UUID_SYSTEM_DISCOVERY);
+
+  nvts_discovery_oid_cache_reload ();
+
+  g_info ("%s: Updating Discovery NVTs done", __func__);
+}
+
+/**
+ * @brief Check whether all given OIDs are marked as discovery
+ *        in the loaded cache.
+ *
+ * @param[in] oids GSList of NVT OID strings (const char*).
+ *
+ * @return TRUE if all OIDs are present in the discovery cache, otherwise FALSE.
+ */
+gboolean
+nvts_oids_all_discovery_cached (GSList *oids)
+{
+  if (!oids)
+    return TRUE; /* empty */
+
+  g_mutex_lock (&nvts_discovery_oid_cache_lock);
+  GHashTable *t = nvts_discovery_oid_cache;
+  g_mutex_unlock (&nvts_discovery_oid_cache_lock);
+
+  if (!t)
+    return FALSE; /* cache not initialized */
+
+  for (GSList *it = oids; it; it = it->next)
+    {
+      const char *oid = it->data;
+      if (!oid || !*oid)
+        return FALSE;
+
+      if (!g_hash_table_contains (t, oid))
+        return FALSE;
+    }
+
+  return TRUE;
 }

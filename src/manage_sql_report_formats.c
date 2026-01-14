@@ -1,19 +1,6 @@
 /* Copyright (C) 2020-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -28,6 +15,7 @@
 #include "manage_acl.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_users.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -649,6 +637,19 @@ save_report_format_files (const gchar *report_id, array_t *files,
         }
 
       full_file_name = g_build_filename (dir, file_name, NULL);
+
+      // Detect path traversal
+      if (!path_is_in_directory (full_file_name, dir))
+        {
+          g_warning ("Potential path traversal attack detected."
+                     " File '%s' breaks out of base directory '%s'",
+                     full_file_name, dir);
+
+          gvm_file_remove_recurse (dir);
+          g_free (full_file_name);
+          g_free (dir);
+          return -1;
+        }
 
       error = NULL;
       g_file_set_contents (full_file_name, contents, contents_size, &error);

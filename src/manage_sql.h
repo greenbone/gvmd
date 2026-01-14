@@ -1,19 +1,6 @@
 /* Copyright (C) 2010-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -174,14 +161,17 @@
  */
 #define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
 
-/* Struct to be sent as user data to the GFunc for adding results */
+/**
+ * @brief Struct to be sent as user data to the GFunc for adding results
+ */
 struct report_aux {
-  GArray *results_array;
-  report_t report;
-  task_t task;
-  GHashTable *hash_results;
-  GHashTable *hash_hostdetails;
+  GArray *results_array;         ///< Results.
+  report_t report;               ///< Report.
+  task_t task;                   ///< Task.
+  GHashTable *hash_results;      ///< Hash.
+  GHashTable *hash_hostdetails;  ///< Hash.
 };
+
 
 /* Variables */
 
@@ -199,6 +189,9 @@ typedef long long int rowid_t;
 
 int
 manage_db_empty ();
+
+gboolean
+db_table_has_column (const gchar *, const gchar *, const gchar *);
 
 gboolean
 host_nthlast_report_host (const char *, report_host_t *, int);
@@ -291,6 +284,9 @@ int
 create_current_report (task_t, char **, task_status_t);
 
 int
+create_agent_task_current_report (task_t, char *, task_status_t);
+
+int
 init_task_schedule_iterator (iterator_t *);
 
 void
@@ -366,7 +362,14 @@ resource_uuid (const gchar *, resource_t);
 
 gboolean
 find_resource_with_permission (const char *, const char *,
-                                        resource_t *, const char *, int);
+                               resource_t *, const char *, int);
+
+gboolean
+find_resource_by_name (const char *, const char *, resource_t *);
+
+gboolean
+find_resource_by_name_with_permission (const char *, const char *,
+                                       resource_t *, const char *);
 
 int
 resource_predefined (const gchar *, resource_t);
@@ -481,6 +484,12 @@ permissions_set_locations (const char *, resource_t, resource_t, int);
 void
 permissions_set_orphans (const char *, resource_t, int);
 
+void
+permissions_set_subjects (const char *, resource_t, resource_t, int);
+
+void
+cache_all_permissions_for_users (GArray *);
+
 int
 copy_resource (const char *, const char *, const char *, const char *,
                const char *, int, resource_t *, resource_t *);
@@ -563,6 +572,12 @@ drop_indexes_cve ();
 void
 report_set_processing_required (report_t, int, int);
 
+void
+report_set_discovery (report_t, gboolean);
+
+gboolean
+check_report_discovery (report_t);
+
 int
 process_report_import (report_t);
 
@@ -588,5 +603,11 @@ convert_http_scanner_type_to_osp_type (const char *);
 
 int
 vector_find_filter (const gchar **, const gchar *);
+
+int
+ldap_auth_enabled ();
+
+int
+radius_auth_enabled ();
 
 #endif /* not _GVMD_MANAGE_SQL_H */

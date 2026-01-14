@@ -13,6 +13,7 @@
 #include "manage_sql.h"
 #include "manage_sql_scan_queue.h"
 #include "manage_scan_handler.h"
+#include "manage_users.h"
 #include <gvm/base/gvm_sentry.h>
 #include <unistd.h>
 #include <signal.h>
@@ -26,13 +27,13 @@
 
 /**
  * @brief Handle a OSP scan in the gvmd scan queue.
- * 
+ *
  * @param[in]  scan_id    UUID of the scan / report to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
  * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.
- * 
+ *
  * @return 0 scan finished, 2 scan running,
  *         -1 if error, -2 if scan was stopped,
  *         -3 if the scan was interrupted, -4 already stopped.
@@ -42,7 +43,8 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
                         task_t task, int start_from)
 {
   task_status_t status = task_run_status (task);
-  
+  gboolean discovery_scan = FALSE;
+
   switch (status)
     {
       case TASK_STATUS_REQUESTED:
@@ -50,7 +52,9 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
           int rc;
           target_t target = task_target (task);
           rc = handle_osp_scan_start (task, target, scan_id, start_from,
-                                      TRUE);
+                                      TRUE, &discovery_scan);
+          /* Set discovery flag to the report */
+          report_set_discovery (report, discovery_scan);
           return (rc == 0) ? 2 : rc;
         }
       default:
@@ -60,15 +64,16 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
           return ret;
         }
     }
-  
+
 }
 
 /**
  * @brief Handle a scan in the gvmd scan queue.
- * 
+ *
  * @param[in]  scan_id    UUID of the scan / report to handle.
- * @param[in]  report     Row id of the report.
- * @param[in]  task       Row id of the task.
+ * @param[in]  report     Report.
+ * @param[in]  task       Task.
+ * @param[in]  scanner    Scanner.
  * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
  *                        2 continue if stopped else start from beginning.
  *
@@ -101,8 +106,8 @@ handle_queued_scan (const char *scan_id, report_t report, task_t task,
 
 /**
  * @brief Handle a scan defined a by a queue entry.
- * 
- * @param[in]  scan_id    UUID of the scan / report to handle.
+ *
+ * @param[in]  report_id  UUID of the scan / report to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
  * @param[in]  owner      Owner of the report.
@@ -162,7 +167,7 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
         {
           gchar *in_assets;
           int in_assets_int;
-          
+
           in_assets = task_preference_value (task, "in_assets");
           in_assets_int = atoi (in_assets);
           g_free (in_assets);
@@ -176,7 +181,7 @@ handle_scan_queue_entry (const char *report_id, report_t report, task_t task,
 
 /**
  * @brief Fork a new handler process for a given scan queue entry.
- * 
+ *
  * @param[in]  report_id  UUID of the scan to handle.
  * @param[in]  report     Row id of the report.
  * @param[in]  task       Row id of the task.
@@ -200,11 +205,11 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
   if (pipe (pipe_fds))
     {
       g_warning ("%s: Failed to create pipe: %s",
-                 __func__, strerror(errno));
+                 __func__, strerror (errno));
       return -1;
     }
 
-  child_pid = fork();
+  child_pid = fork ();
   (void) handle_scan_queue_entry;
 
   switch (child_pid)
@@ -241,25 +246,31 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                 exit (EXIT_SUCCESS);
               case -1:
                 // Child on error
-                close(pipe_fds[1]);
+                close (pipe_fds[1]);
                 g_warning ("%s: fork failed: %s", __func__, strerror (errno));
                 exit (EXIT_FAILURE);
               default:
                 // Child on success
                 ret = write (pipe_fds[1],
                              &grandchild_pid,
-                             sizeof(grandchild_pid));
-                if (ret)
+                             sizeof (grandchild_pid));
+                if (ret < sizeof (grandchild_pid))
                   {
-                    g_warning ("%s: Failed to write PID to pipe: %s",
-                               __func__, strerror(errno));
+                    if (ret <= -1)
+                      g_warning ("%s: Failed to write PID to pipe: %s",
+                                 __func__, strerror (errno));
+                    else
+                      g_warning ("%s: Failed to write PID to pipe: %s"
+                                 " (%d of %zu bytes sent)",
+                                 __func__, strerror (errno),
+                                 ret, sizeof (grandchild_pid));
                   }
                 close (pipe_fds[1]); // Close output side of pipe
                 sql_close_fork ();
-                if (ret)
-                  exit(EXIT_FAILURE);
+                if (ret < sizeof (grandchild_pid))
+                  exit (EXIT_FAILURE);
                 else
-                  exit(EXIT_SUCCESS);
+                  exit (EXIT_SUCCESS);
             }
         }
       case -1:
@@ -275,11 +286,11 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
           // Parent on success
           int status;
 
-          close(pipe_fds[1]); // Close output side of pipe
+          close (pipe_fds[1]); // Close output side of pipe
 
           // Get PID of grandchild from pipe
           grandchild_pid = 0;
-          nbytes = read(pipe_fds[0], &grandchild_pid, sizeof(grandchild_pid));
+          nbytes = read (pipe_fds[0], &grandchild_pid, sizeof (grandchild_pid));
           g_debug ("%s: Received pid: %d (%d bytes)",
                    __func__, grandchild_pid, nbytes);
 
@@ -290,15 +301,15 @@ fork_scan_handler (const char *report_id, report_t report, task_t task,
                            __func__, strerror (errno));
               else
                 g_warning ("%s: Could not read handler PID from pipe:"
-                           " received %d bytes, expected %zd",
-                           __func__, nbytes, sizeof(grandchild_pid));
-          
-              close(pipe_fds[0]); // Close input side of pipe
+                           " received %d bytes, expected %zu",
+                           __func__, nbytes, sizeof (grandchild_pid));
+
+              close (pipe_fds[0]); // Close input side of pipe
               return -1;
             }
-          
-          close(pipe_fds[0]); // Close input side of pipe
-          
+
+          close (pipe_fds[0]); // Close input side of pipe
+
           /*  Wait to prevent zombie, then return. */
           while (waitpid (child_pid, &status, 0) < 0)
             {

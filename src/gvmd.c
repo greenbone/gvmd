@@ -1,19 +1,6 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -63,7 +50,7 @@
 
 /**
  * \page manpage gvmd
- * \htmlinclude doc/gvmd.html
+ * \htmlinclude docs/gvmd.html
  */
 
 #include <locale.h>
@@ -108,6 +95,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_runtime_flags.h"
+#include "manage_roles.h"
 #include "manage_scan_queue.h"
 #include "gmpd.h"
 #include "utils.h"
@@ -1184,30 +1172,39 @@ update_nvt_cache_retry ()
               }
             case SCANNER_TYPE_OPENVASD:
               {
-#if OPENVASD
-                int ret;
-
-                setproctitle ("openvasd: Updating NVT cache");
-                ret = manage_update_nvt_cache_openvasd ();
-                if (ret == 1)
+                if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
                   {
-                    g_message (
-                      "Rebuilding all NVTs because of a hash value mismatch");
-                    ret = update_or_rebuild_nvts (0);
-                    if (ret)
-                      g_warning ("%s: rebuild failed", __func__);
-                    else
-                      g_message ("%s: rebuild successful", __func__);
-                  }
+                    int ret;
 
-                gvm_close_sentry ();
-                exit (ret);
-#else
-                g_critical ("%s: Default scanner is an openvasd one,"
-                            " but gvmd is not built to support this.",
-                            __func__);
-                exit (EXIT_FAILURE);
-#endif
+                    setproctitle ("openvasd: Updating NVT cache");
+                    ret = manage_update_nvt_cache_openvasd ();
+                    if (ret == 1)
+                      {
+                        g_message (
+                          "Rebuilding all NVTs because of a hash value mismatch");
+                        ret = update_or_rebuild_nvts (0);
+                        if (ret)
+                          g_warning ("%s: rebuild failed", __func__);
+                        else
+                          g_message ("%s: rebuild successful", __func__);
+                      }
+
+                    gvm_close_sentry ();
+                    exit (ret);
+                  }
+                else
+                  {
+                    if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+                      g_critical ("%s: Default scanner is an openvasd one,"
+                                " but openvasd runtime flag is disabled.",
+                                __func__);
+                    else
+                      g_critical ("%s: Default scanner is an openvasd one,"
+                                " but gvmd is not built to support this.",
+                                __func__);
+
+                    exit (EXIT_FAILURE);
+                  }
               }
             default:
               g_critical ("%s: scanner type %d is not supported as default",
@@ -1302,6 +1299,12 @@ fork_update_nvt_cache (pid_t *child_pid_out)
             /* Update the cache. */
             update_nvt_cache_retry ();
           }
+
+        /* Reinitialize DB/session again: feed update may close/reset DB state;
+         * required before discovery labeling. */
+        reinit_manage_process ();
+        manage_session_init (current_credentials.uuid);
+        manage_discovery_nvts ();
 
         /* Exit. */
 
@@ -1443,7 +1446,7 @@ fork_feed_sync ()
 
 /**
  * @brief Forks a process for handling queued scan or audit task actions.
- * 
+ *
  * These actions include processing imported reports and handling the task
  *  queue.
  *
@@ -1606,7 +1609,10 @@ fork_agents_sync ()
           while (next (&scanner_iterator))
             {
               scanner_t scanner = get_iterator_resource (&scanner_iterator);
-              if (scanner && scanner_type (scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+              if (scanner && (scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER
+                              || scanner_type (scanner) ==
+                              SCANNER_TYPE_AGENT_CONTROLLER_SENSOR))
                 {
                   gvmd_agent_connector_t connector =
                     gvmd_agent_connector_new_from_scanner (scanner);
@@ -1695,9 +1701,9 @@ set_last_run_time (time_t *last, time_t now)
 /**
  * @brief Run scheduler management if due; updates last timestamp only on work.
  *
- * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * On fatal error this exits the process.
  *
- * @return void. On fatal error, exits the process.
+ * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
  */
 static void
 run_schedule (periodic_times_t *t)
@@ -2217,6 +2223,7 @@ gvmd (int argc, char** argv, char *env[])
   static gboolean disable_password_policy = FALSE;
   static gboolean disable_scheduling = FALSE;
   static gboolean dump_vt_verification = FALSE;
+  static gboolean dump_asset_snapshot_counts = FALSE;
   static gchar *encryption_key_type = NULL;
   static int encryption_key_length = 0;
   static gchar *set_encryption_key = NULL;
@@ -2400,6 +2407,10 @@ gvmd (int argc, char** argv, char *env[])
         { "dump-vt-verification", '\0', 0, G_OPTION_ARG_NONE,
           &dump_vt_verification,
           "Dump the string the VTs verification hash is calculated from.",
+          NULL },
+        { "dump-asset-snapshot-counts", '\0', 0, G_OPTION_ARG_NONE,
+          &dump_asset_snapshot_counts,
+          "Dump the string the Asset snapshot counts are calculated from.",
           NULL },
         { "encryption-key-length", '\0', 0, G_OPTION_ARG_INT,
           &encryption_key_length,
@@ -2755,6 +2766,9 @@ gvmd (int argc, char** argv, char *env[])
   init_manage_settings_funcs (setting_value_sql,
                               setting_value_int_sql);
 
+  /* Initialize runtime flags */
+  runtime_flags_init (NULL);
+
   /* Process options. */
 
   option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
@@ -2788,7 +2802,7 @@ gvmd (int argc, char** argv, char *env[])
           else
             printf ("Sentry support disabled\n");
         }
-#if OPENVASD == 1
+#if ENABLE_OPENVASD == 1
       printf ("OpenVASD is enabled\n");
 #endif
 #if ENABLE_AGENTS == 1
@@ -3171,13 +3185,16 @@ gvmd (int argc, char** argv, char *env[])
    * release gvm-checking, via option_lock. */
 
   if (osp_vt_update)
-#if OPENVASD
-    g_critical ("%s: openvasd scanner is enabled."
-                 " The --osp-vt-update command was not executed.",
-                 __func__);
-#else
-    set_osp_vt_update_socket (osp_vt_update);
-#endif
+    {
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          g_critical ("%s: openvasd scanner is enabled."
+                      " The --osp-vt-update command was not executed.",
+                      __func__);
+        }
+      else
+        set_osp_vt_update_socket (osp_vt_update);
+    }
 
   if (disable_password_policy)
     gvm_disable_password_policy ();
@@ -3294,6 +3311,25 @@ gvmd (int argc, char** argv, char *env[])
       if (ret)
         {
           printf ("Failed to dump VT verification data.\n");
+          return EXIT_FAILURE;
+        }
+      return EXIT_SUCCESS;
+    }
+
+  if (dump_asset_snapshot_counts)
+    {
+      int ret;
+
+      setproctitle ("--dump-asset-snapshot-counts");
+
+      if (option_lock (&lockfile_checking))
+        return EXIT_FAILURE;
+
+      ret = manage_dump_asset_snapshot_counts (log_config, &database);
+      log_config_free ();
+      if (ret)
+        {
+          printf ("Failed to dump Asset snapshot counts.\n");
           return EXIT_FAILURE;
         }
       return EXIT_SUCCESS;
@@ -3899,17 +3935,22 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
-#if OPENVASD == 0
-  if (check_osp_vt_update_socket ())
+
+  /* Load discovery OID cache once in the parent, before forking children. */
+  nvts_discovery_oid_cache_reload ();
+
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
     {
-      g_critical ("%s: No OSP VT update socket found."
-                  " Use --osp-vt-update or change the 'OpenVAS Default'"
-                  " scanner to use the main ospd-openvas socket.",
-                  __func__);
-      gvm_close_sentry ();
-      exit (EXIT_FAILURE);
+      if (check_osp_vt_update_socket ())
+        {
+          g_critical ("%s: No OSP VT update socket found."
+                      " Use --osp-vt-update or change the 'OpenVAS Default'"
+                      " scanner to use the main ospd-openvas socket.",
+                      __func__);
+          gvm_close_sentry ();
+          exit (EXIT_FAILURE);
+        }
     }
-#endif
 
   /* Enter the main forever-loop. */
 

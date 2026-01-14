@@ -1,25 +1,12 @@
 # Copyright (C) 2009-2022 Greenbone AG
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 cmake_minimum_required(VERSION 3.5)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.10.1 LANGUAGES C)
+project(gvm VERSION 26.13.1 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -109,7 +96,7 @@ include(CPack)
 
 ## Variables
 
-set(GVMD_DATABASE_VERSION 262)
+set(GVMD_DATABASE_VERSION 264)
 
 set(GVMD_SCAP_DATABASE_VERSION 22)
 
@@ -250,10 +237,10 @@ if(NOT GVM_DEFAULT_DROP_USER)
 endif(NOT GVM_DEFAULT_DROP_USER)
 
 # Feature toggles
-if(NOT OPENVASD)
-  set(OPENVASD 0)
-endif(NOT OPENVASD)
-add_definitions(-DOPENVASD=${OPENVASD})
+if(NOT ENABLE_OPENVASD)
+  set(ENABLE_OPENVASD 0)
+endif(NOT ENABLE_OPENVASD)
+add_definitions(-DENABLE_OPENVASD=${ENABLE_OPENVASD})
 
 if(NOT ENABLE_AGENTS)
   set(ENABLE_AGENTS 0)
@@ -285,8 +272,8 @@ elseif(ENABLE_CONTAINER_SCANNING EQUAL 0)
   set(ENDIF_ENABLE_CONTAINER_SCANNNING "-->")
 endif()
 
-# HTTP scanner capability (used by OPENVASD / AGENTS / CONTAINER_SCANNING)
-if(OPENVASD OR ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
+# HTTP scanner capability (used by ENABLE_OPENVASD / AGENTS / CONTAINER_SCANNING)
+if(ENABLE_OPENVASD OR ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
   set(ENABLE_HTTP_SCANNER 1)
 else()
   set(ENABLE_HTTP_SCANNER 0)

@@ -1,19 +1,6 @@
 /* Copyright (C) 2019-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "utils.c"
@@ -145,6 +132,34 @@ Ensure (utils, strescape_check_utf_8_with_exceptions)
   g_free (output);
 }
 
+Ensure (utils, path_is_in_directory_returns_true_if_path_is_in_dir)
+{
+  const gchar *directory = "/home/gvmd";
+  const gchar *path1 = "/home/gvmd/abc/";
+  const gchar *path2 = "/home/gvmd/abc/.././def";
+  const gchar *path3 = "/home/gvmd";
+  const gchar *path4 = "/home/gvmd/../gvmd/../gvmd/i_am_a_file.json";
+
+  assert_that (path_is_in_directory (path1, directory), is_true);
+  assert_that (path_is_in_directory (path2, directory), is_true);
+  assert_that (path_is_in_directory (path3, directory), is_true);
+  assert_that (path_is_in_directory (path4, directory), is_true);
+}
+
+Ensure (utils, path_is_in_directory_returns_false_if_path_is_not_in_dir)
+{
+  const gchar *directory = "/home/gvmd";
+  const gchar *path1 = "/opt/gvmd";
+  const gchar *path2 = "/home/gvmd/.././../var";
+  const gchar *path3 = "/home/";
+  const gchar *path4 = "/home/gvmd/../gvmd/../gvmd/../i_am_a_file.json";
+
+  assert_that (path_is_in_directory (path1, directory), is_false);
+  assert_that (path_is_in_directory (path2, directory), is_false);
+  assert_that (path_is_in_directory (path3, directory), is_false);
+  assert_that (path_is_in_directory (path4, directory), is_false);
+}
+
 /* Test suite. */
 
 int
@@ -168,6 +183,11 @@ main (int argc, char **argv)
 
   add_test_with_context (suite, utils, strescape_check_utf_8_no_exceptions);
   add_test_with_context (suite, utils, strescape_check_utf_8_with_exceptions);
+
+  add_test_with_context (suite, utils,
+                         path_is_in_directory_returns_true_if_path_is_in_dir);
+  add_test_with_context (
+    suite, utils, path_is_in_directory_returns_false_if_path_is_not_in_dir);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

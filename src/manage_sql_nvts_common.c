@@ -1,26 +1,13 @@
 /* Copyright (C) 2019-2025 Greenbone AG
 *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
  * @file
- * @brief GVM management layer: Common NVT logic
+ * @brief GVM management layer: Common NVT SQL logic
  *
- * Shared NVT logic for the GVM management layer.
+ * Shared NVT SQL logic for the GVM management layer.
  */
 
 #include "iterator.h"
@@ -655,7 +642,7 @@ update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
 }
 
 /**
- * @brief Updates report counts cache, config preferences and whole-only 
+ * @brief Updates report counts cache, config preferences and whole-only
  *        families after NVT sync.
  *
  * @param[in] old_nvts_last_modified  Time NVTs considered to be modified after.

@@ -1,19 +1,6 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -54,7 +41,7 @@
 #include "manage_http_scanner.h"
 #endif
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 #include <gvm/openvasd/openvasd.h>
 #endif
 
@@ -260,6 +247,9 @@ current_encryption_key_uid (gboolean);
 void
 set_current_encryption_key_uid (const char *new_uid);
 
+int
+validate_sort_field (const gchar*, const gchar*);
+
 void
 manage_session_set_timezone (const char *);
 
@@ -355,6 +345,20 @@ typedef enum scanner_type
   SCANNER_TYPE_MAX = 11,
 } scanner_type_t;
 
+/**
+ * @brief Scanner feature status.
+ *
+ * These numbers are indicating whether the required feature
+ * for a given scanner type is available.
+ */
+typedef enum
+{
+ SCANNER_FEATURE_OK = 0,
+ SCANNER_FEATURE_OPENVASD_DISABLED = 1,
+ SCANNER_FEATURE_AGENTS_DISABLED = 2,
+ SCANNER_FEATURE_CONTAINER_DISABLED = 3
+} scanner_feature_status_t;
+
 int
 scanner_type_valid (scanner_type_t);
 
@@ -363,6 +367,9 @@ scanner_type_supports_unix_sockets (scanner_type_t);
 
 scanner_type_t
 get_scanner_type (scanner_t);
+
+scanner_feature_status_t
+check_scanner_feature (scanner_type_t);
 
 scanner_type_t
 get_scanner_type_by_uuid (const char *);
@@ -655,6 +662,9 @@ task_oci_image_target_in_trash (task_t);
 
 void
 set_task_oci_image_target (task_t, oci_image_target_t);
+
+void
+clear_task_asset_preferences (task_t);
 
 #endif /* ENABLE_CONTAINER_SCANNING */
 
@@ -1929,6 +1939,9 @@ nvt_iterator_max_epss_severity (iterator_t*);
 gboolean
 nvt_iterator_has_max_epss_severity (iterator_t*);
 
+int
+nvt_iterator_discovery (iterator_t*);
+
 char*
 nvt_default_timeout (const char *);
 
@@ -2097,40 +2110,24 @@ check_private_key (const char *, const char *);
 gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
-#if ENABLE_CREDENTIAL_STORES
 int
 create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    array_t*,    const char*, const char*, const char*,
-                   const char*, const char*, const char*, credential_t*);
-#else
-int
-create_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   array_t*,    const char*, const char*, const char*,
                    credential_t*);
-#endif /* ENABLE_CREDENTIAL_STORES */
 
 int
 copy_credential (const char*, const char*, const char*,
                  credential_t*);
 
-#if ENABLE_CREDENTIAL_STORES
 int
 modify_credential (const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, const char*, const char*, const char*,
                    const char*, array_t*, const char*, const char*,
-                   const char*, const char*, const char*);
-#else
-int
-modify_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, array_t*, const char*, const char*);
-#endif
+                   const char*, const char*, const char*, const char*);
 
 int
 delete_credential (const char *, int);
@@ -2187,6 +2184,9 @@ credential_iterator_vault_id (iterator_t*);
 
 const char*
 credential_iterator_host_identifier (iterator_t*);
+
+const char*
+credential_iterator_privacy_host_identifier (iterator_t*);
 
 #endif
 
@@ -2515,20 +2515,23 @@ manage_get_scanners (GSList *, const db_conn_info_t *);
 
 
 typedef enum {
-  CREATE_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
-  CREATE_SCANNER_SUCCESS = 0,             ///< Success
-  CREATE_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
-  CREATE_SCANNER_MISSING_TYPE,            ///< Missing type
-  CREATE_SCANNER_MISSING_HOST,            ///< Missing host
-  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
-  CREATE_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
-  CREATE_SCANNER_INVALID_TYPE,            ///< Invalid type
-  CREATE_SCANNER_INVALID_PORT,            ///< Invalid port
-  CREATE_SCANNER_INVALID_HOST,            ///< Invalid host
-  CREATE_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
-  CREATE_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
-  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
-  CREATE_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+  CREATE_SCANNER_INTERNAL_ERROR = -1,         ///< Internal error
+  CREATE_SCANNER_SUCCESS = 0,                 ///< Success
+  CREATE_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
+  CREATE_SCANNER_MISSING_TYPE,                ///< Missing type
+  CREATE_SCANNER_MISSING_HOST,                ///< Missing host
+  CREATE_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
+  CREATE_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
+  CREATE_SCANNER_INVALID_TYPE,                ///< Invalid type
+  CREATE_SCANNER_INVALID_PORT,                ///< Invalid port
+  CREATE_SCANNER_INVALID_HOST,                ///< Invalid host
+  CREATE_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
+  CREATE_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
+  CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
+  CREATE_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
+  CREATE_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
+  CREATE_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  CREATE_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } create_scanner_return_t;
 
 create_scanner_return_t
@@ -2540,20 +2543,23 @@ int
 copy_scanner (const char*, const char*, const char *, scanner_t *);
 
 typedef enum {
-  MODIFY_SCANNER_INTERNAL_ERROR = -1,     ///< Internal error
-  MODIFY_SCANNER_SUCCESS = 0,             ///< Success
-  MODIFY_SCANNER_ALREADY_EXISTS,          ///< Scanner already exists
-  MODIFY_SCANNER_MISSING_ID,              ///< Missing scanner id
-  MODIFY_SCANNER_NOT_FOUND,               ///< Scanner not found
-  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,    ///< Credential not found
-  MODIFY_SCANNER_CREDENTIAL_NOT_CC,       ///< Credential must have type "cc"
-  MODIFY_SCANNER_INVALID_TYPE,            ///< Invalid type
-  MODIFY_SCANNER_INVALID_PORT,            ///< Invalid port
-  MODIFY_SCANNER_INVALID_HOST,            ///< Invalid host
-  MODIFY_SCANNER_INVALID_RELAY_PORT,      ///< Invalid relay port
-  MODIFY_SCANNER_INVALID_RELAY_HOST,      ///< Invalid relay host
-  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED, ///< Type doesn't support UNIX sockets
-  MODIFY_SCANNER_PERMISSION_DENIED = 99   ///< Permission denied
+  MODIFY_SCANNER_INTERNAL_ERROR = -1,         ///< Internal error
+  MODIFY_SCANNER_SUCCESS = 0,                 ///< Success
+  MODIFY_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
+  MODIFY_SCANNER_MISSING_ID,                  ///< Missing scanner id
+  MODIFY_SCANNER_NOT_FOUND,                   ///< Scanner not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
+  MODIFY_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
+  MODIFY_SCANNER_INVALID_TYPE,                ///< Invalid type
+  MODIFY_SCANNER_INVALID_PORT,                ///< Invalid port
+  MODIFY_SCANNER_INVALID_HOST,                ///< Invalid host
+  MODIFY_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
+  MODIFY_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
+  MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
+  MODIFY_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
+  MODIFY_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
+  MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  MODIFY_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } modify_scanner_return_t;
 
 modify_scanner_return_t
@@ -2861,45 +2867,6 @@ void
 set_schedule_timeout (int);
 
 
-/* Groups. */
-
-int
-init_group_iterator (iterator_t *, get_data_t *);
-
-int
-copy_group (const char *, const char *, const char *, group_t *);
-
-int
-create_group (const char *, const char *, const char *, int, group_t *);
-
-int
-delete_group (const char *, int);
-
-char*
-group_uuid (group_t);
-
-gchar *
-group_users (group_t);
-
-int
-trash_group_in_use (group_t);
-
-int
-group_in_use (group_t);
-
-int
-trash_group_writable (group_t);
-
-int
-group_writable (group_t);
-
-int
-group_count (const get_data_t*);
-
-int
-modify_group (const char *, const char *, const char *, const char *);
-
-
 /* Permissions. */
 
 int
@@ -2980,48 +2947,6 @@ delete_permissions_cache_for_resource (const char*, resource_t);
 
 void
 delete_permissions_cache_for_user (user_t);
-
-
-/* Roles. */
-
-int
-manage_get_roles (GSList *, const db_conn_info_t *, int);
-
-int
-init_role_iterator (iterator_t *, get_data_t *);
-
-int
-copy_role (const char *, const char *, const char *, role_t *);
-
-int
-create_role (const char *, const char *, const char *, role_t *);
-
-int
-delete_role (const char *, int);
-
-char*
-role_uuid (role_t);
-
-gchar *
-role_users (role_t);
-
-int
-trash_role_in_use (role_t);
-
-int
-role_in_use (role_t);
-
-int
-trash_role_writable (role_t);
-
-int
-role_writable (role_t);
-
-int
-role_count (const get_data_t*);
-
-int
-modify_role (const char *, const char *, const char *, const char *);
 
 
 /* Schema. */
@@ -3265,9 +3190,6 @@ manage_default_ca_cert ();
 
 /* Users. */
 
-gboolean
-find_user_by_name_with_permission (const char *, user_t *, const char *);
-
 int
 manage_create_user (GSList *, const db_conn_info_t *, const gchar *,
                     const gchar *, const gchar *);
@@ -3286,56 +3208,11 @@ manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
 gchar *
 manage_user_hash (const gchar *);
 
-gchar *
-manage_user_uuid (const gchar *, auth_method_t);
-
-int
-manage_user_exists (const gchar *, auth_method_t);
-
 int
 copy_user (const char*, const char*, const char*, user_t*);
 
 gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
-
-int
-init_user_iterator (iterator_t*, get_data_t*);
-
-const char*
-user_iterator_role (iterator_t*);
-
-const char*
-user_iterator_method (iterator_t*);
-
-const char*
-user_iterator_hosts (iterator_t*);
-
-int
-user_iterator_hosts_allow (iterator_t*);
-
-void
-init_user_group_iterator (iterator_t *, user_t);
-
-const char*
-user_group_iterator_uuid (iterator_t*);
-
-const char*
-user_group_iterator_name (iterator_t*);
-
-int
-user_group_iterator_readable (iterator_t*);
-
-void
-init_user_role_iterator (iterator_t *, user_t);
-
-const char*
-user_role_iterator_uuid (iterator_t*);
-
-const char*
-user_role_iterator_name (iterator_t*);
-
-int
-user_role_iterator_readable (iterator_t*);
 
 int
 create_user (const gchar *, const gchar *, const gchar *, const gchar *,
@@ -3352,31 +3229,7 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              gchar **);
 
 int
-user_in_use (user_t);
-
-int
-trash_user_in_use (user_t);
-
-int
-user_writable (user_t);
-
-int
-trash_user_writable (user_t);
-
-int
 user_count (const get_data_t*);
-
-gchar*
-user_name (const char *);
-
-char*
-user_uuid (user_t);
-
-gchar*
-user_hosts (const char *);
-
-int
-user_hosts_allow (const char *);
 
 int
 init_vuln_iterator (iterator_t*, const get_data_t*);
@@ -3670,6 +3523,9 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
+
+int
+manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */

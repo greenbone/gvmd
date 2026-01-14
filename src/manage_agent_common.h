@@ -24,7 +24,6 @@
 #include <glib.h>
 
 /**
- * @struct gvmd_agent_connector
  * @brief Holds scanner context and base agent controller connection.
  */
 struct gvmd_agent_connector
@@ -35,7 +34,6 @@ struct gvmd_agent_connector
 typedef struct gvmd_agent_connector *gvmd_agent_connector_t;
 
 /**
- * @struct agent_uuid_list
  * @brief A structure to store a list of agent UUIDs.
  */
 struct agent_uuid_list

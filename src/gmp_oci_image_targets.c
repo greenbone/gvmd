@@ -432,7 +432,7 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
                                  comment ? comment->text : NULL,
                                  credential_id ?: NULL,
                                  image_references
-                                 ? image_references->text 
+                                 ? image_references->text
                                  : NULL,
                                  &error_message);
 
@@ -745,7 +745,7 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
                                cred_uuid ?: "",
                                cred_name ?: "",
                                credential_in_trash);
-      
+
       if (credential_available == 0)
         SEND_TO_CLIENT_OR_FAIL ("<permissions/>");
 
@@ -756,9 +756,9 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
         {
           iterator_t tasks;
           oci_image_target_t target;
-          
+
           SEND_TO_CLIENT_OR_FAIL ("<tasks>");
-          
+
           target = get_iterator_resource (&oci_image_targets);
           init_oci_image_target_task_iterator (&tasks, target);
 
@@ -795,10 +795,10 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
 
   cleanup_iterator (&oci_image_targets);
 
-  filtered = get_oci_image_targets_data.get.id 
+  filtered = get_oci_image_targets_data.get.id
               ? 1
               : oci_image_target_count (&get_oci_image_targets_data.get);
-  SEND_GET_END ("oci_image_target", &get_oci_image_targets_data.get, 
+  SEND_GET_END ("oci_image_target", &get_oci_image_targets_data.get,
                 count, filtered);
 
   get_oci_image_targets_reset ();

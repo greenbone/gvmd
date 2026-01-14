@@ -13,6 +13,7 @@
 #include "manage_assets.h"
 #include "manage_scan_queue.h"
 #include "manage_sql.h"
+#include "manage_sql_nvts.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -22,7 +23,7 @@
 
 /**
  * @brief Frees an osp_connect_data_t struct and its fields.
- * 
+ *
  * @param[in] conn_data  Connection data struct to free.
  */
 void
@@ -37,7 +38,7 @@ osp_connect_data_free (osp_connect_data_t *conn_data)
 
 /**
  * @brief Get OSP connection data from a scanner.
- * 
+ *
  * If a relay is defined in the scanners table, the struct will contain the
  *  relay host and port and .
  *
@@ -77,7 +78,7 @@ osp_connect_data_from_scanner (scanner_t scanner)
 
 /**
  * @brief Get OSP connection data from a scanner iterator.
- * 
+ *
  * Fields are expected to be cleaned up by the iterator.
  *
  * @param[in]  iterator  The scanner iterator to get the data from.
@@ -88,7 +89,7 @@ osp_connect_data_from_scanner_iterator (iterator_t *iterator,
                                         osp_connect_data_t *conn_data)
 {
   gboolean has_relay;
-  
+
   assert (iterator);
 
   has_relay = strcmp (scanner_iterator_relay_host (iterator) ?: "", "");
@@ -353,7 +354,7 @@ osp_scan_semaphore_update_start (int add_result_on_error,
 {
   if (get_max_concurrent_scan_updates () == 0)
     return 0;
-  
+
   int sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
   if (sem_op_ret == 1)
     return 1;
@@ -532,18 +533,20 @@ prepare_osp_scan_for_resume (task_t task, const char *scan_id, char **error)
 /**
  * @brief Launch an OpenVAS via OSP task.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[in]   scan_id     The scan uuid.
- * @param[in]   from        0 start from beginning, 1 continue from stopped,
- *                          2 continue if stopped else start from beginning.
- * @param[out]  error       Error return.
+ * @param[in]   task           The task.
+ * @param[in]   target         The target.
+ * @param[in]   scan_id        The scan uuid.
+ * @param[in]   from           0 start from beginning, 1 continue from stopped,
+ *                             2 continue if stopped else start from beginning.
+ * @param[out]   error         Error return.
+ * @param[out]  discovery_out  Returns TRUE if all OIDs are labeled
+ *                             as discovery in the used scan config.
  *
  * @return 0 success, -1 if error.
  */
 static int
 launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
-                         int from, char **error)
+                         int from, char **error, gboolean *discovery_out)
 {
   osp_connection_t *connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
@@ -552,7 +555,6 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
   osp_target_t *osp_target;
   GSList *osp_targets, *vts;
   GHashTable *vts_hash_table;
-  osp_credential_t *snmp_credential, *krb5_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   int ret, empty;
@@ -642,10 +644,13 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 #else
 
   osp_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  osp_credential_t *snmp_credential, *krb5_credential;
 
   ssh_credential = target_osp_ssh_credential_db (target);
   smb_credential = target_osp_smb_credential_db (target);
   esxi_credential = target_osp_esxi_credential_db (target);
+  snmp_credential = target_osp_snmp_credential_db (target);
+  krb5_credential = target_osp_krb5_credential_db (target);
 
   if (ssh_credential)
     osp_target_add_credential (osp_target, ssh_credential);
@@ -653,16 +658,12 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     osp_target_add_credential (osp_target, smb_credential);
   if (esxi_credential)
     osp_target_add_credential (osp_target, esxi_credential);
-
-#endif
-
-  snmp_credential = target_osp_snmp_credential (target);
   if (snmp_credential)
     osp_target_add_credential (osp_target, snmp_credential);
-
-  krb5_credential = target_osp_krb5_credential (target);
   if (krb5_credential)
     osp_target_add_credential (osp_target, krb5_credential);
+
+#endif
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
@@ -673,6 +674,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  GSList *oids = NULL;
   empty = 1;
   while (next (&families))
     {
@@ -689,6 +691,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
               empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = osp_vt_single_new (oid);
+              oids = g_slist_prepend (oids, g_strdup (oid));
 
               vts = g_slist_prepend (vts, new_vt);
               g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
@@ -697,6 +700,11 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  /* check oids are discovery or not */
+  *discovery_out = nvts_oids_all_discovery_cached (oids);
+  /* clean up oids list */
+  g_slist_free_full (oids, g_free);
 
   if (empty) {
     if (error)
@@ -898,14 +906,15 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
 
 /**
  * @brief Update the status and results of an OSP scan.
- * 
+ *
  * @param[in]  task       The task of the OSP scan
  * @param[in]  report     Row id of the scan report
  * @param[in]  scan_id    UUID of the scan report
- * @param[in]  conn_data   Data used to connect to the scanner.
+ * @param[in]  conn_data  Data used to connect to the scanner.
+ * @param[in,out]  retry_ptr              How many times to retry.
  * @param[in,out]  queued_status_updated  Whether the "queued" status was set.
  * @param[in,out]  started                Whether the scan was started.
- * 
+ *
  * @return 0 if scan finished, 1 if caller should retry if appropriate,
  *         2 if scan is running or queued by the scanner,
  *         -1 if error, -2 if scan was stopped,
@@ -1075,7 +1084,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
 
 /**
  * @brief Handle the start of an OSP scan.
- * 
+ *
  * @param[in]  task       The task of the OSP scan
  * @param[in]  target     The target of the scan task
  * @param[in]  scan_id    UUID of the scan / report
@@ -1083,17 +1092,20 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
  *                        2 continue if stopped else start from beginning.
  * @param[in]  wait_until_active  Whether to wait until scan is queued or
  *                                running
+ * @param[out] discovery_out  Discovery flag for scan config.
  *
  * @return 0 success, -1 if error.
  */
 int
 handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
-                       int start_from, gboolean wait_until_active)
+                       int start_from, gboolean wait_until_active,
+                       gboolean *discovery_out)
 {
   char *error = NULL;
   int rc;
 
-  rc = launch_osp_openvas_task (task, target, scan_id, start_from, &error);
+  rc = launch_osp_openvas_task (task, target, scan_id, start_from, &error,
+                                discovery_out);
   if (rc)
     {
       result_t result;
@@ -1165,7 +1177,7 @@ handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
               rc = -3;
               break;
             }
-          
+
           // Exit loop if scan is queued or started
           if (rc == 2)
             break;
@@ -1258,7 +1270,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
           break;
         }
 
-      if (yield_time 
+      if (yield_time
           && time (NULL) >= yield_time
           && scan_queue_length () > max_active_scans)
         break;
@@ -1273,14 +1285,15 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
 
 /**
  * @brief Handle the end of an OSP scan.
- * 
+ *
  * @param[in]  task                 The task of the scan
  * @param[in]  handle_progress_rc   Return code from handle_osp_scan
- * 
+ * @param[in] discovery             Discovery flag for scan config.
+ *
  * @return The given handle_osp_scan return code.
  */
 int
-handle_osp_scan_end (task_t task, int handle_progress_rc)
+handle_osp_scan_end (task_t task, int handle_progress_rc, gboolean discovery)
 {
   if (handle_progress_rc == 0)
     {
@@ -1307,6 +1320,7 @@ handle_osp_scan_end (task_t task, int handle_progress_rc)
       if (max_concurrent_scan_updates)
         semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0);
 
+      asset_snapshots_target (global_current_report, task, discovery);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }

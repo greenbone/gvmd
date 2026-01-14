@@ -1,19 +1,6 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -794,6 +781,46 @@ scanner_type_valid (scanner_type_t scanner_type)
 }
 
 /**
+ * @brief Check if required feature for a scanner type is enabled.
+ *
+ * @param scanner_type  Scanner type.
+ *
+ * @return SCANNER_FEATURE_OK
+ *         if no feature is required, or the required feature is enabled.
+ *
+ *         Otherwise, the value indicating that the feature required
+ *         for the given scanner type is disabled.
+ */
+scanner_feature_status_t
+check_scanner_feature (scanner_type_t scanner_type)
+{
+  if (scanner_type == SCANNER_TYPE_OPENVASD
+      || scanner_type == SCANNER_TYPE_OPENVASD_SENSOR)
+    {
+      if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        return SCANNER_FEATURE_OPENVASD_DISABLED;
+      return SCANNER_FEATURE_OK;
+    }
+
+  if (scanner_type == SCANNER_TYPE_AGENT_CONTROLLER
+      || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      if (!feature_enabled (FEATURE_ID_AGENTS))
+        return SCANNER_FEATURE_AGENTS_DISABLED;
+      return SCANNER_FEATURE_OK;
+    }
+
+  if (scanner_type == SCANNER_TYPE_CONTAINER_IMAGE)
+    {
+      if (!feature_enabled (FEATURE_ID_CONTAINER_SCANNING))
+        return SCANNER_FEATURE_CONTAINER_DISABLED;
+      return SCANNER_FEATURE_OK;
+    }
+
+  return SCANNER_FEATURE_OK;
+}
+
+/**
  * @brief Check if a scanner type supports UNIX sockets.
  *
  * @param[in]  scanner_type  Scanner type.
@@ -1476,6 +1503,7 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
                        char **report_id_return)
 {
   char *report_id = NULL;
+  gboolean discovery_scan = FALSE;
   int rc;
 
   assert (task);
@@ -1528,7 +1556,8 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE))
+  if (handle_osp_scan_start (task, target, report_id, start_from, FALSE,
+                             &discovery_scan))
     {
       g_free (report_id);
       gvm_close_sentry ();
@@ -1539,7 +1568,7 @@ fork_osp_scan_handler (task_t task, target_t target, int start_from,
 
   rc = handle_osp_scan (task, global_current_report, report_id, 0);
   g_free (report_id);
-  rc = handle_osp_scan_end (task, rc);
+  rc = handle_osp_scan_end (task, rc, discovery_scan);
   gvm_close_sentry ();
   exit (rc);
 }
@@ -1668,6 +1697,18 @@ set_scanner_connection_retry (int new_retry)
 
 /* CVE tasks. */
 
+/**
+ * @brief Check if version is in a given range.
+ *
+ * @param  target      Target version.
+ * @param  start_incl  Start of range (inclusive), or NULL.
+ * @param  start_excl  Start of range (exclusive), or NULL.
+ * @param  end_incl    End of range (inclusive), or NULL.
+ * @param  end_excl    End of range (exclusive), or NULL.
+ *
+ * @return 0 target is within given range, 1 target is outside given range,
+ *         -1 result is undefined.
+ */
 static int
 check_version (const gchar *target, const gchar *start_incl, const gchar *start_excl, const gchar *end_incl, const gchar *end_excl)
 {
@@ -1719,6 +1760,15 @@ check_version (const gchar *target, const gchar *start_incl, const gchar *start_
   return (1);
 }
 
+/**
+ * @brief Check CPE rule match.
+ *
+ * @param[in]  node         CPE match node.
+ * @param[out] match        TRUE if matched.
+ * @param[out] vulnerable   TRUE if vulnerable.
+ * @param[in]  report_host  Report host to get CPEs from.
+ * @param[in]  host_cpe     CPE being checked.
+ */
 static void
 check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable, report_host_t report_host, const char *host_cpe)
 {
@@ -2564,7 +2614,7 @@ slave_get_relay (const char *original_host,
   return ret;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /* Prototype */
 static int
 run_openvasd_task (task_t task, int from, char **report_id);
@@ -2638,7 +2688,7 @@ run_task (const char *task_id, char **report_id, int from)
       || scanner_type (scanner) == SCANNER_TYPE_OSP_SENSOR)
     return run_osp_task (task, from, report_id);
 
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (scanner_type (scanner) == SCANNER_TYPE_OPENVASD
     || scanner_type (scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     return run_openvasd_task (task, from, report_id);
@@ -2789,7 +2839,7 @@ stop_task_internal (task_t task)
   return 0;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 static int
 stop_openvasd_task (task_t task);
 #endif
@@ -2820,7 +2870,7 @@ stop_task (const char *task_id)
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
 
-#if OPENVASD
+#if ENABLE_OPENVASD
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD_SENSOR)
     return stop_openvasd_task (task);
@@ -3064,7 +3114,7 @@ get_osp_performance_string (scanner_t scanner, int start, int end,
                             const char *titles, gchar **performance_str,
                             gchar **error)
 {
-#if OPENVASD
+#if ENABLE_OPENVASD
   http_scanner_connector_t connector;
   int err;
   openvasd_get_performance_opts_t opts;
@@ -4248,6 +4298,8 @@ manage_sync (sigset_t *sigmask_current,
             }
 #endif /* ENABLE_AGENTS */
           manage_sync_configs ();
+          /* After config sync, update discovery nvts */
+          manage_discovery_nvts ();
           manage_sync_port_lists ();
           manage_sync_report_formats ();
 
@@ -4264,7 +4316,7 @@ manage_queued_task_actions ()
 {
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
-  
+
   setproctitle ("Manage process report imports");
   manage_process_report_imports ();
   setproctitle ("Manage scan queue");
@@ -4298,7 +4350,7 @@ manage_process_report_imports ()
       ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
       if (ret > 0)
         {
-          g_debug ("%s: Report %llu is already being processed", 
+          g_debug ("%s: Report %llu is already being processed",
                    __func__,
                    report);
           continue;
@@ -4392,7 +4444,7 @@ manage_process_report_imports ()
             g_free (lockfile_path);
             cleanup_iterator (&reports);
             return;
-    
+
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
@@ -5323,6 +5375,12 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
               "</epss>");
         }
 
+      /* add discovery value */
+      buffer_xml_append_printf
+        (buffer,
+         "<discovery>%d</discovery>",
+         nvt_iterator_discovery (nvts));
+
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
     }
@@ -5333,22 +5391,26 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
                                       get_iterator_resource (nvts),
                                       1);
 
+      GString *buffer = g_string_new (NULL);
+
+      buffer_xml_append_printf (buffer,
+                                "<nvt oid=\"%s\"><name>%s</name>",
+                                oid, name_text);
+
+      /* optional tags */
       if (tag_count)
-        {
-          msg = g_strdup_printf
-                 ("<nvt oid=\"%s\"><name>%s</name>"
-                  "<user_tags><count>%i</count></user_tags>%s",
-                  oid, name_text,
-                  tag_count,
-                  close_tag ? "</nvt>" : "");
-        }
-      else
-        {
-          msg = g_strdup_printf
-                 ("<nvt oid=\"%s\"><name>%s</name>%s",
-                  oid, name_text,
-                  close_tag ? "</nvt>" : "");
-        }
+        buffer_xml_append_printf (buffer,
+                                  "<user_tags><count>%i</count></user_tags>",
+                                  tag_count);
+
+      /* add discovery value */
+      buffer_xml_append_printf (buffer,
+                                "<discovery>%d</discovery>",
+                                nvt_iterator_discovery (nvts));
+
+      /* close */
+      xml_string_append (buffer, close_tag ? "</nvt>" : "");
+      msg = g_string_free (buffer, FALSE);
     }
   g_free (name_text);
   return msg;
@@ -5495,23 +5557,6 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
 
 
 /* Users. */
-
-/**
- *
- * @brief Validates a username.
- *
- * @param[in]  name  The name.
- *
- * @return 0 if the username is valid, 1 if not.
- */
-int
-validate_username (const gchar * name)
-{
-  if (g_regex_match_simple ("^[[:alnum:]_.-]+$", name, 0, 0))
-    return 0;
-  else
-    return 1;
-}
 
 
 /* Resource aggregates. */
@@ -5778,7 +5823,7 @@ set_max_concurrent_scan_updates (int new_max)
 /**
  * @brief Set the maximum number of database connections.
  *
- * @param new_max The current maximum number of database connections. 
+ * @param new_max The current maximum number of database connections.
  */
 void
 set_max_database_connections (int new_max)
@@ -6313,15 +6358,23 @@ nvts_feed_info (gchar **vts_version, gchar **feed_name, gchar **feed_vendor,
                                       feed_vendor,
                                       feed_home);
     case SCANNER_TYPE_OPENVASD:
-#if OPENVASD == 1
-      return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
-                                                    vts_version);
-#else
-      g_critical ("%s: Default scanner is an openvasd one,"
-                  " but gvmd is not built to support this.",
-                  __func__);
-      return -1;
-#endif
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          return nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+            vts_version);
+        }
+      else
+        {
+          if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but openvasd runtime flag is disabled.",
+                      __func__);
+          else
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but gvmd is not built to support this.",
+                      __func__);
+          return -1;
+        }
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
@@ -6395,31 +6448,37 @@ nvts_check_feed (int *lockfile_in_use,
                                        self_test_exit_error,
                                        self_test_error_msg);
     case SCANNER_TYPE_OPENVASD:
-#if OPENVASD == 1
-      {
-        int ret = 0;
-        char *vts_version = NULL;
+      if (feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+        {
+          int ret = 0;
+          char *vts_version = NULL;
 
-        ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
-                                                     &vts_version);
-        self_test_exit_error = 0;
-        *self_test_error_msg = NULL;
-        if (ret == 0 && vts_version)
-          lockfile_in_use = 0;
-        else if (ret == 2)
-          {
-            ret = 0;
-            *lockfile_in_use = 1;
-          }
+          ret = nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
+            &vts_version);
+          self_test_exit_error = 0;
+          *self_test_error_msg = NULL;
+          if (ret == 0 && vts_version)
+            lockfile_in_use = 0;
+          else if (ret == 2)
+            {
+              ret = 0;
+              *lockfile_in_use = 1;
+            }
 
-        return ret;
-      }
-#else
-      g_critical ("%s: Default scanner is an openvasd one,"
-                  " but gvmd is not built to support this.",
-                  __func__);
-      return -1;
-#endif
+          return ret;
+        }
+      else
+        {
+          if (feature_compiled_in (FEATURE_ID_OPENVASD_SCANNER))
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but openvasd runtime flag is disabled.",
+                      __func__);
+          else
+            g_critical ("%s: Default scanner is an openvasd one,"
+                      " but gvmd is not built to support this.",
+                      __func__);
+          return -1;
+        }
     default:
       g_critical ("%s: scanner type %d is not supported as default",
                   __func__, sc_type);
@@ -7120,7 +7179,7 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
   return -1;
 }
 
-#if OPENVASD
+#if ENABLE_OPENVASD
 /* openvasd */
 
 /**
@@ -7133,6 +7192,11 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 static int
 stop_openvasd_task (task_t task)
 {
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: openvasd runtime flag is disabled", __func__);
+      return -1;
+    }
   int ret = 0;
   report_t scan_report;
   char *scan_id;
@@ -7237,18 +7301,20 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
 /**
  * @brief Launch an OpenVAS via openvasd task.
  *
- * @param[in]   task        The task.
- * @param[in]   target      The target.
- * @param[in]   scan_id     The scan uuid.
- * @param[in]   from        0 start from beginning, 1 continue from stopped,
- *                          2 continue if stopped else start from beginning.
- * @param[out]  error       Error return.
+ * @param[in]   task           The task.
+ * @param[in]   target         The target.
+ * @param[in]   scan_id        The scan uuid.
+ * @param[in]   from           0 start from beginning, 1 continue from stopped,
+ *                             2 continue if stopped else start from beginning.
+ * @param[out]  error          Error return.
+ * @param[out]  discovery_out  Returns TRUE if all OIDs are labeled
+ *                             as discovery in the used scan config.
  *
  * @return An http code on success, -1 if error.
  */
 static int
 launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
-                         int from, char **error)
+                         int from, char **error, gboolean *discovery_out)
 {
   http_scanner_connector_t connection;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
@@ -7258,7 +7324,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
-  openvasd_credential_t *snmp_credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
   GHashTable *scanner_options;
   http_scanner_resp_t response;
@@ -7352,6 +7417,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 #if ENABLE_CREDENTIAL_STORES == 0
 
   openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  openvasd_credential_t *snmp_credential;
 
   ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
   if (ssh_credential)
@@ -7365,12 +7431,13 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
     (openvasd_credential_t *) target_osp_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
-#endif
 
   snmp_credential =
-    (openvasd_credential_t *) target_osp_snmp_credential (target);
+    (openvasd_credential_t *) target_osp_snmp_credential_db (target);
   if (snmp_credential)
     openvasd_target_add_credential (openvasd_target, snmp_credential);
+
+#endif
 
   /* Initialize vts table for vulnerability tests and their preferences */
   vts = NULL;
@@ -7381,6 +7448,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 
   /*  Setup of vulnerability tests (without preferences) */
   init_family_iterator (&families, 0, NULL, 1);
+  GSList *oids = NULL;
   empty = 1;
   while (next (&families))
     {
@@ -7397,6 +7465,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
               empty = 0;
               oid = nvt_iterator_oid (&nvts);
               new_vt = openvasd_vt_single_new (oid);
+              oids = g_slist_prepend (oids, g_strdup (oid));
 
               vts = g_slist_prepend (vts, new_vt);
               g_hash_table_replace (vts_hash_table, g_strdup (oid), new_vt);
@@ -7405,6 +7474,11 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
         }
     }
   cleanup_iterator (&families);
+
+  /* check oids are discovery or not */
+  *discovery_out = nvts_oids_all_discovery_cached (oids);
+  /* clean up oids list */
+  g_slist_free_full (oids, g_free);
 
   if (empty) {
     if (error)
@@ -7611,6 +7685,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
                        char **report_id_return)
 {
   char *report_id, *error = NULL;
+  gboolean discovery_scan = FALSE;
   int rc;
 
   assert (task);
@@ -7663,7 +7738,8 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
 
-  rc = launch_openvasd_openvas_task (task, target, report_id, from, &error);
+  rc = launch_openvasd_openvas_task (task, target, report_id, from, &error,
+                                     &discovery_scan);
 
   if (rc < 0)
     {
@@ -7695,6 +7771,7 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
       set_task_run_status (task, TASK_STATUS_PROCESSING);
       set_report_scan_run_status (global_current_report,
                                   TASK_STATUS_PROCESSING);
+      asset_snapshots_target (global_current_report, task, discovery_scan);
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
@@ -7734,6 +7811,11 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
 static int
 run_openvasd_task (task_t task, int from, char **report_id)
 {
+  if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
+    {
+      g_warning ("%s: openvasd runtime flag is disabled", __func__);
+      return -1;
+    }
   target_t target;
 
   target = task_target (task);
@@ -7937,7 +8019,8 @@ launch_agent_control_task (task_t task,
 make_report:
   // Always create a report with TASK_STATUS_REQUESTED
   {
-    int report_resp = create_current_report (task, report_id, TASK_STATUS_REQUESTED);
+    int report_resp = create_agent_task_current_report (
+      task, *report_id, TASK_STATUS_REQUESTED);
     if (report_resp != 0)
       {
         if (error && !*error) *error = g_strdup ("Could not create current report");
@@ -8055,6 +8138,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       hosts_set_identifiers (global_current_report);
       hosts_set_max_severity (global_current_report, NULL, NULL);
       hosts_set_details (global_current_report);
+      asset_snapshots_agent (global_current_report, task, agent_group);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
     }
@@ -8084,6 +8168,11 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
 static int
 run_agent_control_task (task_t task, char **report_id)
 {
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_warning ("%s: Agent runtime flag is disabled", __func__);
+      return -1;
+    }
   agent_group_t agent_group;
 
   agent_group = task_agent_group (task);

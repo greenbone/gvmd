@@ -1,19 +1,6 @@
 /* Copyright (C) 2019-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "manage.c"
@@ -21,8 +8,12 @@
 #include <cgreen/cgreen.h>
 
 Describe (manage);
-BeforeEach (manage) {}
-AfterEach (manage) {}
+BeforeEach (manage)
+{
+}
+AfterEach (manage)
+{
+}
 
 /* truncate_certificate */
 
@@ -61,6 +52,47 @@ Ensure (manage, truncate_certificate_given_truncated)
 
   truncated = truncate_certificate (given);
   assert_that (truncated, is_equal_to_string (given));
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_empty_string)
+{
+  const gchar *given;
+  gchar *truncated;
+
+  given = "";
+
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_null);
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_invalid_certificate)
+{
+  const gchar *given;
+  gchar *truncated;
+
+  given = "foo bar baz";
+
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_null);
+  g_free (truncated);
+}
+
+Ensure (manage, truncate_certificate_extra_data)
+{
+  const gchar *given, *expected;
+  gchar *truncated;
+  given = "-----BEGIN CERTIFICATE-----\n"
+          "MIIEjTCCAvWgAwIBAgIMWtd9bxgrX+9SgEHXMA0GCSqGSIb3DQEBCwUAMGIxKjAo\n"
+          "-----END CERTIFICATE-----\n"
+          "u1UuTizi5guqzOf+57s4o7Q=\n";
+  expected =
+    "-----BEGIN CERTIFICATE-----\n"
+    "MIIEjTCCAvWgAwIBAgIMWtd9bxgrX+9SgEHXMA0GCSqGSIb3DQEBCwUAMGIxKjAo\n"
+    "-----END CERTIFICATE-----\n";
+  truncated = truncate_certificate (given);
+  assert_that (truncated, is_equal_to_string (expected));
   g_free (truncated);
 }
 
@@ -119,8 +151,7 @@ Ensure (manage, truncate_text_skips_suffix)
                  /* Too little space for suffix. */
                  strlen (suffix) - 1,
                  /* Not XML. */
-                 0,
-                 suffix);
+                 0, suffix);
   assert_that (given, is_equal_to_string ("12"));
   g_free (given);
 }
@@ -160,6 +191,10 @@ main (int argc, char **argv)
   suite = create_test_suite ();
 
   add_test_with_context (suite, manage, truncate_certificate_given_truncated);
+  add_test_with_context (suite, manage, truncate_certificate_empty_string);
+  add_test_with_context (suite, manage,
+                         truncate_certificate_invalid_certificate);
+  add_test_with_context (suite, manage, truncate_certificate_extra_data);
 
   add_test_with_context (suite, manage, truncate_text_truncates);
   add_test_with_context (suite, manage, truncate_text_does_not_truncate);

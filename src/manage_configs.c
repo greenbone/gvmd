@@ -1,19 +1,6 @@
 /* Copyright (C) 2019-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -27,6 +14,7 @@
 #include "manage_configs.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_users.h"
 #include "utils.h"
 
 #include <errno.h>
@@ -650,4 +638,58 @@ scanner_type_requires_config (int scanner_type)
     default:
       return TRUE;
     }
+}
+
+/**
+ * @brief Retrieves all NVT OIDs associated with a given scan config UUID.
+ *
+ * @param[in]  config_id  The UUID of the scan configuration.
+ * @param[out] oids       Pointer to a GSList* that will be populated with the
+ *                        retrieved OID strings. The caller is responsible for
+ *                        freeing the resulting list.
+ */
+void
+get_nvt_oids_from_config_uuid (const gchar *config_id, GSList **oids)
+{
+  config_t config;
+
+  if (find_config_no_acl (config_id, &config)
+      || config == 0)
+    return;
+  get_nvt_oids_from_config (config, oids);
+}
+
+/**
+ * @brief Collects all NVT OIDs from the given scan config.
+ *
+ * @param[in]  config  The scan configuration handle.
+ * @param[out] oids    Pointer to a GSList* that will be populated with
+ *                     duplicated OID strings. The caller is responsible
+ *                     for freeing the resulting list.
+ */
+void
+get_nvt_oids_from_config (config_t config, GSList **oids)
+{
+  iterator_t families, nvts;
+
+  if (!oids)
+    return;
+
+  init_family_iterator (&families, 0, NULL, 1);
+  while (next (&families))
+    {
+      const char *family = family_iterator_name (&families);
+      if (!family)
+        continue;
+
+      init_nvt_iterator (&nvts, 0, config, family, NULL, 1, NULL);
+      while (next (&nvts))
+        {
+          const char *oid = nvt_iterator_oid (&nvts);
+          if (oid)
+            *oids = g_slist_prepend (*oids, g_strdup (oid));
+        }
+      cleanup_iterator (&nvts);
+    }
+  cleanup_iterator (&families);
 }

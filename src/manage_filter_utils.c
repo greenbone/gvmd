@@ -10,6 +10,9 @@
  * Filter parser and handling utilities code for the GVM management layer.
  */
 
+/**
+ * @brief Enable extra functions.
+ */
 #define _XOPEN_SOURCE
 
 #include <assert.h>
@@ -920,6 +923,8 @@ filter_term_min_qod (const char *term)
 
 /**
  * @brief Initialize the filter utility functions.
+ *
+ * @param[in]  filter_term_f  Filter term function.
  */
 void
 init_manage_filter_utils_funcs (filter_term_func filter_term_f)

@@ -1,19 +1,6 @@
 /* Copyright (C) 2016-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -1067,4 +1054,23 @@ array_add_new_string (array_t *array, const gchar *string)
     if (strcmp (g_ptr_array_index (array, index), string) == 0)
       return;
   array_add (array, g_strdup (string));
+}
+
+/**
+ * @brief Ensure given path (after resolving/canonicalization) has base
+ *        directory as a prefix
+ *
+ * @param[in]  path       The path to check
+ * @param[in]  directory  The base directory that path should point to
+ *
+ * @return 1 if path points to some file/folder within directory, 0 otherwise
+ */
+gboolean
+path_is_in_directory (const gchar *path, const gchar *directory)
+{
+  gchar *canonicalized_path = g_canonicalize_filename (path, NULL);
+  gboolean is_in_dir = g_str_has_prefix (canonicalized_path, directory);
+
+  g_free (canonicalized_path);
+  return is_in_dir;
 }

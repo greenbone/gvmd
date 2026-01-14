@@ -1,19 +1,6 @@
 # Copyright (C) 2009-2022 Greenbone AG
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as
-# published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ## Libraries
 
@@ -28,7 +15,7 @@ find_package(Threads)
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
 pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.30)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.31)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.34)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
@@ -36,11 +23,11 @@ if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.30)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.30)
 endif(ENABLE_HTTP_SCANNER)
-if(OPENVASD)
+if(ENABLE_OPENVASD)
   pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.30)
-else(OPENVASD)
-  message(STATUS "OPENVASD flag is not enabled")
-endif(OPENVASD)
+else(ENABLE_OPENVASD)
+  message(STATUS "ENABLE_OPENVASD flag is not enabled")
+endif(ENABLE_OPENVASD)
 if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
@@ -172,11 +159,14 @@ set(
   manage.c
   manage_acl.c
   manage_alerts.c
+  manage_credential_store_cyberark.c
+  manage_credential_stores.c
   manage_configs.c
   manage_events.c
   manage_filter_utils.c
   manage_commands.c
   manage_get.c
+  manage_groups.c
   manage_http_scanner.c
   manage_license.c
   manage_openvas.c
@@ -186,6 +176,7 @@ set(
   manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
+  manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
   manage_settings.c
@@ -197,6 +188,7 @@ set(
   manage_scan_queue.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
+  manage_users.c
 )
 
 if(ENABLE_AGENTS)
@@ -210,30 +202,26 @@ if(ENABLE_AGENTS)
   )
 endif()
 
-if(ENABLE_CREDENTIAL_STORES)
-  list(
-    APPEND ALL_MANAGE_SRC
-    manage_credential_store_cyberark.c
-    manage_credential_stores.c
-  )
-endif()
-
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
   manage_sql_copy.c
   manage_sql_alerts.c
   manage_sql_assets.c
+  manage_sql_credential_stores.c
   manage_sql_events.c
   manage_sql_filters.c
+  manage_sql_groups.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_configs.c
   manage_sql_report_formats.c
+  manage_sql_roles.c
   manage_sql_tickets.c
   manage_sql_tls_certificates.c
+  manage_sql_users.c
   manage_sql_nvts_osp.c
   manage_sql_nvts_openvasd.c
   manage_sql_nvts_common.c
@@ -248,10 +236,6 @@ if(ENABLE_AGENTS)
     manage_sql_agents.c
     manage_sql_agent_installers.c
   )
-endif()
-
-if(ENABLE_CREDENTIAL_STORES)
-  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
 endif()
 
 set(
@@ -309,6 +293,23 @@ add_library(all-gmp-obj OBJECT ${ALL_GMP_SRC})
 add_library(all-sql-obj OBJECT ${ALL_SQL_SRC})
 
 add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
+
+## Precommit-like checks
+
+if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
+  add_custom_target(
+    check-whitespace
+    ALL
+    # once for output
+    COMMAND
+      grep -Hn "[ ]$$" *.c *.h | sed
+      "'s/^\\(.\\+:.\\+:\\)/\\1 error: trailing space: /'"
+    # again for exit code
+    COMMAND ! grep --quiet "[ ]$$" *.c *.h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking whitespace..."
+  )
+endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 ## Program
 
@@ -672,11 +673,13 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
@@ -684,15 +687,19 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_assets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_filters.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_users.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_users.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"

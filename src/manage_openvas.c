@@ -10,6 +10,7 @@
 
 #include "manage_openvas.h"
 #include "manage_sql.h"
+#include "manage_users.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -21,7 +22,9 @@
 static const target_osp_credential_getter_t target_osp_credential_getters[] = {
   target_osp_ssh_credential,
   target_osp_smb_credential,
-  target_osp_esxi_credential
+  target_osp_esxi_credential,
+  target_osp_snmp_credential,
+  target_osp_krb5_credential,
 };
 #endif
 
@@ -393,6 +396,68 @@ set_auth_data_up_from_credential_store (iterator_t *iter,
 }
 
 /**
+ * @brief Set SNMP credential authentication data from credential store
+ *
+ * @param[in]  iter            Credential iterator
+ * @param[in]  osp_credential  OSP credential to set data on
+ *
+ * @return 0 on success, 1 on error
+ */
+static int
+set_auth_data_snmp_from_credential_store (iterator_t *iter,
+                                          osp_credential_t *osp_credential)
+{
+  gchar *login, *password, *privacy_password;
+  const char *cred_store_uuid
+    = credential_iterator_credential_store_uuid (iter);
+  const char *vault_id
+    = credential_iterator_vault_id (iter);
+  const char *host_identifier
+    = credential_iterator_host_identifier (iter);
+  const char *privacy_host_identifier
+    = credential_iterator_privacy_host_identifier (iter);
+
+  if (cyberark_login_password_credential_data (cred_store_uuid,
+                                               vault_id,
+                                               host_identifier,
+                                               &login,
+                                               &password))
+    {
+      g_debug ("%s: Error retrieving SNMP username and password from"
+               " CyberArk credential store '%s'.",
+               __func__, cred_store_uuid);
+      g_free (login);
+      g_free (password);
+      return 1;
+    }
+
+  if (cyberark_login_password_credential_data (cred_store_uuid,
+                                               vault_id,
+                                               privacy_host_identifier,
+                                               NULL,
+                                               &privacy_password))
+    {
+      g_debug ("%s: Error retrieving SNMP privacy password from"
+               " CyberArk credential store '%s'.",
+               __func__, cred_store_uuid);
+      g_free (login);
+      g_free (password);
+      g_free (privacy_password);
+      return 1;
+    }
+
+  osp_credential_set_auth_data (osp_credential, "username", login);
+  osp_credential_set_auth_data (osp_credential, "password", password);
+  osp_credential_set_auth_data (osp_credential, "privacy_password",
+                                privacy_password);
+
+  g_free (login);
+  g_free (password);
+  g_free (privacy_password);
+  return 0;
+}
+
+/**
  * @brief Get the SSH credential of a target from database or credential store
  *        as an osp_credential_t
  *
@@ -509,7 +574,7 @@ target_osp_ssh_credential (target_t target, osp_credential_t **ssh_credential)
 }
 
 /**
- * @brief Get the SMB credential of a target from from database
+ * @brief Get the SMB credential of a target from database
  *        or credential store as an osp_credential_t
  *
  * @param[in]  target  The target to get the credential from.
@@ -579,9 +644,12 @@ target_osp_smb_credential (target_t target, osp_credential_t **smb_credential)
 }
 
 /**
- * @brief Get the ESXi credential of a target as an osp_credential_t
+ * @brief Get the ESXi credential of a target from database
+ *        or credential store as an osp_credential_t
  *
  * @param[in]  target  The target to get the credential from.
+ * @param[out] esxi_credential  Pointer to store the resulting credential.
+ *                              Has to be freed by the caller.
  *
  * @return A target_osp_credential_return_t return code.
  */
@@ -643,6 +711,197 @@ target_osp_esxi_credential (target_t target,
 
       cleanup_iterator (&iter);
       *esxi_credential = osp_credential;
+      return TARGET_OSP_CREDENTIAL_OK;
+    }
+  return TARGET_OSP_CREDENTIAL_NOT_FOUND;
+}
+
+/**
+ * @brief Get the Kerberos 5 credential of a target from database
+ *        or credential store as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ * @param[out] krb5_credential  Pointer to store the resulting credential.
+ *                              Has to be freed by the caller.
+ *
+ * @return  A target_osp_credential_return_t return code.
+ */
+target_osp_credential_return_t
+target_osp_krb5_credential (target_t target,
+                            osp_credential_t **krb5_credential)
+{
+  if (!krb5_credential)
+    return TARGET_OSP_MISSING_CREDENTIAL;
+
+  *krb5_credential = NULL;
+
+  credential_t credential;
+  credential = target_credential (target, "krb5");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+      const char *type;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: Kerberos 5 Credential not found.", __func__);
+          cleanup_iterator (&iter);
+          return TARGET_OSP_INTERNAL_ERROR;
+        }
+      type = credential_iterator_type (&iter);
+      osp_credential = osp_credential_new ("up", "krb5", NULL);
+      if (strcmp (type, "krb5") == 0)
+        {
+          osp_credential_set_auth_data (osp_credential,
+                                        "username",
+                                        credential_iterator_login (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "password",
+                                        credential_iterator_password (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "kdc",
+                                        credential_iterator_kdc (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "realm",
+                                        credential_iterator_realm (&iter)
+                                          ?: "");
+        }
+      else if (strcmp (type, "cs_krb5") == 0)
+        {
+          if (set_auth_data_up_from_credential_store (&iter, osp_credential))
+            {
+              cleanup_iterator (&iter);
+              osp_credential_free (osp_credential);
+              g_warning ("%s: Failed to retrieve Kerberos 5 credential"
+                         " from credential store.", __func__);
+              return TARGET_OSP_FAILED_CS_RETRIEVAL;
+            }
+
+          osp_credential_set_auth_data (osp_credential,
+                                        "kdc",
+                                        credential_iterator_kdc (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "realm",
+                                        credential_iterator_realm (&iter)
+                                          ?: "");
+        }
+      else
+        {
+          g_warning ("%s: Kerberos 5 Credential not of type 'krb5' or 'cs_krb5'.",
+                     __func__);
+          cleanup_iterator (&iter);
+          osp_credential_free (osp_credential);
+          return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
+        }
+
+      cleanup_iterator (&iter);
+      *krb5_credential = osp_credential;
+      return TARGET_OSP_CREDENTIAL_OK;
+    }
+  return TARGET_OSP_CREDENTIAL_NOT_FOUND;
+}
+
+/**
+ * @brief Get the SMB credential of a target from database
+ *        or credential store as an osp_credential_t
+ *
+ * @param[in]  target  The target to get the credential from.
+ * @param[out] snmp_credential  Pointer to store the resulting credential.
+ *                              Has to be freed by the caller.
+ *
+ * @return  A target_osp_credential_return_t return code.
+ */
+target_osp_credential_return_t
+target_osp_snmp_credential (target_t target,
+                            osp_credential_t **snmp_credential)
+{
+  if (!snmp_credential)
+    return TARGET_OSP_MISSING_CREDENTIAL;
+
+  *snmp_credential = NULL;
+
+  credential_t credential;
+  credential = target_credential (target, "snmp");
+  if (credential)
+    {
+      iterator_t iter;
+      osp_credential_t *osp_credential;
+      const char *type;
+
+      init_credential_iterator_one (&iter, credential);
+      if (!next (&iter))
+        {
+          g_warning ("%s: SNMP Credential not found.", __func__);
+          cleanup_iterator (&iter);
+          return TARGET_OSP_INTERNAL_ERROR;
+        }
+      type = credential_iterator_type (&iter);
+      osp_credential = osp_credential_new ("snmp", "snmp", NULL);
+
+      if (strcmp (type, "snmp") == 0)
+        {
+          osp_credential_set_auth_data (osp_credential,
+                                        "username",
+                                        credential_iterator_login (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "password",
+                                        credential_iterator_password (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "community",
+                                        credential_iterator_community (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "auth_algorithm",
+                                        credential_iterator_auth_algorithm (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "privacy_algorithm",
+                                        credential_iterator_privacy_algorithm
+                                          (&iter) ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "privacy_password",
+                                        credential_iterator_privacy_password
+                                          (&iter) ?: "");
+        }
+      else if (strcmp (type, "cs_snmp") == 0)
+        {
+          if (set_auth_data_snmp_from_credential_store (&iter, osp_credential))
+            {
+              cleanup_iterator (&iter);
+              osp_credential_free (osp_credential);
+              g_warning ("%s: Failed to retrieve SNMP credential"
+                         " from credential store.", __func__);
+              return TARGET_OSP_FAILED_CS_RETRIEVAL;
+            }
+
+          osp_credential_set_auth_data (osp_credential,
+                                        "auth_algorithm",
+                                        credential_iterator_auth_algorithm (&iter)
+                                          ?: "");
+          osp_credential_set_auth_data (osp_credential,
+                                        "privacy_algorithm",
+                                        credential_iterator_privacy_algorithm
+                                          (&iter) ?: "");
+        }
+      else
+        {
+          g_warning ("%s: SNMP Credential not of type 'snmp' or 'cs_snmp'.",
+                     __func__);
+          cleanup_iterator (&iter);
+          osp_credential_free (osp_credential);
+          return TARGET_OSP_CREDENTIAL_TYPE_MISMATCH;
+        }
+
+      cleanup_iterator (&iter);
+      *snmp_credential = osp_credential;
       return TARGET_OSP_CREDENTIAL_OK;
     }
   return TARGET_OSP_CREDENTIAL_NOT_FOUND;
@@ -736,7 +995,7 @@ target_osp_add_credentials (osp_target_t *osp_target,
  * @return  Pointer to a newly allocated osp_credential_t
  */
 osp_credential_t *
-target_osp_snmp_credential (target_t target)
+target_osp_snmp_credential_db (target_t target)
 {
   credential_t credential;
   credential = target_credential (target, "snmp");
@@ -799,7 +1058,7 @@ target_osp_snmp_credential (target_t target)
  * @return  Pointer to a newly allocated osp_credential_t
  */
 osp_credential_t *
-target_osp_krb5_credential (target_t target)
+target_osp_krb5_credential_db (target_t target)
 {
   credential_t credential;
   credential = target_credential (target, "krb5");

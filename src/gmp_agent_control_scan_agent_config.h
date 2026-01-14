@@ -17,8 +17,6 @@
 #include <agent_controller/agent_controller.h>
 #include <util/xmlutils.h>
 
-/* -------- MODIFY_AGENT_CONTROL_SCAN_CONFIG -------- */
-
 void
 modify_agent_control_scan_config_start (gmp_parser_t *gmp_parser,
                                         const gchar **attribute_names,

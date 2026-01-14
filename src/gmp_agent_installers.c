@@ -235,12 +235,14 @@ get_agent_installer_file_start (const gchar **attribute_names,
 
 /**
  * @brief Read an agent installer file and send it to the GMP client as Base64.
- * 
+ *
  * @param[in]  gmp_parser  The GMP parser.
  * @param[in]  stream      The file stream to read from.
  * @param[in]  validator   The validator to check validity of the file.
  * @param[out] message     Message to return in case of an error.
  * @param[out] error       GError output.
+ *
+ * @return 0 success, -1 error.
  */
 int
 read_agent_installer_file_and_send_base64 (gmp_parser_t *gmp_parser,
@@ -291,7 +293,7 @@ read_agent_installer_file_and_send_base64 (gmp_parser_t *gmp_parser,
           }
       }
   } while (read_bytes);
-  
+
   if (ferror (stream))
     {
       if (message)
@@ -382,7 +384,7 @@ get_agent_installer_file_run (gmp_parser_t *gmp_parser, GError **error)
                                 &validator);
   if (validator_return)
     {
-      SENDF_TO_CLIENT_OR_FAIL 
+      SENDF_TO_CLIENT_OR_FAIL
         (XML_ERROR_UNAVAILABLE ("get_agent_installer_file",
                                 "error in expected checksum: %s"),
          gvm_stream_validator_return_str (validator_return));
@@ -394,10 +396,10 @@ get_agent_installer_file_run (gmp_parser_t *gmp_parser, GError **error)
   file = open_agent_installer_file (
     agent_installer_iterator_installer_path (&iterator),
     &file_validity);
-  if (file == NULL 
+  if (file == NULL
       || (! agent_installer_stream_is_valid (file, validator, &file_validity)))
     {
-      SENDF_TO_CLIENT_OR_FAIL 
+      SENDF_TO_CLIENT_OR_FAIL
         (XML_ERROR_UNAVAILABLE ("get_agent_installer_file",
                                 "%s"),
          file_validity);

@@ -1,26 +1,13 @@
 /* Copyright (C) 2009-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
  * @file
- * @brief GVM management layer: SecInfo
+ * @brief GVM management layer: SecInfo SQL
  *
- * The SecInfo parts of the GVM management layer.
+ * The SecInfo SQL parts of the GVM management layer.
  */
 
 /**
@@ -3730,10 +3717,9 @@ get_cve_configuration_fields (cJSON* configuration_item,
 /**
  * @brief Get all fields from a configuration node of a CVE.
  *
- * @param[in]  configuration_item  The JSON configuration item
- * @param[in]  cve_id       The CVE-ID string of the CVE being processed
- * @param[out] nodes_array       Return of the list of configuration nodes
- * @param[out] config_operator   Return of the operator joining the config nodes
+ * @param[in]  node_item         The JSON configuration item
+ * @param[in]  cve_id            The CVE-ID string of the CVE being processed
+ * @param[out] node_operator     Return of the operator joining the config nodes
  * @param[out] negate            Return whether the node selection is negated
  * @param[out] cpe_matches_array Return of the CPE matches list
  *
@@ -3822,7 +3808,7 @@ get_cve_configuration_node_cpe_match_fields (cJSON* cpe_match_item,
  * @param[in]  config_operator  Operator of the config item being processed
  * @param[in]  negate     Whether the nodes within the config items are negated
  * @param[in,out] node_id_ptr  Pointer to the config node database rowid
- * @param[in,out] node_id_ptr  Pointer to the root config node database rowid
+ * @param[in,out] root_id_ptr  Pointer to the root config node database rowid
  * @param[in]  cpe_match_nodes_buffer COPY buffer for CPE match nodes
  *
  * @return 0 on success, -1 on error.
@@ -3881,7 +3867,7 @@ handle_cve_configuration (resource_t cve_db_id,
  * @param[in]  node_operator  Operator of the config node being processed
  * @param[in]  negate     Whether the nodes within the config items are negated
  * @param[in,out] node_id_ptr  Pointer to the config node database rowid
- * @param[in,out] node_id_ptr  Pointer to the root config node database rowid
+ * @param[in,out] root_id_ptr  Pointer to the root config node database rowid
  * @param[in]  cpe_match_nodes_buffer COPY buffer for CPE match nodes
  *
  * @return 0 on success, -1 on error
@@ -3942,6 +3928,8 @@ handle_cve_configuration_node (resource_t cve_db_id,
  * @param[in]  current_cve_cpes   Hashtable of CPE rowids for current CVE
  * @param[in]  cve_cpes_copy_buffer            COPY buffer for placeholder CPEs
  * @param[in]  affected_products_copy_buffer   COPY buffer for affected products
+ *
+ * @return 0 success, -1 error.
  */
 static int
 handle_cve_affected_product (resource_t cve_db_id,
@@ -4459,7 +4447,7 @@ get_cve_json_fields (cJSON *vuln_item,
  * @brief Handle a complete CVE item using INSERT and UPDATE SQL statement.
  *        Gather some required data and load all match rules.
  *
- * @param[in]  item  The JSON object of the CVE item.
+ * @param[in]  vuln_item  The JSON object of the CVE item.
  *
  * @return 0 success, -1 error.
  */
@@ -4527,7 +4515,7 @@ handle_json_cve_item_inserts (cJSON *vuln_item)
  * @brief Handle a complete CVE item using COPY SQL statements.
  *        Gather some required data and load all match rules.
  *
- * @param[in]  item  The JSON object of the CVE item
+ * @param[in]  vuln_item  The JSON object of the CVE item
  * @param[in,out] cve_db_id_ptr  Pointer to current CVE database rowid
  * @param[in,out] node_id_ptr    Pointer to current CVE config node DB rowid
  * @param[in,out] cpe_db_id_ptr  Pointer to current placeholder CPE DB rowid
@@ -5128,6 +5116,11 @@ update_scap_cves ()
   return 0;
 }
 
+/**
+ * @brief Run SQL to insert affected products.
+ *
+ * @param[in]  cve_ids_str  CVE IDS.
+ */
 static void
 exec_affected_products_sql (const char *cve_ids_str)
 {
@@ -5197,7 +5190,10 @@ update_scap_affected_products ()
  *
  * @param[in]  inserts          Pointer to SQL buffer for match string entries.
  * @param[in]  matches_inserts  Pointer to SQL buffer for match string matches.
- * @param[in]  match_string_item   JSON object from the matchStrings list.
+ * @param[out] copy_buffer          Buffer to copy into.
+ * @param[out] matches_copy_buffer  Buffer to copy into.
+ * @param[in]  use_copy             Whether to insert using SQL COPY.
+ * @param[in]  match_string_item    JSON object from the matchStrings list.
  *
  * @return 0 success, -1 error.
  */

@@ -1,19 +1,6 @@
 /* Copyright (C) 2020-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -33,6 +20,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_tickets.h"
 #include "manage_tickets.h"
+#include "manage_users.h"
 
 #include <bsd/unistd.h>
 #include <glib/gstdio.h>
@@ -1043,14 +1031,22 @@ http_get (const char *url)
 
   g_debug ("   HTTP_GET %s", url);
 
-  cmd = (gchar **) g_malloc (5 * sizeof (gchar *));
+  if (g_str_has_prefix (url, "https://") == FALSE
+      && g_str_has_prefix (url, "http://") == FALSE)
+    {
+      g_warning ("%s: %s is not a valid HTTP(S) URL", __func__, url);
+      return -1;
+    }
+
+  cmd = (gchar **) g_malloc (6 * sizeof (gchar *));
   cmd[0] = g_strdup ("/usr/bin/wget");
   cmd[1] = g_strdup ("-O");
   cmd[2] = g_strdup ("-");
-  cmd[3] = g_strdup (url);
-  cmd[4] = NULL;
-  g_debug ("%s: Spawning in /tmp/: %s %s %s %s",
-           __func__, cmd[0], cmd[1], cmd[2], cmd[3]);
+  cmd[3] = g_strdup ("--");
+  cmd[4] = g_strdup (url);
+  cmd[5] = NULL;
+  g_debug ("%s: Spawning in /tmp/: %s %s %s %s %s",
+           __func__, cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
   if ((g_spawn_sync ("/tmp/",
                      cmd,
                      NULL,                  /* Environment. */
@@ -1087,6 +1083,7 @@ http_get (const char *url)
   g_free (cmd[2]);
   g_free (cmd[3]);
   g_free (cmd[4]);
+  g_free (cmd[5]);
   g_free (cmd);
   g_free (standard_out);
   g_free (standard_err);

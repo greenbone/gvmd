@@ -1,19 +1,6 @@
 /* Copyright (C) 2010-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -24,9 +11,7 @@
 #ifndef _GVMD_MANAGE_SQL_NVTS_H
 #define _GVMD_MANAGE_SQL_NVTS_H
 
-#if OPENVASD
 #include "manage_sql_nvts_openvasd.h"
-#endif
 #include "manage_sql_nvts_osp.h"
 
 /**
@@ -37,7 +22,7 @@
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
    "qod_type", "solution_type", "solution", "summary", "insight",           \
    "affected", "impact", "detection", "solution_method", "epss_score",      \
-   "epss_percentile", "max_epss_score", "max_epss_percentile",              \
+   "epss_percentile", "max_epss_score", "max_epss_percentile", "discovery", \
    NULL }
 
 /**
@@ -81,6 +66,7 @@
      KEYWORD_TYPE_DOUBLE },                                                 \
    { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
    { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+   { "discovery", NULL, KEYWORD_TYPE_INTEGER },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -125,6 +111,7 @@
      KEYWORD_TYPE_DOUBLE },                                                 \
    { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
    { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
+   { "discovery", NULL, KEYWORD_TYPE_INTEGER },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
@@ -164,5 +151,13 @@ manage_update_nvts_from_feed (gboolean);
 int
 nvts_feed_version_status_from_timestamp ();
 
+void
+manage_discovery_nvts ();
+
+void
+nvts_discovery_oid_cache_reload ();
+
+gboolean
+nvts_oids_all_discovery_cached (GSList *oids);
 
 #endif /* not _GVMD_MANAGE_SQL_NVTS_H */

@@ -52,14 +52,15 @@ credential_store_preference_type_name (credential_store_preference_type_t type)
 
 /**
  * @brief Create a new credential store preference data structure.
- * 
+ *
  * @param[in]  name           Name of the preference
  * @param[in]  secret         Whether the preference is an encrypted secret
  * @param[in]  type           The data type of the preference
  * @param[in]  pattern        The regex pattern for string preferences
  * @param[in]  value          The current value of the preference
- * @param[in]  default_value  The default value of the preference
- * 
+ * @param[in]  default_value    The default value of the preference
+ * @param[in]  passphrase_name  Passphrase name.
+ *
  * @return The newly allocated preference data structure.
  */
 credential_store_preference_data_t *
@@ -80,7 +81,7 @@ credential_store_preference_new (const char *name,
   new_pref->pattern = pattern ? g_strdup (pattern) : NULL;
   new_pref->value = value ? g_strdup (value) : NULL;
   new_pref->default_value = default_value ? g_strdup (default_value) : NULL;
-  new_pref->passphrase_name 
+  new_pref->passphrase_name
     = passphrase_name ? g_strdup (passphrase_name) : NULL;
 
   return new_pref;
@@ -88,7 +89,7 @@ credential_store_preference_new (const char *name,
 
 /**
  * @brief Free a credential store preference data structure and its fields.
- * 
+ *
  * @param[in]  preference  The preference struct to free.
  */
 void
@@ -104,9 +105,9 @@ credential_store_preference_free (credential_store_preference_data_t *preference
 
 /**
  * @brief Check if the preference has a non-empty value.
- * 
+ *
  * @param[in]  preference  The preference to check.
- * 
+ *
  * @return TRUE if the prefrence has a non-empty value, FALSE otherwise.
  */
 gboolean
@@ -123,11 +124,12 @@ credential_store_preference_is_set
 
 /**
  * @brief Create a new credential store selector data structure.
- * 
+ *
  * @param[in]  name           Name of the selector
  * @param[in]  pattern        The regex pattern for selector strings
  * @param[in]  default_value  The default value of the selector
- * 
+ * @param[in]  rowid          The credential store selector.
+ *
  * @return The newly allocated preference data structure.
  */
 credential_store_selector_data_t *
@@ -150,7 +152,7 @@ credential_store_selector_new (const char *name,
 
 /**
  * @brief Add a credential type to a credential store selector data structure.
- * 
+ *
  * @param[in]  selector             The selector to add to
  * @param[in]  new_credential_type  The credential type to add
  */
@@ -165,7 +167,7 @@ credential_store_selector_add_credential_type (credential_store_selector_data_t
 
 /**
  * @brief Free a credentials store selector data structure
- * 
+ *
  * @param[in]  selector  The selector data to free.
  */
 void
@@ -224,7 +226,7 @@ eval_pkcs12_credential_store_preference (credential_store_preference_data_t
 
   crt_format = gvm_x509_format_from_data ((const char*) decoded_data.data,
                                           decoded_data.size);
-  
+
   gnutls_pkcs12_init (&pkcs12);
   ret = gnutls_pkcs12_import (pkcs12, &decoded_data, crt_format, 0);
   if (ret)
@@ -290,7 +292,7 @@ eval_privkey_credential_store_preference (credential_store_preference_data_t
 
   crt_format = gvm_x509_format_from_data ((const char*) decoded_data.data,
                                           decoded_data.size);
-  
+
   gnutls_x509_privkey_init (&privkey);
   ret = gnutls_x509_privkey_import2 (privkey, &decoded_data, crt_format,
                                      passphrase, 0);
@@ -331,7 +333,6 @@ eval_privkey_credential_store_preference (credential_store_preference_data_t
  *  the data preference can be decoded and parsed.
  *
  * @param[in]  preference       The preference to evaluate
- * @param[in]  passphrase       Optional Passphrase to decrypt PKCS12 file
  * @param[out] certs_out        Optional certificate list output
  * @param[out] message          Error message output
  *

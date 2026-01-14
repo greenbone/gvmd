@@ -1,19 +1,6 @@
 /* Copyright (C) 2012-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -39,6 +26,88 @@ typedef struct
   gchar *user;              ///< The database user name
   time_t semaphore_timeout; ///< Semaphore timeout for database connections
 } db_conn_info_t;
+
+/**
+ * @brief Enum for defining the type of SQL prepared statement parameters.
+ */
+typedef enum
+{
+  SQL_PARAM_TYPE_NULL = 0, ///< null value
+  SQL_PARAM_TYPE_DOUBLE,   ///< double precision floating point number
+  SQL_PARAM_TYPE_INT,      ///< integer
+  SQL_PARAM_TYPE_STRING,   ///< string
+  SQL_PARAM_TYPE_RESOURCE, ///< resource row id (resource_t)
+} sql_param_type_t;
+
+/**
+ * @brief Union type for SQL prepared statement parameters values.
+ */
+typedef union
+{
+  const double double_value;       ///< double precision floating point value
+  const int int_value;             ///< integer value
+  const char *str_value;           ///< string value
+  const resource_t resource_value; ///< resource row id (resource_t) value
+} sql_param_value_t;
+
+/**
+ * @brief Struct type for defining SQL prepared statement parameters.
+ *
+ * This struct type encapsulates the data type and value of a parameter
+ * to be bound to an SQL prepared statement.
+ *
+ * SQL template strings using the dollar sign + number syntax (e.g. "$1"),
+ * do not contain any type information unlike printf-style template / format
+ * string, where it is contained in the placeholders (e.g. "%s" for strings).
+ *
+ * Therefore this type is used to pass both the value and data type of
+ * paramaters to generic functions using the SQL prepared statement syntax.
+ * Most of them will expect pointers to sql_param_t structs as variadic
+ * arguments list with a NULL sentinel at the end.
+ * This sentinel is different from null values, which are represented by
+ * structs with the type set to SQL_PARAM_TYPE_NULL.
+ *
+ * To keep the code shorter and to ensure consistency between type and value,
+ * sql_param_t* literals can be generated with macros using the pattern
+ * "SQL_{TYPE}_PARAM (value)", e.g." SQL_INT_PARAM (123)".
+ */
+typedef struct
+{
+  sql_param_type_t type;   ///< The data type of the parameter
+  sql_param_value_t value; ///< The value of the parameter
+} sql_param_t;
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a null value.
+ */
+#define SQL_NULL_PARAM &((const sql_param_t){.type = SQL_PARAM_TYPE_NULL})
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a double value.
+ */
+#define SQL_DOUBLE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_DOUBLE, \
+                        .value.double_value = p_value})
+
+/**
+ * @brief Macro for a sql_param_t* literal representing an int value.
+ */
+#define SQL_INT_PARAM(p_value) \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_INT, .value.int_value = p_value})
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a string value.
+ */
+#define SQL_STR_PARAM(p_value)                         \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_STRING, \
+                        .value.str_value = p_value})
+
+/**
+ * @brief Macro for a sql_param_t* literal representing a resource_t value.
+ */
+#define SQL_RESOURCE_PARAM(p_value)                      \
+  &((const sql_param_t){.type = SQL_PARAM_TYPE_RESOURCE, \
+                        .value.resource_value = p_value})
 
 /* Helpers. */
 
@@ -97,28 +166,52 @@ gchar *
 sql_insert (const char *);
 
 void
-sql (char *sql, ...);
+sql (const char *sql, ...);
+
+void
+sql_ps (const char *sql, ...);
 
 int
-sql_error (char *sql, ...);
+sql_error (const char *sql, ...);
 
 int
-sql_giveup (char *sql, ...);
+sql_error_ps (const char *sql, ...);
+
+int
+sql_giveup (const char *sql, ...);
+
+int
+sql_giveup_ps (const char *sql, ...);
 
 double
-sql_double (char *sql, ...);
+sql_double (const char *sql, ...);
+
+double
+sql_double_ps (const char *sql, ...);
 
 int
-sql_int (char *, ...);
+sql_int (const char *, ...);
+
+int
+sql_int_ps (const char *, ...);
 
 char *
-sql_string (char *, ...);
+sql_string (const char *, ...);
+
+char *
+sql_string_ps (const char *, ...);
 
 int
-sql_int64 (long long int *ret, char *, ...);
+sql_int64 (long long int *ret, const char *, ...);
+
+int
+sql_int64_ps (long long int *ret, const char *, ...);
 
 long long int
-sql_int64_0 (char *sql, ...);
+sql_int64_0 (const char *sql, ...);
+
+long long int
+sql_int64_0_ps (const char *sql, ...);
 
 void
 sql_rename_column (const char *, const char *, const char *, const char *);
@@ -150,6 +243,9 @@ sql_table_lock_wait (const char *, int);
 
 void
 init_iterator (iterator_t *, const char *, ...);
+
+void
+init_ps_iterator (iterator_t *, const char *, ...) __attribute__ ((sentinel));
 
 void
 iterator_rewind (iterator_t *iterator);

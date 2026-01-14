@@ -1,19 +1,6 @@
 /* Copyright (C) 2013-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -3327,12 +3314,12 @@ migrate_258_to_259 ()
 
   // Add relay_host and relay_port fields to scanners
 
-  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;"); 
-  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;"); 
+  sql ("ALTER TABLE scanners ADD COLUMN relay_host text;");
+  sql ("ALTER TABLE scanners ADD COLUMN relay_port integer;");
 
-  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;"); 
+  sql ("ALTER TABLE scanners_trash ADD COLUMN relay_host text;");
   sql ("ALTER TABLE scanners_trash ADD COLUMN relay_port integer;");
- 
+
   // Set base values for new relay fields
 
   sql ("UPDATE scanners SET relay_host = '', relay_port = 0;");
@@ -3371,7 +3358,7 @@ migrate_259_to_260 ()
 
   sql ("ALTER TABLE reports ADD COLUMN processing_required integer DEFAULT 0;");
   sql ("ALTER TABLE reports ADD COLUMN in_assets integer;");
- 
+
   /* Set the database version to 260. */
 
   set_db_version (260);
@@ -3449,6 +3436,72 @@ migrate_261_to_262 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 262 to version 263.
+ *
+ * Adds a discovery flag to the nvts table.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_262_to_263 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 262. */
+
+  if (manage_db_version () != 262)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  sql ("ALTER TABLE nvts ADD COLUMN discovery INTEGER NOT NULL DEFAULT 0;");
+
+  /* Set the database version to 263. */
+
+  set_db_version (263);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 263 to version 264.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_263_to_264 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 263. */
+
+  if (manage_db_version () != 263)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add discovery field to reports
+
+  sql ("ALTER TABLE reports ADD COLUMN discovery integer DEFAULT 0;");
+
+  /* Set the database version to 260. */
+
+  set_db_version (264);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3517,6 +3570,8 @@ static migrator_t database_migrators[] = {
   {260, migrate_259_to_260},
   {261, migrate_260_to_261},
   {262, migrate_261_to_262},
+  {263, migrate_262_to_263},
+  {264, migrate_263_to_264},
   /* End marker. */
   {-1, NULL}};
 

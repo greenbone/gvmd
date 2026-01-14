@@ -1,19 +1,6 @@
 /* Copyright (C) 2019-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -2013,7 +2000,7 @@ task_preference_value (task_t task, const char *name)
  * @param[in]  preferences  Preferences.
  *
  * @return 0 success, 1 invalid auto_delete value, 2 auto_delete_data out of
- *         range.
+ *         range, 3 in_assets cannot be set for Container Image scanners.
  */
 int
 set_task_preferences (task_t task, array_t *preferences)
@@ -2048,9 +2035,12 @@ set_task_preferences (task_t task, array_t *preferences)
                           || keep > AUTO_DELETE_KEEP_MAX)
                         return 2;
                     }
-
+                  int type = scanner_type (task_scanner (task));
                   if ((strcmp (pair->name, "in_assets") == 0)
-                      && scanner_type (task_scanner (task)) == SCANNER_TYPE_CVE)
+                      && type == SCANNER_TYPE_CONTAINER_IMAGE)
+                      return 3;
+                  else if ((strcmp (pair->name, "in_assets") == 0)
+                      && type == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");
                   else
                     quoted_value = sql_quote (pair->value);

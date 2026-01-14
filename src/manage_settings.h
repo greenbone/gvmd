@@ -114,6 +114,21 @@
 #define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
 
 /**
+ * @brief UUID of Discovery scan config.
+ */
+#define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
+
+/**
+ * @brief UUID of Discovery scan config.
+ */
+#define CONFIG_UUID_HOST_DISCOVERY "2d3f051c-55ba-11e3-bf43-406186ea4fc5"
+
+/**
+ * @brief UUID of Discovery scan config.
+ */
+#define CONFIG_UUID_SYSTEM_DISCOVERY "bbca7412-a950-11e3-9109-406186ea4fc5"
+
+/**
  * @brief Type for a function getting a setting value as a string.
  */
 typedef int (*setting_value_func)(const char*, char **);

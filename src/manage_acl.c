@@ -1,19 +1,6 @@
 /* Copyright (C) 2013-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -179,25 +166,22 @@ acl_user_may (const char *operation)
 int
 acl_role_can_super_everyone (const char *role_id)
 {
-  gchar *quoted_role_id;
-  quoted_role_id = sql_quote (role_id);
-  if (sql_int (" SELECT EXISTS (SELECT * FROM permissions"
-               "                WHERE name = 'Super'"
-               /*                    Super on everyone. */
-               "                AND (resource = 0)"
-               "                AND subject_location"
-               "                    = " G_STRINGIFY (LOCATION_TABLE)
-               "                AND (subject_type = 'role'"
-               "                     AND subject"
-               "                         = (SELECT id"
-               "                            FROM roles"
-               "                            WHERE uuid = '%s')));",
-               role_id))
+  if (sql_int_ps (
+        " SELECT EXISTS (SELECT * FROM permissions"
+        "                WHERE name = 'Super'"
+        /*                    Super on everyone. */
+        "                AND (resource = 0)"
+        "                AND subject_location"
+        "                    = " G_STRINGIFY (LOCATION_TABLE)
+        "                AND (subject_type = 'role'"
+        "                     AND subject"
+        "                         = (SELECT id"
+        "                            FROM roles"
+        "                            WHERE uuid = $1)));",
+        SQL_STR_PARAM (role_id), NULL))
     {
-      g_free (quoted_role_id);
       return 1;
     }
-  g_free (quoted_role_id);
   return 0;
 }
 

@@ -1,19 +1,6 @@
 /* Copyright (C) 2014-2022 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /**
@@ -90,6 +77,28 @@ manage_db_empty ()
                   "        ::integer;",
                   sql_database ())
          == 0;
+}
+
+/**
+ * @brief Check whether a given table has a certain column
+ *
+ * @param  schema  The schema the table is located in (e.g. "public")
+ * @param  table   Name of the table to check column for
+ * @param  column  The column to check for existence
+ *
+ * @return 1 if column is present, else 0.
+ */
+gboolean
+db_table_has_column (const gchar *schema, const gchar *table,
+                     const gchar *column)
+{
+  return !!sql_int_ps ("SELECT EXISTS (SELECT * FROM information_schema.columns"
+                       "               WHERE table_schema = $1"
+                       "               AND table_name = $2"
+                       "               AND column_name = $3)"
+                       " ::integer;",
+                       SQL_STR_PARAM (schema), SQL_STR_PARAM (table),
+                       SQL_STR_PARAM (column), NULL);
 }
 
 
@@ -1021,7 +1030,7 @@ manage_create_sql_functions ()
           "                 FROM tag_resources_trash"
           "                 JOIN configs"
           "                   ON configs.id = resource"
-          "                 WHERE tag_resources_trash.tag = tag_id" 
+          "                 WHERE tag_resources_trash.tag = tag_id"
           "                 AND configs.usage_type = ANY(usage_types));"
           "    WHEN tag_type = 'audit_report' OR tag_type = 'report'"
           "    THEN RETURN (SELECT count(*)"
@@ -1415,21 +1424,41 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
-
-      /* if (current_db_version >= 189)                                           */
-      /* column date in table reports was renamed to creation_time in version 245 */
-      if (current_db_version >= 245)
+      /* column oci_image_target in table task was added in version 261 */
+      /* column agent_group in table task was added in version 262 */
+      if (current_db_version >= 262)
         {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
-               "                                          integer,"  // overrides
-               "                                          integer)"  // min_qod
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
+               "                                          integer," // overrides
+               "                                          integer)" // min_qod
                " RETURNS double precision AS $$"
                /* Calculate the severity of a task. */
                "  SELECT CASE"
                "         WHEN (SELECT target = 0 "
                "               AND agent_group = 0 "
-
                "               AND oci_image_target = 0 "
+               "               FROM tasks WHERE id = $1)"
+               "         THEN CAST (NULL AS double precision)"
+               "         ELSE"
+               "         (SELECT report_severity ((SELECT id FROM reports"
+               "                                   WHERE task = $1"
+               "                                   AND scan_run_status = %u"
+               "                                   ORDER BY creation_time DESC"
+               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               "         END;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
+        }
+      /* column date in table reports was renamed to creation_time in version 245 */
+      else if (current_db_version >= 245)
+        {
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
+               "                                          integer," // overrides
+               "                                          integer)" // min_qod
+               " RETURNS double precision AS $$"
+               /* Calculate the severity of a task. */
+               "  SELECT CASE"
+               "         WHEN (SELECT target = 0 "
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
@@ -1493,7 +1522,7 @@ manage_create_sql_functions ()
            /*  Get trend only for authenticated users. */
            "   WHEN gvmd_user () = 0"
            "   THEN RETURN ''::text;"
-           /*  Skip running and container tasks. */
+           /*  Skip running and import tasks. */
            "   WHEN (SELECT run_status = %u OR target = 0"
            "         FROM tasks WHERE id = $1)"
            "   THEN RETURN ''::text;"
@@ -2107,15 +2136,14 @@ create_tables_nvt (const gchar *suffix)
        "  max_epss_cve TEXT,"
        "  max_epss_score DOUBLE PRECISION,"
        "  max_epss_percentile DOUBLE PRECISION,"
-       "  max_epss_severity DOUBLE PRECISION"
+       "  max_epss_severity DOUBLE PRECISION,"
+       "  discovery INTEGER NOT NULL DEFAULT 0"
        ");",
        suffix);
 }
 
 /**
  * @brief Create NVT related indexes.
- *
- * @param[in]  suffix  String to append to table names.
  */
 void
 create_indexes_nvt ()
@@ -2699,7 +2727,7 @@ create_tables ()
        "  queued_time_nano integer,"
        "  handler_pid integer,"
        "  start_from integer);");
-  
+
   sql ("CREATE TABLE IF NOT EXISTS scanners"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -2773,6 +2801,55 @@ create_tables ()
        "  pref_type text,"
        "  pref_name text);");
 
+  sql ("CREATE TABLE IF NOT EXISTS schedules"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  first_time integer,"
+       "  period integer,"
+       "  period_months integer,"
+       "  byday integer,"
+       "  duration integer,"
+       "  timezone text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  icalendar text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  first_time integer,"
+       "  period integer,"
+       "  period_months integer,"
+       "  byday integer,"
+       "  duration integer,"
+       "  timezone text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  icalendar text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text,"
+       "  comment text,"
+       "  host text,"
+       "  port integer,"
+       "  type integer,"
+       "  ca_pub text,"
+       "  credential integer,"
+       "  credential_location integer,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  relay_host text,"
+       "  relay_port integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS agents"
     " (id SERIAL PRIMARY KEY,"
     "  uuid UUID NOT NULL UNIQUE,"
@@ -2844,55 +2921,6 @@ create_tables ()
     " (id SERIAL PRIMARY KEY,"
     "  agent_group integer REFERENCES agent_groups_trash (id) ON DELETE RESTRICT,"
     "  agent integer REFERENCES agents (id) ON DELETE RESTRICT);");
-
-  sql ("CREATE TABLE IF NOT EXISTS schedules"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  comment text,"
-       "  first_time integer,"
-       "  period integer,"
-       "  period_months integer,"
-       "  byday integer,"
-       "  duration integer,"
-       "  timezone text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  icalendar text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS schedules_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text NOT NULL,"
-       "  comment text,"
-       "  first_time integer,"
-       "  period integer,"
-       "  period_months integer,"
-       "  byday integer,"
-       "  duration integer,"
-       "  timezone text,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  icalendar text);");
-
-  sql ("CREATE TABLE IF NOT EXISTS scanners_trash"
-       " (id SERIAL PRIMARY KEY,"
-       "  uuid text UNIQUE NOT NULL,"
-       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-       "  name text,"
-       "  comment text,"
-       "  host text,"
-       "  port integer,"
-       "  type integer,"
-       "  ca_pub text,"
-       "  credential integer,"
-       "  credential_location integer,"
-       "  creation_time integer,"
-       "  modification_time integer,"
-       "  relay_host text,"
-       "  relay_port integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS tasks"
        " (id SERIAL PRIMARY KEY,"
@@ -3164,6 +3192,22 @@ create_tables ()
        "  name text,"
        "  value text,"
        "  hash_value text);");
+
+  sql ("CREATE TABLE IF NOT EXISTS asset_snapshots"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid text UNIQUE NOT NULL,"
+     "  task_id integer,"   /* not a FK: keep snapshots after task deletion */
+     "  report_id integer," /* not a FK: keep snapshots after report deletion */
+     "  asset_type integer NOT NULL,"
+     "  ip_address text,"
+     "  hostname text,"
+     "  mac_address text,"
+     "  agent_id text,"
+     "  container_digest text,"
+     "  asset_key text,"
+     "  creation_time integer NOT NULL,"
+     "  modification_time integer NOT NULL"
+     ");");
 
   create_tables_nvt ("");
 
