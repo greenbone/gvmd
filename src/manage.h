@@ -3215,9 +3215,6 @@ gchar *
 keyfile_to_auth_conf_settings_xml (const gchar *);
 
 int
-delete_user (const char *, const char *, int, const char*, const char*);
-
-int
 modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              const gchar*, const gchar *, int,
              const array_t *, array_t *, gchar **, array_t *, gchar **,

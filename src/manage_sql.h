@@ -490,6 +490,9 @@ permissions_set_subjects (const char *, resource_t, resource_t, int);
 void
 cache_all_permissions_for_users (GArray *);
 
+void
+init_user_task_iterator (iterator_t *, int, int);
+
 int
 copy_resource (const char *, const char *, const char *, const char *,
                const char *, int, resource_t *, resource_t *);
