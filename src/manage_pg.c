@@ -2595,6 +2595,7 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  image_references text,"
+       "  exclude_images text,"
        "  comment text,"
        "  creation_time integer,"
        "  modification_time integer,"

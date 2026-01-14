@@ -25,22 +25,22 @@
  * @param[in]   comment          Comment on target.
  * @param[in]   credential_id    Credential for accessing the registry.
  * @param[in]   image_references Image OCI URLs
+ * @param[in]   exclude_images   Excluded image OCI URLs
  * @param[out]  oci_image_target Created target.
  * @param[out]  error_message    Error message if any.
  *
- * @return 0 success, 1 target exists already, 2 error in image URLS,
- *         3 invalid credential, 4 could not find credential,
- *         5 invalid credential type, 99 permission denied, -1 error.
+ * @return A member of create_oci_image_target_return_t.
  */
-int
+create_oci_image_target_return_t
 create_oci_image_target (const char* name,
                          const char* comment,
                          const char* image_references,
+                         const char* exclude_images,
                          const char *credential_id,
                          oci_image_target_t* oci_image_target,
                          gchar **error_message)
 {
-  gchar *quoted_name, *quoted_urls, *quoted_comment;
+  gchar *quoted_name, *quoted_urls, *quoted_comment, *quoted_exclude_images;
   oci_image_target_t new_oci_image_target;
   credential_t credential = 0;
 
@@ -51,25 +51,35 @@ create_oci_image_target (const char* name,
   if (acl_user_may ("create_oci_image_target") == 0)
     {
       sql_rollback ();
-      return 99;
+      return CREATE_OCI_IMAGE_TARGET_PERMISSION_DENIED;
     }
 
   if (resource_with_name_exists (name, "oci_image_target", 0))
     {
       sql_rollback ();
-      return 1;
+      return CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY;
     }
 
   quoted_name = sql_quote (name ?: "");
 
-  if (!validate_oci_image_references (image_references, error_message))
+  if (g_str_equal (image_references, "")
+      || !validate_oci_image_references (image_references, error_message))
     {
       sql_rollback ();
       g_free (quoted_name);
-      return 2;
+      return CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+    }
+
+  if (exclude_images && !validate_oci_image_references (exclude_images,
+                                                        error_message))
+    {
+      sql_rollback ();
+      g_free (quoted_name);
+      return CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
     }
 
   quoted_urls = sql_quote (image_references);
+  quoted_exclude_images = sql_quote (exclude_images ?: "");
 
   if (comment)
     quoted_comment = sql_quote (comment);
@@ -88,8 +98,9 @@ create_oci_image_target (const char* name,
               sql_rollback ();
               g_free (quoted_name);
               g_free (quoted_urls);
+              g_free (quoted_exclude_images);
               g_free (quoted_comment);
-              return -1;
+              return CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR;
             }
 
           if (credential == 0)
@@ -97,8 +108,9 @@ create_oci_image_target (const char* name,
               sql_rollback ();
               g_free (quoted_name);
               g_free (quoted_urls);
+              g_free (quoted_exclude_images);
               g_free (quoted_comment);
-              return 4;
+              return CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND;
             }
 
           type = credential_type (credential);
@@ -107,9 +119,10 @@ create_oci_image_target (const char* name,
               sql_rollback ();
               g_free (quoted_name);
               g_free (quoted_urls);
+              g_free (quoted_exclude_images);
               g_free (quoted_comment);
               g_free (type);
-              return 5;
+              return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
             }
           g_free (type);
         }
@@ -118,19 +131,20 @@ create_oci_image_target (const char* name,
           sql_rollback ();
           g_free (quoted_name);
           g_free (quoted_urls);
+          g_free (quoted_exclude_images);
           g_free (quoted_comment);
-          return 3;
+          return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL;
         }
     }
 
   sql ("INSERT INTO oci_image_targets"
-       " (uuid, name, owner, image_references, comment,"
-       "  creation_time, modification_time)"
+       " (uuid, name, owner, image_references, exclude_images,"
+       "  comment, creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', m_now (), m_now ());",
+       " '%s', '%s', '%s', m_now (), m_now ());",
         quoted_name, current_credentials.uuid,
-        quoted_urls, quoted_comment);
+        quoted_urls, quoted_exclude_images, quoted_comment);
 
   new_oci_image_target = sql_last_insert_id ();
 
@@ -146,10 +160,11 @@ create_oci_image_target (const char* name,
   g_free (quoted_comment);
   g_free (quoted_name);
   g_free (quoted_urls);
+  g_free (quoted_exclude_images);
 
   sql_commit ();
 
-  return 0;
+  return CREATE_OCI_IMAGE_TARGET_OK;
 }
 
 /**
@@ -175,8 +190,8 @@ copy_oci_image_target (const char* name,
   assert (new_oci_image_target);
 
   ret = copy_resource ("oci_image_target", name, comment, oci_image_target_id,
-                       "credential, image_references", 1, new_oci_image_target,
-                       &old_oci_image_target);
+                       "credential, image_references, exclude_images", 1,
+                       new_oci_image_target, &old_oci_image_target);
   if (ret)
     return ret;
 
@@ -191,18 +206,16 @@ copy_oci_image_target (const char* name,
  * @param[in]   comment              Comment on target.
  * @param[in]   credential_id        Credential.
  * @param[in]   image_references     List of image urls.
+ * @param[in]   exclude_images       List of excluded image urls.
  * @param[out]  error_message        Error message if any.
  *
- * @return 0 success, 1 failed to find target,
- *         2 zero length name, 3 target exists already,
- *         4 target is in use, 5 failed to find credential,
- *         6 invalid credential type, 7 error in image urls
- *         specification, 99 permission denied, -1 error.
+ * @return A member of modify_oci_image_target_return_t.
  */
-int
+modify_oci_image_target_return_t
 modify_oci_image_target (const char *oci_image_target_id, const char *name,
                          const char *comment, const char *credential_id,
-                         const char *image_references, gchar **error_message)
+                         const char *image_references, const char *exclude_images,
+                         gchar **error_message)
 {
   oci_image_target_t oci_image_target;
   credential_t credential;
@@ -215,7 +228,7 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
   if (acl_user_may ("modify_oci_image_target") == 0)
     {
       sql_rollback ();
-      return 99;
+      return MODIFY_OCI_IMAGE_TARGET_PERMISSION_DENIED;
     }
 
   oci_image_target = 0;
@@ -224,13 +237,13 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
                                              "modify_oci_image_target"))
     {
       sql_rollback ();
-      return -1;
+      return MODIFY_OCI_IMAGE_TARGET_INTERNAL_ERROR;
     }
 
   if (oci_image_target == 0)
     {
       sql_rollback ();
-      return 1;
+      return MODIFY_OCI_IMAGE_TARGET_NOT_FOUND;
     }
 
   if (name)
@@ -240,12 +253,12 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
       if (strlen (name) == 0)
         {
           sql_rollback ();
-          return 2;
+          return MODIFY_OCI_IMAGE_TARGET_INVALID_NAME;
         }
       if (resource_with_name_exists (name, "oci_image_target", oci_image_target))
         {
           sql_rollback ();
-          return 3;
+          return MODIFY_OCI_IMAGE_TARGET_EXISTS_ALREADY;
         }
 
       quoted_name = sql_quote (name);
@@ -280,7 +293,7 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
       if (oci_image_target_in_use (oci_image_target))
         {
           sql_rollback ();
-          return 4;
+          return MODIFY_OCI_IMAGE_TARGET_IN_USE;
         }
 
       credential = 0;
@@ -292,20 +305,20 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
                                                "get_credentials"))
             {
               sql_rollback ();
-              return -1;
+              return MODIFY_OCI_IMAGE_TARGET_INTERNAL_ERROR;
             }
 
           if (credential == 0)
             {
               sql_rollback ();
-              return 5;
+              return MODIFY_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND;
             }
 
           type = credential_type (credential);
           if (strcmp (type, "up"))
             {
               sql_rollback ();
-              return 6;
+              return MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
             }
           g_free (type);
 
@@ -328,10 +341,11 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
     {
       gchar *quoted_image_references;
 
-      if (!validate_oci_image_references (image_references, error_message))
+      if (g_str_equal (image_references, "")
+          || !validate_oci_image_references (image_references, error_message))
         {
           sql_rollback ();
-          return 7;
+          return MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
         }
 
       quoted_image_references = sql_quote (image_references);
@@ -346,9 +360,42 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
       g_free (quoted_image_references);
     }
 
+  if (exclude_images)
+    {
+      if (g_str_equal (exclude_images, ""))
+        {
+          sql ("UPDATE oci_image_targets SET"
+               " exclude_images = NULL,"
+               " modification_time = m_now ()"
+               " WHERE id = %llu;",
+               oci_image_target);
+        }
+      else
+        {
+          gchar *quoted_exclude_images;
+
+          if (!validate_oci_image_references (exclude_images, error_message))
+            {
+              sql_rollback ();
+              return MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+            }
+
+          quoted_exclude_images = sql_quote (exclude_images);
+
+          sql ("UPDATE oci_image_targets SET"
+               " exclude_images = '%s',"
+               " modification_time = m_now ()"
+               " WHERE id = %llu;",
+               quoted_exclude_images,
+               oci_image_target);
+
+          g_free (quoted_exclude_images);
+        }
+    }
+
   sql_commit ();
 
-  return 0;
+  return MODIFY_OCI_IMAGE_TARGET_OK;
 }
 
 /**
@@ -582,7 +629,8 @@ restore_oci_image_target (const char *oci_image_target_id)
  * @brief Filter columns for oci image target iterator.
  */
 #define OCI_IMAGE_TARGET_ITERATOR_FILTER_COLUMNS               \
- { GET_ITERATOR_FILTER_COLUMNS, "image_references", "credential_name", NULL }
+ { GET_ITERATOR_FILTER_COLUMNS, "image_references", "exclude_images", \
+  "credential_name", NULL }
 
 /**
  * @brief OCI Image Target iterator columns.
@@ -591,6 +639,7 @@ restore_oci_image_target (const char *oci_image_target_id)
  {                                                             \
    GET_ITERATOR_COLUMNS (oci_image_targets),                   \
    { "image_references", NULL, KEYWORD_TYPE_STRING },          \
+   { "exclude_images", NULL, KEYWORD_TYPE_STRING },            \
    { "credential", NULL, KEYWORD_TYPE_INTEGER },               \
    {                                                           \
      "(SELECT name FROM credentials WHERE id = credential)",   \
@@ -608,6 +657,7 @@ restore_oci_image_target (const char *oci_image_target_id)
  {                                                                      \
    GET_ITERATOR_COLUMNS (oci_image_targets_trash),                      \
    { "image_references", NULL, KEYWORD_TYPE_STRING },                   \
+   { "exclude_images", NULL, KEYWORD_TYPE_STRING },                     \
    { "credential", NULL, KEYWORD_TYPE_INTEGER },                        \
    {                                                                    \
      "(SELECT CASE"                                                     \
@@ -677,6 +727,16 @@ init_oci_image_target_iterator (iterator_t* iterator, get_data_t *get)
 DEF_ACCESS (oci_image_target_iterator_image_refs, GET_ITERATOR_COLUMN_COUNT);
 
 /**
+ * @brief Get the excluded images of from an oci image target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Excluded images of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (oci_image_target_iterator_exclude_images,
+              GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
  * @brief Get the credential from an oci image target iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -688,7 +748,7 @@ oci_image_target_iterator_credential (iterator_t* iterator)
 {
   if (iterator->done)
     return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 2);
 }
 
 /**
@@ -699,7 +759,8 @@ oci_image_target_iterator_credential (iterator_t* iterator)
  * @return Credential name, or 0 if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (oci_image_target_iterator_credential_name, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (oci_image_target_iterator_credential_name,
+             GET_ITERATOR_COLUMN_COUNT + 3);
 
 /**
  * @brief Get the credential location of the oci image target from iterator.
@@ -713,7 +774,7 @@ oci_image_target_iterator_credential_trash (iterator_t *iterator)
 {
   if (iterator->done)
     return 0;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
 }
 
 /**
@@ -816,6 +877,21 @@ char*
 oci_image_target_image_references (oci_image_target_t oci_image_target)
 {
   return sql_string ("SELECT image_references FROM oci_image_targets"
+                     " WHERE id = %llu;", oci_image_target);
+}
+
+/**
+ * @brief Return the excluded images of an OCI image target.
+ *
+ * @param[in]  oci_image_target  OCI Image Target.
+ *
+ * @return Newly allocated comma separated list of excluded images
+ *         if available, else NULL.
+ */
+char*
+oci_image_target_exclude_images (oci_image_target_t oci_image_target)
+{
+  return sql_string ("SELECT exclude_images FROM oci_image_targets"
                      " WHERE id = %llu;", oci_image_target);
 }
 

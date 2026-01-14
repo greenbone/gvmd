@@ -151,6 +151,11 @@ add_container_image_scan_result (http_scanner_result_t res,
   if (host)
     manage_report_host_add (rep_aux->report, host, 0, 0);
 
+  if (host && desc && (strcmp (type, "host_start") == 0))
+    set_scan_host_start_time_ctime (rep_aux->report, host, desc);
+  else if (host && desc && (strcmp (type, "host_end") == 0))
+    set_scan_host_end_time_ctime (rep_aux->report, host, desc);
+
   char *hash_value;
   if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
                                          &hash_value, rep_aux->hash_results))
@@ -429,7 +434,7 @@ launch_container_image_task (task_t task,
                              char **error)
 {
   http_scanner_connector_t connection;
-  char *oci_image_references_str;
+  char *oci_image_references_str, *finished_images_str, *exclude_images_str;
   container_image_target_t *container_image_target;
   container_image_credential_t *credential;
   gchar *max_checks, *max_hosts, *hosts_ordering;
@@ -438,6 +443,7 @@ launch_container_image_task (task_t task,
   int ret;
 
   connection = NULL;
+  finished_images_str = NULL;
 
   /* Prepare the report */
   if (from)
@@ -447,13 +453,33 @@ launch_container_image_task (task_t task,
         return 0;
       else if (ret == -1)
         return -1;
+      finished_images_str = report_finished_container_images_str (global_current_report);
     }
 
   oci_image_references_str
     = oci_image_target_image_references (oci_image_target);
 
+  exclude_images_str = oci_image_target_exclude_images (oci_image_target);
+
+  GString *target_exclude_images
+    = g_string_new (exclude_images_str ? exclude_images_str : "");
+
+  if (finished_images_str != NULL && strlen (finished_images_str) > 0)
+    {
+      g_string_append_printf (target_exclude_images,
+                              "%s%s",
+                              exclude_images_str ? "," : "",
+                              finished_images_str);
+    }
+
   container_image_target
-      = container_image_target_new (scan_id, oci_image_references_str);
+      = container_image_target_new (scan_id, oci_image_references_str,
+                                    target_exclude_images->str);
+
+  g_string_free (target_exclude_images, TRUE);
+  free (exclude_images_str);
+  free (finished_images_str);
+  free (oci_image_references_str);
 
   credential = container_image_target_credential (oci_image_target);
 

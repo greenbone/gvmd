@@ -109,8 +109,9 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
 {
   oci_image_target_t new_oci_image_target;
   entity_t entity, name, copy, comment, image_references, credential;
+  entity_t exclude_images;
   const char *credential_id;
-  int ret;
+  create_oci_image_target_return_t ret;
   gchar *error_message = NULL;
 
   entity = (entity_t) create_oci_image_target_data.context->first->data;
@@ -183,6 +184,7 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
   name = entity_child (entity, "name");
   comment = entity_child (entity, "comment");
   image_references = entity_child (entity, "image_references");
+  exclude_images = entity_child (entity, "exclude_images");
   credential = entity_child (entity, "credential");
 
   credential_id = NULL;
@@ -217,13 +219,14 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
   ret = create_oci_image_target (name->text,
                                  comment ? comment->text : NULL,
                                  image_references->text,
+                                 exclude_images ? exclude_images->text : NULL,
                                  credential_id,
                                  &new_oci_image_target,
                                  &error_message);
 
   switch (ret)
     {
-      case 0:
+      case CREATE_OCI_IMAGE_TARGET_OK:
         {
           char *uuid = oci_image_target_uuid (new_oci_image_target);
           SENDF_TO_CLIENT_OR_FAIL
@@ -232,14 +235,14 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
           free (uuid);
           break;
         }
-      case 1:
+      case CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                              "OCI image target with given name exists already"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
-      case 2:
+      case CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                              "Error in image references specification: %s"),
@@ -247,14 +250,14 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
-      case 3:
+      case CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                              "Invalid credential"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
-      case 4:
+      case CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                              "Could not find credential: %s"),
@@ -262,14 +265,22 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
-      case 5:
+      case CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                              "Invalid credential type"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
-      case 99:
+      case CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES:
+        SENDF_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_oci_image_target",
+                             "Invalid exclude images: %s"),
+                             error_message);
+        log_event_fail ("oci_image_target", "OCI Image Target",
+                        NULL, "created");
+        break;
+      case CREATE_OCI_IMAGE_TARGET_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("create_oci_image_target",
                               "Permission config"));
@@ -401,9 +412,9 @@ modify_oci_image_target_element_start (gmp_parser_t *gmp_parser,
 void
 modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
 {
-  entity_t entity, name, comment, credential, image_references;
+  entity_t entity, name, comment, credential, image_references, exclude_images;
   const char *oci_image_target_id, *credential_id;
-  int ret;
+  modify_oci_image_target_return_t ret;
   gchar *error_message = NULL;
 
   entity = (entity_t) modify_oci_image_target_data.context->first->data;
@@ -413,6 +424,7 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
   comment = entity_child (entity, "comment");
   credential = entity_child (entity, "credential");
   image_references = entity_child (entity, "image_references");
+  exclude_images = entity_child (entity, "exclude_images");
 
   if (oci_image_target_id == NULL)
     {
@@ -434,17 +446,20 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
                                  image_references
                                  ? image_references->text
                                  : NULL,
+                                 exclude_images
+                                 ? exclude_images->text
+                                 : NULL,
                                  &error_message);
 
   switch (ret)
     {
-      case 0:
+      case MODIFY_OCI_IMAGE_TARGET_OK:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_OK ("modify_oci_image_target"));
         log_event ("oci_image_target", "OCI Image Target",
                     oci_image_target_id, "modified");
         break;
-      case 1:
+      case MODIFY_OCI_IMAGE_TARGET_NOT_FOUND:
         if (send_find_error_to_client ("modify_oci_image_target",
                                        "OCI Image Target",
                                        oci_image_target_id,
@@ -456,42 +471,42 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("oci_image_target", "OCI Image Target",
                         oci_image_target_id, "modified");
         break;
-      case 2:
+      case MODIFY_OCI_IMAGE_TARGET_INVALID_NAME:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "OCI Image Target should have a non-empty name"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 3:
+      case MODIFY_OCI_IMAGE_TARGET_EXISTS_ALREADY:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "OCI Image Target exists already"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 4:
+      case MODIFY_OCI_IMAGE_TARGET_IN_USE:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "Target is in use"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 5:
+      case MODIFY_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "Failed to find credential"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 6:
+      case MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "Invalid credential type"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 7:
+      case MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS:
         SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "Error in image references specification: %s"),
@@ -499,10 +514,11 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "modified");
         break;
-      case 99:
-        SEND_TO_CLIENT_OR_FAIL
+      case MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES:
+        SENDF_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
-                             "Permission denied"));
+                             "Invalid exclude images: %s"),
+                             error_message);
         log_event_fail ("oci_image_target", "OCI Image Target",
                         oci_image_target_id, "modified");
         break;
@@ -679,7 +695,7 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
     {
       char *cred_name, *cred_uuid;
       credential_t credential;
-      const char *image_references;
+      const char *image_references, *exclude_images;
       int credential_available, credential_in_trash = 0;
 
       ret = get_next (&oci_image_targets, &get_oci_image_targets_data.get,
@@ -737,11 +753,16 @@ get_oci_image_targets_run (gmp_parser_t *gmp_parser, GError **error)
       image_references
         = oci_image_target_iterator_image_refs (&oci_image_targets);
 
+      exclude_images
+        = oci_image_target_iterator_exclude_images (&oci_image_targets);
+
       SENDF_TO_CLIENT_OR_FAIL ("<image_references>%s</image_references>"
+                               "<exclude_images>%s</exclude_images>"
                                "<credential id=\"%s\">"
                                "<name>%s</name>"
                                "<trash>%i</trash>",
                                image_references ?: "",
+                               exclude_images ?: "",
                                cred_uuid ?: "",
                                cred_name ?: "",
                                credential_in_trash);

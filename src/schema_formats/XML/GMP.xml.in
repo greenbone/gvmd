@@ -4857,6 +4857,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <e>image_references</e>
+      <o><e>exclude_images</e></o>
       <o><e>credential</e></o>
     </pattern>
     <ele>
@@ -4883,6 +4884,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ele>
       <name>image_references</name>
       <summary>A comma-separated list of OCI image urls</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>exclude_images</name>
+      <summary>A list of images to exclude</summary>
       <pattern>
         text
       </pattern>
@@ -17751,6 +17759,11 @@ END:VCALENDAR
             <summary>Comma-separated list of image references</summary>
           </column>
           <column>
+            <name>exclude_images</name>
+            <type>text</type>
+            <summary>Comma-separated list of excluded images</summary>
+          </column>          
+          <column>
             <name>credential_name</name>
             <type>name</type>
             <summary>Name of the credential</summary>
@@ -17814,6 +17827,7 @@ END:VCALENDAR
           <e>permissions</e>
           <o><e>user_tags</e></o>
           <e>image_refrences</e>
+          <e>exclude_images</e>
           <e>credential</e>
           <o><e>tasks</e></o>
         </pattern>
@@ -17852,6 +17866,13 @@ END:VCALENDAR
         <ele>
           <name>image_refrences</name>
           <summary>A list of OCI image refrences</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+         <ele>
+          <name>exclude_images</name>
+          <summary>A list of images to exclude</summary>
           <pattern>
             text
           </pattern>
@@ -31277,6 +31298,7 @@ END:VCALENDAR
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>image_references</e></o>
+      <o><e>exclude_images</e></o>      
       <o><e>credential</e></o>
     </pattern>
     <ele>
@@ -31291,8 +31313,15 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>image_references</name>
-      <summary>Comma-separated list of target hosts</summary>
+      <summary>Comma-separated list of image references</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>exclude_images</name>
+      <summary>Comma-separated list of images to exclude</summary>
+      <pattern>
+        text
+      </pattern>
     </ele>
     <ele>
       <name>credential</name>

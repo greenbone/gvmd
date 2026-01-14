@@ -1043,6 +1043,9 @@ report_result_host_count (report_t, int);
 char *
 report_finished_hosts_str (report_t);
 
+char *
+report_finished_container_images_str (report_t);
+
 gboolean
 find_report_with_permission (const char *, report_t *, const char *);
 

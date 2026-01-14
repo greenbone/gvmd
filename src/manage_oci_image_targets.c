@@ -215,7 +215,7 @@ int
 validate_oci_image_references (const char *image_refs_input,
                                gchar **error_message)
 {
-  if (!image_refs_input || !*image_refs_input)
+  if (!image_refs_input)
     return FALSE;
 
   gchar *input_copy = g_strdup (image_refs_input);

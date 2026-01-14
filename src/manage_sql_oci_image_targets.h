@@ -21,6 +21,9 @@
 char*
 oci_image_target_image_references (oci_image_target_t);
 
+char*
+oci_image_target_exclude_images (oci_image_target_t);
+
 credential_t
 oci_image_target_credential (oci_image_target_t);
 
