@@ -3502,6 +3502,39 @@ migrate_263_to_264 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 264 to version 265.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_264_to_265 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 264. */
+
+  if (manage_db_version () != 264)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add exclude_images field to oci_image_targets
+
+  sql ("ALTER TABLE oci_image_targets ADD COLUMN exclude_images text;");
+
+  /* Set the database version to 265. */
+
+  set_db_version (265);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3572,6 +3605,7 @@ static migrator_t database_migrators[] = {
   {262, migrate_261_to_262},
   {263, migrate_262_to_263},
   {264, migrate_263_to_264},
+  {265, migrate_264_to_265},
   /* End marker. */
   {-1, NULL}};
 

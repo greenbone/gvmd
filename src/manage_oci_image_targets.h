@@ -18,6 +18,32 @@
 #include "iterator.h"
 #include "manage_get.h"
 
+typedef enum {
+  CREATE_OCI_IMAGE_TARGET_OK = 0,
+  CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY = 1,
+  CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS = 2,
+  CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL = 3,
+  CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND = 4,
+  CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 5,
+  CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 6,
+  CREATE_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
+  CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
+} create_oci_image_target_return_t;
+
+typedef enum {
+  MODIFY_OCI_IMAGE_TARGET_OK = 0,
+  MODIFY_OCI_IMAGE_TARGET_NOT_FOUND = 1,
+  MODIFY_OCI_IMAGE_TARGET_INVALID_NAME = 2,
+  MODIFY_OCI_IMAGE_TARGET_EXISTS_ALREADY = 3,
+  MODIFY_OCI_IMAGE_TARGET_IN_USE = 4,
+  MODIFY_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND = 5,
+  MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 6,
+  MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS = 7,
+  MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 8,
+  MODIFY_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
+  MODIFY_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
+} modify_oci_image_target_return_t;
+
 gboolean
 find_oci_image_target_with_permission (const char*,
                                        oci_image_target_t*,
@@ -35,17 +61,18 @@ validate_oci_image_references (const char *, gchar **);
 int
 valid_oci_url (const gchar *);
 
-int
+create_oci_image_target_return_t
 create_oci_image_target (const char*, const char*, const char*,
-                         const char*, oci_image_target_t*, gchar**);
+                         const char*, const char*, oci_image_target_t*,
+                         gchar**);
 
 int
 copy_oci_image_target (const char*, const char*,
                        const char*, oci_image_target_t*);
 
-int
+modify_oci_image_target_return_t
 modify_oci_image_target (const char*, const char*, const char*,
-                         const char*, const char*, gchar**);
+                         const char*, const char*, const char*, gchar**);
 
 int
 delete_oci_image_target (const char*, int);
@@ -67,6 +94,9 @@ oci_image_target_task_iterator_name (iterator_t*);
 
 const char*
 oci_image_target_iterator_image_refs (iterator_t*);
+
+const char*
+oci_image_target_iterator_exclude_images (iterator_t*);
 
 const char*
 oci_image_target_iterator_credential_name (iterator_t*);
