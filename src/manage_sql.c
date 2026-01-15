@@ -16173,6 +16173,87 @@ report_finished_hosts_str (report_t report)
 }
 
 /**
+ * @brief Context info for print_report_xml_start.
+ */
+struct print_report_context
+{
+  int count_filtered;         ///< Whether to count filtered results.
+  report_t delta;             ///< Report to compare with.
+  int filtered_result_count;  ///< Filtered result count.
+  const get_data_t *get;      ///< GET command data.
+  gchar *tz;                  ///< TZ.
+  gchar *zone;                ///< Zone.
+  char *old_tz_override;      ///< Old TZ.
+  report_t report;            ///< Report.
+  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+  // Counts.
+  int criticals;              ///< Number of criticals.
+  int holes;                  ///< Number of holes.
+  int infos;                  ///< Number of infos.
+  int logs;                   ///< Number of logs.
+  int warnings;               ///< Number of warnings.
+  int false_positives;        ///< Number of false positives.
+  int total_result_count;     ///< Total number of results.
+  // Filtered counts.
+  GHashTable *f_host_false_positives; ///< False positives per host.
+  GHashTable *f_host_holes;           ///< Holes per host.
+  GHashTable *f_host_infos;           ///< Infos per host.
+  GHashTable *f_host_logs;            ///< Logs per hosts.
+  GHashTable *f_host_ports;           ///< Ports per host.
+  GHashTable *f_host_warnings;        ///< Warnings per hosts.
+  // Filtered counts: audit.
+  GHashTable *f_host_criticals;       ///< Criticals per host.
+  GHashTable *f_host_compliant;       ///< Compliants per host.
+  GHashTable *f_host_incomplete;      ///< Incompletes per host.
+  GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
+  GHashTable *f_host_undefined;       ///< Undefineds per host.
+};
+
+/**
+ * @brief Context type for print_report_xml_start.
+ */
+typedef struct print_report_context print_report_context_t;
+
+/**
+ * @brief Free f_hosts_ field for print_report_context_cleanup.
+ *
+ * @param[in]  table  Hash table.
+ */
+static void
+free_f_host (GHashTable *table)
+{
+  if (table)
+    g_hash_table_destroy (table);
+}
+
+/**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->tsk_usage_type);
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+  // Filtered counts.
+  free_f_host (ctx->f_host_false_positives);
+  free_f_host (ctx->f_host_holes);
+  free_f_host (ctx->f_host_infos);
+  free_f_host (ctx->f_host_logs);
+  free_f_host (ctx->f_host_ports);
+  free_f_host (ctx->f_host_warnings);
+  // Filtered counts: audit.
+  free_f_host (ctx->f_host_compliant);
+  free_f_host (ctx->f_host_criticals);
+  free_f_host (ctx->f_host_incomplete);
+  free_f_host (ctx->f_host_notcompliant);
+  free_f_host (ctx->f_host_undefined);
+}
+
+/**
  * @brief Write report host detail to file stream.
  *
  * On error close stream.
@@ -16544,6 +16625,7 @@ print_report_errors_xml (report_t report, FILE *stream)
 /**
  * @brief Print the XML for a report port summary to a file.
  *
+ * @param[in]  ctx              Printing context.
  * @param[in]  report           The report.
  * @param[in]  out              File stream.
  * @param[in]  get              Result get data.
@@ -16552,16 +16634,15 @@ print_report_errors_xml (report_t report, FILE *stream)
  * @param[in]  max_results      The maximum number of results returned.
  * @param[in]  sort_order       Whether to sort ascending or descending.
  * @param[in]  sort_field       Field to sort on.
- * @param[out] host_ports       Hash table for counting ports per host.
  * @param[in,out] results       Result iterator.  For caller to reuse.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
-                       int first_result, int max_results,
+print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
+                       const get_data_t *get, int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       GHashTable *host_ports, iterator_t *results)
+                       iterator_t *results)
 {
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
@@ -16671,8 +16752,10 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 
     while ((item = g_array_index (ports, result_buffer_t*, index++)))
       {
-        int host_port_count
-              = GPOINTER_TO_INT (g_hash_table_lookup (host_ports, item->host));
+        int port_count;
+
+        port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
+                                                           item->host));
 
         PRINT (out,
                "<port>"
@@ -16688,9 +16771,9 @@ print_report_port_xml (report_t report, FILE *out, const get_data_t *get,
 
         if (g_str_has_prefix(item->port, "general/") == FALSE)
           {
-            g_hash_table_replace (host_ports,
+            g_hash_table_replace (ctx->f_host_ports,
                                   g_strdup (item->host),
-                                  GINT_TO_POINTER (host_port_count + 1));
+                                  GINT_TO_POINTER (port_count + 1));
           }
         result_buffer_free (item);
       }
@@ -16827,6 +16910,8 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 
 /**
  * @brief Print the XML for a report's host to a file stream.
+ *
+ * @param[in]  ctx                      Printing context.
  * @param[in]  stream                   File stream to write to.
  * @param[in]  hosts                    Host iterator.
  * @param[in]  host                     Single host to iterate over.
@@ -16834,38 +16919,17 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  usage_type               Report usage type.
  * @param[in]  lean                     Whether to return lean report.
  * @param[in]  host_summary_buffer      Host sumary buffer.
- * @param[in]  f_host_ports             Hashtable for host ports.
- * @param[in]  f_host_criticals         Hashtable for host criticals.
- * @param[in]  f_host_holes             Hashtable for host holes.
- * @param[in]  f_host_warnings          Hashtable for host host warnings.
- * @param[in]  f_host_infos             Hashtable for host infos.
- * @param[in]  f_host_logs              Hashtable for host logs.
- * @param[in]  f_host_false_positives   Hashtable for host false positives.
- * @param[in]  f_host_compliant         Hashtable for host compliant results.
- * @param[in]  f_host_notcompliant      Hashtable for host non compliant results.
- * @param[in]  f_host_incomplete        Hashtable for host incomplete resuls.
- * @param[in]  f_host_undefined         Hashtable for host undefined results.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_xml (FILE *stream,
+print_report_host_xml (print_report_context_t *ctx,
+                       FILE *stream,
                        iterator_t *hosts,
                        const char *host,
                        gchar *usage_type,
                        int lean,
-                       GString *host_summary_buffer,
-                       GHashTable *f_host_ports,
-                       GHashTable *f_host_criticals,
-                       GHashTable *f_host_holes,
-                       GHashTable *f_host_warnings,
-                       GHashTable *f_host_infos,
-                       GHashTable *f_host_logs,
-                       GHashTable *f_host_false_positives,
-                       GHashTable *f_host_compliant,
-                       GHashTable *f_host_notcompliant,
-                       GHashTable *f_host_incomplete,
-                       GHashTable *f_host_undefined)
+                       GString *host_summary_buffer)
 {
   const char *current_host;
   int ports_count;
@@ -16874,7 +16938,7 @@ print_report_host_xml (FILE *stream,
 
   ports_count
     = GPOINTER_TO_INT
-        (g_hash_table_lookup (f_host_ports, current_host));
+        (g_hash_table_lookup (ctx->f_host_ports, current_host));
 
   host_summary_append (host_summary_buffer,
                        host ? host : host_iterator_host (hosts),
@@ -16900,16 +16964,16 @@ print_report_host_xml (FILE *stream,
 
       yes_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_compliant, current_host));
+            (g_hash_table_lookup (ctx->f_host_compliant, current_host));
       no_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_notcompliant, current_host));
+            (g_hash_table_lookup (ctx->f_host_notcompliant, current_host));
       incomplete_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_incomplete, current_host));
+            (g_hash_table_lookup (ctx->f_host_incomplete, current_host));
       undefined_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_undefined, current_host));
+            (g_hash_table_lookup (ctx->f_host_undefined, current_host));
 
       PRINT (stream,
             "<start>%s</start>"
@@ -16946,22 +17010,22 @@ print_report_host_xml (FILE *stream,
 
       criticals_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_criticals, current_host));
+            (g_hash_table_lookup (ctx->f_host_criticals, current_host));
       holes_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_holes, current_host));
+            (g_hash_table_lookup (ctx->f_host_holes, current_host));
       warnings_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_warnings, current_host));
+            (g_hash_table_lookup (ctx->f_host_warnings, current_host));
       infos_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_infos, current_host));
+            (g_hash_table_lookup (ctx->f_host_infos, current_host));
       logs_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_logs, current_host));
+            (g_hash_table_lookup (ctx->f_host_logs, current_host));
       false_positives_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_false_positives,
+            (g_hash_table_lookup (ctx->f_host_false_positives,
                                   current_host));
 
       PRINT (stream,
@@ -17492,49 +17556,6 @@ print_report_clean_filter (gchar **term, const get_data_t *get)
 }
 
 /**
- * @brief Context info for print_report_xml_start.
- */
-struct print_report_context
-{
-  int count_filtered;         ///< Whether to count filtered results.
-  report_t delta;             ///< Report to compare with.
-  int filtered_result_count;  ///< Filtered result count.
-  const get_data_t *get;      ///< GET command data.
-  gchar *tz;                  ///< TZ.
-  gchar *zone;                ///< Zone.
-  char *old_tz_override;      ///< Old TZ.
-  report_t report;            ///< Report.
-  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
-  // Counts.
-  int criticals;              ///< Number of criticals.
-  int holes;                  ///< Number of holes.
-  int infos;                  ///< Number of infos.
-  int logs;                   ///< Number of logs.
-  int warnings;               ///< Number of warnings.
-  int false_positives;        ///< Number of false positives.
-  int total_result_count;     ///< Total number of results.
-};
-
-/**
- * @brief Context type for print_report_xml_start.
- */
-typedef struct print_report_context print_report_context_t;
-
-/**
- * @brief Free the members of a context.
- *
- * @param[in]  ctx  Printing context.
- */
-static void
-print_report_context_cleanup (print_report_context_t *ctx)
-{
-  g_free (ctx->tsk_usage_type);
-  g_free (ctx->tz);
-  g_free (ctx->zone);
-  free (ctx->old_tz_override);
-}
-
-/**
  * @brief Init zone info for print_report_xml_start.
  *
  * @param[in]  ctx  Printing context.
@@ -17570,6 +17591,43 @@ print_report_init_zone (print_report_context_t *ctx)
       tzset ();
     }
   return 0;
+}
+
+/**
+ * @brief Init the f_hosts_* hashtables.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_init_f_hosts (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit") == 0)
+    {
+      ctx->f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                        g_free, NULL);
+      ctx->f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                      g_free, NULL);
+      ctx->f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+    }
+  else
+    {
+      ctx->f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx->f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx->f_host_false_positives = g_hash_table_new_full (g_str_hash,
+                                                           g_str_equal,
+                                                           g_free, NULL);
+    }
 }
 
 /**
@@ -17671,12 +17729,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
-  GHashTable *f_host_ports;
-  GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
-  GHashTable *f_host_logs, *f_host_false_positives;
-  GHashTable *f_host_compliant, *f_host_notcompliant;
-  GHashTable  *f_host_incomplete, *f_host_undefined;
-  GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
@@ -17695,16 +17747,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
   host_summary_buffer = NULL;
-  f_host_ports = NULL;
-  f_host_holes = NULL;
-  f_host_warnings = NULL;
-  f_host_infos = NULL;
-  f_host_logs = NULL;
-  f_host_false_positives = NULL;
-  f_host_compliant = NULL;
-  f_host_notcompliant = NULL;
-  f_host_incomplete = NULL;
-  f_host_undefined = NULL;
 
   ctx.delta = delta;
   ctx.get = get;
@@ -18242,18 +18284,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Port summary. */
 
-  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
+  ctx.f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
 
   reuse_result_iterator = 0;
   if (get->details && (delta == 0))
     {
       reuse_result_iterator = 1;
-      if (print_report_port_xml (report, out, get, first_result, max_results,
-                                 sort_order, sort_field, f_host_ports, &results))
+      if (print_report_port_xml (&ctx, report, out, get, first_result,
+                                 max_results, sort_order, sort_field, &results))
         {
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
           goto fail;
         }
     }
@@ -18324,7 +18365,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   get, term, sort_field))
         {
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
           goto fail;
         }
     }
@@ -18338,10 +18378,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           res = init_result_get_iterator (&results, get, report, NULL, NULL);
           if (res)
-            {
-              g_hash_table_destroy (f_host_ports);
-              goto fail;
-            }
+            goto fail;
         }
     }
   else
@@ -18361,32 +18398,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-    {
-      f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                   g_free, NULL);
-      f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                 g_free, NULL);
-      f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-    }
-  else
-    {
-      f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                               g_free, NULL);
-      f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
-      f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                      g_free, NULL);
-    }
+  print_report_init_f_hosts (&ctx);
 
   if (delta && get->details)
     {
@@ -18455,25 +18467,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (strcasecmp (compliance, "yes") == 0)
                 {
-                  f_host_result_counts = f_host_compliant;
+                  f_host_result_counts = ctx.f_host_compliant;
                   if (ctx.count_filtered)
                     f_compliance_yes++;
                 }
               else if (strcasecmp (compliance, "no") == 0)
                 {
-                  f_host_result_counts = f_host_notcompliant;
+                  f_host_result_counts = ctx.f_host_notcompliant;
                   if (ctx.count_filtered)
                     f_compliance_no++;
                 }
               else if (strcasecmp (compliance, "incomplete") == 0)
                 {
-                  f_host_result_counts = f_host_incomplete;
+                  f_host_result_counts = ctx.f_host_incomplete;
                   if (ctx.count_filtered)
                     f_compliance_incomplete++;
                 }
               else if (strcasecmp (compliance, "undefined") == 0)
                 {
-                  f_host_result_counts = f_host_undefined;
+                  f_host_result_counts = ctx.f_host_undefined;
                   if (ctx.count_filtered)
                     f_compliance_undefined++;
                 }
@@ -18506,37 +18518,37 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (strcasecmp (level, "log") == 0)
                 {
-                  f_host_result_counts = f_host_logs;
+                  f_host_result_counts = ctx.f_host_logs;
                   if (ctx.count_filtered)
                     f_logs++;
                 }
               else if (strcasecmp (level, "critical") == 0)
                 {
-                  f_host_result_counts = f_host_criticals;
+                  f_host_result_counts = ctx.f_host_criticals;
                   if (ctx.count_filtered)
                     f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
-                  f_host_result_counts = f_host_holes;
+                  f_host_result_counts = ctx.f_host_holes;
                   if (ctx.count_filtered)
                     f_holes++;
                 }
               else if (strcasecmp (level, "medium") == 0)
                 {
-                  f_host_result_counts = f_host_warnings;
+                  f_host_result_counts = ctx.f_host_warnings;
                   if (ctx.count_filtered)
                     f_warnings++;
                 }
               else if (strcasecmp (level, "low") == 0)
                 {
-                  f_host_result_counts = f_host_infos;
+                  f_host_result_counts = ctx.f_host_infos;
                   if (ctx.count_filtered)
                     f_infos++;
                 }
               else if (strcasecmp (level, "false positive") == 0)
                 {
-                  f_host_result_counts = f_host_false_positives;
+                  f_host_result_counts = ctx.f_host_false_positives;
                   if (ctx.count_filtered)
                     f_false_positives++;
                 }
@@ -18734,23 +18746,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           present = next (&hosts);
           if (present)
             {
-              if (print_report_host_xml (out,
+              if (print_report_host_xml (&ctx,
+                                         out,
                                          &hosts,
                                          result_host,
                                          ctx.tsk_usage_type,
                                          lean,
-                                         host_summary_buffer,
-                                         f_host_ports,
-                                         f_host_criticals,
-                                         f_host_holes,
-                                         f_host_warnings,
-                                         f_host_infos,
-                                         f_host_logs,
-                                         f_host_false_positives,
-                                         f_host_compliant,
-                                         f_host_notcompliant,
-                                         f_host_incomplete,
-                                         f_host_undefined))
+                                         host_summary_buffer))
                 {
                   goto failed_print_report_host;
                 }
@@ -18764,45 +18766,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       init_report_host_iterator (&hosts, report, NULL, 0);
       while (next (&hosts))
         {
-          if (print_report_host_xml (out,
+          if (print_report_host_xml (&ctx,
+                                     out,
                                      &hosts,
                                      NULL,
                                      ctx.tsk_usage_type,
                                      lean,
-                                     host_summary_buffer,
-                                     f_host_ports,
-                                     f_host_criticals,
-                                     f_host_holes,
-                                     f_host_warnings,
-                                     f_host_infos,
-                                     f_host_logs,
-                                     f_host_false_positives,
-                                     f_host_compliant,
-                                     f_host_notcompliant,
-                                     f_host_incomplete,
-                                     f_host_undefined))
-
+                                     host_summary_buffer))
             goto failed_print_report_host;
         }
       cleanup_iterator (&hosts);
     }
-  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-    {
-      g_hash_table_destroy (f_host_compliant);
-      g_hash_table_destroy (f_host_notcompliant);
-      g_hash_table_destroy (f_host_incomplete);
-      g_hash_table_destroy (f_host_undefined);
-    }
-  else
-    {
-      g_hash_table_destroy (f_host_criticals);
-      g_hash_table_destroy (f_host_holes);
-      g_hash_table_destroy (f_host_warnings);
-      g_hash_table_destroy (f_host_infos);
-      g_hash_table_destroy (f_host_logs);
-      g_hash_table_destroy (f_host_false_positives);
-    }
-  g_hash_table_destroy (f_host_ports);
 
   /* Print TLS certificates */
 
@@ -18905,25 +18879,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    g_hash_table_destroy (f_host_ports);
 
     g_free (compliance_levels);
-    if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-      {
-        g_hash_table_destroy (f_host_compliant);
-        g_hash_table_destroy (f_host_notcompliant);
-        g_hash_table_destroy (f_host_incomplete);
-        g_hash_table_destroy (f_host_undefined);
-      }
-    else
-      {
-        g_hash_table_destroy (f_host_criticals);
-        g_hash_table_destroy (f_host_holes);
-        g_hash_table_destroy (f_host_warnings);
-        g_hash_table_destroy (f_host_infos);
-        g_hash_table_destroy (f_host_logs);
-        g_hash_table_destroy (f_host_false_positives);
-      }
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
