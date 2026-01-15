@@ -40,7 +40,6 @@ create_oci_image_target (const char* name,
                          oci_image_target_t* oci_image_target,
                          gchar **error_message)
 {
-  gchar *quoted_name, *quoted_urls, *quoted_comment, *quoted_exclude_images;
   oci_image_target_t new_oci_image_target;
   credential_t credential = 0;
 
@@ -60,13 +59,10 @@ create_oci_image_target (const char* name,
       return CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY;
     }
 
-  quoted_name = sql_quote (name ?: "");
-
   if (g_str_equal (image_references, "")
       || !validate_oci_image_references (image_references, error_message))
     {
       sql_rollback ();
-      g_free (quoted_name);
       return CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
     }
 
@@ -74,17 +70,8 @@ create_oci_image_target (const char* name,
                                                         error_message))
     {
       sql_rollback ();
-      g_free (quoted_name);
       return CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
     }
-
-  quoted_urls = sql_quote (image_references);
-  quoted_exclude_images = sql_quote (exclude_images ?: "");
-
-  if (comment)
-    quoted_comment = sql_quote (comment);
-  else
-    quoted_comment = sql_quote ("");
 
   if (credential_id)
     {
@@ -96,20 +83,12 @@ create_oci_image_target (const char* name,
                                                "get_credentials"))
             {
               sql_rollback ();
-              g_free (quoted_name);
-              g_free (quoted_urls);
-              g_free (quoted_exclude_images);
-              g_free (quoted_comment);
               return CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR;
             }
 
           if (credential == 0)
             {
               sql_rollback ();
-              g_free (quoted_name);
-              g_free (quoted_urls);
-              g_free (quoted_exclude_images);
-              g_free (quoted_comment);
               return CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND;
             }
 
@@ -117,10 +96,6 @@ create_oci_image_target (const char* name,
           if (strcmp (type, "up"))
             {
               sql_rollback ();
-              g_free (quoted_name);
-              g_free (quoted_urls);
-              g_free (quoted_exclude_images);
-              g_free (quoted_comment);
               g_free (type);
               return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
             }
@@ -129,38 +104,34 @@ create_oci_image_target (const char* name,
       else
         {
           sql_rollback ();
-          g_free (quoted_name);
-          g_free (quoted_urls);
-          g_free (quoted_exclude_images);
-          g_free (quoted_comment);
           return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL;
         }
     }
 
-  sql ("INSERT INTO oci_image_targets"
-       " (uuid, name, owner, image_references, exclude_images,"
-       "  comment, creation_time, modification_time)"
-       " VALUES (make_uuid (), '%s',"
-       " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', m_now (), m_now ());",
-        quoted_name, current_credentials.uuid,
-        quoted_urls, quoted_exclude_images, quoted_comment);
+  sql_ps ("INSERT INTO oci_image_targets"
+          " (uuid, name, owner, image_references, exclude_images,"
+          "  comment, creation_time, modification_time)"
+          " VALUES (make_uuid (), $1,"
+          " (SELECT id FROM users WHERE users.uuid = $2),"
+          " $3, $4, $5, m_now (), m_now ());",
+          SQL_STR_PARAM (name),
+          SQL_STR_PARAM (current_credentials.uuid),
+          SQL_STR_PARAM (image_references),
+          exclude_images ? SQL_STR_PARAM (exclude_images) : SQL_NULL_PARAM,
+          comment ? SQL_STR_PARAM (comment) : SQL_NULL_PARAM,
+          NULL);
 
   new_oci_image_target = sql_last_insert_id ();
 
   if (credential)
-    sql ("UPDATE oci_image_targets SET credential = %llu"
-         " WHERE id = %llu;",
-         credential,
-         new_oci_image_target);
+    sql_ps ("UPDATE oci_image_targets SET credential = $1"
+            " WHERE id = $2;",
+            SQL_RESOURCE_PARAM (credential),
+            SQL_RESOURCE_PARAM (new_oci_image_target),
+            NULL);
 
   if (oci_image_target)
     *oci_image_target = new_oci_image_target;
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_urls);
-  g_free (quoted_exclude_images);
 
   sql_commit ();
 
@@ -248,8 +219,6 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
 
   if (name)
     {
-      gchar *quoted_name;
-
       if (strlen (name) == 0)
         {
           sql_rollback ();
@@ -261,31 +230,24 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
           return MODIFY_OCI_IMAGE_TARGET_EXISTS_ALREADY;
         }
 
-      quoted_name = sql_quote (name);
-
-      sql ("UPDATE oci_image_targets SET"
-           " name = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_name,
-           oci_image_target);
-
-      g_free (quoted_name);
+      sql_ps ("UPDATE oci_image_targets SET"
+              " name = $1,"
+              " modification_time = m_now ()"
+              " WHERE id = $2;",
+              SQL_STR_PARAM (name),
+              SQL_RESOURCE_PARAM (oci_image_target),
+              NULL);
     }
 
   if (comment)
     {
-      gchar *quoted_comment;
-      quoted_comment = sql_quote (comment);
-
-      sql ("UPDATE oci_image_targets SET"
-           " comment = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_comment,
-           oci_image_target);
-
-      g_free (quoted_comment);
+      sql_ps ("UPDATE oci_image_targets SET"
+              " comment = $1,"
+              " modification_time = m_now ()"
+              " WHERE id = $2;",
+              SQL_STR_PARAM (comment),
+              SQL_RESOURCE_PARAM (oci_image_target),
+              NULL);
     }
 
   if (credential_id)
@@ -322,25 +284,25 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
             }
           g_free (type);
 
-          sql ("UPDATE oci_image_targets SET"
-              " credential = %llu,"
-              " modification_time = m_now ()"
-              " WHERE id = %llu;",
-              credential,
-              oci_image_target);
+          sql_ps ("UPDATE oci_image_targets SET"
+                   " credential = $1,"
+                   " modification_time = m_now ()"
+                   " WHERE id = $2;",
+                   SQL_RESOURCE_PARAM (credential),
+                   SQL_RESOURCE_PARAM (oci_image_target),
+                   NULL);
         }
       else
-        sql ("UPDATE oci_image_targets SET"
-             " credential = NULL,"
-             " modification_time = m_now ()"
-             " WHERE id = %llu;",
-             oci_image_target);
+        sql_ps ("UPDATE oci_image_targets SET"
+                " credential = NULL,"
+                " modification_time = m_now ()"
+                " WHERE id = $1;",
+                SQL_RESOURCE_PARAM (oci_image_target),
+                NULL);
     }
 
   if (image_references)
     {
-      gchar *quoted_image_references;
-
       if (g_str_equal (image_references, "")
           || !validate_oci_image_references (image_references, error_message))
         {
@@ -348,48 +310,41 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
           return MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
         }
 
-      quoted_image_references = sql_quote (image_references);
-
-      sql ("UPDATE oci_image_targets SET"
-           " image_references = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_image_references,
-           oci_image_target);
-
-      g_free (quoted_image_references);
+      sql_ps ("UPDATE oci_image_targets SET"
+              " image_references = $1,"
+              " modification_time = m_now ()"
+              " WHERE id = $2;",
+              SQL_STR_PARAM (image_references),
+              SQL_RESOURCE_PARAM (oci_image_target),
+              NULL);
     }
 
   if (exclude_images)
     {
       if (g_str_equal (exclude_images, ""))
         {
-          sql ("UPDATE oci_image_targets SET"
-               " exclude_images = NULL,"
-               " modification_time = m_now ()"
-               " WHERE id = %llu;",
-               oci_image_target);
+          sql_ps ("UPDATE oci_image_targets SET"
+                  " exclude_images = NULL,"
+                  " modification_time = m_now ()"
+                  " WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (oci_image_target),
+                  NULL);
         }
       else
         {
-          gchar *quoted_exclude_images;
-
           if (!validate_oci_image_references (exclude_images, error_message))
             {
               sql_rollback ();
               return MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
             }
 
-          quoted_exclude_images = sql_quote (exclude_images);
-
-          sql ("UPDATE oci_image_targets SET"
-               " exclude_images = '%s',"
-               " modification_time = m_now ()"
-               " WHERE id = %llu;",
-               quoted_exclude_images,
-               oci_image_target);
-
-          g_free (quoted_exclude_images);
+          sql_ps ("UPDATE oci_image_targets SET"
+                  " exclude_images = $1,"
+                  " modification_time = m_now ()"
+                  " WHERE id = $2;",
+                  SQL_STR_PARAM (exclude_images),
+                  SQL_RESOURCE_PARAM (oci_image_target),
+                  NULL);
         }
     }
 
@@ -891,8 +846,9 @@ oci_image_target_image_references (oci_image_target_t oci_image_target)
 char*
 oci_image_target_exclude_images (oci_image_target_t oci_image_target)
 {
-  return sql_string ("SELECT exclude_images FROM oci_image_targets"
-                     " WHERE id = %llu;", oci_image_target);
+  return sql_string_ps ("SELECT exclude_images FROM oci_image_targets"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (oci_image_target), NULL);
 }
 
 /**
