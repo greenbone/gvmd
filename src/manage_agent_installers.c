@@ -12,6 +12,7 @@
 
 #include "gmp_base.h"
 #include "manage_agent_installers.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql_agent_installers.h"
 #include "manage_users.h"
 
@@ -605,7 +606,9 @@ should_sync_agent_installers ()
 #if ENABLE_AGENTS
   time_t db_last_update;
   GStatBuf state;
-  if (! agent_installers_feed_metadata_file_exists ())
+
+  if (! feature_enabled (FEATURE_ID_AGENTS)
+      || ! agent_installers_feed_metadata_file_exists ())
     return FALSE;
 
   db_last_update = get_meta_agent_installers_last_update ();
