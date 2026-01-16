@@ -13,7 +13,7 @@
 #include "debug_utils.h"
 #include "manage_sql_report_configs.h"
 #include "manage_acl.h"
-#include "manage_report_formats.h"
+#include "manage_sql_report_formats.h"
 #include "sql.h"
 #include "utils.h"
 #include <glib.h>
