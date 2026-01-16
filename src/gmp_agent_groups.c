@@ -11,7 +11,6 @@
  */
 
 #include "gmp_agent_groups.h"
-#include "manage.h"
 #include "manage_acl.h"
 
 #undef G_LOG_DOMAIN

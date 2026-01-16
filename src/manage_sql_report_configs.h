@@ -14,11 +14,9 @@
 #define _GVMD_MANAGE_SQL_REPORT_CONFIGS_H
 
 #include "manage_report_configs.h"
-#include "manage.h"
 #include "manage_sql.h"
 
 #include <glib.h>
-
 
 const char**
 report_config_filter_columns ();

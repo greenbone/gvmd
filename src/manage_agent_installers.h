@@ -15,7 +15,6 @@
 #ifndef _GVMD_MANAGE_AGENT_INSTALLERS_H
 #define _GVMD_MANAGE_AGENT_INSTALLERS_H
 
-#include "manage.h"
 #include "manage_resources.h"
 #include "iterator.h"
 #include "gmp_get.h"
