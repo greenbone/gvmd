@@ -19,6 +19,7 @@
 
 #include "manage_tls_certificates.h"
 
+#include <gnutls/gnutls.h>
 #include <string.h>
 
 #undef G_LOG_DOMAIN

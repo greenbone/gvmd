@@ -20,6 +20,8 @@
 #include <string.h>
 #include <strings.h>
 
+#include <gvm/base/networking.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

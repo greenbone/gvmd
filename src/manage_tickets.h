@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_TICKETS_H
 #define _GVMD_MANAGE_TICKETS_H
 
-#include "manage.h"
+#include "gmp_get.h"
 #include "iterator.h"
 
 int
