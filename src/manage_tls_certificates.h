@@ -13,7 +13,7 @@
 #ifndef _GVMD_MANAGE_TLS_CERTIFICATES_H
 #define _GVMD_MANAGE_TLS_CERTIFICATES_H
 
-#include "manage.h"
+#include "gmp_get.h"
 #include "iterator.h"
 
 int

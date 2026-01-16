@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_ASSETS_H
 #define _GVMD_MANAGE_SQL_ASSETS_H
 
+#include "manage_assets.h"
 #include "manage_resources.h"
 
 /**

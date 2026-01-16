@@ -12,7 +12,7 @@
 
 #include "manage_port_lists.h"
 #include "gmp_port_lists.h"
-#include "manage.h"
+#include "manage_sql.h"
 #include "manage_sql_port_lists.h"
 #include "manage_users.h"
 #include "utils.h"

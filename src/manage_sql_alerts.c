@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "manage_alerts.h"
-#include "manage_acl.h"
-#include "manage_filters.h"
-#include "manage_report_formats.h"
-#include "manage_sql.h"
 #include "manage_sql_alerts.h"
+#include "manage_acl.h"
+#include "manage_sql.h"
+#include "manage_sql_filters.h"
+#include "manage_sql_report_formats.h"
 
 #include <ctype.h>
 

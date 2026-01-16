@@ -16,7 +16,6 @@
 #define _GVMD_MANAGE_SQL_CREDENTIAL_STORES_H
 
 #include "manage_credential_stores.h"
-#include "manage_sql.h"
 
 /**
  * @brief Filter columns for credential stores

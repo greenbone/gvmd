@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_TICKETS_H
 #define _GVMD_MANAGE_SQL_TICKETS_H
 
-#include "manage.h"
+#include "manage_tickets.h"
 
 /**
  * @brief SQL to check if a result may have tickets.

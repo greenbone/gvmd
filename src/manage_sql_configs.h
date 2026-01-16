@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_CONFIGS_H
 #define _GVMD_MANAGE_SQL_CONFIGS_H
 
-#include "manage.h"
+#include "manage_configs.h"
 
 /**
  * @brief Filter columns for scan configs iterator.

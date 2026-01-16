@@ -22,7 +22,7 @@
 
 #include <gvm/base/nvti.h>
 #include "glibconfig.h"
-#include "manage.h"
+#include "manage_sql.h"
 
 #include <assert.h>
 #include <errno.h>

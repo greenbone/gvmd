@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_ALERTS_H
 #define _GVMD_MANAGE_SQL_ALERTS_H
 
-#include "manage.h"
+#include "manage_alerts.h"
 
 /**
  * @brief Filter columns for alert iterator.
