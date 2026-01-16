@@ -4,7 +4,6 @@
  */
 
 #include "manage_sql_filters.h"
-#include "manage.h"
 #include "manage_acl.h"
 #include "manage_filter_utils.h"
 #include "manage_settings.h"
