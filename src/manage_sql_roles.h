@@ -6,6 +6,8 @@
 #ifndef _GVMD_MANAGE_SQL_ROLES_H
 #define _GVMD_MANAGE_SQL_ROLES_H
 
+#include "manage_roles.h"
+
 /**
  * @brief Filter columns for role iterator.
  */

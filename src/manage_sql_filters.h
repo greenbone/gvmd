@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_FILTERS_H
 #define _GVMD_MANAGE_SQL_FILTERS_H
 
+#include "manage_filters.h"
 #include "manage_get.h"
 
 #include <glib.h>
