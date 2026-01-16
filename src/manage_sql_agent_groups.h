@@ -18,7 +18,6 @@
 
 
 #include "manage_agent_groups.h"
-#include "manage_sql.h"
 
 #define AGENT_GROUP_ITERATOR_FILTER_COLUMNS \
 {                                           \
