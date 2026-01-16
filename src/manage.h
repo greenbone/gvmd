@@ -3197,12 +3197,6 @@ gchar *
 manage_user_hash (const gchar *);
 
 int
-copy_user (const char*, const char*, const char*, user_t*);
-
-gchar *
-keyfile_to_auth_conf_settings_xml (const gchar *);
-
-int
 user_count (const get_data_t*);
 
 int
