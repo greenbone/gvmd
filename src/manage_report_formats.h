@@ -6,9 +6,12 @@
 #ifndef _GVMD_MANAGE_REPORT_FORMATS_H
 #define _GVMD_MANAGE_REPORT_FORMATS_H
 
-#include "manage.h"
+#include "manage_resources.h"
+#include "gmp_get.h"
 
 #include <glib.h>
+
+#include <gvm/base/array.h>
 
 /**
  * @brief Report format UUID.

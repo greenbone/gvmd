@@ -13,8 +13,8 @@
 #ifndef _GVMD_MANAGE_REPORT_CONFIGS_H
 #define _GVMD_MANAGE_REPORT_CONFIGS_H
 
-#include "manage.h"
 #include "manage_report_formats.h"
+#include "manage_resources.h"
 
 #include <glib.h>
 
