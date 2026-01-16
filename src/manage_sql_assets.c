@@ -4,7 +4,6 @@
  */
 
 #include "manage_sql_assets.h"
-#include "manage_assets.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_filters.h"

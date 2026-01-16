@@ -10,10 +10,9 @@
  * The TLS Certificates SQL for the GVM management layer.
  */
 
-#include "manage_tls_certificates.h"
+#include "manage_sql_tls_certificates.h"
 #include "manage_acl.h"
 #include "manage_filters.h"
-#include "manage_sql_tls_certificates.h"
 #include "manage_sql.h"
 #include "utils.h"
 #include "sql.h"
