@@ -6,11 +6,11 @@
 #include "manage_sql_assets.h"
 #include "manage.h"
 #include "manage_acl.h"
-#include "manage_filters.h"
-#if ENABLE_AGENTS
-#include "manage_groups.h"
-#endif
 #include "manage_sql.h"
+#include "manage_sql_filters.h"
+#if ENABLE_AGENTS
+#include "manage_sql_groups.h"
+#endif
 #if ENABLE_CONTAINER_SCANNING
 #include "manage_sql_oci_image_targets.h"
 #endif
