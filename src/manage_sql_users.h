@@ -85,6 +85,9 @@ user_uuid_any_method (const gchar *);
 int
 add_users (const gchar *, resource_t, const char *);
 
+int
+set_password (const gchar *, const gchar *, const gchar *, gchar **);
+
 /* Defined in manage_users.c, but internal to libmanage. */
 
 int

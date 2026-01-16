@@ -8,6 +8,7 @@
 
 #include "manage_get.h"
 #include "manage_resources.h"
+#include "sql.h" // Sadly, for db_conn_info_t
 
 gchar *
 user_name (const char *);
@@ -88,5 +89,20 @@ modify_user (const gchar *, gchar **, const gchar *, const gchar *,
              const gchar *, const gchar *, int,
              const array_t *, array_t *, gchar **, array_t *, gchar **,
              gchar **);
+
+int
+manage_create_user (GSList *, const db_conn_info_t *, const gchar *,
+                    const gchar *, const gchar *);
+
+int
+manage_delete_user (GSList *, const db_conn_info_t *, const gchar *,
+                    const gchar *);
+
+int
+manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
+
+int
+manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
+                     const gchar *);
 
 #endif /* not _GVMD_MANAGE_USERS_H */

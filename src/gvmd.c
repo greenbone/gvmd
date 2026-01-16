@@ -97,6 +97,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
+#include "manage_users.h"
 #include "gmpd.h"
 #include "utils.h"
 
