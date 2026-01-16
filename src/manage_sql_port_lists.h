@@ -7,8 +7,8 @@
 #define _GVMD_MANAGE_SQL_PORT_LISTS_H
 
 #include "manage_port_lists.h"
-#include "manage.h"
-#include "manage_sql.h"
+
+#include <gvm/base/networking.h>
 
 column_t*
 port_list_select_columns ();
