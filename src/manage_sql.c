@@ -22,7 +22,6 @@
 #define _GNU_SOURCE
 
 #include <stdio.h>
-#include "manage.h"
 #include "debug_utils.h"
 #include "ipc.h"
 #include "manage_osp.h"

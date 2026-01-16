@@ -17,7 +17,6 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_oci_image_targets.h"
-#include "manage.h"
 #include "manage_openvas.h"
 #include "manage_osp.h"
 #include <sys/types.h>

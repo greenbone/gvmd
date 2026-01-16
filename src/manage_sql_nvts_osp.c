@@ -12,7 +12,6 @@
 
 #include "manage_sql_nvts_osp.h"
 
-#include "manage.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "sql.h"
