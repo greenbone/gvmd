@@ -5640,7 +5640,7 @@ manage_reset_currents ()
  *
  * @return Hash.
  */
-gchar *
+static gchar *
 manage_user_hash (const gchar *username)
 {
   gchar *hash, *quoted_username;

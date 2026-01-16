@@ -35,6 +35,9 @@ int
 user_hosts_allow (const char *);
 
 int
+user_count (const get_data_t *);
+
+int
 init_user_iterator (iterator_t *, get_data_t *);
 
 const char*

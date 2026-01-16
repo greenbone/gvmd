@@ -3191,13 +3191,7 @@ char *
 manage_default_ca_cert ();
 
 
-/* Users. */
-
-gchar *
-manage_user_hash (const gchar *);
-
-int
-user_count (const get_data_t*);
+/* Vulns. */
 
 int
 init_vuln_iterator (iterator_t*, const get_data_t*);
