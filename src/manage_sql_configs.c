@@ -10,10 +10,9 @@
  * The Config SQL for the GVM management layer.
  */
 
-#include "manage_configs.h"
+#include "manage_sql_configs.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
-#include "manage_sql_configs.h"
 #include "manage_sql_nvts.h"
 #include "sql.h"
 
