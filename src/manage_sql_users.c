@@ -1625,3 +1625,438 @@ delete_user (const char *user_id_arg, const char *name_arg,
   sql_commit ();
   return 0;
 }
+
+/**
+ * @brief Create a user from an existing user.
+ *
+ * @param[in]  name      Name of new user.  NULL to copy from existing.
+ * @param[in]  comment   Comment on new user.  NULL to copy from existing.
+ * @param[in]  user_id   UUID of existing user.
+ * @param[out] new_user  New user.
+ *
+ * @return 0 success, 1 user exists already, 2 failed to find existing
+ *         user, 99 permission denied, -1 error.
+ */
+int
+copy_user (const char* name, const char* comment, const char *user_id,
+           user_t* new_user)
+{
+  user_t user;
+  int ret;
+  gchar *quoted_uuid;
+  GArray *cache_users;
+  char *uuid;
+
+  if (acl_user_can_super_everyone (user_id))
+    return 99;
+
+  sql_begin_immediate ();
+
+  ret = copy_resource_lock ("user", name, comment, user_id,
+                            "password, timezone, hosts, hosts_allow, method",
+                            1, &user, NULL);
+  if (ret)
+    {
+      sql_rollback ();
+      return ret;
+    }
+
+  sql ("UPDATE users SET password = NULL WHERE id = %llu;", user);
+
+  quoted_uuid = sql_quote (user_id);
+
+  sql ("INSERT INTO group_users (\"user\", \"group\")"
+       " SELECT %llu, \"group\" FROM group_users"
+       " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
+       user,
+       quoted_uuid);
+
+  sql ("INSERT INTO role_users (\"user\", role)"
+       " SELECT %llu, role FROM role_users"
+       " WHERE \"user\" = (SELECT id FROM users WHERE uuid = '%s');",
+       user,
+       quoted_uuid);
+
+  g_free (quoted_uuid);
+
+  /* Ensure the user can see themself. */
+
+  uuid = user_uuid (user);
+  if (uuid == NULL)
+    {
+      g_warning ("%s: Failed to allocate UUID", __func__);
+      sql_rollback ();
+      return -1;
+    }
+
+  create_permission_internal (1,
+                              "GET_USERS",
+                              "Automatically created when adding user",
+                              NULL,
+                              uuid,
+                              "user",
+                              uuid,
+                              NULL);
+
+  free (uuid);
+
+  /* Cache permissions. */
+
+  cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  g_array_append_val (cache_users, user);
+  cache_all_permissions_for_users (cache_users);
+  g_free (g_array_free (cache_users, TRUE));
+
+  sql_commit ();
+
+  if (new_user)
+    *new_user = user;
+
+  return ret;
+}
+
+/**
+ * @brief Modify a user.
+ *
+ * @param[in]  user_id      The UUID of the user.  Overrides name.
+ * @param[in]  name         The name of the user.  If NULL then set to name
+ *                          when return is 3 or 4.
+ * @param[in]  new_name     New name for the user.  NULL to leave as is.
+ * @param[in]  password     The password of the user.  NULL to leave as is.
+ * @param[in]  comment      The comment for the user.  NULL to leave as is.
+ * @param[in]  hosts        The host the user is allowed/forbidden to scan.
+ *                          NULL to leave as is.
+ * @param[in]  hosts_allow  Whether hosts is allow or forbid.
+ * @param[in]  allowed_methods  Allowed login methods.
+ * @param[in]  groups           Groups.
+ * @param[out] group_id_return  ID of group on "failed to find" error.
+ * @param[in]  roles            Roles.
+ * @param[out] role_id_return   ID of role on "failed to find" error.
+ * @param[out] r_errdesc    If not NULL the address of a variable to receive
+ *                          a malloced string with the error description.  Will
+ *                          always be set to NULL on success.
+ *
+ * @return 0 if the user has been added successfully, 1 failed to find group,
+ *         2 failed to find user, 3 success and user gained admin, 4 success
+ *         and user lost admin, 5 failed to find role, 6 syntax error in hosts,
+ *         7 syntax error in new name, 99 permission denied, -1 on error,
+ *         -2 for an unknown role, -3 if wrong number of methods, -4 error in
+ *         method.
+ */
+int
+modify_user (const gchar * user_id, gchar **name, const gchar *new_name,
+             const gchar * password, const gchar * comment,
+             const gchar * hosts, int hosts_allow,
+             const array_t * allowed_methods, array_t *groups,
+             gchar **group_id_return, array_t *roles, gchar **role_id_return,
+             gchar **r_errdesc)
+{
+  char *errstr;
+  gchar *hash, *quoted_hosts, *quoted_method, *clean, *uuid;
+  gchar *quoted_new_name, *quoted_comment;
+  user_t user;
+  int max, was_admin, is_admin;
+  GArray *cache_users;
+
+  if (r_errdesc)
+    *r_errdesc = NULL;
+
+  /* allowed_methods is a NULL terminated array. */
+  if (allowed_methods && (allowed_methods->len > 2))
+    return -3;
+
+  if (allowed_methods && (allowed_methods->len <= 1))
+    allowed_methods = NULL;
+
+  if (allowed_methods
+      && (strlen (g_ptr_array_index (allowed_methods, 0)) == 0))
+    allowed_methods = NULL;
+
+  if (allowed_methods
+      && (auth_method_name_valid (g_ptr_array_index (allowed_methods, 0))
+          == 0))
+    return -4;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("modify_user") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  user = 0;
+  if (user_id)
+    {
+      if (find_user_with_permission (user_id, &user, "modify_user"))
+        {
+          sql_rollback ();
+          return -1;
+        }
+    }
+  else if (find_user_by_name_with_permission (*name, &user, "modify_user"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (user == 0)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
+  uuid = sql_string ("SELECT uuid FROM users WHERE id = %llu",
+                     user);
+
+  /* The only user that can edit a Super Admin is the Super Admin themself. */
+  if (acl_user_can_super_everyone (uuid) && strcmp (uuid, current_credentials.uuid))
+    {
+      g_free (uuid);
+      sql_rollback ();
+      return 99;
+    }
+
+  was_admin = acl_user_is_admin (uuid);
+
+  if (password)
+    {
+      char *user_name;
+
+      user_name = sql_string ("SELECT name FROM users WHERE id = %llu",
+                              user);
+      errstr = gvm_validate_password (password, user_name);
+      if (errstr)
+        {
+          g_warning ("new password for '%s' rejected: %s", user_name, errstr);
+          if (r_errdesc)
+            *r_errdesc = errstr;
+          else
+            g_free (errstr);
+          sql_rollback ();
+          g_free (user_name);
+          return -1;
+        }
+      g_free (user_name);
+    }
+
+  /* Check hosts. */
+
+  max = manage_max_hosts ();
+  manage_set_max_hosts (MANAGE_USER_MAX_HOSTS);
+  if (hosts && (manage_count_hosts (hosts, NULL) < 0))
+    {
+      manage_set_max_hosts (max);
+      sql_rollback ();
+      return 6;
+    }
+  manage_set_max_hosts (max);
+
+  /* Check new name. */
+
+  if (new_name)
+    {
+      if (validate_username (new_name) != 0)
+        {
+          sql_rollback ();
+          return 7;
+        }
+
+      if (strcmp (uuid, current_credentials.uuid) == 0)
+        {
+          sql_rollback ();
+          return 99;
+        }
+
+      if (resource_with_name_exists_global (new_name, "user", user))
+        {
+          sql_rollback ();
+          return 8;
+        }
+      quoted_new_name = sql_quote (new_name);
+    }
+  else
+    quoted_new_name = NULL;
+
+  /* Get the password hashes. */
+
+  if (password)
+    hash = manage_authentication_hash (password);
+  else
+    hash = NULL;
+
+  if (comment)
+    {
+      quoted_comment = sql_quote (comment);
+    }
+  else
+    {
+      quoted_comment = NULL;
+    }
+
+
+  /* Update the user in the database. */
+
+  clean = clean_hosts (hosts ? hosts : "", &max);
+  if ((hosts_allow == 0) && (max == 0))
+    /* Convert "Deny none" to "Allow All". */
+    hosts_allow = 2;
+  quoted_hosts = sql_quote (clean);
+  g_free (clean);
+  quoted_method = sql_quote (allowed_methods
+                              ? g_ptr_array_index (allowed_methods, 0)
+                              : "");
+  sql ("UPDATE users"
+       " SET name = %s%s%s,"
+       "     comment = %s%s%s,"
+       "     hosts = '%s',"
+       "     hosts_allow = '%i',"
+       "     method = %s%s%s,"
+       "     modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_new_name ? "'" : "",
+       quoted_new_name ? quoted_new_name : "name",
+       quoted_new_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_hosts,
+       hosts_allow,
+       allowed_methods ? "'" : "",
+       allowed_methods ? quoted_method : "method",
+       allowed_methods ? "'" : "",
+       user);
+  g_free (quoted_new_name);
+  g_free (quoted_hosts);
+  g_free (quoted_method);
+  if (hash)
+    sql ("UPDATE users"
+         " SET password = '%s'"
+         " WHERE id = %llu;",
+         hash,
+         user);
+  g_free (hash);
+
+  /* Update the user groups. */
+
+  if (groups)
+    {
+      int index;
+
+      sql ("DELETE FROM group_users WHERE \"user\" = %llu;", user);
+      index = 0;
+      while (groups && (index < groups->len))
+        {
+          gchar *group_id;
+          group_t group;
+
+          group_id = (gchar*) g_ptr_array_index (groups, index);
+          if (strcmp (group_id, "0") == 0)
+            {
+              index++;
+              continue;
+            }
+
+          if (find_group_with_permission (group_id, &group, "modify_group"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (group == 0)
+            {
+              sql_rollback ();
+              if (group_id_return) *group_id_return = group_id;
+              return 1;
+            }
+
+          sql ("INSERT INTO group_users (\"group\", \"user\")"
+               " VALUES (%llu, %llu);",
+               group,
+               user);
+
+          index++;
+        }
+    }
+
+  /* Update the user roles. */
+
+  if (roles)
+    {
+      int index;
+
+      sql ("DELETE FROM role_users"
+           " WHERE \"user\" = %llu"
+           " AND role != (SELECT id from roles"
+           "              WHERE uuid = '" ROLE_UUID_SUPER_ADMIN "');",
+           user);
+      index = 0;
+      while (roles && (index < roles->len))
+        {
+          gchar *role_id;
+          role_t role;
+
+          role_id = (gchar*) g_ptr_array_index (roles, index);
+          if (strcmp (role_id, "0") == 0)
+            {
+              index++;
+              continue;
+            }
+
+          if (find_role_with_permission (role_id, &role, "get_roles"))
+            {
+              sql_rollback ();
+              return -1;
+            }
+
+          if (role == 0)
+            {
+              sql_rollback ();
+              if (role_id_return) *role_id_return = role_id;
+              return 1;
+            }
+
+          if (acl_role_can_super_everyone (role_id))
+            {
+              sql_rollback ();
+              return 99;
+            }
+
+          sql ("INSERT INTO role_users (role, \"user\") VALUES (%llu, %llu);",
+               role,
+               user);
+
+          index++;
+        }
+    }
+
+  cache_users = g_array_new (TRUE, TRUE, sizeof (user_t));
+  g_array_append_val (cache_users, user);
+  cache_all_permissions_for_users (cache_users);
+  g_free (g_array_free (cache_users, TRUE));
+
+  sql_commit ();
+
+  if (was_admin)
+    {
+      is_admin = acl_user_is_admin (uuid);
+      g_free (uuid);
+      if (is_admin)
+        return 0;
+      if (*name == NULL)
+        *name = sql_string ("SELECT name FROM users WHERE id = %llu",
+                            user);
+      return 4;
+    }
+
+  is_admin = acl_user_is_admin (uuid);
+  g_free (uuid);
+  if (is_admin)
+    {
+      if (*name == NULL)
+        *name = sql_string ("SELECT name FROM users WHERE id = %llu",
+                            user);
+      return 3;
+    }
+
+  return 0;
+}

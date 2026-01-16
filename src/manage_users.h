@@ -80,4 +80,13 @@ create_user (const gchar *, const gchar *, const gchar *, const gchar *,
 int
 delete_user (const char *, const char *, int, const char *, const char *);
 
+int
+copy_user (const char *, const char *, const char *, user_t *);
+
+int
+modify_user (const gchar *, gchar **, const gchar *, const gchar *,
+             const gchar *, const gchar *, int,
+             const array_t *, array_t *, gchar **, array_t *, gchar **,
+             gchar **);
+
 #endif /* not _GVMD_MANAGE_USERS_H */
