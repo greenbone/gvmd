@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "manage_users.h"
 #include "manage_sql_users.h"
 #include "manage_acl.h"
 #include "manage_authentication.h"

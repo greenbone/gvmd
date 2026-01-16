@@ -7,7 +7,6 @@
 
 #include "debug_utils.h"
 #include "manage_sql_oci_image_targets.h"
-#include "manage_oci_image_targets.h"
 #include "manage_acl.h"
 #include "sql.h"
 #include "utils.h"
