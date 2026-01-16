@@ -6,6 +6,8 @@
 #ifndef _GVMD_MANAGE_SQL_GROUPS_H
 #define _GVMD_MANAGE_SQL_GROUPS_H
 
+#include "manage_groups.h"
+
 /**
  * @brief Filter columns for group iterator.
  */

@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_PORT_LISTS_H
 #define _GVMD_MANAGE_SQL_PORT_LISTS_H
 
+#include "manage_port_lists.h"
 #include "manage.h"
 #include "manage_sql.h"
 

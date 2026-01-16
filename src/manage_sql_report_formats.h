@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_REPORT_FORMATS_H
 #define _GVMD_MANAGE_SQL_REPORT_FORMATS_H
 
+#include "manage_report_formats.h"
 #include "manage.h"
 #include "manage_sql.h"
 
