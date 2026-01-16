@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_TICKETS_H
 #define _GVMD_MANAGE_SQL_TICKETS_H
 
+#include "manage_tickets.h"
 #include "manage.h"
 
 /**

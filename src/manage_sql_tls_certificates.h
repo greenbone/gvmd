@@ -13,6 +13,8 @@
 #ifndef _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H
 #define _GVMD_MANAGE_SQL_TLS_CERTIFICATES_H
 
+#include "manage_tls_certificates.h"
+
 const char**
 tls_certificate_filter_columns ();
 

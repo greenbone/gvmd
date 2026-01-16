@@ -6,6 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_CONFIGS_H
 #define _GVMD_MANAGE_SQL_CONFIGS_H
 
+#include "manage_configs.h"
 #include "manage.h"
 
 /**

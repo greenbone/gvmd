@@ -15,6 +15,7 @@
 #ifndef _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H
 #define _GVMD_MANAGE_SQL_OCI_IMAGE_TARGETS_H
 
+#include "manage_oci_image_targets.h"
 #include "manage.h"
 #include "manage_sql.h"
 

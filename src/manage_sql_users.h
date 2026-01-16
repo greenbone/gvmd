@@ -6,6 +6,8 @@
 #ifndef _GVMD_MANAGE_SQL_USERS_H
 #define _GVMD_MANAGE_SQL_USERS_H
 
+#include "manage_users.h"
+
 #include <gvm/util/authutils.h>
 
 /**
