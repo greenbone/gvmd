@@ -5,3 +5,4 @@
 - [Generating Database Schema Documentation](./db-schema-documentation-HOWTO.md)
 - [Integration Authentication Methods](./integration-authentication.md)
 - [Feature Flags Overview](./feature-flags.md)
+- [Token Based Authentication](./token-based-authentication.md)
