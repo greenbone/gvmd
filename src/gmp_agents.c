@@ -480,6 +480,8 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t e = NULL;
   if ((e = entity_child (root, "authorized")))
     update->authorized = atoi (entity_text (e));
+  if ((e = entity_child (root, "update_to_latest")))
+    update->update_to_latest = atoi (entity_text (e));
   entity_t cfg_e = entity_child (root, "config");
 
   if (cfg_e)

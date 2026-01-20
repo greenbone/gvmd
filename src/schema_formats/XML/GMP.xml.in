@@ -30082,6 +30082,7 @@ END:VCALENDAR
     <pattern>
       <e>agents</e>
       <o><e>authorized</e></o>
+      <o><e>update_to_latest</e></o>
       <o><e>config</e></o>
       <o><e>comment</e></o>
     </pattern>
@@ -30105,6 +30106,12 @@ END:VCALENDAR
     <ele>
       <name>authorized</name>
       <summary>Authorization flag (1 for authorized, 0 for not)</summary>
+      <pattern><t>integer</t></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>update_to_latest</name>
+      <summary>Enable auto update for agent flag (1 for enable to auto update, 0 for not)</summary>
       <pattern><t>integer</t></pattern>
       <required>0</required>
     </ele>
@@ -30199,6 +30206,7 @@ END:VCALENDAR
             <agent id="fb6451bf-ec5a-45a8-8bab-5cf4b862e51b"/>
           </agents>
           <authorized>1</authorized>
+          <update_to_latest>1</update_to_latest>
           <config>
             <agent_control>
               <retry>
