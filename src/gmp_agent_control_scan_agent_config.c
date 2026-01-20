@@ -13,8 +13,6 @@
 #include "gmp_agent_control_scan_agent_config.h"
 #include "manage_acl.h"
 #include "manage_agent_control_scan_config.h"
-#include "manage_sql.h"
-
 
 #include <glib.h>
 
