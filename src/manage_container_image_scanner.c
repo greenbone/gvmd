@@ -129,53 +129,92 @@ add_container_image_scan_result (http_scanner_result_t res,
   result_t result;
   char *type, *host, *hostname, *test_id;
   char *port = NULL, *desc = NULL;
-  char *nvt_id = NULL, *severity_str = NULL;
-  int qod_int;
 
-  type = convert_http_scanner_type_to_osp_type (res->type);
+  type = res->type;
   test_id = res->oid;
-  // hostname is used as host since there is no IP
-  if (res->hostname && g_str_has_prefix (res->hostname, "oci://"))
-    host = res->hostname + strlen ("oci://");
-  else
-    host = res->hostname;
+
+  host = NULL;
+  if (res->ip_address)
+    {
+      gchar *ip_suffix = g_strstr_len (res->ip_address, -1, "@sha256:");
+      if (ip_suffix)
+        {
+          host = ip_suffix + 1;
+        }
+      else
+        {
+          host = res->ip_address;
+        }
+    }
   hostname = res->hostname;
   port = res->port;
-
-  nvt_id = g_strdup (test_id);
-  severity_str = nvt_severity (test_id, type);
   desc = res->message;
-  qod_int = get_http_scanner_nvti_qod (test_id);
 
   if (host)
     manage_report_host_add (rep_aux->report, host, 0, 0);
 
-  if (host && desc && (strcmp (type, "host_start") == 0))
-    set_scan_host_start_time_ctime (rep_aux->report, host, desc);
-  else if (host && desc && (strcmp (type, "host_end") == 0))
-    set_scan_host_end_time_ctime (rep_aux->report, host, desc);
-
-  char *hash_value;
-  if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task, res,
-                                         &hash_value, rep_aux->hash_results))
+  if (strcmp (type, "host_detail") == 0)
     {
-      result = make_osp_result (rep_aux->task,
-                                host ?: "",
-                                hostname ?: "",
-                                nvt_id ?: "",
-                                type ?: "",
-                                desc ?: "",
-                                port ?: "",
-                                severity_str ?: NULL,
-                                qod_int,
-                                NULL,
-                                hash_value);
-      g_array_append_val (rep_aux->results_array, result);
+      gchar *hash_value = NULL;
+      if (!check_host_detail_exists (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     &hash_value,
+                                     rep_aux->hash_hostdetails))
+        {
+          insert_report_host_detail (rep_aux->report, host,
+                                     res->detail_source_type,
+                                     res->detail_source_name,
+                                     res->detail_source_description,
+                                     res->detail_name,
+                                     res->detail_value,
+                                     hash_value);
+        }
     }
+  else if (host && desc && (strcmp (type, "host_start") == 0))
+    {
+      set_scan_host_start_time_isotime (rep_aux->report, host, desc);
+    }
+  else if (host && desc && (strcmp (type, "host_end") == 0))
+    {
+      set_scan_host_end_time_isotime (rep_aux->report, host, desc);
+    }
+  else
+    {
+      char *nvt_id = NULL, *severity_str = NULL;
+      char *hash_value, *result_type;
+      int qod_int;
 
-  g_free (hash_value);
-  g_free (nvt_id);
-  g_free (type);
+      nvt_id = g_strdup (test_id);
+      result_type = convert_http_scanner_type_to_osp_type (type);
+      severity_str = nvt_severity (test_id, result_type);
+      qod_int = get_http_scanner_nvti_qod (test_id);
+
+      if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task,
+                                             res, &hash_value,
+                                             rep_aux->hash_results))
+        {
+          result = make_osp_result (rep_aux->task,
+                                    host ?: "",
+                                    hostname ?: "",
+                                    nvt_id ?: "",
+                                    result_type ?: "",
+                                    desc ?: "",
+                                    port ?: "",
+                                    severity_str ?: NULL,
+                                    qod_int,
+                                    NULL,
+                                    hash_value);
+          g_array_append_val (rep_aux->results_array, result);
+        }
+      g_free (hash_value);
+      g_free (severity_str);
+      g_free (result_type);
+      g_free (nvt_id);
+    }
 
   return;
 }
@@ -194,9 +233,9 @@ parse_container_image_scan_report (task_t task,
                                    time_t start_time,
                                    time_t end_time)
 {
-  gboolean has_results = FALSE;
   GArray *results_array = NULL;
   GHashTable *hashed_results = NULL;
+  GHashTable *hashed_host_details = NULL;
   struct report_aux *rep_aux;
 
   assert (task);
@@ -221,8 +260,10 @@ parse_container_image_scan_report (task_t task,
                                           g_str_equal,
                                           g_free,
                                           NULL);
-
-  has_results = TRUE;
+  hashed_host_details = g_hash_table_new_full (g_str_hash,
+                                               g_str_equal,
+                                               g_free,
+                                               NULL);
 
   results_array = g_array_new(TRUE, TRUE, sizeof(result_t));
   rep_aux = g_malloc0 (sizeof (struct report_aux));
@@ -230,13 +271,13 @@ parse_container_image_scan_report (task_t task,
   rep_aux->task = task;
   rep_aux->results_array = results_array;
   rep_aux->hash_results = hashed_results;
-  rep_aux->hash_hostdetails = NULL;
+  rep_aux->hash_hostdetails = hashed_host_details;
 
   g_slist_foreach(results,
                   (GFunc) add_container_image_scan_result,
                   &rep_aux);
 
-  if (has_results)
+  if (results_array->len > 0)
     {
       sql ("UPDATE reports SET modification_time = m_now() WHERE id = %llu;",
            report);
@@ -244,10 +285,11 @@ parse_container_image_scan_report (task_t task,
     }
 
   sql_commit ();
-  if (results_array && has_results)
+  if (results_array && results_array->len > 0)
     g_array_free (results_array, TRUE);
 
   g_hash_table_destroy (hashed_results);
+  g_hash_table_destroy (hashed_host_details);
   g_free (rep_aux);
 }
 
@@ -467,7 +509,8 @@ launch_container_image_task (task_t task,
     {
       g_string_append_printf (target_exclude_images,
                               "%s%s",
-                              exclude_images_str ? "," : "",
+                              exclude_images_str
+                                && strlen (exclude_images_str) > 0 ? "," : "",
                               finished_images_str);
     }
 
