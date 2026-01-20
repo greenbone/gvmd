@@ -12,7 +12,7 @@
 
 #include "gmp_delete.h"
 #include "gmp_base.h"
-#include "manage_sql.h"
+#include "manage.h"
 
 #include <stdlib.h>
 #include <string.h>
