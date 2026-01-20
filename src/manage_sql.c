@@ -1339,7 +1339,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                              "             FROM tasks WHERE id = task)"
                              "    END)"
                              " FROM reports"
-                             " WHERE uuid = '$1';",
+                             " WHERE uuid = $1;",
                              SQL_STR_PARAM (uuid), NULL);
     }
   else if (strcasecmp (type, "result") == 0)
@@ -1356,7 +1356,7 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                              "             FROM tasks WHERE id = task)"
                              "    END)"
                              " FROM results"
-                             " WHERE uuid = '$1';",
+                             " WHERE uuid = $1;",
                              SQL_STR_PARAM (uuid), NULL);
     }
   else if (location == LOCATION_TABLE)
