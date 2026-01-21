@@ -38,6 +38,8 @@
       {"operating_system", NULL, KEYWORD_TYPE_STRING},                      \
       {"architecture", NULL, KEYWORD_TYPE_STRING},                          \
       {"update_to_latest", NULL, KEYWORD_TYPE_INTEGER},                     \
+      {"agent_update_available", NULL, KEYWORD_TYPE_INTEGER},               \
+      {"updater_update_available", NULL, KEYWORD_TYPE_INTEGER},             \
     {                                                                       \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                      \
     }                                                                       \
@@ -52,6 +54,7 @@
       "min_interval", "last_update", "last_updater_heartbeat", "comment",      \
       "creation_time", "modification_time", "owner", "id", "updater_version",  \
       "agent_version", "operating_system", "architecture", "update_to_latest", \
+      "agent_update_available", "updater_update_available",                    \
       NULL                                                                     \
   }
 

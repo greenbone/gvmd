@@ -69,6 +69,8 @@ struct agent_data
   gchar *operating_system;
   gchar *architecture;
   int update_to_latest;
+  int agent_update_available;
+  int updater_update_available;
 };
 typedef struct agent_data *agent_data_t;
 
@@ -179,6 +181,12 @@ agent_iterator_architecture (iterator_t *iterator);
 
 int
 agent_iterator_update_to_latest (iterator_t *iterator);
+
+int
+agent_iterator_agent_update_available (iterator_t *iterator);
+
+int
+agent_iterator_updater_update_available (iterator_t *iterator);
 
 int
 agent_count (const get_data_t *get);

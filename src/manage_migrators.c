@@ -3535,6 +3535,46 @@ migrate_264_to_265 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 265 to version 266.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_265_to_266 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 265. */
+
+  if (manage_db_version () != 265)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add agent_update_available and updater_update_available fields to agents
+
+  sql (
+    "ALTER TABLE agents"
+    " ADD COLUMN agent_update_available INTEGER NOT NULL DEFAULT 0;"
+    );
+  sql (
+    "ALTER TABLE agents"
+    " ADD COLUMN updater_update_available INTEGER NOT NULL DEFAULT 0;"
+    );
+
+  /* Set the database version to 266. */
+
+  set_db_version (266);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3606,6 +3646,7 @@ static migrator_t database_migrators[] = {
   {263, migrate_262_to_263},
   {264, migrate_263_to_264},
   {265, migrate_264_to_265},
+  {266, migrate_265_to_266},
   /* End marker. */
   {-1, NULL}};
 

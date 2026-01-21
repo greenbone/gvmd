@@ -9306,6 +9306,16 @@ END:VCALENDAR
             <summary>Update-to-latest flag (1/0)</summary>
           </column>
           <column>
+            <name>agent_update_available</name>
+            <type>integer</type>
+            <summary>Agent update available flag (1/0)</summary>
+          </column>
+          <column>
+            <name>updater_update_available</name>
+            <type>integer</type>
+            <summary>Agent updater update available flag (1/0)</summary>
+          </column>
+          <column>
             <name>comment</name>
             <type>text</type>
             <summary>Agent comment field</summary>
@@ -9386,6 +9396,8 @@ END:VCALENDAR
           <e>operating_system</e>
           <e>architecture</e>
           <e>update_to_latest</e>
+          <e>agent_update_available</e>
+          <e>updater_update_available</e>
           <e>config</e>
         </pattern>
         <ele>
@@ -9521,6 +9533,16 @@ END:VCALENDAR
         <ele>
           <name>update_to_latest</name>
           <summary>Flag to update to latest version (1/0)</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>agent_update_available</name>
+          <summary>Flag of agent update available (1/0)</summary>
+          <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>updater_update_available</name>
+          <summary>Flag of agent updater update available (1/0)</summary>
           <pattern><type>integer</type></pattern>
         </ele>
         <ele>
@@ -9736,6 +9758,8 @@ END:VCALENDAR
             <operating_system>Linux</operating_system>
             <architecture>amd64</architecture>
             <update_to_latest>0</update_to_latest>
+            <agent_update_available>1</agent_update_available>
+            <updater_update_available>0</updater_update_available>
             <config>
               <agent_control>
                 <retry>

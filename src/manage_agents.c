@@ -185,6 +185,8 @@ convert_agent_control_list_to_agent_data_list (
       dest->architecture = g_strdup (src->architecture);
       dest->update_to_latest = src->update_to_latest;
       dest->last_updater_heartbeat = src->last_updater_heartbeat;
+      dest->agent_update_available = src->agent_update_available;
+      dest->updater_update_available = src->updater_update_available;
 
       dest->scanner = scanner;
 
