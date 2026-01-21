@@ -3526,6 +3526,10 @@ migrate_264_to_265 ()
 
   sql ("ALTER TABLE oci_image_targets ADD COLUMN exclude_images text;");
 
+  // Remove hosts_ordering field from tasks
+
+  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
+
   /* Set the database version to 265. */
 
   set_db_version (265);

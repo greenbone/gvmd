@@ -552,9 +552,6 @@ task_iterator_last_report (iterator_t *);
 report_t
 task_iterator_current_report (iterator_t *);
 
-const char *
-task_iterator_hosts_ordering (iterator_t *);
-
 scanner_t
 task_iterator_scanner (iterator_t *);
 
@@ -596,9 +593,6 @@ task_name (task_t);
 
 char*
 task_comment (task_t);
-
-char*
-task_hosts_ordering (task_t);
 
 scanner_t
 task_scanner (task_t);
@@ -667,9 +661,6 @@ void
 clear_task_asset_preferences (task_t);
 
 #endif /* ENABLE_CONTAINER_SCANNING */
-
-void
-set_task_hosts_ordering (task_t, const char *);
 
 void
 set_task_scanner (task_t, scanner_t);
@@ -839,9 +830,8 @@ manage_task_remove_file (const gchar *, const char *);
 int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
-             const gchar *, array_t *, const gchar *, const gchar *,
-             array_t *, const gchar *, const gchar *, const gchar *,
-             gchar **, gchar **);
+             const gchar *, array_t *, const gchar *, const gchar *, array_t *,
+             const gchar *, const gchar *, gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);
