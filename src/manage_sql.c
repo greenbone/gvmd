@@ -14295,6 +14295,72 @@ set_scan_host_start_time_ctime (report_t report, const char* host,
 }
 
 /**
+ * @brief Set the end time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  End time. In ISO format.
+ */
+void
+set_scan_host_end_time_isotime (report_t report, const char* host,
+                                const char* timestamp)
+{
+  gchar *quoted_host;
+  int end_time;
+
+  if (host == NULL || timestamp == NULL)
+    return;
+
+  end_time = parse_iso_time (timestamp);
+  if (end_time <= 0)
+    return;
+
+  quoted_host = sql_quote (host);
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, quoted_host))
+    sql ("UPDATE report_hosts SET end_time = %i"
+         " WHERE report = %llu AND host = '%s';",
+         end_time, report, quoted_host);
+  else
+    manage_report_host_add (report, host, 0, end_time);
+  g_free (quoted_host);
+}
+
+/**
+ * @brief Set the start time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  timestamp  Start time. In ISO format.
+ */
+void
+set_scan_host_start_time_isotime (report_t report, const char* host,
+                                  const char* timestamp)
+{
+  gchar *quoted_host;
+  int start_time;
+
+  if (host == NULL || timestamp == NULL)
+    return;
+
+  start_time = parse_iso_time (timestamp);
+  if (start_time <= 0)
+    return;
+
+  quoted_host = sql_quote (host);
+  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = %llu AND host = '%s';",
+               report, quoted_host))
+    sql ("UPDATE report_hosts SET start_time = %i"
+         " WHERE report = %llu AND host = '%s';",
+         start_time, report, quoted_host);
+  else
+    manage_report_host_add (report, host, start_time, 0);
+  g_free (quoted_host);
+}
+
+/**
  * @brief Get the timestamp of a report.
  *
  * @todo Lacks permission check.  Caller contexts all have permission
@@ -16180,10 +16246,11 @@ report_finished_container_images_str (report_t report)
 {
   char *ret;
 
-  ret = sql_string ("SELECT string_agg ('oci://' || host, ',' ORDER BY host)"
-                    " FROM report_hosts"
-                    " WHERE report = %llu"
-                    "   AND end_time != 0;",
+  ret = sql_string ("SELECT string_agg (DISTINCT r.hostname, ',' ORDER BY r.hostname)"
+                    " FROM results r"
+                    " JOIN report_hosts rh"
+                    " ON r.report = rh.report AND r.host = rh.host"
+                    " WHERE rh.report = %llu AND rh.end_time != 0;",
                     report);
 
   return ret;
@@ -41592,14 +41659,15 @@ check_http_scanner_result_exists (report_t report,
                    "  WHERE report = %llu and hash_value = '%s');",
                    report, *entity_hash_value))
         {
-          const char *desc, *type, *severity = NULL, *host;
+          const char *desc, *type, *severity = NULL, *host = NULL;
           const char *hostname, *port = NULL;
           gchar *quoted_desc, *quoted_type, *quoted_host;
           gchar *quoted_hostname, *quoted_port;
           double severity_double = 0.0;
           int qod_int = get_http_scanner_nvti_qod (res->oid);
 
-          host = res->ip_address;
+          // ip_address for container scanning is an image digest
+          host = extract_sha256_digest_if_found (res->ip_address);
           hostname = res->hostname;
           type = convert_http_scanner_type_to_osp_type(res->type);
           desc = res->message;
