@@ -2871,7 +2871,9 @@ create_tables ()
     "  agent_version TEXT,"
     "  operating_system TEXT,"
     "  architecture TEXT,"
-    "  update_to_latest INTEGER);");
+    "  update_to_latest INTEGER,"
+    "  agent_update_available INTEGER NOT NULL DEFAULT 0,"
+    "  updater_update_available INTEGER NOT NULL DEFAULT 0);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
     " (id SERIAL PRIMARY KEY,"
