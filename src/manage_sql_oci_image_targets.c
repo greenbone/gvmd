@@ -58,18 +58,27 @@ create_oci_image_target (const char* name,
       return CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY;
     }
 
-  if (g_str_equal (image_references, "")
-      || !validate_oci_image_references (image_references, error_message))
+  gchar *clean_references = clean_images (image_references);
+  if (!clean_references
+      || !validate_oci_image_references (clean_references, error_message))
     {
       sql_rollback ();
+      g_free (clean_references);
       return CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
     }
 
-  if (exclude_images && !validate_oci_image_references (exclude_images,
-                                                        error_message))
+  gchar *clean_excludes = NULL;
+  if (exclude_images && strlen (exclude_images) > 0)
     {
-      sql_rollback ();
-      return CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+      clean_excludes = clean_images (exclude_images);
+      if (!clean_excludes || !validate_oci_image_references (clean_excludes,
+                                                             error_message))
+        {
+          sql_rollback ();
+          g_free (clean_references);
+          g_free (clean_excludes);
+          return CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+        }
     }
 
   if (credential_id)
@@ -115,8 +124,8 @@ create_oci_image_target (const char* name,
           " $3, $4, $5, m_now (), m_now ());",
           SQL_STR_PARAM (name),
           SQL_STR_PARAM (current_credentials.uuid),
-          SQL_STR_PARAM (image_references),
-          exclude_images ? SQL_STR_PARAM (exclude_images) : SQL_NULL_PARAM,
+          SQL_STR_PARAM (clean_references),
+          clean_excludes ? SQL_STR_PARAM (clean_excludes) : SQL_NULL_PARAM,
           comment ? SQL_STR_PARAM (comment) : SQL_NULL_PARAM,
           NULL);
 
@@ -133,6 +142,9 @@ create_oci_image_target (const char* name,
     *oci_image_target = new_oci_image_target;
 
   sql_commit ();
+
+  g_free (clean_references);
+  g_free (clean_excludes);
 
   return CREATE_OCI_IMAGE_TARGET_OK;
 }
@@ -302,10 +314,12 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
 
   if (image_references)
     {
-      if (g_str_equal (image_references, "")
-          || !validate_oci_image_references (image_references, error_message))
+      gchar *clean_references = clean_images (image_references);
+      if (!clean_references
+          || !validate_oci_image_references (clean_references, error_message))
         {
           sql_rollback ();
+          g_free (clean_references);
           return MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
         }
 
@@ -313,9 +327,10 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
               " image_references = $1,"
               " modification_time = m_now ()"
               " WHERE id = $2;",
-              SQL_STR_PARAM (image_references),
+              SQL_STR_PARAM (clean_references),
               SQL_RESOURCE_PARAM (oci_image_target),
               NULL);
+      g_free (clean_references);
     }
 
   if (exclude_images)
@@ -331,9 +346,11 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
         }
       else
         {
-          if (!validate_oci_image_references (exclude_images, error_message))
+          gchar *clean_excludes = clean_images (exclude_images);
+          if (!clean_excludes || !validate_oci_image_references (clean_excludes, error_message))
             {
               sql_rollback ();
+              g_free (clean_excludes);
               return MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
             }
 
@@ -341,9 +358,10 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
                   " exclude_images = $1,"
                   " modification_time = m_now ()"
                   " WHERE id = $2;",
-                  SQL_STR_PARAM (exclude_images),
+                  SQL_STR_PARAM (clean_excludes),
                   SQL_RESOURCE_PARAM (oci_image_target),
                   NULL);
+          g_free (clean_excludes);
         }
     }
 
