@@ -133,19 +133,7 @@ add_container_image_scan_result (http_scanner_result_t res,
   type = res->type;
   test_id = res->oid;
 
-  host = NULL;
-  if (res->ip_address)
-    {
-      gchar *ip_suffix = g_strstr_len (res->ip_address, -1, "@sha256:");
-      if (ip_suffix)
-        {
-          host = ip_suffix + 1;
-        }
-      else
-        {
-          host = res->ip_address;
-        }
-    }
+  host = extract_sha256_digest_if_found (res->ip_address);
   hostname = res->hostname;
   port = res->port;
   desc = res->message;
@@ -174,11 +162,11 @@ add_container_image_scan_result (http_scanner_result_t res,
                                      hash_value);
         }
     }
-  else if (host && desc && (strcmp (type, "host_start") == 0))
+  else if (strcmp (type, "host_start") == 0)
     {
       set_scan_host_start_time_isotime (rep_aux->report, host, desc);
     }
-  else if (host && desc && (strcmp (type, "host_end") == 0))
+  else if (strcmp (type, "host_end") == 0)
     {
       set_scan_host_end_time_isotime (rep_aux->report, host, desc);
     }

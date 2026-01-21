@@ -14306,15 +14306,24 @@ set_scan_host_end_time_isotime (report_t report, const char* host,
                                 const char* timestamp)
 {
   gchar *quoted_host;
+  int end_time;
+
+  if (host == NULL || timestamp == NULL)
+    return;
+
+  end_time = parse_iso_time (timestamp);
+  if (end_time <= 0)
+    return;
+
   quoted_host = sql_quote (host);
   if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET end_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
+         end_time, report, quoted_host);
   else
-    manage_report_host_add (report, host, 0, parse_iso_time (timestamp));
+    manage_report_host_add (report, host, 0, end_time);
   g_free (quoted_host);
 }
 
@@ -14330,15 +14339,24 @@ set_scan_host_start_time_isotime (report_t report, const char* host,
                                   const char* timestamp)
 {
   gchar *quoted_host;
+  int start_time;
+
+  if (host == NULL || timestamp == NULL)
+    return;
+
+  start_time = parse_iso_time (timestamp);
+  if (start_time <= 0)
+    return;
+
   quoted_host = sql_quote (host);
   if (sql_int ("SELECT COUNT(*) FROM report_hosts"
                " WHERE report = %llu AND host = '%s';",
                report, quoted_host))
     sql ("UPDATE report_hosts SET start_time = %i"
          " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
+         start_time, report, quoted_host);
   else
-    manage_report_host_add (report, host, parse_iso_time (timestamp), 0);
+    manage_report_host_add (report, host, start_time, 0);
   g_free (quoted_host);
 }
 
@@ -41649,19 +41667,7 @@ check_http_scanner_result_exists (report_t report,
           int qod_int = get_http_scanner_nvti_qod (res->oid);
 
           // ip_address for container scanning is an image digest
-          if (res->ip_address)
-            {
-              gchar *ip_suffix = g_strstr_len (res->ip_address, -1,
-                                               "@sha256:");
-              if (ip_suffix)
-                {
-                  host = ip_suffix + 1;
-                }
-              else
-                {
-                  host = res->ip_address;
-                }
-            }
+          host = extract_sha256_digest_if_found (res->ip_address);
           hostname = res->hostname;
           type = convert_http_scanner_type_to_osp_type(res->type);
           desc = res->message;
