@@ -108,13 +108,17 @@ update_existing_agent (agent_data_t agent)
        " agent_version = %s,"
        " operating_system = %s,"
        " architecture = %s,"
-       " update_to_latest = %d"
+       " update_to_latest = %d,"
+       " agent_update_available = %d,"
+       " updater_update_available = %d"
        " WHERE agent_id = %s;",
        insert_hostname, agent->authorized, insert_connection_status,
        agent->last_update_agent_control, agent->last_updater_heartbeat,
        insert_config, agent->owner, agent->modification_time, agent->scanner,
        insert_updater_version, insert_agent_version, insert_operating_system,
-       insert_architecture, agent->update_to_latest ? 1 : 0, insert_agent_id);
+       insert_architecture, agent->update_to_latest ? 1 : 0,
+       agent->agent_update_available, agent->updater_update_available,
+       insert_agent_id);
 
   g_free (insert_hostname);
   g_free (insert_connection_status);
@@ -161,7 +165,7 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   db_copy_buffer_append_printf (
     buffer,
     "%s\t%s\t%s\t%llu\t%s\t%d\t%s\t%ld\t%ld\t%s\t%u\t%s\t%ld\t%ld\t%s\t%s\t%"
-    "s\t%s\t%d\n",
+    "s\t%s\t%d\t%d\t%d\n",
     agent->uuid, agent->name, agent->agent_id, agent->scanner, escaped_hostname,
     agent->authorized, escaped_connection_status,
     agent->last_update_agent_control, agent->last_updater_heartbeat,
@@ -169,7 +173,8 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
     time (NULL), // creation_time
     agent->modification_time, escaped_updater_version, escaped_agent_version,
     escaped_operating_system, escaped_architecture,
-    agent->update_to_latest ? 1 : 0);
+    agent->update_to_latest, agent->agent_update_available,
+    agent->updater_update_available);
 
   g_free (escaped_hostname);
   g_free (escaped_connection_status);
@@ -305,7 +310,9 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
                        " agent_version,"
                        " operating_system,"
                        " architecture,"
-                       " update_to_latest"
+                       " update_to_latest,"
+                       " agent_update_available,"
+                       " updater_update_available"
                        ") FROM STDIN;");
 
   db_copy_buffer_init (
@@ -608,6 +615,24 @@ int
 agent_iterator_update_to_latest (iterator_t *iterator)
 {
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+}
+
+/**
+ * @brief Retrieve update status of current agent.
+ */
+int
+agent_iterator_agent_update_available (iterator_t *iterator)
+{
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+}
+
+/**
+ * @brief Retrieve update status of current agent updater.
+ */
+int
+agent_iterator_updater_update_available (iterator_t *iterator)
+{
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
 }
 
 /**
