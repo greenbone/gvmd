@@ -3526,10 +3526,6 @@ migrate_264_to_265 ()
 
   sql ("ALTER TABLE oci_image_targets ADD COLUMN exclude_images text;");
 
-  // Remove hosts_ordering field from tasks
-
-  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
-
   /* Set the database version to 265. */
 
   set_db_version (265);
@@ -3573,6 +3569,39 @@ migrate_265_to_266 ()
   /* Set the database version to 266. */
 
   set_db_version (266);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 266 to version 267.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_266_to_267 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 266. */
+
+  if (manage_db_version () != 266)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Remove hosts_ordering field from tasks
+
+  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
+
+  /* Set the database version to 267. */
+
+  set_db_version (267);
 
   sql_commit ();
 
@@ -3651,6 +3680,7 @@ static migrator_t database_migrators[] = {
   {264, migrate_263_to_264},
   {265, migrate_264_to_265},
   {266, migrate_265_to_266},
+  {267, migrate_266_to_267},
   /* End marker. */
   {-1, NULL}};
 
