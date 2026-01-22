@@ -5472,6 +5472,16 @@ init_manage_internal (GSList *log_config,
 
 /**
  * @brief Initialize the manage library.
+ */
+void
+init_manage_funcs () {
+  init_manage_filter_utils_funcs (filter_term_sql);
+  init_manage_settings_funcs (setting_value_sql,
+                              setting_value_int_sql);
+}
+
+/**
+ * @brief Initialize the manage library.
  *
  * Check DB version, do startup database checks, load the NVT cache.
  *
