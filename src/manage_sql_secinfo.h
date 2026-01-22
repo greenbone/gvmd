@@ -11,6 +11,7 @@
 #ifndef _GVMD_MANAGE_SQL_SECINFO_H
 #define _GVMD_MANAGE_SQL_SECINFO_H
 
+#include "manage_secinfo.h"
 #include "sql.h"
 
 #include <glib.h>
@@ -164,21 +165,6 @@ typedef enum {
  }
 
 /**
- * @brief Default for affected_products_query_size.
- */
-#define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 20000
-
-/**
- * @brief Default for secinfo_copy.
- */
-#define SECINFO_FAST_INIT_DEFAULT 1
-
-/**
- * @brief Default for secinfo_commit_size.
- */
-#define SECINFO_COMMIT_SIZE_DEFAULT 0
-
-/**
  * @brief Default for secinfo_update_strategy.
  */
 #define SECINFO_UPDATE_STRATEGY_DEFAULT SECINFO_UPDATE_STRATEGY_KEEP_SCHEMA
@@ -188,9 +174,6 @@ secinfo_feed_version_status (const char *);
 
 pid_t
 manage_sync_scap (sigset_t *);
-
-int
-manage_rebuild_scap (GSList *, const db_conn_info_t *);
 
 pid_t
 manage_sync_cert (sigset_t *);
@@ -203,18 +186,6 @@ check_cert_db_version ();
 
 int
 get_secinfo_commit_size ();
-
-void
-set_affected_products_query_size (int);
-
-void
-set_secinfo_commit_size (int);
-
-void
-set_secinfo_update_strategy (int);
-
-void
-set_secinfo_fast_init (int);
 
 void
 update_scap_extra ();
