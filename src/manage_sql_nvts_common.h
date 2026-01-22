@@ -8,8 +8,8 @@
  * @brief Manager Manage library: Common SQL backend headers.
  */
 
-#ifndef MANAGE_SQL_NVTS_COMMON_H
-#define MANAGE_SQL_NVTS_COMMON_H
+#ifndef _GVMD_MANAGE_SQL_NVTS_COMMON_H
+#define _GVMD_MANAGE_SQL_NVTS_COMMON_H
 
 #include "manage_nvts_common.h"
 #include <glib.h>
@@ -62,4 +62,4 @@ update_preferences_from_nvti (nvti_t *nvti, GList **preferences);
 void
 update_nvt_end (const time_t old_nvts_last_modified);
 
-#endif //MANAGE_SQL_NVTS_COMMON_H
+#endif // not _GVMD_MANAGE_SQL_NVTS_COMMON_H

@@ -10,8 +10,8 @@
  * User settings headers for the GVM management layer.
  */
 
-#ifndef GVMD_MANAGE_SETTINGS_H
-#define GVMD_MANAGE_SETTINGS_H
+#ifndef _GVMD_MANAGE_SETTINGS_H
+#define _GVMD_MANAGE_SETTINGS_H
 
 /**
  * @brief UUID of setting.
@@ -150,4 +150,4 @@ init_manage_settings_funcs (setting_value_func,
                             setting_value_int_func);
 
 
-#endif /* GVMD_MANAGE_SETTINGS_H */
+#endif /* not _GVMD_MANAGE_SETTINGS_H */

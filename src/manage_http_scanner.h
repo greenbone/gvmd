@@ -12,8 +12,8 @@
  */
 
 #if ENABLE_HTTP_SCANNER
-#ifndef MANAGE_HTTP_SCANNER_H
-#define MANAGE_HTTP_SCANNER_H
+#ifndef _GVMD_MANAGE_HTTP_SCANNER_H
+#define _GVMD_MANAGE_HTTP_SCANNER_H
 
 #include "manage_resources.h"
 
@@ -32,5 +32,5 @@ handle_http_scanner_scan (http_scanner_connector_t,
                           void (*)
                             (task_t, report_t, GSList *, time_t, time_t));
 
-#endif //MANAGE_HTTP_SCANNER_H
-#endif
+#endif // MANAGE_HTTP_SCANNER_H
+#endif // not _GVMD_MANAGE_HTTP_SCANNER_H

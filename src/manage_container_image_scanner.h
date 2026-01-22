@@ -12,8 +12,8 @@
  */
 
 #if ENABLE_CONTAINER_SCANNING
-#ifndef MANAGE_CONTAINER_IMAGE_SCANNER_H
-#define MANAGE_CONTAINER_IMAGE_SCANNER_H
+#ifndef _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H
+#define _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H
 
 #include "manage_resources.h"
 #include <gvm/http_scanner/http_scanner.h>
@@ -28,5 +28,5 @@ run_container_image_task (task_t, int, char **);
 int
 stop_container_image_task (task_t);
 
-#endif //MANAGE_CONTAINER_IMAGE_SCANNER_H
-#endif //ENABLE_CONTAINER_SCANNING
+#endif // ENABLE_CONTAINER_SCANNING
+#endif // not _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H

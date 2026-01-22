@@ -10,8 +10,8 @@
  * SQL COPY headers for the GVM management layer.
  */
 
-#ifndef GVMD_MANAGE_SQL_COPY_H
-#define GVMD_MANAGE_SQL_COPY_H
+#ifndef _GVMD_MANAGE_SQL_COPY_H
+#define _GVMD_MANAGE_SQL_COPY_H
 
 #include <glib.h>
 
@@ -37,4 +37,4 @@ db_copy_buffer_commit (db_copy_buffer_t *, gboolean);
 int
 db_copy_buffer_append_printf (db_copy_buffer_t *, const char *, ...);
 
-#endif /* GVMD_MANAGE_SQL_COPY_H */
+#endif /* not _GVMD_MANAGE_SQL_COPY_H */
