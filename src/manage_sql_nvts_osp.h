@@ -5,22 +5,14 @@
 
 /**
  * @file
- * @brief Manager Manage library: OSP SQL backend headers.
+ * @brief Manager Manage library: OSP NVT SQL backend headers.
  */
 
 #ifndef MANAGE_NVTS_OSP_H
 #define MANAGE_NVTS_OSP_H
 
+#include "manage_nvts_osp.h"
 #include "manage_sql_nvts_common.h"
-
-const char *
-get_osp_vt_update_socket ();
-
-void
-set_osp_vt_update_socket (const char *new_socket);
-
-int
-check_osp_vt_update_socket ();
 
 int
 update_or_rebuild_nvts_osp (int update);
@@ -31,8 +23,6 @@ osp_scanner_feed_version (const gchar *update_socket);
 int
 update_nvt_cache_osp (const gchar *update_socket, gchar *db_feed_version,
                       gchar *scanner_feed_version, int rebuild);
-int
-manage_update_nvt_cache_osp (const gchar *update_socket);
 
 int
 nvts_feed_version_status_internal_osp (const gchar *update_socket,
