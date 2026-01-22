@@ -51,5 +51,5 @@ restore_agent_group (const char *agent_group_uuid);
 void
 empty_trashcan_agent_groups (void);
 
-#endif // _GVMD_MANAGE_SQL_AGENT_GROUPS_H
+#endif // not _GVMD_MANAGE_SQL_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS

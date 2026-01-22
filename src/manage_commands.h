@@ -38,4 +38,4 @@ gmp_command_type (const char*);
 int
 gmp_command_takes_resource (const char*);
 
-#endif /* _GVMD_MANAGE_COMMANDS_H */
+#endif /* not _GVMD_MANAGE_COMMANDS_H */

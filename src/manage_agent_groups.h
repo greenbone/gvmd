@@ -148,5 +148,5 @@ trash_agent_group_name (agent_group_t agent_group);
 char *
 trash_agent_group_comment (agent_group_t agent_group);
 
-#endif // _GVMD_MANAGE_AGENT_GROUPS_H
+#endif // not _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS

@@ -73,4 +73,4 @@ target_osp_snmp_credential_db (target_t);
 osp_credential_t *
 target_osp_krb5_credential_db (target_t);
 
-#endif /* _GVMD_MANAGE_OPENVAS_H */
+#endif /* not _GVMD_MANAGE_OPENVAS_H */

@@ -59,4 +59,4 @@ scan_queue_remove (report_t);
 int
 scan_queue_length ();
 
-#endif /* _GVMD_SCAN_QUEUE_H */
+#endif /* not _GVMD_SCAN_QUEUE_H */
