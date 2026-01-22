@@ -91,7 +91,7 @@
 #include "debug_utils.h"
 #include "ipc.h"
 #include "manage.h"
-#include "manage_sql_secinfo.h"
+#include "manage_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_nvts.h"
 #include "manage_runtime_flags.h"
