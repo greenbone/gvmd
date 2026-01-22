@@ -20,6 +20,7 @@
 #define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 
+#include "manage_sql_nvts_common.h"
 #if ENABLE_HTTP_SCANNER
 #include "manage_http_scanner.h"
 #endif

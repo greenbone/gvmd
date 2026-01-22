@@ -5,21 +5,18 @@
 
 /**
  * @file
- * @brief Manager Manage library: openvasd SQL backend headers.
+ * @brief Manager Manage library: openvasd NVT SQL backend headers.
  */
 
 #ifndef MANAGE_NVTS_OPENVASD_H
 #define MANAGE_NVTS_OPENVASD_H
 
+#include "manage_nvts_openvasd.h"
 #include "manage_sql_nvts_common.h"
 #include "manage_resources.h"
 
 int
 manage_update_nvt_cache_openvasd ();
-
-int
-nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
-                                       gchar **vts_version);
 
 int
 update_or_rebuild_nvts_openvasd (int update);
