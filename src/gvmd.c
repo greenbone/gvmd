@@ -1136,7 +1136,7 @@ update_nvt_cache_retry ()
           reinit_manage_process ();
           manage_session_init (current_credentials.uuid);
 
-          sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+          sc_type = get_scanner_type_by_uuid (scanner_uuid_default ());
           switch (sc_type)
           {
             case SCANNER_TYPE_OPENVAS:
