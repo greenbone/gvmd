@@ -90,7 +90,7 @@
 
 #include "debug_utils.h"
 #include "ipc.h"
-#include "manage_sql.h"
+#include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
@@ -1136,7 +1136,7 @@ update_nvt_cache_retry ()
           reinit_manage_process ();
           manage_session_init (current_credentials.uuid);
 
-          sc_type = get_scanner_type_by_uuid (SCANNER_UUID_DEFAULT);
+          sc_type = get_scanner_type_by_uuid (scanner_uuid_default ());
           switch (sc_type)
           {
             case SCANNER_TYPE_OPENVAS:
@@ -2763,9 +2763,7 @@ gvmd (int argc, char** argv, char *env[])
    * functions for testing or gvmd sub-services.
    */
 
-  init_manage_filter_utils_funcs (filter_term_sql);
-  init_manage_settings_funcs (setting_value_sql,
-                              setting_value_int_sql);
+  init_manage_funcs ();
 
   /* Initialize runtime flags */
   runtime_flags_init (NULL);

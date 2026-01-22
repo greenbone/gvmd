@@ -8,9 +8,12 @@
  * @brief Manager Manage library: SQL backend headers.
  */
 
-#include <glib.h>
 #ifndef _GVMD_MANAGE_SQL_SECINFO_H
 #define _GVMD_MANAGE_SQL_SECINFO_H
+
+#include "sql.h"
+
+#include <glib.h>
 
 /**
  * @brief Strategies to handle SecInfo updates
