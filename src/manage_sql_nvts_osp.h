@@ -8,8 +8,8 @@
  * @brief Manager Manage library: OSP NVT SQL backend headers.
  */
 
-#ifndef MANAGE_NVTS_OSP_H
-#define MANAGE_NVTS_OSP_H
+#ifndef _GVMD_MANAGE_SQL_NVTS_OSP_H
+#define _GVMD_MANAGE_SQL_NVTS_OSP_H
 
 #include "manage_nvts_osp.h"
 #include "manage_sql_nvts_common.h"
@@ -32,4 +32,4 @@ nvts_feed_version_status_internal_osp (const gchar *update_socket,
 int
 update_scanner_preferences_osp (const gchar *update_socket);
 
-#endif //MANAGE_NVTS_OSP_H
+#endif // _GVMD_MANAGE_SQL_NVTS_OSP_H

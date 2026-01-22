@@ -8,8 +8,8 @@
  * @brief Headers for Runtime feature flag handler.
  */
 
-#ifndef GVM_MANAGE_RUNTIME_FLAGS_H
-#define GVM_MANAGE_RUNTIME_FLAGS_H
+#ifndef _GVMD_MANAGE_RUNTIME_FLAGS_H
+#define _GVMD_MANAGE_RUNTIME_FLAGS_H
 
 #include <glib.h>
 
@@ -46,4 +46,4 @@ feature_compiled_in (feature_id_t);
 void
 runtime_append_disabled_commands (GString *buf);
 
-#endif //GVM_MANAGE_RUNTIME_FLAGS_H
+#endif // not _GVMD_MANAGE_RUNTIME_FLAGS_H

@@ -10,8 +10,8 @@
  * Non-SQL generic command handling headers for the GVM management layer.
  */
 
-#ifndef GVMD_MANAGE_COMMANDS_H
-#define GVMD_MANAGE_COMMANDS_H
+#ifndef _GVMD_MANAGE_COMMANDS_H
+#define _GVMD_MANAGE_COMMANDS_H
 
 #include <glib.h>
 
@@ -38,5 +38,4 @@ gmp_command_type (const char*);
 int
 gmp_command_takes_resource (const char*);
 
-
-#endif /* GVMD_MANAGE_COMMANDS_H */
+#endif /* _GVMD_MANAGE_COMMANDS_H */
