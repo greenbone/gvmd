@@ -128,6 +128,9 @@ typedef struct
 typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
+void
+init_manage_funcs ();
+
 int
 init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
