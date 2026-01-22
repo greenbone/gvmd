@@ -8067,7 +8067,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
     *report_id_return = NULL;
 
   current_scanner_task = task;
-  set_task_run_status (task, TASK_STATUS_DONE);
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
 
   switch (fork ())
     {
