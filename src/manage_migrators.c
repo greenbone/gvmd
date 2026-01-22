@@ -3524,7 +3524,7 @@ migrate_264_to_265 ()
 
   // Add exclude_images field to oci_image_targets
 
-  sql ("ALTER TABLE oci_image_targets IF EXISTS"
+  sql ("ALTER TABLE IF EXISTS oci_image_targets"
        " ADD COLUMN IF NOT EXISTS exclude_images text;");
 
   /* Set the database version to 265. */
@@ -3559,11 +3559,11 @@ migrate_265_to_266 ()
   // Add agent_update_available and updater_update_available fields to agents
 
   sql (
-    "ALTER TABLE agents IF EXISTS"
+    "ALTER TABLE IF EXISTS agents"
     " ADD COLUMN IF NOT EXISTS agent_update_available INTEGER NOT NULL DEFAULT 0;"
     );
   sql (
-    "ALTER TABLE agents IF EXISTS"
+    "ALTER TABLE IF EXISTS agents"
     " ADD COLUMN IF NOT EXISTS updater_update_available INTEGER NOT NULL DEFAULT 0;"
     );
 
