@@ -142,6 +142,9 @@ void
 init_manage_process (const db_conn_info_t*);
 
 void
+reinit_manage_process ();
+
+void
 cleanup_manage_process (gboolean);
 
 void
@@ -149,6 +152,9 @@ manage_cleanup_process_error (int);
 
 void
 manage_reset_currents ();
+
+void
+manage_session_init (const char *);
 
 /* Commands. */
 

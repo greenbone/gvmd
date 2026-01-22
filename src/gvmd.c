@@ -90,7 +90,7 @@
 
 #include "debug_utils.h"
 #include "ipc.h"
-#include "manage_sql.h"
+#include "manage.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_secinfo.h"
 #include "manage_authentication.h"
