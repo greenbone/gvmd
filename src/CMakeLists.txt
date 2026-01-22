@@ -46,7 +46,7 @@ if(ENABLE_CONTAINER_SCANNING)
   pkg_check_modules(
     LIBGVM_CONTAINER_IMAGE_SCANNER
     REQUIRED
-    libgvm_container_image_scanner>=22.30
+    libgvm_container_image_scanner>=22.35
   )
 else(ENABLE_CONTAINER_SCANNING)
   message(STATUS "ENABLE_CONTAINER_SCANNING flag is not enabled")
