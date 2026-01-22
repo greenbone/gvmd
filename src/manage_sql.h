@@ -327,9 +327,6 @@ task_schedule_iterator_initial_offset (iterator_t *);
 int
 set_task_schedule_uuid (const gchar*, schedule_t, int);
 
-void
-reinit_manage_process ();
-
 int
 manage_update_nvti_cache ();
 
@@ -341,9 +338,6 @@ update_config_cache_init (const char *);
 
 alive_test_t
 target_alive_tests (target_t);
-
-void
-manage_session_init (const char *);
 
 void
 check_generate_scripts ();

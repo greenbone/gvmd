@@ -12,6 +12,7 @@
 #define MANAGE_NVTS_OPENVASD_H
 
 #include "manage_sql_nvts_common.h"
+#include "manage_resources.h"
 
 int
 manage_update_nvt_cache_openvasd ();
