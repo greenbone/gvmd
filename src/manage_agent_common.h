@@ -58,5 +58,5 @@ agent_uuid_list_free (agent_uuid_list_t uuid_list);
 agent_uuid_list_t
 agent_uuid_list_from_group (agent_group_t group);
 
-#endif // _GVMD_MANAGE_AGENT_COMMON_H
+#endif // not _GVMD_MANAGE_AGENT_COMMON_H
 #endif // ENABLE_AGENTS

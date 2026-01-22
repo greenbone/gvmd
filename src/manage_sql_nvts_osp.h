@@ -32,4 +32,4 @@ nvts_feed_version_status_internal_osp (const gchar *update_socket,
 int
 update_scanner_preferences_osp (const gchar *update_socket);
 
-#endif // _GVMD_MANAGE_SQL_NVTS_OSP_H
+#endif // not _GVMD_MANAGE_SQL_NVTS_OSP_H

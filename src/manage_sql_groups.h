@@ -36,4 +36,4 @@ gboolean
 find_group_with_permission (const char *, group_t *,
                             const char *);
 
-#endif //_GVMD_MANAGE_SQL_GROUPS_H
+#endif // not _GVMD_MANAGE_SQL_GROUPS_H

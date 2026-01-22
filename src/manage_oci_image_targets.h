@@ -143,6 +143,6 @@ oci_image_target_task_iterator_readable (iterator_t*);
 gchar*
 clean_images (const char *);
 
-#endif /* _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
+#endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
 
 #endif /* ENABLE_CONTAINER_SCANNING */
