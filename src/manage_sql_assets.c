@@ -1493,18 +1493,15 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
 
       g_hash_table_add (seen, g_strdup (digest));
 
-      gchar *insert_digest = sql_insert (digest);
-
-      sql ("INSERT INTO asset_snapshots"
-           " (uuid, task_id, report_id, asset_type,"
-           "  container_digest,"
-           "  creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), %llu, %llu, %d, %s, m_now (), m_now ());",
-           task, report, ASSET_TYPE_CONTAINER_IMAGE,
-           insert_digest);
-
-      g_free (insert_digest);
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  container_digest,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_CONTAINER_IMAGE),
+              SQL_STR_PARAM (digest), NULL);
     }
 
   cleanup_iterator (&hosts);
@@ -1521,38 +1518,18 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
 static gchar *
 get_asset_key_by_container_digest (const gchar *digest)
 {
-  iterator_t it;
-  gchar *insert_digest;
 
   if (!digest || !*digest)
     return NULL;
 
-  insert_digest = sql_insert (digest);
+  gchar *key = sql_string_ps (
+    "SELECT asset_key FROM asset_snapshots"
+    " WHERE container_digest = $1"
+    "   AND asset_key IS NOT NULL"
+    " ORDER BY modification_time DESC LIMIT 1;",
+    SQL_STR_PARAM (digest), NULL);
 
-  init_iterator (&it,
-                 "SELECT asset_key"
-                 "  FROM asset_snapshots"
-                 " WHERE asset_type = %d"
-                 "   AND container_digest = %s"
-                 "   AND asset_key IS NOT NULL"
-                 " ORDER BY creation_time DESC"
-                 " LIMIT 1;",
-                 ASSET_TYPE_CONTAINER_IMAGE, insert_digest);
-
-  g_free (insert_digest);
-
-  if (next (&it))
-    {
-      const char *asset_key_str = iterator_string (&it, 0);
-      gchar *ret = (asset_key_str && *asset_key_str)
-                     ? g_strdup (asset_key_str)
-                     : NULL;
-      cleanup_iterator (&it);
-      return ret;
-    }
-
-  cleanup_iterator (&it);
-  return NULL;
+  return key;
 }
 
 /**
@@ -1581,22 +1558,23 @@ asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
 
       if (asset_key && *asset_key)
         {
-          gchar *insert_key = sql_insert (asset_key);
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = %s,"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               insert_key, row_id);
-          g_free (insert_key);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = $1,"
+                  "       modification_time = m_now()"
+                  " WHERE id = $2;",
+                  SQL_STR_PARAM (asset_key),
+                  SQL_RESOURCE_PARAM (row_id),
+                  NULL);
         }
       else
         {
           /* no match found anywhere, create new stable key */
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = make_uuid(),"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               row_id);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = make_uuid(),"
+                  "       modification_time = m_now()"
+                  " WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (row_id),
+                  NULL);
         }
 
       g_free (asset_key);
