@@ -1142,16 +1142,12 @@ get_asset_key_by_mac (const gchar *mac)
   if (!mac || !*mac)
     return NULL;
 
-  gchar *q_mac = sql_quote (mac);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE mac_address = '%s'"
+    " WHERE mac_address = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_mac);
-
-  g_free (q_mac);
-  return key;
+    SQL_STR_PARAM (mac), NULL);
 }
 
 /**
@@ -1167,16 +1163,12 @@ get_asset_key_by_hostname (const gchar *hostname)
   if (!hostname || !*hostname)
     return NULL;
 
-  gchar *q_hn = sql_quote (hostname);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE hostname = '%s'"
+    " WHERE hostname = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_hn);
-
-  g_free (q_hn);
-  return key;
+    SQL_STR_PARAM (hostname), NULL);
 }
 
 /**
@@ -1192,16 +1184,12 @@ get_asset_key_by_ip (const gchar *ip)
   if (!ip || !*ip)
     return NULL;
 
-  gchar *q_ip = sql_quote (ip);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE ip_address = '%s'"
+    " WHERE ip_address = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_ip);
-
-  g_free (q_ip);
-  return key;
+    SQL_STR_PARAM (ip), NULL);
 }
 
 /**
@@ -1258,23 +1246,21 @@ asset_snapshots_set_asset_keys (report_t report, task_t task)
 
       if (asset_key && *asset_key)
         {
-          gchar *insert_key = sql_insert (asset_key);
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = %s,"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               insert_key,
-               row_id);
-          g_free (insert_key);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = $1,"
+                  "       modification_time = m_now()"
+                  " WHERE id = $2;",
+                  SQL_STR_PARAM (asset_key),
+                  SQL_RESOURCE_PARAM (row_id), NULL);
         }
       else
         {
           /* no match found anywhere, create new stable key */
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = make_uuid(),"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               row_id);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = make_uuid(),"
+                  "       modification_time = m_now()"
+                  " WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (row_id), NULL);
         }
 
       g_free (asset_key);
@@ -1340,23 +1326,16 @@ asset_snapshots_insert_target (report_t report, task_t task)
             }
         }
 
-      gchar *insert_ip = sql_insert (ip);
-
-      gchar *insert_hostname = hostname ? sql_insert (hostname) : g_strdup ("NULL");
-      gchar *insert_mac      = mac      ? sql_insert (mac)      : g_strdup ("NULL");
-
-      sql ("INSERT INTO asset_snapshots"
-           " (uuid, task_id, report_id, asset_type,"
-           "  ip_address, hostname, mac_address,"
-           "  creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), %llu, %llu, %d, %s, %s, %s, m_now (), m_now ());",
-           task, report, ASSET_TYPE_TARGET,
-           insert_ip, insert_hostname, insert_mac);
-
-      g_free (insert_ip);
-      g_free (insert_hostname);
-      g_free (insert_mac);
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  ip_address, hostname, mac_address,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, $5, $6, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_TARGET),
+              SQL_STR_PARAM (ip), SQL_STR_PARAM (hostname),
+              SQL_STR_PARAM (mac), NULL);
     }
 
   g_hash_table_destroy (seen);
@@ -1433,7 +1412,6 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
     {
       const gchar *agent_uuid = agent_uuids->agent_uuids[i];
       gchar *agent_id = NULL;
-      gchar *q_agent_id = NULL;
 
       if (agent_uuid == NULL || *agent_uuid == '\0')
         continue;
@@ -1445,18 +1423,17 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
           continue;
         }
 
-      q_agent_id   = sql_quote (agent_id);
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  asset_key, agent_id,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, $5, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_AGENT),
+              SQL_STR_PARAM (agent_uuid), SQL_STR_PARAM (agent_id),
+              NULL);
 
-      sql ("INSERT INTO asset_snapshots"
-           " (uuid, task_id, report_id, asset_type,"
-           "  asset_key, agent_id,"
-           "  creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
-           task, report, ASSET_TYPE_AGENT,
-           agent_uuid, q_agent_id);
-
-      g_free (q_agent_id);
       g_free (agent_id);
     }
 
