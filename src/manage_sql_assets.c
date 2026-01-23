@@ -1466,6 +1466,146 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 
 #if ENABLE_CONTAINER_SCANNING
 /**
+ * @brief Insert one asset snapshot per container digest from report hosts.
+ *
+ * @param[in] report  Report the snapshot belongs to.
+ * @param[in] task    Task that produced the report.
+ */
+static void
+asset_snapshots_insert_container_image (report_t report, task_t task)
+{
+  iterator_t hosts;
+
+  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  /* Iterate report hosts (host value contains digest for container-image scan) */
+  init_report_host_iterator (&hosts, report, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *digest;
+      digest = host_iterator_host (&hosts);
+
+      if (!digest || !*digest)
+        continue;
+
+      if (g_hash_table_contains (seen, digest))
+        continue;
+
+      g_hash_table_add (seen, g_strdup (digest));
+
+      gchar *insert_digest = sql_insert (digest);
+
+      sql ("INSERT INTO asset_snapshots"
+           " (uuid, task_id, report_id, asset_type,"
+           "  container_digest,"
+           "  creation_time, modification_time)"
+           " VALUES"
+           " (make_uuid (), %llu, %llu, %d, %s, m_now (), m_now ());",
+           task, report, ASSET_TYPE_CONTAINER_IMAGE,
+           insert_digest);
+
+      g_free (insert_digest);
+    }
+
+  cleanup_iterator (&hosts);
+  g_hash_table_destroy (seen);
+}
+
+/**
+ * @brief Lookup most recent asset_key for a given container digest.
+ *
+ * @param[in] digest  Container digest.
+ *
+ * @return Duplicated asset_key string or NULL if not found.
+ */
+static gchar *
+get_asset_key_by_container_digest (const gchar *digest)
+{
+  iterator_t it;
+  gchar *insert_digest;
+
+  if (!digest || !*digest)
+    return NULL;
+
+  insert_digest = sql_insert (digest);
+
+  init_iterator (&it,
+                 "SELECT asset_key"
+                 "  FROM asset_snapshots"
+                 " WHERE asset_type = %d"
+                 "   AND container_digest = %s"
+                 "   AND asset_key IS NOT NULL"
+                 " ORDER BY creation_time DESC"
+                 " LIMIT 1;",
+                 ASSET_TYPE_CONTAINER_IMAGE, insert_digest);
+
+  g_free (insert_digest);
+
+  if (next (&it))
+    {
+      const char *asset_key_str = iterator_string (&it, 0);
+      gchar *ret = (asset_key_str && *asset_key_str)
+                     ? g_strdup (asset_key_str)
+                     : NULL;
+      cleanup_iterator (&it);
+      return ret;
+    }
+
+  cleanup_iterator (&it);
+  return NULL;
+}
+
+/**
+ * @brief Set asset_key for container-image asset_snapshots rows.
+ *
+ * @param[in] report  Report the snapshot rows belong to.
+ * @param[in] task    Task the snapshot rows belong to.
+ */
+static void
+asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
+{
+  iterator_t it;
+
+  init_asset_snapshot_iterator (&it, task, report, TRUE);
+
+  while (next (&it))
+    {
+      asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
+
+      const char *digest = asset_snapshot_iterator_container_digest (&it);
+
+      gchar *asset_key = NULL;
+
+      if (digest && *digest)
+        asset_key = get_asset_key_by_container_digest (digest);
+
+      if (asset_key && *asset_key)
+        {
+          gchar *insert_key = sql_insert (asset_key);
+          sql ("UPDATE asset_snapshots"
+               "   SET asset_key = %s,"
+               "       modification_time = m_now()"
+               " WHERE id = %llu;",
+               insert_key, row_id);
+          g_free (insert_key);
+        }
+      else
+        {
+          /* no match found anywhere, create new stable key */
+          sql ("UPDATE asset_snapshots"
+               "   SET asset_key = make_uuid(),"
+               "       modification_time = m_now()"
+               " WHERE id = %llu;",
+               row_id);
+        }
+
+      g_free (asset_key);
+    }
+
+  cleanup_iterator (&it);
+}
+
+/**
  * @brief Create container scanning asset snapshots for a completed report.
  *
  * @param[in]  report  Report the snapshot belongs to.
@@ -1474,42 +1614,8 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 void
 asset_snapshots_container_image (report_t report, task_t task)
 {
-  oci_image_target_t image_target;
-  gchar *image_ref = NULL;
-  gchar *image_uuid = NULL;
-  gchar *q_image_ref = NULL;
-
-  image_target = task_oci_image_target (task);
-  if (image_target == 0)
-    return;
-  /**
-   * TODO: 18.12.2025 ozgen - container digest must be included in the scan
-   *                          results and should be used instead of
-   *                          image references for asset_key/stable identity
-   */
-  image_ref = oci_image_target_image_references (image_target);
-  image_uuid = oci_image_target_uuid (image_target);
-
-  if (image_uuid == NULL || *image_uuid == '\0')
-    goto cleanup;
-
-  if (image_ref && *image_ref)
-    q_image_ref = sql_quote (image_ref);
-
-  sql ("INSERT INTO asset_snapshots"
-       " (uuid, task_id, report_id, asset_type,"
-       "  asset_key, container_digest,"
-       "  creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
-       task, report, ASSET_TYPE_CONTAINER_IMAGE,
-       image_uuid,
-       q_image_ref ? q_image_ref : "NULL");
-
-  cleanup:
-    g_free (q_image_ref);
-  g_free (image_ref);
-  g_free (image_uuid);
+  asset_snapshots_insert_container_image (report, task);
+  asset_snapshots_set_asset_keys_container_image (report, task);
 }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
