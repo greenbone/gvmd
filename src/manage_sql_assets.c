@@ -1142,16 +1142,12 @@ get_asset_key_by_mac (const gchar *mac)
   if (!mac || !*mac)
     return NULL;
 
-  gchar *q_mac = sql_quote (mac);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE mac_address = '%s'"
+    " WHERE mac_address = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_mac);
-
-  g_free (q_mac);
-  return key;
+    SQL_STR_PARAM (mac), NULL);
 }
 
 /**
@@ -1167,16 +1163,12 @@ get_asset_key_by_hostname (const gchar *hostname)
   if (!hostname || !*hostname)
     return NULL;
 
-  gchar *q_hn = sql_quote (hostname);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE hostname = '%s'"
+    " WHERE hostname = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_hn);
-
-  g_free (q_hn);
-  return key;
+    SQL_STR_PARAM (hostname), NULL);
 }
 
 /**
@@ -1192,16 +1184,12 @@ get_asset_key_by_ip (const gchar *ip)
   if (!ip || !*ip)
     return NULL;
 
-  gchar *q_ip = sql_quote (ip);
-  gchar *key = sql_string (
+  return sql_string_ps (
     "SELECT asset_key FROM asset_snapshots"
-    " WHERE ip_address = '%s'"
+    " WHERE ip_address = $1"
     "   AND asset_key IS NOT NULL"
     " ORDER BY modification_time DESC LIMIT 1;",
-    q_ip);
-
-  g_free (q_ip);
-  return key;
+    SQL_STR_PARAM (ip), NULL);
 }
 
 /**
@@ -1258,23 +1246,21 @@ asset_snapshots_set_asset_keys (report_t report, task_t task)
 
       if (asset_key && *asset_key)
         {
-          gchar *insert_key = sql_insert (asset_key);
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = %s,"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               insert_key,
-               row_id);
-          g_free (insert_key);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = $1,"
+                  "       modification_time = m_now()"
+                  " WHERE id = $2;",
+                  SQL_STR_PARAM (asset_key),
+                  SQL_RESOURCE_PARAM (row_id), NULL);
         }
       else
         {
           /* no match found anywhere, create new stable key */
-          sql ("UPDATE asset_snapshots"
-               "   SET asset_key = make_uuid(),"
-               "       modification_time = m_now()"
-               " WHERE id = %llu;",
-               row_id);
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = make_uuid(),"
+                  "       modification_time = m_now()"
+                  " WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (row_id), NULL);
         }
 
       g_free (asset_key);
@@ -1340,23 +1326,16 @@ asset_snapshots_insert_target (report_t report, task_t task)
             }
         }
 
-      gchar *insert_ip = sql_insert (ip);
-
-      gchar *insert_hostname = hostname ? sql_insert (hostname) : g_strdup ("NULL");
-      gchar *insert_mac      = mac      ? sql_insert (mac)      : g_strdup ("NULL");
-
-      sql ("INSERT INTO asset_snapshots"
-           " (uuid, task_id, report_id, asset_type,"
-           "  ip_address, hostname, mac_address,"
-           "  creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), %llu, %llu, %d, %s, %s, %s, m_now (), m_now ());",
-           task, report, ASSET_TYPE_TARGET,
-           insert_ip, insert_hostname, insert_mac);
-
-      g_free (insert_ip);
-      g_free (insert_hostname);
-      g_free (insert_mac);
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  ip_address, hostname, mac_address,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, $5, $6, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_TARGET),
+              SQL_STR_PARAM (ip), SQL_STR_PARAM (hostname),
+              SQL_STR_PARAM (mac), NULL);
     }
 
   g_hash_table_destroy (seen);
@@ -1433,7 +1412,6 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
     {
       const gchar *agent_uuid = agent_uuids->agent_uuids[i];
       gchar *agent_id = NULL;
-      gchar *q_agent_id = NULL;
 
       if (agent_uuid == NULL || *agent_uuid == '\0')
         continue;
@@ -1445,18 +1423,17 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
           continue;
         }
 
-      q_agent_id   = sql_quote (agent_id);
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  asset_key, agent_id,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, $5, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_AGENT),
+              SQL_STR_PARAM (agent_uuid), SQL_STR_PARAM (agent_id),
+              NULL);
 
-      sql ("INSERT INTO asset_snapshots"
-           " (uuid, task_id, report_id, asset_type,"
-           "  asset_key, agent_id,"
-           "  creation_time, modification_time)"
-           " VALUES"
-           " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
-           task, report, ASSET_TYPE_AGENT,
-           agent_uuid, q_agent_id);
-
-      g_free (q_agent_id);
       g_free (agent_id);
     }
 
@@ -1466,6 +1443,124 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 
 #if ENABLE_CONTAINER_SCANNING
 /**
+ * @brief Insert one asset snapshot per container digest from report hosts.
+ *
+ * @param[in] report  Report the snapshot belongs to.
+ * @param[in] task    Task that produced the report.
+ */
+static void
+asset_snapshots_insert_container_image (report_t report, task_t task)
+{
+  iterator_t hosts;
+
+  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  /* Iterate report hosts (host value contains digest for container-image scan) */
+  init_report_host_iterator (&hosts, report, NULL, 0);
+  while (next (&hosts))
+    {
+      const char *digest;
+      digest = host_iterator_host (&hosts);
+
+      if (!digest || !*digest)
+        continue;
+
+      if (g_hash_table_contains (seen, digest))
+        continue;
+
+      g_hash_table_add (seen, g_strdup (digest));
+
+      sql_ps ("INSERT INTO asset_snapshots"
+              " (uuid, task_id, report_id, asset_type,"
+              "  container_digest,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now ());",
+              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              SQL_INT_PARAM (ASSET_TYPE_CONTAINER_IMAGE),
+              SQL_STR_PARAM (digest), NULL);
+    }
+
+  cleanup_iterator (&hosts);
+  g_hash_table_destroy (seen);
+}
+
+/**
+ * @brief Lookup most recent asset_key for a given container digest.
+ *
+ * @param[in] digest  Container digest.
+ *
+ * @return Duplicated asset_key string or NULL if not found.
+ */
+static gchar *
+get_asset_key_by_container_digest (const gchar *digest)
+{
+
+  if (!digest || !*digest)
+    return NULL;
+
+  gchar *key = sql_string_ps (
+    "SELECT asset_key FROM asset_snapshots"
+    " WHERE container_digest = $1"
+    "   AND asset_key IS NOT NULL"
+    " ORDER BY modification_time DESC LIMIT 1;",
+    SQL_STR_PARAM (digest), NULL);
+
+  return key;
+}
+
+/**
+ * @brief Set asset_key for container-image asset_snapshots rows.
+ *
+ * @param[in] report  Report the snapshot rows belong to.
+ * @param[in] task    Task the snapshot rows belong to.
+ */
+static void
+asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
+{
+  iterator_t it;
+
+  init_asset_snapshot_iterator (&it, task, report, TRUE);
+
+  while (next (&it))
+    {
+      asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
+
+      const char *digest = asset_snapshot_iterator_container_digest (&it);
+
+      gchar *asset_key = NULL;
+
+      if (digest && *digest)
+        asset_key = get_asset_key_by_container_digest (digest);
+
+      if (asset_key && *asset_key)
+        {
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = $1,"
+                  "       modification_time = m_now()"
+                  " WHERE id = $2;",
+                  SQL_STR_PARAM (asset_key),
+                  SQL_RESOURCE_PARAM (row_id),
+                  NULL);
+        }
+      else
+        {
+          /* no match found anywhere, create new stable key */
+          sql_ps ("UPDATE asset_snapshots"
+                  "   SET asset_key = make_uuid(),"
+                  "       modification_time = m_now()"
+                  " WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (row_id),
+                  NULL);
+        }
+
+      g_free (asset_key);
+    }
+
+  cleanup_iterator (&it);
+}
+
+/**
  * @brief Create container scanning asset snapshots for a completed report.
  *
  * @param[in]  report  Report the snapshot belongs to.
@@ -1474,42 +1569,8 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 void
 asset_snapshots_container_image (report_t report, task_t task)
 {
-  oci_image_target_t image_target;
-  gchar *image_ref = NULL;
-  gchar *image_uuid = NULL;
-  gchar *q_image_ref = NULL;
-
-  image_target = task_oci_image_target (task);
-  if (image_target == 0)
-    return;
-  /**
-   * TODO: 18.12.2025 ozgen - container digest must be included in the scan
-   *                          results and should be used instead of
-   *                          image references for asset_key/stable identity
-   */
-  image_ref = oci_image_target_image_references (image_target);
-  image_uuid = oci_image_target_uuid (image_target);
-
-  if (image_uuid == NULL || *image_uuid == '\0')
-    goto cleanup;
-
-  if (image_ref && *image_ref)
-    q_image_ref = sql_quote (image_ref);
-
-  sql ("INSERT INTO asset_snapshots"
-       " (uuid, task_id, report_id, asset_type,"
-       "  asset_key, container_digest,"
-       "  creation_time, modification_time)"
-       " VALUES"
-       " (make_uuid (), %llu, %llu, %d, '%s', '%s', m_now (), m_now ());",
-       task, report, ASSET_TYPE_CONTAINER_IMAGE,
-       image_uuid,
-       q_image_ref ? q_image_ref : "NULL");
-
-  cleanup:
-    g_free (q_image_ref);
-  g_free (image_ref);
-  g_free (image_uuid);
+  asset_snapshots_insert_container_image (report, task);
+  asset_snapshots_set_asset_keys_container_image (report, task);
 }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
