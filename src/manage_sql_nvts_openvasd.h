@@ -16,9 +16,6 @@
 #include "manage_resources.h"
 
 int
-manage_update_nvt_cache_openvasd ();
-
-int
 update_or_rebuild_nvts_openvasd (int update);
 
 int
