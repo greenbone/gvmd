@@ -18,6 +18,7 @@
 #include "manage_sql_agent_groups.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_copy.h"
+#include "manage_sql_permissions.h"
 
 #include <util/uuidutils.h>
 

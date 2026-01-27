@@ -46,6 +46,7 @@
 #include "manage_sql_filters.h"
 #include "manage_sql_groups.h"
 #include "manage_sql_oci_image_targets.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
@@ -33092,36 +33093,6 @@ modify_schedule (const char *schedule_id, const char *name, const char *comment,
 /* Permissions. */
 
 /**
- * @brief Adjust location of resource in permissions.
- *
- * @param[in]   type  Type.
- * @param[in]   old   Resource ID in old table.
- * @param[in]   new   Resource ID in new table.
- * @param[in]   to    Destination, trash or table.
- */
-void
-permissions_set_locations (const char *type, resource_t old, resource_t new,
-                           int to)
-{
-  sql ("UPDATE permissions SET resource_location = %i, resource = %llu"
-       " WHERE resource_type = '%s' AND resource = %llu"
-       " AND resource_location = %i;",
-       to,
-       new,
-       type,
-       old,
-       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
-  sql ("UPDATE permissions_trash SET resource_location = %i, resource = %llu"
-       " WHERE resource_type = '%s' AND resource = %llu"
-       " AND resource_location = %i;",
-       to,
-       new,
-       type,
-       old,
-       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
-}
-
-/**
  * @brief Set permissions to orphan.
  *
  * @param[in]  type      Type.
@@ -33934,21 +33905,6 @@ permission_is_predefined (permission_t permission)
                     "                  OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
                     "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
                     permission);
-}
-
-/**
- * @brief Test whether a permission is the special Admin permission.
- *
- * @param[in]  permission_id  UUID of permission.
- *
- * @return 1 permission is Admin, else 0.
- */
-int
-permission_is_admin (const char *permission_id)
-{
-  if (permission_id)
-    return strcmp (permission_id, PERMISSION_UUID_ADMIN_EVERYTHING);
-  return 0;
 }
 
 /**

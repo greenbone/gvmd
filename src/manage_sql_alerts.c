@@ -7,6 +7,7 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_filters.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_report_formats.h"
 
 #include <ctype.h>
