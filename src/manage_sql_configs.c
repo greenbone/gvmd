@@ -14,6 +14,7 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_permissions.h"
 #include "sql.h"
 
 #include <assert.h>

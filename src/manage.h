@@ -2898,9 +2898,6 @@ char*
 permission_uuid (permission_t);
 
 int
-permission_is_admin (const char *);
-
-int
 permission_in_use (permission_t);
 
 int

@@ -171,6 +171,7 @@ set(
   manage_license.c
   manage_openvas.c
   manage_osp.c
+  manage_permissions.c
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
@@ -183,6 +184,7 @@ set(
   manage_tls_certificates.c
   manage_utils.c
   manage_migrators.c
+  manage_permissions.c
   manage_pg.c
   manage_scan_handler.c
   manage_scan_queue.c
@@ -214,6 +216,7 @@ set(
   manage_sql_groups.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
+  manage_sql_permissions.c
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_configs.c
@@ -675,6 +678,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_groups.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_permissions.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
@@ -691,6 +695,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
