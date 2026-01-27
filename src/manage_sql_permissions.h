@@ -19,6 +19,24 @@
  */
 #define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
 
+resource_t
+permission_resource (permission_t);
+
+int
+permission_is_predefined (permission_t);
+
+char *
+permission_resource_type (permission_t);
+
+resource_t
+permission_subject (permission_t);
+
+char *
+permission_subject_type (permission_t);
+
+char *
+permission_name (permission_t);
+
 void
 permissions_set_locations (const char *, resource_t, resource_t, int);
 
