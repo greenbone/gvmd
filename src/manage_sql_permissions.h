@@ -22,4 +22,10 @@
 void
 permissions_set_locations (const char *, resource_t, resource_t, int);
 
+void
+permissions_set_orphans (const char *, resource_t, int);
+
+void
+permissions_set_subjects (const char *, resource_t, resource_t, int);
+
 #endif //_GVMD_MANAGE_SQL_PERMISSIONS_H

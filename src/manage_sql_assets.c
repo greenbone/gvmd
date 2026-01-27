@@ -13,6 +13,7 @@
 #if ENABLE_CONTAINER_SCANNING
 #include "manage_sql_oci_image_targets.h"
 #endif
+#include "manage_sql_permissions.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
