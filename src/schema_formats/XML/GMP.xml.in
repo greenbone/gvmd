@@ -14168,8 +14168,7 @@ END:VCALENDAR
     <example>
       <summary>Get the optional features</summary>
       <request>
-        <get_feeds>
-        </get_feeds>
+        <get_features/>
       </request>
       <response>
         <get_features_response status="200" status_text="OK">
