@@ -28,4 +28,10 @@ permissions_set_orphans (const char *, resource_t, int);
 void
 permissions_set_subjects (const char *, resource_t, resource_t, int);
 
+void
+add_feed_role_permissions (const char *, const char *, int *, int *);
+
+void
+clean_feed_role_permissions (const char *, const char *, int *, int *);
+
 #endif //_GVMD_MANAGE_SQL_PERMISSIONS_H
