@@ -19,8 +19,9 @@ contain arbitrary data which in our case should be the user's permissions.
 ## JWT Format
 
 The JWT should use the user id as subject (`sub`) and add [claims](https://en.wikipedia.org/wiki/JSON_Web_Token#Standard_fields)
-for the user name, roles and permissions. The roles and permissions can be used
-in the services to decide wether a user is allowed to access a route.
+for the user name, roles, groups and permissions. The roles, groups and
+permissions can be used in the services to decide wether a user is allowed to
+access a route.
 
 Proposed JWT format
 
@@ -36,6 +37,12 @@ Proposed JWT format
     "User",
     "..."
   ],
+  "groups": [
+    "<groups of the user, for example>",
+    "SomeGroup",
+    "AnotherGroup",
+    "..."
+  ]
   "permissions": [
     "<permissions of the user, for example>",
     "get_tasks",
