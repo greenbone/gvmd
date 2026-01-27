@@ -6,7 +6,12 @@
 #ifndef _GVMD_MANAGE_PERMISSIONS_H
 #define _GVMD_MANAGE_PERMISSIONS_H
 
+#include "manage_resources.h"
+
 int
 permission_is_admin (const char *);
+
+char *
+permission_uuid (permission_t);
 
 #endif /* not _GVMD_MANAGE_PERMISSIONS_H */

@@ -16,6 +16,151 @@
  */
 
 /**
+ * @brief Return the UUID of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+permission_uuid (permission_t permission)
+{
+  return sql_string ("SELECT uuid FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the resource of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Resource if there is one, else 0.
+ */
+resource_t
+permission_resource (permission_t permission)
+{
+  resource_t resource;
+  sql_int64 (&resource,
+             "SELECT resource FROM permissions WHERE id = %llu;",
+             permission);
+  return resource;
+}
+
+/**
+ * @brief Return the name of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char *
+permission_name (permission_t permission)
+{
+  return sql_string ("SELECT name FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the subject type of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated subject type if available, else NULL.
+ */
+char *
+permission_subject_type (permission_t permission)
+{
+  return sql_string ("SELECT subject_type FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the subject of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Subject if there is one, else 0.
+ */
+resource_t
+permission_subject (permission_t permission)
+{
+  resource_t subject;
+  sql_int64 (&subject,
+             "SELECT subject FROM permissions WHERE id = %llu;",
+             permission);
+  return subject;
+}
+
+/**
+ * @brief Return the UUID of the subject of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated subject ID if available, else NULL.
+ */
+char *
+permission_subject_id (permission_t permission)
+{
+  return sql_string ("SELECT subject_id FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the resource type of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated resource type if available, else NULL.
+ */
+char *
+permission_resource_type (permission_t permission)
+{
+  return sql_string ("SELECT resource_type FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return the UUID of the resource of a permission.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return Newly allocated resource ID if available, else NULL.
+ */
+char *
+permission_resource_id (permission_t permission)
+{
+  return sql_string ("SELECT resource_id FROM permissions WHERE id = %llu;",
+                     permission);
+}
+
+/**
+ * @brief Return whether a permission is predefined.
+ *
+ * @param[in]  permission  Permission.
+ *
+ * @return 1 if predefined, else 0.
+ */
+int
+permission_is_predefined (permission_t permission)
+{
+  return !!sql_int ("SELECT COUNT (*) FROM permissions"
+                    " WHERE id = %llu"
+                    " AND (uuid = '" PERMISSION_UUID_ADMIN_EVERYTHING "'"
+                    "      OR (subject_type = 'role'"
+                    "          AND resource = 0"
+                    "          AND subject"
+                    "              IN (SELECT id FROM roles"
+                    "                  WHERE uuid = '" ROLE_UUID_ADMIN "'"
+                    "                  OR uuid = '" ROLE_UUID_GUEST "'"
+                    "                  OR uuid = '" ROLE_UUID_INFO "'"
+                    "                  OR uuid = '" ROLE_UUID_MONITOR "'"
+                    "                  OR uuid = '" ROLE_UUID_USER "'"
+                    "                  OR uuid = '" ROLE_UUID_SUPER_ADMIN "'"
+                    "                  OR uuid = '" ROLE_UUID_OBSERVER "')))",
+                    permission);
+}
+
+/**
  * @brief Adjust location of resource in permissions.
  *
  * @param[in]   type  Type.
