@@ -463,12 +463,6 @@ void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
 void
-permissions_set_orphans (const char *, resource_t, int);
-
-void
-permissions_set_subjects (const char *, resource_t, resource_t, int);
-
-void
 cache_all_permissions_for_users (GArray *);
 
 void
