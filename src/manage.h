@@ -2910,42 +2910,6 @@ int
 permission_count (const get_data_t *);
 
 int
-init_permission_iterator (iterator_t*, get_data_t *);
-
-const char*
-permission_iterator_resource_type (iterator_t*);
-
-const char*
-permission_iterator_resource_uuid (iterator_t*);
-
-const char*
-permission_iterator_resource_name (iterator_t*);
-
-int
-permission_iterator_resource_in_trash (iterator_t*);
-
-int
-permission_iterator_resource_orphan (iterator_t*);
-
-int
-permission_iterator_resource_readable (iterator_t*);
-
-const char*
-permission_iterator_subject_type (iterator_t*);
-
-const char*
-permission_iterator_subject_uuid (iterator_t*);
-
-const char*
-permission_iterator_subject_name (iterator_t*);
-
-int
-permission_iterator_subject_in_trash (iterator_t*);
-
-int
-permission_iterator_subject_readable (iterator_t*);
-
-int
 delete_permission (const char*, int);
 
 int
