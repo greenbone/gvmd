@@ -293,7 +293,8 @@ handle_http_scanner_scan (http_scanner_connector_t connector,
               time_t start_time, end_time;
               http_scanner_scan_status_t scan_status;
 
-              set_report_slave_progress (report, progress);
+              if (progress > 0)
+                set_report_slave_progress (report, progress);
 
               scan_status
                 = http_scanner_parsed_scan_status (connector);
