@@ -199,4 +199,7 @@ add_feed_role_permissions (const char *, const char *, int *, int *);
 void
 clean_feed_role_permissions (const char *, const char *, int *, int *);
 
+gchar *
+subject_where_clause (const char *, resource_t);
+
 #endif //_GVMD_MANAGE_SQL_PERMISSIONS_H

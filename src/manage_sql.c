@@ -33373,49 +33373,6 @@ check_permission_args (gboolean check_access, const char *name_arg,
 }
 
 /**
- * @brief Create a SQL clause to select the subject users.
- *
- * @param[in]  subject_type  Subject type.
- * @param[in]  subject       The subject.
- *
- * @return Newly allocated string containing the SQL clause.
- */
-static gchar*
-subject_where_clause (const char* subject_type, resource_t subject)
-{
-  gchar *subject_where = NULL;
-  if (subject && subject_type)
-    {
-      if (strcmp (subject_type, "user") == 0)
-        {
-          subject_where
-            = g_strdup_printf ("id = %llu", subject);
-        }
-      else if (strcmp (subject_type, "group") == 0)
-        {
-          subject_where
-            = g_strdup_printf ("id IN (SELECT \"user\" FROM group_users"
-                               "        WHERE \"group\" = %llu)",
-                               subject);
-        }
-      else if (strcmp (subject_type, "role") == 0)
-        {
-          subject_where
-            = g_strdup_printf ("id IN (SELECT \"user\" FROM role_users"
-                               "        WHERE \"role\" = %llu)",
-                               subject);
-        }
-      else
-        {
-          subject_where = strdup ("t()");
-          g_warning ("%s: unknown subject_type %s",
-                     __func__, subject_type);
-        }
-    }
-  return subject_where;
-}
-
-/**
  * @brief Create a permission.
  *
  * Caller must organise the transaction.
