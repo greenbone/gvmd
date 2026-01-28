@@ -93,4 +93,4 @@ set_password (const gchar *, const gchar *, const gchar *, gchar **);
 int
 validate_username (const gchar *);
 
-#endif //_GVMD_MANAGE_SQL_USERS_H
+#endif // not _GVMD_MANAGE_SQL_USERS_H

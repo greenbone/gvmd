@@ -38,16 +38,6 @@
 /**
  * @brief Predefined role UUID.
  */
-#define PERMISSION_UUID_ADMIN_EVERYTHING "b3b56a8c-c2fd-11e2-a135-406186ea4fc5"
-
-/**
- * @brief Predefined role UUID.
- */
-#define PERMISSION_UUID_SUPER_ADMIN_EVERYTHING "a9801074-6fe2-11e4-9d81-406186ea4fc5"
-
-/**
- * @brief Predefined role UUID.
- */
 #define ROLE_UUID_ADMIN "7a8cb5b4-b74d-11e2-8187-406186ea4fc5"
 
 /**
@@ -327,9 +317,6 @@ task_schedule_iterator_initial_offset (iterator_t *);
 int
 set_task_schedule_uuid (const gchar*, schedule_t, int);
 
-void
-reinit_manage_process ();
-
 int
 manage_update_nvti_cache ();
 
@@ -341,9 +328,6 @@ update_config_cache_init (const char *);
 
 alive_test_t
 target_alive_tests (target_t);
-
-void
-manage_session_init (const char *);
 
 void
 check_generate_scripts ();
@@ -477,9 +461,6 @@ tags_remove_resource (const char *, resource_t, int);
 
 void
 tags_set_locations (const char *, resource_t, resource_t, int);
-
-void
-permissions_set_locations (const char *, resource_t, resource_t, int);
 
 void
 permissions_set_orphans (const char *, resource_t, int);

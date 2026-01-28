@@ -207,7 +207,7 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
       create_oci_image_target_reset ();
       return;
     }
-  else if (image_references == NULL)
+  else if (image_references == NULL || strlen (image_references->text) == 0)
     {
       SEND_TO_CLIENT_OR_FAIL
         (XML_ERROR_SYNTAX ("create_oci_image_target",

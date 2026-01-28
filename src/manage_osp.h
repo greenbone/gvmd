@@ -58,4 +58,4 @@ handle_osp_scan (task_t, report_t, const char *, time_t);
 int
 handle_osp_scan_end (task_t, int, gboolean);
 
-#endif /* _GVMD_MANAGE_OSP_H */
+#endif /* not _GVMD_MANAGE_OSP_H */

@@ -204,6 +204,70 @@ valid_oci_url (const gchar *oci_url)
 }
 
 /**
+ * @brief Clean an OCI images string.
+ *
+ * @param[in]  given_images  String describing images.
+ *
+ * @return Freshly allocated new images string. NULL if error.
+ *         Caller must free it.
+ */
+gchar*
+clean_images (const char *given_images)
+{
+  gchar **split, **point, *images, *start;
+
+  if (!given_images || !*given_images)
+    return NULL;
+
+  /* Treat newlines like commas. */
+  images = start = g_strdup (given_images);
+  while (*images)
+    {
+      if (*images == '\n') *images = ',';
+      images++;
+    }
+
+  split = g_strsplit (start, ",", -1);
+  g_free (start);
+  point = split;
+
+  GHashTable *seen = g_hash_table_new_full (g_str_hash,
+                                            g_str_equal,
+                                            g_free, NULL);
+  GPtrArray *clean_array = make_array ();
+
+  while (*point)
+    {
+      g_strstrip (*point);
+      if (**point != '\0')
+        {
+          gchar *key = g_strdup (*point);
+          if (!g_hash_table_contains (seen, key))
+            {
+              g_hash_table_add (seen, key);
+              array_add (clean_array, g_strdup(*point));
+            }
+          else
+            {
+              g_free (key);
+            }
+        }
+      point += 1;
+    }
+  array_terminate (clean_array);
+
+  gchar *clean = (clean_array->len == 0)
+    ? g_strdup ("")
+    : g_strjoinv (",", (gchar **) clean_array->pdata);
+
+  g_hash_table_destroy (seen);
+  array_free (clean_array);
+  g_strfreev (split);
+
+  return clean;
+}
+
+/**
  * @brief Validate an OCI image references string.
  *
  * @param[in] image_refs_input  A comma-separated list of OCI image references.
@@ -236,18 +300,6 @@ validate_oci_image_references (const char *image_refs_input,
           return FALSE;
         }
 
-      // reject whitespace
-      for (const gchar *c = entry; *c; ++c)
-        {
-          if (g_ascii_isspace (*c))
-            {
-              g_strfreev (parts);
-              if (error_message)
-                *error_message =
-                  g_strdup_printf ("Whitespace found in OCI image URL");
-              return FALSE;
-            }
-        }
 
       // validate OCI URL format
       if (valid_oci_url (entry) == -1)

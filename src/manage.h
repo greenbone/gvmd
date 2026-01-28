@@ -128,6 +128,9 @@ typedef struct
 typedef int (*manage_connection_forker_t) (gvm_connection_t * conn,
                                            const gchar* uuid);
 
+void
+init_manage_funcs ();
+
 int
 init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
              manage_connection_forker_t, int);
@@ -139,6 +142,9 @@ void
 init_manage_process (const db_conn_info_t*);
 
 void
+reinit_manage_process ();
+
+void
 cleanup_manage_process (gboolean);
 
 void
@@ -146,6 +152,9 @@ manage_cleanup_process_error (int);
 
 void
 manage_reset_currents ();
+
+void
+manage_session_init (const char *);
 
 /* Commands. */
 
@@ -1195,6 +1204,12 @@ set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
 int
 scan_host_end_time (report_t, const char*);
+
+void
+set_scan_host_start_time_isotime (report_t, const char*, const char*);
+
+void
+set_scan_host_end_time_isotime (report_t, const char*, const char* );
 
 void
 set_scan_host_end_time (report_t, const char*, const char*);
@@ -2871,9 +2886,6 @@ copy_permission (const char*, const char *, permission_t *);
 
 char*
 permission_uuid (permission_t);
-
-int
-permission_is_admin (const char *);
 
 int
 permission_in_use (permission_t);

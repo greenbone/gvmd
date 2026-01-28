@@ -1489,3 +1489,28 @@ concat_error_messages (const GPtrArray *errors, const gchar *sep,
 
   return g_string_free (gs, FALSE);
 }
+
+/**
+ * @brief Extract SHA256 digest from a digest-based image reference.
+ *        If no digest is found, the original string is returned.
+ *
+ * @param[in]  image_reference  The image reference string to extract the digest from.
+ *
+ * @return  The extracted SHA256 digest or the original string.
+ */
+gchar *
+extract_sha256_digest_if_found (const gchar *image_reference)
+{
+  if (image_reference == NULL)
+  return NULL;
+
+  gchar *digest = NULL;
+  gchar *suffix = g_strstr_len (image_reference, -1, "@sha256:");
+
+  if (suffix)
+    digest = suffix + 1;
+  else
+    digest = (gchar *) image_reference;
+
+  return digest;
+}

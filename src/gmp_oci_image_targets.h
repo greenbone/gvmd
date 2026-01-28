@@ -74,6 +74,6 @@ modify_oci_image_target_element_end (gmp_parser_t *,
 void
 modify_oci_image_target_run (gmp_parser_t *, GError **);
 
-#endif //_GVMD_GMP_OCI_IMAGE_TARGETS_H
+#endif // not _GVMD_GMP_OCI_IMAGE_TARGETS_H
 
-#endif //ENABLE_CONTAINER_SCANNING
+#endif // ENABLE_CONTAINER_SCANNING

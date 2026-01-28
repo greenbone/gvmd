@@ -72,4 +72,4 @@ void
 verify_credential_store_run (gmp_parser_t *, GError **);
 
 
-#endif /* _GVMD_GMP_CREDENTIAL_STORES_H */
+#endif /* not _GVMD_GMP_CREDENTIAL_STORES_H */

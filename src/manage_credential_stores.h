@@ -316,4 +316,4 @@ eval_certs_credential_store_preference (credential_store_preference_data_t
 const char *
 get_default_credential_store_id ();
 
-#endif /* _GVMD_MANAGE_CREDENTIAL_STORES_H */
+#endif /* not _GVMD_MANAGE_CREDENTIAL_STORES_H */

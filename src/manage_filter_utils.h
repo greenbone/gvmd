@@ -10,8 +10,8 @@
  * Filter parser and handling utilities headers for the GVM management layer.
  */
 
-#ifndef GVMD_MANAGE_FILTER_UTILS_H
-#define GVMD_MANAGE_FILTER_UTILS_H
+#ifndef _GVMD_MANAGE_FILTER_UTILS_H
+#define _GVMD_MANAGE_FILTER_UTILS_H
 
 #include "manage_resources.h"
 #include <gvm/base/array.h>
@@ -109,4 +109,4 @@ void
 init_manage_filter_utils_funcs (filter_term_func filter_term_f);
 
 
-#endif /* GVMD_MANAGE_FILTER_UTILS_H */
+#endif /* not _GVMD_MANAGE_FILTER_UTILS_H */
