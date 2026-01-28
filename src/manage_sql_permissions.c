@@ -511,3 +511,225 @@ clean_feed_role_permissions (const char *type,
 
   return;
 }
+
+/**
+ * @brief Count number of permissions.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of permissions in filtered set.
+ */
+int
+permission_count (const get_data_t *get)
+{
+  static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PERMISSION_ITERATOR_TRASH_COLUMNS;
+
+  return count ("permission", get, columns, trash_columns, filter_columns,
+                0, 0, 0, TRUE);
+}
+
+/**
+ * @brief Initialise a permission iterator.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_permission_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = PERMISSION_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = PERMISSION_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = PERMISSION_ITERATOR_TRASH_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "permission",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the type of resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_type, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the UUID of the resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_uuid, GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the name of the resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_resource_name, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Return the permission resource location.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the resource is in the trashcan
+ */
+int
+permission_iterator_resource_in_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+}
+
+/**
+ * @brief Check if the permission resource has been deleted.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the resource has been deleted.
+ */
+int
+permission_iterator_resource_orphan (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
+
+/**
+ * @brief Get the readable status of a resource from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if readable, otherwise 0.
+ */
+int
+permission_iterator_resource_readable (iterator_t* iterator)
+{
+  resource_t found;
+  const char *type, *uuid;
+  gchar *permission;
+
+  if (iterator->done) return 0;
+
+  type = permission_iterator_resource_type (iterator);
+  uuid = permission_iterator_resource_uuid (iterator);
+
+  if (type == NULL || uuid == NULL)
+    return 0;
+
+  if (type_is_info_subtype (type))
+    permission = g_strdup ("get_info");
+  else if (type_is_asset_subtype (type))
+    permission = g_strdup ("get_assets");
+  else
+    permission = g_strdup_printf ("get_%ss", type);
+
+  found = 0;
+  find_resource_with_permission (type,
+                                 uuid,
+                                 &found,
+                                 permission,
+                                 permission_iterator_resource_in_trash
+                                  (iterator));
+  g_free (permission);
+  return found > 0;
+}
+
+/**
+ * @brief Get the type of subject from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Type, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_type, GET_ITERATOR_COLUMN_COUNT + 5);
+
+/**
+ * @brief Get the subject UUID from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_uuid, GET_ITERATOR_COLUMN_COUNT + 6);
+
+/**
+ * @brief Get the subject name from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (permission_iterator_subject_name, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Return the permission subject location.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether the subject is in the trashcan
+ */
+int
+permission_iterator_subject_in_trash (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+}
+
+/**
+ * @brief Get the readable status of a subject from a permission iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if readable, otherwise 0.
+ */
+int
+permission_iterator_subject_readable (iterator_t* iterator)
+{
+  resource_t found;
+  const char *type, *uuid;
+  gchar *permission;
+
+  if (iterator->done) return 0;
+
+  type = permission_iterator_subject_type (iterator);
+  uuid = permission_iterator_subject_uuid (iterator);
+
+  if (type == NULL || uuid == NULL)
+    return 0;
+
+  if ((strcmp (type, "user") == 0)
+      || (strcmp (type, "role") == 0)
+      || (strcmp (type, "group") == 0))
+    permission = g_strdup_printf ("get_%ss", type);
+  else
+    return 0;
+
+  found = 0;
+  find_resource_with_permission (type,
+                                 uuid,
+                                 &found,
+                                 permission,
+                                 permission_iterator_subject_in_trash
+                                  (iterator));
+  g_free (permission);
+  return found > 0;
+}
