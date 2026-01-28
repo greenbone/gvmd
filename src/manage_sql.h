@@ -487,6 +487,9 @@ int
 create_permission_no_acl (const char *, const char *, const char *, const char *,
                           const char *, const char *, permission_t *);
 
+void
+cache_permissions_for_resource (const char *, resource_t, GArray *);
+
 int
 copy_resource_lock (const char *, const char *, const char *, const char *,
                     const char *, int, resource_t *, resource_t *);
@@ -499,6 +502,9 @@ setting_value_sql (const char *, char **);
 
 int
 setting_value_int_sql (const char *, int *);
+
+int
+setting_auto_cache_rebuild_int ();
 
 int
 setting_dynamic_severity_int ();
@@ -524,6 +530,18 @@ new_severity_clause (int, int);
 
 void
 reports_clear_count_cache_dynamic ();
+
+GHashTable *
+reports_for_override (override_t);
+
+GHashTable *
+reports_hashtable ();
+
+void
+report_cache_counts (report_t, int, int, const char *);
+
+void
+report_clear_count_cache (report_t, int, int, const char *);
 
 int
 cleanup_config_sequences ();

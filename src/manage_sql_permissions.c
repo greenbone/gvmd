@@ -5,6 +5,7 @@
 
 #include "manage_sql_permissions.h"
 #include "manage_acl.h"
+#include "manage_sql_roles.h"
 #include "manage_sql_users.h"
 #include "sql.h"
 
@@ -775,4 +776,570 @@ subject_where_clause (const char* subject_type, resource_t subject)
         }
     }
   return subject_where;
+}
+
+/**
+ * @brief Find a permission given a UUID.
+ *
+ * @param[in]   uuid        UUID of permission.
+ * @param[out]  permission  Permission return, 0 if successfully failed to find
+ *                          permission.
+ *
+ * @return FALSE on success (including if failed to find permission), TRUE on
+ *         error.
+ */
+gboolean
+find_permission (const char* uuid, permission_t* permission)
+{
+  return find_resource ("permission", uuid, permission);
+}
+
+/**
+ * @brief Check args for create_permission or modify_permission.
+ *
+ * @param[in]   check_access    Whether to check if user may get resource and
+ *                              subject.
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  name            Name return.
+ * @param[out]  resource        Resource return.
+ * @param[out]  resource_type   Resource type return.
+ * @param[out]  resource_id     Resource ID return.
+ * @param[out]  subject         Subject return.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 error.
+ */
+int
+check_permission_args (gboolean check_access, const char *name_arg,
+                       const char *resource_type_arg,
+                       const char *resource_id_arg, const char *subject_type,
+                       const char *subject_id, gchar **name,
+                       resource_t *resource, char **resource_type,
+                       const char **resource_id, resource_t *subject)
+{
+  if ((name_arg == NULL)
+      || ((valid_gmp_command (name_arg) == 0)
+          && strcasecmp (name_arg, "super"))
+      || (strcasecmp (name_arg, "get_version") == 0))
+    return 7;
+
+  if (resource_id_arg
+      && strcmp (resource_id_arg, "")
+      && strcmp (resource_id_arg, "0")
+      && (((gmp_command_takes_resource (name_arg) == 0)
+           && strcasecmp (name_arg, "super"))))
+    return 9;
+
+  if (resource_type_arg
+      && strcasecmp (name_arg, "super") == 0
+      && strcmp (resource_type_arg, "group")
+      && strcmp (resource_type_arg, "role")
+      && strcmp (resource_type_arg, "user"))
+    return 5;
+
+  if (resource_type_arg
+      && strcasecmp (name_arg, "super")
+      && (valid_db_resource_type (resource_type_arg) == 0
+          || gmp_command_takes_resource (name_arg) == 0))
+    return 5;
+
+  if (subject_type
+      && strcmp (subject_type, "group")
+      && strcmp (subject_type, "role")
+      && strcmp (subject_type, "user"))
+    return 6;
+
+  if (subject_id == NULL)
+    /* For now a permission must have a subject. */
+    return 6;
+
+  if (subject_id && (subject_type == NULL))
+    return 6;
+
+  assert (subject_type);
+
+  *name = strcasecmp (name_arg, "super")
+           ? g_ascii_strdown (name_arg, -1)
+           : g_strdup ("Super");
+  *resource = 0;
+  if (resource_id_arg
+      && strcmp (resource_id_arg, "")
+      && strcmp (resource_id_arg, "0"))
+    {
+      *resource_type = strcasecmp (*name, "super")
+                        ? gmp_command_type (*name)
+                        : g_strdup (resource_type_arg);
+
+      if (*resource_type == NULL)
+        {
+          g_free (*name);
+          return 3;
+        }
+
+      if (strcasecmp (*resource_type, "asset") == 0)
+        {
+          g_free (*resource_type);
+          *resource_type = g_strdup ("host");
+          if (check_access == FALSE)
+            {
+              if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
+            }
+          else
+            {
+              if (find_resource (*resource_type, resource_id_arg, resource))
+                {
+                  g_free (*name);
+                  g_free (*resource_type);
+                  return -1;
+                }
+            }
+
+          if (*resource == 0)
+            {
+              g_free (*resource_type);
+              *resource_type = g_strdup ("os");
+              if (check_access == FALSE)
+                {
+                  if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
+                }
+              else
+                {
+                  if (find_resource (*resource_type, resource_id_arg, resource))
+                    {
+                      g_free (*name);
+                      g_free (*resource_type);
+                      return -1;
+                    }
+                }
+            }
+        }
+      else if (check_access == FALSE)
+        {
+          if (find_resource_no_acl (*resource_type, resource_id_arg, resource))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
+        }
+      else
+        {
+          gchar *get_permission;
+          get_permission = g_strdup_printf ("get_%ss", *resource_type);
+          if (find_resource_with_permission (*resource_type, resource_id_arg,
+                                             resource, get_permission, 0))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              g_free (get_permission);
+              return -1;
+            }
+          g_free (get_permission);
+        }
+
+      if (*resource == 0)
+        {
+          g_free (*name);
+          g_free (*resource_type);
+          return 3;
+        }
+
+      *resource_id = resource_id_arg;
+    }
+  else
+    {
+      *resource_id = NULL;
+      *resource_type = NULL;
+    }
+
+  if (strcasecmp (*name, "super") == 0)
+    {
+      if (*resource == 0)
+        {
+          g_free (*name);
+          g_free (*resource_type);
+          return 3;
+        }
+
+      if ((acl_user_is_owner (*resource_type, *resource_id) == 0)
+          && (acl_user_can_super_everyone (current_credentials.uuid) == 0))
+        {
+          g_free (*name);
+          g_free (*resource_type);
+          return 99;
+        }
+    }
+
+  /* For simplicity refuse to make permissions on permissions. */
+  if (*resource && strcasestr (*name, "permission"))
+    {
+      g_free (*name);
+      g_free (*resource_type);
+      return 8;
+    }
+
+  /* Ensure the user may grant this permission. */
+
+  if (((*resource == 0) || strcasecmp (*name, "super") == 0)
+      && (acl_user_can_everything (current_credentials.uuid) == 0))
+    {
+      g_free (*name);
+      g_free (*resource_type);
+      return 99;
+    }
+
+  *subject = 0;
+  assert (subject_id);
+  if (*resource)
+    {
+      /* Permission on a particular resource.  Only need read access to the
+       * subject. */
+      if (check_access)
+        {
+          if (find_resource_with_permission (subject_type,
+                                             subject_id,
+                                             subject,
+                                             NULL, /* GET permission. */
+                                             0))   /* Trash. */
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
+        }
+       else
+        {
+          if (find_resource_no_acl (subject_type, subject_id, subject))
+            {
+              g_free (*name);
+              g_free (*resource_type);
+              return -1;
+            }
+        }
+    }
+  else
+    {
+      gchar *permission;
+
+      /* Command level permission.  Must have write access to the subject. */
+
+      /* However, modification of the predefined roles is forbidden. */
+      if (subject_id
+          && strcmp (subject_type, "role") == 0
+          && role_is_predefined_id (subject_id))
+        return 99;
+
+      permission = g_strdup_printf ("modify_%s", subject_type);
+      if (find_resource_with_permission (subject_type,
+                                         subject_id,
+                                         subject,
+                                         permission,
+                                         0)) /* Trash. */
+        {
+          g_free (*name);
+          g_free (*resource_type);
+          g_free (permission);
+          return -1;
+        }
+      g_free (permission);
+    }
+
+  if (*subject == 0)
+    {
+      g_free (*name);
+      g_free (*resource_type);
+      return 2;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create a permission.
+ *
+ * Caller must organise the transaction.
+ *
+ * @param[in]   check_access    Whether to check if user may CREATE_PERMISSION.
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  permission      Permission.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
+ */
+int
+create_permission_internal (int check_access, const char *name_arg,
+                            const char *comment, const char *resource_type_arg,
+                            const char *resource_id_arg,
+                            const char *subject_type, const char *subject_id,
+                            permission_t *permission)
+{
+  int ret;
+  gchar *name, *quoted_name, *quoted_comment, *resource_type;
+  resource_t resource, subject;
+  const char *resource_id;
+  GHashTable *reports = NULL;
+  int clear_original = 0;
+  gchar *subject_where;
+
+  assert (current_credentials.uuid);
+
+  if (check_access && (acl_user_may ("create_permission") == 0))
+    return 99;
+
+  ret = check_permission_args (check_access, name_arg, resource_type_arg,
+                               resource_id_arg, subject_type, subject_id, &name,
+                               &resource, &resource_type, &resource_id,
+                               &subject);
+
+  if (ret)
+    return ret;
+
+  assert (subject);
+  assert ((resource_id == resource_id_arg) || (resource_id == NULL));
+
+  quoted_name = sql_quote (name);
+  g_free (name);
+  quoted_comment = sql_quote (comment ? comment : "");
+
+  sql ("INSERT INTO permissions"
+       " (uuid, owner, name, comment, resource_type, resource_uuid, resource,"
+       "  resource_location, subject_type, subject, subject_location,"
+       "  creation_time, modification_time)"
+       " VALUES"
+       " (make_uuid (),"
+       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
+       "  '%s', '%s', '%s', '%s', %llu, " G_STRINGIFY (LOCATION_TABLE) ","
+       "  %s%s%s, %llu, " G_STRINGIFY (LOCATION_TABLE) ", m_now (), m_now ());",
+       current_credentials.uuid,
+       quoted_name,
+       quoted_comment,
+       resource_id ? resource_type : "",
+       resource_id ? resource_id : "",
+       resource,
+       subject_id ? "'" : "",
+       subject_id ? subject_type : "NULL",
+       subject_id ? "'" : "",
+       subject);
+
+  subject_where = subject_where_clause (subject_type, subject);
+
+  if (permission)
+    *permission = sql_last_insert_id ();
+
+  /* Update Permissions cache */
+  if (strcasecmp (quoted_name, "super") == 0)
+    cache_all_permissions_for_users (NULL);
+  else if (resource_type && resource)
+    cache_permissions_for_resource (resource_type, resource, NULL);
+
+  /* Update Reports cache */
+  if (resource_type && resource_id && strcmp (resource_type, "override") == 0)
+    {
+      reports = reports_for_override (resource);
+    }
+  else if (strcasecmp (quoted_name, "super") == 0)
+    {
+      reports = reports_hashtable ();
+      clear_original = 1;
+    }
+
+  if (reports && g_hash_table_size (reports))
+    {
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+      int auto_cache_rebuild;
+
+      reports_ptr = NULL;
+      g_hash_table_iter_init (&reports_iter, reports);
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, clear_original, 1,
+                                 subject_where);
+          else
+            report_clear_count_cache (*reports_ptr, clear_original, 1,
+                                      subject_where);
+        }
+    }
+
+  if (reports)
+    g_hash_table_destroy (reports);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (resource_type);
+  g_free (subject_where);
+
+  return 0;
+}
+
+/**
+ * @brief Create a permission.
+ *
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  permission      Permission.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
+ */
+int
+create_permission (const char *name_arg, const char *comment,
+                   const char *resource_type_arg, const char *resource_id_arg,
+                   const char *subject_type, const char *subject_id,
+                   permission_t *permission)
+{
+  int ret;
+
+  sql_begin_immediate ();
+
+  ret = create_permission_internal (1, name_arg, comment, resource_type_arg,
+                                    resource_id_arg, subject_type, subject_id,
+                                    permission);
+  if (ret)
+    sql_rollback ();
+  else
+    sql_commit ();
+
+  return ret;
+}
+
+/**
+ * @brief Create a permission.
+ *
+ * Does not require current user to have CREATE_PERMISSION access.
+ *
+ * @param[in]   name_arg        Name of permission.
+ * @param[in]   comment         Comment on permission.
+ * @param[in]   resource_type_arg  Type of resource, for special permissions.
+ * @param[in]   resource_id_arg    UUID of resource.
+ * @param[in]   subject_type    Type of subject.
+ * @param[in]   subject_id      UUID of subject.
+ * @param[out]  permission      Permission.
+ *
+ * @return 0 success, 2 failed to find subject, 3 failed to find resource,
+ *         5 error in resource, 6 error in subject, 7 error in name,
+ *         8 permission on permission, 9 permission does not accept resource,
+ *         99 permission denied, -1 internal error.
+ */
+int
+create_permission_no_acl (const char *name_arg, const char *comment,
+                          const char *resource_type_arg,
+                          const char *resource_id_arg,
+                          const char *subject_type, const char *subject_id,
+                          permission_t *permission)
+{
+  return create_permission_internal (0, name_arg, comment, resource_type_arg,
+                                     resource_id_arg, subject_type, subject_id,
+                                     permission);
+}
+
+/**
+ * @brief Create a permission from an existing permission.
+ *
+ * @param[in]  comment     Comment on new permission.  NULL to copy from existing.
+ * @param[in]  permission_id   UUID of existing permission.
+ * @param[out] new_permission  New permission.
+ *
+ * @return 0 success, 1 permission exists already, 2 failed to find existing
+ *         permission, 99 permission denied, -1 error.
+ */
+int
+copy_permission (const char* comment, const char *permission_id,
+                 permission_t* new_permission)
+{
+  int ret;
+  permission_t permission, new, old;
+  char *subject_type, *name;
+  resource_t subject;
+
+  sql_begin_immediate ();
+
+  permission = 0;
+  /* There are no permissions on permissions, so no need for the
+   * "_with_permission" version. */
+  if (find_permission (permission_id, &permission))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (permission == 0)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
+  /* Prevent copying of command level permissions for predefined roles. */
+  subject_type = permission_subject_type (permission);
+  subject = permission_subject (permission);
+  if (permission_resource (permission) == 0
+      && subject_type
+      && strcmp (subject_type, "role") == 0
+      && subject
+      && role_is_predefined (subject))
+    {
+      free (subject_type);
+      sql_rollback ();
+      return 99;
+    }
+  free (subject_type);
+
+  /* Refuse to copy Super On Everyone. */
+  name = permission_name (permission);
+  if ((strcmp (name, "Super") == 0)
+      && (permission_resource (permission) == 0))
+    {
+      free (name);
+      sql_rollback ();
+      return 99;
+    }
+  free (name);
+
+  ret = copy_resource_lock ("permission", NULL, comment, permission_id,
+                            "resource_type, resource, resource_uuid,"
+                            " resource_location, subject_type, subject,"
+                            " subject_location",
+                            0, &new, &old);
+  if (ret)
+    {
+      sql_rollback ();
+      return ret;
+    }
+
+  sql_commit ();
+  if (new_permission) *new_permission = new;
+  return 0;
+
 }
