@@ -534,6 +534,12 @@ reports_clear_count_cache_dynamic ();
 GHashTable *
 reports_for_override (override_t);
 
+void
+reports_add_all (GHashTable *);
+
+void
+reports_add_for_override (GHashTable *, override_t);
+
 GHashTable *
 reports_hashtable ();
 
@@ -542,6 +548,9 @@ report_cache_counts (report_t, int, int, const char *);
 
 void
 report_clear_count_cache (report_t, int, int, const char *);
+
+GHashTable *
+new_resources_hashtable ();
 
 int
 cleanup_config_sequences ();

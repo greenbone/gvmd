@@ -55,6 +55,10 @@ int
 delete_permission (const char *, int);
 
 int
+modify_permission (const char *, const char *, const char *, const char *,
+                   const char *, const char *, const char *);
+
+int
 permission_in_use (permission_t);
 
 int
