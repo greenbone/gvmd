@@ -2895,18 +2895,6 @@ int
 copy_permission (const char*, const char *, permission_t *);
 
 int
-permission_in_use (permission_t);
-
-int
-trash_permission_in_use (permission_t);
-
-int
-permission_writable (permission_t);
-
-int
-trash_permission_writable (permission_t);
-
-int
 permission_count (const get_data_t *);
 
 int
