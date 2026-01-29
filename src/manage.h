@@ -2897,10 +2897,6 @@ copy_permission (const char*, const char *, permission_t *);
 int
 permission_count (const get_data_t *);
 
-int
-modify_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *);
-
 /* Permission caching */
 
 void
