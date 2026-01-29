@@ -51,4 +51,7 @@ permission_iterator_subject_in_trash (iterator_t*);
 int
 permission_iterator_subject_readable (iterator_t*);
 
+int
+delete_permission (const char *, int);
+
 #endif /* not _GVMD_MANAGE_PERMISSIONS_H */

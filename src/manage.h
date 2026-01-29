@@ -2910,9 +2910,6 @@ int
 permission_count (const get_data_t *);
 
 int
-delete_permission (const char*, int);
-
-int
 modify_permission (const char *, const char *, const char *, const char *,
                    const char *, const char *, const char *);
 
