@@ -153,6 +153,12 @@ include_directories(
   ${PostgreSQL_SERVER_INCLUDE_DIRS}
 )
 
+# PostgreSQL headers and macros trigger -Wredundant-decls in this file.
+set_source_files_properties(
+  manage_pg_server.c
+  PROPERTIES COMPILE_OPTIONS "-Wno-redundant-decls"
+)
+
 # Source lists
 set(
   ALL_MANAGE_SRC
