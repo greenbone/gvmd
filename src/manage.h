@@ -2885,15 +2885,6 @@ void
 set_schedule_timeout (int);
 
 
-/* Permission caching */
-
-void
-delete_permissions_cache_for_resource (const char*, resource_t);
-
-void
-delete_permissions_cache_for_user (user_t);
-
-
 /* Schema. */
 
 int
