@@ -508,6 +508,16 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+set(
+        ALL_OBJECTS
+        $<TARGET_OBJECTS:all-gmp-obj>
+        $<TARGET_OBJECTS:all-manage-sql-obj>
+        $<TARGET_OBJECTS:all-misc-obj>
+        $<TARGET_OBJECTS:all-sql-obj>
+)
+set(EXTRA_SRC ${ALL_MANAGE_SRC})
+add_unit_test(manage-asset-keys "${ALL_OBJECTS}" "${EXTRA_SRC}")
+
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(DEBUG_FUNCTION_NAMES)
