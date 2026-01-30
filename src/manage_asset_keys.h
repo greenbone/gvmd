@@ -3,6 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+/**
+ * @file
+ * @brief Manage asset key merging for target assets.
+ *
+ * Provides functions to decide and apply asset key merges for asset snapshots
+ * of type ASSET_TYPE_TARGET.
+ */
+
 #ifndef _GVMD_MANAGE_ASSET_KEYS_H
 #define _GVMD_MANAGE_ASSET_KEYS_H
 
