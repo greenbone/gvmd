@@ -463,9 +463,6 @@ void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
 void
-cache_all_permissions_for_users (GArray *);
-
-void
 init_user_task_iterator (iterator_t *, int, int);
 
 int
@@ -486,9 +483,6 @@ create_permission_internal (int, const char *, const char *, const char *,
 int
 create_permission_no_acl (const char *, const char *, const char *, const char *,
                           const char *, const char *, permission_t *);
-
-void
-cache_permissions_for_resource (const char *, resource_t, GArray *);
 
 int
 copy_resource_lock (const char *, const char *, const char *, const char *,
