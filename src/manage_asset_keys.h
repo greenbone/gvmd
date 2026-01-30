@@ -1,0 +1,61 @@
+/* Copyright (C) 2026 Greenbone AG
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+#ifndef _GVMD_MANAGE_ASSET_KEYS_H
+#define _GVMD_MANAGE_ASSET_KEYS_H
+
+#include <glib.h>
+#include <stddef.h>
+
+/**
+ * @brief Match flags indicating which observed properties match a candidate
+ *        asset_key.
+ */
+#define MATCH_IP       (1u << 0)  ///< Candidate matches the observed IP address.
+#define MATCH_HOSTNAME (1u << 1)  ///< Candidate matches the observed hostname.
+#define MATCH_MAC      (1u << 2)  ///< Candidate matches the observed MAC address.
+
+/**
+ * @brief Observed target identifiers for a single asset snapshot row.
+ */
+typedef struct
+{
+    const char* ip; ///< Observed IP address (may be NULL or "").
+    const char* hostname; ///< Observed hostname (may be NULL or "").
+    const char* mac; ///< Observed MAC address (may be NULL or "").
+} asset_target_obs_t;
+
+/**
+ * @brief Candidate existing asset identified by an asset_key.
+ */
+typedef struct
+{
+    const char* asset_key; ///< Existing asset_key for this candidate.
+    time_t last_seen; ///< Last seen timestamp for this asset_key.
+    unsigned match_mask; ///< Bitmask of MATCH_* flags for this candidate.
+} asset_candidate_t;
+
+/**
+ * @brief Merge decision returned by the target merge algorithm.
+ */
+typedef struct
+{
+    int needs_new_key; ///< 1 if caller must generate a new asset_key.
+    const char* selected_key; ///< Chosen asset_key (borrowed, may be NULL).
+    size_t selected_index; ///< Index of chosen candidate in candidates[].
+
+    size_t* merge_indices; ///< Indices into candidates[] to merge.
+    size_t merge_indices_len; ///< Number of indices in merge_indices.
+} asset_merge_decision_t;
+
+asset_merge_decision_t
+asset_keys_target_merge_decide(const asset_target_obs_t* obs,
+                               const asset_candidate_t* candidates,
+                               size_t candidates_len);
+
+void
+asset_merge_decision_free(asset_merge_decision_t* d);
+
+#endif /* _GVMD_MANAGE_ASSET_KEYS_H */

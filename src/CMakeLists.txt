@@ -165,6 +165,7 @@ set(
   manage.c
   manage_acl.c
   manage_alerts.c
+  manage_asset_keys.c
   manage_credential_store_cyberark.c
   manage_credential_stores.c
   manage_configs.c
@@ -681,6 +682,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_asset_keys.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
