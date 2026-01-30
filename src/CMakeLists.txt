@@ -224,6 +224,7 @@ set(
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_permissions.c
+  manage_sql_permissions_cache.c
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_configs.c
@@ -714,6 +715,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions_cache.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
