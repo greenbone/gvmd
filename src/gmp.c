@@ -4449,6 +4449,8 @@ typedef enum
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_COPY,
+  /* HOSTS_ORDERING not used, kept for reasons of compatibility */
+  CLIENT_CREATE_TASK_HOSTS_ORDERING,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
   CLIENT_CREATE_TASK_OBSERVERS_GROUP,
@@ -4725,6 +4727,8 @@ typedef enum
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_CONFIG,
   CLIENT_MODIFY_TASK_FILE,
+  /* HOSTS_ORDERING not used, kept for reasons of compatibility */
+  CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
   CLIENT_MODIFY_TASK_OBSERVERS_GROUP,
@@ -7094,6 +7098,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_task_data->comment, "");
             set_client_state (CLIENT_MODIFY_TASK_COMMENT);
           }
+        /* HOSTS_ORDERING kept for reasons of compatibility */
+        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
+          set_client_state (CLIENT_MODIFY_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("SCANNER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -8191,6 +8198,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &create_task_data->scanner_id);
             set_client_state (CLIENT_CREATE_TASK_SCANNER);
           }
+        /* HOSTS_ORDERING kept for reasons of compatibility */
+        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -25329,6 +25339,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_TASK, ALTERABLE);
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
+      /* HOSTS_ORDERING kept for reasons of compatibility */
+      CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_CREATE_TASK, SCANNER);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
       CLOSE (CLIENT_CREATE_TASK, COPY);
@@ -28165,6 +28177,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_TASK, ALTERABLE);
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      /* HOSTS_ORDERING kept for reasons of compatibility */
+      CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_MODIFY_TASK, SCANNER);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
       CLOSE (CLIENT_MODIFY_TASK, ALERT);
