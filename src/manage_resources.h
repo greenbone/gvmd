@@ -10,8 +10,8 @@
  * Non-SQL generic resource type handling headers for the GVM management layer.
  */
 
-#ifndef GVMD_MANAGE_RESOURCES_H
-#define GVMD_MANAGE_RESOURCES_H
+#ifndef _GVMD_MANAGE_RESOURCES_H
+#define _GVMD_MANAGE_RESOURCES_H
 
 #include "iterator.h"
 
@@ -113,4 +113,4 @@ int
 secinfo_type_is_scap (const char*);
 
 
-#endif /* GVMD_MANAGE_RESOURCES_H */
+#endif /* not _GVMD_MANAGE_RESOURCES_H */

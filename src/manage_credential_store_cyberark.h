@@ -29,4 +29,4 @@ cyberark_login_password_credential_data (const char *,
                                          gchar **);
 
 
-#endif /* _GVMD_MANAGE_CREDENTIAL_STORE_CYBERARK_H */
+#endif /* not _GVMD_MANAGE_CREDENTIAL_STORE_CYBERARK_H */

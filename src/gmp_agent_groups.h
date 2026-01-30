@@ -64,4 +64,4 @@ int
 modify_agent_group_element_end (gmp_parser_t *, GError **,
                                 const gchar *);
 
-#endif // _GVMD_GMP_AGENT_GROUPS_H
+#endif // not _GVMD_GMP_AGENT_GROUPS_H

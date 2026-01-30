@@ -40,6 +40,7 @@
 #include "manage_agent_installers.h"
 #include "manage_assets.h"
 #include "manage_configs.h"
+#include "manage_nvts.h"
 #include "manage_osp.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
@@ -51,7 +52,6 @@
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
 #include "manage_sql_secinfo.h"
-#include "manage_sql_nvts.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
@@ -8062,7 +8062,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
     *report_id_return = NULL;
 
   current_scanner_task = task;
-  set_task_run_status (task, TASK_STATUS_DONE);
+  set_task_run_status (task, TASK_STATUS_REQUESTED);
 
   switch (fork ())
     {

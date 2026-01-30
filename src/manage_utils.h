@@ -92,4 +92,7 @@ gchar *
 concat_error_messages (const GPtrArray *errors, const gchar *sep,
                        const gchar *prefix);
 
+gchar *
+extract_sha256_digest_if_found (const gchar *);
+
 #endif /* not _GVMD_MANAGE_UTILS_H */

@@ -25,5 +25,5 @@ modify_agent_control_scan_config(scanner_t scanner,
                                  agent_controller_scan_agent_config_t cfg,
                                  GPtrArray** errors);
 
-#endif //_GVMD_MANAGE_AGENT_SCAN_CONFIG_H
+#endif // not _GVMD_MANAGE_AGENT_SCAN_CONFIG_H
 #endif // ENABLE_AGENTS

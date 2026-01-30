@@ -8,23 +8,12 @@
  * @brief Manager Manage library: Common SQL backend headers.
  */
 
-#ifndef MANAGE_SQL_NVTS_COMMON_H
-#define MANAGE_SQL_NVTS_COMMON_H
+#ifndef _GVMD_MANAGE_SQL_NVTS_COMMON_H
+#define _GVMD_MANAGE_SQL_NVTS_COMMON_H
 
+#include "manage_nvts_common.h"
 #include <glib.h>
 #include <gvm/base/nvti.h>
-
-/**
- * @brief Default for vt_ref_insert_size.
- */
-#define VT_REF_INSERT_SIZE_DEFAULT 50000
-
-/**
- * @brief Default for vt_sev_insert_size.
- *
- * There are about 80k vt_severities.
- */
-#define VT_SEV_INSERT_SIZE_DEFAULT 100000
 
 /**
  * @brief SQL batch.
@@ -73,4 +62,4 @@ update_preferences_from_nvti (nvti_t *nvti, GList **preferences);
 void
 update_nvt_end (const time_t old_nvts_last_modified);
 
-#endif //MANAGE_SQL_NVTS_COMMON_H
+#endif // not _GVMD_MANAGE_SQL_NVTS_COMMON_H

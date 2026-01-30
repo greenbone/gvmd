@@ -8,6 +8,7 @@
 #include "manage_filter_utils.h"
 #include "manage_settings.h"
 #include "manage_sql.h"
+#include "manage_sql_permissions.h"
 
 #include <ctype.h>
 

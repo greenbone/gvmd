@@ -40,6 +40,7 @@
 #include <gvm/base/cvss.h>
 
 #include "manage_sql_nvts.h"
+#include "manage_sql_nvts_openvasd.h"
 #include "manage_preferences.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"

@@ -38,4 +38,4 @@ user_t
 scan_queue_iterator_owner (iterator_t*);
 
 
-#endif /* _GVMD_MANAGE_SQL_SCAN_QUEUE_H */
+#endif /* not _GVMD_MANAGE_SQL_SCAN_QUEUE_H */

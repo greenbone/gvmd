@@ -99,6 +99,7 @@
 #include "manage_filters.h"
 #include "manage_groups.h"
 #include "manage_oci_image_targets.h"
+#include "manage_permissions.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"

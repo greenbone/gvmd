@@ -6,6 +6,7 @@
 #include "manage_sql_groups.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_users.h"
 #include "sql.h"
 

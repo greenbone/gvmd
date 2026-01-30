@@ -64,4 +64,4 @@ delete_agent_element_end (gmp_parser_t *gmp_parser, GError **error,
 void
 delete_agent_run (gmp_parser_t *gmp_parser, GError **error);
 
-#endif //_GVMD_GMP_AGENTS_H
+#endif // not _GVMD_GMP_AGENTS_H
