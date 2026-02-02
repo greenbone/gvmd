@@ -18,6 +18,15 @@ typedef enum
  ASSET_TYPE_CONTAINER_IMAGE = 2
 } asset_type_t;
 
+/**
+ * @brief Statuses of assets represented in asset snapshots.
+ */
+typedef enum
+{
+ ASSET_STATUS_UNMANAGED = 0,
+ ASSET_STATUS_MANAGED = 1,
+} asset_status_t;
+
 char*
 host_uuid (resource_t);
 
