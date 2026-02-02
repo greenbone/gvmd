@@ -1667,7 +1667,7 @@ fork_agents_sync ()
  * @return 0 on success, 1 if already in progress, -1 on error.
  */
 static int
-fork_asset_snapshot_status ()
+fork_asset_snapshot_status_update ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1727,7 +1727,7 @@ fork_asset_snapshot_status ()
         }
 
     /* Update status of asset snapshot as UNMANAGED */
-      manage_asset_snapshot_asset_status (MANAGED_POLICY_DAY);
+      manage_asset_snapshot_asset_status (ASSET_SNAPSHOT_MANAGED_POLICY_DAY);
 
       cleanup_manage_process (FALSE);
       gvm_close_sentry ();
@@ -1891,7 +1891,7 @@ run_asset_snapshot_status_update (periodic_times_t *t)
   if (!time_to_run (t->last_asset_snapshot_status_update,
                     ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD, now))
     return;
-  fork_asset_snapshot_status ();
+  fork_asset_snapshot_status_update ();
   set_last_run_time (&t->last_asset_snapshot_status_update, time (NULL));
 }
 
