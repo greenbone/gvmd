@@ -112,5 +112,13 @@ secinfo_type_name (const char*);
 int
 secinfo_type_is_scap (const char*);
 
+
+/* Everything else. */
+
+int
+manage_resource_name (const char *, const char *, char **);
+
+int
+manage_trash_resource_name (const char *, const char *, char **);
 
 #endif /* not _GVMD_MANAGE_RESOURCES_H */
