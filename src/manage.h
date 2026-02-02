@@ -3424,7 +3424,7 @@ manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
 /* Asset Snapshots */
 
-#define MANAGED_POLICY_DAY 90
+#define ASSET_SNAPSHOT_MANAGED_POLICY_DAY 90
 
 void
 manage_asset_snapshot_asset_status (int);
