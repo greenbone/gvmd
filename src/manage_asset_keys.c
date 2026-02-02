@@ -71,56 +71,133 @@ obs_has_any_property (const asset_target_obs_t *obs)
 }
 
 /**
- * @brief Decide the asset_key for a target observation and which candidates to
- *        merge into it.
+ * @brief Check whether all properties of @p cand are covered by selected and obs.
  *
- * @param[in] obs             Observed identifiers (ip/hostname/mac).
- * @param[in] candidates      Candidate asset_keys provided by SQL layer.
- * @param[in] candidates_len  Number of candidates.
+ * @param[in] cand      Candidate being considered for merging into selected.
+ * @param[in] selected  The selected candidate.
+ * @param[in] obs       The current observation.
  *
- * @return A merge decision. Caller must call asset_merge_decision_free() on the
- *         returned decision to release merge_indices.
+ * @return TRUE if @p cand can be merged into @p selected, else FALSE.
  */
-asset_merge_decision_t
-asset_keys_target_merge_decide (const asset_target_obs_t *obs,
-                           const asset_candidate_t *candidates,
-                           size_t candidates_len)
+static gboolean
+candidate_props_subset_of_selected_and_obs (const asset_candidate_t *cand,
+                                            const asset_candidate_t *selected,
+                                            const asset_target_obs_t *obs)
 {
-  asset_merge_decision_t out;
+  if (!cand || !selected || !obs)
+    return FALSE;
 
-  memset (&out, 0, sizeof (out));
+  /* MAC */
+  if (cand->mac && *cand->mac)
+    {
+      gboolean ok = FALSE;
 
-  /* assume new key unless we find a suitable candidate */
-  out.needs_new_key = 1;
-  out.selected_key = NULL;
-  out.selected_index = 0;
-  out.merge_indices = NULL;
-  out.merge_indices_len = 0;
+      if (selected->mac && *selected->mac &&
+          g_strcmp0 (cand->mac, selected->mac) == 0)
+        ok = TRUE;
+
+      if (!ok && obs->mac && *obs->mac &&
+          g_strcmp0 (cand->mac, obs->mac) == 0)
+        ok = TRUE;
+
+      if (!ok)
+        return FALSE;
+    }
+
+  /* HOSTNAME */
+  if (cand->hostname && *cand->hostname)
+    {
+      gboolean ok = FALSE;
+
+      if (selected->hostname && *selected->hostname &&
+          g_strcmp0 (cand->hostname, selected->hostname) == 0)
+        ok = TRUE;
+
+      if (!ok && obs->hostname && *obs->hostname &&
+          g_strcmp0 (cand->hostname, obs->hostname) == 0)
+        ok = TRUE;
+
+      if (!ok)
+        return FALSE;
+    }
+
+  /* IP */
+  if (cand->ip && *cand->ip)
+    {
+      gboolean ok = FALSE;
+
+      if (selected->ip && *selected->ip &&
+          g_strcmp0 (cand->ip, selected->ip) == 0)
+        ok = TRUE;
+
+      if (!ok && obs->ip && *obs->ip &&
+          g_strcmp0 (cand->ip, obs->ip) == 0)
+        ok = TRUE;
+
+      if (!ok)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+/**
+ * @brief Initialize a merge decision with default values.
+ *
+ * @param[in,out] out  Decision object to initialize.
+ */
+static void
+asset_merge_decision_init (asset_merge_decision_t *out)
+{
+  memset (out, 0, sizeof (*out));
+  out->needs_new_key = 1;
+  out->selected_key = NULL;
+  out->selected_index = 0;
+  out->merge_indices = NULL;
+}
+
+/**
+ * @brief Decide the asset_key for a target observation and which candidates to merge.
+ *
+ * Selection:
+ * - choose the best candidate by score (MAC strong, hostname/IP weak)
+ * - pick by last_seen
+ *
+ * @param[in]  obs             Observed identifiers (ip/hostname/mac).
+ * @param[in]  candidates      Candidate asset_keys.
+ * @param[in]  candidates_len  Number of entries in @p candidates.
+ * @param[in,out] out             Output decision.
+ */
+void
+asset_keys_target_merge_decide (const asset_target_obs_t *obs,
+                                const asset_candidate_t *candidates,
+                                size_t candidates_len,
+                                asset_merge_decision_t *out)
+{
+  if (!out)
+    return;
+
+  asset_merge_decision_init (out);
 
   if (!obs_has_any_property (obs))
-    return out;
+    return;
 
-  /* No candidates then new key */
   if (!candidates || candidates_len == 0)
-    return out;
+    return;
 
-  /* Pick best candidate: score desc, last_seen desc */
   float best_score = -1.0f;
   time_t best_last_seen = (time_t) 0;
-  size_t best_idx = (size_t) 0;
-  int found = 0;
+  size_t best_idx = 0;
+  gboolean found = FALSE;
 
   for (size_t i = 0; i < candidates_len; i++)
     {
       const asset_candidate_t *c = &candidates[i];
 
-      /* ignore empty keys */
       if (!c->asset_key || !*c->asset_key)
         continue;
 
       float s = candidate_score (c);
-
-      /* score==0 means no matching observed properties */
       if (s <= 0.0f)
         continue;
 
@@ -131,26 +208,22 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
           best_score = s;
           best_last_seen = c->last_seen;
           best_idx = i;
-          found = 1;
+          found = TRUE;
         }
     }
 
   if (!found)
-    return out; /* keep needs_new_key=1 */
+    return;
 
-  out.needs_new_key = 0;
-  out.selected_index = best_idx;
-  out.selected_key = candidates[best_idx].asset_key;
+  out->needs_new_key = 0;
+  out->selected_index = best_idx;
+  out->selected_key = candidates[best_idx].asset_key;
 
-  size_t *indices = (size_t *) malloc (candidates_len * sizeof (size_t));
-  if (!indices)
-    {
-      out.merge_indices = NULL;
-      out.merge_indices_len = 0;
-      return out;
-    }
+  const asset_candidate_t *selected = &candidates[best_idx];
 
-  size_t n = 0;
+  out->merge_indices =
+    g_array_sized_new (FALSE, FALSE, sizeof (size_t), candidates_len);
+
   for (size_t i = 0; i < candidates_len; i++)
     {
       if (i == best_idx)
@@ -161,22 +234,15 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
       if (!c->asset_key || !*c->asset_key)
         continue;
 
-      if (candidate_score (c) > 0.0f)
-        indices[n++] = i;
+      if (candidate_props_subset_of_selected_and_obs (c, selected, obs))
+        g_array_append_val (out->merge_indices, i);
     }
 
-  if (n == 0)
+  if (out->merge_indices->len == 0)
     {
-      free (indices);
-      out.merge_indices = NULL;
-      out.merge_indices_len = 0;
-      return out;
+      g_array_free (out->merge_indices, TRUE);
+      out->merge_indices = NULL;
     }
-
-  out.merge_indices = indices;
-  out.merge_indices_len = n;
-
-  return out;
 }
 
 /**
@@ -185,14 +251,15 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
  * @param[in,out] d  Decision to free/reset.
  */
 void
-asset_merge_decision_free (asset_merge_decision_t *d)
+asset_merge_decision_reset (asset_merge_decision_t *d)
 {
   if (!d)
     return;
 
-  free (d->merge_indices);
+  if (d->merge_indices)
+    g_array_free (d->merge_indices, TRUE);
+
   d->merge_indices = NULL;
-  d->merge_indices_len = 0;
   d->selected_key = NULL;
   d->selected_index = 0;
   d->needs_new_key = 0;

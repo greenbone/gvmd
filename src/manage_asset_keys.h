@@ -43,6 +43,9 @@ typedef struct
     const char* asset_key; ///< Existing asset_key for this candidate.
     time_t last_seen; ///< Last seen timestamp for this asset_key.
     unsigned match_mask; ///< Bitmask of MATCH_* flags for this candidate.
+    const char* ip; ///< IP address of this candidate
+    const char* hostname; ///< Hostname of this candidate
+    const char* mac; ///< MAC address of this candidate
 } asset_candidate_t;
 
 /**
@@ -54,16 +57,17 @@ typedef struct
     const char* selected_key; ///< Chosen asset_key (borrowed, may be NULL).
     size_t selected_index; ///< Index of chosen candidate in candidates[].
 
-    size_t* merge_indices; ///< Indices into candidates[] to merge.
-    size_t merge_indices_len; ///< Number of indices in merge_indices.
+    GArray* merge_indices; ///< Indices into candidates[] to merge.
+    ///  Element type: size_t
 } asset_merge_decision_t;
 
-asset_merge_decision_t
-asset_keys_target_merge_decide(const asset_target_obs_t* obs,
-                               const asset_candidate_t* candidates,
-                               size_t candidates_len);
+void
+asset_keys_target_merge_decide (const asset_target_obs_t*,
+                                const asset_candidate_t*,
+                                size_t,
+                                asset_merge_decision_t*);
 
 void
-asset_merge_decision_free(asset_merge_decision_t* d);
+asset_merge_decision_reset (asset_merge_decision_t* );
 
 #endif /* _GVMD_MANAGE_ASSET_KEYS_H */
