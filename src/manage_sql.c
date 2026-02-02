@@ -1237,31 +1237,6 @@ copy_resource (const char *type, const char *name, const char *comment,
 }
 
 /**
- * @brief Get whether a resource exists.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Resource.
- * @param[in]  location  Location.
- *
- * @return 1 yes, 0 no, -1 error in type.
- */
-int
-resource_exists (const char *type, resource_t resource, int location)
-{
-  if (valid_db_resource_type (type) == 0)
-    return -1;
-
-  if (location == LOCATION_TABLE)
-    return sql_int ("SELECT EXISTS (SELECT id FROM %ss WHERE id = %llu);",
-                    type,
-                    resource);
-  return sql_int ("SELECT EXISTS (SELECT id FROM %ss%s WHERE id = %llu);",
-                  type,
-                  strcmp (type, "task") ? "_trash" : "",
-                  resource);
-}
-
-/**
  * @brief Get the name of a resource.
  *
  * @param[in]  type      Type.
