@@ -2749,6 +2749,10 @@ int
 slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
+/**
+* @brief Seconds of a day
+*/
+#define SECONDS_PER_DAY 86400
 
 /**
  * @brief Seconds between calls to manage_schedule.
@@ -2777,6 +2781,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
   */
   #define AGENT_SYNC_SCHEDULE_PERIOD 300 /* every 5 minutes */
 #endif
+
+/**
+ * @brief Seconds between calls to manage_asset_snapshot_asset_status.
+ */
+#define ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD 3600 /* every hour */
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
@@ -3419,8 +3428,15 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
+/* Asset Snapshots */
+
+#define MANAGED_POLICY_DAY 90
+
+void
+manage_asset_snapshot_asset_status (int);
+
 int
-manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
+manage_dump_asset_snapshot_counts (GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */
