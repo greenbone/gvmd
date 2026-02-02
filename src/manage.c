@@ -51,6 +51,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"

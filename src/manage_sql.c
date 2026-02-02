@@ -1451,24 +1451,6 @@ set_resource_id_deprecated (const char *type, const char *resource_id,
 }
 
 /**
- * @brief Get the UUID of a resource.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Resource.
- *
- * @return Freshly allocated UUID on success, else NULL.
- */
-gchar *
-resource_uuid (const gchar *type, resource_t resource)
-{
-  assert (valid_db_resource_type (type));
-
-  return sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
-                     type,
-                     resource);
-}
-
-/**
  * @brief Initialise a GET iterator, including observed resources.
  *
  * This version includes the extra_with arg.
