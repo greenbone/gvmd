@@ -342,9 +342,6 @@ void
 set_report_scheduled (report_t);
 
 gboolean
-find_resource_by_name (const char *, const char *, resource_t *);
-
-gboolean
 find_resource_by_name_with_permission (const char *, const char *,
                                        resource_t *, const char *);
 
