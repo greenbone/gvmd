@@ -30,4 +30,8 @@ gboolean
 find_resource_by_name_with_permission (const char *, const char *,
                                        resource_t *, const char *);
 
+int
+copy_resource_lock (const char *, const char *, const char *, const char *,
+                    const char *, int, resource_t *, resource_t *);
+
 #endif // not _GVMD_MANAGE_SQL_RESOURCES_H

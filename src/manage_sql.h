@@ -470,10 +470,6 @@ int
 create_permission_no_acl (const char *, const char *, const char *, const char *,
                           const char *, const char *, permission_t *);
 
-int
-copy_resource_lock (const char *, const char *, const char *, const char *,
-                    const char *, int, resource_t *, resource_t *);
-
 nvti_t *
 lookup_nvti (const gchar *);
 
