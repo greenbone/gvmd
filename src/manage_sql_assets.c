@@ -160,7 +160,7 @@ typedef enum
   AS_COL_ASSET_KEY = 10,
   AS_COL_CREATION_TIME = 11,
   AS_COL_MODIFICATION_TIME = 12,
-  AS_COL_ASSET_STATUS = 13
+  AS_COL_SCANNER = 13
 } asset_snapshot_col_t;
 
 static int
@@ -1062,12 +1062,14 @@ identifier_free (identifier_t *identifier)
  * @param[out] iterator          Iterator to initialize.
  * @param[in]  task              Filter by task_id (0 means "any task").
  * @param[in]  report            Filter by report_id (0 means "any report").
+ * @param[in]  scanner           Filter by scanner_id (0 means "any scanner").
  * @param[in]  only_missing_key  If true, only rows with asset_key IS NULL.
  */
 static void
 init_asset_snapshot_iterator (iterator_t *iterator,
                               task_t task,
                               report_t report,
+                              scanner_t scanner,
                               gboolean only_missing_key)
 {
   g_return_if_fail (iterator);
@@ -1080,6 +1082,9 @@ init_asset_snapshot_iterator (iterator_t *iterator,
   if (report)
     g_string_append_printf (where, " AND report_id = %llu", report);
 
+  if (scanner)
+    g_string_append_printf (where, " AND scanner = %llu", scanner);
+
   if (only_missing_key)
     g_string_append (where, " AND asset_key IS NULL");
 
@@ -1087,7 +1092,7 @@ init_asset_snapshot_iterator (iterator_t *iterator,
     "SELECT id, uuid, task_id, report_id, asset_type,"
     "       ip_address, hostname, mac_address, agent_id,"
     "       container_digest, asset_key, creation_time,"
-    "       modification_time, asset_status"
+    "       modification_time, scanner"
     "  FROM asset_snapshots"
     "%s"
     " ORDER BY id ASC;",
@@ -1134,8 +1139,8 @@ DEF_ACCESS (asset_snapshot_iterator_container_digest, AS_COL_CONTAINER_DIGEST);
 /** @brief Get the asset key from the current iterator row. */
 DEF_ACCESS (asset_snapshot_iterator_asset_key, AS_COL_ASSET_KEY);
 
-/** @brief Get the asset status from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_asset_status, AS_COL_ASSET_STATUS);
+/** @brief Get the scanner from the current iterator row. */
+DEF_ACCESS (asset_snapshot_iterator_scanner, AS_COL_SCANNER);
 
 /**
  * @brief Get modification time for an asset_key.
@@ -1169,11 +1174,14 @@ asset_target_get_last_modification_time (const char *asset_key)
  * @param[in]     match_bit   Which property is being matched (MATCH_MAC /
  *                            MATCH_HOSTNAME / MATCH_IP). Also ORed into
  *                            match_mask for the candidate.
+ * @param[in]     scanner     Scanner id of the task used for distinguishing
+ *                            networks
  */
 static void
 asset_target_add_candidates (GPtrArray  *candidates,
                              const char *value,
-                             unsigned    match_bit)
+                             unsigned    match_bit,
+                             scanner_t scanner)
 {
   iterator_t it;
   const char *sql = NULL;
@@ -1190,6 +1198,7 @@ asset_target_add_candidates (GPtrArray  *candidates,
         " WHERE mac_address = $1"
         "   AND asset_type = $2"
         "   AND asset_key IS NOT NULL"
+        "   AND scanner = $3"
         " ORDER BY asset_key;";
       break;
     case MATCH_HOSTNAME:
@@ -1199,6 +1208,7 @@ asset_target_add_candidates (GPtrArray  *candidates,
         " WHERE hostname = $1"
         "   AND asset_type = $2"
         "   AND asset_key IS NOT NULL"
+        "   AND scanner= $3"
         " ORDER BY asset_key;";
       break;
     case MATCH_IP:
@@ -1208,6 +1218,7 @@ asset_target_add_candidates (GPtrArray  *candidates,
         " WHERE ip_address = $1"
         "   AND asset_type = $2"
         "   AND asset_key IS NOT NULL"
+        "   AND scanner= $3"
         " ORDER BY asset_key;";
       break;
     default:
@@ -1218,6 +1229,7 @@ asset_target_add_candidates (GPtrArray  *candidates,
                     sql,
                     SQL_STR_PARAM (value),
                     SQL_INT_PARAM (ASSET_TYPE_TARGET),
+                    SQL_RESOURCE_PARAM (scanner),
                     NULL);
 
   while (next (&it))
@@ -1291,13 +1303,15 @@ asset_target_add_candidates (GPtrArray  *candidates,
  * (MAC, hostname, IP), runs the target-merge decision algorithm, then updates
  * the snapshot row to the selected key (or generates a new UUID if required).
  *
- * @param row_id  The asset_snapshots.id of the target snapshot row to update.
- * @param obs     The observation (mac/hostname/ip) used to find candidates and
- *                drive the merge decision.
+ * @param[in] row_id   The asset_snapshots.id of the target snapshot row to update.
+ * @param[in] obs      The observation (mac/hostname/ip) used to find candidates and
+ *                     drive the merge decision.
+ * @param[in] scanner  Scanner id of the task used for distinguishing networks
  */
 static void
 asset_target_merge_apply_sql (asset_snapshot_t row_id,
-                              const asset_target_obs_t *obs)
+                              const asset_target_obs_t *obs,
+                              scanner_t scanner)
 {
   GPtrArray *candidates = g_ptr_array_new ();
   asset_candidate_t *cand_array = NULL;
@@ -1305,9 +1319,10 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
   asset_merge_decision_t decision;
 
   /* Collect candidates */
-  asset_target_add_candidates (candidates, obs->mac, MATCH_MAC);
-  asset_target_add_candidates (candidates, obs->hostname, MATCH_HOSTNAME);
-  asset_target_add_candidates (candidates, obs->ip,MATCH_IP);
+  asset_target_add_candidates (candidates, obs->mac, MATCH_MAC, scanner);
+  asset_target_add_candidates (candidates, obs->hostname, MATCH_HOSTNAME,
+                               scanner);
+  asset_target_add_candidates (candidates, obs->ip,MATCH_IP, scanner);
 
   /* Build flat array for algorithm */
   cand_len = candidates->len;
@@ -1341,11 +1356,9 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
     {
       sql_ps ("UPDATE asset_snapshots"
               "   SET asset_key = $1,"
-              "       modification_time = m_now(),"
-              "       asset_status = $2"
-              " WHERE id = $3;",
+              "       modification_time = m_now()"
+              " WHERE id = $2;",
               SQL_STR_PARAM (selected_key),
-              SQL_INT_PARAM (ASSET_STATUS_MANAGED),
               SQL_RESOURCE_PARAM (row_id),
               NULL);
 
@@ -1398,18 +1411,18 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
  * @brief Set asset_key for asset_snapshots rows of a report.
  *
  * Uses the target merge algorithm:
- * - Collect candidate asset_keys
+ * - Collect candidate asset_keys filter by scanner (network)
  * - Decide best key via asset_target_merge_decide()
  * - Set asset_key and merge connected assets
  */
 static void
-asset_snapshots_set_target_asset_keys ()
+asset_snapshots_set_target_asset_keys (scanner_t scanner)
 {
   iterator_t it;
 
   /* iterate only rows that still need a key */
   init_asset_snapshot_iterator (&it, 0 /* any task */, 0 /* any report */,
-                                TRUE);
+                                scanner, TRUE);
 
   while (next (&it))
     {
@@ -1422,7 +1435,7 @@ asset_snapshots_set_target_asset_keys ()
       asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
 
       /* Delegate all logic to the merge apply helper */
-      asset_target_merge_apply_sql (row_id, &obs);
+      asset_target_merge_apply_sql (row_id, &obs, scanner);
     }
 
   cleanup_iterator (&it);
@@ -1433,9 +1446,10 @@ asset_snapshots_set_target_asset_keys ()
  *
  * @param[in]  report     Report that the host identifiers come from.
  * @param[in]  task       Task that produced the report.
+ * @param[in]  task       Scanner that produced the task.
  */
 static void
-asset_snapshots_insert_target (report_t report, task_t task)
+asset_snapshots_insert_target (report_t report, task_t task, scanner_t scanner)
 {
   if (!snapshot_identifier_hosts || snapshot_identifier_hosts->len == 0)
     {
@@ -1488,14 +1502,15 @@ asset_snapshots_insert_target (report_t report, task_t task)
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
               "  ip_address, hostname, mac_address,"
-              "  creation_time, modification_time, asset_status)"
+              "  creation_time, modification_time, scanner)"
               " VALUES"
               " (make_uuid (), $1, $2, $3, $4, $5, $6, m_now (),"
               " m_now (), $7);",
               SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_TARGET),
               SQL_STR_PARAM (ip), SQL_STR_PARAM (hostname),
-              SQL_STR_PARAM (mac), SQL_INT_PARAM (ASSET_STATUS_MANAGED), NULL);
+              SQL_STR_PARAM (mac),
+              SQL_RESOURCE_PARAM (scanner), NULL);
     }
 
   g_hash_table_destroy (seen);
@@ -1524,7 +1539,7 @@ cleanup:
 void
 asset_snapshots_target (report_t report, task_t task, gboolean discovery)
 {
-  if (!discovery)
+  if (discovery)
     {
       g_debug ("%s: Discovery scan assets will not stored for counting",
                __func__);
@@ -1541,10 +1556,12 @@ asset_snapshots_target (report_t report, task_t task, gboolean discovery)
         }
       return;
     }
+
+  scanner_t scanner = task_scanner (task);
   /* Store asset snapshot without asset_key*/
-  asset_snapshots_insert_target (report, task);
+  asset_snapshots_insert_target (report, task, scanner);
   /* Set asset_key for asset_snapshots  */
-  asset_snapshots_set_target_asset_keys ();
+  asset_snapshots_set_target_asset_keys (scanner);
 }
 
 #if ENABLE_AGENTS
@@ -1559,6 +1576,7 @@ void
 asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 {
   agent_uuid_list_t agent_uuids;
+  scanner_t scanner = task_scanner (task);
 
   agent_uuids = agent_uuid_list_from_group (group);
   if (agent_uuids == NULL || agent_uuids->count <= 0 || agent_uuids->agent_uuids == NULL)
@@ -1586,13 +1604,14 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
               "  asset_key, agent_id,"
-              "  creation_time, modification_time, asset_status)"
+              "  creation_time, modification_time, scanner)"
               " VALUES"
-              " (make_uuid (), $1, $2, $3, $4, $5, m_now (), m_now (), $6);",
+              " (make_uuid (), $1, $2, $3, $4, $5, m_now (), m_now (),"
+              " $6);",
               SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_AGENT),
               SQL_STR_PARAM (agent_uuid), SQL_STR_PARAM (agent_id),
-              SQL_INT_PARAM (ASSET_STATUS_MANAGED), NULL);
+              SQL_RESOURCE_PARAM (scanner), NULL);
 
       g_free (agent_id);
     }
@@ -1613,7 +1632,9 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
 {
   iterator_t hosts;
 
-  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
+                                            NULL);
+  scanner_t scanner = task_scanner (task);
 
   /* Iterate report hosts (host value contains digest for container-image scan) */
   init_report_host_iterator (&hosts, report, NULL, 0);
@@ -1633,13 +1654,14 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
               "  container_digest,"
-              "  creation_time, modification_time, asset_snapshot)"
+              "  creation_time, modification_time, scanner)"
               " VALUES"
-              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now (), $5);",
+              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now (),"
+              " $5);",
               SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_CONTAINER_IMAGE),
-              SQL_STR_PARAM (digest), SQL_INT_PARAM (ASSET_STATUS_MANAGED),
-              NULL);
+              SQL_STR_PARAM (digest),
+              SQL_RESOURCE_PARAM (scanner), NULL);
     }
 
   cleanup_iterator (&hosts);
@@ -1681,7 +1703,7 @@ asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
 {
   iterator_t it;
 
-  init_asset_snapshot_iterator (&it, task, report, TRUE);
+  init_asset_snapshot_iterator (&it, task, report, 0 /*any scanner */, TRUE);
 
   while (next (&it))
     {
@@ -1762,29 +1784,29 @@ manage_dump_asset_snapshot_counts (GSList *log_config,
     return ret;
 
   total_count = sql_int (
-    "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots where asset_status=1;");
+  "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots;");
 
   target_count = sql_int_ps (
     "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
-    " WHERE asset_type = $1 and asset_status= $2;",
-    SQL_INT_PARAM (ASSET_TYPE_TARGET), SQL_INT_PARAM (ASSET_STATUS_MANAGED),
+    " WHERE asset_type = $1;",
+    SQL_INT_PARAM (ASSET_TYPE_TARGET),
     NULL);
 
   agent_count = sql_int_ps (
     "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
-    " WHERE asset_type =$1 and asset_status= $2;",
-    SQL_INT_PARAM (ASSET_TYPE_AGENT), SQL_INT_PARAM (ASSET_STATUS_MANAGED),
+    " WHERE asset_type =$1;",
+    SQL_INT_PARAM (ASSET_TYPE_AGENT),
     NULL);
 
   container_image_count = sql_int_ps (
     "SELECT COUNT(DISTINCT asset_key) FROM asset_snapshots"
-    " WHERE asset_type = $1 and asset_status= $2;",
+    " WHERE asset_type = $1;",
     SQL_INT_PARAM (ASSET_TYPE_CONTAINER_IMAGE),
-    SQL_INT_PARAM (ASSET_STATUS_MANAGED), NULL);
+    NULL);
 
   GString *out = g_string_new (NULL);
 
-  g_string_append (out, "Managed Asset Snapshot Counts (distinct asset_key)\n");
+  g_string_append (out, "Asset Snapshot Counts (distinct asset_key)\n");
   g_string_append_printf (
     out, "  Total:                     %d\n", total_count);
   g_string_append_printf (
@@ -1806,21 +1828,21 @@ manage_dump_asset_snapshot_counts (GSList *log_config,
 }
 
 /**
- * @brief Mark stale asset snapshots as unmanaged based on last modification time.
+ * @brief Delete stale asset snapshots based on last modification time.
  *
  * @param[in] days  Age threshold in days;
- *                  snapshots older than this are marked unmanaged.
+ *                  snapshots older than this are deleted.
  */
 void
-manage_asset_snapshot_asset_status (int days)
+manage_asset_snapshot_delete_stale (int days)
 {
   if (days <= 0)
     return;
 
   long long seconds = days * SECONDS_PER_DAY;
-  sql_ps ("UPDATE asset_snapshots SET asset_status = $1"
-          "  WHERE modification_time < (m_now() - $2);",
-          SQL_INT_PARAM (ASSET_STATUS_UNMANAGED),
+
+  sql_ps ("DELETE FROM asset_snapshots"
+          " WHERE modification_time < (m_now() - $1);",
           SQL_RESOURCE_PARAM (seconds),
           NULL);
 }
