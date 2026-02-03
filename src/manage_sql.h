@@ -451,10 +451,6 @@ tags_set_locations (const char *, resource_t, resource_t, int);
 void
 init_user_task_iterator (iterator_t *, int, int);
 
-int
-copy_resource (const char *, const char *, const char *, const char *,
-               const char *, int, resource_t *, resource_t *);
-
 gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 

@@ -742,45 +742,6 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 /* Resources. */
 
 /**
- * @brief Create a resource from an existing resource.
- *
- * @param[in]  type          Type of resource.
- * @param[in]  name          Name of new resource.  NULL to copy from existing.
- * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
- * @param[in]  resource_id   UUID of existing resource.
- * @param[in]  columns       Extra columns in resource.
- * @param[in]  make_name_unique  When name NULL, whether to make existing name
- *                               unique.
- * @param[out] new_resource  New resource.
- * @param[out] old_resource  Address for existing resource, or NULL.
- *
- * @return 0 success, 1 resource exists already, 2 failed to find existing
- *         resource, 99 permission denied, -1 error.
- */
-int
-copy_resource (const char *type, const char *name, const char *comment,
-               const char *resource_id, const char *columns,
-               int make_name_unique, resource_t* new_resource,
-               resource_t *old_resource)
-{
-  int ret;
-
-  assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  ret = copy_resource_lock (type, name, comment, resource_id, columns,
-                            make_name_unique, new_resource, old_resource);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-/**
  * @brief Check if a resource has been marked as deprecated.
  *
  * @param[in]  type         Resource type.
