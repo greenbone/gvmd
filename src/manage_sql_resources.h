@@ -34,4 +34,8 @@ int
 copy_resource_lock (const char *, const char *, const char *, const char *,
                     const char *, int, resource_t *, resource_t *);
 
+int
+copy_resource (const char *, const char *, const char *, const char *,
+               const char *, int, resource_t *, resource_t *);
+
 #endif // not _GVMD_MANAGE_SQL_RESOURCES_H
