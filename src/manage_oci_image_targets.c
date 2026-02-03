@@ -14,6 +14,7 @@
 
 #include "manage_oci_image_targets.h"
 #include "manage_sql.h"
+#include "manage_sql_resources.h"
 
 #include <gvm/base/hosts.h>
 

@@ -19,4 +19,8 @@ resource_uuid (const gchar *, resource_t);
 gboolean
 find_resource_no_acl (const char *, const char *, resource_t *);
 
+gboolean
+find_resource_with_permission (const char *, const char *,
+                               resource_t *, const char *, int);
+
 #endif // not _GVMD_MANAGE_SQL_RESOURCES_H

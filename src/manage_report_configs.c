@@ -10,8 +10,9 @@
  * Non-SQL report config code for the GVM management layer.
  */
 
-#include "manage_sql.h"
 #include "manage_report_configs.h"
+#include "manage_sql.h"
+#include "manage_sql_resources.h"
 
 #undef G_LOG_DOMAIN
 /**
