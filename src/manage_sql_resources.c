@@ -254,3 +254,70 @@ find_resource_no_acl (const char* type, const char* uuid, resource_t* resource)
   g_free (quoted_uuid);
   return FALSE;
 }
+
+/**
+ * @brief Find a resource given a UUID and a permission.
+ *
+ * @param[in]   type        Type of resource.
+ * @param[in]   uuid        UUID of resource.
+ * @param[out]  resource    Resource return, 0 if successfully failed to find
+ *                          resource.
+ * @param[in]   permission  Permission.
+ * @param[in]   trash       Whether resource is in trashcan.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+gboolean
+find_resource_with_permission (const char* type, const char* uuid,
+                               resource_t* resource, const char *permission,
+                               int trash)
+{
+  gchar *quoted_uuid;
+  if (uuid == NULL)
+    return TRUE;
+  if ((type == NULL) || (valid_db_resource_type (type) == 0))
+    return TRUE;
+  quoted_uuid = sql_quote (uuid);
+  if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
+    {
+      g_free (quoted_uuid);
+      *resource = 0;
+      return FALSE;
+    }
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
+                     type,
+                     (trash && strcmp (type, "task") && strcmp (type, "report"))
+                      ? "_trash"
+                      : "",
+                     quoted_uuid,
+                     strcmp (type, "task")
+                      ? ""
+                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
+                     strcmp (type, "report")
+                      ? ""
+                      : (trash
+                          ? " AND (SELECT hidden FROM tasks"
+                            "      WHERE tasks.id = task)"
+                            "     = 2"
+                          : " AND (SELECT hidden FROM tasks"
+                          "        WHERE tasks.id = task)"
+                          "       = 0")))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}

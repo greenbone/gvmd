@@ -13,6 +13,7 @@
 #include "manage_credential_store_cyberark.h"
 #include "manage_sql.h"
 #include "manage_sql_credential_stores.h"
+#include "manage_sql_resources.h"
 #include "manage_credential_stores.h"
 #include "manage_runtime_flags.h"
 
