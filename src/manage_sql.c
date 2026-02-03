@@ -740,54 +740,6 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 
 /* Resources. */
 
-/* TODO Only used by find_scanner, find_permission and check_permission_args. */
-/**
- * @brief Find a resource given a UUID.
- *
- * This only looks for resources owned (or effectively owned) by the current user.
- * So no shared resources and no globals.
- *
- * @param[in]   type       Type of resource.
- * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
- */
-gboolean
-find_resource (const char* type, const char* uuid, resource_t* resource)
-{
-  gchar *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-  if (acl_user_owns_uuid (type, quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *resource = 0;
-      return FALSE;
-    }
-  // TODO should really check type
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss WHERE uuid = '%s'%s;",
-                     type,
-                     quoted_uuid,
-                     strcmp (type, "task") ? "" : " AND hidden < 2"))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
 /**
  * @brief Find a resource given a UUID.
  *

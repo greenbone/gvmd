@@ -10,6 +10,9 @@
 
 #include <glib.h>
 
+gboolean
+find_resource (const char *, const char *, resource_t *);
+
 gchar *
 resource_uuid (const gchar *, resource_t);
 
