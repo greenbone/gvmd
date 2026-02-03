@@ -45,6 +45,7 @@ Prerequisites for building documentation:
 Prerequisites for building tests:
 
 * Cgreen (optional, for building tests)
+* libasan (optional, for building tests)
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.
