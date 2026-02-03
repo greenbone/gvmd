@@ -361,3 +361,63 @@ find_resource_by_name (const char* type, const char* name, resource_t *resource)
   g_free (quoted_name);
   return FALSE;
 }
+
+/**
+ * @brief Find a resource given a UUID and a permission.
+ *
+ * @param[in]   type        Type of resource.
+ * @param[in]   name        Name of resource.
+ * @param[out]  resource    Resource return, 0 if successfully failed to find
+ *                          resource.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+gboolean
+find_resource_by_name_with_permission (const char *type, const char *name,
+                                       resource_t *resource,
+                                       const char *permission)
+{
+  gchar *quoted_name;
+  assert (strcmp (type, "task"));
+  if (name == NULL)
+    return TRUE;
+  quoted_name = sql_quote (name);
+  // TODO should really check type
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss WHERE name = '%s'"
+                     " ORDER BY id DESC;",
+                     type,
+                     quoted_name))
+    {
+      case 0:
+        {
+          gchar *uuid;
+
+          uuid = sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
+                             type, *resource);
+          if (acl_user_has_access_uuid (type, uuid, permission, 0) == 0)
+            {
+              g_free (uuid);
+              g_free (quoted_name);
+              *resource = 0;
+              return FALSE;
+            }
+          g_free (uuid);
+        }
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
