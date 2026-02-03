@@ -166,7 +166,7 @@ asset_merge_decision_init (asset_merge_decision_t *out)
  * @param[in]  obs             Observed identifiers (ip/hostname/mac).
  * @param[in]  candidates      Candidate asset_keys.
  * @param[in]  candidates_len  Number of entries in @p candidates.
- * @param[in,out] out             Output decision.
+ * @param[in,out] out          Output decision.
  */
 void
 asset_keys_target_merge_decide (const asset_target_obs_t *obs,
