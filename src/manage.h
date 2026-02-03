@@ -395,9 +395,6 @@ resource_id_exists (const char *, const char *);
 int
 trash_id_exists (const char *, const char *);
 
-gboolean
-find_resource_no_acl (const char*, const char*, resource_t*);
-
 int
 delete_resource (const char *, const char *, int);
 

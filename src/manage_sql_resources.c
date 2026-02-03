@@ -215,3 +215,42 @@ find_resource (const char* type, const char* uuid, resource_t* resource)
   g_free (quoted_uuid);
   return FALSE;
 }
+
+/**
+ * @brief Find a resource given a UUID.
+ *
+ * @param[in]   type       Type of resource.
+ * @param[in]   uuid       UUID of resource.
+ * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on error.
+ */
+gboolean
+find_resource_no_acl (const char* type, const char* uuid, resource_t* resource)
+{
+  gchar *quoted_uuid;
+  quoted_uuid = sql_quote (uuid);
+
+  // TODO should really check type
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss WHERE uuid = '%s'%s;",
+                     type,
+                     quoted_uuid,
+                     strcmp (type, "task") ? "" : " AND hidden < 2"))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_uuid);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_uuid);
+  return FALSE;
+}

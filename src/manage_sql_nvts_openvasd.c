@@ -28,6 +28,7 @@
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_nvts_openvasd.h"
+#include "manage_sql_resources.h"
 #include "sql.h"
 
 #if ENABLE_CONTAINER_SCANNING
