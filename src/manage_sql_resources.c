@@ -321,3 +321,43 @@ find_resource_with_permission (const char* type, const char* uuid,
   g_free (quoted_uuid);
   return FALSE;
 }
+
+/**
+ * @brief Find a resource given a name.
+ *
+ * @param[in]   type      Type of resource.
+ * @param[in]   name      A resource name.
+ * @param[out]  resource  Resource return, 0 if successfully failed to find
+ *                        resource.
+ *
+ * @return FALSE on success (including if failed to find resource), TRUE on
+ *         error.
+ */
+gboolean
+find_resource_by_name (const char* type, const char* name, resource_t *resource)
+{
+  gchar *quoted_name;
+  quoted_name = sql_quote (name);
+  // TODO should really check type
+  switch (sql_int64 (resource,
+                     "SELECT id FROM %ss WHERE name = '%s'"
+                     " ORDER BY id DESC;",
+                     type,
+                     quoted_name))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        *resource = 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        g_free (quoted_name);
+        return TRUE;
+        break;
+    }
+
+  g_free (quoted_name);
+  return FALSE;
+}
