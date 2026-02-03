@@ -2779,7 +2779,7 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 /**
  * @brief Seconds between calls to manage_asset_snapshot_delete_stale.
  */
-#define ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD 3600 /* every hour */
+#define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);

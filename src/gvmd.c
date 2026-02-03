@@ -1662,7 +1662,7 @@ fork_agents_sync ()
 #endif //ENABLE_AGENTS
 
 /**
- * @brief Forks a process to update status of asset snapshots.
+ * @brief Forks a process to delete stale asset snapshots.
  *
  * @return 0 on success, 1 if already in progress, -1 on error.
  */
@@ -1672,18 +1672,18 @@ fork_asset_snapshot_delete_stale ()
   int pid;
   sigset_t sigmask_all, sigmask_current;
 
-  static gboolean asset_snapshot_status_in_progress = FALSE;
+  static gboolean asset_snapshot_delete_in_progress = FALSE;
 
-  if (asset_snapshot_status_in_progress)
+  if (asset_snapshot_delete_in_progress)
     {
       g_debug (
-        "%s: Updating status of asset snapshots skipped"
+        "%s: Deleting asset snapshots skipped"
         " because one is already in progress",
         __func__);
       return 1;
     }
 
-  asset_snapshot_status_in_progress = TRUE;
+  asset_snapshot_delete_in_progress = TRUE;
 
   if (sigemptyset (&sigmask_all))
     {
@@ -1703,7 +1703,7 @@ fork_asset_snapshot_delete_stale ()
     case 0:
       /* Child */
       init_sentry ();
-      setproctitle ("Updating asset snapshot data status");
+      setproctitle ("Deleting stale asset snapshots");
 
       if (sigmask_normal)
         pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
@@ -1735,14 +1735,14 @@ fork_asset_snapshot_delete_stale ()
 
     case -1:
       g_warning ("%s: fork: %s", __func__, strerror (errno));
-      asset_snapshot_status_in_progress = FALSE;
+      asset_snapshot_delete_in_progress = FALSE;
       if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
         g_warning ("%s: Error resetting signal mask", __func__);
       return -1;
 
     default:
       g_debug ("%s: %i forked %i", __func__, getpid (), pid);
-      asset_snapshot_status_in_progress = FALSE;
+      asset_snapshot_delete_in_progress = FALSE;
       if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
         g_warning ("%s: Error resetting signal mask", __func__);
       return 0;
@@ -1758,8 +1758,8 @@ typedef struct
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
   time_t last_agents_sync; ///< Last time the agents sync was executed.
-  time_t last_asset_snapshot_status_update; ///< Last time the update
-                                            ///  asset snapshots was executed.
+  time_t last_asset_snapshot_stale_delete; ///< Last time the delete
+                                           ///  asset snapshots was executed.
 } periodic_times_t;
 
 /**
@@ -1880,7 +1880,7 @@ run_agents_sync (periodic_times_t *t)
 }
 
 /**
- * @brief Run to update status of asset snapshots as UNMANAGED.
+ * @brief Run to delete stale asset snapshots.
  *
  * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
  */
@@ -1888,11 +1888,11 @@ static void
 run_asset_snapshot_delete_stale (periodic_times_t *t)
 {
   time_t now = time (NULL);
-  if (!time_to_run (t->last_asset_snapshot_status_update,
-                    ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD, now))
+  if (!time_to_run (t->last_asset_snapshot_stale_delete,
+                    ASSET_SNAPSHOT_STALE_DELETE_PERIOD, now))
     return;
   fork_asset_snapshot_delete_stale ();
-  set_last_run_time (&t->last_asset_snapshot_status_update, time (NULL));
+  set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
 }
 
 /**
