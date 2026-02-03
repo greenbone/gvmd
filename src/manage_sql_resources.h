@@ -16,4 +16,7 @@ find_resource (const char *, const char *, resource_t *);
 gchar *
 resource_uuid (const gchar *, resource_t);
 
+gboolean
+find_resource_no_acl (const char *, const char *, resource_t *);
+
 #endif // not _GVMD_MANAGE_SQL_RESOURCES_H

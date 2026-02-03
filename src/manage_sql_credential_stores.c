@@ -16,6 +16,7 @@
 #include "manage_acl.h"
 #include "manage_credential_store_cyberark.h"
 #include "manage_sql_credential_stores.h"
+#include "manage_sql_resources.h"
 #include <gnutls/x509.h>
 #include <gnutls/pkcs12.h>
 #include <gvm/util/tlsutils.h>

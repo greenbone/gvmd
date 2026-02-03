@@ -16,6 +16,7 @@
 #if ENABLE_AGENTS
 #include "manage_agents.h"
 #include "manage_sql_agents.h"
+#include "manage_sql_resources.h"
 
 #include <assert.h>
 
