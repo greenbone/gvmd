@@ -110,6 +110,6 @@ gersemi -i cmake .
 
 ## License
 
-Copyright (C) 2009-2025 [Greenbone AG](https://www.greenbone.net/)
+Copyright (C) 2009-2026 [Greenbone AG](https://www.greenbone.net/)
 
 Licensed under the [GNU Affero General Public License v3.0 or later](COPYING).

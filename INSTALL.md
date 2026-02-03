@@ -9,7 +9,7 @@ install dependent development packages.
 Prerequisites:
 
 * cJSON >= 1.7.14
-* cmake >= 3.5
+* cmake >= 3.18
 * GCC
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15

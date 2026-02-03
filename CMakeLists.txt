@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 

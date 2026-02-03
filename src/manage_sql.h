@@ -341,9 +341,6 @@ parse_iso_time (const char *);
 void
 set_report_scheduled (report_t);
 
-gchar *
-resource_uuid (const gchar *, resource_t);
-
 gboolean
 find_resource_with_permission (const char *, const char *,
                                resource_t *, const char *, int);
