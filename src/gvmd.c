@@ -1667,7 +1667,7 @@ fork_agents_sync ()
  * @return 0 on success, 1 if already in progress, -1 on error.
  */
 static int
-fork_asset_snapshot_status_update ()
+fork_asset_snapshot_delete_stale ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1726,8 +1726,8 @@ fork_asset_snapshot_status_update ()
           manager_socket_2 = -1;
         }
 
-    /* Update status of asset snapshot as UNMANAGED */
-      manage_asset_snapshot_asset_status (ASSET_SNAPSHOT_MANAGED_POLICY_DAY);
+    /* Delete asset snapshots regarding to ASSET_SNAPSHOT_MANAGED_POLICY_DAY */
+      manage_asset_snapshot_delete_stale (ASSET_SNAPSHOT_MANAGED_POLICY_DAY);
 
       cleanup_manage_process (FALSE);
       gvm_close_sentry ();
@@ -1885,13 +1885,13 @@ run_agents_sync (periodic_times_t *t)
  * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
  */
 static void
-run_asset_snapshot_status_update (periodic_times_t *t)
+run_asset_snapshot_delete_stale (periodic_times_t *t)
 {
   time_t now = time (NULL);
   if (!time_to_run (t->last_asset_snapshot_status_update,
                     ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD, now))
     return;
-  fork_asset_snapshot_status_update ();
+  fork_asset_snapshot_delete_stale ();
   set_last_run_time (&t->last_asset_snapshot_status_update, time (NULL));
 }
 
@@ -1907,7 +1907,7 @@ run_periodic_block (periodic_times_t *t)
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
-  run_asset_snapshot_status_update (t);
+  run_asset_snapshot_delete_stale (t);
 }
 
 /**

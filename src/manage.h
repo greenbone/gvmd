@@ -2783,7 +2783,7 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 #endif
 
 /**
- * @brief Seconds between calls to manage_asset_snapshot_asset_status.
+ * @brief Seconds between calls to manage_asset_snapshot_delete_stale.
  */
 #define ASSET_SNAPSHOT_STATUS_UPDATE_PERIOD 3600 /* every hour */
 
@@ -3433,7 +3433,7 @@ manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 #define ASSET_SNAPSHOT_MANAGED_POLICY_DAY 90
 
 void
-manage_asset_snapshot_asset_status (int);
+manage_asset_snapshot_delete_stale (int);
 
 int
 manage_dump_asset_snapshot_counts (GSList *, const db_conn_info_t *);

@@ -3209,7 +3209,8 @@ create_tables ()
      "  container_digest text,"
      "  asset_key text,"
      "  creation_time integer NOT NULL,"
-     "  modification_time integer NOT NULL"
+     "  modification_time integer NOT NULL,"
+     "  scanner integer"
      ");");
 
   create_tables_nvt ("");
