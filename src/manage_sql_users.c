@@ -22,6 +22,12 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/uuidutils.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @file
  * @brief GVM management layer: Users SQL
