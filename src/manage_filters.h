@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_FILTERS_H
 
 #include "gmp_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief filt_id value to use term or built-in default filter.

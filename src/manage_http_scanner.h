@@ -15,7 +15,7 @@
 #ifndef _GVMD_MANAGE_HTTP_SCANNER_H
 #define _GVMD_MANAGE_HTTP_SCANNER_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 #include <gvm/http_scanner/http_scanner.h>
 

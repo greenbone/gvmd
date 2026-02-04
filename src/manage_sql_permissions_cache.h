@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_PERMISSIONS_CACHE_H
 #define _GVMD_MANAGE_SQL_PERMISSIONS_CACHE_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 void
 cache_permissions_for_resource (const char *, resource_t, GArray *);
