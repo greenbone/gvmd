@@ -739,64 +739,7 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 }
 
 
-/* Resources. */
-
-/**
- * @brief Check if a resource has been marked as deprecated.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource_id  UUID of the resource.
- *
- * @return 1 if deprecated, else 0.
- */
-int
-resource_id_deprecated (const char *type, const char *resource_id)
-{
-  int ret;
-  gchar *quoted_type = sql_quote (type);
-  gchar *quoted_uuid = sql_quote (resource_id);
-
-  ret = sql_int ("SELECT count(*) FROM deprecated_feed_data"
-                 " WHERE type = '%s' AND uuid = '%s';",
-                 quoted_type, quoted_uuid);
-
-  g_free (quoted_type);
-  g_free (quoted_uuid);
-
-  return ret != 0;
-}
-
-/**
- * @brief Mark whether resource is deprecated.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource_id  UUID of the resource.
- * @param[in]  deprecated   Whether the resource is deprecated.
- */
-void
-set_resource_id_deprecated (const char *type, const char *resource_id,
-                            gboolean deprecated)
-{
-  gchar *quoted_type = sql_quote (type);
-  gchar *quoted_uuid = sql_quote (resource_id);
-
-  if (deprecated)
-    {
-      sql ("INSERT INTO deprecated_feed_data (type, uuid, modification_time)"
-           " VALUES ('%s', '%s', m_now ())"
-           " ON CONFLICT (uuid, type)"
-           " DO UPDATE SET modification_time = m_now ()",
-           quoted_type, quoted_uuid);
-    }
-  else
-    {
-      sql ("DELETE FROM deprecated_feed_data"
-           " WHERE type = '%s' AND uuid = '%s'",
-           quoted_type, quoted_uuid);
-    }
-  g_free (quoted_type);
-  g_free (quoted_uuid);
-}
+/* GET iterators. */
 
 /**
  * @brief Initialise a GET iterator, including observed resources.
@@ -1925,6 +1868,7 @@ info_name_count (const char *type, const char *name)
 }
 
 
+/* Versions. */
 
 /**
  * @brief Return the database version supported by this manager.
@@ -2050,6 +1994,8 @@ set_db_version (int version)
 }
 
 
+/* Encryption. */
+
 /**
  * @brief Encrypt, re-encrypt or decrypt all credentials
  *

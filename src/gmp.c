@@ -103,6 +103,7 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_resources.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_tls_certificates.h"

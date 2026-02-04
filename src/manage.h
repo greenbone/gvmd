@@ -398,12 +398,6 @@ trash_id_exists (const char *, const char *);
 int
 delete_resource (const char *, const char *, int);
 
-int
-resource_id_deprecated (const char *, const char *);
-
-void
-set_resource_id_deprecated (const char *, const char *, gboolean);
-
 
 /* Events and Alerts. */
 
