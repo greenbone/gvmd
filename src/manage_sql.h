@@ -341,20 +341,6 @@ parse_iso_time (const char *);
 void
 set_report_scheduled (report_t);
 
-gchar *
-resource_uuid (const gchar *, resource_t);
-
-gboolean
-find_resource_with_permission (const char *, const char *,
-                               resource_t *, const char *, int);
-
-gboolean
-find_resource_by_name (const char *, const char *, resource_t *);
-
-gboolean
-find_resource_by_name_with_permission (const char *, const char *,
-                                       resource_t *, const char *);
-
 int
 resource_predefined (const gchar *, resource_t);
 
@@ -463,15 +449,6 @@ void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
 void
-permissions_set_orphans (const char *, resource_t, int);
-
-void
-permissions_set_subjects (const char *, resource_t, resource_t, int);
-
-void
-cache_all_permissions_for_users (GArray *);
-
-void
 init_user_task_iterator (iterator_t *, int, int);
 
 int
@@ -507,6 +484,9 @@ int
 setting_value_int_sql (const char *, int *);
 
 int
+setting_auto_cache_rebuild_int ();
+
+int
 setting_dynamic_severity_int ();
 
 void
@@ -530,6 +510,27 @@ new_severity_clause (int, int);
 
 void
 reports_clear_count_cache_dynamic ();
+
+GHashTable *
+reports_for_override (override_t);
+
+void
+reports_add_all (GHashTable *);
+
+void
+reports_add_for_override (GHashTable *, override_t);
+
+GHashTable *
+reports_hashtable ();
+
+void
+report_cache_counts (report_t, int, int, const char *);
+
+void
+report_clear_count_cache (report_t, int, int, const char *);
+
+GHashTable *
+new_resources_hashtable ();
 
 int
 cleanup_config_sequences ();

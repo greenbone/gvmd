@@ -387,12 +387,6 @@ get_scanner_type_by_uuid (const char *);
 /* Resources. */
 
 int
-manage_resource_name (const char *, const char *, char **);
-
-int
-manage_trash_resource_name (const char *, const char *, char **);
-
-int
 resource_count (const char *, const get_data_t *);
 
 int
@@ -400,12 +394,6 @@ resource_id_exists (const char *, const char *);
 
 int
 trash_id_exists (const char *, const char *);
-
-gboolean
-find_resource (const char*, const char*, resource_t*);
-
-gboolean
-find_resource_no_acl (const char*, const char*, resource_t*);
 
 int
 delete_resource (const char *, const char *, int);
@@ -2749,6 +2737,10 @@ int
 slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
+/**
+* @brief Seconds of a day
+*/
+#define SECONDS_PER_DAY 86400
 
 /**
  * @brief Seconds between calls to manage_schedule.
@@ -2777,6 +2769,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
   */
   #define AGENT_SYNC_SCHEDULE_PERIOD 300 /* every 5 minutes */
 #endif
+
+/**
+ * @brief Seconds between calls to manage_asset_snapshot_delete_stale.
+ */
+#define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
@@ -2883,85 +2880,6 @@ get_schedule_timeout ();
 
 void
 set_schedule_timeout (int);
-
-
-/* Permissions. */
-
-int
-create_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, permission_t *);
-
-int
-copy_permission (const char*, const char *, permission_t *);
-
-char*
-permission_uuid (permission_t);
-
-int
-permission_in_use (permission_t);
-
-int
-trash_permission_in_use (permission_t);
-
-int
-permission_writable (permission_t);
-
-int
-trash_permission_writable (permission_t);
-
-int
-permission_count (const get_data_t *);
-
-int
-init_permission_iterator (iterator_t*, get_data_t *);
-
-const char*
-permission_iterator_resource_type (iterator_t*);
-
-const char*
-permission_iterator_resource_uuid (iterator_t*);
-
-const char*
-permission_iterator_resource_name (iterator_t*);
-
-int
-permission_iterator_resource_in_trash (iterator_t*);
-
-int
-permission_iterator_resource_orphan (iterator_t*);
-
-int
-permission_iterator_resource_readable (iterator_t*);
-
-const char*
-permission_iterator_subject_type (iterator_t*);
-
-const char*
-permission_iterator_subject_uuid (iterator_t*);
-
-const char*
-permission_iterator_subject_name (iterator_t*);
-
-int
-permission_iterator_subject_in_trash (iterator_t*);
-
-int
-permission_iterator_subject_readable (iterator_t*);
-
-int
-delete_permission (const char*, int);
-
-int
-modify_permission (const char *, const char *, const char *, const char *,
-                   const char *, const char *, const char *);
-
-/* Permission caching */
-
-void
-delete_permissions_cache_for_resource (const char*, resource_t);
-
-void
-delete_permissions_cache_for_user (user_t);
 
 
 /* Schema. */
@@ -3498,8 +3416,15 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
+/* Asset Snapshots */
+
+#define ASSET_SNAPSHOT_MANAGED_POLICY_DAY 90
+
+void
+manage_asset_snapshot_delete_stale (int);
+
 int
-manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
+manage_dump_asset_snapshot_counts (GSList *, const db_conn_info_t *);
 
 
 /* Wizards. */
