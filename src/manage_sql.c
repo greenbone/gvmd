@@ -3176,7 +3176,6 @@ append_to_task_string (task_t task, const char* field, const char* value)
      NULL,                                                                  \
      KEYWORD_TYPE_INTEGER                                                   \
    },                                                                       \
-   { "hosts_ordering", NULL, KEYWORD_TYPE_STRING },                         \
    { "scanner", NULL, KEYWORD_TYPE_INTEGER },                               \
    { "usage_type", NULL, KEYWORD_TYPE_STRING }
 
@@ -3638,20 +3637,6 @@ task_iterator_finished_reports (iterator_t *iterator)
 }
 
 /**
- * @brief Get the hosts ordering value from a task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Task hosts ordering.
- */
-const char *
-task_iterator_hosts_ordering (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-}
-
-/**
  * @brief Get the UUID of task scanner from a task iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -3662,7 +3647,7 @@ scanner_t
 task_iterator_scanner (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
 }
 
 /**
@@ -3676,7 +3661,7 @@ const char *
 task_iterator_usage_type (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 8);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 7);
 }
 
 /**
@@ -6169,20 +6154,6 @@ task_comment (task_t task)
 }
 
 /**
- * @brief Return the hosts ordering of a task.
- *
- * @param[in]  task  Task.
- *
- * @return Hosts ordering of task.
- */
-char*
-task_hosts_ordering (task_t task)
-{
-  return sql_string ("SELECT hosts_ordering FROM tasks WHERE id = %llu;",
-                     task);
-}
-
-/**
  * @brief Return the observers of a task.
  *
  * @param[in]  task  Task.
@@ -6540,21 +6511,6 @@ clear_task_asset_preferences (task_t task)
 }
 
 #endif
-
-/**
- * @brief Set the hosts ordering of a task.
- *
- * @param[in]  task         Task.
- * @param[in]  ordering     Hosts ordering.
- */
-void
-set_task_hosts_ordering (task_t task, const char *ordering)
-{
-  char *quoted_ordering = sql_quote (ordering ?: "");
-  sql ("UPDATE tasks SET hosts_ordering = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;", quoted_ordering, task);
-  g_free (quoted_ordering);
-}
 
 /**
  * @brief Return whether the target of a task is in the trashcan.
@@ -19944,8 +19900,8 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " oci_image_target_location, hosts_ordering,"
-                            " usage_type, alterable",
+                            " oci_image_target_location, usage_type,"
+                            " alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -20735,7 +20691,6 @@ DEF_ACCESS (task_file_iterator_content, 1);
  * @param[in]  schedule_id  Schedule.
  * @param[in]  schedule_periods  Period of schedule.
  * @param[in]  preferences       Preferences.
- * @param[in]  hosts_ordering    Host scan order.
  * @param[in]  agent_group_id    Agent group.
  * @param[in]  oci_image_target_id  OCI image target.
  * @param[out] fail_alert_id     Alert when failed to find alert.
@@ -20763,7 +20718,6 @@ modify_task (const gchar *task_id, const gchar *name,
              const gchar *schedule_id,
              const gchar *schedule_periods,
              array_t *preferences,
-             const gchar *hosts_ordering,
              const gchar *agent_group_id,
              const gchar* oci_image_target_id,
              gchar **fail_alert_id,
@@ -21007,9 +20961,6 @@ modify_task (const gchar *task_id, const gchar *name,
         default:
           return -1;
       }
-
-  if (hosts_ordering)
-    set_task_hosts_ordering (task, hosts_ordering);
 
   return 0;
 }

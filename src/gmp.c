@@ -1125,7 +1125,6 @@ typedef struct
 {
   char *alterable;      ///< Boolean.  Whether task is alterable.
   char *config_id;      ///< ID of task config.
-  char *hosts_ordering; ///< Order for scanning target hosts.
   char *scanner_id;     ///< ID of task scanner.
   array_t *alerts;      ///< IDs of alerts.
   char *copy;           ///< UUID of resource to copy.
@@ -1153,7 +1152,6 @@ create_task_data_reset (create_task_data_t *data)
 {
   free (data->alterable);
   free (data->config_id);
-  free (data->hosts_ordering);
   free (data->scanner_id);
   free (data->copy);
   array_free (data->alerts);
@@ -3048,7 +3046,6 @@ typedef struct
   char *action;        ///< What to do to file: "update" or "remove".
   char *alterable;     ///< Boolean. Whether the task is alterable.
   char *comment;       ///< Comment.
-  char *hosts_ordering; ///< Order for scanning of target hosts.
   char *scanner_id;    ///< ID of new scanner for task.
   char *config_id;     ///< ID of new config for task.
   array_t *alerts;     ///< IDs of new alerts for task.
@@ -3080,7 +3077,6 @@ modify_task_data_reset (modify_task_data_t *data)
   array_free (data->alerts);
   array_free (data->groups);
   free (data->comment);
-  free (data->hosts_ordering);
   free (data->scanner_id);
   free (data->config_id);
   free (data->file);
@@ -4454,6 +4450,7 @@ typedef enum
   CLIENT_CREATE_TASK_COMMENT,
   CLIENT_CREATE_TASK_CONFIG,
   CLIENT_CREATE_TASK_COPY,
+  /* HOSTS_ORDERING not used, kept for reasons of compatibility */
   CLIENT_CREATE_TASK_HOSTS_ORDERING,
   CLIENT_CREATE_TASK_NAME,
   CLIENT_CREATE_TASK_OBSERVERS,
@@ -4731,6 +4728,8 @@ typedef enum
   CLIENT_MODIFY_TASK_COMMENT,
   CLIENT_MODIFY_TASK_CONFIG,
   CLIENT_MODIFY_TASK_FILE,
+  /* HOSTS_ORDERING not used, kept for reasons of compatibility */
+  CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_NAME,
   CLIENT_MODIFY_TASK_OBSERVERS,
   CLIENT_MODIFY_TASK_OBSERVERS_GROUP,
@@ -4744,7 +4743,6 @@ typedef enum
   CLIENT_MODIFY_TASK_SCHEDULE,
   CLIENT_MODIFY_TASK_SCHEDULE_PERIODS,
   CLIENT_MODIFY_TASK_TARGET,
-  CLIENT_MODIFY_TASK_HOSTS_ORDERING,
   CLIENT_MODIFY_TASK_SCANNER,
   CLIENT_MODIFY_TICKET,
   CLIENT_MODIFY_TLS_CERTIFICATE,
@@ -7101,6 +7099,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_task_data->comment, "");
             set_client_state (CLIENT_MODIFY_TASK_COMMENT);
           }
+        /* HOSTS_ORDERING kept for reasons of compatibility */
         else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
           set_client_state (CLIENT_MODIFY_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("SCANNER", element_name) == 0)
@@ -8194,14 +8193,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_CREATE_TASK_NAME);
         else if (strcasecmp ("COMMENT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_COMMENT);
-        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
-          set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("SCANNER", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
                               &create_task_data->scanner_id);
             set_client_state (CLIENT_CREATE_TASK_SCANNER);
           }
+        /* HOSTS_ORDERING kept for reasons of compatibility */
+        else if (strcasecmp ("HOSTS_ORDERING", element_name) == 0)
+          set_client_state (CLIENT_CREATE_TASK_HOSTS_ORDERING);
         else if (strcasecmp ("CONFIG", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -20024,7 +20024,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
                        "%s"
 #endif
-                       "<hosts_ordering>%s</hosts_ordering>"
                        "<scanner id='%s'>"
                        "<name>%s</name>"
                        "<type>%d</type>"
@@ -20057,9 +20056,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
                        agent_group_xml ?: "",
 #endif
-                       task_iterator_hosts_ordering (&tasks)
-                        ? task_iterator_hosts_ordering (&tasks)
-                        : "",
                        task_scanner_uuid,
                        task_scanner_name_escaped,
                        task_scanner_type,
@@ -25292,8 +25288,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 
           set_task_scanner (create_task_data->task, scanner);
-          set_task_hosts_ordering (create_task_data->task,
-                                   create_task_data->hosts_ordering);
           set_task_usage_type (create_task_data->task,
                                create_task_data->usage_type);
           if (create_task_data->preferences)
@@ -25346,6 +25340,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
       CLOSE (CLIENT_CREATE_TASK, ALTERABLE);
       CLOSE (CLIENT_CREATE_TASK, COMMENT);
+      /* HOSTS_ORDERING kept for reasons of compatibility */
       CLOSE (CLIENT_CREATE_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_CREATE_TASK, SCANNER);
       CLOSE (CLIENT_CREATE_TASK, CONFIG);
@@ -27972,7 +27967,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->schedule_id,
                                       modify_task_data->schedule_periods,
                                       modify_task_data->preferences,
-                                      modify_task_data->hosts_ordering,
                                       modify_task_data->agent_group_id,
                                       modify_task_data->oci_image_target_id,
                                       &fail_alert_id,
@@ -28184,6 +28178,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
       CLOSE (CLIENT_MODIFY_TASK, ALTERABLE);
       CLOSE (CLIENT_MODIFY_TASK, COMMENT);
+      /* HOSTS_ORDERING kept for reasons of compatibility */
       CLOSE (CLIENT_MODIFY_TASK, HOSTS_ORDERING);
       CLOSE (CLIENT_MODIFY_TASK, SCANNER);
       CLOSE (CLIENT_MODIFY_TASK, CONFIG);
@@ -29302,9 +29297,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_MODIFY_TASK_COMMENT,
               &modify_task_data->comment);
 
-      APPEND (CLIENT_MODIFY_TASK_HOSTS_ORDERING,
-              &modify_task_data->hosts_ordering);
-
       APPEND (CLIENT_MODIFY_TASK_NAME,
               &modify_task_data->name);
 
@@ -29867,9 +29859,6 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_TASK_COMMENT:
         append_to_task_comment (create_task_data->task, text, text_len);
         break;
-
-      APPEND (CLIENT_CREATE_TASK_HOSTS_ORDERING,
-              &create_task_data->hosts_ordering);
 
       APPEND (CLIENT_CREATE_TASK_COPY,
               &create_task_data->copy);
