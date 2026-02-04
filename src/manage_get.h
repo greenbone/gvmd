@@ -12,7 +12,7 @@
 #define _GVMD_MANAGE_GET_H
 
 #include "iterator.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "manage_filter_utils.h"
 
 #include <glib.h>

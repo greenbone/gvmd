@@ -387,9 +387,6 @@ get_scanner_type_by_uuid (const char *);
 /* Resources. */
 
 int
-resource_count (const char *, const get_data_t *);
-
-int
 resource_id_exists (const char *, const char *);
 
 int

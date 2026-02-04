@@ -13,47 +13,9 @@
 #ifndef _GVMD_MANAGE_RESOURCES_H
 #define _GVMD_MANAGE_RESOURCES_H
 
+#include "manage_resources_types.h"
 #include "iterator.h"
-
-
-/* Resource types */
-#if ENABLE_AGENTS
-typedef resource_t agent_t;
-typedef resource_t agent_group_t;
-typedef resource_t agent_installer_t;
-#endif
-typedef resource_t alert_t;
-typedef resource_t asset_snapshot_t;
-typedef resource_t config_t;
-typedef resource_t credential_store_t;
-typedef resource_t credential_t;
-typedef resource_t filter_t;
-typedef resource_t group_t;
-typedef resource_t host_t;
-typedef resource_t note_t;
-typedef resource_t nvt_t;
-typedef resource_t oci_image_target_t;
-typedef resource_t override_t;
-typedef resource_t permission_t;
-typedef resource_t port_list_t;
-typedef resource_t port_range_t;
-typedef resource_t report_config_param_t;
-typedef resource_t report_config_t;
-typedef resource_t report_format_param_t;
-typedef resource_t report_format_t;
-typedef resource_t report_host_t;
-typedef resource_t report_t;
-typedef resource_t result_t;
-typedef resource_t role_t;
-typedef resource_t scanner_t;
-typedef resource_t schedule_t;
-typedef resource_t setting_t;
-typedef resource_t tag_t;
-typedef resource_t target_t;
-typedef resource_t task_t;
-typedef resource_t ticket_t;
-typedef resource_t tls_certificate_t;
-typedef resource_t user_t;
+#include "manage_get.h"
 
 
 /* Resource type information. */
@@ -114,6 +76,9 @@ secinfo_type_is_scap (const char*);
 
 
 /* Everything else. */
+
+int
+resource_count (const char *, const get_data_t *);
 
 int
 manage_resource_name (const char *, const char *, char **);

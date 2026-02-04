@@ -439,6 +439,21 @@ task_second_last_report (task_t, report_t *);
 double
 task_severity_double (task_t, int, int, int);
 
+gchar *
+tasks_extra_where (int, const char *);
+
+gchar *
+reports_extra_where (int, const gchar *, const char *);
+
+gchar*
+vulns_extra_where (int);
+
+gchar *
+vuln_iterator_extra_with_from_filter (const gchar *);
+
+gchar*
+vuln_iterator_opts_from_filter (const gchar *);
+
 gboolean
 find_trash (const char *, const char *, resource_t *);
 
