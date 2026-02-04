@@ -121,4 +121,10 @@ manage_resource_name (const char *, const char *, char **);
 int
 manage_trash_resource_name (const char *, const char *, char **);
 
+int
+resource_id_deprecated (const char *, const char *);
+
+void
+set_resource_id_deprecated (const char *, const char *, gboolean);
+
 #endif /* not _GVMD_MANAGE_RESOURCES_H */
