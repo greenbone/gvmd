@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_SQL_RESOURCES_H
 #define _GVMD_MANAGE_SQL_RESOURCES_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 #include <glib.h>
 

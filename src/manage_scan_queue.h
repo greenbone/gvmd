@@ -12,7 +12,7 @@
 #define _GVMD_MANAGE_SCAN_QUEUE_H
 
 #include <glib.h>
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief Default maximum number of active scan handlers

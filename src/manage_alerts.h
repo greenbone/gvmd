@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_ALERTS_H
 #define _GVMD_MANAGE_ALERTS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_tasks.h"

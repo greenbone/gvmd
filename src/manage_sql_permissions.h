@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_SQL_PERMISSIONS_H
 
 #include "manage_permissions.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief Predefined role UUID.
