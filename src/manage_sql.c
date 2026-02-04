@@ -218,15 +218,6 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
 
-static gchar*
-vulns_extra_where (int);
-
-static gchar*
-vuln_iterator_opts_from_filter (const gchar *);
-
-static gchar*
-vuln_iterator_extra_with_from_filter (const gchar *);
-
 static gboolean
 find_trash_task (const char*, task_t*);
 
@@ -235,9 +226,6 @@ find_trash_report_with_permission (const char *, report_t *, const char *);
 
 static int
 cleanup_schedule_times ();
-
-static gchar *
-reports_extra_where (int, const gchar *, const char *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -2472,7 +2460,7 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
  *
  * @return Newly allocated where clause string.
  */
-static gchar *
+gchar *
 tasks_extra_where (int trash, const char *usage_type)
 {
   gchar *extra_where = NULL;
@@ -5384,80 +5372,6 @@ logout_user ()
 {
   auth_cache_delete(current_credentials.username);
   manage_reset_currents ();
-}
-
-/**
- * @brief Return number of resources of a certain type for current user.
- *
- * @param[in]  type  Type.
- * @param[in]  get   GET params.
- *
- * @return The number of resources associated with the current user.
- */
-int
-resource_count (const char *type, const get_data_t *get)
-{
-  static const char *filter_columns[] = { "owner", NULL };
-  static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
-  get_data_t count_get;
-  gchar *extra_where, *extra_with, *extra_tables;
-  int rc;
-
-  memset (&count_get, '\0', sizeof (count_get));
-  count_get.trash = get->trash;
-  if (type_owned (type))
-    count_get.filter = "rows=-1 first=1 permission=any owner=any min_qod=0";
-  else
-    count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
-
-  extra_with = extra_tables = NULL;
-
-  if (strcasecmp (type, "config") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = configs_extra_where (usage_type);
-    }
-  else if (strcmp (type, "task") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = tasks_extra_where (get->trash, usage_type);
-    }
-  else if (strcmp (type, "report") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = reports_extra_where (0, NULL, usage_type);
-    }
-  else if (strcmp (type, "result") == 0)
-    {
-      extra_where
-        = g_strdup (" AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")");
-    }
-  else if (strcmp (type, "vuln") == 0)
-    {
-      extra_where = vulns_extra_where (filter_term_min_qod (count_get.filter));
-      extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
-      extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
-    }
-  else
-    extra_where = NULL;
-
-  rc = count2 (get->subtype ? get->subtype : type,
-               &count_get,
-               type_owned (type) ? select_columns : NULL,
-               type_owned (type) ? select_columns : NULL,
-               NULL,
-               NULL,
-               type_owned (type) ? filter_columns : NULL,
-               0,
-               extra_tables,
-               extra_where,
-               extra_with,
-               type_owned (type));
-
-  g_free (extra_where);
-  g_free (extra_with);
-  g_free (extra_tables);
-  return rc;
 }
 
 /**
@@ -10265,7 +10179,7 @@ where_compliance_status (const char *compliance)
  *
  * @return Newly allocated where clause string.
  */
-static gchar *
+gchar *
 reports_extra_where (int trash, const gchar *filter, const char *usage_type)
 {
 
@@ -35270,7 +35184,7 @@ vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
  *
  * @return Newly allocated string with the extra_with clause.
  */
-static gchar*
+gchar*
 vuln_iterator_extra_with_from_filter (const gchar *filter)
 {
   gchar *task_id, *report_id, *host;
@@ -35358,7 +35272,7 @@ vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
  *
  * @return Newly allocated string with the extra_tables clause.
  */
-static gchar*
+gchar*
 vuln_iterator_opts_from_filter (const gchar *filter)
 {
   gchar *task_id, *report_id, *host;
@@ -35610,7 +35524,7 @@ vuln_count (const get_data_t *get)
  *
  * @return WHERE clause.
  */
-static gchar*
+gchar*
 vulns_extra_where (int min_qod)
 {
   return g_strdup_printf (" AND (vulns.qod >= %d)",

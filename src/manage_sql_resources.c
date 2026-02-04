@@ -6,6 +6,7 @@
 #include "manage_sql_resources.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_configs.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql_users.h"
@@ -721,4 +722,78 @@ set_resource_id_deprecated (const char *type, const char *resource_id,
     }
   g_free (quoted_type);
   g_free (quoted_uuid);
+}
+
+/**
+ * @brief Return number of resources of a certain type for current user.
+ *
+ * @param[in]  type  Type.
+ * @param[in]  get   GET params.
+ *
+ * @return The number of resources associated with the current user.
+ */
+int
+resource_count (const char *type, const get_data_t *get)
+{
+  static const char *filter_columns[] = { "owner", NULL };
+  static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
+  get_data_t count_get;
+  gchar *extra_where, *extra_with, *extra_tables;
+  int rc;
+
+  memset (&count_get, '\0', sizeof (count_get));
+  count_get.trash = get->trash;
+  if (type_owned (type))
+    count_get.filter = "rows=-1 first=1 permission=any owner=any min_qod=0";
+  else
+    count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
+
+  extra_with = extra_tables = NULL;
+
+  if (strcasecmp (type, "config") == 0)
+    {
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = configs_extra_where (usage_type);
+    }
+  else if (strcmp (type, "task") == 0)
+    {
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = tasks_extra_where (get->trash, usage_type);
+    }
+  else if (strcmp (type, "report") == 0)
+    {
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = reports_extra_where (0, NULL, usage_type);
+    }
+  else if (strcmp (type, "result") == 0)
+    {
+      extra_where
+        = g_strdup (" AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")");
+    }
+  else if (strcmp (type, "vuln") == 0)
+    {
+      extra_where = vulns_extra_where (filter_term_min_qod (count_get.filter));
+      extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
+      extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
+    }
+  else
+    extra_where = NULL;
+
+  rc = count2 (get->subtype ? get->subtype : type,
+               &count_get,
+               type_owned (type) ? select_columns : NULL,
+               type_owned (type) ? select_columns : NULL,
+               NULL,
+               NULL,
+               type_owned (type) ? filter_columns : NULL,
+               0,
+               extra_tables,
+               extra_where,
+               extra_with,
+               type_owned (type));
+
+  g_free (extra_where);
+  g_free (extra_with);
+  g_free (extra_tables);
+  return rc;
 }
