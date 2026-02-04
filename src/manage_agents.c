@@ -188,6 +188,8 @@ convert_agent_control_list_to_agent_data_list (
       dest->last_updater_heartbeat = src->last_updater_heartbeat;
       dest->agent_update_available = src->agent_update_available;
       dest->updater_update_available = src->updater_update_available;
+      dest->latest_agent_version = g_strdup (src->latest_agent_version);
+      dest->latest_updater_version = g_strdup (src->latest_updater_version);
 
       dest->scanner = scanner;
 
@@ -481,6 +483,12 @@ agent_data_free (agent_data_t data)
 
   if (data->comment)
     g_free (data->comment);
+
+  if (data->latest_agent_version)
+    g_free (data->latest_agent_version);
+
+  if (data->latest_updater_version)
+    g_free (data->latest_updater_version);
 
   agent_ip_data_list_free (data->ip_addresses);
 

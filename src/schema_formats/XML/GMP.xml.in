@@ -9321,6 +9321,16 @@ END:VCALENDAR
             <summary>Agent comment field</summary>
           </column>
           <column>
+            <name>latest_agent_version</name>
+            <type>text</type>
+            <summary>Latest agent software version</summary>
+          </column>
+          <column>
+            <name>latest_updater_version</name>
+            <type>text</type>
+            <summary>Latest updater software version</summary>
+          </column>
+          <column>
             <name>created</name>
             <type>iso_time</type>
             <summary>Creation time</summary>
@@ -9398,6 +9408,8 @@ END:VCALENDAR
           <e>update_to_latest</e>
           <e>agent_update_available</e>
           <e>updater_update_available</e>
+          <e>latest_agent_version</e>
+          <e>latest_updater_version</e>
           <e>config</e>
         </pattern>
         <ele>
@@ -9544,6 +9556,16 @@ END:VCALENDAR
           <name>updater_update_available</name>
           <summary>Flag of agent updater update available (1/0)</summary>
           <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>latest_agent_version</name>
+          <summary>Latest agent software version (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>latest_updater_version</name>
+          <summary>Latest updater software version (may be empty)</summary>
+          <pattern><type>text</type></pattern>
         </ele>
         <ele>
           <name>config</name>
@@ -9760,6 +9782,8 @@ END:VCALENDAR
             <update_to_latest>0</update_to_latest>
             <agent_update_available>1</agent_update_available>
             <updater_update_available>0</updater_update_available>
+            <latest_agent_version>1.0.0</latest_agent_version>
+            <latest_updater_version></latest_updater_version>
             <config>
               <agent_control>
                 <retry>
