@@ -106,6 +106,7 @@
 #include "manage_resources.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
+#include "manage_targets.h"
 #include "manage_tls_certificates.h"
 #include "manage_users.h"
 #include "sql.h"

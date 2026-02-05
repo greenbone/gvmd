@@ -53,6 +53,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql_users.h"
@@ -285,11 +286,6 @@ type_build_select (const char *, const char *, const get_data_t *,
  * @brief Function to fork a connection that will accept GMP requests.
  */
 manage_connection_forker_t manage_fork_connection;
-
-/**
- * @brief Max number of hosts per target.
- */
-static int max_hosts = MANAGE_MAX_HOSTS;
 
 /**
  * @brief Memory cache of NVT information from the database.
@@ -4632,7 +4628,7 @@ init_manage_internal (GSList *log_config,
       || (max_ips_per_target > MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET))
     return -4;
 
-  max_hosts = max_ips_per_target;
+  manage_set_max_hosts (max_ips_per_target);
   if (max_email_attachment_size)
     set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
@@ -4684,7 +4680,7 @@ init_manage_internal (GSList *log_config,
       sql ("INSERT INTO meta (name, value)"
            " VALUES ('max_hosts', %i)"
            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
-           max_hosts);
+           manage_max_hosts ());
     }
 
   if (stop_tasks)
@@ -20383,28 +20379,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Get the maximum allowed number of hosts per target.
- *
- * @return Maximum.
- */
-int
-manage_max_hosts ()
-{
-  return max_hosts;
-}
-
-/**
- * @brief Set the maximum allowed number of hosts per target.
- *
- * @param[in]   new_max   New max_hosts value.
- */
-void
-manage_set_max_hosts (int new_max)
-{
-  max_hosts = new_max;
-}
-
-/**
  * @brief Find a target for a specific permission, given a UUID.
  *
  * @param[in]   uuid        UUID of target.
@@ -21050,7 +21024,7 @@ create_target (const char* name, const char* asset_hosts_filter,
       sql_rollback ();
       return 2;
     }
-  if (max > max_hosts)
+  if (max > manage_max_hosts ())
     {
       g_free (clean);
       g_free (clean_exclude);
@@ -21977,7 +21951,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
           return 2;
         }
 
-      if (max > max_hosts)
+      if (max > manage_max_hosts ())
         {
           g_free (clean);
           g_free (clean_exclude);
