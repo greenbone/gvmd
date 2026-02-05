@@ -10,10 +10,11 @@
  * SQL handlers of agent installers.
  */
 
-#include "gmp_base.h"
-#include "manage_sql.h"
 #include "manage_sql_agent_installers.h"
+#include "gmp_base.h"
 #include "manage_acl.h"
+#include "manage_sql.h"
+#include "manage_sql_permissions.h"
 #include <glib/gstdio.h>
 #include <cjson/cJSON.h>
 #include <gvm/util/json.h>

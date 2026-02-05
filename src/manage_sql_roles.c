@@ -12,6 +12,12 @@
 #include "manage_sql_users.h"
 #include "sql.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @file
  * @brief GVM management layer: Roles SQL
