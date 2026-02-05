@@ -596,9 +596,6 @@ ldap_auth_enabled ();
 int
 radius_auth_enabled ();
 
-void
-manage_set_max_hosts (int);
-
 gchar*
 clean_hosts (const char *, int *);
 
