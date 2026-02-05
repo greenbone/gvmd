@@ -1622,9 +1622,6 @@ prognosis_iterator_description (iterator_t*);
 #define MANAGE_USER_MAX_HOSTS 16777216
 
 int
-manage_max_hosts ();
-
-int
 manage_count_hosts (const char *, const char *);
 
 gboolean
