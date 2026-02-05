@@ -9,6 +9,7 @@
 #include "manage_sql.h"
 #include "manage_sql_filters.h"
 #include "manage_sql_groups.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_permissions_cache.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
