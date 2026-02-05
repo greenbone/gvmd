@@ -472,15 +472,6 @@ resource_with_name_exists (const char *, const char *, resource_t);
 gboolean
 resource_with_name_exists_global (const char *, const char *, resource_t);
 
-int
-create_permission_internal (int, const char *, const char *, const char *,
-                            const char *, const char *, const char *,
-                            permission_t *);
-
-int
-create_permission_no_acl (const char *, const char *, const char *, const char *,
-                          const char *, const char *, permission_t *);
-
 nvti_t *
 lookup_nvti (const gchar *);
 

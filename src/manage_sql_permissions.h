@@ -202,4 +202,13 @@ clean_feed_role_permissions (const char *, const char *, int *, int *);
 gchar *
 subject_where_clause (const char *, resource_t);
 
+int
+create_permission_internal (int, const char *, const char *, const char *,
+                            const char *, const char *, const char *,
+                            permission_t *);
+
+int
+create_permission_no_acl (const char *, const char *, const char *, const char *,
+                          const char *, const char *, permission_t *);
+
 #endif //_GVMD_MANAGE_SQL_PERMISSIONS_H
