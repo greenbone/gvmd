@@ -20507,20 +20507,6 @@ clean_hosts (const char *given_hosts, int *max)
 }
 
 /**
- * @brief Start a new IMMEDIATE transaction.
- */
-void
-manage_transaction_start ()
-{
-  if (!in_transaction)
-    {
-      sql_begin_immediate ();
-      in_transaction = TRUE;
-    }
-  gettimeofday (&last_msg, NULL);
-}
-
-/**
  * @brief Commit the current transaction, if any.
  *
  * The algorithm is extremely naive (time elapsed since the last message
