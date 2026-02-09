@@ -263,9 +263,6 @@ void
 manage_session_set_timezone (const char *);
 
 void
-manage_transaction_start ();
-
-void
 manage_transaction_stop (gboolean);
 
 
