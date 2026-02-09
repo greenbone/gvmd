@@ -9,6 +9,7 @@
 #include "manage_sql.h"
 #include "manage_sql_filters.h"
 #include "manage_sql_groups.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_permissions_cache.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
@@ -22,6 +23,12 @@
 
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/uuidutils.h>
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @file

@@ -20111,9 +20111,9 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
-           19 failed to find OCI image target,
-           20 cannot set asset preferences for container image task,
-           -1 error.
+ *         19 failed to find OCI image target,
+ *         20 cannot set asset preferences for container image task,
+ *         -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
