@@ -262,9 +262,6 @@ validate_sort_field (const gchar*, const gchar*);
 void
 manage_session_set_timezone (const char *);
 
-void
-manage_transaction_stop (gboolean);
-
 
 /* Task macros and structures. */
 
