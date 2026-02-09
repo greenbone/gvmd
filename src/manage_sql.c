@@ -298,16 +298,6 @@ static nvtis_t* nvti_cache = NULL;
 db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
 
 /**
- * @brief Whether a transaction has been opened and not committed yet.
- */
-static gboolean in_transaction;
-
-/**
- * @brief Time of reception of the currently processed message.
- */
-static struct timeval last_msg;
-
-/**
  * @brief The VT verification collation override
  */
 static gchar *vt_verification_collation = NULL;
@@ -20504,31 +20494,6 @@ clean_hosts (const char *given_hosts, int *max)
     }
 
   return g_string_free (clean, FALSE);
-}
-
-/**
- * @brief Commit the current transaction, if any.
- *
- * The algorithm is extremely naive (time elapsed since the last message
- * was received) but delivers good enough performances when facing
- * bursts of messages.
- *
- * @param[in] force_commit  Force committing the pending transaction.
- */
-void
-manage_transaction_stop (gboolean force_commit)
-{
-  struct timeval now;
-
-  if (!in_transaction)
-    return;
-
-  gettimeofday (&now, NULL);
-  if (force_commit || TIMEVAL_SUBTRACT_MS (now, last_msg) >= 500)
-    {
-      sql_commit ();
-      in_transaction = FALSE;
-    }
 }
 
 /**
