@@ -17,7 +17,7 @@
 
 #include "iterator.h"
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "manage_utils.h"
 
 #include <agent_controller/agent_controller.h>

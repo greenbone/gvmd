@@ -9,9 +9,11 @@
 #include "manage_sql.h"
 #include "manage_sql_filters.h"
 #include "manage_sql_groups.h"
+#include "manage_sql_permissions_cache.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
@@ -2397,4 +2399,30 @@ manage_set_password (GSList *log_config, const db_conn_info_t *database,
   sql_rollback ();
   manage_option_cleanup ();
   return -1;
+}
+
+/**
+ * @brief  Get a GArray of all users as user_t.
+ *
+ * @return  Newly allocated GArray containing all users.
+ */
+GArray*
+all_users_array ()
+{
+  iterator_t users_iter;
+  GArray *ret;
+
+  ret = g_array_new (TRUE, TRUE, sizeof (resource_t));
+
+  init_iterator (&users_iter, "SELECT id FROM users;");
+
+  while (next (&users_iter))
+    {
+      user_t user = iterator_int64 (&users_iter, 0);
+      g_array_append_val (ret, user);
+    }
+
+  cleanup_iterator (&users_iter);
+
+  return ret;
 }

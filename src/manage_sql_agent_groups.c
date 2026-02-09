@@ -19,6 +19,7 @@
 #include "manage_sql_agents.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_resources.h"
 
 #include <util/uuidutils.h>
 

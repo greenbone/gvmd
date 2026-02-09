@@ -14,7 +14,7 @@
 #include <gvm/osp/osp.h>
 #include <glib.h>
 #include "manage_openvas.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief Connection data.

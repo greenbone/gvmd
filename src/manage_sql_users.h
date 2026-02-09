@@ -88,6 +88,9 @@ add_users (const gchar *, resource_t, const char *);
 int
 set_password (const gchar *, const gchar *, const gchar *, gchar **);
 
+GArray*
+all_users_array ();
+
 /* Defined in manage_users.c, but internal to libmanage. */
 
 int

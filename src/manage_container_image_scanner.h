@@ -15,7 +15,7 @@
 #ifndef _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H
 #define _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include <gvm/http_scanner/http_scanner.h>
 
 http_scanner_connector_t

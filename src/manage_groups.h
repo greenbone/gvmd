@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_GROUPS_H
 
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 char*
 group_uuid (group_t);

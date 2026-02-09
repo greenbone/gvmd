@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_PORT_LISTS_H
 #define _GVMD_MANAGE_PORT_LISTS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "gmp_get.h"
 
 #include <glib.h>

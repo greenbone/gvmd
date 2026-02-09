@@ -45,6 +45,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"

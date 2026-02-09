@@ -13,7 +13,7 @@
 
 #include "manage_scan_queue.h"
 #include "iterator.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "time.h"
 
 void
