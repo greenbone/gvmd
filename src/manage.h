@@ -1723,12 +1723,6 @@ target_iterator_port_list_trash (iterator_t*);
 int
 target_iterator_alive_tests (iterator_t*);
 
-char*
-target_name (target_t);
-
-char*
-trash_target_name (target_t);
-
 int
 trash_target_readable (target_t);
 

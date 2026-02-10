@@ -20,4 +20,10 @@ target_uuid (target_t);
 char*
 trash_target_uuid (target_t);
 
+char*
+target_name (target_t);
+
+char*
+trash_target_name (target_t);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */

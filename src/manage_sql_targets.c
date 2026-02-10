@@ -40,3 +40,59 @@ trash_target_uuid (target_t target)
   return sql_string ("SELECT uuid FROM targets_trash WHERE id = %llu;",
                      target);
 }
+
+/**
+ * @brief Return the name of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+target_name (target_t target)
+{
+  return sql_string ("SELECT name FROM targets WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the name of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_target_name (target_t target)
+{
+  return sql_string ("SELECT name FROM targets_trash WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
+                     target);
+}
+
+/**
+ * @brief Return the comment of a trashcan target.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated name if available, else NULL.
+ */
+char*
+trash_target_comment (target_t target)
+{
+  return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
+                     target);
+}
