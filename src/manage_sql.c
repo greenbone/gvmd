@@ -22563,34 +22563,6 @@ tag_uuid (tag_t tag)
 }
 
 /**
- * @brief Return the UUID of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-target_uuid (target_t target)
-{
-  return sql_string ("SELECT uuid FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the UUID of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-trash_target_uuid (target_t target)
-{
-  return sql_string ("SELECT uuid FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
  * @brief Return the name of a target.
  *
  * @param[in]  target  Target.

@@ -1724,12 +1724,6 @@ int
 target_iterator_alive_tests (iterator_t*);
 
 char*
-target_uuid (target_t);
-
-char*
-trash_target_uuid (target_t);
-
-char*
 target_name (target_t);
 
 char*
