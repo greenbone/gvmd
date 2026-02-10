@@ -57,7 +57,7 @@
       "creation_time", "modification_time", "owner", "id", "updater_version",  \
       "agent_version", "operating_system", "architecture", "update_to_latest", \
       "agent_update_available", "updater_update_available",                    \
-      "latest_agent_version", "latest_updater_version",                        \
+      "latest_agent_version", "latest_updater_version", "connection_status",   \
       NULL                                                                     \
   }
 
