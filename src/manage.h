@@ -1729,9 +1729,6 @@ trash_target_readable (target_t);
 char*
 target_port_range (target_t);
 
-char*
-target_ssh_port (target_t);
-
 int
 target_in_use (target_t);
 
@@ -1758,12 +1755,6 @@ target_task_iterator_uuid (iterator_t*);
 
 int
 target_task_iterator_readable (iterator_t*);
-
-credential_t
-target_credential (target_t, const char*);
-
-int
-target_login_port (target_t, const char*);
 
 
 /* Configs.

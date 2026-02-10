@@ -41,4 +41,7 @@ target_reverse_lookup_unify (target_t);
 char*
 target_allow_simultaneous_ips (target_t);
 
+char*
+target_ssh_port (target_t);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */
