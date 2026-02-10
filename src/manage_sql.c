@@ -259,17 +259,11 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 static char *
 setting_timezone ();
 
-static char*
-target_comment (target_t);
-
 static column_t *
 type_select_columns (const char *type);
 
 static column_t *
 type_where_columns (const char *type);
-
-static char*
-trash_target_comment (target_t);
 
 static const char**
 type_filter_columns (const char *);
@@ -22560,62 +22554,6 @@ tag_uuid (tag_t tag)
 {
   return sql_string ("SELECT uuid FROM tags WHERE id = %llu;",
                      tag);
-}
-
-/**
- * @brief Return the name of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-target_name (target_t target)
-{
-  return sql_string ("SELECT name FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the name of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-trash_target_name (target_t target)
-{
-  return sql_string ("SELECT name FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the comment of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-static char*
-target_comment (target_t target)
-{
-  return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the comment of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-static char*
-trash_target_comment (target_t target)
-{
-  return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
-                     target);
 }
 
 /**

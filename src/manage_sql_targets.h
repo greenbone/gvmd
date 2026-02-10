@@ -8,4 +8,10 @@
 
 #include "manage_targets.h"
 
+char*
+target_comment (target_t);
+
+char*
+trash_target_comment (target_t);
+
 #endif // not _GVMD_MANAGE_SQL_TARGETS_H
