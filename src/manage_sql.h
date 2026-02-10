@@ -255,21 +255,6 @@ preference_iterator_value (iterator_t *);
 port_list_t
 target_port_list (target_t);
 
-credential_t
-target_ssh_credential (target_t);
-
-credential_t
-target_smb_credential (target_t);
-
-credential_t
-target_esxi_credential (target_t);
-
-credential_t
-target_ssh_elevate_credential (target_t);
-
-credential_t
-target_krb5_credential (target_t);
-
 int
 create_current_report (task_t, char **, task_status_t);
 
