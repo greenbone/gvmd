@@ -1727,21 +1727,6 @@ int
 trash_target_readable (target_t);
 
 char*
-target_hosts (target_t);
-
-char*
-target_exclude_hosts (target_t);
-
-char*
-target_reverse_lookup_only (target_t);
-
-char*
-target_reverse_lookup_unify (target_t);
-
-char*
-target_allow_simultaneous_ips (target_t);
-
-char*
 target_port_range (target_t);
 
 char*

@@ -26,4 +26,19 @@ target_name (target_t);
 char*
 trash_target_name (target_t);
 
+char*
+target_hosts (target_t);
+
+char*
+target_exclude_hosts (target_t);
+
+char*
+target_reverse_lookup_only (target_t);
+
+char*
+target_reverse_lookup_unify (target_t);
+
+char*
+target_allow_simultaneous_ips (target_t);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */
