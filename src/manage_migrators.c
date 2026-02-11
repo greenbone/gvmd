@@ -155,58 +155,6 @@ typedef struct
  * track of the transaction, and rollback before aborting. */
 
 /**
- * @brief Rename a column.
- *
- * @param[in]  table  Table
- * @param[in]  old    Old column.
- * @param[in]  new    New column.
- */
-static void
-move (const gchar *table, const gchar *old, const gchar *new)
-{
-  sql ("ALTER TABLE %s RENAME COLUMN %s TO %s;", table, old, new);
-}
-
-/**
- * @brief Migrate the database from version 204 to version 205.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_204_to_205 ()
-{
-  sql_begin_immediate ();
-
-  /* Ensure that the database is currently version 204. */
-
-  if (manage_db_version () != 204)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Ticket "comment" column suffix was changed to "note". */
-
-  move ("tickets", "open_comment", "open_note");
-  move ("tickets", "fixed_comment", "fixed_note");
-  move ("tickets", "closed_comment", "closed_note");
-
-  move ("tickets_trash", "open_comment", "open_note");
-  move ("tickets_trash", "fixed_comment", "fixed_note");
-  move ("tickets_trash", "closed_comment", "closed_note");
-
-  /* Set the database version to 205. */
-
-  set_db_version (205);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
  * @brief Converts old NVT preferences to the new format.
  *
  * @param[in]  table_name  The name of the table to update.
