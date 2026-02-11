@@ -342,9 +342,6 @@ int
 manage_cert_db_exists ();
 
 int
-manage_scap_db_exists ();
-
-int
 cert_check_time ();
 
 int
