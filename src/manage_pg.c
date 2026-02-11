@@ -123,21 +123,6 @@ manage_cert_db_exists ()
 /* SQL functions. */
 
 /**
- * @brief Move data from a table to a new table, heeding column rename.
- *
- * @param[in]  old_table  Existing table.
- * @param[in]  new_table  New empty table with renamed column.
- * @param[in]  old_name   Name of column in old table.
- * @param[in]  new_name   Name of column in new table.
- */
-void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
-{
-  return;
-}
-
-/**
  * @brief Common overrides SQL for SQL functions.
  */
 #define OVERRIDES_SQL(severity_sql)                         \
