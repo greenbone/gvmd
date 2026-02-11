@@ -33,9 +33,6 @@
 // Number of subdivisions for 1 severity point (10 => step size 0.1)
 #define SEVERITY_SUBDIVISIONS 10
 
-long
-current_offset (const char *);
-
 time_t
 add_months (time_t, int);
 
