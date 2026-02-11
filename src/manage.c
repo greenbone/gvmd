@@ -2486,44 +2486,6 @@ get_relay_info_entity (const char *original_host, int original_port,
 }
 
 /**
- * @brief Gets whether there is a relay supporting the scanner type.
- *
- * @param[in]  original_host    The original hostname or IP address.
- * @param[in]  original_port    The original port number.
- * @param[in]  type             The scanner type to check.
- *
- * @return Whether there is a relay supporting the scanner type.
- */
-gboolean
-relay_supports_scanner_type (const char *original_host, int original_port,
-                             scanner_type_t type)
-{
-  entity_t relay_entity = NULL;
-  const char *protocol;
-  gboolean ret = FALSE;
-
-  if (type == SCANNER_TYPE_OSP_SENSOR)
-    protocol = "OSP";
-  else
-    return FALSE;
-
-  if (get_relay_info_entity (original_host, original_port,
-                             protocol, &relay_entity) == 0)
-    {
-      entity_t host_entity;
-      host_entity = entity_child (relay_entity, "host");
-
-      if (host_entity
-          && strcmp (entity_text (host_entity), ""))
-        {
-          ret = TRUE;
-        }
-    }
-  free_entity (relay_entity);
-  return ret;
-}
-
-/**
  * @brief Gets a relay hostname and port for a sensor scanner.
  *
  * If no mapper is available, a copy of the original host, port and
