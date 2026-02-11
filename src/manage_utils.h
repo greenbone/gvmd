@@ -54,9 +54,6 @@ level_max_severity (const char *);
 int
 valid_db_resource_type (const char *);
 
-int
-hosts_str_contains (const char *, const char *, int);
-
 void
 blank_control_chars (char *);
 
