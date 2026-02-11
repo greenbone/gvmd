@@ -119,21 +119,6 @@ manage_cert_db_exists ()
   return 0;
 }
 
-/**
- * @brief Check if SCAP db exists.
- *
- * @return 1 if exists, else 0.
- */
-int
-manage_scap_db_exists ()
-{
-  if (sql_int ("SELECT exists (SELECT schema_name"
-               "               FROM information_schema.schemata"
-               "               WHERE schema_name = 'scap');"))
-    return 1;
-  return 0;
-}
-
 
 /* SQL functions. */
 
