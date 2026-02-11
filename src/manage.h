@@ -3335,18 +3335,6 @@ feed_lockfile_unlock (lockfile_t *);
 int
 gvm_migrate_secinfo (int);
 
-gboolean
-gvm_sync_script_perform_selftest (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_identification (const gchar *, gchar **, int);
-
-gboolean
-gvm_get_sync_script_description (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_feed_version (const gchar *, gchar **);
-
 int
 nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
 
