@@ -58,9 +58,6 @@ icaltimezone *
 icalendar_timezone_from_string (const char *);
 
 icalcomponent *
-icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int);
-
-icalcomponent *
 icalendar_from_string (const char *, icaltimezone *, gchar **);
 
 int
