@@ -2667,9 +2667,6 @@ get_relay_mapper_path ();
 void
 set_relay_mapper_path (const char *);
 
-gboolean
-relay_supports_scanner_type (const char *, int, scanner_type_t);
-
 int
 slave_get_relay (const char *,
                  int,
