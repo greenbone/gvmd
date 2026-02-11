@@ -351,9 +351,9 @@ set(
 )
 set(LINKER_HARDENING_FLAGS "-Wl,-z,relro -Wl,-z,now")
 
-#set(UNUSED_FUNCTIONS_FLAGS "")
+set(UNUSED_FUNCTIONS_FLAGS "")
 # Enable this to find unused functions, and search for "removing" in output.
-set(UNUSED_FUNCTIONS_FLAGS "-flto -fwhole-program -ffunction-sections -Wl,--gc-sections -Wl,--print-gc-sections")
+#set(UNUSED_FUNCTIONS_FLAGS "-flto -fwhole-program -ffunction-sections -Wl,--gc-sections -Wl,--print-gc-sections")
 set(
   CMAKE_C_FLAGS
   "${CMAKE_C_FLAGS} ${UNUSED_FUNCTIONS_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 ${COVERAGE_FLAGS}"
