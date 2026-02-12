@@ -79,7 +79,7 @@ icalendar_first_time_from_vcalendar (icalcomponent *, icaltimezone *);
 gchar *
 clean_hosts_string (const char *);
 
-gchar*
+gchar *
 clean_hosts (const char *, int *);
 
 gchar *

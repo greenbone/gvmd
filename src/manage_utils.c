@@ -1266,7 +1266,7 @@ array_find_string (array_t *array, const gchar *string)
  *
  * @return Freshly allocated new hosts string, or NULL on error.
  */
-gchar*
+gchar *
 clean_hosts (const char *given_hosts, int *max)
 {
   array_t *clean_array;
