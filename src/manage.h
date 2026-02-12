@@ -1628,9 +1628,6 @@ create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, target_t*);
 
 int
-copy_target (const char*, const char*, const char *, target_t*);
-
-int
 modify_target (const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,
                const char*, const char*, const char*, const char*, const char*,

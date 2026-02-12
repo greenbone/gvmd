@@ -20949,43 +20949,6 @@ create_target (const char* name, const char* asset_hosts_filter,
 }
 
 /**
- * @brief Create a target from an existing target.
- *
- * @param[in]  name        Name of new target.  NULL to copy from existing.
- * @param[in]  comment     Comment on new target.  NULL to copy from existing.
- * @param[in]  target_id   UUID of existing target.
- * @param[out] new_target  New target.
- *
- * @return 0 success, 1 target exists already, 2 failed to find existing
- *         target, 99 permission denied, -1 error.
- */
-int
-copy_target (const char* name, const char* comment, const char *target_id,
-             target_t* new_target)
-{
-  int ret;
-  target_t old_target;
-
-  assert (new_target);
-
-  ret = copy_resource ("target", name, comment, target_id,
-                       "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test,"
-                       " allow_simultaneous_ips",
-                       1, new_target, &old_target);
-  if (ret)
-    return ret;
-
-  sql ("INSERT INTO targets_login_data (target, type, credential, port)"
-       " SELECT %llu, type, credential, port"
-       "   FROM targets_login_data"
-       "  WHERE target = %llu;",
-       *new_target, old_target);
-
-  return 0;
-}
-
-/**
  * @brief Delete a target.
  *
  * @param[in]  target_id  UUID of target.
