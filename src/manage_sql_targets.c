@@ -4,6 +4,7 @@
  */
 
 #include "manage_sql_targets.h"
+#include "manage_sql_resources.h"
 #include "sql.h"
 
 /**
@@ -12,6 +13,22 @@
  *
  * The Targets SQL for the GVM management layer.
  */
+
+/**
+ * @brief Find a target for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of target.
+ * @param[out]  target      Target return, 0 if successfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_target_with_permission (const char* uuid, target_t* target,
+                             const char *permission)
+{
+  return find_resource_with_permission ("target", uuid, target, permission, 0);
+}
 
 /**
  * @brief Return the UUID of a target.
