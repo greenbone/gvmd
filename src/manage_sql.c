@@ -442,28 +442,6 @@ parse_iso_time (const char *text_time)
 }
 
 /**
- * @brief Find a string in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.
- *
- * @return The string from the array if found, else NULL.
- */
-static gchar*
-array_find_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    {
-      gchar *ele;
-      ele = (gchar*) g_ptr_array_index (array, index);
-      if (ele && (strcmp (ele, string) == 0))
-        return ele;
-    }
-  return NULL;
-}
-
-/**
  * @brief Find a string in a glib style string vector.
  *
  * @param[in]  vector  Vector.
@@ -20209,102 +20187,6 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
   return manage_count_hosts_max (given_hosts,
                                  exclude_hosts,
                                  manage_max_hosts ());
-}
-
-/**
- * @brief Trim leading and trailing space from a hosts string.
- *
- * @param[in]  string  String.  May be modified.
- *
- * @return Either string or some address within string.
- */
-static gchar *
-trim_hosts (gchar *string)
-{
-  gchar *host, *end;
-
-  /* Trim leading and trailing space. */
-  host = string;
-  while ((*host == ' ') || (*host == '\t'))
-    host++;
-  end = host;
-  while (*end)
-    {
-      if ((*end == ' ') || (*end == '\t'))
-        {
-          *end = '\0';
-          break;
-        }
-      end++;
-    }
-  return host;
-}
-
-/**
- * @brief Clean a hosts string.
- *
- * @param[in]  given_hosts  String describing hosts.
- * @param[out] max          Max number of hosts, adjusted for duplicates.
- *
- * @return Freshly allocated new hosts string, or NULL on error.
- */
-gchar*
-clean_hosts (const char *given_hosts, int *max)
-{
-  array_t *clean_array;
-  GString *clean;
-  gchar **split, **point, *hosts, *hosts_start, *host;
-  guint index;
-
-  /* Treat newlines like commas. */
-  hosts = hosts_start = g_strdup (given_hosts);
-  while (*hosts)
-    {
-      if (*hosts == '\n') *hosts = ',';
-      hosts++;
-    }
-
-  split = g_strsplit (hosts_start, ",", 0);
-  g_free (hosts_start);
-  point = split;
-
-  if ((point == NULL) || (*point == NULL))
-    {
-      g_strfreev (split);
-      return g_strdup ("");
-    }
-
-  clean_array = make_array ();
-  while (*point)
-    {
-      host = trim_hosts (*point);
-
-      if (*host)
-        {
-          /* Prevent simple duplicates. */
-          if (array_find_string (clean_array, host) == NULL)
-            array_add (clean_array, host);
-          else if (max)
-            (*max)--;
-        }
-
-      point += 1;
-    }
-
-  clean = g_string_new ("");
-
-  host = (gchar*) g_ptr_array_index (clean_array, 0);
-  if (host)
-    g_string_append_printf (clean, "%s", host);
-
-  for (index = 1; index < clean_array->len; index++)
-    {
-      host = (gchar*) g_ptr_array_index (clean_array, index);
-      if (host)
-        g_string_append_printf (clean, ", %s", host);
-    }
-
-  return g_string_free (clean, FALSE);
 }
 
 /**

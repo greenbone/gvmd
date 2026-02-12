@@ -566,7 +566,4 @@ ldap_auth_enabled ();
 int
 radius_auth_enabled ();
 
-gchar*
-clean_hosts (const char *, int *);
-
 #endif /* not _GVMD_MANAGE_SQL_H */
