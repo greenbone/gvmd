@@ -1603,9 +1603,6 @@ prognosis_iterator_description (iterator_t*);
 int
 manage_count_hosts (const char *, const char *);
 
-gboolean
-find_target_with_permission (const char *, target_t *, const char *);
-
 int
 create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char*, credential_t, credential_t,

@@ -20158,22 +20158,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Find a target for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of target.
- * @param[out]  target      Target return, 0 if successfully failed to find target.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_target_with_permission (const char* uuid, target_t* target,
-                             const char *permission)
-{
-  return find_resource_with_permission ("target", uuid, target, permission, 0);
-}
-
-/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  given_hosts      String describing hosts.
