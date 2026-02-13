@@ -213,9 +213,6 @@ report_start_time (report_t);
 gchar *
 report_end_time (report_t);
 
-void
-trim_report (report_t);
-
 int
 delete_report_internal (report_t);
 
