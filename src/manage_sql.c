@@ -14572,37 +14572,6 @@ set_report_slave_progress (report_t report, int progress)
 }
 
 /**
- * @brief Prepare a partial report for restarting the scan from the beginning.
- *
- * @param[in]  report  The report.
- */
-void
-trim_report (report_t report)
-{
-  /* Remove results for all hosts. */
-
-  sql ("DELETE FROM results WHERE id IN"
-       " (SELECT results.id FROM results"
-       "  WHERE results.report = %llu);",
-       report);
-
-  /* Remove all hosts and host details. */
-
-  sql ("DELETE FROM report_host_details WHERE report_host IN"
-       " (SELECT id FROM report_hosts WHERE report = %llu);",
-       report);
-  sql ("DELETE FROM report_hosts"
-       " WHERE report = %llu;",
-       report);
-
-  /* Clear and rebuild counts cache */
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 1, 1, NULL);
-  else
-    report_clear_count_cache (report, 1, 1, NULL);
-}
-
-/**
  * @brief Prepare a partial report for resumption of the scan.
  *
  * @param[in]  report  The report.
