@@ -3423,6 +3423,11 @@ int
 manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
 
 
+/* Timezone info. */
+array_t *
+manange_get_timezones ();
+
+
 /* Wizards. */
 
 int

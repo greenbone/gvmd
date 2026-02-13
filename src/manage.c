@@ -6523,6 +6523,33 @@ gvm_migrate_secinfo (int feed_type)
 }
 
 
+/* Time zone info. */
+
+/**
+ * @brief Get all a list of supported timezones
+ *
+ * @return An array of supported timezones. Caller must free.
+ */
+array_t *
+manange_get_timezones ()
+{
+  array_t *tzs_out = make_array ();
+  iterator_t pg_iterator;
+
+  init_pg_timezones_iterator (&pg_iterator);
+  while (next (&pg_iterator))
+    {
+      const char *pg_tz_name = pg_timezones_iterator_name (&pg_iterator);
+
+      icaltimezone *ical_tz = icalendar_timezone_from_string (pg_tz_name);
+      if (ical_tz)
+        array_add_new_string (tzs_out, pg_tz_name);
+    }
+
+  return tzs_out;
+}
+
+
 /* Wizards. */
 
 /**

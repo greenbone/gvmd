@@ -39679,3 +39679,28 @@ parse_http_scanner_report (task_t task, report_t report, GSList *results,
   g_free (rep_aux);
 }
 #endif
+
+/**
+ * @brief Initializes a PostgreSQL timezones iterator.
+ *
+ * The iterator returns the timezones supported by the PostgreSQL server.
+ *
+ * @param[in]  iterator  Iterator to initialize.
+ */
+void
+init_pg_timezones_iterator (iterator_t *iterator)
+{
+  init_iterator (iterator,
+                 "SELECT name FROM pg_timezone_names ORDER BY name ASC;");
+}
+
+/**
+ * @brief Get a timezone name from a PostgreSQL timezone iterator.
+ */
+const char *
+pg_timezones_iterator_name (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+  return iterator_string (iterator, 0);
+}

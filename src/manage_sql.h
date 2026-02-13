@@ -618,4 +618,10 @@ manage_set_max_hosts (int);
 gchar*
 clean_hosts (const char *, int *);
 
+void
+init_pg_timezones_iterator (iterator_t *);
+
+const char *
+pg_timezones_iterator_name (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
