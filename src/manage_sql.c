@@ -19881,55 +19881,6 @@ manage_task_remove_file (const gchar *task_id, const char *name)
   return -1;
 }
 
-
-/**
- * @brief Initialise a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  task      Task.
- * @param[in]  file      File name, NULL for all files.
- */
-void
-init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
-{
-  gchar* sql;
-  if (file)
-    {
-      gchar *quoted_file = sql_nquote (file, strlen (file));
-      sql = g_strdup_printf ("SELECT name, content, length(content)"
-                             " FROM task_files"
-                             " WHERE task = %llu"
-                             " AND name = '%s';",
-                             task, quoted_file);
-      g_free (quoted_file);
-    }
-  else
-    sql = g_strdup_printf ("SELECT name, content, length(content)"
-                           " FROM task_files"
-                           " WHERE task = %llu;",
-                           task);
-  init_iterator (iterator, "%s", sql);
-  g_free (sql);
-}
-
-/**
- * @brief Get the name of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_name, 0);
-
-/**
- * @brief Get the content of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Content of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_content, 1);
-
 /**
  * @brief Modify a task.
  *
