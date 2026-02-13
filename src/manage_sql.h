@@ -226,15 +226,6 @@ int
 set_report_slave_progress (report_t, int);
 
 void
-init_task_file_iterator (iterator_t *, task_t, const char *);
-
-const char *
-task_file_iterator_name (iterator_t *);
-
-const char *
-task_file_iterator_content (iterator_t *);
-
-void
 set_task_schedule_next_time (task_t, time_t);
 
 void
