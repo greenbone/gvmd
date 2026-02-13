@@ -13366,30 +13366,6 @@ set_scan_end_time_ctime (report_t report, const char* timestamp)
  *
  * @param[in]  report     Report associated with the scan.
  * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  ISO format.
- */
-void
-set_scan_host_end_time (report_t report, const char* host,
-                        const char* timestamp)
-{
-  gchar *quoted_host;
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
-  else
-    manage_report_host_add (report, host, 0, parse_iso_time (timestamp));
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
  * @param[in]  timestamp  End time.  In UTC ctime format.
  */
 void
