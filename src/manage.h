@@ -1016,9 +1016,6 @@ report_severity (report_t, int, int);
 int
 report_host_count (report_t);
 
-int
-report_result_host_count (report_t, int);
-
 char *
 report_finished_hosts_str (report_t);
 
