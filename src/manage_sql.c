@@ -6882,26 +6882,6 @@ task_schedule_periods_uuid (const gchar *task_id)
 }
 
 /**
- * @brief Get next time a scheduled task will run, following schedule timezone.
- *
- * @param[in]  task  Task.
- *
- * @return If the task has a schedule, the next time the task will run (0 if it
- *         has already run), otherwise 0.
- */
-int
-task_schedule_next_time (task_t task)
-{
-  int next_time;
-
-  next_time = sql_int ("SELECT schedule_next_time FROM tasks"
-                       " WHERE id = %llu;",
-                       task);
-
-  return next_time;
-}
-
-/**
  * @brief Get the next time a scheduled task will be due.
  *
  * @param[in]  task_id  Task UUID.
