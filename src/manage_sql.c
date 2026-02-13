@@ -13362,28 +13362,6 @@ set_scan_end_time_ctime (report_t report, const char* timestamp)
 }
 
 /**
- * @brief Get the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- *
- * @return End time.
- */
-int
-scan_host_end_time (report_t report, const char* host)
-{
-  gchar *quoted_host;
-  int ret;
-
-  quoted_host = sql_quote (host);
-  ret = sql_int ("SELECT end_time FROM report_hosts"
-                 " WHERE report = %llu AND host = '%s';",
-                 report, quoted_host);
-  g_free (quoted_host);
-  return ret;
-}
-
-/**
  * @brief Set the end time of a scanned host.
  *
  * @param[in]  report     Report associated with the scan.
