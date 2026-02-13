@@ -15,6 +15,12 @@
 
 #include <assert.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @file
  * @brief GVM management layer: Resources SQL
@@ -172,7 +178,7 @@ manage_trash_resource_name (const char *type, const char *uuid, char **name)
   return resource_name (type, uuid, LOCATION_TRASH, name);
 }
 
-/* TODO Only used by find_scanner, find_permission and check_permission_args. */
+/* TODO Only used by find_permission and check_permission_args. */
 /**
  * @brief Find a resource given a UUID.
  *

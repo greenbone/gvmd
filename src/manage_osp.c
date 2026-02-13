@@ -14,6 +14,7 @@
 #include "manage_scan_queue.h"
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
+#include "manage_sql_targets.h"
 
 #undef G_LOG_DOMAIN
 /**

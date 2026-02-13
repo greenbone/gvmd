@@ -106,6 +106,7 @@
 #include "manage_resources.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
+#include "manage_targets.h"
 #include "manage_tls_certificates.h"
 #include "manage_users.h"
 #include "sql.h"
@@ -30328,9 +30329,6 @@ process_gmp_client_input ()
   gboolean success;
   GError* error = NULL;
 
-  /* Terminate any pending transaction. (force close = TRUE). */
-  manage_transaction_stop (TRUE);
-
   if (xml_context == NULL) return -1;
 
   success = g_markup_parse_context_parse (xml_context,
@@ -30421,9 +30419,6 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   GMarkupParseContext *old_xml_context;
   client_state_t old_client_state;
   command_data_t old_command_data;
-
-  /* Terminate any pending transaction. (force close = TRUE). */
-  manage_transaction_stop (TRUE);
 
   if (response) *response = NULL;
 

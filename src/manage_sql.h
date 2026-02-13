@@ -255,21 +255,6 @@ preference_iterator_value (iterator_t *);
 port_list_t
 target_port_list (target_t);
 
-credential_t
-target_ssh_credential (target_t);
-
-credential_t
-target_smb_credential (target_t);
-
-credential_t
-target_esxi_credential (target_t);
-
-credential_t
-target_ssh_elevate_credential (target_t);
-
-credential_t
-target_krb5_credential (target_t);
-
 int
 create_current_report (task_t, char **, task_status_t);
 
@@ -355,9 +340,6 @@ insert_port_range (port_list_t, port_protocol_t, int, int);
 
 int
 manage_cert_db_exists ();
-
-int
-manage_scap_db_exists ();
 
 int
 cert_check_time ();
@@ -471,15 +453,6 @@ resource_with_name_exists (const char *, const char *, resource_t);
 
 gboolean
 resource_with_name_exists_global (const char *, const char *, resource_t);
-
-int
-create_permission_internal (int, const char *, const char *, const char *,
-                            const char *, const char *, const char *,
-                            permission_t *);
-
-int
-create_permission_no_acl (const char *, const char *, const char *, const char *,
-                          const char *, const char *, permission_t *);
 
 nvti_t *
 lookup_nvti (const gchar *);
@@ -604,9 +577,6 @@ ldap_auth_enabled ();
 
 int
 radius_auth_enabled ();
-
-void
-manage_set_max_hosts (int);
 
 gchar*
 clean_hosts (const char *, int *);

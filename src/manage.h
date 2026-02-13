@@ -262,12 +262,6 @@ validate_sort_field (const gchar*, const gchar*);
 void
 manage_session_set_timezone (const char *);
 
-void
-manage_transaction_start ();
-
-void
-manage_transaction_stop (gboolean);
-
 
 /* Task macros and structures. */
 
@@ -1612,9 +1606,6 @@ prognosis_iterator_description (iterator_t*);
 #define MANAGE_USER_MAX_HOSTS 16777216
 
 int
-manage_max_hosts ();
-
-int
 manage_count_hosts (const char *, const char *);
 
 gboolean
@@ -1722,41 +1713,11 @@ target_iterator_port_list_trash (iterator_t*);
 int
 target_iterator_alive_tests (iterator_t*);
 
-char*
-target_uuid (target_t);
-
-char*
-trash_target_uuid (target_t);
-
-char*
-target_name (target_t);
-
-char*
-trash_target_name (target_t);
-
 int
 trash_target_readable (target_t);
 
 char*
-target_hosts (target_t);
-
-char*
-target_exclude_hosts (target_t);
-
-char*
-target_reverse_lookup_only (target_t);
-
-char*
-target_reverse_lookup_unify (target_t);
-
-char*
-target_allow_simultaneous_ips (target_t);
-
-char*
 target_port_range (target_t);
-
-char*
-target_ssh_port (target_t);
 
 int
 target_in_use (target_t);
@@ -1784,12 +1745,6 @@ target_task_iterator_uuid (iterator_t*);
 
 int
 target_task_iterator_readable (iterator_t*);
-
-credential_t
-target_credential (target_t, const char*);
-
-int
-target_login_port (target_t, const char*);
 
 
 /* Configs.
@@ -2702,9 +2657,6 @@ get_relay_mapper_path ();
 void
 set_relay_mapper_path (const char *);
 
-gboolean
-relay_supports_scanner_type (const char *, int, scanner_type_t);
-
 int
 slave_get_relay (const char *,
                  int,
@@ -3372,18 +3324,6 @@ feed_lockfile_unlock (lockfile_t *);
 
 int
 gvm_migrate_secinfo (int);
-
-gboolean
-gvm_sync_script_perform_selftest (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_identification (const gchar *, gchar **, int);
-
-gboolean
-gvm_get_sync_script_description (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_feed_version (const gchar *, gchar **);
 
 int
 nvts_feed_info (gchar **, gchar **, gchar **, gchar **);

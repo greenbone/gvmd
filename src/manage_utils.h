@@ -33,9 +33,6 @@
 // Number of subdivisions for 1 severity point (10 => step size 0.1)
 #define SEVERITY_SUBDIVISIONS 10
 
-long
-current_offset (const char *);
-
 time_t
 add_months (time_t, int);
 
@@ -54,17 +51,11 @@ level_max_severity (const char *);
 int
 valid_db_resource_type (const char *);
 
-int
-hosts_str_contains (const char *, const char *, int);
-
 void
 blank_control_chars (char *);
 
 icaltimezone *
 icalendar_timezone_from_string (const char *);
-
-icalcomponent *
-icalendar_from_old_schedule_data (time_t, time_t, time_t, time_t, int);
 
 icalcomponent *
 icalendar_from_string (const char *, icaltimezone *, gchar **);

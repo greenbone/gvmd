@@ -213,9 +213,6 @@ sql_int64_0 (const char *sql, ...);
 long long int
 sql_int64_0_ps (const char *sql, ...);
 
-void
-sql_rename_column (const char *, const char *, const char *, const char *);
-
 int
 sql_cancel_internal ();
 
