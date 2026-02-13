@@ -15135,26 +15135,6 @@ report_host_count (report_t report)
 }
 
 /**
- * @brief Count a report's total number of hosts with results.
- *
- * @param[in]   report         Report.
- * @param[in]   min_qod        Minimum QoD of results to count.
- *
- * @return The number of hosts with results
- */
-int
-report_result_host_count (report_t report, int min_qod)
-{
-  return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
-                  " WHERE report_hosts.report = %llu"
-                  "   AND EXISTS (SELECT * FROM results"
-                  "               WHERE results.host = report_hosts.host"
-                  "                 AND results.qod >= %d)",
-                  report,
-                  min_qod);
-}
-
-/**
  * @brief Count a report's total number of tcp/ip ports.
  *
  * Ignores port entries in "general/..." form.
