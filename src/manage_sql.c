@@ -19672,23 +19672,6 @@ append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 }
 
 /**
- * @brief Set the ports for a particular host in a scan.
- *
- * @param[in]  report   Report associated with scan.
- * @param[in]  host     Host.
- * @param[in]  current  New value for port currently being scanned.
- * @param[in]  max      New value for last port to be scanned.
- */
-void
-set_scan_ports (report_t report, const char* host, unsigned int current,
-                unsigned int max)
-{
-  sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
-       " WHERE host = '%s' AND report = %llu;",
-       current, max, host, report);
-}
-
-/**
  * @brief Find a task for a specific permission, given a UUID.
  *
  * @param[in]   uuid      UUID of task.

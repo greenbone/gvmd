@@ -804,9 +804,6 @@ void
 add_task_description_line (task_t, const char*, size_t);
 
 void
-set_scan_ports (report_t, const char*, unsigned int, unsigned int);
-
-void
 append_task_open_port (task_t task, const char *, const char*);
 
 int
