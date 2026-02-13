@@ -741,9 +741,6 @@ time_t
 task_schedule_next_time_uuid (const gchar *);
 
 int
-task_schedule_next_time (task_t);
-
-int
 task_debugs_size (task_t);
 
 int
