@@ -50,4 +50,7 @@ target_ssh_port (target_t);
 int
 copy_target (const char *, const char *, const char *, target_t *);
 
+int
+delete_target (const char *, int);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */
