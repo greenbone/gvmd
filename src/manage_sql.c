@@ -20209,52 +20209,6 @@ validate_port (const char *port)
 }
 
 /**
- * @brief Validate a single port, for use in override or note.
- *
- * @param[in]  port  A port.
- *
- * @return 0 success, 1 failed.
- */
-static int
-validate_results_port (const char *port)
-{
-  long int num;
-  char *end;
-
-  if (!port)
-    return 1;
-
-  if (strcmp (port, "package") == 0)
-    return 0;
-
-  /* "cpe:abc", "general/tcp", "20/udp"
-   *
-   * We keep the "general/tcp" case pretty open because it is not clearly
-   * restricted anywhere, and is already used with non-alphanumerics in
-   * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
-   * users from entering lists of ports.
-   *
-   * Similarly, the CPE case forbids whitespace, but allows ',' and ';' as
-   * these may occur in valid CPEs. */
-  if (g_regex_match_simple
-       ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
-        port, 0, 0)
-      == FALSE)
-    return 1;
-
-  if (g_str_has_prefix (port, "cpe:")
-      || g_str_has_prefix (port, "general/"))
-    return 0;
-
-  num = strtol (port, &end, 10);
-  if (*end != '/')
-    return 1;
-  if (num > 0 && num <= 65535)
-    return 0;
-  return 1;
-}
-
-/**
  * @brief Convert alive test array to alive test bitfield.
  *
  * @param[in]  alive_tests NULL-terminated array of alive tests.
@@ -25511,6 +25465,52 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 
 
 /* Notes. */
+
+/**
+ * @brief Validate a single port, for use in override or note.
+ *
+ * @param[in]  port  A port.
+ *
+ * @return 0 success, 1 failed.
+ */
+static int
+validate_results_port (const char *port)
+{
+  long int num;
+  char *end;
+
+  if (!port)
+    return 1;
+
+  if (strcmp (port, "package") == 0)
+    return 0;
+
+  /* "cpe:abc", "general/tcp", "20/udp"
+   *
+   * We keep the "general/tcp" case pretty open because it is not clearly
+   * restricted anywhere, and is already used with non-alphanumerics in
+   * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
+   * users from entering lists of ports.
+   *
+   * Similarly, the CPE case forbids whitespace, but allows ',' and ';' as
+   * these may occur in valid CPEs. */
+  if (g_regex_match_simple
+       ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
+        port, 0, 0)
+      == FALSE)
+    return 1;
+
+  if (g_str_has_prefix (port, "cpe:")
+      || g_str_has_prefix (port, "general/"))
+    return 0;
+
+  num = strtol (port, &end, 10);
+  if (*end != '/')
+    return 1;
+  if (num > 0 && num <= 65535)
+    return 0;
+  return 1;
+}
 
 /**
  * @brief Find a note for a specific permission, given a UUID.
