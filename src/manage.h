@@ -1604,21 +1604,6 @@ int
 manage_count_hosts (const char *, const char *);
 
 int
-create_target (const char*, const char*, const char*, const char*, const char*,
-               const char *, const char*, credential_t, credential_t,
-               const char *,
-               credential_t, credential_t, credential_t, credential_t,
-               const char *, const char *,
-               GPtrArray *, const char *,
-               const char *, target_t*);
-
-int
-modify_target (const char*, const char*, const char*, const char*, const char*,
-               const char*, const char*, const char*, const char*, const char*,
-               const char*, const char*, const char*, const char*, const char*,
-               GPtrArray *, const char*, const char*);
-
-int
 target_count (const get_data_t *);
 
 void
