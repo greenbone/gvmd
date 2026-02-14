@@ -1619,9 +1619,6 @@ modify_target (const char*, const char*, const char*, const char*, const char*,
                GPtrArray *, const char*, const char*);
 
 int
-delete_target (const char*, int);
-
-int
 target_count (const get_data_t *);
 
 void
