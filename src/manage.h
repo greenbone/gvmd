@@ -741,9 +741,6 @@ time_t
 task_schedule_next_time_uuid (const gchar *);
 
 int
-task_schedule_next_time (task_t);
-
-int
 task_debugs_size (task_t);
 
 int
@@ -805,9 +802,6 @@ append_to_task_comment (task_t, const char*, int);
 
 void
 add_task_description_line (task_t, const char*, size_t);
-
-void
-set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 
 void
 append_task_open_port (task_t task, const char *, const char*);
@@ -1019,9 +1013,6 @@ report_severity (report_t, int, int);
 int
 report_host_count (report_t);
 
-int
-report_result_host_count (report_t, int);
-
 char *
 report_finished_hosts_str (report_t);
 
@@ -1185,17 +1176,11 @@ set_scan_end_time_epoch (report_t, time_t);
 void
 set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
-int
-scan_host_end_time (report_t, const char*);
-
 void
 set_scan_host_start_time_isotime (report_t, const char*, const char*);
 
 void
 set_scan_host_end_time_isotime (report_t, const char*, const char* );
-
-void
-set_scan_host_end_time (report_t, const char*, const char*);
 
 void
 set_scan_host_end_time_ctime (report_t, const char*, const char*);
@@ -1641,9 +1626,6 @@ target_count (const get_data_t *);
 
 void
 init_user_target_iterator (iterator_t*, target_t);
-
-void
-init_target_iterator_one (iterator_t*, target_t);
 
 int
 init_target_iterator (iterator_t*, get_data_t *);

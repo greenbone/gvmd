@@ -213,9 +213,6 @@ report_start_time (report_t);
 gchar *
 report_end_time (report_t);
 
-void
-trim_report (report_t);
-
 int
 delete_report_internal (report_t);
 
@@ -227,15 +224,6 @@ update_report_modification_time (report_t);
 
 int
 set_report_slave_progress (report_t, int);
-
-void
-init_task_file_iterator (iterator_t *, task_t, const char *);
-
-const char *
-task_file_iterator_name (iterator_t *);
-
-const char *
-task_file_iterator_content (iterator_t *);
 
 void
 set_task_schedule_next_time (task_t, time_t);
