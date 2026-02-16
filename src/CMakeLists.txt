@@ -71,8 +71,7 @@ if(NOT PostgreSQL_FOUND)
   message(SEND_ERROR "The PostgreSQL library is required.")
 endif(NOT PostgreSQL_FOUND)
 string(
-  REGEX MATCH
-  "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
+  REGEX MATCH "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
   TEMP
   "${PostgreSQL_VERSION_STRING}"
 )
