@@ -14,6 +14,9 @@ manage_max_hosts ();
 void
 manage_set_max_hosts (int);
 
+gboolean
+find_target_with_permission (const char *, target_t *, const char *);
+
 char*
 target_uuid (target_t);
 
@@ -43,5 +46,8 @@ target_allow_simultaneous_ips (target_t);
 
 char*
 target_ssh_port (target_t);
+
+int
+copy_target (const char *, const char *, const char *, target_t *);
 
 #endif /* not _GVMD_MANAGE_TARGETS_H */

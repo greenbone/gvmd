@@ -80,6 +80,9 @@ gchar *
 clean_hosts_string (const char *);
 
 gchar *
+clean_hosts (const char *, int *);
+
+gchar *
 concat_error_messages (const GPtrArray *errors, const gchar *sep,
                        const gchar *prefix);
 

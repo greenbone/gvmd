@@ -442,28 +442,6 @@ parse_iso_time (const char *text_time)
 }
 
 /**
- * @brief Find a string in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.
- *
- * @return The string from the array if found, else NULL.
- */
-static gchar*
-array_find_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    {
-      gchar *ele;
-      ele = (gchar*) g_ptr_array_index (array, index);
-      if (ele && (strcmp (ele, string) == 0))
-        return ele;
-    }
-  return NULL;
-}
-
-/**
  * @brief Find a string in a glib style string vector.
  *
  * @param[in]  vector  Vector.
@@ -6835,26 +6813,6 @@ task_schedule_periods_uuid (const gchar *task_id)
                  quoted_task_id);
   g_free (quoted_task_id);
   return ret;
-}
-
-/**
- * @brief Get next time a scheduled task will run, following schedule timezone.
- *
- * @param[in]  task  Task.
- *
- * @return If the task has a schedule, the next time the task will run (0 if it
- *         has already run), otherwise 0.
- */
-int
-task_schedule_next_time (task_t task)
-{
-  int next_time;
-
-  next_time = sql_int ("SELECT schedule_next_time FROM tasks"
-                       " WHERE id = %llu;",
-                       task);
-
-  return next_time;
 }
 
 /**
@@ -13318,52 +13276,6 @@ set_scan_end_time_ctime (report_t report, const char* timestamp)
 }
 
 /**
- * @brief Get the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- *
- * @return End time.
- */
-int
-scan_host_end_time (report_t report, const char* host)
-{
-  gchar *quoted_host;
-  int ret;
-
-  quoted_host = sql_quote (host);
-  ret = sql_int ("SELECT end_time FROM report_hosts"
-                 " WHERE report = %llu AND host = '%s';",
-                 report, quoted_host);
-  g_free (quoted_host);
-  return ret;
-}
-
-/**
- * @brief Set the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  ISO format.
- */
-void
-set_scan_host_end_time (report_t report, const char* host,
-                        const char* timestamp)
-{
-  gchar *quoted_host;
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
-  else
-    manage_report_host_add (report, host, 0, parse_iso_time (timestamp));
-  g_free (quoted_host);
-}
-
-/**
  * @brief Set the end time of a scanned host.
  *
  * @param[in]  report     Report associated with the scan.
@@ -14528,37 +14440,6 @@ set_report_slave_progress (report_t report, int progress)
 }
 
 /**
- * @brief Prepare a partial report for restarting the scan from the beginning.
- *
- * @param[in]  report  The report.
- */
-void
-trim_report (report_t report)
-{
-  /* Remove results for all hosts. */
-
-  sql ("DELETE FROM results WHERE id IN"
-       " (SELECT results.id FROM results"
-       "  WHERE results.report = %llu);",
-       report);
-
-  /* Remove all hosts and host details. */
-
-  sql ("DELETE FROM report_host_details WHERE report_host IN"
-       " (SELECT id FROM report_hosts WHERE report = %llu);",
-       report);
-  sql ("DELETE FROM report_hosts"
-       " WHERE report = %llu;",
-       report);
-
-  /* Clear and rebuild counts cache */
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 1, 1, NULL);
-  else
-    report_clear_count_cache (report, 1, 1, NULL);
-}
-
-/**
  * @brief Prepare a partial report for resumption of the scan.
  *
  * @param[in]  report  The report.
@@ -15185,26 +15066,6 @@ report_host_count (report_t report)
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
                   report);
-}
-
-/**
- * @brief Count a report's total number of hosts with results.
- *
- * @param[in]   report         Report.
- * @param[in]   min_qod        Minimum QoD of results to count.
- *
- * @return The number of hosts with results
- */
-int
-report_result_host_count (report_t report, int min_qod)
-{
-  return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
-                  " WHERE report_hosts.report = %llu"
-                  "   AND EXISTS (SELECT * FROM results"
-                  "               WHERE results.host = report_hosts.host"
-                  "                 AND results.qod >= %d)",
-                  report,
-                  min_qod);
 }
 
 /**
@@ -19745,23 +19606,6 @@ append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 }
 
 /**
- * @brief Set the ports for a particular host in a scan.
- *
- * @param[in]  report   Report associated with scan.
- * @param[in]  host     Host.
- * @param[in]  current  New value for port currently being scanned.
- * @param[in]  max      New value for last port to be scanned.
- */
-void
-set_scan_ports (report_t report, const char* host, unsigned int current,
-                unsigned int max)
-{
-  sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
-       " WHERE host = '%s' AND report = %llu;",
-       current, max, host, report);
-}
-
-/**
  * @brief Find a task for a specific permission, given a UUID.
  *
  * @param[in]   uuid      UUID of task.
@@ -19970,55 +19814,6 @@ manage_task_remove_file (const gchar *task_id, const char *name)
     }
   return -1;
 }
-
-
-/**
- * @brief Initialise a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  task      Task.
- * @param[in]  file      File name, NULL for all files.
- */
-void
-init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
-{
-  gchar* sql;
-  if (file)
-    {
-      gchar *quoted_file = sql_nquote (file, strlen (file));
-      sql = g_strdup_printf ("SELECT name, content, length(content)"
-                             " FROM task_files"
-                             " WHERE task = %llu"
-                             " AND name = '%s';",
-                             task, quoted_file);
-      g_free (quoted_file);
-    }
-  else
-    sql = g_strdup_printf ("SELECT name, content, length(content)"
-                           " FROM task_files"
-                           " WHERE task = %llu;",
-                           task);
-  init_iterator (iterator, "%s", sql);
-  g_free (sql);
-}
-
-/**
- * @brief Get the name of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_name, 0);
-
-/**
- * @brief Get the content of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Content of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_content, 1);
 
 /**
  * @brief Modify a task.
@@ -20314,22 +20109,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Find a target for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of target.
- * @param[out]  target      Target return, 0 if successfully failed to find target.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_target_with_permission (const char* uuid, target_t* target,
-                             const char *permission)
-{
-  return find_resource_with_permission ("target", uuid, target, permission, 0);
-}
-
-/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  given_hosts      String describing hosts.
@@ -20343,102 +20122,6 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
   return manage_count_hosts_max (given_hosts,
                                  exclude_hosts,
                                  manage_max_hosts ());
-}
-
-/**
- * @brief Trim leading and trailing space from a hosts string.
- *
- * @param[in]  string  String.  May be modified.
- *
- * @return Either string or some address within string.
- */
-static gchar *
-trim_hosts (gchar *string)
-{
-  gchar *host, *end;
-
-  /* Trim leading and trailing space. */
-  host = string;
-  while ((*host == ' ') || (*host == '\t'))
-    host++;
-  end = host;
-  while (*end)
-    {
-      if ((*end == ' ') || (*end == '\t'))
-        {
-          *end = '\0';
-          break;
-        }
-      end++;
-    }
-  return host;
-}
-
-/**
- * @brief Clean a hosts string.
- *
- * @param[in]  given_hosts  String describing hosts.
- * @param[out] max          Max number of hosts, adjusted for duplicates.
- *
- * @return Freshly allocated new hosts string, or NULL on error.
- */
-gchar*
-clean_hosts (const char *given_hosts, int *max)
-{
-  array_t *clean_array;
-  GString *clean;
-  gchar **split, **point, *hosts, *hosts_start, *host;
-  guint index;
-
-  /* Treat newlines like commas. */
-  hosts = hosts_start = g_strdup (given_hosts);
-  while (*hosts)
-    {
-      if (*hosts == '\n') *hosts = ',';
-      hosts++;
-    }
-
-  split = g_strsplit (hosts_start, ",", 0);
-  g_free (hosts_start);
-  point = split;
-
-  if ((point == NULL) || (*point == NULL))
-    {
-      g_strfreev (split);
-      return g_strdup ("");
-    }
-
-  clean_array = make_array ();
-  while (*point)
-    {
-      host = trim_hosts (*point);
-
-      if (*host)
-        {
-          /* Prevent simple duplicates. */
-          if (array_find_string (clean_array, host) == NULL)
-            array_add (clean_array, host);
-          else if (max)
-            (*max)--;
-        }
-
-      point += 1;
-    }
-
-  clean = g_string_new ("");
-
-  host = (gchar*) g_ptr_array_index (clean_array, 0);
-  if (host)
-    g_string_append_printf (clean, "%s", host);
-
-  for (index = 1; index < clean_array->len; index++)
-    {
-      host = (gchar*) g_ptr_array_index (clean_array, index);
-      if (host)
-        g_string_append_printf (clean, ", %s", host);
-    }
-
-  return g_string_free (clean, FALSE);
 }
 
 /**
@@ -21029,43 +20712,6 @@ create_target (const char* name, const char* asset_hosts_filter,
     }
 
   sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create a target from an existing target.
- *
- * @param[in]  name        Name of new target.  NULL to copy from existing.
- * @param[in]  comment     Comment on new target.  NULL to copy from existing.
- * @param[in]  target_id   UUID of existing target.
- * @param[out] new_target  New target.
- *
- * @return 0 success, 1 target exists already, 2 failed to find existing
- *         target, 99 permission denied, -1 error.
- */
-int
-copy_target (const char* name, const char* comment, const char *target_id,
-             target_t* new_target)
-{
-  int ret;
-  target_t old_target;
-
-  assert (new_target);
-
-  ret = copy_resource ("target", name, comment, target_id,
-                       "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test,"
-                       " allow_simultaneous_ips",
-                       1, new_target, &old_target);
-  if (ret)
-    return ret;
-
-  sql ("INSERT INTO targets_login_data (target, type, credential, port)"
-       " SELECT %llu, type, credential, port"
-       "   FROM targets_login_data"
-       "  WHERE target = %llu;",
-       *new_target, old_target);
 
   return 0;
 }
@@ -22065,29 +21711,6 @@ target_count (const get_data_t *get)
   static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
   return count ("target", get, columns, trash_columns, extra_columns, 0, 0, 0,
                 TRUE);
-}
-
-/**
- * @brief Initialise a target iterator, given a single target.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  target     Single target to iterate.
- */
-void
-init_target_iterator_one (iterator_t* iterator, target_t target)
-{
-  get_data_t get;
-
-  assert (target);
-
-  memset (&get, '\0', sizeof (get));
-  get.id = target_uuid (target);
-  get.filter = "owner=any permission=get_targets";
-
-  /* We could pass the return up to the caller, but we don't pass in
-   * a filter id and the callers are all in situations where the
-   * target cannot disappear, so it's safe to ignore the return. */
-  init_target_iterator (iterator, &get);
 }
 
 /**

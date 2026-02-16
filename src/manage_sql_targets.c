@@ -4,7 +4,10 @@
  */
 
 #include "manage_sql_targets.h"
+#include "manage_sql_resources.h"
 #include "sql.h"
+
+#include <assert.h>
 
 /**
  * @file
@@ -12,6 +15,22 @@
  *
  * The Targets SQL for the GVM management layer.
  */
+
+/**
+ * @brief Find a target for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of target.
+ * @param[out]  target      Target return, 0 if successfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_target_with_permission (const char* uuid, target_t* target,
+                             const char *permission)
+{
+  return find_resource_with_permission ("target", uuid, target, permission, 0);
+}
 
 /**
  * @brief Return the UUID of a target.
@@ -323,4 +342,41 @@ credential_t
 target_krb5_credential (target_t target)
 {
   return target_credential (target, "krb5");
+}
+
+/**
+ * @brief Create a target from an existing target.
+ *
+ * @param[in]  name        Name of new target.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new target.  NULL to copy from existing.
+ * @param[in]  target_id   UUID of existing target.
+ * @param[out] new_target  New target.
+ *
+ * @return 0 success, 1 target exists already, 2 failed to find existing
+ *         target, 99 permission denied, -1 error.
+ */
+int
+copy_target (const char* name, const char* comment, const char *target_id,
+             target_t* new_target)
+{
+  int ret;
+  target_t old_target;
+
+  assert (new_target);
+
+  ret = copy_resource ("target", name, comment, target_id,
+                       "hosts, exclude_hosts, port_list, reverse_lookup_only,"
+                       " reverse_lookup_unify, alive_test,"
+                       " allow_simultaneous_ips",
+                       1, new_target, &old_target);
+  if (ret)
+    return ret;
+
+  sql ("INSERT INTO targets_login_data (target, type, credential, port)"
+       " SELECT %llu, type, credential, port"
+       "   FROM targets_login_data"
+       "  WHERE target = %llu;",
+       *new_target, old_target);
+
+  return 0;
 }

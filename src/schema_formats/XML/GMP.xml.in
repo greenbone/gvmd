@@ -6377,6 +6377,7 @@ END:VCALENDAR
         <create_target>
           <name>All GNU/Linux machines</name>
           <hosts>192.168.1.0/24</hosts>
+          <port_list id="33d0cd82-57c6-11e1-8ed1-406186ea4fc5"/>
         </create_target>
       </request>
       <response>
