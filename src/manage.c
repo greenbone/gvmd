@@ -6190,12 +6190,12 @@ gvm_migrate_secinfo (int feed_type)
 /* Time zone info. */
 
 /**
- * @brief Get all a list of supported timezones
+ * @brief Get a list of all supported timezones
  *
  * @return An array of supported timezones. Caller must free.
  */
 array_t *
-manange_get_timezones ()
+manage_get_timezones ()
 {
   array_t *tzs_out = make_array ();
   iterator_t pg_iterator;

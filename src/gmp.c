@@ -20335,7 +20335,7 @@ handle_get_timezones (gmp_parser_t *gmp_parser, GError **error)
                           " status=\"" STATUS_OK "\""
                           " status_text=\"" STATUS_OK_TEXT "\">");
 
-  timezones = manange_get_timezones ();
+  timezones = manage_get_timezones ();
   for (int i = 0; i < timezones->len; i++)
     {
       const char *name = timezones->pdata[i];
