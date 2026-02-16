@@ -21225,6 +21225,25 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          ? current_credentials.timezone
                          : "UTC";
 
+                if (manage_timezone_supported (zone) == FALSE)
+                  {
+                    g_warning ("User '%s' (%s) has unsupported timezone '%s',"
+                               " falling back to 'UTC'.",
+                               current_credentials.username,
+                               current_credentials.uuid,
+                               zone);
+                    zone = "UTC";
+
+                    user_t user;
+                    if (find_resource_no_acl ("user",
+                                              current_credentials.uuid,
+                                              &user) == 0
+                        && user)
+                      {
+                        user_set_timezone (user, zone);
+                      }
+                  }
+
                 if (setenv ("TZ", zone, 1) == -1)
                   {
                     free_credentials (&current_credentials);

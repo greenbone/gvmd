@@ -3427,6 +3427,9 @@ manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
 array_t *
 manange_get_timezones ();
 
+gboolean
+manage_timezone_supported (const char *);
+
 
 /* Wizards. */
 

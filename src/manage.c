@@ -6549,6 +6549,21 @@ manange_get_timezones ()
   return tzs_out;
 }
 
+/**
+ * @brief Check if a timezone is supported
+ *
+ * @param[in]  zone  Name of the timezone to check.
+ *
+ * @return TRUE if the timezone is supported, FALSE otherwise
+ */
+gboolean
+manage_timezone_supported (const char *zone)
+{
+  if (icalendar_timezone_from_string (zone) == NULL)
+    return FALSE;
+  return pg_timezone_supported (zone);
+}
+
 
 /* Wizards. */
 

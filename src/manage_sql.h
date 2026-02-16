@@ -624,4 +624,7 @@ init_pg_timezones_iterator (iterator_t *);
 const char *
 pg_timezones_iterator_name (iterator_t *);
 
+gboolean
+pg_timezone_supported (const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
