@@ -185,6 +185,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         "<update_to_latest>%i</update_to_latest>"
         "<agent_update_available>%i</agent_update_available>"
         "<updater_update_available>%i</updater_update_available>"
+        "<latest_agent_version>%s</latest_agent_version>"
+        "<latest_updater_version>%s</latest_updater_version>"
         "<scanner id=\"%s\">"
         "<name>%s</name>"
         "</scanner>",
@@ -200,6 +202,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         agent_iterator_update_to_latest (&agents),
         agent_iterator_agent_update_available (&agents),
         agent_iterator_updater_update_available (&agents),
+        agent_iterator_latest_agent_version (&agents),
+        agent_iterator_latest_updater_version (&agents),
         agent_scanner_uuid ? agent_scanner_uuid : "",
         agent_scanner_name ? agent_scanner_name : "");
 

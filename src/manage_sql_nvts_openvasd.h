@@ -13,7 +13,7 @@
 
 #include "manage_nvts_openvasd.h"
 #include "manage_sql_nvts_common.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 int
 update_or_rebuild_nvts_openvasd (int update);

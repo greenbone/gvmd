@@ -155,58 +155,6 @@ typedef struct
  * track of the transaction, and rollback before aborting. */
 
 /**
- * @brief Rename a column.
- *
- * @param[in]  table  Table
- * @param[in]  old    Old column.
- * @param[in]  new    New column.
- */
-static void
-move (const gchar *table, const gchar *old, const gchar *new)
-{
-  sql ("ALTER TABLE %s RENAME COLUMN %s TO %s;", table, old, new);
-}
-
-/**
- * @brief Migrate the database from version 204 to version 205.
- *
- * @return 0 success, -1 error.
- */
-int
-migrate_204_to_205 ()
-{
-  sql_begin_immediate ();
-
-  /* Ensure that the database is currently version 204. */
-
-  if (manage_db_version () != 204)
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  /* Update the database. */
-
-  /* Ticket "comment" column suffix was changed to "note". */
-
-  move ("tickets", "open_comment", "open_note");
-  move ("tickets", "fixed_comment", "fixed_note");
-  move ("tickets", "closed_comment", "closed_note");
-
-  move ("tickets_trash", "open_comment", "open_note");
-  move ("tickets_trash", "fixed_comment", "fixed_note");
-  move ("tickets_trash", "closed_comment", "closed_note");
-
-  /* Set the database version to 205. */
-
-  set_db_version (205);
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
  * @brief Converts old NVT preferences to the new format.
  *
  * @param[in]  table_name  The name of the table to update.
@@ -3576,6 +3524,81 @@ migrate_265_to_266 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 266 to version 267.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_266_to_267 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 266. */
+
+  if (manage_db_version () != 266)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add scanner field to asset_snapshots
+
+  sql (
+    "ALTER TABLE asset_snapshots ADD COLUMN scanner INTEGER;"
+    );
+
+  /* Set the database version to 267. */
+
+  set_db_version (267);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 265 to version 266.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_267_to_268 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 267. */
+
+  if (manage_db_version () != 267)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add latest_agent_version and latest_updater_version fields to agents
+
+  sql (
+    "ALTER TABLE IF EXISTS agents"
+    " ADD COLUMN IF NOT EXISTS latest_agent_version TEXT;"
+    );
+  sql (
+    "ALTER TABLE IF EXISTS agents"
+    " ADD COLUMN IF NOT EXISTS latest_updater_version TEXT;"
+    );
+
+  /* Set the database version to 268. */
+
+  set_db_version (268);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3648,6 +3671,8 @@ static migrator_t database_migrators[] = {
   {264, migrate_263_to_264},
   {265, migrate_264_to_265},
   {266, migrate_265_to_266},
+  {267, migrate_266_to_267},
+  {268, migrate_267_to_268},
   /* End marker. */
   {-1, NULL}};
 

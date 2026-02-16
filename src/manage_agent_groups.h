@@ -20,7 +20,7 @@
 #include "iterator.h"
 #include "manage_agent_common.h"
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief Represents an agent group and its metadata.

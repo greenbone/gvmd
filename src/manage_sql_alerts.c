@@ -9,6 +9,7 @@
 #include "manage_sql_filters.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_resources.h"
 
 #include <ctype.h>
 

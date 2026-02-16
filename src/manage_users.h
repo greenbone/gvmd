@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_USERS_H
 
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "sql.h" // Sadly, for db_conn_info_t
 
 gchar *

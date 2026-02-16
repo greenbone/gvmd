@@ -14,7 +14,7 @@
 #define _GVMD_MANAGE_CREDENTIAL_STORES_H
 
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include <gnutls/gnutls.h>
 
 /**

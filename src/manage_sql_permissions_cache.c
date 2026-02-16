@@ -4,10 +4,17 @@
  */
 
 #include "manage_sql_permissions_cache.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_users.h"
 #include "manage.h" // for current_credentials
 #include "manage_sql.h"
 #include "sql.h"
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @file

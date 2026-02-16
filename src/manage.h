@@ -262,12 +262,6 @@ validate_sort_field (const gchar*, const gchar*);
 void
 manage_session_set_timezone (const char *);
 
-void
-manage_transaction_start ();
-
-void
-manage_transaction_stop (gboolean);
-
 
 /* Task macros and structures. */
 
@@ -387,34 +381,13 @@ get_scanner_type_by_uuid (const char *);
 /* Resources. */
 
 int
-manage_resource_name (const char *, const char *, char **);
-
-int
-manage_trash_resource_name (const char *, const char *, char **);
-
-int
-resource_count (const char *, const get_data_t *);
-
-int
 resource_id_exists (const char *, const char *);
 
 int
 trash_id_exists (const char *, const char *);
 
-gboolean
-find_resource (const char*, const char*, resource_t*);
-
-gboolean
-find_resource_no_acl (const char*, const char*, resource_t*);
-
 int
 delete_resource (const char *, const char *, int);
-
-int
-resource_id_deprecated (const char *, const char *);
-
-void
-set_resource_id_deprecated (const char *, const char *, gboolean);
 
 
 /* Events and Alerts. */
@@ -768,9 +741,6 @@ time_t
 task_schedule_next_time_uuid (const gchar *);
 
 int
-task_schedule_next_time (task_t);
-
-int
 task_debugs_size (task_t);
 
 int
@@ -832,9 +802,6 @@ append_to_task_comment (task_t, const char*, int);
 
 void
 add_task_description_line (task_t, const char*, size_t);
-
-void
-set_scan_ports (report_t, const char*, unsigned int, unsigned int);
 
 void
 append_task_open_port (task_t task, const char *, const char*);
@@ -1046,9 +1013,6 @@ report_severity (report_t, int, int);
 int
 report_host_count (report_t);
 
-int
-report_result_host_count (report_t, int);
-
 char *
 report_finished_hosts_str (report_t);
 
@@ -1212,17 +1176,11 @@ set_scan_end_time_epoch (report_t, time_t);
 void
 set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
-int
-scan_host_end_time (report_t, const char*);
-
 void
 set_scan_host_start_time_isotime (report_t, const char*, const char*);
 
 void
 set_scan_host_end_time_isotime (report_t, const char*, const char* );
-
-void
-set_scan_host_end_time (report_t, const char*, const char*);
 
 void
 set_scan_host_end_time_ctime (report_t, const char*, const char*);
@@ -1643,13 +1601,7 @@ prognosis_iterator_description (iterator_t*);
 #define MANAGE_USER_MAX_HOSTS 16777216
 
 int
-manage_max_hosts ();
-
-int
 manage_count_hosts (const char *, const char *);
-
-gboolean
-find_target_with_permission (const char *, target_t *, const char *);
 
 int
 create_target (const char*, const char*, const char*, const char*, const char*,
@@ -1659,9 +1611,6 @@ create_target (const char*, const char*, const char*, const char*, const char*,
                const char *, const char *,
                GPtrArray *, const char *,
                const char *, target_t*);
-
-int
-copy_target (const char*, const char*, const char *, target_t*);
 
 int
 modify_target (const char*, const char*, const char*, const char*, const char*,
@@ -1677,9 +1626,6 @@ target_count (const get_data_t *);
 
 void
 init_user_target_iterator (iterator_t*, target_t);
-
-void
-init_target_iterator_one (iterator_t*, target_t);
 
 int
 init_target_iterator (iterator_t*, get_data_t *);
@@ -1753,41 +1699,11 @@ target_iterator_port_list_trash (iterator_t*);
 int
 target_iterator_alive_tests (iterator_t*);
 
-char*
-target_uuid (target_t);
-
-char*
-trash_target_uuid (target_t);
-
-char*
-target_name (target_t);
-
-char*
-trash_target_name (target_t);
-
 int
 trash_target_readable (target_t);
 
 char*
-target_hosts (target_t);
-
-char*
-target_exclude_hosts (target_t);
-
-char*
-target_reverse_lookup_only (target_t);
-
-char*
-target_reverse_lookup_unify (target_t);
-
-char*
-target_allow_simultaneous_ips (target_t);
-
-char*
 target_port_range (target_t);
-
-char*
-target_ssh_port (target_t);
 
 int
 target_in_use (target_t);
@@ -1815,12 +1731,6 @@ target_task_iterator_uuid (iterator_t*);
 
 int
 target_task_iterator_readable (iterator_t*);
-
-credential_t
-target_credential (target_t, const char*);
-
-int
-target_login_port (target_t, const char*);
 
 
 /* Configs.
@@ -2733,9 +2643,6 @@ get_relay_mapper_path ();
 void
 set_relay_mapper_path (const char *);
 
-gboolean
-relay_supports_scanner_type (const char *, int, scanner_type_t);
-
 int
 slave_get_relay (const char *,
                  int,
@@ -2749,6 +2656,10 @@ int
 slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
+/**
+* @brief Seconds of a day
+*/
+#define SECONDS_PER_DAY 86400
 
 /**
  * @brief Seconds between calls to manage_schedule.
@@ -2777,6 +2688,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
   */
   #define AGENT_SYNC_SCHEDULE_PERIOD 300 /* every 5 minutes */
 #endif
+
+/**
+ * @brief Seconds between calls to manage_asset_snapshot_delete_stale.
+ */
+#define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
@@ -3395,18 +3311,6 @@ feed_lockfile_unlock (lockfile_t *);
 int
 gvm_migrate_secinfo (int);
 
-gboolean
-gvm_sync_script_perform_selftest (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_identification (const gchar *, gchar **, int);
-
-gboolean
-gvm_get_sync_script_description (const gchar *, gchar **);
-
-gboolean
-gvm_get_sync_script_feed_version (const gchar *, gchar **);
-
 int
 nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
 
@@ -3419,8 +3323,15 @@ manage_rebuild (GSList *, const db_conn_info_t *);
 int
 manage_dump_vt_verification (GSList *, const db_conn_info_t *);
 
+/* Asset Snapshots */
+
+#define ASSET_SNAPSHOT_MANAGED_POLICY_DAY 90
+
+void
+manage_asset_snapshot_delete_stale (int);
+
 int
-manage_dump_asset_snapshot_counts(GSList *, const db_conn_info_t *);
+manage_dump_asset_snapshot_counts (GSList *, const db_conn_info_t *);
 
 
 /* Timezone info. */

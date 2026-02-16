@@ -165,6 +165,7 @@ set(
   manage.c
   manage_acl.c
   manage_alerts.c
+  manage_asset_keys.c
   manage_credential_store_cyberark.c
   manage_credential_stores.c
   manage_configs.c
@@ -196,6 +197,7 @@ set(
   manage_scan_queue.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
+  manage_targets.c
   manage_users.c
 )
 
@@ -228,7 +230,9 @@ set(
   manage_sql_configs.c
   manage_sql_report_configs.c
   manage_sql_report_formats.c
+  manage_sql_resources.c
   manage_sql_roles.c
+  manage_sql_targets.c
   manage_sql_tickets.c
   manage_sql_tls_certificates.c
   manage_sql_users.c
@@ -506,6 +510,16 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+set(EXTRA_SRC ${ALL_MANAGE_SRC})
+add_unit_test(manage-asset-keys "${ALL_OBJECTS}" "${EXTRA_SRC}")
+
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(DEBUG_FUNCTION_NAMES)
@@ -680,6 +694,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_asset_keys.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
@@ -706,8 +721,10 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions_cache.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_resources.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_users.c"

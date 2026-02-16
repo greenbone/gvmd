@@ -119,38 +119,8 @@ manage_cert_db_exists ()
   return 0;
 }
 
-/**
- * @brief Check if SCAP db exists.
- *
- * @return 1 if exists, else 0.
- */
-int
-manage_scap_db_exists ()
-{
-  if (sql_int ("SELECT exists (SELECT schema_name"
-               "               FROM information_schema.schemata"
-               "               WHERE schema_name = 'scap');"))
-    return 1;
-  return 0;
-}
-
 
 /* SQL functions. */
-
-/**
- * @brief Move data from a table to a new table, heeding column rename.
- *
- * @param[in]  old_table  Existing table.
- * @param[in]  new_table  New empty table with renamed column.
- * @param[in]  old_name   Name of column in old table.
- * @param[in]  new_name   Name of column in new table.
- */
-void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
-{
-  return;
-}
 
 /**
  * @brief Common overrides SQL for SQL functions.
@@ -2873,7 +2843,9 @@ create_tables ()
     "  architecture TEXT,"
     "  update_to_latest INTEGER,"
     "  agent_update_available INTEGER NOT NULL DEFAULT 0,"
-    "  updater_update_available INTEGER NOT NULL DEFAULT 0);");
+    "  updater_update_available INTEGER NOT NULL DEFAULT 0,"
+    "  latest_agent_version TEXT,"
+    "  latest_updater_version TEXT);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
     " (id SERIAL PRIMARY KEY,"
@@ -3209,7 +3181,8 @@ create_tables ()
      "  container_digest text,"
      "  asset_key text,"
      "  creation_time integer NOT NULL,"
-     "  modification_time integer NOT NULL"
+     "  modification_time integer NOT NULL,"
+     "  scanner integer"
      ");");
 
   create_tables_nvt ("");
