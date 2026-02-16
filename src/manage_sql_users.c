@@ -2434,3 +2434,24 @@ all_users_array ()
 
   return ret;
 }
+
+/**
+ * @brief Sets the timezone of a user.
+ *
+ * @param[in] user    The user to set the timezone of
+ * @param[in] zone    The timezone to set
+ *
+ * @return 0 success, 1 invalid timezone
+ */
+int
+user_set_timezone (user_t user, const char *zone)
+{
+  if (manage_timezone_supported (zone) == FALSE)
+    return 1;
+  sql_ps ("UPDATE users SET timezone = $1"
+          " WHERE id = $2",
+          SQL_STR_PARAM (zone),
+          SQL_RESOURCE_PARAM (user),
+          NULL);
+  return 0;
+}

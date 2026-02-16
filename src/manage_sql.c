@@ -33222,6 +33222,11 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (value);
               return -1;
             }
+          if (manage_timezone_supported (value) == FALSE)
+            {
+              g_free (value);
+              return 2;
+            }
         }
       else
         {
@@ -38099,3 +38104,48 @@ parse_http_scanner_report (task_t task, report_t report, GSList *results,
   g_free (rep_aux);
 }
 #endif
+
+/**
+ * @brief Initializes a PostgreSQL timezones iterator.
+ *
+ * The iterator returns the timezones supported by the PostgreSQL server.
+ *
+ * @param[in]  iterator  Iterator to initialize.
+ */
+void
+init_pg_timezones_iterator (iterator_t *iterator)
+{
+  init_iterator (iterator,
+                 "SELECT name FROM pg_timezone_names ORDER BY name ASC;");
+}
+
+/**
+ * @brief Get a timezone name from a PostgreSQL timezone iterator.
+ *
+ * @param[in]  iterator  Iterator to get name from.
+ *
+ * @return The name of the timezone.
+ */
+const char *
+pg_timezones_iterator_name (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+  return iterator_string (iterator, 0);
+}
+
+/**
+ * @brief Check if a timezone is supported by the PostgreSQL server.
+ *
+ * @param[in]  zone  The timezone to check.
+ *
+ * @return TRUE if timezone is supported, else FALSE.
+ */
+gboolean
+pg_timezone_supported (const char *zone)
+{
+  return sql_int_ps ("SELECT count(*) > 0"
+                     " FROM pg_timezone_names WHERE name = $1",
+                     SQL_STR_PARAM (zone),
+                     NULL);
+}
