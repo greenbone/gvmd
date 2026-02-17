@@ -1679,3 +1679,346 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   return 0;
 }
+
+/**
+ * @brief Count number of targets.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of targets in filtered set.
+ */
+int
+target_count (const get_data_t *get)
+{
+  static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
+  return count ("target", get, columns, trash_columns, extra_columns, 0, 0, 0,
+                TRUE);
+}
+
+/**
+ * @brief Initialise a target iterator, including observed targets.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_target_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "target",
+                            get,
+                            columns,
+                            trash_columns,
+                            filter_columns,
+                            0,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the hosts of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Hosts of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_hosts, GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the SSH LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SSH LSC credential.
+ */
+int
+target_iterator_ssh_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return ret;
+}
+
+/**
+ * @brief Get the SSH LSC port of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SSH LSC port of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_port, GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the SMB LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return SMB LSC credential.
+ */
+int
+target_iterator_smb_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
+  return ret;
+}
+
+/**
+ * @brief Get the location of the SSH LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash
+ */
+int
+target_iterator_ssh_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
+  return ret;
+}
+
+/**
+ * @brief Get the location of the SMB LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash
+ */
+int
+target_iterator_smb_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
+  return ret;
+}
+
+/**
+ * @brief Get the port list uuid of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID of the target port list or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_port_list_uuid, GET_ITERATOR_COLUMN_COUNT + 7);
+
+/**
+ * @brief Get the port list name of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name of the target port list or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_port_list_name, GET_ITERATOR_COLUMN_COUNT + 8);
+
+/**
+ * @brief Get the location of the port list from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 0 in table, 1 in trash.
+ */
+int
+target_iterator_port_list_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  return ret;
+}
+
+/**
+ * @brief Get the excluded hosts of the target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Excluded hosts of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_exclude_hosts, GET_ITERATOR_COLUMN_COUNT + 10);
+
+/**
+ * @brief Get the reverse lookup only value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reverse lookup only of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_reverse_lookup_only,
+            GET_ITERATOR_COLUMN_COUNT + 11);
+
+/**
+ * @brief Get the reverse lookup unify value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reverse lookup unify of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_reverse_lookup_unify,
+            GET_ITERATOR_COLUMN_COUNT + 12);
+
+/**
+ * @brief Get the alive_tests value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Alive_tests of the target or -1 if iteration is complete.
+ */
+int
+target_iterator_alive_tests (iterator_t* iterator)
+{
+  if (iterator->done)
+    return -1;
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+}
+
+/**
+ * @brief Get the ESXi LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_esxi_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
+  return ret;
+}
+
+/**
+ * @brief Get the ESXi LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_esxi_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
+  return ret;
+}
+
+/**
+ * @brief Get the SNMP LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_snmp_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+  return ret;
+}
+
+/**
+ * @brief Get the SNMP LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ESXi LSC credential.
+ */
+int
+target_iterator_snmp_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
+  return ret;
+}
+
+/**
+ * @brief Get the ELEVATE LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ELEVATE LSC credential.
+ */
+int
+target_iterator_ssh_elevate_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
+  return ret;
+}
+
+/**
+ * @brief Get the ELEVATE LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return ELEVATE LSC credential.
+ */
+int
+target_iterator_ssh_elevate_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 19);
+  return ret;
+}
+
+/**
+ * @brief Get the Kerberos 5 LSC credential from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_credential (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
+  return ret;
+}
+
+/**
+ * @brief Get the Kerberos 5 LSC credential location from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Kerberos 5 LSC credential.
+ */
+int
+target_iterator_krb5_trash (iterator_t* iterator)
+{
+  int ret;
+  if (iterator->done) return -1;
+  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
+  return ret;
+}
+
+/**
+ * @brief Get the allow_simultaneous_ips value from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return allow_simult_ips_same_host or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_allow_simultaneous_ips,
+            GET_ITERATOR_COLUMN_COUNT + 22);
