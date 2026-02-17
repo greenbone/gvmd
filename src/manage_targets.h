@@ -136,4 +136,16 @@ target_iterator_port_list_trash (iterator_t *);
 int
 target_iterator_alive_tests (iterator_t *);
 
+void
+init_target_task_iterator (iterator_t *, target_t);
+
+const char *
+target_task_iterator_name (iterator_t *);
+
+const char *
+target_task_iterator_uuid (iterator_t *);
+
+int
+target_task_iterator_readable (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */
