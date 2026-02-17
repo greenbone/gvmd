@@ -1631,9 +1631,6 @@ manage_count_hosts (const char *, const char *);
 int
 target_count (const get_data_t *);
 
-void
-init_user_target_iterator (iterator_t*, target_t);
-
 int
 trash_target_readable (target_t);
 
