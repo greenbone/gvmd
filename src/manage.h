@@ -1655,18 +1655,6 @@ trash_target_writable (target_t);
 char*
 target_ssh_credential_name (const char *);
 
-void
-init_target_task_iterator (iterator_t*, target_t);
-
-const char*
-target_task_iterator_name (iterator_t*);
-
-const char*
-target_task_iterator_uuid (iterator_t*);
-
-int
-target_task_iterator_readable (iterator_t*);
-
 
 /* Configs.
  *

@@ -20489,78 +20489,6 @@ trash_target_writable (target_t target)
   return trash_target_in_use (target) == 0;
 }
 
-/**
- * @brief Initialise a target task iterator.
- *
- * Iterates over all tasks that use the target.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  target     Target.
- */
-void
-init_target_task_iterator (iterator_t* iterator, target_t target)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (target);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM tasks"
-                 " WHERE target = %llu"
-                 " AND hidden = 0"
-                 " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
-                 available,
-                 target);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the name from a target_task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (target_task_iterator_name, 0);
-
-/**
- * @brief Get the uuid from a target_task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The uuid of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (target_task_iterator_uuid, 1);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-target_task_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
-}
-
 
 /* Credentials. */
 
