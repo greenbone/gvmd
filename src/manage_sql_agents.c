@@ -439,6 +439,7 @@ init_agent_uuid_list_iterator (iterator_t *iterator,
   get.type = "agent";
   get.ignore_pagination = 1;
   get.ignore_max_rows_per_page = 1;
+  get.filter = "rows=-1";
 
   GString *where_clause = g_string_new (NULL);
 
