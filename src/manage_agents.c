@@ -648,6 +648,8 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
     }
   if (count != uuid_list->count)
     {
+      g_debug ("%s: agent iterator agent count: %d, user agent list count: %d",
+               __func__, count, uuid_list->count);
       cleanup_iterator (&iterator);
       return AGENT_RESPONSE_AGENT_NOT_FOUND;
     }
