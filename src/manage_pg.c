@@ -337,6 +337,18 @@ manage_create_sql_functions ()
        " END;"
        "$$ language 'plpgsql';");
 
+  sql ("CREATE OR REPLACE FUNCTION try_shared_lock_wait (regclass)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   EXECUTE 'LOCK TABLE '"
+       "           || quote_ident_split($1::text)"
+       "           || ' IN ACCESS SHARE MODE;';"
+       "   RETURN 1;"
+       " EXCEPTION WHEN lock_not_available THEN"
+       "   RETURN 0;"
+       " END;"
+       "$$ language 'plpgsql';");
+
   if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
                "               WHERE table_catalog = '%s'"
                "               AND table_schema = 'public'"
