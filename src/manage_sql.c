@@ -28568,50 +28568,6 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
- * @brief Return the password associated with a scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated password if available, else NULL.
- */
-char*
-scanner_password (scanner_t scanner)
-{
-  gchar *password;
-
-  password = sql_string ("SELECT credentials_data.value"
-                         " FROM scanners, credentials_data"
-                         " WHERE scanners.id = %llu"
-                         "   AND credentials_data.credential"
-                         "         = scanners.credential"
-                         "   AND credentials_data.type = 'password';",
-                         scanner);
-
-  if (password == NULL)
-    {
-      gchar *secret;
-      lsc_crypt_ctx_t crypt_ctx;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-
-      secret = sql_string ("SELECT credentials_data.value"
-                           " FROM scanners, credentials_data"
-                           " WHERE scanners.id = %llu"
-                           "   AND credentials_data.credential"
-                           "         = scanners.credential"
-                           "   AND credentials_data.type = 'secret';",
-                           scanner);
-
-      password = g_strdup (lsc_crypt_get_password (crypt_ctx, secret));
-      lsc_crypt_release (crypt_ctx);
-      g_free (secret);
-    }
-
-  return password;
-}
-
-/**
  * @brief Return the name of a scanner in the trashcan.
  *
  * @param[in]  scanner  Scanner.

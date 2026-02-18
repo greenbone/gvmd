@@ -2522,9 +2522,6 @@ scanner_key_pub (scanner_t);
 char *
 scanner_key_priv (scanner_t);
 
-char*
-scanner_password (scanner_t);
-
 int
 scanner_count (const get_data_t *);
 
