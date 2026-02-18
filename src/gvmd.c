@@ -2401,6 +2401,7 @@ gvmd (int argc, char** argv, char *env[])
   static int max_active_scan_handlers = DEFAULT_MAX_ACTIVE_SCAN_HANDLERS;
   static int max_concurrent_scan_updates = 0;
   static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  static int max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
   static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
@@ -2611,6 +2612,11 @@ gvmd (int argc, char** argv, char *env[])
           &max_database_connections,
           "Maximum number of database connections at the same time."
           " Default: 50",
+          "<number>" },
+        { "max-table-lock-retries", '\0', 0, G_OPTION_ARG_INT,
+          &max_table_lock_retries,
+          "Maximum number of retries for a table lock."
+          " Default: "G_STRINGIFY (MAX_TABLE_LOCK_RETRIES_DEFAULT),
           "<number>" },
         { "max-concurrent-report-processing", '\0', 0, G_OPTION_ARG_INT,
           &max_concurrent_report_processing,
@@ -3030,6 +3036,11 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set maximum number of database connections */
   set_max_database_connections (max_database_connections);
+
+  /* Set maximum number of table lock retries */
+  set_max_table_lock_retries (max_table_lock_retries
+                             ? max_table_lock_retries
+                             : MAX_TABLE_LOCK_RETRIES_DEFAULT);
 
   /* Set maximum number of concurrent report processing */
   set_max_concurrent_report_processing (max_concurrent_report_processing);
