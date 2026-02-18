@@ -28568,20 +28568,6 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
- * @brief Return the UUID of a scanner in the trashcan.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated UUID.
- */
-char *
-trash_scanner_uuid (scanner_t scanner)
-{
-  return sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
-                     scanner);
-}
-
-/**
  * @brief Count number of scanners.
  *
  * @param[in]  get  GET params.
