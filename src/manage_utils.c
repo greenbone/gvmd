@@ -1322,6 +1322,8 @@ clean_hosts (const char *given_hosts, int *max)
         g_string_append_printf (clean, ", %s", host);
     }
 
+  g_strfreev (split);
+  g_ptr_array_free (clean_array, TRUE);
   return g_string_free (clean, FALSE);
 }
 
