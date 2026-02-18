@@ -1729,9 +1729,6 @@ modify_task_check_config_scanner (task_t, const char *, const char *);
 /* NVT's. */
 
 char *
-manage_nvt_name (nvt_t);
-
-char *
 nvt_name (const char *);
 
 char*
