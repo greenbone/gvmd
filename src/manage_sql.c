@@ -28568,24 +28568,6 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
- * @brief Return the login associated with a scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated login if available, else NULL.
- */
-char*
-scanner_login (scanner_t scanner)
-{
-  return sql_string ("SELECT credentials_data.value"
-                     " FROM scanners, credentials_data"
-                     " WHERE scanners.id = %llu"
-                     "   AND credentials_data.credential = scanners.credential"
-                     "   AND credentials_data.type = 'username';",
-                     scanner);
-}
-
-/**
  * @brief Return the password associated with a scanner.
  *
  * @param[in]  scanner  Scanner.
