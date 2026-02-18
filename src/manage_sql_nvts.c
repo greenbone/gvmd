@@ -165,19 +165,6 @@ check_db_nvts ()
 }
 
 /**
- * @brief Get the name of an NVT.
- *
- * @param[in]  nvt  NVT.
- *
- * @return Freshly allocated name of NVT if possible, else NULL.
- */
-char *
-manage_nvt_name (nvt_t nvt)
-{
-  return sql_string ("SELECT name FROM nvts WHERE id = %llu;", nvt);
-}
-
-/**
  * @brief Get the name of an NVT given its OID.
  *
  * @param[in]  oid  OID of NVT.
