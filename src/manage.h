@@ -2523,9 +2523,6 @@ char *
 scanner_key_priv (scanner_t);
 
 char*
-scanner_login (scanner_t);
-
-char*
 scanner_password (scanner_t);
 
 int
