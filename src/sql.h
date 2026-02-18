@@ -233,6 +233,9 @@ sql_rollback ();
 int
 sql_table_lock_wait (const char *, int);
 
+int
+sql_table_shared_lock_wait (const char *, int);
+
 /* Iterators. */
 
 /* These functions are for "internal" use.  They may only be accessed by code

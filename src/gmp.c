@@ -15974,6 +15974,28 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       gchar *extension, *content_type;
       GString *prefix;
+      int lock_ret, lock_retries;
+
+      sql_begin_immediate ();
+
+      lock_retries = get_max_table_lock_retries ();
+      lock_ret = sql_table_shared_lock_wait ("reports", LOCK_TIMEOUT);
+      while ((lock_ret == 0) && (lock_retries > 0))
+        {
+          lock_ret = sql_table_shared_lock_wait ("reports", LOCK_TIMEOUT);
+          lock_retries--;
+        }
+      if (lock_ret == 0)
+        {
+          sql_rollback ();
+          break;
+        }
+
+      if (!resource_with_id_exists ("report", report))
+        {
+          sql_rollback ();
+          continue;
+        }
 
       prefix = g_string_new ("");
       content_type = no_report_format
@@ -16137,6 +16159,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             switch (ret)
               {
                 case 0:
+                  sql_rollback ();
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -16144,6 +16167,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                         get_reports_data->alert_id, gmp_parser))
                     {
                       error_send_to_client (error);
+                      sql_rollback ();
                       return;
                     }
                   /* Close the connection with the client, as part of the
@@ -16154,6 +16178,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case 2:
@@ -16162,6 +16187,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                         get_reports_data->get.filt_id, gmp_parser))
                     {
                       error_send_to_client (error);
+                      sql_rollback ();
                       return;
                     }
                   /* This error always occurs before anything is sent
@@ -16170,6 +16196,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -2:
@@ -16181,6 +16208,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -3:
@@ -16190,6 +16218,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -4:
@@ -16201,6 +16230,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 default:
@@ -16215,6 +16245,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
               }
@@ -16225,6 +16256,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                      get_reports_data->get.filt_id, gmp_parser))
                 {
                   error_send_to_client (error);
+                  sql_rollback ();
                   return;
                 }
               /* This error always occurs before anything is sent
@@ -16233,6 +16265,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 cleanup_iterator (&reports);
               get_reports_data_reset (get_reports_data);
               set_client_state (CLIENT_AUTHENTIC);
+              sql_rollback ();
               return;
             }
           else
@@ -16245,6 +16278,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 cleanup_iterator (&reports);
               get_reports_data_reset (get_reports_data);
               set_client_state (CLIENT_AUTHENTIC);
+              sql_rollback ();
               return;
             }
         }
@@ -16254,8 +16288,13 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       count++;
 
       if (request_report)
-        /* Just to be safe, because iterator has been freed. */
-        break;
+        {
+          /* Just to be safe, because iterator has been freed. */
+          sql_commit ();
+          break;
+        }
+
+      sql_commit ();
     }
   if (request_report == 0)
     cleanup_iterator (&reports);
