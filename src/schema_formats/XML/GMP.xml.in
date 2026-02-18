@@ -28026,6 +28026,58 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_timezones</name>
+    <summary>Get a list of supported timezones</summary>
+    <description>
+      <p>
+        The client uses the "get_timezones" command to retrieve the list of
+        supported timezones.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>timezone</e></any>
+      </pattern>
+      <ele>
+        <name>timezone</name>
+        <pattern>
+          <e>name</e>
+        </pattern>
+        <summary>A supported timezone</summary>
+        <ele>
+          <name>name</name>
+          <pattern>text</pattern>
+          <summary>Name of the timezone</summary>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all supported timezones</summary>
+      <request>
+        <get_timezones></get_timezones>
+      </request>
+      <response>
+        <get_timezones_response status_text="OK" status="200">
+          <timezone><name>Africa/Abidjan</name></timezone>
+          <truncate>...</truncate>
+          <timezone><name>UTC</name></timezone>
+        </get_timezones_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_tls_certificates</name>
     <summary>Get one or many TLS certificates</summary>
     <description>

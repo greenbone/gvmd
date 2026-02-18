@@ -151,6 +151,75 @@ Ensure (manage_utils, icalendar_next_time_from_string_tz)
                is_equal_to (1));
 }
 
+/* clean_hosts tests */
+
+Ensure (manage_utils, clean_hosts_simple_host)
+{
+  gchar *clean_str;
+
+  clean_str = clean_hosts ("192.168.1.1", NULL);
+  assert_that (clean_str, is_equal_to_string ("192.168.1.1"));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_removes_duplicates)
+{
+  gchar *clean_str;
+  int max = 5;
+
+  clean_str = clean_hosts ("host1, host2, host1, host3", &max);
+  assert_that (clean_str, is_equal_to_string ("host1, host2, host3"));
+  assert_that (max, is_equal_to (4));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_converts_newlines_to_commas)
+{
+  gchar *clean_str;
+
+  clean_str = clean_hosts ("host1\nhost2\nhost3", NULL);
+  assert_that (clean_str, is_equal_to_string ("host1, host2, host3"));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_handles_whitespace)
+{
+  gchar *clean_str;
+
+  clean_str = clean_hosts ("  host1  ,   host2  ,  host3  ", NULL);
+  assert_that (clean_str, is_equal_to_string ("host1, host2, host3"));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_empty_string)
+{
+  gchar *clean_str;
+
+  clean_str = clean_hosts ("", NULL);
+  assert_that (clean_str, is_equal_to_string (""));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_single_host)
+{
+  gchar *clean_str;
+
+  clean_str = clean_hosts ("example.com", NULL);
+  assert_that (clean_str, is_equal_to_string ("example.com"));
+  g_free (clean_str);
+}
+
+Ensure (manage_utils, clean_hosts_all_duplicates)
+{
+  gchar *clean_str;
+  int max = 3;
+
+  clean_str = clean_hosts ("host, host, host", &max);
+  assert_that (clean_str, is_equal_to_string ("host"));
+  assert_that (max, is_equal_to (1));
+  g_free (clean_str);
+}
+
 /* Hosts test */
 
 Ensure (manage_utils, clean_hosts_string_zeroes)
@@ -313,6 +382,14 @@ main (int argc, char **argv)
                          icalendar_next_time_from_string_tz);
 
   add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
+
+  add_test_with_context (suite, manage_utils, clean_hosts_simple_host);
+  add_test_with_context (suite, manage_utils, clean_hosts_removes_duplicates);
+  add_test_with_context (suite, manage_utils, clean_hosts_converts_newlines_to_commas);
+  add_test_with_context (suite, manage_utils, clean_hosts_handles_whitespace);
+  add_test_with_context (suite, manage_utils, clean_hosts_empty_string);
+  add_test_with_context (suite, manage_utils, clean_hosts_single_host);
+  add_test_with_context (suite, manage_utils, clean_hosts_all_duplicates);
 
   add_test_with_context (suite, manage_utils,
                          concat_error_messages_null_array_returns_null);
