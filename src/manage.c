@@ -190,6 +190,11 @@ static int max_concurrent_scan_updates = 0;
 static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
 
 /**
+ * @brief Maximum number of table lock retries.
+ */
+static int max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
+
+/**
  * @brief Maximum number of imported reports processed concurrently.
  */
 static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
@@ -5759,6 +5764,17 @@ get_max_database_connections ()
 }
 
 /**
+ * @brief Get the maximum number of table lock retries.
+ *
+ * @return The current maximum number of table lock retries.
+ */
+int
+get_max_table_lock_retries ()
+{
+  return max_table_lock_retries;
+}
+
+/**
  * @brief Get the maximum number of reports to be processed concurrently.
  *
  * @return The current maximum number of reports to be processed concurrently.
@@ -5795,6 +5811,20 @@ set_max_database_connections (int new_max)
     max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
   else
     max_database_connections = new_max;
+}
+
+/**
+ * @brief Set the maximum number of table lock retries.
+ *
+ * @param new_max The current maximum number of table lock retries.
+ */
+void
+set_max_table_lock_retries (int new_max)
+{
+  if (new_max <= 0)
+    max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
+  else
+    max_table_lock_retries = new_max;
 }
 
 /**

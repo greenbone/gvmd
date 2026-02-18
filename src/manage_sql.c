@@ -113,18 +113,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/**
- * @brief Number of retries for
- *        LOCK TABLE .. IN ACCESS EXLUSIVE MODE NOWAIT
- *        statements.
- */
-#define LOCK_RETRIES 64
-
-/**
- * @brief Timeout for trying to acquire a lock in milliseconds.
- */
-#define LOCK_TIMEOUT 500
-
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
 
@@ -298,6 +286,32 @@ static gchar *vt_verification_collation = NULL;
 
 
 /* General helpers. */
+
+/**
+ * @brief Check if a resource with a given id still exists.
+ *
+ * @param[in]   type      Type of resource.
+ * @param[in]   resource  Resource to check.
+ *
+ * @return Whether resource with id exists.
+ */
+gboolean
+resource_with_id_exists (const char *type, resource_t resource)
+{
+  int ret;
+  char *quoted_type;
+
+  assert (type);
+  quoted_type = sql_quote (type);
+
+  if (resource)
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE id = %llu;",
+                   quoted_type, resource);
+
+  g_free (quoted_type);
+  return !!ret;
+}
 
 /**
  * @brief Check if a resource with a certain name exists already.
@@ -14356,7 +14370,7 @@ delete_report (const char *report_id, int dummy)
    *
    * If the report is running already then delete_report_internal will
    * ROLLBACK. */
-  lock_retries = LOCK_RETRIES;
+  lock_retries = get_max_table_lock_retries ();
   lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
@@ -19195,7 +19209,7 @@ delete_task_lock (task_t task, int ultimate)
    *
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
-  lock_retries = LOCK_RETRIES;
+  lock_retries = get_max_table_lock_retries ();
   lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
@@ -19375,7 +19389,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
                *
                * If the task is running already then delete_task will lead to
                * ROLLBACK. */
-              lock_retries = LOCK_RETRIES;
+              lock_retries = get_max_table_lock_retries ();
               lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
               while ((lock_ret == 0) && (lock_retries > 0))
                 {

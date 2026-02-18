@@ -437,6 +437,9 @@ void
 init_user_task_iterator (iterator_t *, int, int);
 
 gboolean
+resource_with_id_exists (const char *, resource_t);
+
+gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
 gboolean

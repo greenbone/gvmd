@@ -162,6 +162,16 @@ manage_session_init (const char *);
 
 #define MAX_DATABASE_CONNECTIONS_DEFAULT 50
 
+/**
+ * @brief Maximum number of retries to lock a table.
+ */
+#define MAX_TABLE_LOCK_RETRIES_DEFAULT 128
+
+/**
+ * @brief Timeout for trying to acquire a table lock in milliseconds.
+ */
+#define LOCK_TIMEOUT 500
+
 #define MAX_REPORT_PROCESSING_DEFAULT 30
 
 /* Certificate and key management. */
@@ -3244,8 +3254,14 @@ set_max_concurrent_scan_updates (int);
 int
 get_max_database_connections ();
 
+int
+get_max_table_lock_retries ();
+
 void
 set_max_database_connections (int);
+
+void
+set_max_table_lock_retries (int);
 
 int
 get_max_concurrent_report_processing ();
