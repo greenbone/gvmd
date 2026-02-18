@@ -2592,9 +2592,6 @@ char *
 scanner_uuid (scanner_t);
 
 char *
-trash_scanner_name (scanner_t);
-
-char *
 trash_scanner_uuid (scanner_t);
 
 int

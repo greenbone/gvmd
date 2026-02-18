@@ -28568,20 +28568,6 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
- * @brief Return the name of a scanner in the trashcan.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-trash_scanner_name (scanner_t scanner)
-{
-  return sql_string ("SELECT name FROM scanners_trash WHERE id = %llu;",
-                     scanner);
-}
-
-/**
  * @brief Return the UUID of a scanner in the trashcan.
  *
  * @param[in]  scanner  Scanner.
