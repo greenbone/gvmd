@@ -2591,9 +2591,6 @@ scanner_name (scanner_t);
 char *
 scanner_uuid (scanner_t);
 
-char *
-trash_scanner_uuid (scanner_t);
-
 int
 osp_get_version_from_iterator (iterator_t *, char **, char **, char **, char **,
                                char **, char **);
