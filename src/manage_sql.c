@@ -32889,18 +32889,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
   return 0;
 }
 
-/**
- * @brief Get the default CA cert.
- *
- * @return Freshly allocated value of Default CA Cert setting.
- */
-char *
-manage_default_ca_cert ()
-{
-  return sql_string ("SELECT value FROM settings"
-                     " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
-}
-
 
 /* Vulns. */
 

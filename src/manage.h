@@ -3013,9 +3013,6 @@ int
 manage_modify_setting (GSList *, const db_conn_info_t *, const gchar *,
                        const gchar *, const char *);
 
-char *
-manage_default_ca_cert ();
-
 
 /* Vulns. */
 
