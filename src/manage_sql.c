@@ -16923,17 +16923,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
   host_summary_buffer = NULL;
-  ctx.f_host_criticals = NULL;
-  ctx.f_host_ports = NULL;
-  ctx.f_host_holes = NULL;
-  ctx.f_host_warnings = NULL;
-  ctx.f_host_infos = NULL;
-  ctx.f_host_logs = NULL;
-  ctx.f_host_false_positives = NULL;
-  ctx.f_host_compliant = NULL;
-  ctx.f_host_notcompliant = NULL;
-  ctx.f_host_incomplete = NULL;
-  ctx.f_host_undefined = NULL;
 
   ctx.delta = delta;
   ctx.get = get;
