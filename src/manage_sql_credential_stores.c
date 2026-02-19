@@ -448,20 +448,6 @@ credential_store_writable (credential_store_t credential_store)
 }
 
 /**
- * @brief Get the "active" status of a credential store.
- *
- * @param[in]  credential_store  The credential store to check.
- *
- * @return TRUE if active, FALSE if not.
- */
-gboolean
-credential_store_active (credential_store_t credential_store)
-{
-  return sql_int ("SELECT active FROM credential_stores WHERE id = %llu",
-                  credential_store);
-}
-
-/**
  * @brief Get the host of a credential store.
  *
  * @param[in]  credential_store  The credential store to check.
