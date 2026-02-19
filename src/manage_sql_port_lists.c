@@ -848,21 +848,6 @@ port_list_predefined (port_list_t port_list)
 }
 
 /**
- * @brief Return whether a trash port list is predefined.
- *
- * @param[in]  port_list  Port list.
- *
- * @return 1 if predefined, else 0.
- */
-int
-trash_port_list_predefined (port_list_t port_list)
-{
-  return sql_int ("SELECT predefined FROM port_lists_trash"
-                  " WHERE id = %llu;",
-                  port_list);
-}
-
-/**
  * @brief Return the UUID of the port list of a port_range.
  *
  * @param[in]  port_range  Port Range UUID.

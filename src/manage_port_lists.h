@@ -23,9 +23,6 @@ gboolean
 find_port_range (const char*, port_list_t*);
 
 int
-trash_port_list_predefined (port_list_t);
-
-int
 port_list_predefined (port_list_t);
 
 int
