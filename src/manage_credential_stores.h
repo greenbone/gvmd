@@ -210,9 +210,6 @@ trash_credential_store_in_use (credential_store_t);
 int
 credential_store_writable (credential_store_t);
 
-gboolean
-credential_store_active (credential_store_t);
-
 char *
 credential_store_host (credential_store_t);
 
