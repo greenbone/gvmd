@@ -113,31 +113,6 @@ get_trustedkeys_name ()
 }
 
 
-/* Predefined resources.
- *
- * These are only used by report formats, because report formats from the feed
- * are automatically trusted, so we need to track them. */
-
-/**
- * @brief Return whether a resource is predefined.
- *
- * @param[in]  type      Type of resource.
- * @param[in]  resource  Resource.
- *
- * @return 1 if predefined, else 0.
- */
-int
-resource_predefined (const gchar *type, resource_t resource)
-{
-  assert (valid_type (type));
-  return sql_int ("SELECT EXISTS (SELECT * FROM resources_predefined"
-                  "               WHERE resource_type = '%s'"
-                  "               AND resource = %llu);",
-                  type,
-                  resource);
-}
-
-
 /* Signature utils. */
 
 /**
