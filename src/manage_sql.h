@@ -314,9 +314,6 @@ parse_iso_time (const char *);
 void
 set_report_scheduled (report_t);
 
-int
-resource_predefined (const gchar *, resource_t);
-
 void
 parse_osp_report (task_t, report_t, const char *);
 
