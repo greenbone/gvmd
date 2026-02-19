@@ -4248,33 +4248,6 @@ update_all_config_caches ()
 }
 
 /**
- * @brief Update count and growing info in config, without checking user.
- *
- * For use during initialisation.
- *
- * @param[in]  uuid  Config UUID.
- *
- * It's up to the caller to organise a transaction.
- */
-void
-update_config_cache_init (const char *uuid)
-{
-  static column_t select_columns[] = CONFIG_ITERATOR_COLUMNS;
-  gchar *columns;
-  iterator_t configs;
-
-  columns = columns_build_select (select_columns);
-  init_iterator (&configs,
-                 "SELECT %s FROM configs WHERE uuid = '%s';",
-                 columns,
-                 uuid);
-  g_free (columns);
-  while (next (&configs))
-    update_config_cache (&configs);
-  cleanup_iterator (&configs);
-}
-
-/**
  * @brief Migrate old ownerless configs to the Feed Owner.
  */
 void
