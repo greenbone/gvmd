@@ -296,9 +296,6 @@ manage_update_nvti_cache ();
 const char *
 run_status_name_internal (task_status_t);
 
-void
-update_config_cache_init (const char *);
-
 alive_test_t
 target_alive_tests (target_t);
 
