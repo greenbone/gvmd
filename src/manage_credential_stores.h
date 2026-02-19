@@ -174,10 +174,6 @@ init_credential_store_selector_iterator_for_type (iterator_t *iterator,
                                                     credential_store,
                                                   const char *credential_type);
 
-credential_store_selector_data_t *
-credential_store_selector_from_iterator (iterator_t *iterator,
-                                         gboolean include_credential_types);
-
 resource_t
 credential_store_selector_iterator_resource_id (iterator_t *iterator);
 

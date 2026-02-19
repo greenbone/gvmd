@@ -327,42 +327,6 @@ init_credential_store_selector_iterator (iterator_t *iterator,
 }
 
 /**
- * @brief Create a credential selector structure from an iterator.
- *
- * @param[in]  iterator                  The iterator to get data from.
- * @param[in]  include_credential_types  Whether to add credential types.
- *
- * @return The newly allocated selector.
- */
-credential_store_selector_data_t *
-credential_store_selector_from_iterator (iterator_t *iterator,
-                                         gboolean include_credential_types)
-{
-  credential_store_selector_data_t *selector;
-  selector = credential_store_selector_new (
-    credential_store_selector_iterator_name (iterator),
-    credential_store_selector_iterator_pattern (iterator),
-    credential_store_selector_iterator_default_value (iterator),
-    credential_store_selector_iterator_resource_id (iterator)
-  );
-
-  if (include_credential_types)
-    {
-      iterator_t types_iter;
-      init_credential_store_selector_type_iterator (&types_iter,
-                                                    selector->rowid);
-      while (next (&types_iter))
-        {
-          const char *type
-            = credential_store_selector_type_iterator_type (&types_iter);
-          credential_store_selector_add_credential_type (selector, type);
-        }
-      cleanup_iterator (&types_iter);
-    }
-  return selector;
-}
-
-/**
  * @brief Initialize an iterator for retrieving credential store selectors,
  *        limite to a given credential type.
  *
