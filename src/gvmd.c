@@ -2926,7 +2926,7 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_CREDENTIAL_STORES == 1
       printf ("Credential stores are enabled\n");
 #endif
-      printf ("Copyright (C) 2009-2025 Greenbone AG\n");
+      printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
