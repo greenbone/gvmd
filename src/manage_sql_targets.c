@@ -180,20 +180,6 @@ target_reverse_lookup_unify (target_t target)
 }
 
 /**
- * @brief Return the allow_simultaneous_ips value of a target.
- *
- * @param[in]  target  Target.
- *
- * @return The allow_simultaneous_ips value if available, else NULL.
- */
-char*
-target_allow_simultaneous_ips (target_t target)
-{
-  return sql_string ("SELECT allow_simultaneous_ips FROM targets"
-                     " WHERE id = %llu;", target);
-}
-
-/**
  * @brief Get a login port from a target.
  *
  * @param[in]  target         The target.
