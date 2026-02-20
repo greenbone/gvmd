@@ -216,6 +216,9 @@ sql_int64_0_ps (const char *sql, ...);
 int
 sql_cancel_internal ();
 
+int
+sql_table_exists (const gchar *, const gchar *);
+
 /* Transactions. */
 
 void
