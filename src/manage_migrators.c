@@ -3560,7 +3560,7 @@ migrate_266_to_267 ()
 }
 
 /**
- * @brief Migrate the database from version 265 to version 266.
+ * @brief Migrate the database from version 267 to version 268.
  *
  * @return 0 success, -1 error.
  */
@@ -3593,6 +3593,84 @@ migrate_267_to_268 ()
   /* Set the database version to 268. */
 
   set_db_version (268);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 268 to version 269.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_268_to_269 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 268. */
+
+  if (manage_db_version () != 268)
+    {
+      sql_rollback ();
+      return -1;
+    }
+  /* Check table exists */
+  const char *schema = sql_schema ();
+  int ag_exists = (sql_table_exists (schema, "agent_groups") == 1);
+  int ag_trash_exists = (sql_table_exists (schema, "agent_groups_trash") == 1);
+
+  if (ag_exists)
+    {
+      /* Update the database. */
+      // Before adding unique constraint migrate all agent group names
+      // name -> name - id
+      sql (
+        "UPDATE agent_groups SET name = name || '-' || id::text;"
+        );
+
+      // According to the manual, ADD CONSTRAINT IF NOT EXISTS does not work
+      // Instead use drop and create new constraint
+      //ref: https://www.postgresql.org/docs/current/sql-altertable.html#SQL-ALTERTABLE-DESC-DROP-CONSTRAINT
+      // Drop unique constraints if exists
+      sql (
+        "ALTER TABLE agent_groups"
+        " DROP CONSTRAINT IF EXISTS agent_groups_name_key;"
+        );
+
+      // Add unique constraints for agent group name
+      sql (
+        "ALTER TABLE agent_groups "
+        " ADD CONSTRAINT agent_groups_name_key UNIQUE (name);"
+        );
+    }
+
+  if (ag_trash_exists)
+    {
+      /* Update the database. */
+      // Before adding unique constraint migrate all agent group names
+      // name -> name - id
+      sql (
+        "UPDATE agent_groups_trash SET name = name || '-' || id::text;"
+        );
+
+      // Drop unique constraints if exists
+      sql (
+        "ALTER TABLE agent_groups_trash"
+        " DROP CONSTRAINT IF EXISTS agent_groups_trash_name_key;"
+        );
+
+      // Add unique constraints for agent group name
+      sql (
+        "ALTER TABLE agent_groups_trash "
+        " ADD CONSTRAINT agent_groups_trash_name_key UNIQUE (name);"
+        );
+    }
+
+  /* Set the database version to 269. */
+
+  set_db_version (269);
 
   sql_commit ();
 
@@ -3673,6 +3751,7 @@ static migrator_t database_migrators[] = {
   {266, migrate_265_to_266},
   {267, migrate_266_to_267},
   {268, migrate_267_to_268},
+  {269, migrate_268_to_269},
   /* End marker. */
   {-1, NULL}};
 

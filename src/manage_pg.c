@@ -2882,7 +2882,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS agent_groups"
     " (id SERIAL PRIMARY KEY,"
     "  uuid TEXT NOT NULL UNIQUE,"
-    "  name TEXT NOT NULL,"
+    "  name TEXT UNIQUE NOT NULL,"
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
     "  comment TEXT,"
@@ -2899,7 +2899,7 @@ create_tables ()
     "  uuid text UNIQUE NOT NULL,"
     "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
-    "  name text NOT NULL,"
+    "  name text UNIQUE NOT NULL,"
     "  comment text,"
     "  creation_time integer,"
     "  modification_time integer);");

@@ -943,6 +943,32 @@ sql_cancel_internal ()
 }
 
 /**
+ * @brief Check whether a table exists in a schema.
+ *
+ * @return 1 if exists, 0 if not exists, -1 on error.
+ */
+int
+sql_table_exists (const gchar *schema, const gchar *table)
+{
+  const gchar *schema_name;
+
+  if (table == NULL || *table == '\0')
+    return -1;
+
+  schema_name = (schema && *schema) ? schema : sql_schema ();
+
+  return sql_int_ps (
+    "SELECT EXISTS ("
+    "  SELECT 1"
+    "  FROM pg_catalog.pg_tables"
+    "  WHERE schemaname = $1 AND tablename = $2"
+    ");",
+    SQL_STR_PARAM (schema_name),
+    SQL_STR_PARAM (table),
+    NULL);
+}
+
+/**
  * @brief Tries to transfer data for a COPY ... FROM STDIN statement.
  *
  * To finalize the data transfer for the statement, call sql_copy_end
