@@ -3547,7 +3547,7 @@ migrate_266_to_267 ()
   // Add scanner field to asset_snapshots
 
   sql (
-    "ALTER TABLE asset_snapshots ADD COLUMN scanner INTEGER;"
+    "ALTER TABLE IF EXISTS asset_snapshots ADD COLUMN scanner INTEGER;"
     );
 
   /* Set the database version to 267. */
