@@ -10518,7 +10518,8 @@ where_qod (int min_qod)
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
     "path", "compliant", "epss_score", "epss_percentile", "max_epss_score",   \
-    "max_epss_percentile", NULL }
+    "max_epss_percentile", "oci_image_name", "oci_image_digest",              \
+    "oci_image_registry", "oci_image_path", "oci_image_short_name", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -10634,6 +10635,20 @@ where_qod (int min_qod)
     { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
       "         'undefined')",                                                \
       "compliant",                                                            \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
+    { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+      "oci_image_registry",                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
+      "oci_image_path",                                                       \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+      "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },
 
 /**
@@ -10818,6 +10833,21 @@ where_qod (int min_qod)
       "compliant",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 45 = 35 */                                                           \
+    { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
+    { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+      "oci_image_registry",                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
+      "oci_image_path",                                                       \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+      "oci_image_short_name",                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    /* ^ 50 = 40 */                                                           \
     { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
       "epss_score",                                                           \
       KEYWORD_TYPE_DOUBLE },                                                  \
@@ -10833,7 +10863,7 @@ where_qod (int min_qod)
     { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
       "max_epss_score",                                                       \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    /* ^ 50 = 40 */                                                           \
+    /* ^ 55 = 45 */                                                           \
     { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
       "max_epss_percentile",                                                  \
       KEYWORD_TYPE_DOUBLE },                                                  \
@@ -12106,6 +12136,76 @@ result_iterator_compliance (iterator_t* iterator)
 }
 
 /**
+ * @brief Get container image name / full URL from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image name.
+ */
+const char *
+result_iterator_oci_image_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+}
+
+/**
+ * @brief Get container image digest from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image digest.
+ */
+const char *
+result_iterator_oci_image_digest (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+}
+
+/**
+ * @brief Get container image registry from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image registry.
+ */
+const char *
+result_iterator_oci_image_registry (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+}
+
+/**
+ * @brief Get container image path from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image path.
+ */
+const char *
+result_iterator_oci_image_path (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 39);
+}
+
+/**
+ * @brief Get container image organisation from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image organisation.
+ */
+const char *
+result_iterator_oci_image_short_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 40);
+}
+
+/**
  * @brief Get EPSS score of highest severity CVE from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12116,7 +12216,7 @@ double
 result_iterator_epss_score (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 41);
 }
 
 /**
@@ -12130,7 +12230,7 @@ double
 result_iterator_epss_percentile (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 42);
 }
 
 /**
@@ -12144,7 +12244,7 @@ const gchar *
 result_iterator_epss_cve (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 43);
 }
 
 /**
@@ -12158,7 +12258,7 @@ double
 result_iterator_epss_severity (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 39);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 44);
 }
 
 /**
@@ -12172,7 +12272,7 @@ double
 result_iterator_max_epss_score (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 40);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 45);
 }
 
 /**
@@ -12186,7 +12286,7 @@ double
 result_iterator_max_epss_percentile (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 41);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 46);
 }
 
 /**
@@ -12200,7 +12300,7 @@ const gchar *
 result_iterator_max_epss_cve (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 42);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 47);
 }
 
 /**
@@ -12214,7 +12314,7 @@ double
 result_iterator_max_epss_severity (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 43);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 48);
 }
 
 /**
@@ -12228,7 +12328,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 44);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 49);
 }
 
 /**
@@ -12242,7 +12342,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 45);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 50);
 }
 
 /**

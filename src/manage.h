@@ -1370,6 +1370,21 @@ const char *
 result_iterator_compliance (iterator_t*);
 
 const char *
+result_iterator_oci_image_name (iterator_t*);
+
+const char *
+result_iterator_oci_image_digest (iterator_t*);
+
+const char *
+result_iterator_oci_image_registry (iterator_t*);
+
+const char *
+result_iterator_oci_image_path (iterator_t*);
+
+const char *
+result_iterator_oci_image_short_name (iterator_t*);
+
+const char *
 result_iterator_delta_state (iterator_t*);
 
 const char *
