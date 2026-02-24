@@ -13,7 +13,7 @@
 #ifndef _GVMD_MANAGE_FILTER_UTILS_H
 #define _GVMD_MANAGE_FILTER_UTILS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include <gvm/base/array.h>
 
 /**

@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_PORT_LISTS_H
 #define _GVMD_MANAGE_PORT_LISTS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "gmp_get.h"
 
 #include <glib.h>
@@ -21,9 +21,6 @@ find_port_list_with_permission (const char *, port_list_t *, const char *);
 
 gboolean
 find_port_range (const char*, port_list_t*);
-
-int
-trash_port_list_predefined (port_list_t);
 
 int
 port_list_predefined (port_list_t);

@@ -119,38 +119,8 @@ manage_cert_db_exists ()
   return 0;
 }
 
-/**
- * @brief Check if SCAP db exists.
- *
- * @return 1 if exists, else 0.
- */
-int
-manage_scap_db_exists ()
-{
-  if (sql_int ("SELECT exists (SELECT schema_name"
-               "               FROM information_schema.schemata"
-               "               WHERE schema_name = 'scap');"))
-    return 1;
-  return 0;
-}
-
 
 /* SQL functions. */
-
-/**
- * @brief Move data from a table to a new table, heeding column rename.
- *
- * @param[in]  old_table  Existing table.
- * @param[in]  new_table  New empty table with renamed column.
- * @param[in]  old_name   Name of column in old table.
- * @param[in]  new_name   Name of column in new table.
- */
-void
-sql_rename_column (const char *old_table, const char *new_table,
-                   const char *old_name, const char *new_name)
-{
-  return;
-}
 
 /**
  * @brief Common overrides SQL for SQL functions.
@@ -361,6 +331,18 @@ manage_create_sql_functions ()
        "   EXECUTE 'LOCK TABLE '"
        "           || quote_ident_split($1::text)"
        "           || ' IN ACCESS EXCLUSIVE MODE;';"
+       "   RETURN 1;"
+       " EXCEPTION WHEN lock_not_available THEN"
+       "   RETURN 0;"
+       " END;"
+       "$$ language 'plpgsql';");
+
+  sql ("CREATE OR REPLACE FUNCTION try_shared_lock_wait (regclass)"
+       " RETURNS integer AS $$"
+       " BEGIN"
+       "   EXECUTE 'LOCK TABLE '"
+       "           || quote_ident_split($1::text)"
+       "           || ' IN ACCESS SHARE MODE;';"
        "   RETURN 1;"
        " EXCEPTION WHEN lock_not_available THEN"
        "   RETURN 0;"
@@ -2873,7 +2855,9 @@ create_tables ()
     "  architecture TEXT,"
     "  update_to_latest INTEGER,"
     "  agent_update_available INTEGER NOT NULL DEFAULT 0,"
-    "  updater_update_available INTEGER NOT NULL DEFAULT 0);");
+    "  updater_update_available INTEGER NOT NULL DEFAULT 0,"
+    "  latest_agent_version TEXT,"
+    "  latest_updater_version TEXT);");
 
   sql ("CREATE TABLE IF NOT EXISTS agent_ip_addresses"
     " (id SERIAL PRIMARY KEY,"
@@ -2898,7 +2882,7 @@ create_tables ()
   sql ("CREATE TABLE IF NOT EXISTS agent_groups"
     " (id SERIAL PRIMARY KEY,"
     "  uuid TEXT NOT NULL UNIQUE,"
-    "  name TEXT NOT NULL,"
+    "  name TEXT UNIQUE NOT NULL,"
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
     "  comment TEXT,"
@@ -2915,7 +2899,7 @@ create_tables ()
     "  uuid text UNIQUE NOT NULL,"
     "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
-    "  name text NOT NULL,"
+    "  name text UNIQUE NOT NULL,"
     "  comment text,"
     "  creation_time integer,"
     "  modification_time integer);");
@@ -2993,7 +2977,8 @@ create_tables ()
        "  flags integer,"
        "  modification_time integer,"
        "  processing_required integer DEFAULT 0,"
-       "  in_assets integer);");
+       "  in_assets integer,"
+       "  discovery integer DEFAULT 0);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"
@@ -3208,7 +3193,8 @@ create_tables ()
      "  container_digest text,"
      "  asset_key text,"
      "  creation_time integer NOT NULL,"
-     "  modification_time integer NOT NULL"
+     "  modification_time integer NOT NULL,"
+     "  scanner integer"
      ");");
 
   create_tables_nvt ("");
@@ -3657,8 +3643,10 @@ check_db_extensions ()
       sql ("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pgcrypto\"");
       sql ("CREATE EXTENSION IF NOT EXISTS \"pg-gvm\"");
-      if (sql_int ("SELECT extversion != '1.1' FROM pg_extension"
-                   " WHERE extname='pg-gvm';"))
+      if (sql_int ("SELECT string_to_array(extversion, '.')::int[] "
+                   "       < string_to_array('1.1', '.')::int[] "
+                   "FROM pg_extension "
+                   "WHERE extname='pg-gvm';"))
         sql ("ALTER EXTENSION \"pg-gvm\" UPDATE;");
 
       sql ("RESET ROLE;");

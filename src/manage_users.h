@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_USERS_H
 
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "sql.h" // Sadly, for db_conn_info_t
 
 gchar *
@@ -107,5 +107,8 @@ manage_get_users (GSList *, const db_conn_info_t *, const gchar *, int);
 int
 manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
                      const gchar *);
+
+int
+user_set_timezone (user_t, const char *);
 
 #endif /* not _GVMD_MANAGE_USERS_H */

@@ -6377,6 +6377,7 @@ END:VCALENDAR
         <create_target>
           <name>All GNU/Linux machines</name>
           <hosts>192.168.1.0/24</hosts>
+          <port_list id="33d0cd82-57c6-11e1-8ed1-406186ea4fc5"/>
         </create_target>
       </request>
       <response>
@@ -9314,6 +9315,16 @@ END:VCALENDAR
             <summary>Agent comment field</summary>
           </column>
           <column>
+            <name>latest_agent_version</name>
+            <type>text</type>
+            <summary>Latest agent software version</summary>
+          </column>
+          <column>
+            <name>latest_updater_version</name>
+            <type>text</type>
+            <summary>Latest updater software version</summary>
+          </column>
+          <column>
             <name>created</name>
             <type>iso_time</type>
             <summary>Creation time</summary>
@@ -9391,6 +9402,8 @@ END:VCALENDAR
           <e>update_to_latest</e>
           <e>agent_update_available</e>
           <e>updater_update_available</e>
+          <e>latest_agent_version</e>
+          <e>latest_updater_version</e>
           <e>config</e>
         </pattern>
         <ele>
@@ -9537,6 +9550,16 @@ END:VCALENDAR
           <name>updater_update_available</name>
           <summary>Flag of agent updater update available (1/0)</summary>
           <pattern><type>integer</type></pattern>
+        </ele>
+        <ele>
+          <name>latest_agent_version</name>
+          <summary>Latest agent software version (may be empty)</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>latest_updater_version</name>
+          <summary>Latest updater software version (may be empty)</summary>
+          <pattern><type>text</type></pattern>
         </ele>
         <ele>
           <name>config</name>
@@ -9753,6 +9776,8 @@ END:VCALENDAR
             <update_to_latest>0</update_to_latest>
             <agent_update_available>1</agent_update_available>
             <updater_update_available>0</updater_update_available>
+            <latest_agent_version>1.0.0</latest_agent_version>
+            <latest_updater_version></latest_updater_version>
             <config>
               <agent_control>
                 <retry>
@@ -27997,6 +28022,58 @@ END:VCALENDAR
             <page>2</page>
           </ticket_count>
         </get_tickets_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_timezones</name>
+    <summary>Get a list of supported timezones</summary>
+    <description>
+      <p>
+        The client uses the "get_timezones" command to retrieve the list of
+        supported timezones.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>timezone</e></any>
+      </pattern>
+      <ele>
+        <name>timezone</name>
+        <pattern>
+          <e>name</e>
+        </pattern>
+        <summary>A supported timezone</summary>
+        <ele>
+          <name>name</name>
+          <pattern>text</pattern>
+          <summary>Name of the timezone</summary>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get all supported timezones</summary>
+      <request>
+        <get_timezones></get_timezones>
+      </request>
+      <response>
+        <get_timezones_response status_text="OK" status="200">
+          <timezone><name>Africa/Abidjan</name></timezone>
+          <truncate>...</truncate>
+          <timezone><name>UTC</name></timezone>
+        </get_timezones_response>
       </response>
     </example>
   </command>

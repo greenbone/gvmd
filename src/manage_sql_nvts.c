@@ -45,6 +45,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_secinfo.h"
 #include "sql.h"
 #include "utils.h"
@@ -161,19 +162,6 @@ check_db_nvts ()
     sql ("INSERT INTO %s.meta (name, value)"
          " VALUES ('update_nvti_cache', 0);",
          sql_schema ());
-}
-
-/**
- * @brief Get the name of an NVT.
- *
- * @param[in]  nvt  NVT.
- *
- * @return Freshly allocated name of NVT if possible, else NULL.
- */
-char *
-manage_nvt_name (nvt_t nvt)
-{
-  return sql_string ("SELECT name FROM nvts WHERE id = %llu;", nvt);
 }
 
 /**

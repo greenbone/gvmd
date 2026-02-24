@@ -16,6 +16,7 @@
 #include "manage_acl.h"
 #include "manage_credential_store_cyberark.h"
 #include "manage_sql_credential_stores.h"
+#include "manage_sql_resources.h"
 #include <gnutls/x509.h>
 #include <gnutls/pkcs12.h>
 #include <gvm/util/tlsutils.h>
@@ -326,42 +327,6 @@ init_credential_store_selector_iterator (iterator_t *iterator,
 }
 
 /**
- * @brief Create a credential selector structure from an iterator.
- *
- * @param[in]  iterator                  The iterator to get data from.
- * @param[in]  include_credential_types  Whether to add credential types.
- *
- * @return The newly allocated selector.
- */
-credential_store_selector_data_t *
-credential_store_selector_from_iterator (iterator_t *iterator,
-                                         gboolean include_credential_types)
-{
-  credential_store_selector_data_t *selector;
-  selector = credential_store_selector_new (
-    credential_store_selector_iterator_name (iterator),
-    credential_store_selector_iterator_pattern (iterator),
-    credential_store_selector_iterator_default_value (iterator),
-    credential_store_selector_iterator_resource_id (iterator)
-  );
-
-  if (include_credential_types)
-    {
-      iterator_t types_iter;
-      init_credential_store_selector_type_iterator (&types_iter,
-                                                    selector->rowid);
-      while (next (&types_iter))
-        {
-          const char *type
-            = credential_store_selector_type_iterator_type (&types_iter);
-          credential_store_selector_add_credential_type (selector, type);
-        }
-      cleanup_iterator (&types_iter);
-    }
-  return selector;
-}
-
-/**
  * @brief Initialize an iterator for retrieving credential store selectors,
  *        limite to a given credential type.
  *
@@ -480,20 +445,6 @@ int
 credential_store_writable (credential_store_t credential_store)
 {
   return 1;
-}
-
-/**
- * @brief Get the "active" status of a credential store.
- *
- * @param[in]  credential_store  The credential store to check.
- *
- * @return TRUE if active, FALSE if not.
- */
-gboolean
-credential_store_active (credential_store_t credential_store)
-{
-  return sql_int ("SELECT active FROM credential_stores WHERE id = %llu",
-                  credential_store);
 }
 
 /**

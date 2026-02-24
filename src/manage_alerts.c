@@ -18,6 +18,7 @@
 #include "manage_sql_alerts.h"
 #include "manage_acl.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_tickets.h"
 #include "manage_tickets.h"
 #include "manage_users.h"

@@ -213,11 +213,11 @@ sql_int64_0 (const char *sql, ...);
 long long int
 sql_int64_0_ps (const char *sql, ...);
 
-void
-sql_rename_column (const char *, const char *, const char *, const char *);
-
 int
 sql_cancel_internal ();
+
+int
+sql_table_exists (const gchar *, const gchar *);
 
 /* Transactions. */
 
@@ -235,6 +235,9 @@ sql_rollback ();
 
 int
 sql_table_lock_wait (const char *, int);
+
+int
+sql_table_shared_lock_wait (const char *, int);
 
 /* Iterators. */
 

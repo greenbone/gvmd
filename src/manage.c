@@ -51,7 +51,9 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_secinfo.h"
+#include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
@@ -186,6 +188,11 @@ static int max_concurrent_scan_updates = 0;
  * @brief Maximum number of database connections.
  */
 static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+
+/**
+ * @brief Maximum number of table lock retries.
+ */
+static int max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
 
 /**
  * @brief Maximum number of imported reports processed concurrently.
@@ -2480,44 +2487,6 @@ get_relay_info_entity (const char *original_host, int original_port,
   g_free (stdout_str);
   g_free (stderr_str);
 
-  return ret;
-}
-
-/**
- * @brief Gets whether there is a relay supporting the scanner type.
- *
- * @param[in]  original_host    The original hostname or IP address.
- * @param[in]  original_port    The original port number.
- * @param[in]  type             The scanner type to check.
- *
- * @return Whether there is a relay supporting the scanner type.
- */
-gboolean
-relay_supports_scanner_type (const char *original_host, int original_port,
-                             scanner_type_t type)
-{
-  entity_t relay_entity = NULL;
-  const char *protocol;
-  gboolean ret = FALSE;
-
-  if (type == SCANNER_TYPE_OSP_SENSOR)
-    protocol = "OSP";
-  else
-    return FALSE;
-
-  if (get_relay_info_entity (original_host, original_port,
-                             protocol, &relay_entity) == 0)
-    {
-      entity_t host_entity;
-      host_entity = entity_child (relay_entity, "host");
-
-      if (host_entity
-          && strcmp (entity_text (host_entity), ""))
-        {
-          ret = TRUE;
-        }
-    }
-  free_entity (relay_entity);
   return ret;
 }
 
@@ -5795,6 +5764,17 @@ get_max_database_connections ()
 }
 
 /**
+ * @brief Get the maximum number of table lock retries.
+ *
+ * @return The current maximum number of table lock retries.
+ */
+int
+get_max_table_lock_retries ()
+{
+  return max_table_lock_retries;
+}
+
+/**
  * @brief Get the maximum number of reports to be processed concurrently.
  *
  * @return The current maximum number of reports to be processed concurrently.
@@ -5831,6 +5811,20 @@ set_max_database_connections (int new_max)
     max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
   else
     max_database_connections = new_max;
+}
+
+/**
+ * @brief Set the maximum number of table lock retries.
+ *
+ * @param new_max The current maximum number of table lock retries.
+ */
+void
+set_max_table_lock_retries (int new_max)
+{
+  if (new_max <= 0)
+    max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
+  else
+    max_table_lock_retries = new_max;
 }
 
 /**
@@ -5975,306 +5969,6 @@ feed_lockfile_unlock (lockfile_t *lockfile)
     }
 
   return 0;
-}
-
-/**
- * @brief Request a feed synchronization script selftest.
- *
- * Ask a feed synchronization script to perform a selftest and report
- * the results.
- *
- * @param[in]   sync_script  The file name of the synchronization script.
- * @param[out]  result       Return location for selftest errors, or NULL.
- *
- * @return TRUE if the selftest was successful, or FALSE if an error occurred.
- */
-gboolean
-gvm_sync_script_perform_selftest (const gchar * sync_script,
-                                  gchar ** result)
-{
-  g_assert (sync_script);
-  g_assert_cmpstr (*result, ==, NULL);
-
-  gchar *script_working_dir = g_path_get_dirname (sync_script);
-
-  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
-  argv[0] = g_strdup (sync_script);
-  argv[1] = g_strdup ("--selftest");
-  argv[2] = NULL;
-
-  gchar *script_out;
-  gchar *script_err;
-  gint script_exit;
-  GError *error = NULL;
-
-  if (!g_spawn_sync
-      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-       &script_exit, &error))
-    {
-      if (*result != NULL)
-        {
-          *result =
-            g_strdup_printf ("Failed to execute synchronization " "script: %s",
-                             error->message);
-        }
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-      g_error_free (error);
-
-      return FALSE;
-    }
-
-  if (script_exit != 0)
-    {
-      if (script_err != NULL)
-        {
-          *result = g_strdup_printf ("%s", script_err);
-        }
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-
-      return FALSE;
-    }
-
-  g_free (script_working_dir);
-  g_strfreev (argv);
-  g_free (script_out);
-  g_free (script_err);
-
-  return TRUE;
-}
-
-/**
- * @brief Retrieves the ID string of a feed sync script, with basic validation.
- *
- * @param[in]   sync_script     The file name of the synchronization script.
- * @param[out]  identification  Return location of the identification string.
- * @param[in]   feed_type       Could be NVT_FEED, SCAP_FEED or CERT_FEED.
- *
- * @return TRUE if the identification string was retrieved, or FALSE if an
- *         error occurred.
- */
-gboolean
-gvm_get_sync_script_identification (const gchar * sync_script,
-                                    gchar ** identification,
-                                    int feed_type)
-{
-  g_assert (sync_script);
-  if (identification)
-    g_assert_cmpstr (*identification, ==, NULL);
-
-  gchar *script_working_dir = g_path_get_dirname (sync_script);
-
-  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
-  argv[0] = g_strdup (sync_script);
-  argv[1] = g_strdup ("--identify");
-  argv[2] = NULL;
-
-  gchar *script_out;
-  gchar *script_err;
-  gint script_exit;
-  GError *error = NULL;
-
-  gchar **script_identification;
-
-  if (!g_spawn_sync
-        (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-         &script_exit, &error))
-    {
-      g_warning ("Failed to execute %s: %s", sync_script, error->message);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-      g_error_free (error);
-
-      return FALSE;
-    }
-
-  if (script_exit != 0)
-    {
-      g_warning ("%s returned a non-zero exit code.", sync_script);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-
-      return FALSE;
-    }
-
-  script_identification = g_strsplit (script_out, "|", 6);
-
-  if ((script_identification[0] == NULL)
-      || (feed_type == NVT_FEED
-          && g_ascii_strncasecmp (script_identification[0], "NVTSYNC", 7))
-      || (feed_type == SCAP_FEED
-          && g_ascii_strncasecmp (script_identification[0], "SCAPSYNC", 7))
-      || (feed_type == CERT_FEED
-          && g_ascii_strncasecmp (script_identification[0], "CERTSYNC", 7))
-      || g_ascii_strncasecmp (script_identification[0], script_identification[5], 7))
-    {
-      g_warning ("%s is not a feed synchronization script", sync_script);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-
-      g_strfreev (script_identification);
-
-      return FALSE;
-    }
-
-  if (identification)
-    *identification = g_strdup (script_out);
-
-  g_free (script_working_dir);
-  g_strfreev (argv);
-  g_free (script_out);
-  g_free (script_err);
-
-  g_strfreev (script_identification);
-
-  return TRUE;
-}
-
-/**
- * @brief Retrieves description of a feed sync script, with basic validation.
- *
- * @param[in]   sync_script  The file name of the synchronization script.
- * @param[out]  description  Return location of the description string.
- *
- * @return TRUE if the description was retrieved, or FALSE if an error
- *         occurred.
- */
-gboolean
-gvm_get_sync_script_description (const gchar * sync_script,
-                                 gchar ** description)
-{
-  g_assert (sync_script);
-  g_assert_cmpstr (*description, ==, NULL);
-
-  gchar *script_working_dir = g_path_get_dirname (sync_script);
-
-  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
-  argv[0] = g_strdup (sync_script);
-  argv[1] = g_strdup ("--describe");
-  argv[2] = NULL;
-
-  gchar *script_out;
-  gchar *script_err;
-  gint script_exit;
-  GError *error = NULL;
-
-  if (!g_spawn_sync
-      (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-       &script_exit, &error))
-    {
-      g_warning ("Failed to execute %s: %s", sync_script, error->message);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-      g_error_free (error);
-
-      return FALSE;
-    }
-
-  if (script_exit != 0)
-    {
-      g_warning ("%s returned a non-zero exit code.", sync_script);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-
-      return FALSE;
-    }
-
-  *description = g_strdup (script_out);
-
-  g_free (script_working_dir);
-  g_strfreev (argv);
-  g_free (script_out);
-  g_free (script_err);
-
-  return TRUE;
-}
-
-/**
- * @brief Retrieves the version of a feed handled by the sync, with basic
- * validation.
- *
- * @param[in]   sync_script  The file name of the synchronization script.
- * @param[out]  feed_version  Return location of the feed version string.
- *
- * @return TRUE if the feed version was retrieved, or FALSE if an error
- *         occurred.
- */
-gboolean
-gvm_get_sync_script_feed_version (const gchar * sync_script,
-                                  gchar ** feed_version)
-{
-  g_assert (sync_script);
-  g_assert_cmpstr (*feed_version, ==, NULL);
-
-  gchar *script_working_dir = g_path_get_dirname (sync_script);
-
-  gchar **argv = (gchar **) g_malloc (3 * sizeof (gchar *));
-  argv[0] = g_strdup (sync_script);
-  argv[1] = g_strdup ("--feedversion");
-  argv[2] = NULL;
-
-  gchar *script_out;
-  gchar *script_err;
-  gint script_exit;
-  GError *error = NULL;
-
-  if (!g_spawn_sync
-        (script_working_dir, argv, NULL, 0, NULL, NULL, &script_out, &script_err,
-         &script_exit, &error))
-    {
-      g_warning ("Failed to execute %s: %s", sync_script, error->message);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-      g_error_free (error);
-
-      return FALSE;
-    }
-
-  if (script_exit != 0)
-    {
-      g_warning ("%s returned a non-zero exit code.", sync_script);
-
-      g_free (script_working_dir);
-      g_strfreev (argv);
-      g_free (script_out);
-      g_free (script_err);
-
-      return FALSE;
-    }
-
-  *feed_version = g_strdup (script_out);
-
-  g_free (script_working_dir);
-  g_strfreev (argv);
-  g_free (script_out);
-  g_free (script_err);
-
-  return TRUE;
 }
 
 /**
@@ -6520,6 +6214,48 @@ gvm_migrate_secinfo (int feed_type)
   feed_lockfile_unlock (&lockfile);
 
   return ret;
+}
+
+
+/* Time zone info. */
+
+/**
+ * @brief Get a list of all supported timezones
+ *
+ * @return An array of supported timezones. Caller must free.
+ */
+array_t *
+manage_get_timezones ()
+{
+  array_t *tzs_out = make_array ();
+  iterator_t pg_iterator;
+
+  init_pg_timezones_iterator (&pg_iterator);
+  while (next (&pg_iterator))
+    {
+      const char *pg_tz_name = pg_timezones_iterator_name (&pg_iterator);
+
+      icaltimezone *ical_tz = icalendar_timezone_from_string (pg_tz_name);
+      if (ical_tz)
+        array_add_new_string (tzs_out, pg_tz_name);
+    }
+
+  return tzs_out;
+}
+
+/**
+ * @brief Check if a timezone is supported
+ *
+ * @param[in]  zone  Name of the timezone to check.
+ *
+ * @return TRUE if the timezone is supported, FALSE otherwise
+ */
+gboolean
+manage_timezone_supported (const char *zone)
+{
+  if (icalendar_timezone_from_string (zone) == NULL)
+    return FALSE;
+  return pg_timezone_supported (zone);
 }
 
 

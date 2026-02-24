@@ -256,57 +256,6 @@ parse_feed_timestamp (const char *text_time)
 }
 
 /**
- * @brief Convert a ctime into seconds since epoch.
- *
- * Use the current timezone.
- *
- * @param[in]  text_time  Time as text in ctime format.
- *
- * @return Time since epoch.
- */
-int
-parse_ctime (const char *text_time)
-{
-  int epoch_time;
-  struct tm tm;
-
-  /* ctime format: "Wed Jun 30 21:49:08 1993". */
-
-  memset (&tm, 0, sizeof (struct tm));
-  if (strptime ((char*) text_time, "%a %b %d %H:%M:%S %Y", &tm) == NULL)
-    {
-      g_warning ("%s: Failed to parse time '%s'", __func__, text_time);
-      return 0;
-    }
-  epoch_time = mktime (&tm);
-  if (epoch_time == -1)
-    {
-      g_warning ("%s: Failed to make time '%s'", __func__, text_time);
-      return 0;
-    }
-
-  return epoch_time;
-}
-
-/**
- * @brief Calculate difference between now and epoch_time in days
- *
- * @param[in]  epoch_time  Time in seconds from epoch.
- *
- * @return Int days bettween now and epoch_time or -1 if epoch_time is in the
- * past
- */
-int
-days_from_now (time_t *epoch_time)
-{
-  time_t now = time (NULL);
-  int diff = *epoch_time - now;
-
-  if (diff < 0) return -1;
-  return diff / 86400; /* 60 sec * 60 min * 24 h */
-}
-
-/**
  * @brief Convert an ISO time into seconds since epoch.
  *
  * If no offset is specified, the given timezone is used (UTC in case of NULL).

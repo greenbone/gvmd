@@ -93,6 +93,8 @@ update_existing_agent (agent_data_t agent)
   gchar *insert_agent_version = sql_insert (agent->agent_version);
   gchar *insert_operating_system = sql_insert (agent->operating_system);
   gchar *insert_architecture = sql_insert (agent->architecture);
+  gchar *insert_latest_agent_version = sql_insert (agent->latest_agent_version);
+  gchar *insert_latest_updater_version = sql_insert (agent->latest_updater_version);
 
   sql ("UPDATE agents SET "
        " hostname = %s,"
@@ -110,7 +112,9 @@ update_existing_agent (agent_data_t agent)
        " architecture = %s,"
        " update_to_latest = %d,"
        " agent_update_available = %d,"
-       " updater_update_available = %d"
+       " updater_update_available = %d,"
+       " latest_agent_version = %s,"
+       " latest_updater_version = %s"
        " WHERE agent_id = %s;",
        insert_hostname, agent->authorized, insert_connection_status,
        agent->last_update_agent_control, agent->last_updater_heartbeat,
@@ -118,6 +122,7 @@ update_existing_agent (agent_data_t agent)
        insert_updater_version, insert_agent_version, insert_operating_system,
        insert_architecture, agent->update_to_latest ? 1 : 0,
        agent->agent_update_available, agent->updater_update_available,
+       insert_latest_agent_version, insert_latest_updater_version,
        insert_agent_id);
 
   g_free (insert_hostname);
@@ -129,6 +134,8 @@ update_existing_agent (agent_data_t agent)
   g_free (insert_operating_system);
   g_free (insert_architecture);
   g_free (config_string);
+  g_free (insert_latest_agent_version);
+  g_free (insert_latest_updater_version);
 }
 
 /**
@@ -161,11 +168,15 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   gchar *escaped_agent_version = sql_copy_escape (agent->agent_version);
   gchar *escaped_operating_system = sql_copy_escape (agent->operating_system);
   gchar *escaped_architecture = sql_copy_escape (agent->architecture);
+  gchar *escaped_latest_agent_version = sql_copy_escape (
+    agent->latest_agent_version);
+  gchar *escaped_latest_updater_version = sql_copy_escape (
+    agent->latest_updater_version);
 
   db_copy_buffer_append_printf (
     buffer,
     "%s\t%s\t%s\t%llu\t%s\t%d\t%s\t%ld\t%ld\t%s\t%u\t%s\t%ld\t%ld\t%s\t%s\t%"
-    "s\t%s\t%d\t%d\t%d\n",
+    "s\t%s\t%d\t%d\t%d\t%s\t%s\n",
     agent->uuid, agent->name, agent->agent_id, agent->scanner, escaped_hostname,
     agent->authorized, escaped_connection_status,
     agent->last_update_agent_control, agent->last_updater_heartbeat,
@@ -174,7 +185,8 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
     agent->modification_time, escaped_updater_version, escaped_agent_version,
     escaped_operating_system, escaped_architecture,
     agent->update_to_latest, agent->agent_update_available,
-    agent->updater_update_available);
+    agent->updater_update_available,
+    escaped_latest_agent_version, escaped_latest_updater_version);
 
   g_free (escaped_hostname);
   g_free (escaped_connection_status);
@@ -185,6 +197,8 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   g_free (escaped_operating_system);
   g_free (escaped_architecture);
   g_free (config_string);
+  g_free (escaped_latest_agent_version);
+  g_free (escaped_latest_updater_version);
 }
 
 /**
@@ -312,7 +326,9 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
                        " architecture,"
                        " update_to_latest,"
                        " agent_update_available,"
-                       " updater_update_available"
+                       " updater_update_available,"
+                       " latest_agent_version,"
+                       " latest_updater_version"
                        ") FROM STDIN;");
 
   db_copy_buffer_init (
@@ -423,6 +439,7 @@ init_agent_uuid_list_iterator (iterator_t *iterator,
   get.type = "agent";
   get.ignore_pagination = 1;
   get.ignore_max_rows_per_page = 1;
+  get.filter = "rows=-1";
 
   GString *where_clause = g_string_new (NULL);
 
@@ -633,6 +650,24 @@ int
 agent_iterator_updater_update_available (iterator_t *iterator)
 {
   return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
+}
+
+/**
+ * @brief Retrieve latest agent version.
+ */
+const gchar*
+agent_iterator_latest_agent_version (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
+}
+
+/**
+ * @brief Retrieve latest updater version.
+ */
+const gchar*
+agent_iterator_latest_updater_version (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
 }
 
 /**

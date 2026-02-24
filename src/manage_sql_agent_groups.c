@@ -19,6 +19,7 @@
 #include "manage_sql_agents.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_resources.h"
 
 #include <util/uuidutils.h>
 
@@ -109,6 +110,34 @@ agent_group_in_use_in_hidden_task (agent_group_t agent_group)
   return !!sql_int ("SELECT COUNT(*) FROM tasks "
                     "WHERE hidden != 0 AND agent_group = %llu;",
                     agent_group);
+}
+
+/**
+ * @brief Check if an agent group name already exists.
+ *        in agent_groups and agent_groups_trash table.
+ *
+ * @param name The agent group name to check.
+ *
+ * @return 1 if the name exists in either agent_groups
+ *         or agent_groups_trash, 0 otherwise.
+ */
+static int
+agent_group_name_exists (const gchar *name)
+{
+  int count = sql_int_ps (
+      "SELECT COUNT(*) FROM agent_groups WHERE name = $1;",
+      SQL_STR_PARAM (name),
+      NULL);
+
+  if (count > 0)
+    return 1;
+
+  count = sql_int_ps (
+      "SELECT COUNT(*) FROM agent_groups_trash WHERE name = $1;",
+      SQL_STR_PARAM (name),
+      NULL);
+
+  return (count > 0) ? 1 : 0;
 }
 
 /**
@@ -214,30 +243,27 @@ create_agent_group (agent_group_data_t group_data,
         return AGENT_GROUP_RESP_INTERNAL_ERROR;
     }
 
-  gchar *quoted_uuid = sql_quote (group_data->uuid);
-  gchar *quoted_name = sql_quote (group_data->name);
-  gchar *quoted_comment = sql_quote (group_data->comment);
-  gchar *quoted_user_uuid = sql_quote (current_credentials.uuid);
+  if (agent_group_name_exists (group_data->name))
+    {
+      g_debug ("%s: agent group name already exists", __func__);
+      return AGENT_GROUP_RESP_GROUP_NAME_EXISTS;
+    }
 
   sql_begin_immediate ();
 
   // Insert into agent_groups (scanner added)
-  sql ("INSERT INTO agent_groups (uuid, name, comment, scanner, owner, creation_time, modification_time) "
-       "VALUES ('%s', '%s', '%s', %llu, "
-       "  (SELECT id FROM users WHERE uuid = '%s'),"
-       "  %ld, %ld);",
-       quoted_uuid,
-       quoted_name,
-       quoted_comment,
-       group_data->scanner,
-       quoted_user_uuid,
-       group_data->creation_time,
-       group_data->modification_time);
-
-  g_free (quoted_uuid);
-  g_free (quoted_name);
-  g_free (quoted_comment);
-  g_free (quoted_user_uuid);
+  sql_ps ("INSERT INTO agent_groups (uuid, name, comment, scanner, owner, creation_time, modification_time) "
+       "VALUES ($1, $2, $3, $4, "
+       "  (SELECT id FROM users WHERE uuid = $5),"
+       "  $6, $7);",
+       SQL_STR_PARAM (group_data->uuid),
+       SQL_STR_PARAM (group_data->name),
+       SQL_STR_PARAM (group_data->comment),
+       SQL_RESOURCE_PARAM (group_data->scanner),
+       SQL_STR_PARAM (current_credentials.uuid),
+       SQL_INT_PARAM (group_data->creation_time),
+       SQL_INT_PARAM (group_data->modification_time),
+       NULL);
 
   agent_group_t new_agent_group = sql_last_insert_id ();
   if (new_agent_group == 0)
@@ -299,20 +325,21 @@ modify_agent_group (agent_group_t agent_group,
                     agent_group_data_t group_data,
                     agent_uuid_list_t agent_uuids)
 {
-  gchar *quoted_name = sql_quote (group_data->name);
-  gchar *quoted_comment = sql_quote (group_data->comment);
 
+  if (agent_group_name_exists (group_data->name))
+    {
+      g_debug ("%s: agent group name already exists", __func__);
+      return AGENT_GROUP_RESP_GROUP_NAME_EXISTS;
+    }
   sql_begin_immediate ();
 
-  sql ("UPDATE agent_groups SET name = '%s', comment = '%s', "
-       "modification_time = %ld WHERE id = %llu;",
-       quoted_name,
-       quoted_comment,
-       group_data->modification_time,
-       agent_group);
-
-  g_free (quoted_name);
-  g_free (quoted_comment);
+  sql_ps ("UPDATE agent_groups SET name = $1, comment = $2, "
+       "modification_time = $3 WHERE id = $4;",
+       SQL_STR_PARAM (group_data->name),
+       SQL_STR_PARAM (group_data->comment),
+       SQL_INT_PARAM (group_data->modification_time),
+       SQL_RESOURCE_PARAM (agent_group),
+       NULL);
 
   if (!agent_uuids || agent_uuids->count == 0)
     {

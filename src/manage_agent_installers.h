@@ -15,7 +15,7 @@
 #ifndef _GVMD_MANAGE_AGENT_INSTALLERS_H
 #define _GVMD_MANAGE_AGENT_INSTALLERS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "iterator.h"
 #include "gmp_get.h"
 #include <gvm/util/streamvalidator.h>

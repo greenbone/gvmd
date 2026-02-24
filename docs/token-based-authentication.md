@@ -19,9 +19,9 @@ contain arbitrary data which in our case should be the user's permissions.
 ## JWT Format
 
 The JWT should use the user id as subject (`sub`) and add [claims](https://en.wikipedia.org/wiki/JSON_Web_Token#Standard_fields)
-for the user name, roles, groups and permissions. The roles, groups and
-permissions can be used in the services to decide wether a user is allowed to
-access a route.
+for the user name and permissions. Optionally the roles and groups could be
+added to if necessary. The permissions, roles and groups can be used in the
+services to decide whether a user is allowed to access a route.
 
 Proposed JWT format
 
@@ -31,23 +31,21 @@ Proposed JWT format
   "exp": "<unix timestamp of current datetime + X>",
   "iat": "<unix timestamp of current datetime>",
   "username": "<username>",
-  "roles": [
-    "<roles of the user, for example>",
-    "Admin",
-    "User",
-    "..."
-  ],
-  "groups": [
-    "<groups of the user, for example>",
-    "SomeGroup",
-    "AnotherGroup",
-    "..."
-  ]
   "permissions": [
     "<permissions of the user, for example>",
     "get_tasks",
     "create_task",
     "..."
+  ]
+  "roles": [
+    {"id": "<role-id-1>", "name": "<role-name-1>"},
+    {"id": "7a8cb5b4-b74d-11e2-8187-406186ea4fc5", "name": "Admin"},
+    {"id": "8d453140-b74d-11e2-b0be-406186ea4fc5", "name": "User"}
+  ],
+  "groups": [
+    {"id": "<group-id-1>", "name": "<group-name-1>"},
+    {"id": "45cf04ee-001f-4d60-99c6-02989d7dcd59", "name": "SomeGroup"},
+    {"id": "6efc8ffd-2195-4d82-8bab-2b4a471035d8", "name": "AnotherGroup"}
   ]
 }
 ```

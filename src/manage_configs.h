@@ -6,7 +6,7 @@
 #ifndef _GVMD_MANAGE_CONFIGS_H
 #define _GVMD_MANAGE_CONFIGS_H
 
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include "manage_get.h"
 #include "manage_preferences.h"
 
