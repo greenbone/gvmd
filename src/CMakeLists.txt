@@ -21,7 +21,7 @@ pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.30)
-  pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.30)
+  pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.35)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
   pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.30)
