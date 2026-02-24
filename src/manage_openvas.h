@@ -15,7 +15,7 @@
 
 #include <gvm/osp/osp.h>
 #include <glib.h>
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #if ENABLE_CREDENTIAL_STORES
 #include "manage_credential_store_cyberark.h"
 #endif

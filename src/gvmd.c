@@ -1662,6 +1662,94 @@ fork_agents_sync ()
 #endif //ENABLE_AGENTS
 
 /**
+ * @brief Forks a process to delete stale asset snapshots.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_asset_snapshot_delete_stale ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean asset_snapshot_delete_in_progress = FALSE;
+
+  if (asset_snapshot_delete_in_progress)
+    {
+      g_debug (
+        "%s: Deleting asset snapshots skipped"
+        " because one is already in progress",
+        __func__);
+      return 1;
+    }
+
+  asset_snapshot_delete_in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+    case 0:
+      /* Child */
+      init_sentry ();
+      setproctitle ("Deleting stale asset snapshots");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+    /* Delete asset snapshots regarding to ASSET_SNAPSHOT_MANAGED_POLICY_DAY */
+      manage_asset_snapshot_delete_stale (ASSET_SNAPSHOT_MANAGED_POLICY_DAY);
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+      asset_snapshot_delete_in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return -1;
+
+    default:
+      g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+      asset_snapshot_delete_in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return 0;
+    }
+}
+
+/**
  * @brief Periodic timestamps for background jobs in the main loop.
  */
 typedef struct
@@ -1670,6 +1758,8 @@ typedef struct
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
   time_t last_agents_sync; ///< Last time the agents sync was executed.
+  time_t last_asset_snapshot_stale_delete; ///< Last time the delete
+                                           ///  asset snapshots was executed.
 } periodic_times_t;
 
 /**
@@ -1790,6 +1880,22 @@ run_agents_sync (periodic_times_t *t)
 }
 
 /**
+ * @brief Run to delete stale asset snapshots.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_queue on run.
+ */
+static void
+run_asset_snapshot_delete_stale (periodic_times_t *t)
+{
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_asset_snapshot_stale_delete,
+                    ASSET_SNAPSHOT_STALE_DELETE_PERIOD, now))
+    return;
+  fork_asset_snapshot_delete_stale ();
+  set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
+}
+
+/**
  * @brief Execute all periodic jobs in order.
  *
  * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
@@ -1801,6 +1907,7 @@ run_periodic_block (periodic_times_t *t)
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
+  run_asset_snapshot_delete_stale (t);
 }
 
 /**
@@ -2294,6 +2401,7 @@ gvmd (int argc, char** argv, char *env[])
   static int max_active_scan_handlers = DEFAULT_MAX_ACTIVE_SCAN_HANDLERS;
   static int max_concurrent_scan_updates = 0;
   static int max_database_connections = MAX_DATABASE_CONNECTIONS_DEFAULT;
+  static int max_table_lock_retries = MAX_TABLE_LOCK_RETRIES_DEFAULT;
   static int max_concurrent_report_processing = MAX_REPORT_PROCESSING_DEFAULT;
   static int mem_wait_retries = 30;
   static int min_mem_feed_update = 0;
@@ -2504,6 +2612,11 @@ gvmd (int argc, char** argv, char *env[])
           &max_database_connections,
           "Maximum number of database connections at the same time."
           " Default: 50",
+          "<number>" },
+        { "max-table-lock-retries", '\0', 0, G_OPTION_ARG_INT,
+          &max_table_lock_retries,
+          "Maximum number of retries for a table lock."
+          " Default: "G_STRINGIFY (MAX_TABLE_LOCK_RETRIES_DEFAULT),
           "<number>" },
         { "max-concurrent-report-processing", '\0', 0, G_OPTION_ARG_INT,
           &max_concurrent_report_processing,
@@ -2813,7 +2926,7 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_CREDENTIAL_STORES == 1
       printf ("Credential stores are enabled\n");
 #endif
-      printf ("Copyright (C) 2009-2025 Greenbone AG\n");
+      printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
         ("This is free software: you are free to change and redistribute it.\n"
@@ -2923,6 +3036,11 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Set maximum number of database connections */
   set_max_database_connections (max_database_connections);
+
+  /* Set maximum number of table lock retries */
+  set_max_table_lock_retries (max_table_lock_retries
+                             ? max_table_lock_retries
+                             : MAX_TABLE_LOCK_RETRIES_DEFAULT);
 
   /* Set maximum number of concurrent report processing */
   set_max_concurrent_report_processing (max_concurrent_report_processing);

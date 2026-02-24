@@ -15,6 +15,7 @@
 #include "manage_acl.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_report_configs.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_users.h"
 #include "sql.h"
 #include "utils.h"
@@ -109,31 +110,6 @@ get_trustedkeys_name ()
     name = g_build_filename (get_sysconf_gpghome (), "pubring.gpg", NULL);
 
   return name;
-}
-
-
-/* Predefined resources.
- *
- * These are only used by report formats, because report formats from the feed
- * are automatically trusted, so we need to track them. */
-
-/**
- * @brief Return whether a resource is predefined.
- *
- * @param[in]  type      Type of resource.
- * @param[in]  resource  Resource.
- *
- * @return 1 if predefined, else 0.
- */
-int
-resource_predefined (const gchar *type, resource_t resource)
-{
-  assert (valid_type (type));
-  return sql_int ("SELECT EXISTS (SELECT * FROM resources_predefined"
-                  "               WHERE resource_type = '%s'"
-                  "               AND resource = %llu);",
-                  type,
-                  resource);
 }
 
 

@@ -14,7 +14,7 @@
 #define _GVMD_MANAGE_SQL_REPORT_CONFIGS_H
 
 #include "manage_report_configs.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 #include <glib.h>
 

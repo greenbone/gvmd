@@ -656,7 +656,7 @@ sql_rollback ()
 }
 
 /**
- * Try to lock a table, timing out after a given time.
+ * Try to lock a table in exclusive mode, timing out after a given time.
  *
  * @param[in]  table         The table to lock.
  * @param[in]  lock_timeout  The lock timeout in milliseconds, 0 for unlimited.
@@ -671,6 +671,27 @@ sql_table_lock_wait (const char *table, int lock_timeout)
 
   // This requires the gvmd functions to be defined first.
   int ret = sql_int ("SELECT try_exclusive_lock_wait ('%s');", table);
+
+  sql ("SET LOCAL lock_timeout = %d;", old_lock_timeout);
+  return ret;
+}
+
+/**
+ * Try to lock a table in shared mode, timing out after a given time.
+ *
+ * @param[in]  table         The table to lock.
+ * @param[in]  lock_timeout  The lock timeout in milliseconds, 0 for unlimited.
+ *
+ * @return 1 if locked, 0 if failed / timed out.
+ */
+int
+sql_table_shared_lock_wait (const char *table, int lock_timeout)
+{
+  int old_lock_timeout = sql_int ("SHOW lock_timeout;");
+  sql ("SET LOCAL lock_timeout = %d;", lock_timeout);
+
+  // This requires the gvmd functions to be defined first.
+  int ret = sql_int ("SELECT try_shared_lock_wait ('%s');", table);
 
   sql ("SET LOCAL lock_timeout = %d;", old_lock_timeout);
   return ret;
@@ -919,6 +940,32 @@ sql_cancel_internal ()
     }
 
   return 0;
+}
+
+/**
+ * @brief Check whether a table exists in a schema.
+ *
+ * @return 1 if exists, 0 if not exists, -1 on error.
+ */
+int
+sql_table_exists (const gchar *schema, const gchar *table)
+{
+  const gchar *schema_name;
+
+  if (table == NULL || *table == '\0')
+    return -1;
+
+  schema_name = (schema && *schema) ? schema : sql_schema ();
+
+  return sql_int_ps (
+    "SELECT EXISTS ("
+    "  SELECT 1"
+    "  FROM pg_catalog.pg_tables"
+    "  WHERE schemaname = $1 AND tablename = $2"
+    ");",
+    SQL_STR_PARAM (schema_name),
+    SQL_STR_PARAM (table),
+    NULL);
 }
 
 /**

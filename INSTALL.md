@@ -9,12 +9,12 @@ install dependent development packages.
 Prerequisites:
 
 * cJSON >= 1.7.14
-* cmake >= 3.5
+* cmake >= 3.18
 * GCC
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * gpgme
-* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.34 (or 22.35 if you ENABLE_AGENTS or ENABLE_CONTAINER_SCANNING)
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.34 (or 22.35 if you ENABLE_AGENTS, ENABLE_CONTAINER_SCANNING or ENABLE_OPENVASD)
 * libical >= 1.0.0
 * libbsd
 * pkg-config
@@ -45,6 +45,7 @@ Prerequisites for building documentation:
 Prerequisites for building tests:
 
 * Cgreen (optional, for building tests)
+* libasan (optional, for building tests)
 
 Please see the section "Prerequisites for Optional Features" below additional
 optional prerequisites.

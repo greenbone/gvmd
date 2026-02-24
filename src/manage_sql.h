@@ -213,9 +213,6 @@ report_start_time (report_t);
 gchar *
 report_end_time (report_t);
 
-void
-trim_report (report_t);
-
 int
 delete_report_internal (report_t);
 
@@ -227,15 +224,6 @@ update_report_modification_time (report_t);
 
 int
 set_report_slave_progress (report_t, int);
-
-void
-init_task_file_iterator (iterator_t *, task_t, const char *);
-
-const char *
-task_file_iterator_name (iterator_t *);
-
-const char *
-task_file_iterator_content (iterator_t *);
 
 void
 set_task_schedule_next_time (task_t, time_t);
@@ -254,21 +242,6 @@ preference_iterator_value (iterator_t *);
 
 port_list_t
 target_port_list (target_t);
-
-credential_t
-target_ssh_credential (target_t);
-
-credential_t
-target_smb_credential (target_t);
-
-credential_t
-target_esxi_credential (target_t);
-
-credential_t
-target_ssh_elevate_credential (target_t);
-
-credential_t
-target_krb5_credential (target_t);
 
 int
 create_current_report (task_t, char **, task_status_t);
@@ -323,9 +296,6 @@ manage_update_nvti_cache ();
 const char *
 run_status_name_internal (task_status_t);
 
-void
-update_config_cache_init (const char *);
-
 alive_test_t
 target_alive_tests (target_t);
 
@@ -341,23 +311,6 @@ parse_iso_time (const char *);
 void
 set_report_scheduled (report_t);
 
-gchar *
-resource_uuid (const gchar *, resource_t);
-
-gboolean
-find_resource_with_permission (const char *, const char *,
-                               resource_t *, const char *, int);
-
-gboolean
-find_resource_by_name (const char *, const char *, resource_t *);
-
-gboolean
-find_resource_by_name_with_permission (const char *, const char *,
-                                       resource_t *, const char *);
-
-int
-resource_predefined (const gchar *, resource_t);
-
 void
 parse_osp_report (task_t, report_t, const char *);
 
@@ -369,9 +322,6 @@ insert_port_range (port_list_t, port_protocol_t, int, int);
 
 int
 manage_cert_db_exists ();
-
-int
-manage_scap_db_exists ();
 
 int
 cert_check_time ();
@@ -453,6 +403,21 @@ task_second_last_report (task_t, report_t *);
 double
 task_severity_double (task_t, int, int, int);
 
+gchar *
+tasks_extra_where (int, const char *);
+
+gchar *
+reports_extra_where (int, const gchar *, const char *);
+
+gchar*
+vulns_extra_where (int);
+
+gchar *
+vuln_iterator_extra_with_from_filter (const gchar *);
+
+gchar*
+vuln_iterator_opts_from_filter (const gchar *);
+
 gboolean
 find_trash (const char *, const char *, resource_t *);
 
@@ -463,36 +428,16 @@ void
 tags_set_locations (const char *, resource_t, resource_t, int);
 
 void
-cache_all_permissions_for_users (GArray *);
-
-void
 init_user_task_iterator (iterator_t *, int, int);
 
-int
-copy_resource (const char *, const char *, const char *, const char *,
-               const char *, int, resource_t *, resource_t *);
+gboolean
+resource_with_id_exists (const char *, resource_t);
 
 gboolean
 resource_with_name_exists (const char *, const char *, resource_t);
 
 gboolean
 resource_with_name_exists_global (const char *, const char *, resource_t);
-
-int
-create_permission_internal (int, const char *, const char *, const char *,
-                            const char *, const char *, const char *,
-                            permission_t *);
-
-int
-create_permission_no_acl (const char *, const char *, const char *, const char *,
-                          const char *, const char *, permission_t *);
-
-void
-cache_permissions_for_resource (const char *, resource_t, GArray *);
-
-int
-copy_resource_lock (const char *, const char *, const char *, const char *,
-                    const char *, int, resource_t *, resource_t *);
 
 nvti_t *
 lookup_nvti (const gchar *);
@@ -619,9 +564,12 @@ int
 radius_auth_enabled ();
 
 void
-manage_set_max_hosts (int);
+init_pg_timezones_iterator (iterator_t *);
 
-gchar*
-clean_hosts (const char *, int *);
+const char *
+pg_timezones_iterator_name (iterator_t *);
+
+gboolean
+pg_timezone_supported (const char *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

@@ -13,6 +13,7 @@
 #include "manage_sql_port_lists.h"
 #include "manage_acl.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_resources.h"
 #include "sql.h"
 
 #include <errno.h>
@@ -842,21 +843,6 @@ int
 port_list_predefined (port_list_t port_list)
 {
   return sql_int ("SELECT predefined FROM port_lists"
-                  " WHERE id = %llu;",
-                  port_list);
-}
-
-/**
- * @brief Return whether a trash port list is predefined.
- *
- * @param[in]  port_list  Port list.
- *
- * @return 1 if predefined, else 0.
- */
-int
-trash_port_list_predefined (port_list_t port_list)
-{
-  return sql_int ("SELECT predefined FROM port_lists_trash"
                   " WHERE id = %llu;",
                   port_list);
 }

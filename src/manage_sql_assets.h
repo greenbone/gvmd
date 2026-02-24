@@ -7,7 +7,7 @@
 #define _GVMD_MANAGE_SQL_ASSETS_H
 
 #include "manage_assets.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @file

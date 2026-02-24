@@ -103,8 +103,11 @@
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
+#include "manage_resources.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
+#include "manage_sql_resources.h"
+#include "manage_targets.h"
 #include "manage_tls_certificates.h"
 #include "manage_users.h"
 #include "sql.h"
@@ -4555,6 +4558,7 @@ typedef enum
   CLIENT_GET_TARGETS,
   CLIENT_GET_TASKS,
   CLIENT_GET_TICKETS,
+  CLIENT_GET_TIMEZONES,
   CLIENT_GET_TLS_CERTIFICATES,
   CLIENT_GET_USERS,
   CLIENT_GET_VERSION,
@@ -6033,6 +6037,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         ELSE_GET_START (tickets, TICKETS)
         ELSE_GET_START (tls_certificates, TLS_CERTIFICATES)
+        else if (strcasecmp ("GET_TIMEZONES", element_name) == 0)
+          {
+            set_client_state (CLIENT_GET_TIMEZONES);
+          }
         else if (strcasecmp ("GET_USERS", element_name) == 0)
           {
             get_data_parse_attributes (&get_users_data->get, "user",
@@ -15966,6 +15974,28 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
     {
       gchar *extension, *content_type;
       GString *prefix;
+      int lock_ret, lock_retries;
+
+      sql_begin_immediate ();
+
+      lock_retries = get_max_table_lock_retries ();
+      lock_ret = sql_table_shared_lock_wait ("reports", LOCK_TIMEOUT);
+      while ((lock_ret == 0) && (lock_retries > 0))
+        {
+          lock_ret = sql_table_shared_lock_wait ("reports", LOCK_TIMEOUT);
+          lock_retries--;
+        }
+      if (lock_ret == 0)
+        {
+          sql_rollback ();
+          break;
+        }
+
+      if (!resource_with_id_exists ("report", report))
+        {
+          sql_rollback ();
+          continue;
+        }
 
       prefix = g_string_new ("");
       content_type = no_report_format
@@ -16129,6 +16159,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             switch (ret)
               {
                 case 0:
+                  sql_rollback ();
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -16136,6 +16167,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                         get_reports_data->alert_id, gmp_parser))
                     {
                       error_send_to_client (error);
+                      sql_rollback ();
                       return;
                     }
                   /* Close the connection with the client, as part of the
@@ -16146,6 +16178,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case 2:
@@ -16154,6 +16187,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                         get_reports_data->get.filt_id, gmp_parser))
                     {
                       error_send_to_client (error);
+                      sql_rollback ();
                       return;
                     }
                   /* This error always occurs before anything is sent
@@ -16162,6 +16196,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -2:
@@ -16173,6 +16208,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -3:
@@ -16182,6 +16218,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 case -4:
@@ -16193,6 +16230,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
                 default:
@@ -16207,6 +16245,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                     cleanup_iterator (&reports);
                   get_reports_data_reset (get_reports_data);
                   set_client_state (CLIENT_AUTHENTIC);
+                  sql_rollback ();
                   return;
                   break;
               }
@@ -16217,6 +16256,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                      get_reports_data->get.filt_id, gmp_parser))
                 {
                   error_send_to_client (error);
+                  sql_rollback ();
                   return;
                 }
               /* This error always occurs before anything is sent
@@ -16225,6 +16265,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 cleanup_iterator (&reports);
               get_reports_data_reset (get_reports_data);
               set_client_state (CLIENT_AUTHENTIC);
+              sql_rollback ();
               return;
             }
           else
@@ -16237,6 +16278,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
                 cleanup_iterator (&reports);
               get_reports_data_reset (get_reports_data);
               set_client_state (CLIENT_AUTHENTIC);
+              sql_rollback ();
               return;
             }
         }
@@ -16246,8 +16288,13 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
       count++;
 
       if (request_report)
-        /* Just to be safe, because iterator has been freed. */
-        break;
+        {
+          /* Just to be safe, because iterator has been freed. */
+          sql_commit ();
+          break;
+        }
+
+      sql_commit ();
     }
   if (request_report == 0)
     cleanup_iterator (&reports);
@@ -20310,6 +20357,35 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 }
 
 /**
+ * @brief Handle end of GET_TIMEZONES element.
+ *
+ * @param[in]  gmp_parser   GMP parser.
+ * @param[in]  error        Error parameter.
+ */
+static void
+handle_get_timezones (gmp_parser_t *gmp_parser, GError **error)
+{
+  array_t *timezones;
+  SEND_TO_CLIENT_OR_FAIL ("<get_timezones_response"
+                          " status=\"" STATUS_OK "\""
+                          " status_text=\"" STATUS_OK_TEXT "\">");
+
+  timezones = manage_get_timezones ();
+  for (int i = 0; i < timezones->len; i++)
+    {
+      const char *name = timezones->pdata[i];
+      SENDF_TO_CLIENT_OR_FAIL ("<timezone>"
+                               "<name>%s</name>"
+                               "</timezone>",
+                               name);
+    }
+  array_free (timezones);
+
+  SEND_TO_CLIENT_OR_FAIL ("</get_timezones_response>");
+  set_client_state (CLIENT_AUTHENTIC);
+}
+
+/**
  * @brief Handle end of GET_USER element.
  *
  * @param[in]  gmp_parser   GMP parser.
@@ -21187,6 +21263,25 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          ? current_credentials.timezone
                          : "UTC";
 
+                if (manage_timezone_supported (zone) == FALSE)
+                  {
+                    g_warning ("User '%s' (%s) has unsupported timezone '%s',"
+                               " falling back to 'UTC'.",
+                               current_credentials.username,
+                               current_credentials.uuid,
+                               zone);
+                    zone = "UTC";
+
+                    user_t user;
+                    if (find_resource_no_acl ("user",
+                                              current_credentials.uuid,
+                                              &user) == 0
+                        && user)
+                      {
+                        user_set_timezone (user, zone);
+                      }
+                  }
+
                 if (setenv ("TZ", zone, 1) == -1)
                   {
                     free_credentials (&current_credentials);
@@ -21939,6 +22034,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_GET_END (TICKETS, tickets);
 
       CASE_GET_END (TLS_CERTIFICATES, tls_certificates);
+
+      case CLIENT_GET_TIMEZONES:
+        handle_get_timezones (gmp_parser, error);
+        break;
 
       case CLIENT_GET_USERS:
         handle_get_users (gmp_parser, error);
@@ -30341,9 +30440,6 @@ process_gmp_client_input ()
   gboolean success;
   GError* error = NULL;
 
-  /* Terminate any pending transaction. (force close = TRUE). */
-  manage_transaction_stop (TRUE);
-
   if (xml_context == NULL) return -1;
 
   success = g_markup_parse_context_parse (xml_context,
@@ -30434,9 +30530,6 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   GMarkupParseContext *old_xml_context;
   client_state_t old_client_state;
   command_data_t old_command_data;
-
-  /* Terminate any pending transaction. (force close = TRUE). */
-  manage_transaction_stop (TRUE);
 
   if (response) *response = NULL;
 

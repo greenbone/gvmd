@@ -40,6 +40,8 @@
       {"update_to_latest", NULL, KEYWORD_TYPE_INTEGER},                     \
       {"agent_update_available", NULL, KEYWORD_TYPE_INTEGER},               \
       {"updater_update_available", NULL, KEYWORD_TYPE_INTEGER},             \
+      {"latest_agent_version", NULL, KEYWORD_TYPE_STRING},                  \
+      {"latest_updater_version", NULL, KEYWORD_TYPE_STRING},                \
     {                                                                       \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                      \
     }                                                                       \
@@ -55,6 +57,7 @@
       "creation_time", "modification_time", "owner", "id", "updater_version",  \
       "agent_version", "operating_system", "architecture", "update_to_latest", \
       "agent_update_available", "updater_update_available",                    \
+      "latest_agent_version", "latest_updater_version", "connection_status",   \
       NULL                                                                     \
   }
 

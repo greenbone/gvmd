@@ -14,7 +14,7 @@
 #define _GVMD_MANAGE_CREDENTIAL_STORES_H
 
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 #include <gnutls/gnutls.h>
 
 /**
@@ -174,10 +174,6 @@ init_credential_store_selector_iterator_for_type (iterator_t *iterator,
                                                     credential_store,
                                                   const char *credential_type);
 
-credential_store_selector_data_t *
-credential_store_selector_from_iterator (iterator_t *iterator,
-                                         gboolean include_credential_types);
-
 resource_t
 credential_store_selector_iterator_resource_id (iterator_t *iterator);
 
@@ -213,9 +209,6 @@ trash_credential_store_in_use (credential_store_t);
 
 int
 credential_store_writable (credential_store_t);
-
-gboolean
-credential_store_active (credential_store_t);
 
 char *
 credential_store_host (credential_store_t);

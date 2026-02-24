@@ -47,10 +47,13 @@
 #include "manage_sql_groups.h"
 #include "manage_sql_oci_image_targets.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_permissions_cache.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_configs.h"
 #include "manage_sql_report_formats.h"
+#include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql_users.h"
@@ -109,18 +112,6 @@
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
-
-/**
- * @brief Number of retries for
- *        LOCK TABLE .. IN ACCESS EXLUSIVE MODE NOWAIT
- *        statements.
- */
-#define LOCK_RETRIES 64
-
-/**
- * @brief Timeout for trying to acquire a lock in milliseconds.
- */
-#define LOCK_TIMEOUT 500
 
 #ifdef DEBUG_FUNCTION_NAMES
 #include <dlfcn.h>
@@ -216,15 +207,6 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
 
-static gchar*
-vulns_extra_where (int);
-
-static gchar*
-vuln_iterator_opts_from_filter (const gchar *);
-
-static gchar*
-vuln_iterator_extra_with_from_filter (const gchar *);
-
 static gboolean
 find_trash_task (const char*, task_t*);
 
@@ -233,9 +215,6 @@ find_trash_report_with_permission (const char *, report_t *, const char *);
 
 static int
 cleanup_schedule_times ();
-
-static gchar *
-reports_extra_where (int, const gchar *, const char *);
 
 static int
 set_credential_data (credential_t, const char*, const char*);
@@ -268,17 +247,11 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 static char *
 setting_timezone ();
 
-static char*
-target_comment (target_t);
-
 static column_t *
 type_select_columns (const char *type);
 
 static column_t *
 type_where_columns (const char *type);
-
-static char*
-trash_target_comment (target_t);
 
 static const char**
 type_filter_columns (const char *);
@@ -297,11 +270,6 @@ type_build_select (const char *, const char *, const get_data_t *,
 manage_connection_forker_t manage_fork_connection;
 
 /**
- * @brief Max number of hosts per target.
- */
-static int max_hosts = MANAGE_MAX_HOSTS;
-
-/**
  * @brief Memory cache of NVT information from the database.
  */
 static nvtis_t* nvti_cache = NULL;
@@ -312,22 +280,38 @@ static nvtis_t* nvti_cache = NULL;
 db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
 
 /**
- * @brief Whether a transaction has been opened and not committed yet.
- */
-static gboolean in_transaction;
-
-/**
- * @brief Time of reception of the currently processed message.
- */
-static struct timeval last_msg;
-
-/**
  * @brief The VT verification collation override
  */
 static gchar *vt_verification_collation = NULL;
 
 
 /* General helpers. */
+
+/**
+ * @brief Check if a resource with a given id still exists.
+ *
+ * @param[in]   type      Type of resource.
+ * @param[in]   resource  Resource to check.
+ *
+ * @return Whether resource with id exists.
+ */
+gboolean
+resource_with_id_exists (const char *type, resource_t resource)
+{
+  int ret;
+  char *quoted_type;
+
+  assert (type);
+  quoted_type = sql_quote (type);
+
+  if (resource)
+    ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                   " WHERE id = %llu;",
+                   quoted_type, resource);
+
+  g_free (quoted_type);
+  return !!ret;
+}
 
 /**
  * @brief Check if a resource with a certain name exists already.
@@ -469,28 +453,6 @@ int
 parse_iso_time (const char *text_time)
 {
   return parse_iso_time_tz (text_time, current_credentials.timezone);
-}
-
-/**
- * @brief Find a string in an array.
- *
- * @param[in]  array   Array.
- * @param[in]  string  String.
- *
- * @return The string from the array if found, else NULL.
- */
-static gchar*
-array_find_string (array_t *array, const gchar *string)
-{
-  guint index;
-  for (index = 0; index < array->len; index++)
-    {
-      gchar *ele;
-      ele = (gchar*) g_ptr_array_index (array, index);
-      if (ele && (strcmp (ele, string) == 0))
-        return ele;
-    }
-  return NULL;
 }
 
 /**
@@ -737,735 +699,7 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
 }
 
 
-/* Resources. */
-
-/* TODO Only used by find_scanner, find_permission and check_permission_args. */
-/**
- * @brief Find a resource given a UUID.
- *
- * This only looks for resources owned (or effectively owned) by the current user.
- * So no shared resources and no globals.
- *
- * @param[in]   type       Type of resource.
- * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
- */
-gboolean
-find_resource (const char* type, const char* uuid, resource_t* resource)
-{
-  gchar *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-  if (acl_user_owns_uuid (type, quoted_uuid, 0) == 0)
-    {
-      g_free (quoted_uuid);
-      *resource = 0;
-      return FALSE;
-    }
-  // TODO should really check type
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss WHERE uuid = '%s'%s;",
-                     type,
-                     quoted_uuid,
-                     strcmp (type, "task") ? "" : " AND hidden < 2"))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find a resource given a UUID.
- *
- * @param[in]   type       Type of resource.
- * @param[in]   uuid       UUID of resource.
- * @param[out]  resource   Resource return, 0 if successfully failed to find resource.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on error.
- */
-gboolean
-find_resource_no_acl (const char* type, const char* uuid, resource_t* resource)
-{
-  gchar *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-
-  // TODO should really check type
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss WHERE uuid = '%s'%s;",
-                     type,
-                     quoted_uuid,
-                     strcmp (type, "task") ? "" : " AND hidden < 2"))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-
-/**
- * @brief Find a resource given a UUID and a permission.
- *
- * @param[in]   type        Type of resource.
- * @param[in]   uuid        UUID of resource.
- * @param[out]  resource    Resource return, 0 if successfully failed to find
- *                          resource.
- * @param[in]   permission  Permission.
- * @param[in]   trash       Whether resource is in trashcan.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on
- *         error.
- */
-gboolean
-find_resource_with_permission (const char* type, const char* uuid,
-                               resource_t* resource, const char *permission,
-                               int trash)
-{
-  gchar *quoted_uuid;
-  if (uuid == NULL)
-    return TRUE;
-  if ((type == NULL) || (valid_db_resource_type (type) == 0))
-    return TRUE;
-  quoted_uuid = sql_quote (uuid);
-  if (acl_user_has_access_uuid (type, quoted_uuid, permission, trash) == 0)
-    {
-      g_free (quoted_uuid);
-      *resource = 0;
-      return FALSE;
-    }
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
-                     type,
-                     (trash && strcmp (type, "task") && strcmp (type, "report"))
-                      ? "_trash"
-                      : "",
-                     quoted_uuid,
-                     strcmp (type, "task")
-                      ? ""
-                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
-                     strcmp (type, "report")
-                      ? ""
-                      : (trash
-                          ? " AND (SELECT hidden FROM tasks"
-                            "      WHERE tasks.id = task)"
-                            "     = 2"
-                          : " AND (SELECT hidden FROM tasks"
-                          "        WHERE tasks.id = task)"
-                          "       = 0")))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_uuid);
-  return FALSE;
-}
-
-/**
- * @brief Find a resource given a name.
- *
- * @param[in]   type      Type of resource.
- * @param[in]   name      A resource name.
- * @param[out]  resource  Resource return, 0 if successfully failed to find
- *                        resource.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on
- *         error.
- */
-gboolean
-find_resource_by_name (const char* type, const char* name, resource_t *resource)
-{
-  gchar *quoted_name;
-  quoted_name = sql_quote (name);
-  // TODO should really check type
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss WHERE name = '%s'"
-                     " ORDER BY id DESC;",
-                     type,
-                     quoted_name))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
-}
-
-/**
- * @brief Find a resource given a UUID and a permission.
- *
- * @param[in]   type        Type of resource.
- * @param[in]   name        Name of resource.
- * @param[out]  resource    Resource return, 0 if successfully failed to find
- *                          resource.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find resource), TRUE on
- *         error.
- */
-gboolean
-find_resource_by_name_with_permission (const char *type, const char *name,
-                                       resource_t *resource,
-                                       const char *permission)
-{
-  gchar *quoted_name;
-  assert (strcmp (type, "task"));
-  if (name == NULL)
-    return TRUE;
-  quoted_name = sql_quote (name);
-  // TODO should really check type
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss WHERE name = '%s'"
-                     " ORDER BY id DESC;",
-                     type,
-                     quoted_name))
-    {
-      case 0:
-        {
-          gchar *uuid;
-
-          uuid = sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
-                             type, *resource);
-          if (acl_user_has_access_uuid (type, uuid, permission, 0) == 0)
-            {
-              g_free (uuid);
-              g_free (quoted_name);
-              *resource = 0;
-              return FALSE;
-            }
-          g_free (uuid);
-        }
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_name);
-        return TRUE;
-        break;
-    }
-
-  g_free (quoted_name);
-  return FALSE;
-}
-
-/**
- * @brief Create a resource from an existing resource.
- *
- * @param[in]  type          Type of resource.
- * @param[in]  name          Name of new resource.  NULL to copy from existing.
- * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
- * @param[in]  resource_id   UUID of existing resource.
- * @param[in]  columns       Extra columns in resource.
- * @param[in]  make_name_unique  When name NULL, whether to make existing name
- *                               unique.
- * @param[out] new_resource  Address for new resource, or NULL.
- * @param[out] old_resource  Address for existing resource, or NULL.
- *
- * @return 0 success, 1 resource exists already, 2 failed to find existing
- *         resource, 99 permission denied, -1 error.
- */
-int
-copy_resource_lock (const char *type, const char *name, const char *comment,
-                    const char *resource_id, const char *columns,
-                    int make_name_unique, resource_t* new_resource,
-                    resource_t *old_resource)
-{
-  gchar *quoted_name, *quoted_uuid, *uniquify, *command;
-  int named, globally_unique;
-  user_t owner;
-  resource_t resource;
-  resource_t new;
-  int ret = -1;
-
-  if (resource_id == NULL)
-    return -1;
-
-  command = g_strdup_printf ("create_%s", type);
-  if (acl_user_may (command) == 0)
-    {
-      g_free (command);
-      return 99;
-    }
-  g_free (command);
-
-  command = g_strdup_printf ("get_%ss", type);
-  if (find_resource_with_permission (type, resource_id, &resource, command, 0))
-    {
-      g_free (command);
-      return -1;
-    }
-  g_free (command);
-
-  if (resource == 0)
-    return 2;
-
-  if (find_user_by_name (current_credentials.username, &owner)
-      || owner == 0)
-    {
-      return -1;
-    }
-
-  if (strcmp (type, "permission") == 0)
-    {
-      resource_t perm_resource;
-      perm_resource = permission_resource (resource);
-      if ((perm_resource == 0)
-          && (acl_user_can_everything (current_credentials.uuid) == 0))
-        /* Only admins can copy permissions that apply to whole commands. */
-        return 99;
-    }
-
-  named = type_named (type);
-  globally_unique = type_globally_unique (type);
-
-  if (named && name && *name && resource_with_name_exists (name, type, 0))
-    return 1;
-
-  if ((strcmp (type, "tls_certificate") == 0)
-      && user_has_tls_certificate (resource, owner))
-    return 1;
-
-  if (name && *name)
-    quoted_name = sql_quote (name);
-  else
-    quoted_name = NULL;
-  quoted_uuid = sql_quote (resource_id);
-
-  /* Copy the existing resource. */
-
-  if (globally_unique && make_name_unique)
-    uniquify = g_strdup_printf ("uniquify ('%s', name, NULL, '%cClone')",
-                                type,
-                                strcmp (type, "user") ? ' ' : '_');
-  else if (make_name_unique)
-    uniquify = g_strdup_printf ("uniquify ('%s', name, %llu, ' Clone')",
-                                type,
-                                owner);
-  else
-    uniquify = g_strdup ("name");
-  if (named && comment && strlen (comment))
-    {
-      gchar *quoted_comment;
-      quoted_comment = sql_nquote (comment, strlen (comment));
-      ret = sql_error ("INSERT INTO %ss"
-                       " (uuid, owner, name, comment,"
-                       "  creation_time, modification_time%s%s)"
-                       " SELECT make_uuid (),"
-                       "        (SELECT id FROM users"
-                       "         where users.uuid = '%s'),"
-                       "        %s%s%s, '%s', m_now (), m_now ()%s%s"
-                       " FROM %ss WHERE uuid = '%s';",
-                       type,
-                       columns ? ", " : "",
-                       columns ? columns : "",
-                       current_credentials.uuid,
-                       quoted_name ? "'" : "",
-                       quoted_name ? quoted_name : uniquify,
-                       quoted_name ? "'" : "",
-                       quoted_comment,
-                       columns ? ", " : "",
-                       columns ? columns : "",
-                       type,
-                       quoted_uuid);
-      g_free (quoted_comment);
-    }
-  else if (named)
-    ret = sql_error ("INSERT INTO %ss"
-                      " (uuid, owner, name%s,"
-                      "  creation_time, modification_time%s%s)"
-                      " SELECT make_uuid (),"
-                      "        (SELECT id FROM users where users.uuid = '%s'),"
-                      "        %s%s%s%s, m_now (), m_now ()%s%s"
-                      " FROM %ss WHERE uuid = '%s';",
-                      type,
-                      type_has_comment (type) ? ", comment" : "",
-                      columns ? ", " : "",
-                      columns ? columns : "",
-                      current_credentials.uuid,
-                      quoted_name ? "'" : "",
-                      quoted_name ? quoted_name : uniquify,
-                      quoted_name ? "'" : "",
-                      type_has_comment (type) ? ", comment" : "",
-                      columns ? ", " : "",
-                      columns ? columns : "",
-                      type,
-                      quoted_uuid);
-  else
-    ret = sql_error ("INSERT INTO %ss"
-                     " (uuid, owner, creation_time, modification_time%s%s)"
-                     " SELECT make_uuid (),"
-                     "        (SELECT id FROM users where users.uuid = '%s'),"
-                     "        m_now (), m_now ()%s%s"
-                     " FROM %ss WHERE uuid = '%s';",
-                     type,
-                     columns ? ", " : "",
-                     columns ? columns : "",
-                     current_credentials.uuid,
-                     columns ? ", " : "",
-                     columns ? columns : "",
-                     type,
-                     quoted_uuid);
-
-  if (ret == 3)
-    {
-      g_free (quoted_uuid);
-      g_free (quoted_name);
-      g_free (uniquify);
-      return 1;
-    }
-  else if (ret)
-    {
-      g_free (quoted_uuid);
-      g_free (quoted_name);
-      g_free (uniquify);
-      return -1;
-    }
-
-  new = sql_last_insert_id ();
-
-  /* Copy attached tags */
-  sql ("INSERT INTO tag_resources"
-       " (tag, resource_type, resource, resource_uuid, resource_location)"
-       " SELECT tag, resource_type, %llu,"
-       "        (SELECT uuid FROM %ss WHERE id = %llu),"
-       "        resource_location"
-       "   FROM tag_resources"
-       "  WHERE resource_type = '%s' AND resource = %llu"
-       "    AND resource_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-       new,
-       type, new,
-       type, resource);
-
-  if (new_resource)
-    *new_resource = new;
-
-  if (old_resource)
-    *old_resource = resource;
-
-  g_free (quoted_uuid);
-  g_free (quoted_name);
-  g_free (uniquify);
-  if (sql_last_insert_id () == 0)
-    return -1;
-  return 0;
-}
-
-/**
- * @brief Create a resource from an existing resource.
- *
- * @param[in]  type          Type of resource.
- * @param[in]  name          Name of new resource.  NULL to copy from existing.
- * @param[in]  comment       Comment on new resource.  NULL to copy from existing.
- * @param[in]  resource_id   UUID of existing resource.
- * @param[in]  columns       Extra columns in resource.
- * @param[in]  make_name_unique  When name NULL, whether to make existing name
- *                               unique.
- * @param[out] new_resource  New resource.
- * @param[out] old_resource  Address for existing resource, or NULL.
- *
- * @return 0 success, 1 resource exists already, 2 failed to find existing
- *         resource, 99 permission denied, -1 error.
- */
-int
-copy_resource (const char *type, const char *name, const char *comment,
-               const char *resource_id, const char *columns,
-               int make_name_unique, resource_t* new_resource,
-               resource_t *old_resource)
-{
-  int ret;
-
-  assert (current_credentials.uuid);
-
-  sql_begin_immediate ();
-
-  ret = copy_resource_lock (type, name, comment, resource_id, columns,
-                            make_name_unique, new_resource, old_resource);
-
-  if (ret)
-    sql_rollback ();
-  else
-    sql_commit ();
-
-  return ret;
-}
-
-/**
- * @brief Get whether a resource exists.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Resource.
- * @param[in]  location  Location.
- *
- * @return 1 yes, 0 no, -1 error in type.
- */
-int
-resource_exists (const char *type, resource_t resource, int location)
-{
-  if (valid_db_resource_type (type) == 0)
-    return -1;
-
-  if (location == LOCATION_TABLE)
-    return sql_int ("SELECT EXISTS (SELECT id FROM %ss WHERE id = %llu);",
-                    type,
-                    resource);
-  return sql_int ("SELECT EXISTS (SELECT id FROM %ss%s WHERE id = %llu);",
-                  type,
-                  strcmp (type, "task") ? "_trash" : "",
-                  resource);
-}
-
-/**
- * @brief Get the name of a resource.
- *
- * @param[in]  type      Type.
- * @param[in]  uuid      UUID.
- * @param[in]  location  Location.
- * @param[out] name      Return for freshly allocated name.
- *
- * @return 0 success, 1 error in type.
- */
-int
-resource_name (const char *type, const char *uuid, int location, char **name)
-{
-  if (valid_db_resource_type (type) == 0)
-    return 1;
-
-  GString *query = g_string_new ("");
-
-  if (strcasecmp (type, "note") == 0)
-    {
-      g_string_printf (query,
-                       "SELECT 'Note for: '"
-                       " || (SELECT name"
-                       "     FROM nvts"
-                       "     WHERE nvts.uuid = tnotes.nvt)"
-                       " FROM notes%s AS tnotes"
-                       " WHERE uuid = $1;",
-                       location == LOCATION_TABLE ? "" : "_trash");
-
-      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
-    }
-  else if (strcasecmp (type, "override") == 0)
-    {
-      g_string_printf (query,
-                       "SELECT 'Override for: '"
-                       " || (SELECT name"
-                       "     FROM nvts"
-                       "     WHERE nvts.uuid = tovrr.nvt)"
-                       " FROM overrides%s AS tovrr"
-                       " WHERE uuid = $1;",
-                       location == LOCATION_TABLE ? "" : "_trash");
-
-      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
-    }
-  else if (strcasecmp (type, "report") == 0)
-    {
-      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                             " || ' - '"
-                             " || (SELECT"
-                             "       CASE (SELECT end_time FROM tasks"
-                             "             WHERE id = task)"
-                             "       WHEN 0 THEN 'N/A'"
-                             "       ELSE (SELECT iso_time (end_time)"
-                             "             FROM tasks WHERE id = task)"
-                             "    END)"
-                             " FROM reports"
-                             " WHERE uuid = $1;",
-                             SQL_STR_PARAM (uuid), NULL);
-    }
-  else if (strcasecmp (type, "result") == 0)
-    {
-      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
-                             " || ' - '"
-                             " || (SELECT name FROM nvts WHERE oid = nvt)"
-                             " || ' - '"
-                             " || (SELECT"
-                             "       CASE (SELECT end_time FROM tasks"
-                             "             WHERE id = task)"
-                             "       WHEN 0 THEN 'N/A'"
-                             "       ELSE (SELECT iso_time (end_time)"
-                             "             FROM tasks WHERE id = task)"
-                             "    END)"
-                             " FROM results"
-                             " WHERE uuid = $1;",
-                             SQL_STR_PARAM (uuid), NULL);
-    }
-  else if (location == LOCATION_TABLE)
-    {
-      g_string_printf (query,
-                       "SELECT name"
-                       " FROM %ss"
-                       " WHERE uuid = $1;",
-                       type);
-      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
-    }
-  else if (type_has_trash (type))
-    {
-      g_string_printf (query,
-                       "SELECT name"
-                       " FROM %ss%s"
-                       " WHERE uuid = $1;",
-                       type, strcmp (type, "task") ? "_trash" : "");
-
-      *name = sql_string_ps (query->str, SQL_STR_PARAM (uuid), NULL);
-    }
-  else
-    *name = NULL;
-
-  g_string_free (query, TRUE);
-  return 0;
-}
-
-/**
- * @brief Get the name of a resource.
- *
- * @param[in]  type      Type.
- * @param[in]  uuid      UUID.
- * @param[out] name      Return for freshly allocated name.
- *
- * @return 0 success, 1 error in type.
- */
-int
-manage_resource_name (const char *type, const char *uuid, char **name)
-{
-  return resource_name (type, uuid, LOCATION_TABLE, name);
-}
-
-/**
- * @brief Get the name of a trashcan resource.
- *
- * @param[in]  type      Type.
- * @param[in]  uuid      UUID.
- * @param[out] name      Return for freshly allocated name.
- *
- * @return 0 success, 1 error in type.
- */
-int
-manage_trash_resource_name (const char *type, const char *uuid, char **name)
-{
-  return resource_name (type, uuid, LOCATION_TRASH, name);
-}
-
-/**
- * @brief Check if a resource has been marked as deprecated.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource_id  UUID of the resource.
- *
- * @return 1 if deprecated, else 0.
- */
-int
-resource_id_deprecated (const char *type, const char *resource_id)
-{
-  int ret;
-  gchar *quoted_type = sql_quote (type);
-  gchar *quoted_uuid = sql_quote (resource_id);
-
-  ret = sql_int ("SELECT count(*) FROM deprecated_feed_data"
-                 " WHERE type = '%s' AND uuid = '%s';",
-                 quoted_type, quoted_uuid);
-
-  g_free (quoted_type);
-  g_free (quoted_uuid);
-
-  return ret != 0;
-}
-
-/**
- * @brief Mark whether resource is deprecated.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource_id  UUID of the resource.
- * @param[in]  deprecated   Whether the resource is deprecated.
- */
-void
-set_resource_id_deprecated (const char *type, const char *resource_id,
-                            gboolean deprecated)
-{
-  gchar *quoted_type = sql_quote (type);
-  gchar *quoted_uuid = sql_quote (resource_id);
-
-  if (deprecated)
-    {
-      sql ("INSERT INTO deprecated_feed_data (type, uuid, modification_time)"
-           " VALUES ('%s', '%s', m_now ())"
-           " ON CONFLICT (uuid, type)"
-           " DO UPDATE SET modification_time = m_now ()",
-           quoted_type, quoted_uuid);
-    }
-  else
-    {
-      sql ("DELETE FROM deprecated_feed_data"
-           " WHERE type = '%s' AND uuid = '%s'",
-           quoted_type, quoted_uuid);
-    }
-  g_free (quoted_type);
-  g_free (quoted_uuid);
-}
-
-/**
- * @brief Get the UUID of a resource.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Resource.
- *
- * @return Freshly allocated UUID on success, else NULL.
- */
-gchar *
-resource_uuid (const gchar *type, resource_t resource)
-{
-  assert (valid_db_resource_type (type));
-
-  return sql_string ("SELECT uuid FROM %ss WHERE id = %llu;",
-                     type,
-                     resource);
-}
+/* GET iterators. */
 
 /**
  * @brief Initialise a GET iterator, including observed resources.
@@ -2594,6 +1828,7 @@ info_name_count (const char *type, const char *name)
 }
 
 
+/* Versions. */
 
 /**
  * @brief Return the database version supported by this manager.
@@ -2719,6 +1954,8 @@ set_db_version (int version)
 }
 
 
+/* Encryption. */
+
 /**
  * @brief Encrypt, re-encrypt or decrypt all credentials
  *
@@ -3195,7 +2432,7 @@ DEF_ACCESS (task_role_iterator_uuid, 4);
  *
  * @return Newly allocated where clause string.
  */
-static gchar *
+gchar *
 tasks_extra_where (int trash, const char *usage_type)
 {
   gchar *extra_where = NULL;
@@ -5352,7 +4589,7 @@ init_manage_internal (GSList *log_config,
       || (max_ips_per_target > MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET))
     return -4;
 
-  max_hosts = max_ips_per_target;
+  manage_set_max_hosts (max_ips_per_target);
   if (max_email_attachment_size)
     set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
@@ -5404,7 +4641,7 @@ init_manage_internal (GSList *log_config,
       sql ("INSERT INTO meta (name, value)"
            " VALUES ('max_hosts', %i)"
            " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
-           max_hosts);
+           manage_max_hosts ());
     }
 
   if (stop_tasks)
@@ -6092,80 +5329,6 @@ logout_user ()
 {
   auth_cache_delete(current_credentials.username);
   manage_reset_currents ();
-}
-
-/**
- * @brief Return number of resources of a certain type for current user.
- *
- * @param[in]  type  Type.
- * @param[in]  get   GET params.
- *
- * @return The number of resources associated with the current user.
- */
-int
-resource_count (const char *type, const get_data_t *get)
-{
-  static const char *filter_columns[] = { "owner", NULL };
-  static column_t select_columns[] = {{ "owner", NULL }, { NULL, NULL }};
-  get_data_t count_get;
-  gchar *extra_where, *extra_with, *extra_tables;
-  int rc;
-
-  memset (&count_get, '\0', sizeof (count_get));
-  count_get.trash = get->trash;
-  if (type_owned (type))
-    count_get.filter = "rows=-1 first=1 permission=any owner=any min_qod=0";
-  else
-    count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
-
-  extra_with = extra_tables = NULL;
-
-  if (strcasecmp (type, "config") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = configs_extra_where (usage_type);
-    }
-  else if (strcmp (type, "task") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = tasks_extra_where (get->trash, usage_type);
-    }
-  else if (strcmp (type, "report") == 0)
-    {
-      const gchar *usage_type = get_data_get_extra (get, "usage_type");
-      extra_where = reports_extra_where (0, NULL, usage_type);
-    }
-  else if (strcmp (type, "result") == 0)
-    {
-      extra_where
-        = g_strdup (" AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")");
-    }
-  else if (strcmp (type, "vuln") == 0)
-    {
-      extra_where = vulns_extra_where (filter_term_min_qod (count_get.filter));
-      extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
-      extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
-    }
-  else
-    extra_where = NULL;
-
-  rc = count2 (get->subtype ? get->subtype : type,
-               &count_get,
-               type_owned (type) ? select_columns : NULL,
-               type_owned (type) ? select_columns : NULL,
-               NULL,
-               NULL,
-               type_owned (type) ? filter_columns : NULL,
-               0,
-               extra_tables,
-               extra_where,
-               extra_with,
-               type_owned (type));
-
-  g_free (extra_where);
-  g_free (extra_with);
-  g_free (extra_tables);
-  return rc;
 }
 
 /**
@@ -7664,26 +6827,6 @@ task_schedule_periods_uuid (const gchar *task_id)
                  quoted_task_id);
   g_free (quoted_task_id);
   return ret;
-}
-
-/**
- * @brief Get next time a scheduled task will run, following schedule timezone.
- *
- * @param[in]  task  Task.
- *
- * @return If the task has a schedule, the next time the task will run (0 if it
- *         has already run), otherwise 0.
- */
-int
-task_schedule_next_time (task_t task)
-{
-  int next_time;
-
-  next_time = sql_int ("SELECT schedule_next_time FROM tasks"
-                       " WHERE id = %llu;",
-                       task);
-
-  return next_time;
 }
 
 /**
@@ -10944,7 +10087,7 @@ where_compliance_status (const char *compliance)
  *
  * @return Newly allocated where clause string.
  */
-static gchar *
+gchar *
 reports_extra_where (int trash, const gchar *filter, const char *usage_type)
 {
 
@@ -14147,52 +13290,6 @@ set_scan_end_time_ctime (report_t report, const char* timestamp)
 }
 
 /**
- * @brief Get the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- *
- * @return End time.
- */
-int
-scan_host_end_time (report_t report, const char* host)
-{
-  gchar *quoted_host;
-  int ret;
-
-  quoted_host = sql_quote (host);
-  ret = sql_int ("SELECT end_time FROM report_hosts"
-                 " WHERE report = %llu AND host = '%s';",
-                 report, quoted_host);
-  g_free (quoted_host);
-  return ret;
-}
-
-/**
- * @brief Set the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  End time.  ISO format.
- */
-void
-set_scan_host_end_time (report_t report, const char* host,
-                        const char* timestamp)
-{
-  gchar *quoted_host;
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         parse_iso_time (timestamp), report, quoted_host);
-  else
-    manage_report_host_add (report, host, 0, parse_iso_time (timestamp));
-  g_free (quoted_host);
-}
-
-/**
  * @brief Set the end time of a scanned host.
  *
  * @param[in]  report     Report associated with the scan.
@@ -15273,7 +14370,7 @@ delete_report (const char *report_id, int dummy)
    *
    * If the report is running already then delete_report_internal will
    * ROLLBACK. */
-  lock_retries = LOCK_RETRIES;
+  lock_retries = get_max_table_lock_retries ();
   lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
@@ -15354,37 +14451,6 @@ set_report_slave_progress (report_t report, int progress)
        progress,
        report);
   return 0;
-}
-
-/**
- * @brief Prepare a partial report for restarting the scan from the beginning.
- *
- * @param[in]  report  The report.
- */
-void
-trim_report (report_t report)
-{
-  /* Remove results for all hosts. */
-
-  sql ("DELETE FROM results WHERE id IN"
-       " (SELECT results.id FROM results"
-       "  WHERE results.report = %llu);",
-       report);
-
-  /* Remove all hosts and host details. */
-
-  sql ("DELETE FROM report_host_details WHERE report_host IN"
-       " (SELECT id FROM report_hosts WHERE report = %llu);",
-       report);
-  sql ("DELETE FROM report_hosts"
-       " WHERE report = %llu;",
-       report);
-
-  /* Clear and rebuild counts cache */
-  if (setting_auto_cache_rebuild_int ())
-    report_cache_counts (report, 1, 1, NULL);
-  else
-    report_clear_count_cache (report, 1, 1, NULL);
 }
 
 /**
@@ -16014,26 +15080,6 @@ report_host_count (report_t report)
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
                   report);
-}
-
-/**
- * @brief Count a report's total number of hosts with results.
- *
- * @param[in]   report         Report.
- * @param[in]   min_qod        Minimum QoD of results to count.
- *
- * @return The number of hosts with results
- */
-int
-report_result_host_count (report_t report, int min_qod)
-{
-  return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
-                  " WHERE report_hosts.report = %llu"
-                  "   AND EXISTS (SELECT * FROM results"
-                  "               WHERE results.host = report_hosts.host"
-                  "                 AND results.qod >= %d)",
-                  report,
-                  min_qod);
 }
 
 /**
@@ -17543,6 +16589,19 @@ struct print_report_context
   int warnings;               ///< Number of warnings.
   int false_positives;        ///< Number of false positives.
   int total_result_count;     ///< Total number of results.
+  // Filtered counts.
+  GHashTable *f_host_false_positives; ///< False positives per host.
+  GHashTable *f_host_holes;           ///< Holes per host.
+  GHashTable *f_host_infos;           ///< Infos per host.
+  GHashTable *f_host_logs;            ///< Logs per hosts.
+  GHashTable *f_host_ports;           ///< Ports per host.
+  GHashTable *f_host_warnings;        ///< Warnings per hosts.
+  // Filtered counts: audit.
+  GHashTable *f_host_criticals;       ///< Criticals per host.
+  GHashTable *f_host_compliant;       ///< Compliants per host.
+  GHashTable *f_host_incomplete;      ///< Incompletes per host.
+  GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
+  GHashTable *f_host_undefined;       ///< Undefineds per host.
 };
 
 /**
@@ -17701,12 +16760,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int search_phrase_exact, apply_overrides;
   double severity, f_severity;
   GString *filters_buffer, *filters_extra_buffer, *host_summary_buffer;
-  GHashTable *f_host_ports;
-  GHashTable *f_host_holes, *f_host_warnings, *f_host_infos;
-  GHashTable *f_host_logs, *f_host_false_positives;
-  GHashTable *f_host_compliant, *f_host_notcompliant;
-  GHashTable  *f_host_incomplete, *f_host_undefined;
-  GHashTable *f_host_criticals = NULL;
   task_status_t run_status;
   int f_compliance_yes, f_compliance_no;
   int f_compliance_incomplete, f_compliance_undefined;
@@ -17725,16 +16778,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
   host_summary_buffer = NULL;
-  f_host_ports = NULL;
-  f_host_holes = NULL;
-  f_host_warnings = NULL;
-  f_host_infos = NULL;
-  f_host_logs = NULL;
-  f_host_false_positives = NULL;
-  f_host_compliant = NULL;
-  f_host_notcompliant = NULL;
-  f_host_incomplete = NULL;
-  f_host_undefined = NULL;
+  ctx.f_host_criticals = NULL;
+  ctx.f_host_ports = NULL;
+  ctx.f_host_holes = NULL;
+  ctx.f_host_warnings = NULL;
+  ctx.f_host_infos = NULL;
+  ctx.f_host_logs = NULL;
+  ctx.f_host_false_positives = NULL;
+  ctx.f_host_compliant = NULL;
+  ctx.f_host_notcompliant = NULL;
+  ctx.f_host_incomplete = NULL;
+  ctx.f_host_undefined = NULL;
 
   ctx.delta = delta;
   ctx.get = get;
@@ -18272,18 +17326,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   /* Port summary. */
 
-  f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                        g_free, NULL);
+  ctx.f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
 
   reuse_result_iterator = 0;
   if (get->details && (delta == 0))
     {
       reuse_result_iterator = 1;
       if (print_report_port_xml (report, out, get, first_result, max_results,
-                                 sort_order, sort_field, f_host_ports, &results))
+                                 sort_order, sort_field, ctx.f_host_ports,
+                                 &results))
         {
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
+          g_hash_table_destroy (ctx.f_host_ports);
           goto fail;
         }
     }
@@ -18354,7 +17409,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   get, term, sort_field))
         {
           g_free (term);
-          g_hash_table_destroy (f_host_ports);
+          g_hash_table_destroy (ctx.f_host_ports);
           goto fail;
         }
     }
@@ -18369,7 +17424,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           res = init_result_get_iterator (&results, get, report, NULL, NULL);
           if (res)
             {
-              g_hash_table_destroy (f_host_ports);
+              g_hash_table_destroy (ctx.f_host_ports);
               goto fail;
             }
         }
@@ -18393,29 +17448,30 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
-      f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                   g_free, NULL);
-      f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                 g_free, NULL);
-      f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
+      ctx.f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx.f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                       g_free, NULL);
+      ctx.f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx.f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
     }
   else
     {
-      f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+      ctx.f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx.f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx.f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                   g_free, NULL);
+      ctx.f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx.f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                g_free, NULL);
-      f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
-      f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                           g_free, NULL);
-      f_host_false_positives = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                      g_free, NULL);
+      ctx.f_host_false_positives = g_hash_table_new_full (g_str_hash,
+                                                          g_str_equal,
+                                                          g_free, NULL);
     }
 
   if (delta && get->details)
@@ -18485,25 +17541,25 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (strcasecmp (compliance, "yes") == 0)
                 {
-                  f_host_result_counts = f_host_compliant;
+                  f_host_result_counts = ctx.f_host_compliant;
                   if (ctx.count_filtered)
                     f_compliance_yes++;
                 }
               else if (strcasecmp (compliance, "no") == 0)
                 {
-                  f_host_result_counts = f_host_notcompliant;
+                  f_host_result_counts = ctx.f_host_notcompliant;
                   if (ctx.count_filtered)
                     f_compliance_no++;
                 }
               else if (strcasecmp (compliance, "incomplete") == 0)
                 {
-                  f_host_result_counts = f_host_incomplete;
+                  f_host_result_counts = ctx.f_host_incomplete;
                   if (ctx.count_filtered)
                     f_compliance_incomplete++;
                 }
               else if (strcasecmp (compliance, "undefined") == 0)
                 {
-                  f_host_result_counts = f_host_undefined;
+                  f_host_result_counts = ctx.f_host_undefined;
                   if (ctx.count_filtered)
                     f_compliance_undefined++;
                 }
@@ -18536,37 +17592,37 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (strcasecmp (level, "log") == 0)
                 {
-                  f_host_result_counts = f_host_logs;
+                  f_host_result_counts = ctx.f_host_logs;
                   if (ctx.count_filtered)
                     f_logs++;
                 }
               else if (strcasecmp (level, "critical") == 0)
                 {
-                  f_host_result_counts = f_host_criticals;
+                  f_host_result_counts = ctx.f_host_criticals;
                   if (ctx.count_filtered)
                     f_criticals++;
                 }
               else if (strcasecmp (level, "high") == 0)
                 {
-                  f_host_result_counts = f_host_holes;
+                  f_host_result_counts = ctx.f_host_holes;
                   if (ctx.count_filtered)
                     f_holes++;
                 }
               else if (strcasecmp (level, "medium") == 0)
                 {
-                  f_host_result_counts = f_host_warnings;
+                  f_host_result_counts = ctx.f_host_warnings;
                   if (ctx.count_filtered)
                     f_warnings++;
                 }
               else if (strcasecmp (level, "low") == 0)
                 {
-                  f_host_result_counts = f_host_infos;
+                  f_host_result_counts = ctx.f_host_infos;
                   if (ctx.count_filtered)
                     f_infos++;
                 }
               else if (strcasecmp (level, "false positive") == 0)
                 {
-                  f_host_result_counts = f_host_false_positives;
+                  f_host_result_counts = ctx.f_host_false_positives;
                   if (ctx.count_filtered)
                     f_false_positives++;
                 }
@@ -18770,17 +17826,17 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                          ctx.tsk_usage_type,
                                          lean,
                                          host_summary_buffer,
-                                         f_host_ports,
-                                         f_host_criticals,
-                                         f_host_holes,
-                                         f_host_warnings,
-                                         f_host_infos,
-                                         f_host_logs,
-                                         f_host_false_positives,
-                                         f_host_compliant,
-                                         f_host_notcompliant,
-                                         f_host_incomplete,
-                                         f_host_undefined))
+                                         ctx.f_host_ports,
+                                         ctx.f_host_criticals,
+                                         ctx.f_host_holes,
+                                         ctx.f_host_warnings,
+                                         ctx.f_host_infos,
+                                         ctx.f_host_logs,
+                                         ctx.f_host_false_positives,
+                                         ctx.f_host_compliant,
+                                         ctx.f_host_notcompliant,
+                                         ctx.f_host_incomplete,
+                                         ctx.f_host_undefined))
                 {
                   goto failed_print_report_host;
                 }
@@ -18800,39 +17856,38 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                      ctx.tsk_usage_type,
                                      lean,
                                      host_summary_buffer,
-                                     f_host_ports,
-                                     f_host_criticals,
-                                     f_host_holes,
-                                     f_host_warnings,
-                                     f_host_infos,
-                                     f_host_logs,
-                                     f_host_false_positives,
-                                     f_host_compliant,
-                                     f_host_notcompliant,
-                                     f_host_incomplete,
-                                     f_host_undefined))
-
+                                     ctx.f_host_ports,
+                                     ctx.f_host_criticals,
+                                     ctx.f_host_holes,
+                                     ctx.f_host_warnings,
+                                     ctx.f_host_infos,
+                                     ctx.f_host_logs,
+                                     ctx.f_host_false_positives,
+                                     ctx.f_host_compliant,
+                                     ctx.f_host_notcompliant,
+                                     ctx.f_host_incomplete,
+                                     ctx.f_host_undefined))
             goto failed_print_report_host;
         }
       cleanup_iterator (&hosts);
     }
   if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
-      g_hash_table_destroy (f_host_compliant);
-      g_hash_table_destroy (f_host_notcompliant);
-      g_hash_table_destroy (f_host_incomplete);
-      g_hash_table_destroy (f_host_undefined);
+      g_hash_table_destroy (ctx.f_host_compliant);
+      g_hash_table_destroy (ctx.f_host_notcompliant);
+      g_hash_table_destroy (ctx.f_host_incomplete);
+      g_hash_table_destroy (ctx.f_host_undefined);
     }
   else
     {
-      g_hash_table_destroy (f_host_criticals);
-      g_hash_table_destroy (f_host_holes);
-      g_hash_table_destroy (f_host_warnings);
-      g_hash_table_destroy (f_host_infos);
-      g_hash_table_destroy (f_host_logs);
-      g_hash_table_destroy (f_host_false_positives);
+      g_hash_table_destroy (ctx.f_host_criticals);
+      g_hash_table_destroy (ctx.f_host_holes);
+      g_hash_table_destroy (ctx.f_host_warnings);
+      g_hash_table_destroy (ctx.f_host_infos);
+      g_hash_table_destroy (ctx.f_host_logs);
+      g_hash_table_destroy (ctx.f_host_false_positives);
     }
-  g_hash_table_destroy (f_host_ports);
+  g_hash_table_destroy (ctx.f_host_ports);
 
   /* Print TLS certificates */
 
@@ -18935,24 +17990,24 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    g_hash_table_destroy (f_host_ports);
+    g_hash_table_destroy (ctx.f_host_ports);
 
     g_free (compliance_levels);
     if (strcmp (ctx.tsk_usage_type, "audit") == 0)
       {
-        g_hash_table_destroy (f_host_compliant);
-        g_hash_table_destroy (f_host_notcompliant);
-        g_hash_table_destroy (f_host_incomplete);
-        g_hash_table_destroy (f_host_undefined);
+        g_hash_table_destroy (ctx.f_host_compliant);
+        g_hash_table_destroy (ctx.f_host_notcompliant);
+        g_hash_table_destroy (ctx.f_host_incomplete);
+        g_hash_table_destroy (ctx.f_host_undefined);
       }
     else
       {
-        g_hash_table_destroy (f_host_criticals);
-        g_hash_table_destroy (f_host_holes);
-        g_hash_table_destroy (f_host_warnings);
-        g_hash_table_destroy (f_host_infos);
-        g_hash_table_destroy (f_host_logs);
-        g_hash_table_destroy (f_host_false_positives);
+        g_hash_table_destroy (ctx.f_host_criticals);
+        g_hash_table_destroy (ctx.f_host_holes);
+        g_hash_table_destroy (ctx.f_host_warnings);
+        g_hash_table_destroy (ctx.f_host_infos);
+        g_hash_table_destroy (ctx.f_host_logs);
+        g_hash_table_destroy (ctx.f_host_false_positives);
       }
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
@@ -20163,7 +19218,7 @@ delete_task_lock (task_t task, int ultimate)
    *
    * If the task is already active then delete_report (via delete_task)
    * will fail and rollback. */
-  lock_retries = LOCK_RETRIES;
+  lock_retries = get_max_table_lock_retries ();
   lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
   while ((lock_ret == 0) && (lock_retries > 0))
     {
@@ -20343,7 +19398,7 @@ request_delete_task_uuid (const char *task_id, int ultimate)
                *
                * If the task is running already then delete_task will lead to
                * ROLLBACK. */
-              lock_retries = LOCK_RETRIES;
+              lock_retries = get_max_table_lock_retries ();
               lock_ret = sql_table_lock_wait ("reports", LOCK_TIMEOUT);
               while ((lock_ret == 0) && (lock_retries > 0))
                 {
@@ -20574,23 +19629,6 @@ append_to_task_comment (task_t task, const char* text, /* unused */ int length)
 }
 
 /**
- * @brief Set the ports for a particular host in a scan.
- *
- * @param[in]  report   Report associated with scan.
- * @param[in]  host     Host.
- * @param[in]  current  New value for port currently being scanned.
- * @param[in]  max      New value for last port to be scanned.
- */
-void
-set_scan_ports (report_t report, const char* host, unsigned int current,
-                unsigned int max)
-{
-  sql ("UPDATE report_hosts SET current_port = %i, max_port = %i"
-       " WHERE host = '%s' AND report = %llu;",
-       current, max, host, report);
-}
-
-/**
  * @brief Find a task for a specific permission, given a UUID.
  *
  * @param[in]   uuid      UUID of task.
@@ -20800,55 +19838,6 @@ manage_task_remove_file (const gchar *task_id, const char *name)
   return -1;
 }
 
-
-/**
- * @brief Initialise a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  task      Task.
- * @param[in]  file      File name, NULL for all files.
- */
-void
-init_task_file_iterator (iterator_t* iterator, task_t task, const char* file)
-{
-  gchar* sql;
-  if (file)
-    {
-      gchar *quoted_file = sql_nquote (file, strlen (file));
-      sql = g_strdup_printf ("SELECT name, content, length(content)"
-                             " FROM task_files"
-                             " WHERE task = %llu"
-                             " AND name = '%s';",
-                             task, quoted_file);
-      g_free (quoted_file);
-    }
-  else
-    sql = g_strdup_printf ("SELECT name, content, length(content)"
-                           " FROM task_files"
-                           " WHERE task = %llu;",
-                           task);
-  init_iterator (iterator, "%s", sql);
-  g_free (sql);
-}
-
-/**
- * @brief Get the name of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_name, 0);
-
-/**
- * @brief Get the content of the file from a task file iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Content of the file or NULL if iteration is complete.
- */
-DEF_ACCESS (task_file_iterator_content, 1);
-
 /**
  * @brief Modify a task.
  *
@@ -20879,9 +19868,9 @@ DEF_ACCESS (task_file_iterator_content, 1);
  *         delete count out of range, 15 config and scanner types mismatch,
  *         16 status must be new to edit target, 17 for import tasks only
  *         certain fields may be edited, 18 failed to find agent group,
-           19 failed to find OCI image target,
-           20 cannot set asset preferences for container image task,
-           -1 error.
+ *         19 failed to find OCI image target,
+ *         20 cannot set asset preferences for container image task,
+ *         -1 error.
  */
 int
 modify_task (const gchar *task_id, const gchar *name,
@@ -21143,44 +20132,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Get the maximum allowed number of hosts per target.
- *
- * @return Maximum.
- */
-int
-manage_max_hosts ()
-{
-  return max_hosts;
-}
-
-/**
- * @brief Set the maximum allowed number of hosts per target.
- *
- * @param[in]   new_max   New max_hosts value.
- */
-void
-manage_set_max_hosts (int new_max)
-{
-  max_hosts = new_max;
-}
-
-/**
- * @brief Find a target for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of target.
- * @param[out]  target      Target return, 0 if successfully failed to find target.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find target), TRUE on error.
- */
-gboolean
-find_target_with_permission (const char* uuid, target_t* target,
-                             const char *permission)
-{
-  return find_resource_with_permission ("target", uuid, target, permission, 0);
-}
-
-/**
  * @brief Return number of hosts described by a hosts string.
  *
  * @param[in]  given_hosts      String describing hosts.
@@ -21194,1609 +20145,6 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
   return manage_count_hosts_max (given_hosts,
                                  exclude_hosts,
                                  manage_max_hosts ());
-}
-
-/**
- * @brief Trim leading and trailing space from a hosts string.
- *
- * @param[in]  string  String.  May be modified.
- *
- * @return Either string or some address within string.
- */
-static gchar *
-trim_hosts (gchar *string)
-{
-  gchar *host, *end;
-
-  /* Trim leading and trailing space. */
-  host = string;
-  while ((*host == ' ') || (*host == '\t'))
-    host++;
-  end = host;
-  while (*end)
-    {
-      if ((*end == ' ') || (*end == '\t'))
-        {
-          *end = '\0';
-          break;
-        }
-      end++;
-    }
-  return host;
-}
-
-/**
- * @brief Clean a hosts string.
- *
- * @param[in]  given_hosts  String describing hosts.
- * @param[out] max          Max number of hosts, adjusted for duplicates.
- *
- * @return Freshly allocated new hosts string, or NULL on error.
- */
-gchar*
-clean_hosts (const char *given_hosts, int *max)
-{
-  array_t *clean_array;
-  GString *clean;
-  gchar **split, **point, *hosts, *hosts_start, *host;
-  guint index;
-
-  /* Treat newlines like commas. */
-  hosts = hosts_start = g_strdup (given_hosts);
-  while (*hosts)
-    {
-      if (*hosts == '\n') *hosts = ',';
-      hosts++;
-    }
-
-  split = g_strsplit (hosts_start, ",", 0);
-  g_free (hosts_start);
-  point = split;
-
-  if ((point == NULL) || (*point == NULL))
-    {
-      g_strfreev (split);
-      return g_strdup ("");
-    }
-
-  clean_array = make_array ();
-  while (*point)
-    {
-      host = trim_hosts (*point);
-
-      if (*host)
-        {
-          /* Prevent simple duplicates. */
-          if (array_find_string (clean_array, host) == NULL)
-            array_add (clean_array, host);
-          else if (max)
-            (*max)--;
-        }
-
-      point += 1;
-    }
-
-  clean = g_string_new ("");
-
-  host = (gchar*) g_ptr_array_index (clean_array, 0);
-  if (host)
-    g_string_append_printf (clean, "%s", host);
-
-  for (index = 1; index < clean_array->len; index++)
-    {
-      host = (gchar*) g_ptr_array_index (clean_array, index);
-      if (host)
-        g_string_append_printf (clean, ", %s", host);
-    }
-
-  return g_string_free (clean, FALSE);
-}
-
-/**
- * @brief Start a new IMMEDIATE transaction.
- */
-void
-manage_transaction_start ()
-{
-  if (!in_transaction)
-    {
-      sql_begin_immediate ();
-      in_transaction = TRUE;
-    }
-  gettimeofday (&last_msg, NULL);
-}
-
-/**
- * @brief Commit the current transaction, if any.
- *
- * The algorithm is extremely naive (time elapsed since the last message
- * was received) but delivers good enough performances when facing
- * bursts of messages.
- *
- * @param[in] force_commit  Force committing the pending transaction.
- */
-void
-manage_transaction_stop (gboolean force_commit)
-{
-  struct timeval now;
-
-  if (!in_transaction)
-    return;
-
-  gettimeofday (&now, NULL);
-  if (force_commit || TIMEVAL_SUBTRACT_MS (now, last_msg) >= 500)
-    {
-      sql_commit ();
-      in_transaction = FALSE;
-    }
-}
-
-/**
- * @brief Validate a single port.
- *
- * @param[in]   port      A port.
- *
- * @return 0 success, 1 failed.
- */
-static int
-validate_port (const char *port)
-{
-  const char *first;
-
-  while (*port && isblank (*port)) port++;
-  if (*port == '\0')
-    return 1;
-
-  first = port;
-  while (*first && isdigit (*first)) first++;
-  if (first == port)
-    return 1;
-
-  while (*first && isblank (*first)) first++;
-  if (*first == '\0')
-    {
-      long int number;
-      number = strtol (port, NULL, 10);
-      if (number <= 0)
-        return 1;
-      if (number > 65535)
-        return 1;
-      return 0;
-    }
-  return 1;
-}
-
-/**
- * @brief Validate a single port, for use in override or note.
- *
- * @param[in]  port  A port.
- *
- * @return 0 success, 1 failed.
- */
-static int
-validate_results_port (const char *port)
-{
-  long int num;
-  char *end;
-
-  if (!port)
-    return 1;
-
-  if (strcmp (port, "package") == 0)
-    return 0;
-
-  /* "cpe:abc", "general/tcp", "20/udp"
-   *
-   * We keep the "general/tcp" case pretty open because it is not clearly
-   * restricted anywhere, and is already used with non-alphanumerics in
-   * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
-   * users from entering lists of ports.
-   *
-   * Similarly, the CPE case forbids whitespace, but allows ',' and ';' as
-   * these may occur in valid CPEs. */
-  if (g_regex_match_simple
-       ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
-        port, 0, 0)
-      == FALSE)
-    return 1;
-
-  if (g_str_has_prefix (port, "cpe:")
-      || g_str_has_prefix (port, "general/"))
-    return 0;
-
-  num = strtol (port, &end, 10);
-  if (*end != '/')
-    return 1;
-  if (num > 0 && num <= 65535)
-    return 0;
-  return 1;
-}
-
-/**
- * @brief Convert alive test array to alive test bitfield.
- *
- * @param[in]  alive_tests NULL-terminated array of alive tests.
- *
- * @return Alive test bitfield, or -1 on error.
- */
-static int
-alive_test_from_array (GPtrArray *alive_tests)
-{
-  alive_test_t alive_test_bitfield = 0;
-
-  if (alive_tests->len == 0)
-    return 0;
-
-  for (int i = 0; i < alive_tests->len; i++)
-    {
-      const char *item = g_ptr_array_index (alive_tests, i);
-      if (strcasecmp (item, "Scan Config Default") == 0)
-        {
-          alive_test_bitfield = 0;
-          break;
-        }
-      else if (strcasecmp (item, "Consider Alive") == 0)
-        {
-          alive_test_bitfield = ALIVE_TEST_CONSIDER_ALIVE;
-          break;
-        }
-      else if (strcasecmp (item, "ARP") == 0
-          || strcasecmp (item, "ARP Ping") == 0)
-        alive_test_bitfield |= ALIVE_TEST_ARP;
-      else if (strcmp (item, "ICMP") == 0
-                || strcmp (item, "ICMP Ping") == 0)
-        alive_test_bitfield |= ALIVE_TEST_ICMP;
-      else if (strcmp (item, "TCP-ACK Service") == 0
-                || strcmp (item, "TCP-ACK Service Ping") == 0)
-        alive_test_bitfield |= ALIVE_TEST_TCP_ACK_SERVICE;
-      else if (strcmp (item, "TCP-SYN Service") == 0
-                || strcmp (item, "TCP-SYN Service Ping") == 0)
-        alive_test_bitfield |= ALIVE_TEST_TCP_SYN_SERVICE;
-      else
-        {
-          g_debug ("%s: Invalid alive_tests item: %s", __func__, item);
-          alive_test_bitfield = -1;
-          break;
-        }
-    }
-  return alive_test_bitfield;
-}
-
-/**
- * @brief Convert legacy alive test name string to alive test bitfield.
- *
- * @param[in]  alive_tests  Name of alive test.
- *
- * @return Alive test, or -1 on error.
- */
-static int
-alive_test_from_string (const char* alive_tests)
-{
-  alive_test_t alive_test;
-  if (alive_tests == NULL
-      || strcmp (alive_tests, "") == 0
-      || strcmp (alive_tests, "Scan Config Default") == 0)
-    alive_test = 0;
-  else if (strcmp (alive_tests, "ICMP, TCP-ACK Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP-ACK Service & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "ICMP & TCP-ACK Service Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP | ALIVE_TEST_TCP_ACK_SERVICE;
-  else if (strcmp (alive_tests, "ARP Ping") == 0)
-    alive_test = ALIVE_TEST_ARP;
-  else if (strcmp (alive_tests, "TCP-ACK Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_ACK_SERVICE;
-  else if (strcmp (alive_tests, "TCP-SYN Service Ping") == 0)
-    alive_test = ALIVE_TEST_TCP_SYN_SERVICE;
-  else if (strcmp (alive_tests, "ICMP Ping") == 0)
-    alive_test = ALIVE_TEST_ICMP;
-  else if (strcmp (alive_tests, "Consider Alive") == 0)
-    alive_test = ALIVE_TEST_CONSIDER_ALIVE;
-  else
-    return -1;
-  return alive_test;
-}
-
-/**
- * @brief Set login data for a target.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- * @param[in]  credential     The credential or 0 to remove.
- * @param[in]  port           The port to authenticate at with credential.
- *
- * @return  0 on success, -1 on error, 1 target not found, 99 permission denied.
- */
-static int
-set_target_login_data (target_t target, const char* type,
-                       credential_t credential, int port)
-{
-  gchar *quoted_type;
-
-  if (current_credentials.uuid
-      && (acl_user_may ("modify_target") == 0))
-    return 99;
-
-  if (type == NULL)
-    return -1;
-
-  if (target == 0)
-    return 1;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT count (*) FROM targets_login_data"
-               " WHERE target = %llu AND type = '%s';",
-               target, quoted_type))
-    {
-      if (credential == 0)
-        {
-          sql ("DELETE FROM targets_login_data"
-               " WHERE target = '%llu' AND type = '%s';",
-               target, quoted_type);
-        }
-      else
-        {
-          sql ("UPDATE targets_login_data"
-               " SET credential = %llu, port = %d"
-               " WHERE target = %llu AND type = '%s';",
-               credential, port, target, quoted_type);
-        }
-    }
-  else if (credential)
-    {
-      sql ("INSERT INTO targets_login_data (target, type, credential, port)"
-            " VALUES (%llu, '%s', %llu, %i)",
-            target, quoted_type, credential, port);
-    }
-
-  g_free (quoted_type);
-  return 0;
-}
-
-/**
- * @brief Get a credential from a target.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-credential_t
-target_credential (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  credential_t credential;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  sql_int64 (&credential,
-             "SELECT credential FROM targets_login_data"
-             " WHERE target = %llu AND type = '%s';",
-             target, quoted_type);
-
-  g_free (quoted_type);
-
-  return credential;
-}
-
-/**
- * @brief Get a login port from a target.
- *
- * @param[in]  target         The target.
- * @param[in]  type           The credential type (e.g. "ssh" or "smb").
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-int
-target_login_port (target_t target, const char* type)
-{
-  gchar *quoted_type;
-  int port;
-
-  if (target == 0 || type == NULL)
-    return 0;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT NOT EXISTS"
-               " (SELECT * FROM targets_login_data"
-               "  WHERE target = %llu and type = '%s');",
-               target, quoted_type))
-    {
-      g_free (quoted_type);
-      return 0;
-    }
-
-  port = sql_int ("SELECT port FROM targets_login_data"
-                  " WHERE target = %llu AND type = '%s';",
-                  target, quoted_type);
-
-  g_free (quoted_type);
-
-  return port;
-}
-
-/**
- * @brief Create a target.
- *
- * @param[in]   name            Name of target.
- * @param[in]   asset_hosts_filter  Asset host filter to select hosts.
- *                                  Overrides \p hosts and \p exclude_hosts.
- * @param[in]   hosts           Host list of target.
- * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
- * @param[in]   comment         Comment on target.
- * @param[in]   port_list_id    Port list of target (overrides \p port_range).
- * @param[in]   port_range      Port range of target.
- * @param[in]   ssh_credential  SSH credential.
- * @param[in]   ssh_elevate_credential  SSH previlige escalation credential.
- * @param[in]   ssh_port        Port for SSH login.
- * @param[in]   smb_credential        SMB credential.
- * @param[in]   esxi_credential       ESXi credential.
- * @param[in]   snmp_credential       SNMP credential.
- * @param[in]   krb5_credential       Kerberos credential.
- * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
- * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests             Alive tests array.
- * @param[in]   alive_test_str          Legacy alive tests string.
- * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
- * @param[out]  target                  Created target.
- *
- * @return 0 success, 1 target exists already, 2 error in host specification,
- *         3 too many hosts, 4 error in port range, 5 error in SSH port,
- *         6 failed to find port list, 7 error in alive tests,
- *         8 invalid SSH credential type, 9 invalid SSH elevate credential type,
- *         10 invalid SMB credential type, 11 invalid ESXi credential type,
- *         12 invalid SNMP credential type, 13 port range or port list required,
- *         14 SSH elevate credential without an SSH credential,
- *         15 elevate credential must be different from the SSH credential,
- *         16 invalid Kerberos 5 credential type,
- *         30 cannot use both alive_tests string and sub-elements,
- *         99 permission denied, -1 error.
- */
-int
-create_target (const char* name, const char* asset_hosts_filter,
-               const char* hosts, const char* exclude_hosts,
-               const char* comment, const char* port_list_id,
-               const char* port_range, credential_t ssh_credential,
-               credential_t ssh_elevate_credential,
-               const char* ssh_port, credential_t smb_credential,
-               credential_t esxi_credential, credential_t snmp_credential,
-               credential_t krb5_credential,
-               const char *reverse_lookup_only,
-               const char *reverse_lookup_unify,
-               GPtrArray *alive_tests,
-               const char *alive_test_str,
-               const char *allow_simultaneous_ips,
-               target_t* target)
-{
-  gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
-  gchar *port_list_comment, *quoted_ssh_port, *clean, *clean_exclude;
-  gchar *chosen_hosts;
-  port_list_t port_list;
-  int ret, alive_test, max;
-  target_t new_target;
-
-  assert (current_credentials.uuid);
-
-  if (port_range && validate_port_range (port_range))
-    return 4;
-
-  if (ssh_port && validate_port (ssh_port))
-    return 5;
-
-  if (alive_tests && alive_tests->len
-      && alive_test_str && strlen (alive_test_str))
-    return 30;
-  else if (alive_tests && alive_tests->len)
-    alive_test = alive_test_from_array (alive_tests);
-  else if (alive_test_str && strlen (alive_test_str))
-    alive_test = alive_test_from_string (alive_test_str);
-  else
-    alive_test = 0;
-  if (alive_test <= -1)
-    return 7;
-
-  if (ssh_elevate_credential && (!ssh_credential))
-    return 14;
-
-  if (ssh_credential && (ssh_elevate_credential == ssh_credential))
-    return 15;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_target") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (name, "target", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (port_list_id)
-    {
-      if (find_port_list_with_permission (port_list_id, &port_list,
-                                          "get_port_lists")
-          || (port_list == 0))
-        {
-          sql_rollback ();
-          return 6;
-        }
-    }
-  else if (port_range == NULL)
-    {
-      sql_rollback ();
-      return 13;
-    }
-  else
-    {
-      port_list_comment = g_strdup_printf ("Autogenerated for target %s.", name);
-      ret = create_port_list_unique (name, port_list_comment, port_range,
-                                     &port_list);
-      g_free (port_list_comment);
-      if (ret)
-        {
-          sql_rollback ();
-          return ret;
-        }
-    }
-
-  if (asset_hosts_filter)
-    {
-      iterator_t asset_hosts;
-      int previous;
-      get_data_t get;
-      GString *buffer;
-
-      memset (&get, 0, sizeof (get));
-      get.filter = g_strdup (asset_hosts_filter);
-      init_asset_host_iterator (&asset_hosts, &get);
-      g_free (get.filter);
-      previous = 0;
-      buffer = g_string_new ("");
-      while (next (&asset_hosts))
-        {
-          g_string_append_printf (buffer,
-                                  "%s%s",
-                                  previous ? ", " : "",
-                                  get_iterator_name (&asset_hosts));
-          previous = 1;
-        }
-      cleanup_iterator (&asset_hosts);
-      chosen_hosts = g_string_free (buffer, FALSE);
-
-      g_debug ("asset chosen_hosts: %s", chosen_hosts);
-    }
-  else
-    {
-      chosen_hosts = g_strdup (hosts);
-      g_debug ("manual chosen_hosts: %s", chosen_hosts);
-    }
-
-
-  clean = clean_hosts (chosen_hosts, &max);
-  g_free (chosen_hosts);
-  if (exclude_hosts)
-    clean_exclude = clean_hosts (exclude_hosts, NULL);
-  else
-    clean_exclude = g_strdup ("");
-
-  max = manage_count_hosts (clean, clean_exclude);
-  if (max <= 0)
-    {
-      g_free (clean);
-      g_free (clean_exclude);
-      sql_rollback ();
-      return 2;
-    }
-  if (max > max_hosts)
-    {
-      g_free (clean);
-      g_free (clean_exclude);
-      sql_rollback ();
-      return 3;
-    }
-  quoted_hosts = sql_quote (clean);
-  quoted_exclude_hosts = sql_quote (clean_exclude);
-  g_free (clean);
-  g_free (clean_exclude);
-
-  if (ssh_credential)
-    quoted_ssh_port = sql_insert (ssh_port ? ssh_port : "22");
-  else
-    quoted_ssh_port = g_strdup ("NULL");
-
-  if (reverse_lookup_only == NULL || strcmp (reverse_lookup_only, "0") == 0)
-    reverse_lookup_only = "0";
-  else
-    reverse_lookup_only = "1";
-  if (reverse_lookup_unify == NULL || strcmp (reverse_lookup_unify, "0") == 0)
-    reverse_lookup_unify = "0";
-  else
-    reverse_lookup_unify = "1";
-  if (allow_simultaneous_ips
-      && strcmp (allow_simultaneous_ips, "0") == 0)
-    allow_simultaneous_ips = "0";
-  else
-    allow_simultaneous_ips = "1";
-
-  quoted_name = sql_quote (name ?: "");
-
-  if (comment)
-    quoted_comment = sql_quote (comment);
-  else
-    quoted_comment = sql_quote ("");
-
-  sql ("INSERT INTO targets"
-       " (uuid, name, owner, hosts, exclude_hosts, comment, "
-       "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
-       "  allow_simultaneous_ips,"
-       "  creation_time, modification_time)"
-       " VALUES (make_uuid (), '%s',"
-       " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
-       " %s,"
-       " m_now (), m_now ());",
-        quoted_name, current_credentials.uuid,
-        quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
-        reverse_lookup_only, reverse_lookup_unify, alive_test,
-        allow_simultaneous_ips);
-
-  new_target = sql_last_insert_id ();
-  if (target)
-    *target = new_target;
-
-  g_free (quoted_comment);
-  g_free (quoted_name);
-  g_free (quoted_hosts);
-  g_free (quoted_exclude_hosts);
-
-  if (ssh_credential)
-    {
-      gchar *type = credential_type (ssh_credential);
-      if (strcmp (type, "usk") && strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_usk") && strcmp (type, "cs_up")
-#endif
-          )
-        {
-          sql_rollback ();
-          g_free (quoted_ssh_port);
-          return 8;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'ssh', %llu, %s);",
-           new_target, ssh_credential, quoted_ssh_port);
-    }
-  g_free (quoted_ssh_port);
-
-  if (ssh_elevate_credential)
-    {
-      gchar *type = credential_type (ssh_elevate_credential);
-      if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_up")
-#endif
-         )
-        {
-          sql_rollback ();
-          return 9;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'elevate', %llu, %s);",
-           new_target, ssh_elevate_credential, "0");
-    }
-
-  if (smb_credential)
-    {
-      gchar *type = credential_type (smb_credential);
-      if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_up")
-#endif
-         )
-        {
-          sql_rollback ();
-          return 10;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'smb', %llu, %s);",
-           new_target, smb_credential, "0");
-    }
-
-  if (esxi_credential)
-    {
-      gchar *type = credential_type (esxi_credential);
-      if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_up")
-#endif
-        )
-        {
-          sql_rollback ();
-          return 11;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'esxi', %llu, %s);",
-           new_target, esxi_credential, "0");
-    }
-
-  if (snmp_credential)
-    {
-      gchar *type = credential_type (snmp_credential);
-      if (strcmp (type, "snmp")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_snmp")
-#endif
-         )
-        {
-          sql_rollback ();
-          return 12;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'snmp', %llu, %s);",
-           new_target, snmp_credential, "0");
-    }
-
-  if (krb5_credential)
-    {
-      gchar *type = credential_type (krb5_credential);
-      if (strcmp (type, "krb5")
-#if ENABLE_CREDENTIAL_STORES
-          && strcmp (type, "cs_krb5")
-#endif
-         )
-        {
-          sql_rollback ();
-          g_free (type);
-          return 16;
-        }
-      g_free (type);
-
-      sql ("INSERT INTO targets_login_data"
-           " (target, type, credential, port)"
-           " VALUES (%llu, 'krb5', %llu, %s);",
-           new_target, krb5_credential, "0");
-    }
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create a target from an existing target.
- *
- * @param[in]  name        Name of new target.  NULL to copy from existing.
- * @param[in]  comment     Comment on new target.  NULL to copy from existing.
- * @param[in]  target_id   UUID of existing target.
- * @param[out] new_target  New target.
- *
- * @return 0 success, 1 target exists already, 2 failed to find existing
- *         target, 99 permission denied, -1 error.
- */
-int
-copy_target (const char* name, const char* comment, const char *target_id,
-             target_t* new_target)
-{
-  int ret;
-  target_t old_target;
-
-  assert (new_target);
-
-  ret = copy_resource ("target", name, comment, target_id,
-                       "hosts, exclude_hosts, port_list, reverse_lookup_only,"
-                       " reverse_lookup_unify, alive_test,"
-                       " allow_simultaneous_ips",
-                       1, new_target, &old_target);
-  if (ret)
-    return ret;
-
-  sql ("INSERT INTO targets_login_data (target, type, credential, port)"
-       " SELECT %llu, type, credential, port"
-       "   FROM targets_login_data"
-       "  WHERE target = %llu;",
-       *new_target, old_target);
-
-  return 0;
-}
-
-/**
- * @brief Delete a target.
- *
- * @param[in]  target_id  UUID of target.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 1 fail because a task refers to the target, 2 failed
- *         to find target, 99 permission denied, -1 error.
- */
-int
-delete_target (const char *target_id, int ultimate)
-{
-  target_t target = 0;
-  target_t trash_target;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_target") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_target_with_permission (target_id, &target, "delete_target"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (target == 0)
-    {
-      if (find_trash ("target", target_id, &target))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (target == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   target))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      permissions_set_orphans ("target", target, LOCATION_TRASH);
-      tags_remove_resource ("target", target, LOCATION_TRASH);
-
-      sql ("DELETE FROM targets_trash_login_data WHERE target = %llu;", target);
-      sql ("DELETE FROM targets_trash WHERE id = %llu;", target);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND hidden = 0;",
-                   target))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, exclude_hosts, comment,"
-           "  port_list, port_list_location,"
-           "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "  allow_simultaneous_ips,"
-           "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
-           "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
-           "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
-           "        allow_simultaneous_ips,"
-           "        creation_time, modification_time"
-           " FROM targets WHERE id = %llu;",
-           target);
-
-      trash_target = sql_last_insert_id ();
-
-      /* Copy login data */
-      sql ("INSERT INTO targets_trash_login_data"
-           " (target, type, credential, port, credential_location)"
-           " SELECT %llu, type, credential, port, "
-           G_STRINGIFY (LOCATION_TABLE)
-           "   FROM targets_login_data WHERE target = %llu;",
-           trash_target, target);
-
-      /* Update the location of the target in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET target = %llu,"
-           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           target);
-
-      permissions_set_locations ("target", target,
-                                 sql_last_insert_id (),
-                                 LOCATION_TRASH);
-      tags_set_locations ("target", target,
-                          sql_last_insert_id (),
-                          LOCATION_TRASH);
-    }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
-                    target))
-    {
-      sql_rollback ();
-      return 1;
-    }
-  else
-    {
-      permissions_set_orphans ("target", target, LOCATION_TABLE);
-      tags_remove_resource ("target", target, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM targets_login_data WHERE target = %llu;", target);
-  sql ("DELETE FROM targets WHERE id = %llu;", target);
-
-  sql_commit ();
-  return 0;
-}
-
-/**
- * @brief Modify a target.
- *
- * @param[in]   target_id       UUID of target.
- * @param[in]   name            Name of target.
- * @param[in]   hosts           Host list of target.
- * @param[in]   exclude_hosts   List of hosts to exclude from \p hosts.
- * @param[in]   comment         Comment on target.
- * @param[in]   port_list_id    Port list of target (overrides \p port_range).
- * @param[in]   ssh_credential_id  SSH credential.
- * @param[in]   ssh_elevate_credential_id  SSH previlige escalation credential.
- * @param[in]   ssh_port        Port for SSH login.
- * @param[in]   smb_credential_id  SMB credential.
- * @param[in]   esxi_credential_id  ESXi credential.
- * @param[in]   snmp_credential_id  SNMP credential.
- * @param[in]   krb5_credential_id  Kerberos 5 credential.
- * @param[in]   reverse_lookup_only   Scanner preference reverse_lookup_only.
- * @param[in]   reverse_lookup_unify  Scanner preference reverse_lookup_unify.
- * @param[in]   alive_tests            Alive tests array.
- * @param[in]   alive_test_str         Alive test string.
- * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
- *
- * @return 0 success, 1 target exists already, 2 error in host specification,
- *         3 too many hosts, 4 error in port range, 5 error in SSH port,
- *         6 failed to find port list, 7 failed to find SSH cred, 8 failed to
- *         find SMB cred, 9 failed to find target, 10 error in alive tests,
- *         11 zero length name, 12 exclude hosts requires hosts
- *         13 hosts requires exclude hosts,
- *         14 hosts must be at least one character, 15 target is in use,
- *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
- *         18 invalid SSH credential type, 19 invalid SMB credential type,
- *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
- *         22 failed to find SSH elevate cred, 23 invalid SSH elevate
- *         credential type, 24 SSH elevate credential without SSH credential,
- *         25 SSH elevate credential equals SSH credential,
- *         26 failed to find Kerberos 5 credential,
- *         27 invalid Kerberos 5 credential type,
- *         28 cannot use both SMB and Kerberos 5 credential,
- *         30 cannot use both alive_tests string and sub-elements,
- *         99 permission denied, -1 error.
- */
-int
-modify_target (const char *target_id, const char *name, const char *hosts,
-               const char *exclude_hosts, const char *comment,
-               const char *port_list_id, const char *ssh_credential_id,
-               const char *ssh_elevate_credential_id,
-               const char *ssh_port, const char *smb_credential_id,
-               const char *esxi_credential_id, const char* snmp_credential_id,
-               const char *krb5_credential_id,
-               const char *reverse_lookup_only,
-               const char *reverse_lookup_unify,
-               GPtrArray *alive_tests,
-               const char *alive_test_str,
-               const char *allow_simultaneous_ips)
-{
-  target_t target;
-  credential_t ssh_credential = 0;
-  credential_t ssh_elevate_credential = 0;
-  credential_t smb_credential;
-  credential_t krb5_credential;
-
-  assert (target_id);
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_target") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (hosts && (exclude_hosts == NULL))
-    {
-      sql_rollback ();
-      return 13;
-    }
-
-  target = 0;
-  if (find_target_with_permission (target_id, &target, "modify_target"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (target == 0)
-    {
-      sql_rollback ();
-      return 9;
-    }
-
-  if (name)
-    {
-      gchar *quoted_name;
-
-      if (strlen (name) == 0)
-        {
-          sql_rollback ();
-          return 11;
-        }
-      if (resource_with_name_exists (name, "target", target))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      quoted_name = sql_quote (name);
-      sql ("UPDATE targets SET"
-           " name = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_name,
-           target);
-
-      g_free (quoted_name);
-    }
-
-  if (comment)
-    {
-      gchar *quoted_comment;
-      quoted_comment = sql_quote (comment);
-      sql ("UPDATE targets SET"
-           " comment = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_comment,
-           target);
-      g_free (quoted_comment);
-    }
-
-  if (allow_simultaneous_ips)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      sql ("UPDATE targets SET"
-           " allow_simultaneous_ips = '%i',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           strcmp (allow_simultaneous_ips, "0") ? 1 : 0,
-           target);
-    }
-
-  if (alive_tests && alive_tests->len
-      && alive_test_str && strlen (alive_test_str))
-    return 30;
-  else if (alive_tests && alive_tests->len)
-    {
-      int alive_test;
-
-      alive_test = alive_test_from_array (alive_tests);
-      if (alive_test <= -1)
-        {
-          sql_rollback ();
-          return 10;
-        }
-      sql ("UPDATE targets SET"
-           " alive_test = '%i',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           alive_test,
-           target);
-    }
-  else if (alive_test_str && strlen (alive_test_str))
-    {
-      int alive_test;
-
-      alive_test = alive_test_from_string (alive_test_str);
-      if (alive_test <= -1)
-        {
-          sql_rollback ();
-          return 10;
-        }
-      sql ("UPDATE targets SET"
-           " alive_test = '%i',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           alive_test,
-           target);
-    }
-
-  if (port_list_id)
-    {
-      port_list_t port_list;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      port_list = 0;
-      if (find_port_list_with_permission (port_list_id, &port_list,
-                                          "get_port_lists"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (port_list == 0)
-        {
-          sql_rollback ();
-          return 6;
-        }
-
-      sql ("UPDATE targets SET"
-           " port_list = %llu,"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           port_list,
-           target);
-    }
-
-  if (ssh_credential_id)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      ssh_credential = 0;
-      if (strcmp (ssh_credential_id, "0"))
-        {
-          int port_int;
-          gchar *type;
-
-          if (find_credential_with_permission (ssh_credential_id,
-                                               &ssh_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (ssh_credential == 0)
-            {
-              sql_rollback ();
-              return 7;
-            }
-
-          if (ssh_port && strcmp (ssh_port, "0") && strcmp (ssh_port, ""))
-            {
-              if (validate_port (ssh_port))
-                {
-                  sql_rollback ();
-                  return 5;
-                }
-              port_int = atoi (ssh_port);
-            }
-          else
-            port_int = 22;
-
-          type = credential_type (ssh_credential);
-          if (strcmp (type, "up") && strcmp (type, "usk")
-#if ENABLE_CREDENTIAL_STORES
-              && strcmp (type, "cs_up") && strcmp (type, "cs_usk")
-#endif
-          )
-            {
-              sql_rollback ();
-              return 18;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "ssh", ssh_credential, port_int);
-        }
-      else
-        set_target_login_data (target, "ssh", 0, 0);
-    }
-
-  if (ssh_elevate_credential_id)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      ssh_elevate_credential = 0;
-      if (strcmp (ssh_elevate_credential_id, "0"))
-        {
-          gchar *type;
-          if (find_credential_with_permission (ssh_elevate_credential_id,
-                                               &ssh_elevate_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (ssh_elevate_credential == 0)
-            {
-              sql_rollback ();
-              return 22;
-            }
-
-          type = credential_type (ssh_elevate_credential);
-          if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-              && strcmp (type, "cs_up")
-#endif
-            )
-            {
-              sql_rollback ();
-              return 23;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "elevate", ssh_elevate_credential, 0);
-        }
-      else
-        set_target_login_data (target, "elevate", 0, 0);
-    }
-
-  if (smb_credential_id)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      smb_credential = 0;
-      if (strcmp (smb_credential_id, "0"))
-        {
-          gchar *type;
-          if (find_credential_with_permission (smb_credential_id,
-                                               &smb_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (smb_credential == 0)
-            {
-              sql_rollback ();
-              return 7;
-            }
-
-          type = credential_type (smb_credential);
-          if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-              && strcmp (type, "cs_up")
-#endif
-             )
-            {
-              sql_rollback ();
-              return 19;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "smb", smb_credential, 0);
-        }
-      else
-        set_target_login_data (target, "smb", 0, 0);
-    }
-  else
-    smb_credential = target_smb_credential (target);
-
-  if (esxi_credential_id)
-    {
-      credential_t esxi_credential;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      esxi_credential = 0;
-      if (strcmp (esxi_credential_id, "0"))
-        {
-          gchar *type;
-          if (find_credential_with_permission (esxi_credential_id,
-                                               &esxi_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (esxi_credential == 0)
-            {
-              sql_rollback ();
-              return 16;
-            }
-
-          type = credential_type (esxi_credential);
-          if (strcmp (type, "up")
-#if ENABLE_CREDENTIAL_STORES
-              && strcmp (type, "cs_up")
-#endif
-             )
-            {
-              sql_rollback ();
-              return 20;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "esxi", esxi_credential, 0);
-        }
-      else
-        set_target_login_data (target, "esxi", 0, 0);
-    }
-
-  if (snmp_credential_id)
-    {
-      credential_t snmp_credential;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      snmp_credential = 0;
-      if (strcmp (snmp_credential_id, "0"))
-        {
-          gchar *type;
-          if (find_credential_with_permission (snmp_credential_id,
-                                               &snmp_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (snmp_credential == 0)
-            {
-              sql_rollback ();
-              return 17;
-            }
-
-          type = credential_type (snmp_credential);
-          if (strcmp (type, "snmp")
-#if ENABLE_CREDENTIAL_STORES
-              && strcmp (type, "cs_snmp")
-#endif
-             )
-            {
-              sql_rollback ();
-              return 21;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "snmp", snmp_credential, 0);
-        }
-      else
-        set_target_login_data (target, "snmp", 0, 0);
-    }
-
-  if (ssh_credential_id || ssh_elevate_credential_id)
-    {
-      if (!ssh_credential_id)
-        ssh_credential = target_ssh_credential (target);
-      if (!ssh_elevate_credential_id)
-        ssh_elevate_credential = target_ssh_elevate_credential (target);
-
-      if (ssh_elevate_credential && !ssh_credential)
-        {
-          sql_rollback ();
-          return 24;
-        }
-      if (ssh_credential && (ssh_credential == ssh_elevate_credential))
-        {
-          sql_rollback ();
-          return 25;
-        }
-    }
-
-  if (krb5_credential_id)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      krb5_credential = 0;
-      if (strcmp (krb5_credential_id, "0"))
-        {
-          gchar *type;
-          if (find_credential_with_permission (krb5_credential_id,
-                                               &krb5_credential,
-                                               "get_credentials"))
-            {
-              sql_rollback ();
-              return -1;
-            }
-
-          if (krb5_credential == 0)
-            {
-              sql_rollback ();
-              return 26;
-            }
-
-          type = credential_type (krb5_credential);
-          if (strcmp (type, "krb5"))
-            {
-              sql_rollback ();
-              g_free (type);
-              return 27;
-            }
-          g_free (type);
-
-          set_target_login_data (target, "krb5", krb5_credential, 0);
-        }
-      else
-        set_target_login_data (target, "krb5", 0, 0);
-    }
-  else
-    krb5_credential = target_krb5_credential (target);
-
-  if (smb_credential && krb5_credential)
-    {
-      sql_rollback ();
-      return 28;
-    }
-
-  if (exclude_hosts)
-    {
-      gchar *quoted_exclude_hosts, *quoted_hosts, *clean, *clean_exclude;
-      int max;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      if (hosts == NULL)
-        {
-          sql_rollback ();
-          return 12;
-        }
-
-      if (strlen (hosts) == 0)
-        {
-          sql_rollback ();
-          return 14;
-        }
-
-      clean = clean_hosts (hosts, &max);
-      clean_exclude = clean_hosts (exclude_hosts, NULL);
-
-      max = manage_count_hosts (clean, clean_exclude);
-      if (max <= 0)
-        {
-          g_free (clean);
-          g_free (clean_exclude);
-          sql_rollback ();
-          return 2;
-        }
-
-      if (max > max_hosts)
-        {
-          g_free (clean);
-          g_free (clean_exclude);
-          sql_rollback ();
-          return 3;
-        }
-      quoted_hosts = sql_quote (clean);
-      quoted_exclude_hosts = sql_quote (clean_exclude);
-      g_free (clean);
-      g_free (clean_exclude);
-
-      sql ("UPDATE targets SET"
-           " hosts = '%s',"
-           " exclude_hosts = '%s',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           quoted_hosts,
-           quoted_exclude_hosts,
-           target);
-
-      g_free (quoted_hosts);
-      g_free (quoted_exclude_hosts);
-    }
-
-  if (reverse_lookup_only)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      sql ("UPDATE targets SET"
-           " reverse_lookup_only = '%i',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           strcmp (reverse_lookup_only, "0") ? 1 : 0,
-           target);
-    }
-
-  if (reverse_lookup_unify)
-    {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
-      sql ("UPDATE targets SET"
-           " reverse_lookup_unify = '%i',"
-           " modification_time = m_now ()"
-           " WHERE id = %llu;",
-           strcmp (reverse_lookup_unify, "0") ? 1 : 0,
-           target);
-    }
-
-  sql_commit ();
-
-  return 0;
 }
 
 /**
@@ -23032,29 +20380,6 @@ target_count (const get_data_t *get)
   static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
   return count ("target", get, columns, trash_columns, extra_columns, 0, 0, 0,
                 TRUE);
-}
-
-/**
- * @brief Initialise a target iterator, given a single target.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  target     Single target to iterate.
- */
-void
-init_target_iterator_one (iterator_t* iterator, target_t target)
-{
-  get_data_t get;
-
-  assert (target);
-
-  memset (&get, '\0', sizeof (get));
-  get.id = target_uuid (target);
-  get.filter = "owner=any permission=get_targets";
-
-  /* We could pass the return up to the caller, but we don't pass in
-   * a filter id and the callers are all in situations where the
-   * target cannot disappear, so it's safe to ignore the return. */
-  init_target_iterator (iterator, &get);
 }
 
 /**
@@ -23398,90 +20723,6 @@ tag_uuid (tag_t tag)
 }
 
 /**
- * @brief Return the UUID of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-target_uuid (target_t target)
-{
-  return sql_string ("SELECT uuid FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the UUID of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-trash_target_uuid (target_t target)
-{
-  return sql_string ("SELECT uuid FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the name of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-target_name (target_t target)
-{
-  return sql_string ("SELECT name FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the name of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-trash_target_name (target_t target)
-{
-  return sql_string ("SELECT name FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the comment of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-static char*
-target_comment (target_t target)
-{
-  return sql_string ("SELECT comment FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the comment of a trashcan target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated name if available, else NULL.
- */
-static char*
-trash_target_comment (target_t target)
-{
-  return sql_string ("SELECT comment FROM targets_trash WHERE id = %llu;",
-                     target);
-}
-
-/**
  * @brief Return whether a trashcan target is readable.
  *
  * @param[in]  target  Target.
@@ -23504,157 +20745,6 @@ trash_target_readable (target_t target)
     }
   g_free (uuid);
   return found > 0;
-}
-
-/**
- * @brief Return the hosts associated with a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated comma separated list of hosts if available,
- *         else NULL.
- */
-char*
-target_hosts (target_t target)
-{
-  return sql_string ("SELECT hosts FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the excluded hosts associated with a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated comma separated list of excluded hosts if available,
- *         else NULL.
- */
-char*
-target_exclude_hosts (target_t target)
-{
-  return sql_string ("SELECT exclude_hosts FROM targets WHERE id = %llu;",
-                     target);
-}
-
-/**
- * @brief Return the reverse_lookup_only value of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Reverse lookup only value if available, else NULL.
- */
-char*
-target_reverse_lookup_only (target_t target)
-{
-  return sql_string ("SELECT reverse_lookup_only FROM targets"
-                     " WHERE id = %llu;", target);
-}
-
-/**
- * @brief Return the reverse_lookup_unify value of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Reverse lookup unify value if available, else NULL.
- */
-char*
-target_reverse_lookup_unify (target_t target)
-{
-  return sql_string ("SELECT reverse_lookup_unify FROM targets"
-                     " WHERE id = %llu;", target);
-}
-
-/**
- * @brief Return the allow_simultaneous_ips value of a target.
- *
- * @param[in]  target  Target.
- *
- * @return The allow_simultaneous_ips value if available, else NULL.
- */
-char*
-target_allow_simultaneous_ips (target_t target)
-{
-  return sql_string ("SELECT allow_simultaneous_ips FROM targets"
-                     " WHERE id = %llu;", target);
-}
-
-/**
- * @brief Return the SSH LSC port of a target.
- *
- * @param[in]  target  Target.
- *
- * @return Newly allocated port if available, else NULL.
- */
-char*
-target_ssh_port (target_t target)
-{
-  int port = target_login_port (target, "ssh");
-  return port ? g_strdup_printf ("%d", port) : NULL;
-}
-
-/**
- * @brief Return the SSH credential associated with a target, if any.
- *
- * @param[in]  target  Target.
- *
- * @return SSH credential if any, else 0.
- */
-credential_t
-target_ssh_credential (target_t target)
-{
-  return target_credential (target, "ssh");
-}
-
-/**
- * @brief Return the SMB credential associated with a target, if any.
- *
- * @param[in]  target  Target.
- *
- * @return SMB credential if any, else 0.
- */
-credential_t
-target_smb_credential (target_t target)
-{
-  return target_credential (target, "smb");
-}
-
-/**
- * @brief Return the ESXi credential associated with a target, if any.
- *
- * @param[in]  target  Target.
- *
- * @return ESXi credential if any, else 0.
- */
-credential_t
-target_esxi_credential (target_t target)
-{
-  return target_credential (target, "esxi");
-}
-
-/**
- * @brief Return the ELEVATE credential associated with a target, if any.
- *
- * @param[in]  target  Target.
- *
- * @return ELEVATE credential if any, else 0.
- */
-credential_t
-target_ssh_elevate_credential (target_t target)
-{
-  return target_credential (target, "elevate");
-}
-
-/**
- * @brief Return the Kerberos 5 credential associated with a target, if any.
- *
- * @param[in]  target  Target.
- *
- * @return Kerberos 5 credential if any, else 0.
- */
-credential_t
-target_krb5_credential (target_t target)
-{
-  return target_credential (target, "krb5");
 }
 
 /**
@@ -27041,6 +24131,52 @@ credential_scanner_iterator_readable (iterator_t* iterator)
 
 
 /* Notes. */
+
+/**
+ * @brief Validate a single port, for use in override or note.
+ *
+ * @param[in]  port  A port.
+ *
+ * @return 0 success, 1 failed.
+ */
+static int
+validate_results_port (const char *port)
+{
+  long int num;
+  char *end;
+
+  if (!port)
+    return 1;
+
+  if (strcmp (port, "package") == 0)
+    return 0;
+
+  /* "cpe:abc", "general/tcp", "20/udp"
+   *
+   * We keep the "general/tcp" case pretty open because it is not clearly
+   * restricted anywhere, and is already used with non-alphanumerics in
+   * "general/Host_Details".  We exclude whitespace, ',' and ';' to prevent
+   * users from entering lists of ports.
+   *
+   * Similarly, the CPE case forbids whitespace, but allows ',' and ';' as
+   * these may occur in valid CPEs. */
+  if (g_regex_match_simple
+       ("^(cpe:[^\\s]+|general/[^\\s,;]+|[0-9]+/[[:alnum:]]+)$",
+        port, 0, 0)
+      == FALSE)
+    return 1;
+
+  if (g_str_has_prefix (port, "cpe:")
+      || g_str_has_prefix (port, "general/"))
+    return 0;
+
+  num = strtol (port, &end, 10);
+  if (*end != '/')
+    return 1;
+  if (num > 0 && num <= 65535)
+    return 0;
+  return 1;
+}
 
 /**
  * @brief Find a note for a specific permission, given a UUID.
@@ -31406,96 +28542,6 @@ scanner_key_priv (scanner_t scanner)
 }
 
 /**
- * @brief Return the login associated with a scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated login if available, else NULL.
- */
-char*
-scanner_login (scanner_t scanner)
-{
-  return sql_string ("SELECT credentials_data.value"
-                     " FROM scanners, credentials_data"
-                     " WHERE scanners.id = %llu"
-                     "   AND credentials_data.credential = scanners.credential"
-                     "   AND credentials_data.type = 'username';",
-                     scanner);
-}
-
-/**
- * @brief Return the password associated with a scanner.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated password if available, else NULL.
- */
-char*
-scanner_password (scanner_t scanner)
-{
-  gchar *password;
-
-  password = sql_string ("SELECT credentials_data.value"
-                         " FROM scanners, credentials_data"
-                         " WHERE scanners.id = %llu"
-                         "   AND credentials_data.credential"
-                         "         = scanners.credential"
-                         "   AND credentials_data.type = 'password';",
-                         scanner);
-
-  if (password == NULL)
-    {
-      gchar *secret;
-      lsc_crypt_ctx_t crypt_ctx;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-
-      secret = sql_string ("SELECT credentials_data.value"
-                           " FROM scanners, credentials_data"
-                           " WHERE scanners.id = %llu"
-                           "   AND credentials_data.credential"
-                           "         = scanners.credential"
-                           "   AND credentials_data.type = 'secret';",
-                           scanner);
-
-      password = g_strdup (lsc_crypt_get_password (crypt_ctx, secret));
-      lsc_crypt_release (crypt_ctx);
-      g_free (secret);
-    }
-
-  return password;
-}
-
-/**
- * @brief Return the name of a scanner in the trashcan.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated name if available, else NULL.
- */
-char*
-trash_scanner_name (scanner_t scanner)
-{
-  return sql_string ("SELECT name FROM scanners_trash WHERE id = %llu;",
-                     scanner);
-}
-
-/**
- * @brief Return the UUID of a scanner in the trashcan.
- *
- * @param[in]  scanner  Scanner.
- *
- * @return Newly allocated UUID.
- */
-char *
-trash_scanner_uuid (scanner_t scanner)
-{
-  return sql_string ("SELECT uuid FROM scanners_trash WHERE id = %llu;",
-                     scanner);
-}
-
-/**
  * @brief Count number of scanners.
  *
  * @param[in]  get  GET params.
@@ -34752,6 +31798,11 @@ modify_setting (const gchar *uuid, const gchar *name,
               g_free (value);
               return -1;
             }
+          if (manage_timezone_supported (value) == FALSE)
+            {
+              g_free (value);
+              return 2;
+            }
         }
       else
         {
@@ -35789,18 +32840,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
   return 0;
 }
 
-/**
- * @brief Get the default CA cert.
- *
- * @return Freshly allocated value of Default CA Cert setting.
- */
-char *
-manage_default_ca_cert ()
-{
-  return sql_string ("SELECT value FROM settings"
-                     " WHERE uuid = '" SETTING_UUID_DEFAULT_CA_CERT "';");
-}
-
 
 /* Vulns. */
 
@@ -35944,7 +32983,7 @@ vuln_iterator_extra_with (const gchar *task_id, const gchar *report_id,
  *
  * @return Newly allocated string with the extra_with clause.
  */
-static gchar*
+gchar*
 vuln_iterator_extra_with_from_filter (const gchar *filter)
 {
   gchar *task_id, *report_id, *host;
@@ -36032,7 +33071,7 @@ vuln_iterator_opts_table (const gchar *task_id, const gchar *report_id,
  *
  * @return Newly allocated string with the extra_tables clause.
  */
-static gchar*
+gchar*
 vuln_iterator_opts_from_filter (const gchar *filter)
 {
   gchar *task_id, *report_id, *host;
@@ -36284,7 +33323,7 @@ vuln_count (const get_data_t *get)
  *
  * @return WHERE clause.
  */
-static gchar*
+gchar*
 vulns_extra_where (int min_qod)
 {
   return g_strdup_printf (" AND (vulns.qod >= %d)",
@@ -38728,234 +35767,6 @@ tags_set_locations (const char *type, resource_t old, resource_t new,
        to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
 }
 
-/**
- * @brief  Get a GArray of all users as user_t.
- *
- * @return  Newly allocated GArray containing all users.
- */
-static GArray*
-all_users_array ()
-{
-  iterator_t users_iter;
-  GArray *ret;
-
-  ret = g_array_new (TRUE, TRUE, sizeof (resource_t));
-
-  init_iterator (&users_iter, "SELECT id FROM users;");
-
-  while (next (&users_iter))
-    {
-      user_t user = iterator_int64 (&users_iter, 0);
-      g_array_append_val (ret, user);
-    }
-
-  cleanup_iterator (&users_iter);
-
-  return ret;
-}
-
-/**
- * @brief Update permissions cache for a resource.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource     The resource to update the cache for.
- * @param[in]  cache_users  GArray of users to create cache for or NULL for all.
- */
-void
-cache_permissions_for_resource (const char *type, resource_t resource,
-                                GArray *cache_users)
-{
-  int free_users;
-
-  if (type == NULL || resource == 0 || resource == -1)
-    return;
-
-  if (cache_users == NULL)
-    {
-      g_debug ("%s: Getting all users", __func__);
-      free_users = 1;
-      cache_users = all_users_array ();
-    }
-  else
-    free_users = 0;
-
-  if (strcmp (type, "task") == 0)
-    {
-      char* old_current_user_id;
-      gchar *resource_id;
-      int user_index;
-
-      old_current_user_id = current_credentials.uuid;
-      resource_id = resource_uuid (type, resource);
-
-      g_debug ("%s: Caching permissions on %s \"%s\" for %d user(s)",
-               __func__, type, resource_id, cache_users->len);
-
-      for (user_index = 0; user_index < cache_users->len; user_index++)
-        {
-          user_t user;
-          gchar *user_id;
-
-          user = g_array_index (cache_users, user_t, user_index);
-          user_id = user_uuid (user);
-
-          current_credentials.uuid = user_id;
-          manage_session_init (user_id);
-
-          if (sql_int ("SELECT count(*) FROM permissions_get_%ss"
-                       " WHERE \"user\" = %llu"
-                       "   AND %s = %llu;",
-                       type,
-                       user,
-                       type,
-                       resource))
-            {
-              sql ("UPDATE permissions_get_%ss"
-                   "  SET has_permission"
-                   "       = user_has_access_uuid (cast ('%s' as text),"
-                   "                               cast ('%s' as text),"
-                   "                               cast ('get_%ss' as text),"
-                   "                               0)"
-                   " WHERE \"user\" = %llu"
-                   "   AND %s = %llu;",
-                   type,
-                   type,
-                   resource_id,
-                   type,
-                   user,
-                   type,
-                   resource);
-            }
-          else
-            {
-              sql ("INSERT INTO permissions_get_%ss"
-                   "              (\"user\", %s, has_permission)"
-                   "  SELECT %llu, %llu,"
-                   "         user_has_access_uuid (cast ('%s' as text),"
-                   "                               cast ('%s' as text),"
-                   "                               cast ('get_%ss' as text),"
-                   "                               0);",
-                   type,
-                   type,
-                   user,
-                   resource,
-                   type,
-                   resource_id,
-                   type);
-            }
-
-          g_free (user_id);
-          current_credentials.uuid = NULL;
-        }
-
-      current_credentials.uuid = old_current_user_id;
-      manage_session_init (old_current_user_id);
-
-      g_free (resource_id);
-    }
-
-  if (free_users)
-    g_array_free (cache_users, TRUE);
-}
-
-/**
- * @brief Update permissions cache for a given type and selection of users.
- *
- * @param[in]  type         Type.
- * @param[in]  cache_users  GArray of users to create cache for.
- */
-static void
-cache_permissions_for_users (const char *type, GArray *cache_users)
-{
-  int free_users;
-
-  if (type == NULL)
-    return;
-
-  if (cache_users == NULL)
-    {
-      g_debug ("%s: Getting all users", __func__);
-      free_users = 1;
-      cache_users = all_users_array ();
-    }
-  else
-    free_users = 0;
-
-  if (strcmp (type, "task") == 0)
-    {
-      iterator_t resources;
-
-      init_iterator (&resources, "SELECT id FROM %ss;", type);
-
-      while (next (&resources))
-        {
-          resource_t resource = iterator_int64 (&resources, 0);
-          cache_permissions_for_resource (type, resource, cache_users);
-        }
-
-      cleanup_iterator (&resources);
-    }
-
-  if (free_users)
-    g_array_free (cache_users, TRUE);
-}
-
-/**
- * @brief Update entire permission cache the given users.
- *
- * @param[in]  cache_users  GArray of users to create cache for.  NULL means
- *                          all users.
- */
-void
-cache_all_permissions_for_users (GArray *cache_users)
-{
-  int free_users;
-
-  if (cache_users == NULL)
-    {
-      g_debug ("%s: Getting all users", __func__);
-      free_users = 1;
-      cache_users = all_users_array ();
-    }
-  else
-    free_users = 0;
-
-  cache_permissions_for_users ("task", cache_users);
-
-  if (free_users)
-    g_array_free (cache_users, TRUE);
-}
-
-/**
- * @brief Delete permission cache a resource.
- *
- * @param[in]  type      Resource type.
- * @param[in]  resource  Resource.
- */
-void
-delete_permissions_cache_for_resource (const char* type, resource_t resource)
-{
-  if (type == NULL || resource == 0)
-    return;
-
-  if (strcmp (type, "task") == 0)
-    {
-      sql ("DELETE FROM permissions_get_%ss WHERE \"%s\" = %llu",
-           type, type, resource);
-    }
-}
-
-/**
- * @brief Delete permission cache the given user.
- *
- * @param[in]  user  User.
- */
-void
-delete_permissions_cache_for_user (user_t user)
-{
-  sql ("DELETE FROM permissions_get_tasks WHERE \"user\" = %llu;", user);
-}
-
 
 /* Optimize. */
 
@@ -39857,3 +36668,48 @@ parse_http_scanner_report (task_t task, report_t report, GSList *results,
   g_free (rep_aux);
 }
 #endif
+
+/**
+ * @brief Initializes a PostgreSQL timezones iterator.
+ *
+ * The iterator returns the timezones supported by the PostgreSQL server.
+ *
+ * @param[in]  iterator  Iterator to initialize.
+ */
+void
+init_pg_timezones_iterator (iterator_t *iterator)
+{
+  init_iterator (iterator,
+                 "SELECT name FROM pg_timezone_names ORDER BY name ASC;");
+}
+
+/**
+ * @brief Get a timezone name from a PostgreSQL timezone iterator.
+ *
+ * @param[in]  iterator  Iterator to get name from.
+ *
+ * @return The name of the timezone.
+ */
+const char *
+pg_timezones_iterator_name (iterator_t *iterator)
+{
+  if (iterator->done)
+    return NULL;
+  return iterator_string (iterator, 0);
+}
+
+/**
+ * @brief Check if a timezone is supported by the PostgreSQL server.
+ *
+ * @param[in]  zone  The timezone to check.
+ *
+ * @return TRUE if timezone is supported, else FALSE.
+ */
+gboolean
+pg_timezone_supported (const char *zone)
+{
+  return sql_int_ps ("SELECT count(*) > 0"
+                     " FROM pg_timezone_names WHERE name = $1",
+                     SQL_STR_PARAM (zone),
+                     NULL);
+}

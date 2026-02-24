@@ -20,7 +20,7 @@
 #include "iterator.h"
 #include "manage_agent_common.h"
 #include "manage_get.h"
-#include "manage_resources.h"
+#include "manage_resources_types.h"
 
 /**
  * @brief Represents an agent group and its metadata.
@@ -47,7 +47,8 @@ typedef enum {
     AGENT_GROUP_RESP_INVALID_ARGUMENT = -5,             ///< Failed invalid argument
     AGENT_GROUP_RESP_AGENT_NOT_FOUND = -6,              ///< Failed getting agent id
     AGENT_GROUP_RESP_INTERNAL_ERROR = -7,               ///< Internal error
-    AGENT_GROUP_RESP_AGENT_UNAUTHORIZED = -8            ///< Failed to create group with unauthorized agent
+    AGENT_GROUP_RESP_AGENT_UNAUTHORIZED = -8,           ///< Failed to create group with unauthorized agent
+    AGENT_GROUP_RESP_GROUP_NAME_EXISTS = -9             ///< Failed to create group for name exists
   } agent_group_resp_t;
 
 agent_group_data_t

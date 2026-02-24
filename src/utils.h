@@ -28,12 +28,6 @@ parse_utc_ctime (const char *);
 int
 parse_feed_timestamp (const char *);
 
-int
-parse_ctime (const char *);
-
-int
-days_from_now (time_t *);
-
 time_t
 parse_iso_time_tz (const char *, const char *);
 
