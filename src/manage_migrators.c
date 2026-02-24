@@ -3677,6 +3677,40 @@ migrate_268_to_269 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 269 to version 270.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_269_to_270 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 269. */
+
+  if (manage_db_version () != 269)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add exclude_images field to oci_image_targets_trash
+
+  sql ("ALTER TABLE IF EXISTS oci_image_targets_trash"
+       " ADD COLUMN IF NOT EXISTS exclude_images text;");
+
+  /* Set the database version to 270. */
+
+  set_db_version (270);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3752,6 +3786,7 @@ static migrator_t database_migrators[] = {
   {267, migrate_266_to_267},
   {268, migrate_267_to_268},
   {269, migrate_268_to_269},
+  {270, migrate_269_to_270},
   /* End marker. */
   {-1, NULL}};
 
