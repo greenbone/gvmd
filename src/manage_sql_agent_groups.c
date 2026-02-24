@@ -117,25 +117,44 @@ agent_group_in_use_in_hidden_task (agent_group_t agent_group)
  *        in agent_groups and agent_groups_trash table.
  *
  * @param name The agent group name to check.
+ * @param current_agent_group   The row id of the current agent group or 0.
  *
  * @return 1 if the name exists in either agent_groups
  *         or agent_groups_trash, 0 otherwise.
  */
 static int
-agent_group_name_exists (const gchar *name)
+agent_group_name_exists (const gchar *name, agent_group_t current_agent_group)
 {
-  int count = sql_int_ps (
-      "SELECT COUNT(*) FROM agent_groups WHERE name = $1;",
-      SQL_STR_PARAM (name),
-      NULL);
+  int count;
+
+  if (current_agent_group)
+    count = sql_int_ps (
+              "SELECT COUNT(*) FROM agent_groups"
+              " WHERE name = $1 AND id != $2;",
+              SQL_STR_PARAM (name),
+              SQL_RESOURCE_PARAM (current_agent_group),
+              NULL);
+  else
+    count = sql_int_ps (
+              "SELECT COUNT(*) FROM agent_groups WHERE name = $1;",
+              SQL_STR_PARAM (name),
+              NULL);
 
   if (count > 0)
     return 1;
 
-  count = sql_int_ps (
-      "SELECT COUNT(*) FROM agent_groups_trash WHERE name = $1;",
-      SQL_STR_PARAM (name),
-      NULL);
+  if (current_agent_group)
+    count = sql_int_ps (
+              "SELECT COUNT(*) FROM agent_groups_trash"
+              " WHERE name = $1 AND id != $2;",
+              SQL_STR_PARAM (name),
+              SQL_RESOURCE_PARAM (current_agent_group),
+              NULL);
+  else
+    count = sql_int_ps (
+              "SELECT COUNT(*) FROM agent_groups_trash WHERE name = $1;",
+              SQL_STR_PARAM (name),
+              NULL);
 
   return (count > 0) ? 1 : 0;
 }
@@ -243,7 +262,7 @@ create_agent_group (agent_group_data_t group_data,
         return AGENT_GROUP_RESP_INTERNAL_ERROR;
     }
 
-  if (agent_group_name_exists (group_data->name))
+  if (agent_group_name_exists (group_data->name, 0))
     {
       g_debug ("%s: agent group name already exists", __func__);
       return AGENT_GROUP_RESP_GROUP_NAME_EXISTS;
@@ -326,7 +345,7 @@ modify_agent_group (agent_group_t agent_group,
                     agent_uuid_list_t agent_uuids)
 {
 
-  if (agent_group_name_exists (group_data->name))
+  if (agent_group_name_exists (group_data->name, agent_group))
     {
       g_debug ("%s: agent group name already exists", __func__);
       return AGENT_GROUP_RESP_GROUP_NAME_EXISTS;
