@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.15.1 LANGUAGES C)
+project(gvm VERSION 26.16.2 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -96,7 +96,7 @@ include(CPack)
 
 ## Variables
 
-set(GVMD_DATABASE_VERSION 267)
+set(GVMD_DATABASE_VERSION 270)
 
 set(GVMD_SCAP_DATABASE_VERSION 22)
 
@@ -351,10 +351,12 @@ set(
 )
 set(LINKER_HARDENING_FLAGS "-Wl,-z,relro -Wl,-z,now")
 
-# To find unused functions, add: -flto -fwhole-program -ffunction-sections -Wl,--gc-sections -Wl,--print-gc-sections
+set(UNUSED_FUNCTIONS_FLAGS "")
+# Enable this to find unused functions, and search for "removing" in output.
+#set(UNUSED_FUNCTIONS_FLAGS "-flto -fwhole-program -ffunction-sections -Wl,--gc-sections -Wl,--print-gc-sections")
 set(
   CMAKE_C_FLAGS
-  "${CMAKE_C_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 ${COVERAGE_FLAGS}"
+  "${CMAKE_C_FLAGS} ${UNUSED_FUNCTIONS_FLAGS} -Wall -D_BSD_SOURCE -D_ISOC99_SOURCE -D_SVID_SOURCE -D_DEFAULT_SOURCE -D_FILE_OFFSET_BITS=64 ${COVERAGE_FLAGS}"
 )
 
 set(
