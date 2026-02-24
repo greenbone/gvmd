@@ -12192,11 +12192,12 @@ result_iterator_oci_image_path (iterator_t* iterator)
 }
 
 /**
- * @brief Get container image organisation from a result iterator.
+ * @brief Get container image short name (last part including tag)
+ *        from a result iterator.
  *
  * @param[in]  iterator  Iterator.
  *
- * @return The container image organisation.
+ * @return The container image short name.
  */
 const char *
 result_iterator_oci_image_short_name (iterator_t* iterator)
