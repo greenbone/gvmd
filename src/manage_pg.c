@@ -2978,7 +2978,8 @@ create_tables ()
        "  flags integer,"
        "  modification_time integer,"
        "  processing_required integer DEFAULT 0,"
-       "  in_assets integer);");
+       "  in_assets integer,"
+       "  discovery integer DEFAULT 0);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_counts"
        " (id SERIAL PRIMARY KEY,"
