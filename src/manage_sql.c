@@ -20229,20 +20229,6 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
 }
 
 /**
- * @brief Return the UUID of a tag.
- *
- * @param[in]  tag  Tag.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-tag_uuid (tag_t tag)
-{
-  return sql_string ("SELECT uuid FROM tags WHERE id = %llu;",
-                     tag);
-}
-
-/**
  * @brief Return whether a trashcan target is readable.
  *
  * @param[in]  target  Target.
@@ -33067,6 +33053,20 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 
 
 /* Tags */
+
+/**
+ * @brief Return the UUID of a tag.
+ *
+ * @param[in]  tag  Tag.
+ *
+ * @return Newly allocated UUID if available, else NULL.
+ */
+char*
+tag_uuid (tag_t tag)
+{
+  return sql_string ("SELECT uuid FROM tags WHERE id = %llu;",
+                     tag);
+}
 
 /**
  * @brief Add a resource to a tag.
