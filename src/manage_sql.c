@@ -20213,22 +20213,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Return number of hosts described by a hosts string.
- *
- * @param[in]  given_hosts      String describing hosts.
- * @param[in]  exclude_hosts    String describing hosts excluded from given set.
- *
- * @return Number of hosts, or -1 on error.
- */
-int
-manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
-{
-  return manage_count_hosts_max (given_hosts,
-                                 exclude_hosts,
-                                 manage_max_hosts ());
-}
-
-/**
  * @brief Return whether a trashcan target is readable.
  *
  * @param[in]  target  Target.
