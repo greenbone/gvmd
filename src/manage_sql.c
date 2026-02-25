@@ -247,15 +247,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 static char *
 setting_timezone ();
 
-static column_t *
-type_select_columns (const char *type);
-
-static column_t *
-type_where_columns (const char *type);
-
-static const char**
-type_filter_columns (const char *);
-
 static int
 type_build_select (const char *, const char *, const get_data_t *,
                    gboolean, gboolean, const char *, const char *,
@@ -34559,7 +34550,7 @@ column_is_timestamp (const char* column)
  *
  * @return The columns.
  */
-static column_t *
+column_t *
 type_select_columns (const char *type)
 {
 #if ENABLE_AGENTS
@@ -34678,7 +34669,7 @@ type_select_columns (const char *type)
  *
  * @return The columns.
  */
-static column_t *
+column_t *
 type_where_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
@@ -34706,7 +34697,7 @@ type_where_columns (const char *type)
  *
  * @return The filter columns.
  */
-static const char**
+const char**
 type_filter_columns (const char *type)
 {
   if (type == NULL)

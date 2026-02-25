@@ -45,6 +45,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_filters.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_secinfo.h"
 #include "sql.h"
@@ -342,18 +343,18 @@ init_nvt_info_iterator_all (iterator_t* iterator, get_data_t *get)
 }
 
 /**
- * @brief Get NVT iterator SELECT columns.
+ * @brief Get the SQL for a NVTs iterator column by its filter keyword.
  *
- * @return SELECT columns
+ * @param[in]  column_name  The name as used as a filter keyword.
+ *
+ * @return The SQL fragment for the column.
  */
-static gchar *
-nvt_iterator_columns ()
+static const char *
+nvt_column_sql (const char *column_name)
 {
-  static column_t select_columns[] = NVT_ITERATOR_COLUMNS;
-  static gchar *columns = NULL;
-  if (columns == NULL)
-    columns = columns_build_select (select_columns);
-  return columns;
+  return columns_select_column (type_select_columns ("nvt"),
+                                type_where_columns ("nvt"),
+                                column_name);
 }
 
 /**
@@ -362,9 +363,9 @@ nvt_iterator_columns ()
  * @return SELECT columns
  */
 static gchar *
-nvt_iterator_columns_nvts ()
+nvt_iterator_columns ()
 {
-  static column_t select_columns[] = NVT_ITERATOR_COLUMNS_NVTS;
+  static column_t select_columns[] = NVT_ITERATOR_COLUMNS;
   static gchar *columns = NULL;
   if (columns == NULL)
     columns = columns_build_select (select_columns);
@@ -436,6 +437,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     const char* sort_field)
 {
   gchar *quoted_selector, *quoted_family, *sql;
+  const char *sort_field_sql;
   char *selector;
 
   selector = config_nvt_selector (config);
@@ -447,6 +449,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
   free (selector);
 
   quoted_family = sql_quote (family);
+  sort_field_sql = nvt_column_sql (sort_field);
 
   if (config_nvts_growing (config))
     {
@@ -470,7 +473,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " ORDER BY %s %s;",
                     nvt_iterator_columns (),
                     quoted_family,
-                    sort_field ? sort_field : "name",
+                    sort_field_sql ? sort_field_sql : "nvts.name",
                     ascending ? "ASC" : "DESC");
           else
             {
@@ -497,11 +500,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         " AND nvt_selectors.exclude = 0"
                         " AND nvts.oid = nvt_selectors.family_or_nvt"
                         " ORDER BY %s %s;",
-                        nvt_iterator_columns_nvts (),
+                        nvt_iterator_columns (),
                         quoted_family,
                         quoted_selector,
                         quoted_family,
-                        sort_field ? sort_field : "nvts.name",
+                        sort_field_sql ? sort_field_sql : "nvts.name",
                         ascending ? "ASC" : "DESC");
               else
                 /* The family is included.
@@ -525,14 +528,14 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                         " ORDER BY %s %s;",
                         nvt_iterator_columns (),
                         quoted_family,
-                        nvt_iterator_columns_nvts (),
+                        nvt_iterator_columns (),
                         quoted_family,
                         quoted_selector,
                         quoted_family,
                         /* This works around "ERROR: missing FROM-clause" from
                          * Postgres when using nvts.name. */
-                        sort_field && strcmp (sort_field, "nvts.name")
-                         ? sort_field : "3", /* 3 is nvts.name. */
+                        sort_field_sql && strcmp (sort_field_sql, "nvts.name")
+                         ? sort_field_sql : "3", /* 3 is nvts.name. */
                         ascending ? "ASC" : "DESC");
             }
         }
@@ -570,14 +573,14 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " ORDER BY %s %s;",
                     nvt_iterator_columns (),
                     quoted_family,
-                    nvt_iterator_columns_nvts (),
+                    nvt_iterator_columns (),
                     quoted_family,
                     quoted_selector,
                     quoted_family,
                     /* This works around "ERROR: missing FROM-clause" from
                      * Postgres when using nvts.name. */
-                    sort_field && strcmp (sort_field, "nvts.name")
-                     ? sort_field : "3", /* 3 is nvts.name. */
+                    sort_field_sql && strcmp (sort_field_sql, "nvts.name")
+                     ? sort_field_sql : "3", /* 3 is nvts.name. */
                     ascending ? "ASC" : "DESC");
           else
             sql = g_strdup_printf
@@ -592,11 +595,11 @@ select_config_nvts (const config_t config, const char* family, int ascending,
                     " AND nvt_selectors.exclude = 0"
                     " AND nvts.oid = nvt_selectors.family_or_nvt"
                     " ORDER BY %s %s;",
-                    nvt_iterator_columns_nvts (),
+                    nvt_iterator_columns (),
                     quoted_family,
                     quoted_selector,
                     quoted_family,
-                    sort_field ? sort_field : "nvts.name",
+                    sort_field_sql ? sort_field_sql : "nvts.name",
                     ascending ? "ASC" : "DESC");
         }
     }
@@ -614,10 +617,10 @@ select_config_nvts (const config_t config, const char* family, int ascending,
               " AND nvt_selectors.name = '%s'"
               " AND nvts.oid = nvt_selectors.family_or_nvt"
               " ORDER BY %s %s;",
-              nvt_iterator_columns_nvts (),
+              nvt_iterator_columns (),
               quoted_family,
               quoted_selector,
-              sort_field ? sort_field : "nvts.id",
+              sort_field_sql ? sort_field_sql : "nvts.id",
               ascending ? "ASC" : "DESC");
     }
 
@@ -676,6 +679,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
   else if (family)
     {
       gchar *quoted_family = sql_quote (family);
+      const char *sort_field_sql = nvt_column_sql (sort_field);
       init_iterator (iterator,
                      "SELECT %s"
                      " FROM nvts"
@@ -683,14 +687,14 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                      " ORDER BY %s %s;",
                      nvt_iterator_columns (),
                      quoted_family,
-                     sort_field ? sort_field : "name",
+                     sort_field_sql ? sort_field_sql : "nvts.name",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_family);
     }
   else if (category)
     {
-      gchar *quoted_category;
-      quoted_category = sql_quote (category);
+      gchar *quoted_category = sql_quote (category);
+      const char *sort_field_sql = nvt_column_sql (sort_field);
       init_iterator (iterator,
                      "SELECT %s"
                      " FROM nvts"
@@ -698,18 +702,21 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
                      " ORDER BY %s %s;",
                      nvt_iterator_columns (),
                      quoted_category,
-                     sort_field ? sort_field : "name",
+                     sort_field_sql ? sort_field_sql : "nvts.name",
                      ascending ? "ASC" : "DESC");
       g_free (quoted_category);
     }
   else
-    init_iterator (iterator,
-                   "SELECT %s"
-                   " FROM nvts"
-                   " ORDER BY %s %s;",
-                   nvt_iterator_columns (),
-                   sort_field ? sort_field : "name",
-                   ascending ? "ASC" : "DESC");
+    {
+      const char *sort_field_sql = nvt_column_sql (sort_field);
+      init_iterator (iterator,
+                    "SELECT %s"
+                    " FROM nvts"
+                    " ORDER BY %s %s;",
+                    nvt_iterator_columns (),
+                    sort_field_sql ? sort_field_sql : "nvts.name",
+                    ascending ? "ASC" : "DESC");
+    }
 }
 
 /**
@@ -724,6 +731,8 @@ void
 init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
                        const char* sort_field)
 {
+  const char *sort_field_sql = nvt_column_sql (sort_field);
+
   init_iterator (iterator,
                  "SELECT %s"
                  " FROM nvts"
@@ -735,7 +744,7 @@ init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
                  cve ? cve : "",
                  sql_ilike_op (),
                  cve ? cve : "",
-                 sort_field ? sort_field : "name",
+                 sort_field_sql ? sort_field_sql : "nvts.name",
                  ascending ? "ASC" : "DESC");
 }
 
