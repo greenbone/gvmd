@@ -3711,6 +3711,38 @@ migrate_269_to_270 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 270 to version 271.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_270_to_271 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 270. */
+  if (manage_db_version () != 270)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add discovery field to reports if it does not exist
+  sql ("ALTER TABLE IF EXISTS reports"
+       " ADD COLUMN IF NOT EXISTS discovery integer DEFAULT 0;");
+
+  /* Set the database version to 271. */
+
+  set_db_version (271);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3787,6 +3819,7 @@ static migrator_t database_migrators[] = {
   {268, migrate_267_to_268},
   {269, migrate_268_to_269},
   {270, migrate_269_to_270},
+  {271, migrate_270_to_271},
   /* End marker. */
   {-1, NULL}};
 
