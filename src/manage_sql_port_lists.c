@@ -2165,7 +2165,7 @@ init_port_range_iterator (iterator_t* iterator, port_list_t port_list,
     }
   else
     init_iterator (iterator,
-                   "SELECT uuid, comment, start, end, type, exclude"
+                   "SELECT uuid, comment, start, \"end\", type, exclude"
                    " FROM port_ranges%s"
                    " WHERE"
                    " (((SELECT owner FROM port_lists%s WHERE id = port_list)"
