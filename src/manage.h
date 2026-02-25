@@ -3266,11 +3266,14 @@ xml_escape_text_truncated (const char *, size_t, const char *);
 int
 column_is_timestamp (const char*);
 
-char*
-type_columns (const char *);
+column_t*
+type_select_columns (const char *);
 
-char*
-type_trash_columns (const char *);
+column_t*
+type_where_columns (const char *);
+
+const char**
+type_filter_columns (const char *);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const db_conn_info_t *);
