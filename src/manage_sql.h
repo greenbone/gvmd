@@ -149,7 +149,7 @@
 /**
  * @brief Delta results columns offset for result iterator.
  */
-#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 46
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 51
 
 /**
  * @brief Struct to be sent as user data to the GFunc for adding results

@@ -1360,6 +1360,21 @@ const char *
 result_iterator_compliance (iterator_t*);
 
 const char *
+result_iterator_oci_image_name (iterator_t*);
+
+const char *
+result_iterator_oci_image_digest (iterator_t*);
+
+const char *
+result_iterator_oci_image_registry (iterator_t*);
+
+const char *
+result_iterator_oci_image_path (iterator_t*);
+
+const char *
+result_iterator_oci_image_short_name (iterator_t*);
+
+const char *
 result_iterator_delta_state (iterator_t*);
 
 const char *
@@ -1606,81 +1621,6 @@ manage_count_hosts (const char *, const char *);
 int
 target_count (const get_data_t *);
 
-void
-init_user_target_iterator (iterator_t*, target_t);
-
-int
-init_target_iterator (iterator_t*, get_data_t *);
-
-const char*
-target_iterator_hosts (iterator_t*);
-
-const char*
-target_iterator_exclude_hosts (iterator_t*);
-
-const char*
-target_iterator_reverse_lookup_only (iterator_t*);
-
-const char*
-target_iterator_reverse_lookup_unify (iterator_t*);
-
-const char*
-target_iterator_comment (iterator_t*);
-
-int
-target_iterator_ssh_credential (iterator_t*);
-
-const char*
-target_iterator_ssh_port (iterator_t*);
-
-int
-target_iterator_smb_credential (iterator_t*);
-
-int
-target_iterator_esxi_credential (iterator_t*);
-
-int
-target_iterator_snmp_credential (iterator_t*);
-
-int
-target_iterator_ssh_elevate_credential (iterator_t*);
-
-int
-target_iterator_krb5_credential (iterator_t*);
-
-int
-target_iterator_ssh_trash (iterator_t*);
-
-int
-target_iterator_smb_trash (iterator_t*);
-
-int
-target_iterator_esxi_trash (iterator_t*);
-
-int
-target_iterator_snmp_trash (iterator_t*);
-
-int
-target_iterator_ssh_elevate_trash (iterator_t*);
-
-int
-target_iterator_krb5_trash (iterator_t*);
-
-const char*
-target_iterator_allow_simultaneous_ips (iterator_t*);
-
-const char*
-target_iterator_port_list_uuid (iterator_t*);
-
-const char*
-target_iterator_port_list_name (iterator_t*);
-
-int
-target_iterator_port_list_trash (iterator_t*);
-
-int
-target_iterator_alive_tests (iterator_t*);
-
 int
 trash_target_readable (target_t);
 
@@ -1701,18 +1641,6 @@ trash_target_writable (target_t);
 
 char*
 target_ssh_credential_name (const char *);
-
-void
-init_target_task_iterator (iterator_t*, target_t);
-
-const char*
-target_task_iterator_name (iterator_t*);
-
-const char*
-target_task_iterator_uuid (iterator_t*);
-
-int
-target_task_iterator_readable (iterator_t*);
 
 
 /* Configs.
@@ -3328,11 +3256,14 @@ xml_escape_text_truncated (const char *, size_t, const char *);
 int
 column_is_timestamp (const char*);
 
-char*
-type_columns (const char *);
+column_t*
+type_select_columns (const char *);
 
-char*
-type_trash_columns (const char *);
+column_t*
+type_where_columns (const char *);
+
+const char**
+type_filter_columns (const char *);
 
 gboolean
 manage_migrate_needs_timezone (GSList *, const db_conn_info_t *);

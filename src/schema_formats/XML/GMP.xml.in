@@ -1319,6 +1319,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <e>host</e>
       <e>port</e>
       <o><e>path</e></o>
+      <o><e>oci_image</e></o>
       <e>nvt</e>
       <e>scan_nvt_version</e>
       <e>threat</e>
@@ -1483,6 +1484,42 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <name>path</name>
       <summary>The local path on the host, e.g. a file location</summary>
       <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>oci_image</name>
+      <summary>OCI image information if available</summary>
+      <pattern>
+        <e>name</e>
+        <e>digest</e>
+        <e>registry</e>
+        <e>path</e>
+        <e>short_name</e>
+      </pattern>
+      <ele>
+        <name>name</name>
+        <summary>The full name / URL of the image</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>digest</name>
+        <summary>The digest of the image</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>registry</name>
+        <summary>The registry hostname / address of the image</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>path</name>
+        <summary>The path before the short name of the image</summary>
+        <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>short_name</name>
+        <summary>The last part including the tag of the image</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>nvt</name>
@@ -21331,6 +21368,31 @@ END:VCALENDAR
             <summary>Unique ID of the test that produced the result</summary>
           </column>
           <column>
+            <name>oci_image_name</name>
+            <type>text</type>
+            <summary>The full name / URL of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_digest</name>
+            <type>text</type>
+            <summary>The digest of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_registry</name>
+            <type>text</type>
+            <summary>The registry hostname / address of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_path</name>
+            <type>text</type>
+            <summary>The path before the short name of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_short_name</name>
+            <type>text</type>
+            <summary>The last part including the tag of the image</summary>
+          </column>
+          <column>
             <name>type</name>
             <type>threat</type>
             <summary>Severity type of the result with overrides</summary>
@@ -22340,6 +22402,31 @@ END:VCALENDAR
             <name>nvt</name>
             <type>text</type>
             <summary>Unique ID of the test that produced the result</summary>
+          </column>
+          <column>
+            <name>oci_image_name</name>
+            <type>text</type>
+            <summary>The full name / URL of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_digest</name>
+            <type>text</type>
+            <summary>The digest of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_registry</name>
+            <type>text</type>
+            <summary>The registry hostname / address of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_path</name>
+            <type>text</type>
+            <summary>The path before the short name of the image</summary>
+          </column>
+          <column>
+            <name>oci_image_short_name</name>
+            <type>text</type>
+            <summary>The last part including the tag of the image</summary>
           </column>
           <column>
             <name>type</name>

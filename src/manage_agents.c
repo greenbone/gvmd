@@ -188,8 +188,8 @@ convert_agent_control_list_to_agent_data_list (
       dest->last_updater_heartbeat = src->last_updater_heartbeat;
       dest->agent_update_available = src->agent_update_available;
       dest->updater_update_available = src->updater_update_available;
-      dest->latest_agent_version = g_strdup (src->latest_agent_version);
-      dest->latest_updater_version = g_strdup (src->latest_updater_version);
+      dest->latest_agent_version = g_strdup (src->agent_version);
+      dest->latest_updater_version = g_strdup (src->updater_version);
 
       dest->scanner = scanner;
 

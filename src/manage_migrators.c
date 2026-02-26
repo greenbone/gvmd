@@ -3697,13 +3697,77 @@ migrate_269_to_270 ()
 
   /* Update the database. */
 
-  // Remove hosts_ordering field from tasks
+  // Add exclude_images field to oci_image_targets_trash
 
-  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
+  sql ("ALTER TABLE IF EXISTS oci_image_targets_trash"
+       " ADD COLUMN IF NOT EXISTS exclude_images text;");
 
-  /* Set the database version to 267. */
+  /* Set the database version to 270. */
 
   set_db_version (270);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 270 to version 271.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_270_to_271 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 270. */
+  if (manage_db_version () != 270)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add discovery field to reports if it does not exist
+  sql ("ALTER TABLE IF EXISTS reports"
+       " ADD COLUMN IF NOT EXISTS discovery integer DEFAULT 0;");
+
+  /* Set the database version to 271. */
+
+  set_db_version (271);
+
+  sql_commit ();
+
+  return 0;
+}
+
+/**
+ * @brief Migrate the database from version 271 to version 272.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_271_to_272 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 271. */
+
+  if (manage_db_version () != 271)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Remove hosts_ordering field from tasks
+  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
+
+  /* Set the database version to 272. */
+  set_db_version (272);
 
   sql_commit ();
 
@@ -3786,6 +3850,8 @@ static migrator_t database_migrators[] = {
   {268, migrate_267_to_268},
   {269, migrate_268_to_269},
   {270, migrate_269_to_270},
+  {271, migrate_270_to_271},
+  {272, migrate_271_to_272},
   /* End marker. */
   {-1, NULL}};
 

@@ -10003,6 +10003,8 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
   const char *host, *hostname, *result_id, *port, *path, *asset_id, *qod, *qod_type;
   char *detect_oid, *detect_ref, *detect_cpe, *detect_loc, *detect_name;
   const char *compliance;
+  const char *oci_image_name, *oci_image_digest;
+  const char *oci_image_registry, *oci_image_path, *oci_image_short_name;
   double severity_double;
   gchar *nl_descr, *nl_descr_escaped;
   result_t result;
@@ -10246,6 +10248,29 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
     buffer_xml_append_printf (buffer,
                               "<path>%s</path>",
                               path);
+
+  oci_image_name = result_iterator_oci_image_name (results);
+  oci_image_digest = result_iterator_oci_image_digest (results);
+  oci_image_registry = result_iterator_oci_image_registry (results);
+  oci_image_path = result_iterator_oci_image_path (results);
+  oci_image_short_name = result_iterator_oci_image_short_name (results);
+
+  if (oci_image_registry && strcmp (oci_image_registry, ""))
+    {
+      buffer_xml_append_printf (buffer,
+                                "<oci_image>"
+                                "<name>%s</name>"
+                                "<digest>%s</digest>"
+                                "<registry>%s</registry>"
+                                "<path>%s</path>"
+                                "<short_name>%s</short_name>"
+                                "</oci_image>",
+                                oci_image_name ?: "",
+                                oci_image_digest ?: "",
+                                oci_image_registry ?: "",
+                                oci_image_path ?: "",
+                                oci_image_short_name ?: "");
+    }
 
   if (cert_loaded == -1)
     cert_loaded = manage_cert_loaded ();

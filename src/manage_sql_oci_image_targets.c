@@ -459,11 +459,11 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
         }
 
       sql ("INSERT INTO oci_image_targets_trash"
-           " (uuid, owner, name, image_references, comment,"
-           "  credential, credential_location, creation_time,"
+           " (uuid, owner, name, image_references, exclude_images,"
+           "  comment, credential, credential_location, creation_time,"
            "  modification_time)"
-           " SELECT uuid, owner, name, image_references, comment,"
-           " credential, " G_STRINGIFY (LOCATION_TABLE) ","
+           " SELECT uuid, owner, name, image_references, exclude_images,"
+           " comment, credential, " G_STRINGIFY (LOCATION_TABLE) ","
            " creation_time, modification_time"
            " FROM oci_image_targets WHERE id = %llu;",
            oci_image_target);
@@ -566,10 +566,10 @@ restore_oci_image_target (const char *oci_image_target_id)
   /* Move to "real" tables. */
   sql ("INSERT INTO oci_image_targets"
        " (uuid, owner, name, comment, creation_time, modification_time,"
-       "  image_references, credential)"
+       "  image_references, exclude_images, credential)"
        " SELECT"
        "  uuid, owner, name, comment, creation_time, modification_time,"
-       "  image_references, credential"
+       "  image_references, exclude_images, credential"
        " FROM oci_image_targets_trash"
        " WHERE id = %llu;",
        resource);

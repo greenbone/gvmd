@@ -247,15 +247,6 @@ set_credential_snmp_secret (credential_t, const char *, const char *,
 static char *
 setting_timezone ();
 
-static column_t *
-type_select_columns (const char *type);
-
-static column_t *
-type_where_columns (const char *type);
-
-static const char**
-type_filter_columns (const char *);
-
 static int
 type_build_select (const char *, const char *, const get_data_t *,
                    gboolean, gboolean, const char *, const char *,
@@ -10474,7 +10465,8 @@ where_qod (int min_qod)
     "severity", "original_severity", "vulnerability", "date", "report_id",    \
     "solution_type", "qod", "qod_type", "task_id", "cve", "hostname",         \
     "path", "compliant", "epss_score", "epss_percentile", "max_epss_score",   \
-    "max_epss_percentile", NULL }
+    "max_epss_percentile", "oci_image_name", "oci_image_digest",              \
+    "oci_image_registry", "oci_image_path", "oci_image_short_name", NULL }
 
 // TODO Combine with RESULT_ITERATOR_COLUMNS.
 /**
@@ -10590,6 +10582,20 @@ where_qod (int min_qod)
     { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
       "         'undefined')",                                                \
       "compliant",                                                            \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
+    { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+      "oci_image_registry",                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
+      "oci_image_path",                                                       \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+      "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },
 
 /**
@@ -10774,6 +10780,21 @@ where_qod (int min_qod)
       "compliant",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 45 = 35 */                                                           \
+    { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
+    { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+      "oci_image_registry",                                                   \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
+      "oci_image_path",                                                       \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "(regexp_match(hostname,"                                               \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+      "oci_image_short_name",                                                 \
+      KEYWORD_TYPE_STRING },                                                  \
+    /* ^ 50 = 40 */                                                           \
     { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
       "epss_score",                                                           \
       KEYWORD_TYPE_DOUBLE },                                                  \
@@ -10789,7 +10810,7 @@ where_qod (int min_qod)
     { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
       "max_epss_score",                                                       \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    /* ^ 50 = 40 */                                                           \
+    /* ^ 55 = 45 */                                                           \
     { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
       "max_epss_percentile",                                                  \
       KEYWORD_TYPE_DOUBLE },                                                  \
@@ -12062,6 +12083,77 @@ result_iterator_compliance (iterator_t* iterator)
 }
 
 /**
+ * @brief Get container image name / full URL from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image name.
+ */
+const char *
+result_iterator_oci_image_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+}
+
+/**
+ * @brief Get container image digest from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image digest.
+ */
+const char *
+result_iterator_oci_image_digest (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+}
+
+/**
+ * @brief Get container image registry from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image registry.
+ */
+const char *
+result_iterator_oci_image_registry (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+}
+
+/**
+ * @brief Get container image path from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image path.
+ */
+const char *
+result_iterator_oci_image_path (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 39);
+}
+
+/**
+ * @brief Get container image short name (last part including tag)
+ *        from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The container image short name.
+ */
+const char *
+result_iterator_oci_image_short_name (iterator_t* iterator)
+{
+  if (iterator->done) return 0;
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 40);
+}
+
+/**
  * @brief Get EPSS score of highest severity CVE from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12072,7 +12164,7 @@ double
 result_iterator_epss_score (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 36);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 41);
 }
 
 /**
@@ -12086,7 +12178,7 @@ double
 result_iterator_epss_percentile (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 37);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 42);
 }
 
 /**
@@ -12100,7 +12192,7 @@ const gchar *
 result_iterator_epss_cve (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 38);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 43);
 }
 
 /**
@@ -12114,7 +12206,7 @@ double
 result_iterator_epss_severity (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 39);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 44);
 }
 
 /**
@@ -12128,7 +12220,7 @@ double
 result_iterator_max_epss_score (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 40);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 45);
 }
 
 /**
@@ -12142,7 +12234,7 @@ double
 result_iterator_max_epss_percentile (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 41);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 46);
 }
 
 /**
@@ -12156,7 +12248,7 @@ const gchar *
 result_iterator_max_epss_cve (iterator_t* iterator)
 {
   if (iterator->done) return NULL;
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 42);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 47);
 }
 
 /**
@@ -12170,7 +12262,7 @@ double
 result_iterator_max_epss_severity (iterator_t* iterator)
 {
   if (iterator->done) return 0.0;
-  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 43);
+  return iterator_double (iterator, GET_ITERATOR_COLUMN_COUNT + 48);
 }
 
 /**
@@ -12184,7 +12276,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 44);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 49);
 }
 
 /**
@@ -12198,7 +12290,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 45);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 50);
 }
 
 /**
@@ -16778,17 +16870,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   orig_f_false_positives = orig_f_warnings = orig_f_logs = orig_f_infos = 0;
   orig_f_holes = orig_f_criticals = 0;
   host_summary_buffer = NULL;
-  ctx.f_host_criticals = NULL;
-  ctx.f_host_ports = NULL;
-  ctx.f_host_holes = NULL;
-  ctx.f_host_warnings = NULL;
-  ctx.f_host_infos = NULL;
-  ctx.f_host_logs = NULL;
-  ctx.f_host_false_positives = NULL;
-  ctx.f_host_compliant = NULL;
-  ctx.f_host_notcompliant = NULL;
-  ctx.f_host_incomplete = NULL;
-  ctx.f_host_undefined = NULL;
 
   ctx.delta = delta;
   ctx.get = get;
@@ -20148,567 +20229,6 @@ manage_count_hosts (const char *given_hosts, const char *exclude_hosts)
 }
 
 /**
- * @brief Filter columns for target iterator.
- */
-#define TARGET_ITERATOR_FILTER_COLUMNS                                         \
- { GET_ITERATOR_FILTER_COLUMNS, "hosts", "exclude_hosts", "ips", "port_list",  \
-   "ssh_credential", "smb_credential", "esxi_credential", "snmp_credential",   \
-   "ssh_elevate_credential", NULL }
-
-/**
- * @brief Target iterator columns.
- */
-#define TARGET_ITERATOR_COLUMNS                                \
- {                                                             \
-   GET_ITERATOR_COLUMNS (targets),                             \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('ssh' AS text))",                      \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "target_login_port (id, 0, CAST ('ssh' AS text))",        \
-     "ssh_port",                                               \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('smb' AS text))",                      \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   {                                                           \
-     "(SELECT uuid FROM port_lists"                            \
-     " WHERE port_lists.id = port_list)",                      \
-     NULL,                                                     \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM port_lists"                            \
-     " WHERE port_lists.id = port_list)",                      \
-     "port_list",                                              \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },             \
-   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },      \
-   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },     \
-   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },               \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('esxi' AS text))",                     \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('snmp' AS text))",                     \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('elevate' AS text))",                  \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "(SELECT credential FROM targets_login_data"              \
-     " WHERE target = targets.id"                              \
-     " AND type = CAST ('krb5' AS text))",                     \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { "0", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "allow_simultaneous_ips",                                 \
-     NULL,                                                     \
-     KEYWORD_TYPE_INTEGER },                                   \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('ssh' AS text)))",            \
-     "ssh_credential",                                         \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('smb' AS text)))",            \
-     "smb_credential",                                         \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('esxi' AS text)))",           \
-     "esxi_credential",                                        \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('snmp' AS text)))",           \
-     "snmp_credential",                                        \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('elevate' AS text)))",        \
-     "ssh_elevate_credential",                                 \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   {                                                           \
-     "(SELECT name FROM credentials"                           \
-     " WHERE credentials.id"                                   \
-     "       = (SELECT credential FROM targets_login_data"     \
-     "          WHERE target = targets.id"                     \
-     "          AND type = CAST ('krb5' AS text)))",           \
-     "krb5_credential",                                        \
-     KEYWORD_TYPE_STRING                                       \
-   },                                                          \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                     \
-   { "max_hosts (hosts, exclude_hosts)",                       \
-     "ips",                                                    \
-     KEYWORD_TYPE_INTEGER },                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                        \
- }
-
-/**
- * @brief Target iterator columns for trash case.
- */
-#define TARGET_ITERATOR_TRASH_COLUMNS                                   \
- {                                                                      \
-   GET_ITERATOR_COLUMNS (targets_trash),                                \
-   { "hosts", NULL, KEYWORD_TYPE_STRING },                              \
-   { "target_credential (id, 1, CAST ('ssh' AS text))",                 \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "target_login_port (id, 1, CAST ('ssh' AS text))",                 \
-     "ssh_port",                                                        \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "target_credential (id, 1, CAST ('smb' AS text))",                 \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "port_list", NULL, KEYWORD_TYPE_INTEGER },                         \
-   { "trash_target_credential_location (id, CAST ('ssh' AS text))",     \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "trash_target_credential_location (id, CAST ('smb' AS text))",     \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   {                                                                    \
-     "(CASE"                                                            \
-     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)         \
-     " THEN (SELECT uuid FROM port_lists_trash"                         \
-     "       WHERE port_lists_trash.id = port_list)"                    \
-     " ELSE (SELECT uuid FROM port_lists"                               \
-     "       WHERE port_lists.id = port_list)"                          \
-     " END)",                                                           \
-     NULL,                                                              \
-     KEYWORD_TYPE_STRING                                                \
-   },                                                                   \
-   {                                                                    \
-     "(CASE"                                                            \
-     " WHEN port_list_location = " G_STRINGIFY (LOCATION_TRASH)         \
-     " THEN (SELECT name FROM port_lists_trash"                         \
-     "       WHERE port_lists_trash.id = port_list)"                    \
-     " ELSE (SELECT name FROM port_lists"                               \
-     "       WHERE port_lists.id = port_list)"                          \
-     " END)",                                                           \
-     NULL,                                                              \
-     KEYWORD_TYPE_STRING                                                \
-   },                                                                   \
-   { "port_list_location = " G_STRINGIFY (LOCATION_TRASH),              \
-     NULL,                                                              \
-     KEYWORD_TYPE_STRING },                                             \
-   { "exclude_hosts", NULL, KEYWORD_TYPE_STRING },                      \
-   { "reverse_lookup_only", NULL, KEYWORD_TYPE_INTEGER },               \
-   { "reverse_lookup_unify", NULL, KEYWORD_TYPE_INTEGER },              \
-   { "alive_test", NULL, KEYWORD_TYPE_INTEGER },                        \
-   { "target_credential (id, 1, CAST ('esxi' AS text))",                \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "trash_target_credential_location (id, CAST ('esxi' AS text))",    \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "target_credential (id, 1, CAST ('snmp' AS text))",                \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "trash_target_credential_location (id, CAST ('snmp' AS text))",    \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "target_credential (id, 1, CAST ('elevate' AS text))",             \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "trash_target_credential_location (id, CAST ('elevate' AS text))", \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "target_credential (id, 1, CAST ('krb5' AS text))",                \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "trash_target_credential_location (id, CAST ('krb5' AS text))",    \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { "allow_simultaneous_ips",                                          \
-     NULL,                                                              \
-     KEYWORD_TYPE_INTEGER },                                            \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
- }
-
-/**
- * @brief Count number of targets.
- *
- * @param[in]  get  GET params.
- *
- * @return Total number of targets in filtered set.
- */
-int
-target_count (const get_data_t *get)
-{
-  static const char *extra_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
-  return count ("target", get, columns, trash_columns, extra_columns, 0, 0, 0,
-                TRUE);
-}
-
-/**
- * @brief Initialise a target iterator, including observed targets.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET data.
- *
- * @return 0 success, 1 failed to find target, 2 failed to find filter,
- *         -1 error.
- */
-int
-init_target_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "target",
-                            get,
-                            columns,
-                            trash_columns,
-                            filter_columns,
-                            0,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the hosts of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Hosts of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_hosts, GET_ITERATOR_COLUMN_COUNT);
-
-/**
- * @brief Get the SSH LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return SSH LSC credential.
- */
-int
-target_iterator_ssh_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
-  return ret;
-}
-
-/**
- * @brief Get the SSH LSC port of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return SSH LSC port of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_ssh_port, GET_ITERATOR_COLUMN_COUNT + 2);
-
-/**
- * @brief Get the SMB LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return SMB LSC credential.
- */
-int
-target_iterator_smb_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
-  return ret;
-}
-
-/**
- * @brief Get the location of the SSH LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 0 in table, 1 in trash
- */
-int
-target_iterator_ssh_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 5);
-  return ret;
-}
-
-/**
- * @brief Get the location of the SMB LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 0 in table, 1 in trash
- */
-int
-target_iterator_smb_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 6);
-  return ret;
-}
-
-/**
- * @brief Get the port list uuid of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return UUID of the target port list or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_port_list_uuid, GET_ITERATOR_COLUMN_COUNT + 7);
-
-/**
- * @brief Get the port list name of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Name of the target port list or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_port_list_name, GET_ITERATOR_COLUMN_COUNT + 8);
-
-/**
- * @brief Get the location of the port list from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 0 in table, 1 in trash.
- */
-int
-target_iterator_port_list_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
-  return ret;
-}
-
-/**
- * @brief Get the excluded hosts of the target from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Excluded hosts of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_exclude_hosts, GET_ITERATOR_COLUMN_COUNT + 10);
-
-/**
- * @brief Get the reverse lookup only value from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Reverse lookup only of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_reverse_lookup_only,
-            GET_ITERATOR_COLUMN_COUNT + 11);
-
-/**
- * @brief Get the reverse lookup unify value from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Reverse lookup unify of the target or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_reverse_lookup_unify,
-            GET_ITERATOR_COLUMN_COUNT + 12);
-
-/**
- * @brief Get the alive_tests value from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Alive_tests of the target or -1 if iteration is complete.
- */
-int
-target_iterator_alive_tests (iterator_t* iterator)
-{
-  if (iterator->done)
-    return -1;
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
-}
-
-/**
- * @brief Get the ESXi LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ESXi LSC credential.
- */
-int
-target_iterator_esxi_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
-  return ret;
-}
-
-/**
- * @brief Get the ESXi LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ESXi LSC credential.
- */
-int
-target_iterator_esxi_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
-  return ret;
-}
-
-/**
- * @brief Get the SNMP LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ESXi LSC credential.
- */
-int
-target_iterator_snmp_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
-  return ret;
-}
-
-/**
- * @brief Get the SNMP LSC credential location from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ESXi LSC credential.
- */
-int
-target_iterator_snmp_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
-  return ret;
-}
-
-/**
- * @brief Get the ELEVATE LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ELEVATE LSC credential.
- */
-int
-target_iterator_ssh_elevate_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
-  return ret;
-}
-
-/**
- * @brief Get the ELEVATE LSC credential location from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return ELEVATE LSC credential.
- */
-int
-target_iterator_ssh_elevate_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 19);
-  return ret;
-}
-
-/**
- * @brief Get the Kerberos 5 LSC credential from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Kerberos 5 LSC credential.
- */
-int
-target_iterator_krb5_credential (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
-  return ret;
-}
-
-/**
- * @brief Get the Kerberos 5 LSC credential location from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Kerberos 5 LSC credential.
- */
-int
-target_iterator_krb5_trash (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
-  return ret;
-}
-
-/**
- * @brief Get the allow_simultaneous_ips value from a target iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return allow_simult_ips_same_host or NULL if iteration is complete.
- */
-DEF_ACCESS (target_iterator_allow_simultaneous_ips,
-            GET_ITERATOR_COLUMN_COUNT + 22);
-
-/**
  * @brief Return the UUID of a tag.
  *
  * @param[in]  tag  Tag.
@@ -20909,78 +20429,6 @@ int
 trash_target_writable (target_t target)
 {
   return trash_target_in_use (target) == 0;
-}
-
-/**
- * @brief Initialise a target task iterator.
- *
- * Iterates over all tasks that use the target.
- *
- * @param[in]  iterator   Iterator.
- * @param[in]  target     Target.
- */
-void
-init_target_task_iterator (iterator_t* iterator, target_t target)
-{
-  gchar *available, *with_clause;
-  get_data_t get;
-  array_t *permissions;
-
-  assert (target);
-
-  get.trash = 0;
-  permissions = make_array ();
-  array_add (permissions, g_strdup ("get_tasks"));
-  available = acl_where_owned ("task", &get, 1, "any", 0, permissions, 0,
-                               &with_clause);
-  array_free (permissions);
-
-  init_iterator (iterator,
-                 "%s"
-                 " SELECT name, uuid, %s FROM tasks"
-                 " WHERE target = %llu"
-                 " AND hidden = 0"
-                 " ORDER BY name ASC;",
-                 with_clause ? with_clause : "",
-                 available,
-                 target);
-
-  g_free (with_clause);
-  g_free (available);
-}
-
-/**
- * @brief Get the name from a target_task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (target_task_iterator_name, 0);
-
-/**
- * @brief Get the uuid from a target_task iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The uuid of the host, or NULL if iteration is complete.  Freed by
- *         cleanup_iterator.
- */
-DEF_ACCESS (target_task_iterator_uuid, 1);
-
-/**
- * @brief Get the read permission status from a GET iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return 1 if may read, else 0.
- */
-int
-target_task_iterator_readable (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return iterator_int (iterator, 2);
 }
 
 
@@ -35053,7 +34501,7 @@ column_is_timestamp (const char* column)
  *
  * @return The columns.
  */
-static column_t *
+column_t *
 type_select_columns (const char *type)
 {
 #if ENABLE_AGENTS
@@ -35172,7 +34620,7 @@ type_select_columns (const char *type)
  *
  * @return The columns.
  */
-static column_t *
+column_t *
 type_where_columns (const char *type)
 {
   static column_t task_columns[] = TASK_ITERATOR_WHERE_COLUMNS;
@@ -35200,7 +34648,7 @@ type_where_columns (const char *type)
  *
  * @return The filter columns.
  */
-static const char**
+const char**
 type_filter_columns (const char *type)
 {
   if (type == NULL)

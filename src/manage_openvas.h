@@ -65,12 +65,12 @@ target_osp_smb_credential_db (target_t);
 
 osp_credential_t *
 target_osp_esxi_credential_db (target_t);
-#endif
 
 osp_credential_t *
 target_osp_snmp_credential_db (target_t);
 
 osp_credential_t *
 target_osp_krb5_credential_db (target_t);
+#endif
 
 #endif /* not _GVMD_MANAGE_OPENVAS_H */
