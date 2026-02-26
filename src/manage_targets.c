@@ -5,6 +5,7 @@
 
 #include "manage_sql_targets.h"
 #include "manage.h"
+#include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -37,4 +38,29 @@ void
 manage_set_max_hosts (int new_max)
 {
   max_hosts = new_max;
+}
+
+/**
+ * @brief Return whether a trashcan target is readable.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if readable, else 0.
+ */
+int
+trash_target_readable (target_t target)
+{
+  char *uuid;
+  target_t found = 0;
+
+  if (target == 0)
+    return 0;
+  uuid = target_uuid (target);
+  if (find_trash ("target", uuid, &found))
+    {
+      g_free (uuid);
+      return 0;
+    }
+  g_free (uuid);
+  return found > 0;
 }
