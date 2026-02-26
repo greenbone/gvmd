@@ -26,6 +26,12 @@ target_writable (target_t);
 int
 trash_target_writable (target_t);
 
+int
+target_in_use (target_t);
+
+int
+trash_target_in_use (target_t);
+
 gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 

@@ -2110,3 +2110,36 @@ target_task_iterator_readable (iterator_t* iterator)
   if (iterator->done) return 0;
   return iterator_int (iterator, 2);
 }
+
+/**
+ * @brief Return whether a target is in use by a task.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+target_in_use (target_t target)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE target = %llu"
+                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+                    " AND hidden = 0;",
+                    target);
+}
+
+/**
+ * @brief Return whether a trashcan target is referenced by a task.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_target_in_use (target_t target)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE target = %llu"
+                    " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
+                    target);
+}
