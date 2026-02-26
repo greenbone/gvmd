@@ -20350,32 +20350,6 @@ trash_target_in_use (target_t target)
                     target);
 }
 
-/**
- * @brief Return whether a target is writable.
- *
- * @param[in]  target  Target.
- *
- * @return 1 if writable, else 0.
- */
-int
-target_writable (target_t target)
-{
-  return 1;
-}
-
-/**
- * @brief Return whether a trashcan target is writable.
- *
- * @param[in]  target  Target.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_target_writable (target_t target)
-{
-  return trash_target_in_use (target) == 0;
-}
-
 
 /* Credentials. */
 

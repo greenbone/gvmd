@@ -20,6 +20,12 @@ manage_count_hosts (const char *, const char *);
 int
 trash_target_readable (target_t);
 
+int
+target_writable (target_t);
+
+int
+trash_target_writable (target_t);
+
 gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 

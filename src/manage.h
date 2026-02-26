@@ -1627,12 +1627,6 @@ target_in_use (target_t);
 int
 trash_target_in_use (target_t);
 
-int
-target_writable (target_t);
-
-int
-trash_target_writable (target_t);
-
 char*
 target_ssh_credential_name (const char *);
 
