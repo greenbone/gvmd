@@ -3743,6 +3743,37 @@ migrate_270_to_271 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 271 to version 272.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_271_to_272 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 271. */
+
+  if (manage_db_version () != 271)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Remove hosts_ordering field from tasks
+  sql ("ALTER TABLE tasks DROP COLUMN hosts_ordering;");
+
+  /* Set the database version to 272. */
+  set_db_version (272);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3820,6 +3851,7 @@ static migrator_t database_migrators[] = {
   {269, migrate_268_to_269},
   {270, migrate_269_to_270},
   {271, migrate_270_to_271},
+  {272, migrate_271_to_272},
   /* End marker. */
   {-1, NULL}};
 

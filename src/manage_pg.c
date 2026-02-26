@@ -2935,7 +2935,6 @@ create_tables ()
        "  oci_image_target_location integer,"
        "  agent_group_location integer,"
        "  upload_result_count integer,"
-       "  hosts_ordering text,"
        "  alterable integer,"
        "  creation_time integer,"
        "  modification_time integer,"

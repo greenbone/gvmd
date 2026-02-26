@@ -7059,7 +7059,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
-  gchar *max_checks, *max_hosts, *hosts_ordering;
+  gchar *max_checks, *max_hosts;
   GHashTable *scanner_options;
   http_scanner_resp_t response;
   int ret, empty;
@@ -7276,11 +7276,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   max_hosts = task_preference_value (task, "max_hosts");
   g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
                        max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
-
-  hosts_ordering = task_hosts_ordering (task);
-  if (hosts_ordering)
-    g_hash_table_insert (scanner_options, g_strdup ("hosts_ordering"),
-                         hosts_ordering);
 
   /* Setup VT preferences */
   init_preference_iterator (&prefs, config, "PLUGINS_PREFS");

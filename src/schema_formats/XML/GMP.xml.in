@@ -6440,9 +6440,8 @@ END:VCALENDAR
         imported must be in the XML format.
       </p>
       <p>
-        When creating an import task, the elements config, hosts_ordering,
-        scanner, alert, schedule, schedule_periods, observers and preferences
-        are ignored.
+        When creating an import task, the elements config, scanner, alert,
+        schedule, schedule_periods, observers and preferences are ignored.
       </p>
     </description>
     <pattern>
@@ -6459,7 +6458,6 @@ END:VCALENDAR
       <e>oci_image_target</e>
       @ENDIF_ENABLE_CONTAINER_SCANNNING@
       <e>target</e>
-      <o><e>hosts_ordering</e></o>
       <e>scanner</e>
       <any><e>alert</e></any>
       <o><e>schedule</e></o>
@@ -6549,11 +6547,6 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_CONTAINER_SCANNNING@
-    <ele>
-      <name>hosts_ordering</name>
-      <summary>The order hosts are scanned in</summary>
-      <pattern>text</pattern>
-    </ele>
     <ele>
       <name>scanner</name>
       <summary>The scanner to use for scanning the target</summary>
@@ -26437,7 +26430,6 @@ END:VCALENDAR
               @IF_ENABLE_AGENTS@
               <o><e>agent_group</e></o>
               @ENDIF_ENABLE_AGENTS@
-              <e>hosts_ordering</e>
               <e>scanner</e>
               <e>alert</e>
               <e>observers</e>
@@ -26716,11 +26708,6 @@ END:VCALENDAR
           </ele>
         </ele>
         @ENDIF_ENABLE_AGENTS@
-        <ele>
-          <name>hosts_ordering</name>
-          <summary>The order hosts are scanned in</summary>
-          <pattern>text</pattern>
-        </ele>
         <ele>
           <name>scanner</name>
           <summary>The scanner used to scan the target</summary>
@@ -27408,7 +27395,6 @@ END:VCALENDAR
               <name></name>
               <trash>0</trash>
             </target>
-            <hosts_ordering></hosts_ordering>
             <scanner id=''>
               <name></name>
               <type>0</type>
@@ -32473,7 +32459,6 @@ END:VCALENDAR
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>hosts</e></o>
-      <o><e>hosts_ordering</e></o>
       <o><e>exclude_hosts</e></o>
       <o><e>ssh_credential</e></o>
       <o><e>ssh_elevate_credential</e></o>
@@ -32507,11 +32492,6 @@ END:VCALENDAR
     <ele>
       <name>hosts</name>
       <summary>Comma-separated list of target hosts</summary>
-      <pattern>text</pattern>
-    </ele>
-    <ele>
-      <name>hosts_ordering</name>
-      <summary>The order hosts are scanned in</summary>
       <pattern>text</pattern>
     </ele>
     <ele>
