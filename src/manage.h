@@ -1621,12 +1621,6 @@ target_count (const get_data_t *);
 char*
 target_port_range (target_t);
 
-int
-target_in_use (target_t);
-
-int
-trash_target_in_use (target_t);
-
 char*
 target_ssh_credential_name (const char *);
 
