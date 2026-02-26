@@ -17,6 +17,9 @@ manage_set_max_hosts (int);
 int
 manage_count_hosts (const char *, const char *);
 
+int
+trash_target_readable (target_t);
+
 gboolean
 find_target_with_permission (const char *, target_t *, const char *);
 

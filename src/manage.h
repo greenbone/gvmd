@@ -1618,9 +1618,6 @@ prognosis_iterator_description (iterator_t*);
 int
 target_count (const get_data_t *);
 
-int
-trash_target_readable (target_t);
-
 char*
 target_port_range (target_t);
 

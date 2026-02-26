@@ -20213,31 +20213,6 @@ modify_task (const gchar *task_id, const gchar *name,
 /* Targets. */
 
 /**
- * @brief Return whether a trashcan target is readable.
- *
- * @param[in]  target  Target.
- *
- * @return 1 if readable, else 0.
- */
-int
-trash_target_readable (target_t target)
-{
-  char *uuid;
-  target_t found = 0;
-
-  if (target == 0)
-    return 0;
-  uuid = target_uuid (target);
-  if (find_trash ("target", uuid, &found))
-    {
-      g_free (uuid);
-      return 0;
-    }
-  g_free (uuid);
-  return found > 0;
-}
-
-/**
  * @brief Return the port list associated with a target, if any.
  *
  * @param[in]  target  Target.
