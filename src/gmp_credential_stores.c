@@ -63,7 +63,6 @@ get_credential_stores_start (const gchar **attribute_names,
                              attribute_values);
 }
 
-#if ENABLE_CREDENTIAL_STORES
 /**
  * @brief Send a credential store preference to the GMP client.
  *
@@ -137,7 +136,6 @@ send_credential_store_selector (gmp_parser_t *gmp_parser, GError **error,
   SEND_TO_CLIENT_OR_FAIL ("</credential_types>"
     "</selector>");
 }
-#endif /* ENABLE_CREDENTIAL_STORES */
 
 /**
  * @brief Run the get_credential_stores command.
@@ -148,7 +146,6 @@ send_credential_store_selector (gmp_parser_t *gmp_parser, GError **error,
 void
 get_credential_stores_run (gmp_parser_t *gmp_parser, GError **error)
 {
-#if ENABLE_CREDENTIAL_STORES
   iterator_t credential_stores;
   int count = 0, filtered, ret, first;
 
@@ -284,11 +281,6 @@ get_credential_stores_run (gmp_parser_t *gmp_parser, GError **error)
 
   SEND_GET_END ("credential_store", &get_credential_stores_data.get,
                 count, filtered);
-
-#else
-  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("get_credential_stores",
-    "Command unavailable"));
-#endif
 
   get_credential_stores_reset ();
 }
@@ -458,7 +450,6 @@ credential_store_preferences_from_entity (entity_t prefs_list_entity)
 void
 modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 {
-#if ENABLE_CREDENTIAL_STORES
   entity_t entity, child_entity;
   const char *credential_store_id, *active, *host, *path, *port, *comment;
   modify_credential_store_return_t ret;
@@ -581,11 +572,6 @@ modify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
     }
   g_free (message);
 
-#else
-  SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("modify_credential_store",
-    "Command unavailable"));
-#endif
-
   modify_credential_store_reset ();
 }
 
@@ -657,7 +643,6 @@ verify_credential_store_start (gmp_parser_t *gmp_parser,
 void
 verify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 {
-#if ENABLE_CREDENTIAL_STORES
   const char *credential_store_id
     = verify_credential_store_data.credential_store_id;
   gchar *message = NULL;
@@ -750,5 +735,4 @@ verify_credential_store_run (gmp_parser_t *gmp_parser, GError **error)
 
   g_free (message);
   verify_credential_store_reset ();
-#endif /* ENABLE_CREDENTIAL_STORES */
 }
