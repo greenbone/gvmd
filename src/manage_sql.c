@@ -16702,6 +16702,18 @@ struct print_report_context
 typedef struct print_report_context print_report_context_t;
 
 /**
+ * @brief Free f_hosts_ field for print_report_context_cleanup.
+ *
+ * @param[in]  table  Hash table.
+ */
+static void
+free_f_host (GHashTable *table)
+{
+  if (table)
+    g_hash_table_destroy (table);
+}
+
+/**
  * @brief Free the members of a context.
  *
  * @param[in]  ctx  Printing context.
@@ -16713,6 +16725,19 @@ print_report_context_cleanup (print_report_context_t *ctx)
   g_free (ctx->tz);
   g_free (ctx->zone);
   free (ctx->old_tz_override);
+  // Filtered counts.
+  free_f_host (ctx->f_host_false_positives);
+  free_f_host (ctx->f_host_holes);
+  free_f_host (ctx->f_host_infos);
+  free_f_host (ctx->f_host_logs);
+  free_f_host (ctx->f_host_ports);
+  free_f_host (ctx->f_host_warnings);
+  // Filtered counts: audit.
+  free_f_host (ctx->f_host_compliant);
+  free_f_host (ctx->f_host_criticals);
+  free_f_host (ctx->f_host_incomplete);
+  free_f_host (ctx->f_host_notcompliant);
+  free_f_host (ctx->f_host_undefined);
 }
 
 /**
@@ -17490,7 +17515,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   get, term, sort_field))
         {
           g_free (term);
-          g_hash_table_destroy (ctx.f_host_ports);
           goto fail;
         }
     }
@@ -17504,10 +17528,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         {
           res = init_result_get_iterator (&results, get, report, NULL, NULL);
           if (res)
-            {
-              g_hash_table_destroy (ctx.f_host_ports);
-              goto fail;
-            }
+            goto fail;
         }
     }
   else
@@ -17952,23 +17973,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
         }
       cleanup_iterator (&hosts);
     }
-  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-    {
-      g_hash_table_destroy (ctx.f_host_compliant);
-      g_hash_table_destroy (ctx.f_host_notcompliant);
-      g_hash_table_destroy (ctx.f_host_incomplete);
-      g_hash_table_destroy (ctx.f_host_undefined);
-    }
-  else
-    {
-      g_hash_table_destroy (ctx.f_host_criticals);
-      g_hash_table_destroy (ctx.f_host_holes);
-      g_hash_table_destroy (ctx.f_host_warnings);
-      g_hash_table_destroy (ctx.f_host_infos);
-      g_hash_table_destroy (ctx.f_host_logs);
-      g_hash_table_destroy (ctx.f_host_false_positives);
-    }
-  g_hash_table_destroy (ctx.f_host_ports);
 
   /* Print TLS certificates */
 
@@ -18071,25 +18075,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   failed_print_report_host:
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
-    g_hash_table_destroy (ctx.f_host_ports);
 
     g_free (compliance_levels);
-    if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-      {
-        g_hash_table_destroy (ctx.f_host_compliant);
-        g_hash_table_destroy (ctx.f_host_notcompliant);
-        g_hash_table_destroy (ctx.f_host_incomplete);
-        g_hash_table_destroy (ctx.f_host_undefined);
-      }
-    else
-      {
-        g_hash_table_destroy (ctx.f_host_criticals);
-        g_hash_table_destroy (ctx.f_host_holes);
-        g_hash_table_destroy (ctx.f_host_warnings);
-        g_hash_table_destroy (ctx.f_host_infos);
-        g_hash_table_destroy (ctx.f_host_logs);
-        g_hash_table_destroy (ctx.f_host_false_positives);
-      }
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
