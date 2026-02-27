@@ -346,15 +346,21 @@ init_nvt_info_iterator_all (iterator_t* iterator, get_data_t *get)
  * @brief Get the SQL for a NVTs iterator column by its filter keyword.
  *
  * @param[in]  column_name  The name as used as a filter keyword.
+ * @param[in]  fallback     The fallback if column_name is NULL or not found.
  *
  * @return The SQL fragment for the column.
  */
 static const char *
-nvt_column_sql (const char *column_name)
+nvt_column_sql (const char *column_name, const char *fallback)
 {
-  return columns_select_column (type_select_columns ("nvt"),
-                                type_where_columns ("nvt"),
-                                column_name);
+  const char *column;
+  if (column_name == NULL)
+    return fallback;
+
+  column = columns_select_column (type_select_columns ("nvt"),
+                                  type_where_columns ("nvt"),
+                                  column_name);
+  return column ? column : fallback;
 }
 
 /**
@@ -449,7 +455,7 @@ select_config_nvts (const config_t config, const char* family, int ascending,
   free (selector);
 
   quoted_family = sql_quote (family);
-  sort_field_sql = nvt_column_sql (sort_field);
+  sort_field_sql = nvt_column_sql (sort_field, "nvts.name");
 
   if (config_nvts_growing (config))
     {
@@ -679,7 +685,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
   else if (family)
     {
       gchar *quoted_family = sql_quote (family);
-      const char *sort_field_sql = nvt_column_sql (sort_field);
+      const char *sort_field_sql = nvt_column_sql (sort_field, "nvts.name");
       init_iterator (iterator,
                      "SELECT %s"
                      " FROM nvts"
@@ -694,7 +700,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
   else if (category)
     {
       gchar *quoted_category = sql_quote (category);
-      const char *sort_field_sql = nvt_column_sql (sort_field);
+      const char *sort_field_sql = nvt_column_sql (sort_field, "nvts.name");
       init_iterator (iterator,
                      "SELECT %s"
                      " FROM nvts"
@@ -708,7 +714,7 @@ init_nvt_iterator (iterator_t* iterator, nvt_t nvt, config_t config,
     }
   else
     {
-      const char *sort_field_sql = nvt_column_sql (sort_field);
+      const char *sort_field_sql = nvt_column_sql (sort_field, "nvts.name");
       init_iterator (iterator,
                     "SELECT %s"
                     " FROM nvts"
@@ -731,7 +737,7 @@ void
 init_cve_nvt_iterator (iterator_t* iterator, const char *cve, int ascending,
                        const char* sort_field)
 {
-  const char *sort_field_sql = nvt_column_sql (sort_field);
+  const char *sort_field_sql = nvt_column_sql (sort_field, "nvts.name");
 
   init_iterator (iterator,
                  "SELECT %s"
