@@ -2034,6 +2034,8 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
 
   if (!gvm_file_is_readable (script))
     {
+      memset (clean_password, 0, strlen (clean_password));
+
       g_free (report_file);
       g_free (pkcs12_file);
       g_free (clean_password);
@@ -2055,6 +2057,9 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         g_warning ("%s: Failed to getcwd: %s",
                    __func__,
                    strerror (errno));
+
+        memset (clean_password, 0, strlen (clean_password));
+
         g_free (report_file);
         g_free (pkcs12_file);
         g_free (clean_password);
@@ -2069,6 +2074,9 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
         g_warning ("%s: Failed to chdir: %s",
                    __func__,
                    strerror (errno));
+
+        memset (clean_password, 0, strlen (clean_password));
+
         g_free (report_file);
         g_free (pkcs12_file);
         g_free (clean_password);
@@ -2092,6 +2100,10 @@ send_to_sourcefire (const char *ip, const char *port, const char *pkcs12_64,
                                pkcs12_file,
                                report_file,
                                clean_password);
+
+
+    memset (clean_password, 0, strlen (clean_password));
+    
     g_free (script);
     g_free (clean_ip);
     g_free (clean_port);
@@ -2424,6 +2436,9 @@ send_to_verinice (const char *url, const char *username, const char *password,
                                    clean_url,
                                    clean_username,
                                    archive_file);
+
+    memset (clean_password, 0, strlen (clean_password));
+
     g_free (script);
     g_free (clean_url);
     g_free (clean_username);
@@ -4403,6 +4418,9 @@ trigger_to_vfire (alert_t alert, task_t task, report_t report, event_t event,
       get_data_reset (alert_filter_get);
       g_free (alert_filter_get);
     }
+
+  memset (password, 0, strlen (password));
+
   free (base_url);
   free (session_type);
   free (client_id);
@@ -4939,6 +4957,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                                      message, strlen (message),
                                      script_message);
 
+                  memset (password, 0, strlen (password));
+
                   g_free (message);
                   free (private_key);
                   free (password);
@@ -5005,6 +5025,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                                  host, port, alert_path, known_hosts,
                                  report_content, content_length,
                                  script_message);
+
+              memset (password, 0, strlen (password));
 
               free (private_key);
               free (password);
@@ -5216,6 +5238,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                                   max_protocol, report_content, content_length,
                                   script_message);
 
+          memset (password, 0, strlen (password));
+
           g_free (username);
           g_free (password);
           free (credential_id);
@@ -5378,6 +5402,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
           ret = send_to_sourcefire (ip, port, pkcs12, pkcs12_password,
                                     report_content);
 
+          memset (pkcs12_password, 0, strlen (pkcs12_password));
+
           free (ip);
           g_free (port);
           free (pkcs12);
@@ -5487,6 +5513,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
           g_free (extension);
           if (ret)
             {
+              memset (password, 0, strlen (password));
+
               g_free (username);
               g_free (password);
               g_free (hostname);
@@ -5499,6 +5527,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
                                       username, password, hostname,
                                       certificate, tls_cert_workaround,
                                       script_message);
+
+          memset (password, 0, strlen (password));
 
           g_free (username);
           g_free (password);
@@ -5577,6 +5607,8 @@ trigger (alert_t alert, task_t task, report_t report, event_t event,
 
               ret = send_to_verinice (url, username, password, report_content,
                                       content_length);
+
+              memset (password, 0, strlen (password));
 
               free (url);
               g_free (username);
