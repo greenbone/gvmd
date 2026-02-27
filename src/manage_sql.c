@@ -21745,6 +21745,7 @@ modify_credential (const char *credential_id,
 
       if (g_str_has_prefix (type, "cs_"))
         {
+#if ENABLE_CREDENTIAL_STORES
           if (credential_store_id)
             {
               credential_store_t store;
@@ -21795,6 +21796,7 @@ modify_credential (const char *credential_id,
                                     "privacy_host_identifier",
                                     privacy_host_identifier);
             }
+#endif
         }
       g_free (key_private_truncated);
     }
