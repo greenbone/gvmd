@@ -20961,6 +20961,7 @@ create_credential (const char* name, const char* comment, const char* login,
 
   if (g_str_has_prefix (quoted_type, "cs_") && ret == 0)
     {
+#if ENABLE_CREDENTIAL_STORES
       credential_store_t store;
       if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
         ret = 4;
@@ -20975,6 +20976,9 @@ create_credential (const char* name, const char* comment, const char* login,
         ret = 25;
       else if (host_identifier == NULL)
         ret = 26;
+#else
+      ret = 4;
+#endif
     }
 
   if (ret)
@@ -21053,6 +21057,7 @@ create_credential (const char* name, const char* comment, const char* login,
   if (realm)
     set_credential_data (new_credential, "realm", realm);
 
+#if ENABLE_CREDENTIAL_STORES
   if (g_str_has_prefix (quoted_type, "cs_"))
     {
       if (credential_store_id)
@@ -21077,6 +21082,7 @@ create_credential (const char* name, const char* comment, const char* login,
       sql_commit ();
       return 0;
     }
+#endif
 
   g_free (quoted_type);
 
@@ -21745,6 +21751,7 @@ modify_credential (const char *credential_id,
 
       if (g_str_has_prefix (type, "cs_"))
         {
+#if ENABLE_CREDENTIAL_STORES
           if (credential_store_id)
             {
               credential_store_t store;
@@ -21795,6 +21802,7 @@ modify_credential (const char *credential_id,
                                     "privacy_host_identifier",
                                     privacy_host_identifier);
             }
+#endif
         }
       g_free (key_private_truncated);
     }

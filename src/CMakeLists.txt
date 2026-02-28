@@ -165,8 +165,6 @@ set(
   manage_acl.c
   manage_alerts.c
   manage_asset_keys.c
-  manage_credential_store_cyberark.c
-  manage_credential_stores.c
   manage_configs.c
   manage_events.c
   manage_filter_utils.c
@@ -211,13 +209,20 @@ if(ENABLE_AGENTS)
   )
 endif()
 
+if(ENABLE_CREDENTIAL_STORES)
+  list(
+    APPEND ALL_MANAGE_SRC
+    manage_credential_store_cyberark.c
+    manage_credential_stores.c
+  )
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
   manage_sql_copy.c
   manage_sql_alerts.c
   manage_sql_assets.c
-  manage_sql_credential_stores.c
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
@@ -249,6 +254,10 @@ if(ENABLE_AGENTS)
     manage_sql_agents.c
     manage_sql_agent_installers.c
   )
+endif()
+
+if(ENABLE_CREDENTIAL_STORES)
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
 endif()
 
 set(
