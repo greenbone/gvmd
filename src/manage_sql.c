@@ -289,7 +289,7 @@ static gchar *vt_verification_collation = NULL;
 gboolean
 resource_with_id_exists (const char *type, resource_t resource)
 {
-  int ret;
+  int ret = 0;
   char *quoted_type;
 
   assert (type);
