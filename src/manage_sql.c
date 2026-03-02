@@ -16682,6 +16682,7 @@ struct print_report_context
   int false_positives;        ///< Number of false positives.
   int total_result_count;     ///< Total number of results.
   // Filtered counts.
+  GHashTable *f_host_criticals;       ///< Criticals per host.
   GHashTable *f_host_false_positives; ///< False positives per host.
   GHashTable *f_host_holes;           ///< Holes per host.
   GHashTable *f_host_infos;           ///< Infos per host.
@@ -16689,7 +16690,6 @@ struct print_report_context
   GHashTable *f_host_ports;           ///< Ports per host.
   GHashTable *f_host_warnings;        ///< Warnings per hosts.
   // Filtered counts: audit.
-  GHashTable *f_host_criticals;       ///< Criticals per host.
   GHashTable *f_host_compliant;       ///< Compliants per host.
   GHashTable *f_host_incomplete;      ///< Incompletes per host.
   GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
