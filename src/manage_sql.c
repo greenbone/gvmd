@@ -31498,6 +31498,12 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Main Dashboard Configuration");
 
       /*
+       * Export reports
+       */
+      else if (strcmp (uuid, "8f0602d4-431a-4321-bfd7-cfb7eb0af55f") == 0)
+        setting_name = g_strdup ("Export Reports to OPENVAS INTELLIGENCE");
+
+      /*
        * Scans dashboards
        */
       else if (strcmp (uuid, "c7584d7c-649f-4f8b-9ded-9e1dc20f24c8") == 0)
@@ -31591,14 +31597,14 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   if (setting_name)
     {
-      gchar *quoted_value, *value;
+      gchar *value;
       gsize value_size;
 
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
         {
-          value = (gchar*) g_base64_decode (value_64, &value_size);
+          value = (gchar *) g_base64_decode (value_64, &value_size);
           if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
@@ -31614,37 +31620,29 @@ modify_setting (const gchar *uuid, const gchar *name,
           value_size = 0;
         }
 
-      quoted_value = sql_quote (value);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value), SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  '%s',"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
-             "  '%s');",
-             uuid,
-             current_credentials.uuid,
-             setting_name,
-             uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  $3,"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL () "),"
+                "  $4);",
+                SQL_STR_PARAM (uuid), SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (setting_name), SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      g_free (quoted_value);
-
       return 0;
     }
 
