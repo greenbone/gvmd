@@ -898,3 +898,46 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
 #endif
   delete_agent_reset ();
 }
+
+/**
+ * @brief Execute the `<sync_agents>` GMP command.
+ *
+ * @param[in] gmp_parser Pointer to the GMP parser handling the current session.
+ * @param[in] error      Pointer to a GError to store error information, if any
+ * occurs.
+ */
+void
+sync_agents (gmp_parser_t *gmp_parser, GError **error)
+{
+#if ENABLE_AGENTS
+  int ret;
+
+  if (!acl_user_may ("sync_agents"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("sync_agents",
+                                               "Permission denied"));
+      log_event_fail ("agents", "Agents", NULL, "synchronized");
+      return;
+    }
+
+  ret = manage_agents_sync_from_agent_controllers (NULL);
+
+  switch (ret)
+    {
+    case 0:
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("sync_agents"));
+      log_event ("agents", "Agents", NULL, "synchronized");
+      break;
+
+    case -1:
+    default:
+      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("sync_agents"));
+      log_event_fail ("agents", "Agents", NULL, "synchronized");
+      break;
+    }
+
+#else
+  SEND_TO_CLIENT_OR_FAIL (
+    XML_ERROR_UNAVAILABLE ("sync_agents", "Command unavailable"));
+#endif
+}

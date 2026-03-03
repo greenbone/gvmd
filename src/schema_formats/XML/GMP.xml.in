@@ -33569,6 +33569,44 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AGENTS@
+  <command>
+    <name>sync_agents</name>
+    <summary>Synchronize agents from all agent-controllers</summary>
+    <description>
+      <p>
+        The client uses the "sync_agents" command to request agent synchronization
+        with all existing agent controllers.
+      </p>
+    </description>
+    <pattern>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Sync agents</summary>
+      <request>
+        <sync_agents>
+        </sync_agents>
+      </request>
+      <response>
+        <sync_agents_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AGENTS@
   <command>
     <name>test_alert</name>
     <summary>Run an alert</summary>

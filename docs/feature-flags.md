@@ -86,6 +86,7 @@ modify_agent_group
 delete_agent_group
 get_agent_installers
 get_agent_installer_file
+sync_agents
 ```
 
 ### Container scanning disabled - these commands are hidden

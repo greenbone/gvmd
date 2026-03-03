@@ -180,6 +180,9 @@ command_t gmp_commands[]
     {"RUN_WIZARD", "Run a wizard."},
     {"START_TASK", "Manually start an existing task."},
     {"STOP_TASK", "Stop a running task."},
+#if ENABLE_AGENTS
+    {"SYNC_AGENTS", "Synchronize agents from all agent-controllers."},
+#endif /* ENABLE_AGENTS */
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"TEST_ALERT", "Run an alert."},
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
