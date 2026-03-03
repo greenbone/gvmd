@@ -4769,6 +4769,9 @@ typedef enum
   CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
   CLIENT_START_TASK,
   CLIENT_STOP_TASK,
+#if ENABLE_AGENTS
+  CLIENT_SYNC_AGENTS,
+#endif
   CLIENT_TEST_ALERT,
 #if ENABLE_CREDENTIAL_STORES
   CLIENT_VERIFY_CREDENTIAL_STORE,
@@ -6328,6 +6331,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &stop_task_data->task_id);
             set_client_state (CLIENT_STOP_TASK);
           }
+#if ENABLE_AGENTS
+        else if (strcasecmp ("SYNC_AGENTS", element_name) == 0)
+          {
+            set_client_state (CLIENT_SYNC_AGENTS);
+          }
+#endif
         else if (strcasecmp ("TEST_ALERT", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values,
@@ -29156,6 +29165,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         stop_task_data_reset (stop_task_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+#if ENABLE_AGENTS
+      case CLIENT_SYNC_AGENTS:
+        sync_agents (gmp_parser, error);
+        break;
+#endif
 #if ENABLE_CREDENTIAL_STORES
       case CLIENT_VERIFY_CREDENTIAL_STORE:
         {
