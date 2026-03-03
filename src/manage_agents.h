@@ -136,6 +136,9 @@ agent_response_t
 delete_and_resync_agents (agent_uuid_list_t agent_uuids);
 
 int
+manage_agents_sync_from_agent_controllers (gboolean *);
+
+int
 init_agent_iterator (iterator_t *iterator, get_data_t *get);
 
 void

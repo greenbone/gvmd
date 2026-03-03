@@ -26,6 +26,49 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+#define AGENT_SYNC_LOCK_NAME "gvm-agent-sync"
+#define LOCK_SLEEP_SECS      4
+
+/**
+ * @brief Try to acquire a non-blocking lock with retry logic.
+ *
+ * Attempts to acquire the specified lock using lockfile_lock_nb().
+ * If the lock is already stored by another process (return value 1),
+ * the function retries up to MAX_LOCK_RETRIES times, sleeping
+ * LOCK_SLEEP_SECS seconds between attempts.
+ *
+ * @param[out] lock  Pointer to an initialized lockfile_t structure.
+ * @param[in]  name  Name of the lock to acquire.
+ *
+ * @return 0  if the lock was successfully acquired,
+ *         1  if the lock is still busy after all retries,
+ *        -1  on error.
+ */
+static int
+acquire_lock_with_retry (lockfile_t *lock, const char *name)
+{
+  int lock_ret = lockfile_lock_nb (lock, name);
+  int retries = 0;
+
+  while (lock_ret == 1 && retries < MAX_LOCK_RETRIES)
+    {
+      gvm_sleep (LOCK_SLEEP_SECS);
+      lock_ret = lockfile_lock_nb (lock, name);
+      retries++;
+    }
+
+  switch (lock_ret)
+    {
+    case 0:
+      return 0;   /* acquired */
+    case 1:
+      return 1;   /* busy */
+    case -1:
+    default:
+      return -1;  /* error */
+    }
+}
+
 /**
  * @brief Allocate and initialize a new agent_data_list_t structure.
  *
@@ -692,7 +735,7 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
   if (map_response != AGENT_RESPONSE_SUCCESS)
     return map_response;
 
-   /* Prevent unauthorized modification if the agent is currently in use. */
+  /* Prevent unauthorized modification if the agent is currently in use. */
   if (agents_in_use (agent_uuids) && agent_update->authorized == 0)
     {
       g_warning ("%s: Agent is in use by an agent group ", __func__);
@@ -718,7 +761,7 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
     }
 
   int update_result = agent_controller_update_agents (
-  connector->base, agent_control_list, agent_update, errors);
+    connector->base, agent_control_list, agent_update, errors);
 
   if (update_result < 0 && errors && *errors && (*errors)->len > 0)
     {
@@ -845,6 +888,13 @@ delete_and_resync_agents (agent_uuid_list_t agent_uuids)
   return AGENT_RESPONSE_SUCCESS;
 }
 
+/**
+ * @brief Convert an agent_response_t code to a human-readable string.
+ *
+ * @param[in] code  The agent_response_t value to convert.
+ *
+ * @return Constant string representation of the response code.
+ */
 const gchar *
 agent_response_to_string (agent_response_t code)
 {
@@ -883,5 +933,87 @@ agent_response_to_string (agent_response_t code)
     }
 }
 
-#endif // ENABLE_AGENTS
+/**
+ * @brief Synchronize agents from all configured agent controllers.
+ *
+ * If @p log_token is NULL, warnings are always logged.
+ *
+ * @param[in,out] log_token  Optional flag controlling failure logging.
+ *
+ * @return 0 on success (including “already syncing” case), or -1 on error.
+ */
+int
+manage_agents_sync_from_agent_controllers (gboolean *log_token)
+{
+  lockfile_t lockfile_agent_sync;
+  int lr = acquire_lock_with_retry (&lockfile_agent_sync, AGENT_SYNC_LOCK_NAME);
 
+  if (lr == 1)
+    {
+      /* Another process is already syncing */
+      g_debug ("%s: Agent sync already running (%s)", __func__, AGENT_SYNC_LOCK_NAME);
+      return 0;
+    }
+  if (lr != 0)
+    {
+      g_critical ("%s: Error trying to get agent sync lock (%s)",
+                  __func__, AGENT_SYNC_LOCK_NAME);
+      return -1;
+    }
+
+  int ret = 0;
+
+  iterator_t scanner_iterator;
+  get_data_t get = { 0 };
+
+  if (init_scanner_iterator (&scanner_iterator, &get) != 0)
+    {
+      ret = -1;
+      goto out_unlock;
+    }
+
+  while (next (&scanner_iterator))
+    {
+      scanner_t scanner = get_iterator_resource (&scanner_iterator);
+      if (!scanner)
+        continue;
+
+      scanner_type_t type = scanner_type (scanner);
+      if (type != SCANNER_TYPE_AGENT_CONTROLLER &&
+          type != SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+        continue;
+
+      gvmd_agent_connector_t connector =
+        gvmd_agent_connector_new_from_scanner (scanner);
+
+      if (connector && connector->base)
+        {
+          agent_response_t response =
+            sync_agents_from_agent_controller (connector);
+
+          const gboolean should_log = (log_token == NULL) ? TRUE : *log_token;
+
+          if (response != AGENT_RESPONSE_SUCCESS && should_log)
+            {
+              g_warning ("%s: Synchronizing agent data failed: %s",
+                         __func__, agent_response_to_string (response));
+
+              if (log_token != NULL)
+                *log_token = FALSE;
+            }
+        }
+
+      gvmd_agent_connector_free (connector);
+    }
+
+  cleanup_iterator (&scanner_iterator);
+
+  out_unlock:
+    if (lockfile_unlock (&lockfile_agent_sync))
+      g_warning ("%s: Error releasing agent sync lock (%s)",
+                 __func__, AGENT_SYNC_LOCK_NAME);
+
+  return ret;
+}
+
+#endif // ENABLE_AGENTS
