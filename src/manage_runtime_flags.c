@@ -96,6 +96,12 @@ static feature_state_t feature_vt_metadata =
   {1, 0};
 
 /**
+ * @brief State of a single feature.
+ */
+static feature_state_t feature_report_export =
+  {1, 0};
+
+/**
  * @brief Parse a textual boolean value into an integer.
  *
  * Recognized true values: "1", "true", "yes", "on"
@@ -194,6 +200,9 @@ struct conf_feature_flags
 
   int has_vt_metadata;         ///< Whether flag is present.
   int vt_metadata;             ///< Value of flag.
+
+  int has_report_export;       ///< Whether flag is present.
+  int report_export;           ///< Value of flag.
 };
 
 /**
@@ -292,6 +301,9 @@ load_conf_file_feature_flags (const char *config_path,
 
   load_feature_flag (kf, "features", "enable_vt_metadata",
                      &out->has_vt_metadata, &out->vt_metadata);
+
+  load_feature_flag (kf, "features", "enable_report_export",
+                     &out->has_report_export, &out->report_export);
 
   g_key_file_unref (kf);
   return 0;
@@ -412,6 +424,11 @@ runtime_flags_init (const gchar *config_path)
                    conf_flags.has_vt_metadata,
                    conf_flags.vt_metadata);
 
+  resolve_feature (&feature_report_export,
+                   "GVMD_ENABLE_REPORT_EXPORT",
+                   conf_flags.has_report_export,
+                   conf_flags.report_export);
+
   return 0;
 }
 
@@ -441,6 +458,8 @@ feature_enabled (feature_id_t t)
       return feature_credential_stores.enabled;
     case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.enabled;
+    case FEATURE_ID_REPORT_EXPORT:
+      return feature_report_export.enabled;
     default:
       return 0;
     }
@@ -468,6 +487,8 @@ feature_compiled_in (feature_id_t t)
       return feature_credential_stores.compiled_in;
     case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.compiled_in;
+    case FEATURE_ID_REPORT_EXPORT:
+      return feature_report_export.compiled_in;
     default:
       return 0;
     }
