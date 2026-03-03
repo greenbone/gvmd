@@ -1619,9 +1619,6 @@ int
 target_count (const get_data_t *);
 
 char*
-target_port_range (target_t);
-
-char*
 target_ssh_credential_name (const char *);
 
 
