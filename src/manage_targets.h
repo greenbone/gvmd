@@ -86,6 +86,9 @@ modify_target (const char *, const char *, const char *, const char *,
                const char *, const char *);
 
 int
+target_count (const get_data_t *);
+
+int
 init_target_iterator (iterator_t *, get_data_t *);
 
 const char *

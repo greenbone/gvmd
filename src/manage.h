@@ -1615,9 +1615,6 @@ prognosis_iterator_description (iterator_t*);
  */
 #define MANAGE_USER_MAX_HOSTS 16777216
 
-int
-target_count (const get_data_t *);
-
 
 /* Configs.
  *
