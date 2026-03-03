@@ -7,6 +7,7 @@
 #define _GVMD_MANAGE_SQL_TARGETS_H
 
 #include "manage_targets.h"
+#include "manage.h"
 
 /**
  * @brief Filter columns for target iterator.
@@ -225,6 +226,9 @@
      KEYWORD_TYPE_INTEGER },                                            \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
+
+alive_test_t
+target_alive_tests (target_t);
 
 char*
 target_comment (target_t);

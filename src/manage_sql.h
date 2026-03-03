@@ -293,9 +293,6 @@ manage_update_nvti_cache ();
 const char *
 run_status_name_internal (task_status_t);
 
-alive_test_t
-target_alive_tests (target_t);
-
 void
 check_generate_scripts ();
 

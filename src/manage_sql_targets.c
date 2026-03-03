@@ -138,6 +138,20 @@ trash_target_comment (target_t target)
 }
 
 /**
+ * @brief Return a target's alive tests.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Alive test bitfield.
+ */
+alive_test_t
+target_alive_tests (target_t target)
+{
+  return sql_int ("SELECT alive_test FROM targets WHERE id = %llu;",
+                  target);
+}
+
+/**
  * @brief Return the hosts associated with a target.
  *
  * @param[in]  target  Target.
