@@ -54,6 +54,9 @@ char*
 target_exclude_hosts (target_t);
 
 char*
+target_port_range (target_t);
+
+char*
 target_reverse_lookup_only (target_t);
 
 char*
