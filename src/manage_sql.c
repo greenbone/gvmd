@@ -20197,23 +20197,6 @@ modify_task (const gchar *task_id, const gchar *name,
 }
 
 
-/* Targets. */
-
-/**
- * @brief Return a target's alive tests.
- *
- * @param[in]  target  Target.
- *
- * @return Alive test bitfield.
- */
-alive_test_t
-target_alive_tests (target_t target)
-{
-  return sql_int ("SELECT alive_test FROM targets WHERE id = %llu;",
-                  target);
-}
-
-
 /* Credentials. */
 
 /**
