@@ -240,9 +240,6 @@ preference_iterator_name (iterator_t *);
 const char *
 preference_iterator_value (iterator_t *);
 
-port_list_t
-target_port_list (target_t);
-
 int
 create_current_report (task_t, char **, task_status_t);
 

@@ -2145,6 +2145,38 @@ trash_target_in_use (target_t target)
 }
 
 /**
+ * @brief Return the port list associated with a target, if any.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Port list
+ */
+static port_list_t
+target_port_list (target_t target)
+{
+  port_list_t port_list;
+
+  switch (sql_int64 (&port_list,
+                     "SELECT port_list FROM targets"
+                     " WHERE id = %llu;",
+                     target))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        /** @todo Move return to arg; return -1. */
+        return 0;
+        break;
+    }
+  return port_list;
+}
+
+/**
  * @brief Return the port range of a target, in GMP port range list format.
  *
  * For "OpenVAS Default", return the explicit port ranges instead of "default".
