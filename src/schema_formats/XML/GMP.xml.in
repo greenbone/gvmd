@@ -14243,7 +14243,7 @@ END:VCALENDAR
             <name>FEED_VT_METADATA</name>
           </feature>
           <feature compiled_in="1" enabled="0">
-            <name>ENABLE_REPORT_EXPORT</name>
+            <name>ENABLE_OSI_EXPORT</name>
           </feature>
         </get_features_response>
       </response>

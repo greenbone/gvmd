@@ -23,7 +23,7 @@ enable_container_scanning = false
 enable_credential_store = false
 enable_openvasd = false
 enable_vt_metadata = false
-enable_report_export = false
+enable_osi_export = false
 ```
 
 Each line is optional.
@@ -40,7 +40,7 @@ If a line is missing, gvmd does not apply a value from the config file.
 | OpenVASd Integration | `ENABLE_OPENVASD`                                         | `GVMD_ENABLE_OPENVASD`           | `enable_openvasd`                         |
 | Credential Stores    | `ENABLE_CREDENTIAL_STORES`                                | `GVMD_ENABLE_CREDENTIAL_STORES`  | `enable_credential_store`                 |
 | VT Metadata Feed     | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`        | `enable_vt_metadata`                      |
-| OSI Report Export    | Always exists in binary                                   | `GVMD_ENABLE_REPORT_EXPORT`      | `enable_report_export`                    |
+| OSI Report Export    | Always exists in binary                                   | `GVMD_ENABLE_OSI_EXPORT`         | `enable_osi_export`                       |
 
 ---
 
@@ -134,7 +134,7 @@ Exact example response:
   <name>FEED_VT_METADATA</name>
   </feature>
   <feature compiled_in="1" enabled="0">
-  <name>ENABLE_REPORT_EXPORT</name>
+  <name>ENABLE_OSI_EXPORT</name>
   </feature>
 </get_features_response>
 ```
