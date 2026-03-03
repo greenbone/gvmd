@@ -1618,9 +1618,6 @@ prognosis_iterator_description (iterator_t*);
 int
 target_count (const get_data_t *);
 
-char*
-target_ssh_credential_name (const char *);
-
 
 /* Configs.
  *
