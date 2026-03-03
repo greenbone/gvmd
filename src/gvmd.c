@@ -1601,44 +1601,8 @@ fork_agents_sync ()
             manager_socket_2 = -1;
           }
 
-        /* Iterate scanners and sync agents. */
-      iterator_t scanner_iterator;
-      get_data_t get = { 0 };
-
-      if (init_scanner_iterator (&scanner_iterator, &get) == 0)
-        {
-          while (next (&scanner_iterator))
-            {
-              scanner_t scanner = get_iterator_resource (&scanner_iterator);
-              if (scanner && (scanner_type (scanner) ==
-                              SCANNER_TYPE_AGENT_CONTROLLER
-                              || scanner_type (scanner) ==
-                              SCANNER_TYPE_AGENT_CONTROLLER_SENSOR))
-                {
-                  gvmd_agent_connector_t connector =
-                    gvmd_agent_connector_new_from_scanner (scanner);
-
-                  if (connector && connector->base)
-                    {
-                      agent_response_t response =
-                        sync_agents_from_agent_controller (connector);
-
-                      if (response != AGENT_RESPONSE_SUCCESS &&
-                          s_agent_log_token)
-                        {
-                          g_warning ("%s: Synchronizing agent data failed: %s",
-                                     __func__, agent_response_to_string (response));
-                          /* Set token false so we do not double-log inside this child */
-                          s_agent_log_token = FALSE;
-                        }
-                    }
-
-                  gvmd_agent_connector_free (connector);
-                }
-            }
-
-          cleanup_iterator (&scanner_iterator);
-        }
+      /* Sync agents from all agent controllers. */
+        manage_agents_sync_from_agent_controllers (&s_agent_log_token);
 
         cleanup_manage_process (FALSE);
         gvm_close_sentry ();
