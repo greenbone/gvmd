@@ -428,7 +428,7 @@ watch_client_connection (void* data)
           if (watcher_data->connection_closed == 0)
             {
               g_debug ("%s: Client connection closed", __func__);
-              sql_cancel ();
+              manage_cancel ();
               active = 0;
               watcher_data->connection_closed = 1;
             }
@@ -1019,7 +1019,7 @@ handle_termination_signal (int signal)
 {
   termination_signal = signal;
 
-  sql_cancel ();
+  manage_cancel ();
 }
 
 /**

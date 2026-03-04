@@ -35438,15 +35438,14 @@ manage_optimize (GSList *log_config, const db_conn_info_t *database,
 }
 
 /**
- * @brief Cancels the current SQL statement.
+ * @brief Cancels the current manager operation.
  *
  * @return 0 on success, -1 on error.
  */
 int
-sql_cancel ()
+manage_cancel ()
 {
-  g_debug ("%s: cancelling current SQL statement", __func__);
-  return sql_cancel_internal ();
+  return sql_cancel ();
 }
 
 /**
