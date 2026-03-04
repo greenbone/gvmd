@@ -3231,7 +3231,7 @@ manage_optimize (GSList *, const db_conn_info_t *, const gchar *);
 /* Signal management */
 
 int
-sql_cancel ();
+manage_cancel ();
 
 
 /* General settings */

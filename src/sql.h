@@ -214,7 +214,7 @@ long long int
 sql_int64_0_ps (const char *sql, ...);
 
 int
-sql_cancel_internal ();
+sql_cancel ();
 
 int
 sql_table_exists (const gchar *, const gchar *);

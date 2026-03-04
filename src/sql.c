@@ -41,6 +41,9 @@
 
 /* Headers of internal symbols defined in backend files. */
 
+int
+sql_cancel_internal ();
+
 void
 sql_prepare_internal (int, const char *, va_list, sql_stmt_t **);
 
@@ -332,6 +335,18 @@ sql_ps (const char *sql, ...)
   va_start (args, sql);
   sql_internal (TRUE, sql, args);
   va_end (args);
+}
+
+/**
+ * @brief Cancels the current SQL statement.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+sql_cancel ()
+{
+  g_debug ("%s: cancelling current SQL statement", __func__);
+  return sql_cancel_internal ();
 }
 
 /**
