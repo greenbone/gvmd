@@ -289,19 +289,21 @@ static gchar *vt_verification_collation = NULL;
 gboolean
 resource_with_id_exists (const char *type, resource_t resource)
 {
-  int ret = 0;
-  char *quoted_type;
+  if (resource && type)
+    {
+      int ret;
+      char *quoted_type;
 
-  assert (type);
-  quoted_type = sql_quote (type);
+      quoted_type = sql_quote (type);
 
-  if (resource)
-    ret = sql_int ("SELECT COUNT(*) FROM %ss"
-                   " WHERE id = %llu;",
-                   quoted_type, resource);
+      ret = sql_int ("SELECT COUNT(*) FROM %ss"
+                     " WHERE id = %llu;",
+                     quoted_type, resource);
 
-  g_free (quoted_type);
-  return !!ret;
+      g_free (quoted_type);
+      return !!ret;
+    }
+  return 0;
 }
 
 /**
