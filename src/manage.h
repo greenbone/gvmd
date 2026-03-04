@@ -1596,35 +1596,6 @@ const char*
 prognosis_iterator_description (iterator_t*);
 
 
-/* Targets. */
-
-/**
- * @brief Absolute maximum number of IPs per target.
- *
- * The number of 70000 is chosen to cover "192.168.0.0-192.168.255.255".
- */
-#define MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET 70000
-
-/**
- * @brief Default maximum number of hosts a target may specify.
- */
-#define MANAGE_MAX_HOSTS 4095
-
-/**
- * @brief Default maximum number of hosts a user host access may specify.
- */
-#define MANAGE_USER_MAX_HOSTS 16777216
-
-int
-target_count (const get_data_t *);
-
-char*
-target_port_range (target_t);
-
-char*
-target_ssh_credential_name (const char *);
-
-
 /* Configs.
  *
  * These are here because they need definitions that are still in manage.h. */

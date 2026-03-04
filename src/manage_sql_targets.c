@@ -138,6 +138,20 @@ trash_target_comment (target_t target)
 }
 
 /**
+ * @brief Return a target's alive tests.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Alive test bitfield.
+ */
+alive_test_t
+target_alive_tests (target_t target)
+{
+  return sql_int ("SELECT alive_test FROM targets WHERE id = %llu;",
+                  target);
+}
+
+/**
  * @brief Return the hosts associated with a target.
  *
  * @param[in]  target  Target.
@@ -2142,4 +2156,95 @@ trash_target_in_use (target_t target)
                     " WHERE target = %llu"
                     " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
                     target);
+}
+
+/**
+ * @brief Return the port list associated with a target, if any.
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Port list
+ */
+static port_list_t
+target_port_list (target_t target)
+{
+  port_list_t port_list;
+
+  switch (sql_int64 (&port_list,
+                     "SELECT port_list FROM targets"
+                     " WHERE id = %llu;",
+                     target))
+    {
+      case 0:
+        break;
+      case 1:        /* Too few rows in result of query. */
+        return 0;
+        break;
+      default:       /* Programming error. */
+        assert (0);
+      case -1:
+        /** @todo Move return to arg; return -1. */
+        return 0;
+        break;
+    }
+  return port_list;
+}
+
+/**
+ * @brief Return the port range of a target, in GMP port range list format.
+ *
+ * For "OpenVAS Default", return the explicit port ranges instead of "default".
+ *
+ * @param[in]  target  Target.
+ *
+ * @return Newly allocated port range if available, else NULL.
+ */
+char*
+target_port_range (target_t target)
+{
+  GString *range;
+  iterator_t ranges;
+  range = g_string_new ("");
+  init_port_range_iterator (&ranges, target_port_list (target), 0, 1,
+                            "type, CAST (start AS INTEGER)");
+  if (next (&ranges))
+    {
+      const char *start, *end;
+      int type;
+
+      start = port_range_iterator_start (&ranges);
+      end = port_range_iterator_end (&ranges);
+      type = port_range_iterator_type_int (&ranges);
+
+      /* Scanner can only handle: T:1-3,5-6,9,U:1-2 */
+
+      if (end && strcmp (end, "0") && strcmp (end, start))
+        g_string_append_printf (range, "%s%s-%s",
+                                (type == PORT_PROTOCOL_UDP ? "U:" : "T:"),
+                                start, end);
+      else
+        g_string_append_printf (range, "%s%s",
+                                (type == PORT_PROTOCOL_UDP ? "U:" : "T:"),
+                                start);
+      while (next (&ranges))
+        {
+          int tcp;
+
+          start = port_range_iterator_start (&ranges);
+          end = port_range_iterator_end (&ranges);
+          tcp = (type == PORT_PROTOCOL_TCP);
+          type = port_range_iterator_type_int (&ranges);
+
+          if (end && strcmp (end, "0") && strcmp (end, start))
+            g_string_append_printf (range, ",%s%s-%s",
+                                    (tcp && type == PORT_PROTOCOL_UDP ? "U:" : ""),
+                                    start, end);
+          else
+            g_string_append_printf (range, ",%s%s",
+                                    (tcp && type == PORT_PROTOCOL_UDP ? "U:" : ""),
+                                    start);
+        }
+    }
+  cleanup_iterator (&ranges);
+  return g_string_free (range, FALSE);
 }

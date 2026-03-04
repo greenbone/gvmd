@@ -8,6 +8,23 @@
 
 #include "manage_resources.h"
 
+/**
+ * @brief Absolute maximum number of IPs per target.
+ *
+ * The number of 70000 is chosen to cover "192.168.0.0-192.168.255.255".
+ */
+#define MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET 70000
+
+/**
+ * @brief Default maximum number of hosts a target may specify.
+ */
+#define MANAGE_MAX_HOSTS 4095
+
+/**
+ * @brief Default maximum number of hosts a user host access may specify.
+ */
+#define MANAGE_USER_MAX_HOSTS 16777216
+
 int
 manage_max_hosts ();
 
@@ -54,6 +71,9 @@ char*
 target_exclude_hosts (target_t);
 
 char*
+target_port_range (target_t);
+
+char*
 target_reverse_lookup_only (target_t);
 
 char*
@@ -81,6 +101,9 @@ modify_target (const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, GPtrArray *,
                const char *, const char *);
+
+int
+target_count (const get_data_t *);
 
 int
 init_target_iterator (iterator_t *, get_data_t *);

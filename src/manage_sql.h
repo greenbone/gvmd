@@ -240,9 +240,6 @@ preference_iterator_name (iterator_t *);
 const char *
 preference_iterator_value (iterator_t *);
 
-port_list_t
-target_port_list (target_t);
-
 int
 create_current_report (task_t, char **, task_status_t);
 
@@ -295,9 +292,6 @@ manage_update_nvti_cache ();
 
 const char *
 run_status_name_internal (task_status_t);
-
-alive_test_t
-target_alive_tests (target_t);
 
 void
 check_generate_scripts ();
