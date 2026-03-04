@@ -68,6 +68,9 @@ int
 lockfile_locked (const gchar *);
 
 int
+lockfile_lock_with_retry (lockfile_t *, const gchar *, int, int);
+
+int
 is_uuid (const char *);
 
 gchar *

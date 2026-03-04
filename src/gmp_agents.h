@@ -67,6 +67,6 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error);
 /* SYNC AGENTS */
 
 void
-sync_agents (gmp_parser_t *gmp_parser, GError **error);
+sync_agents_run (gmp_parser_t *gmp_parser, GError **error);
 
 #endif // not _GVMD_GMP_AGENTS_H

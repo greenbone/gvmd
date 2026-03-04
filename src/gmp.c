@@ -29167,7 +29167,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 #if ENABLE_AGENTS
       case CLIENT_SYNC_AGENTS:
-        sync_agents (gmp_parser, error);
+        sync_agents_run (gmp_parser, error);
         break;
 #endif
 #if ENABLE_CREDENTIAL_STORES
