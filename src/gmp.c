@@ -13744,6 +13744,7 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     compiled_in, enabled, "ENABLE_OSI_EXPORT");
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
+  set_client_state (CLIENT_AUTHENTIC);
 }
 
 /**
@@ -29168,6 +29169,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 #if ENABLE_AGENTS
       case CLIENT_SYNC_AGENTS:
         sync_agents_run (gmp_parser, error);
+        set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif
 #if ENABLE_CREDENTIAL_STORES
