@@ -907,7 +907,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
  * occurs.
  */
 void
-sync_agents (gmp_parser_t *gmp_parser, GError **error)
+sync_agents_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
   int ret;
@@ -926,7 +926,7 @@ sync_agents (gmp_parser_t *gmp_parser, GError **error)
     {
     case 0:
       SENDF_TO_CLIENT_OR_FAIL (XML_OK ("sync_agents"));
-      log_event ("agents", "Agents", NULL, "synchronized");
+      log_event_plural ("agents", "Agents", NULL, "synchronized");
       break;
 
     case -1:

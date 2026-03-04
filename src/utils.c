@@ -689,6 +689,50 @@ lockfile_locked (const gchar *lockfile_basename)
   return ret;
 }
 
+/**
+ * @brief Try to acquire a non-blocking lock with retry logic.
+ *
+ * Attempts to acquire the specified lock using lockfile_lock_nb().
+ * If the lock is already stored by another process (return value 1),
+ * the function retries up to @pmax_lock_retries times, sleeping
+ * @plock_sleep_secs seconds between attempts.
+ *
+ * @param[out] lock  Pointer to an initialized lockfile_t structure.
+ * @param[in]  name  Name of the lock to acquire.
+ * @param[in]  max_lock_retries  Maximum number of lock retries.
+ * @param[in]  lock_sleep_secs  Sleep seconds between lock retries.
+ *
+ * @return 0  if the lock was successfully acquired,
+ *         1  if the lock is still busy after all retries,
+ *        -1  on error.
+ */
+int
+lockfile_lock_with_retry (lockfile_t *lock, const gchar *name,
+                         int max_lock_retries,
+                         int lock_sleep_secs)
+{
+  int lock_ret = lockfile_lock_nb (lock, name);
+  int retries = 0;
+
+  while (lock_ret == 1 && retries < max_lock_retries)
+    {
+      gvm_sleep (lock_sleep_secs);
+      lock_ret = lockfile_lock_nb (lock, name);
+      retries++;
+    }
+
+  switch (lock_ret)
+    {
+    case 0:
+      return 0; /* acquired */
+    case 1:
+      return 1; /* busy */
+    case -1:
+    default:
+      return -1; /* error */
+    }
+}
+
 
 /* UUIDs. */
 

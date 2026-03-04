@@ -27,47 +27,7 @@
 #define G_LOG_DOMAIN "md manage"
 
 #define AGENT_SYNC_LOCK_NAME "gvm-agent-sync"
-#define LOCK_SLEEP_SECS      4
-
-/**
- * @brief Try to acquire a non-blocking lock with retry logic.
- *
- * Attempts to acquire the specified lock using lockfile_lock_nb().
- * If the lock is already stored by another process (return value 1),
- * the function retries up to MAX_LOCK_RETRIES times, sleeping
- * LOCK_SLEEP_SECS seconds between attempts.
- *
- * @param[out] lock  Pointer to an initialized lockfile_t structure.
- * @param[in]  name  Name of the lock to acquire.
- *
- * @return 0  if the lock was successfully acquired,
- *         1  if the lock is still busy after all retries,
- *        -1  on error.
- */
-static int
-acquire_lock_with_retry (lockfile_t *lock, const char *name)
-{
-  int lock_ret = lockfile_lock_nb (lock, name);
-  int retries = 0;
-
-  while (lock_ret == 1 && retries < MAX_LOCK_RETRIES)
-    {
-      gvm_sleep (LOCK_SLEEP_SECS);
-      lock_ret = lockfile_lock_nb (lock, name);
-      retries++;
-    }
-
-  switch (lock_ret)
-    {
-    case 0:
-      return 0;   /* acquired */
-    case 1:
-      return 1;   /* busy */
-    case -1:
-    default:
-      return -1;  /* error */
-    }
-}
+#define LOCK_SLEEP_SECS 4
 
 /**
  * @brief Allocate and initialize a new agent_data_list_t structure.
@@ -946,7 +906,8 @@ int
 manage_agents_sync_from_agent_controllers (gboolean *log_token)
 {
   lockfile_t lockfile_agent_sync;
-  int lr = acquire_lock_with_retry (&lockfile_agent_sync, AGENT_SYNC_LOCK_NAME);
+  int lr = lockfile_lock_with_retry (&lockfile_agent_sync, AGENT_SYNC_LOCK_NAME,
+                                     MAX_LOCK_RETRIES, LOCK_SLEEP_SECS);
 
   if (lr == 1)
     {
