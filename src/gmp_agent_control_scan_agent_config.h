@@ -45,6 +45,6 @@ build_agent_config_from_entity (entity_t root,
 
 int
 build_scan_agent_config_from_entity (entity_t root,
-                                     agent_controller_scan_agent_config_t out_defaults);
+                                     agent_controller_scan_agent_config_t out);
 
 #endif /* not _GVMD_GMP_AGENT_CONTROL_SCAN_AGENT_CONFIG_H */
