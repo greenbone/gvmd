@@ -94,15 +94,15 @@ dup_str_ptr_array (const GPtrArray *src)
  *         NULL if @p src is NULL or if any allocation fails. On failure, any
  *         partially allocated memory is released.
  */
-static agent_controller_scan_agent_config_t
+static agent_controller_agent_config_t
 copy_agent_controller_scan_agent_config (
-  agent_controller_scan_agent_config_t src)
+  agent_controller_agent_config_t src)
 {
   if (!src)
     return NULL;
 
-  agent_controller_scan_agent_config_t dst =
-    agent_controller_scan_agent_config_new ();
+  agent_controller_agent_config_t dst =
+    agent_controller_agent_config_new ();
 
   /* Plain struct copies */
   dst->agent_control.retry.attempts = src->agent_control.retry.attempts;
@@ -128,7 +128,7 @@ copy_agent_controller_scan_agent_config (
       && !dst->agent_script_executor.scheduler_cron_time)
     {
       /* allocation failed – clean up partial dst */
-      agent_controller_scan_agent_config_free (dst);
+      agent_controller_agent_config_free (dst);
       return NULL;
     }
 
@@ -470,7 +470,7 @@ agent_data_free (agent_data_t data)
     g_free (data->connection_status);
 
   if (data->config)
-    agent_controller_scan_agent_config_free (data->config);
+    agent_controller_agent_config_free (data->config);
 
   if (data->updater_version)
     g_free (data->updater_version);
@@ -619,8 +619,8 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
 
       /* config conversion */
       const gchar *cfg_str = g_strdup (agent_iterator_config (&iterator));
-      agent_controller_scan_agent_config_t config =
-        agent_controller_parse_scan_agent_config_string (cfg_str);
+      agent_controller_agent_config_t config =
+        agent_controller_parse_agent_config_string (cfg_str);
 
       agent->row_id = iterator_int64 (&iterator, 0);
       agent->agent_id = g_strdup (agent_iterator_agent_id (&iterator));

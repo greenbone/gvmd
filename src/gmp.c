@@ -17905,42 +17905,52 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
             {
               scanner_t scanner_id = get_iterator_resource (&scanners);
               agent_controller_scan_agent_config_t cfg =
-                get_agent_control_scan_config (scanner_id);
+                get_agent_control_scan_agent_config (scanner_id);
 
               if (!cfg)
                 {
-                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config/>");
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config_defaults/>");
+                }
+              else if (!cfg->agent_defaults)
+                {
+                  agent_controller_scan_agent_config_free (cfg);
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config_defaults/>");
                 }
               else
                 {
-                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config>");
+                  agent_controller_agent_config_t dflt = cfg->
+                    agent_defaults;
+
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_config_defaults>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_defaults>");
 
                   /* agent_control/retry */
                   SEND_TO_CLIENT_OR_FAIL ("<agent_control><retry>");
                   SENDF_TO_CLIENT_OR_FAIL ("<attempts>%d</attempts>",
-                                           cfg->agent_control.retry.attempts);
+                                           dflt->agent_control.retry.attempts);
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<delay_in_seconds>%d</delay_in_seconds>",
-                    cfg->agent_control.retry.delay_in_seconds);
+                    dflt->agent_control.retry.delay_in_seconds);
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<max_jitter_in_seconds>%d</max_jitter_in_seconds>",
-                    cfg->agent_control.retry.max_jitter_in_seconds);
+                    dflt->agent_control.retry.max_jitter_in_seconds);
                   SEND_TO_CLIENT_OR_FAIL ("</retry></agent_control>");
 
                   /* agent_script_executor */
                   SEND_TO_CLIENT_OR_FAIL ("<agent_script_executor>");
                   SENDF_TO_CLIENT_OR_FAIL ("<bulk_size>%d</bulk_size>",
-                                           cfg->agent_script_executor.bulk_size)
-                  ;
+                                           dflt->agent_script_executor.
+                                           bulk_size);
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<bulk_throttle_time_in_ms>%d</bulk_throttle_time_in_ms>",
-                    cfg->agent_script_executor.bulk_throttle_time_in_ms);
+                    dflt->agent_script_executor.bulk_throttle_time_in_ms);
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<indexer_dir_depth>%d</indexer_dir_depth>",
-                    cfg->agent_script_executor.indexer_dir_depth);
+                    dflt->agent_script_executor.indexer_dir_depth);
 
-                  GPtrArray *cron = cfg->agent_script_executor.
-                                         scheduler_cron_time;
+                  GPtrArray *cron = dflt->agent_script_executor.
+                                          scheduler_cron_time;
                   if (cron && cron->len > 0)
                     {
                       SEND_TO_CLIENT_OR_FAIL (
@@ -17966,13 +17976,25 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                   SEND_TO_CLIENT_OR_FAIL ("<heartbeat>");
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<interval_in_seconds>%d</interval_in_seconds>",
-                    cfg->heartbeat.interval_in_seconds);
+                    dflt->heartbeat.interval_in_seconds);
                   SENDF_TO_CLIENT_OR_FAIL (
                     "<miss_until_inactive>%d</miss_until_inactive>",
-                    cfg->heartbeat.miss_until_inactive);
+                    dflt->heartbeat.miss_until_inactive);
                   SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
 
-                  SEND_TO_CLIENT_OR_FAIL ("</agent_control_config>");
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_defaults>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("<agent_control_defaults>");
+
+                  SENDF_TO_CLIENT_OR_FAIL (
+                    "<update_to_latest>%d</update_to_latest>",
+                    (cfg->agent_control_defaults
+                      ? cfg->agent_control_defaults->update_to_latest
+                      : 0));
+
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_control_defaults>");
+
+                  SEND_TO_CLIENT_OR_FAIL ("</agent_control_config_defaults>");
 
                   agent_controller_scan_agent_config_free (cfg);
                 }

@@ -30,7 +30,7 @@
  *         allocation/parse error occurs.
  */
 agent_controller_scan_agent_config_t
-get_agent_control_scan_config (scanner_t scanner)
+get_agent_control_scan_agent_config (scanner_t scanner)
 {
   gvmd_agent_connector_t connector = NULL;
   agent_controller_scan_agent_config_t agent_config = NULL;
@@ -72,9 +72,10 @@ get_agent_control_scan_config (scanner_t scanner)
  *       communication failure).
  */
 int
-modify_agent_control_scan_config (scanner_t scanner,
-                                  agent_controller_scan_agent_config_t cfg,
-                                  GPtrArray **errors)
+modify_agent_control_scan_agent_config (scanner_t scanner,
+                                        agent_controller_scan_agent_config_t
+                                        cfg,
+                                        GPtrArray **errors)
 {
   int ret = 0;
   gvmd_agent_connector_t connector = NULL;

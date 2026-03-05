@@ -157,13 +157,13 @@ modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  /* <config>… */
-  entity_t cfg_e = entity_child (root, "config");
+  /* <config_defaults> */
+  entity_t cfg_e = entity_child (root, "config_defaults");
   if (!cfg_e)
     {
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX ("modify_agent_control_scan_config",
-          "Missing <config>"));
+          "Missing <config_defaults>"));
       modify_agent_control_scan_config_reset ();
       return;
     }
@@ -173,7 +173,7 @@ modify_agent_control_scan_config_run (gmp_parser_t *gmp_parser, GError **error)
   build_scan_agent_config_from_entity (cfg_e, cfg);
 
   GPtrArray *errs = NULL;
-  int rc = modify_agent_control_scan_config (scanner, cfg, &errs);
+  int rc = modify_agent_control_scan_agent_config (scanner, cfg, &errs);
 
   switch (rc)
     {
@@ -279,7 +279,7 @@ modify_agent_control_scan_config_element_end (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Populate an Agent-Controller scan config from a <config> subtree.
+ * @brief Populate an agent config from a <config> subtree.
  *
  * @param[in] root Entity node representing the <config> subtree
  *                 (i.e., the parent of <agent_control>, <agent_script_executor>,
@@ -289,9 +289,9 @@ modify_agent_control_scan_config_element_end (gmp_parser_t *gmp_parser,
  * @return 0 on success; -1 if @p out_cfg is NULL.
  */
 int
-build_scan_agent_config_from_entity (
+build_agent_config_from_entity (
   entity_t root,
-  agent_controller_scan_agent_config_t out_cfg)
+  agent_controller_agent_config_t out_cfg)
 {
   if (!out_cfg)
     return -1;
@@ -375,6 +375,45 @@ build_scan_agent_config_from_entity (
       if (e)
         out_cfg->heartbeat.miss_until_inactive =
           atoi (entity_text (e) ? entity_text (e) : "0");
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Populate scan-agent config from a <defaults> subtree.
+ *
+ * @param[in] root Entity node representing the <defaults> subtree.
+ * @param[in,out] out_defaults Pre-allocated defaults object to populate.
+ *                             Must not be NULL.
+ *
+ * @return 0 on success; -1 on error (e.g., NULL out_defaults or OOM).
+ */
+int
+build_scan_agent_config_from_entity (
+  entity_t root,
+  agent_controller_scan_agent_config_t out_defaults)
+{
+  if (!out_defaults)
+    return -1;
+
+  entity_t ad = entity_child (root, "agent_defaults");
+  if (ad)
+    {
+      (void) build_agent_config_from_entity (
+        ad, out_defaults->agent_defaults);
+    }
+
+  /* agent_control_defaults */
+  entity_t acd = entity_child (root, "agent_control_defaults");
+  if (acd)
+    {
+      entity_t e = entity_child (acd, "update_to_latest");
+      if (e)
+        {
+          out_defaults->agent_control_defaults->update_to_latest =
+            atoi (entity_text (e) ? entity_text (e) : "0");;
+        }
     }
 
   return 0;

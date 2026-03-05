@@ -81,7 +81,7 @@ static void
 update_existing_agent (agent_data_t agent)
 {
   gchar *config_string =
-    agent_controller_convert_scan_agent_config_string (agent->config);
+    agent_controller_convert_agent_config_string (agent->config);
   if (!config_string)
     config_string = g_strdup ("");
 
@@ -155,7 +155,7 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
     }
 
   gchar *config_string =
-    agent_controller_convert_scan_agent_config_string (agent->config);
+    agent_controller_convert_agent_config_string (agent->config);
   if (!config_string)
     config_string = g_strdup ("");
 

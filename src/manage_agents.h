@@ -60,7 +60,7 @@ struct agent_data
   time_t modification_time;
   time_t last_update_agent_control;
   time_t last_updater_heartbeat;
-  agent_controller_scan_agent_config_t config;
+  agent_controller_agent_config_t config;
   gchar *comment;
   user_t owner;
   scanner_t scanner;
