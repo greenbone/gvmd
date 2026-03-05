@@ -384,7 +384,7 @@ build_agent_config_from_entity (
  * @brief Populate scan-agent config from a <defaults> subtree.
  *
  * @param[in] root Entity node representing the <defaults> subtree.
- * @param[in,out] out_defaults Pre-allocated defaults object to populate.
+ * @param[in,out] out Pre-allocated scan-agent-config object to populate.
  *                             Must not be NULL.
  *
  * @return 0 on success; -1 on error (e.g., NULL out_defaults or OOM).
@@ -392,16 +392,16 @@ build_agent_config_from_entity (
 int
 build_scan_agent_config_from_entity (
   entity_t root,
-  agent_controller_scan_agent_config_t out_defaults)
+  agent_controller_scan_agent_config_t out)
 {
-  if (!out_defaults)
+  if (!out)
     return -1;
 
   entity_t ad = entity_child (root, "agent_defaults");
   if (ad)
     {
       (void) build_agent_config_from_entity (
-        ad, out_defaults->agent_defaults);
+        ad, out->agent_defaults);
     }
 
   /* agent_control_defaults */
@@ -411,7 +411,7 @@ build_scan_agent_config_from_entity (
       entity_t e = entity_child (acd, "update_to_latest");
       if (e)
         {
-          out_defaults->agent_control_defaults->update_to_latest =
+          out->agent_control_defaults->update_to_latest =
             atoi (entity_text (e) ? entity_text (e) : "0");;
         }
     }
