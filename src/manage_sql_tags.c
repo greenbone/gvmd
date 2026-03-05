@@ -4,6 +4,7 @@
  */
 
 #include "manage_sql_tags.h"
+#include "manage_sql.h"
 #include "sql.h"
 
 /**
@@ -43,4 +44,34 @@ tags_remove_resource (const char *type, resource_t resource, int location)
        type,
        resource,
        location);
+}
+
+/**
+ * @brief Adjust location of resource in tags.
+ *
+ * @param[in]   type  Type.
+ * @param[in]   old   Resource ID in old table.
+ * @param[in]   new   Resource ID in new table.
+ * @param[in]   to    Destination, trash or table.
+ */
+void
+tags_set_locations (const char *type, resource_t old, resource_t new,
+                    int to)
+{
+  sql ("UPDATE tag_resources SET resource_location = %i, resource = %llu"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       to,
+       new,
+       type,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
+  sql ("UPDATE tag_resources_trash SET resource_location = %i, resource = %llu"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       to,
+       new,
+       type,
+       old,
+       to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
 }
