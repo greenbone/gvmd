@@ -53,6 +53,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
@@ -34940,24 +34941,6 @@ type_build_select (const char *type, const char *columns_str,
   g_free (pagination_clauses);
 
   return 0;
-}
-
-/**
- * @brief Remove a resource from tags.
- *
- * @param[in]  type      Type.
- * @param[in]  resource  Resource.
- * @param[in]  location  Location: table or trash.
- */
-void
-tags_remove_resource (const char *type, resource_t resource, int location)
-{
-  sql ("DELETE FROM tag_resources"
-       " WHERE resource_type = '%s' AND resource = %llu"
-       " AND resource_location = %i;",
-       type,
-       resource,
-       location);
 }
 
 /**

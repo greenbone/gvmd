@@ -20,6 +20,7 @@
 #include "manage_sql_copy.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_tags.h"
 
 #include <util/uuidutils.h>
 

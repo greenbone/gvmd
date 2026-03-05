@@ -15,6 +15,7 @@
 #include "manage_sql.h"
 #include "manage_sql_filters.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_tags.h"
 #include "utils.h"
 #include "sql.h"
 
