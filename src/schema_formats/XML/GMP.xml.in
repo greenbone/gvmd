@@ -9144,7 +9144,7 @@ END:VCALENDAR
     <summary>Get the file of an agent installer</summary>
     <description>
       <p>
-        The client uses the get_agent_installer_file to get the
+        The client uses the get_agent_installer_file command to get the
         file of an agent installer.
       </p>
     </description>
@@ -33259,7 +33259,7 @@ END:VCALENDAR
     <summary>Restore a resource</summary>
     <description>
       <p>
-        The client uses the restore a resource from the trashcan.
+        The client uses the restore command to restore a resource from the trashcan.
       </p>
     </description>
     <pattern>
