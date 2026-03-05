@@ -10,6 +10,7 @@
 #include "manage_sql_permissions.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_tags.h"
 
 #include <ctype.h>
 

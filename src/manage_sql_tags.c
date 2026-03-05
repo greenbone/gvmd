@@ -26,3 +26,21 @@ tag_uuid (tag_t tag)
   return sql_string ("SELECT uuid FROM tags WHERE id = %llu;",
                      tag);
 }
+
+/**
+ * @brief Remove a resource from tags.
+ *
+ * @param[in]  type      Type.
+ * @param[in]  resource  Resource.
+ * @param[in]  location  Location: table or trash.
+ */
+void
+tags_remove_resource (const char *type, resource_t resource, int location)
+{
+  sql ("DELETE FROM tag_resources"
+       " WHERE resource_type = '%s' AND resource = %llu"
+       " AND resource_location = %i;",
+       type,
+       resource,
+       location);
+}

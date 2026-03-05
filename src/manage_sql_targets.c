@@ -9,6 +9,7 @@
 #include "manage_sql_permissions.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_tags.h"
 #include "sql.h"
 
 #include <assert.h>
