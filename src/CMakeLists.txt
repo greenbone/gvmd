@@ -194,6 +194,7 @@ set(
   manage_scan_queue.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
+  manage_tags.c
   manage_targets.c
   manage_users.c
 )
@@ -236,6 +237,7 @@ set(
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_roles.c
+  manage_sql_tags.c
   manage_sql_targets.c
   manage_sql_tickets.c
   manage_sql_tls_certificates.c
@@ -714,6 +716,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_roles.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_tags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
@@ -732,6 +735,7 @@ set(
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_resources.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tags.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_targets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"

@@ -32844,20 +32844,6 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 /* Tags */
 
 /**
- * @brief Return the UUID of a tag.
- *
- * @param[in]  tag  Tag.
- *
- * @return Newly allocated UUID if available, else NULL.
- */
-char*
-tag_uuid (tag_t tag)
-{
-  return sql_string ("SELECT uuid FROM tags WHERE id = %llu;",
-                     tag);
-}
-
-/**
  * @brief Add a resource to a tag.
  *
  * @param[in]  tag         Tag to attach to the resource.
