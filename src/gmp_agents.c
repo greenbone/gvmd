@@ -227,8 +227,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         }
       else
         {
-          agent_controller_scan_agent_config_t cfg =
-            agent_controller_parse_scan_agent_config_string (cfg_json);
+          agent_controller_agent_config_t cfg =
+            agent_controller_parse_agent_config_string (cfg_json);
 
           if (!cfg)
             {
@@ -299,7 +299,7 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
 
               SEND_TO_CLIENT_OR_FAIL ("</config>");
 
-              agent_controller_scan_agent_config_free (cfg);
+              agent_controller_agent_config_free (cfg);
             }
         }
 
@@ -494,8 +494,8 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (cfg_e)
     {
-      agent_controller_scan_agent_config_t cfg =
-        agent_controller_scan_agent_config_new ();
+      agent_controller_agent_config_t cfg =
+        agent_controller_agent_config_new ();
       if (!cfg)
         {
           agent_uuid_list_free (agent_uuids);
@@ -506,7 +506,7 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
-      build_scan_agent_config_from_entity (cfg_e, cfg);
+      build_agent_config_from_entity (cfg_e, cfg);
       update->config = cfg;
     }
 
