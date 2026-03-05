@@ -11,4 +11,7 @@
 void
 tags_remove_resource (const char *, resource_t, int);
 
+void
+tags_set_locations (const char *, resource_t, resource_t, int);
+
 #endif // not _GVMD_MANAGE_SQL_TAGS_H

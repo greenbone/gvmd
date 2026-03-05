@@ -416,9 +416,6 @@ gboolean
 find_trash (const char *, const char *, resource_t *);
 
 void
-tags_set_locations (const char *, resource_t, resource_t, int);
-
-void
 init_user_task_iterator (iterator_t *, int, int);
 
 gboolean
