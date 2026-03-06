@@ -17899,6 +17899,12 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           break;
         }
 
+      if (! feature_enabled (FEATURE_ID_CONTAINER_SCANNING)
+          && (scanner_iterator_type (&scanners) == SCANNER_TYPE_CONTAINER_IMAGE))
+        {
+          continue;
+        }
+
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
 
       SENDF_TO_CLIENT_OR_FAIL
@@ -25282,6 +25288,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "Only one of target_id or agent_group_id must be provided"));
               goto create_task_fail;
             }
+          if (create_task_data->target_id && is_container_scanning_task)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Target and scanner types mismatch."));
+              goto create_task_fail;
+            }
 
 #if ENABLE_AGENTS
           if (is_agent_task)
@@ -28415,6 +28428,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "modified");
                   break;
 #endif /* ENABLE_CONTAINER_SCANNING */
+                case 21:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Target and scanner types mismatch"));
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
                 default:
                 case -1:
                   SEND_TO_CLIENT_OR_FAIL
