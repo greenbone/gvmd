@@ -3563,16 +3563,20 @@ check_db_settings ()
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
 
-  if (sql_int ("SELECT count(*) FROM settings"
-               " WHERE uuid = '" SETTING_UUID_EXPORT_REPORTS_OSI "'"
-               " AND " ACL_IS_GLOBAL () ";")
-      == 0)
-    sql ("INSERT into settings (uuid, owner, name, comment, value)"
-         " VALUES"
-         " ('" SETTING_UUID_EXPORT_REPORTS_OSI "', NULL,"
-         "  'Export Reports to OPENVAS INTELLIGENCE',"
-         "  'Whether to automatically export reports to OPENVAS INTELLIGENCE.',"
-         "  '0');");
+  if (feature_enabled (FEATURE_ID_OSI_EXPORT))
+    {
+      if (sql_int ("SELECT count(*) FROM settings"
+                   " WHERE uuid = '" SETTING_UUID_EXPORT_REPORTS_OSI "'"
+                   " AND " ACL_IS_GLOBAL () ";")
+          == 0)
+        sql ("INSERT into settings (uuid, owner, name, comment, value)"
+             " VALUES"
+             " ('" SETTING_UUID_EXPORT_REPORTS_OSI "', NULL,"
+             "  'Export Reports to OPENVAS INTELLIGENCE',"
+             "  'Whether to automatically export scan reports to "
+             "OPENVAS INTELLIGENCE.',"
+             "  '0');");
+    }
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '9246a0f6-c6ad-44bc-86c2-557a527c8fb3'"
@@ -31295,6 +31299,12 @@ modify_setting (const gchar *uuid, const gchar *name,
 
       if (strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_OSI) == 0)
         {
+          if (!feature_enabled (FEATURE_ID_OSI_EXPORT))
+            {
+              g_free (value);
+              return 1;
+            }
+
           int value_int;
           /* Export Reports to OPENVAS INTELLIGENCE */
           if (sscanf (value, "%d", &value_int) != 1
