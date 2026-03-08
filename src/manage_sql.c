@@ -3564,6 +3564,17 @@ check_db_settings ()
          "  '1');");
 
   if (sql_int ("SELECT count(*) FROM settings"
+               " WHERE uuid = '" SETTING_UUID_EXPORT_REPORTS_OSI "'"
+               " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+         " VALUES"
+         " ('" SETTING_UUID_EXPORT_REPORTS_OSI "', NULL,"
+         "  'Export Reports to OPENVAS INTELLIGENCE',"
+         "  'Whether to automatically export reports to OPENVAS INTELLIGENCE.',"
+         "  '0');");
+
+  if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '9246a0f6-c6ad-44bc-86c2-557a527c8fb3'"
                " AND " ACL_IS_GLOBAL () ";")
       == 0)
@@ -31079,6 +31090,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_OSI) == 0
                || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
                || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
@@ -31210,6 +31222,18 @@ modify_setting (const gchar *uuid, const gchar *name,
         {
           int value_int;
           /* Auto Cache Rebuild */
+          if (sscanf (value, "%d", &value_int) != 1
+              || (strcmp (value, "0") && strcmp (value, "1")))
+            {
+              g_free (value);
+              return 2;
+            }
+        }
+
+      if (strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_OSI) == 0)
+        {
+          int value_int;
+          /* Export Reports to OPENVAS INTELLIGENCE */
           if (sscanf (value, "%d", &value_int) != 1
               || (strcmp (value, "0") && strcmp (value, "1")))
             {
@@ -31477,12 +31501,6 @@ modify_setting (const gchar *uuid, const gchar *name,
        */
       else if (strcmp (uuid, "d97eca9f-0386-4e5d-88f2-0ed7f60c0646") == 0)
         setting_name = g_strdup ("Main Dashboard Configuration");
-
-      /*
-       * Export reports
-       */
-      else if (strcmp (uuid, "8f0602d4-431a-4321-bfd7-cfb7eb0af55f") == 0)
-        setting_name = g_strdup ("Export Reports to OPENVAS INTELLIGENCE");
 
       /*
        * Scans dashboards
