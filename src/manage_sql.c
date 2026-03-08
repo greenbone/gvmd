@@ -3572,7 +3572,7 @@ check_db_settings ()
         sql ("INSERT into settings (uuid, owner, name, comment, value)"
              " VALUES"
              " ('" SETTING_UUID_EXPORT_REPORTS_OSI "', NULL,"
-             "  'Export Reports to OPENVAS INTELLIGENCE',"
+             "  'Export Reports OSI',"
              "  'Whether to automatically export scan reports to "
              "OPENVAS INTELLIGENCE.',"
              "  '0');");
@@ -31306,7 +31306,7 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
 
           int value_int;
-          /* Export Reports to OPENVAS INTELLIGENCE */
+          /* Export Reports OSI */
           if (sscanf (value, "%d", &value_int) != 1
               || (strcmp (value, "0") && strcmp (value, "1")))
             {
