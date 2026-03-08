@@ -31011,36 +31011,36 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (name && (strcmp (name, "Timezone") == 0))
     {
       gsize value_size;
-      gchar *quoted_timezone, *value;
+      gchar *timezone;
       if (value_64 && strlen (value_64))
         {
-          value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+          timezone = (gchar *) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (timezone, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
-              g_free (value);
+              g_free (timezone);
               return -1;
             }
-          if (manage_timezone_supported (value) == FALSE)
+          if (manage_timezone_supported (timezone) == FALSE)
             {
-              g_free (value);
+              g_free (timezone);
               return 2;
             }
         }
       else
         {
-          value = g_strdup ("");
+          timezone = g_strdup ("");
           value_size = 0;
         }
-      quoted_timezone = sql_quote (value);
-      g_free (value);
-      sql ("UPDATE users SET timezone = '%s', modification_time = m_now ()"
-           " WHERE uuid = '%s';",
-           quoted_timezone,
-           current_credentials.uuid);
-      g_free (quoted_timezone);
+
+      sql_ps ("UPDATE users SET timezone = $1, modification_time = m_now ()"
+              " WHERE uuid = $2;",
+              SQL_STR_PARAM (timezone),
+              SQL_STR_PARAM (current_credentials.uuid), NULL);
+
+      g_free (timezone);
       return 0;
     }
 
@@ -31089,20 +31089,16 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0))
     {
       gsize value_size;
-      gchar *value, *quoted_uuid, *quoted_value;
+      gchar *value;
 
       assert (current_credentials.username);
 
-      quoted_uuid = sql_quote (uuid);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND " ACL_IS_GLOBAL () ";",
-                   quoted_uuid,
-                   current_credentials.uuid)
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND " ACL_IS_GLOBAL () ";",
+                      SQL_STR_PARAM (uuid), NULL)
           == 0)
         {
-          g_free (quoted_uuid);
           return 1;
         }
 
@@ -31132,7 +31128,6 @@ modify_setting (const gchar *uuid, const gchar *name,
           while (*val && isdigit (*val)) val++;
           if (*val && strcmp (value, "-1"))
             {
-              g_free (quoted_uuid);
               return 2;
             }
         }
@@ -31179,7 +31174,6 @@ modify_setting (const gchar *uuid, const gchar *name,
           /* Invalid value */
           else
             {
-              g_free (quoted_uuid);
               g_free (value);
               return 2;
             }
@@ -31246,41 +31240,33 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      quoted_value = sql_quote (value);
-      g_free (value);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   quoted_uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             quoted_uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value), SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  (SELECT name FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
-             "   LIMIT 1),"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
-             "   LIMIT 1),"
-             "  '%s');",
-             quoted_uuid,
-             current_credentials.uuid,
-             quoted_uuid,
-             quoted_uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  (SELECT name FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL ()
+                "   LIMIT 1),"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL ()
+                "   LIMIT 1),"
+                "  $3);",
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (value), NULL);
 
-      g_free (quoted_uuid);
-      g_free (quoted_value);
-
+      g_free (value);
       return 0;
     }
 
@@ -31291,7 +31277,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           || strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0))
     {
       gsize value_size;
-      gchar *value, *quoted_value;
+      gchar *value;
 
       assert (current_credentials.uuid);
       if (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0)
@@ -31320,44 +31306,39 @@ modify_setting (const gchar *uuid, const gchar *name,
           value = g_strdup ("");
           value_size = 0;
         }
-      quoted_value = sql_quote (value);
 
       if (strcmp (value, "") == 0)
         {
           g_free (value);
-          g_free (quoted_value);
           return 2;
         }
 
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value),
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  '%s',"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
-             "  '%s');",
-             uuid,
-             current_credentials.uuid,
-             setting_name,
-             uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  $3,"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL () "),"
+                "  $4);",
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (setting_name),
+                SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      g_free (quoted_value);
-
       return 0;
     }
 
