@@ -10588,16 +10588,20 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[1])",                           \
       "oci_image_registry",                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(regexp_match(hostname,"                                               \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
       "oci_image_path",                                                       \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[2])",                           \
       "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },
 
@@ -10785,16 +10789,20 @@ where_qod (int min_qod)
     /* ^ 45 = 35 */                                                           \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[1])",                           \
       "oci_image_registry",                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(regexp_match(hostname,"                                               \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
       "oci_image_path",                                                       \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[2])",                           \
       "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 50 = 40 */                                                           \
