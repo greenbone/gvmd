@@ -79,9 +79,9 @@
 #define SETTING_UUID_FILE_REPORT "e1a2ae0b-736e-4484-b029-330c9e15b900"
 
 /**
- * @brief UUID of seting.
+ * @brief UUID of setting.
  */
-#define SETTING_UUID_EXPORT_REPORTS_OSI "8f0602d4-431a-4321-bfd7-cfb7eb0af55f"
+#define SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE "8f0602d4-431a-4321-bfd7-cfb7eb0af55f"
 
 /**
  * @brief UUID of 'Debian LSC Package Maintainer' setting.
