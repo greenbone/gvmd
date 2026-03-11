@@ -2940,9 +2940,6 @@ create_tag (const char *, const char *, const char *, const char *,
             array_t *, const char *, const char *, tag_t *, gchar **);
 
 int
-delete_tag (const char *, int);
-
-int
 modify_tag (const char *, const char *, const char *, const char *,
             const char *, array_t *, const char *, const char *, const char*,
             gchar **);
