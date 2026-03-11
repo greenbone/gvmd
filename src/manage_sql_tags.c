@@ -75,3 +75,42 @@ tags_set_locations (const char *type, resource_t old, resource_t new,
        old,
        to == LOCATION_TABLE ? LOCATION_TRASH : LOCATION_TABLE);
 }
+
+/**
+ * @brief Create a tag from an existing tag.
+ *
+ * @param[in]  name        Name of new tag.  NULL to copy from existing.
+ * @param[in]  comment     Comment on new tag.  NULL to copy from existing.
+ * @param[in]  tag_id      UUID of existing tag.
+ * @param[out] new_tag_return  New tag.
+ *
+ * @return 0 success, 2 failed to find existing tag,
+ *         99 permission denied, -1 error.
+ */
+int
+copy_tag (const char* name, const char* comment, const char *tag_id,
+          tag_t* new_tag_return)
+{
+  int ret = 0;
+  tag_t new_tag, old_tag;
+
+  ret = copy_resource ("tag", name, comment, tag_id,
+                       "value, resource_type, active",
+                       1, &new_tag, &old_tag);
+
+  if (ret)
+    return ret;
+
+  if (new_tag_return)
+    *new_tag_return = new_tag;
+
+  sql ("INSERT INTO tag_resources"
+       " (tag, resource_type, resource, resource_uuid, resource_location)"
+       " SELECT"
+       "  %llu, resource_type, resource, resource_uuid, resource_location"
+       "   FROM tag_resources"
+       "  WHERE tag = %llu",
+       new_tag, old_tag);
+
+  return 0;
+}

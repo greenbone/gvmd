@@ -2936,9 +2936,6 @@ manage_set_radius_info (int, gchar *, gchar *);
 /* Tags */
 
 int
-copy_tag (const char*, const char*, const char*, tag_t*);
-
-int
 create_tag (const char *, const char *, const char *, const char *,
             array_t *, const char *, const char *, tag_t *, gchar **);
 
