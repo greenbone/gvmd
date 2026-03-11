@@ -27914,128 +27914,6 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 #endif
 
-#if ENABLE_AGENTS
-/**
- * @brief Get an Agent Control sensor's version info.
- *
- * @param[in]   iterator    Scanner object iterator.
- * @param[out]  name        Scanner name.
- * @param[out]  version     Scanner version.
- *
- * @return 0 success, 1 for failure.
- */
-int
-agent_control_get_version_from_iterator (iterator_t *iterator,
-                                         char **name,
-                                         char **version)
-{
-  int port;
-  const char *host, *ca_pub, *key_pub, *key_priv;
-  const char *protocol = "https";
-  agent_controller_connector_t connection;
-
-  assert (iterator);
-
-  host = scanner_iterator_host (iterator);
-  port = scanner_iterator_port (iterator);
-  ca_pub = scanner_iterator_ca_pub (iterator);
-  key_pub = scanner_iterator_key_pub (iterator);
-  key_priv = scanner_iterator_key_priv (iterator);
-
-  if (!ca_pub || !key_pub)
-    {
-      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
-      protocol = "http";
-    }
-
-  connection = agent_controller_connector_new ();
-  if (!connection)
-    return 1;
-
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
-
-  /*
-   The following block has to be replaced by something like:
-
-        agent_controller_get_version (name, version);
-        agent_controller_connector_free (connection);
-        if (name == NULL && version == NULL)
-          return 1;
-
-   as soon as the required endpoint is available.
-   */
-  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
-  agent_controller_connector_free (connection);
-  if (agents == NULL)
-    return 1;
-  *name = g_strdup ("TestName");
-  *version = g_strdup ("TestVersion");
-  agent_controller_agent_list_free (agents);
-
-  return 0;
-}
-
-/**
- * @brief Get an Agent Control scanner's preferences info.
- *
- * @param[in]   iterator    Scanner object iterator.
- * @param[out]  desc        Scanner description.
- * @param[out]  params      Scanner parameters.
- *
- * @return 0 success, 1 for failure.
- */
-int
-agent_control_get_details_from_iterator (iterator_t *iterator, char **desc,
-                                         GSList **params)
-{
-  int port;
-  const char *host, *ca_pub, *key_pub, *key_priv;
-  const char *protocol = "https";
-  agent_controller_connector_t connection;
-
-  assert (iterator);
-
-  host = scanner_iterator_host (iterator);
-  port = scanner_iterator_port (iterator);
-  ca_pub = scanner_iterator_ca_pub (iterator);
-  key_pub = scanner_iterator_key_pub (iterator);
-  key_priv = scanner_iterator_key_priv (iterator);
-
-  if (!ca_pub || !key_pub)
-    {
-      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
-      protocol = "http";
-    }
-
-  connection = agent_controller_connector_new ();
-  if (!connection)
-    return 1;
-
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
-
-  *desc = g_strdup_printf ("Agent Control Scanner on %s://%s:%d", protocol, host, port);
-
-  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
-  agent_controller_connector_free (connection);
-
-  if (agents == NULL)
-    return 1;
-
-  agent_controller_agent_list_free (agents);
-  return 0;
-}
-#endif
-
 /**
  * @brief Verify a scanner.
  *
@@ -28078,22 +27956,17 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
 #if ENABLE_AGENTS
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER
+           || scanner_iterator_type (&scanner)
+                == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     {
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_agent_controller_connection (scanner_row_id);
       cleanup_iterator (&scanner);
-      return 0;
-    }
-  else if (scanner_iterator_type (&scanner) ==
-           SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
-    {
-      char *name;
-      int ret = agent_control_get_version_from_iterator (&scanner, &name,
-                                                         version);
-      cleanup_iterator (&scanner);
-      g_free (name);
 
-      if (ret)
+      if (res == 1)
         return 2;
+
       return 0;
     }
 #endif

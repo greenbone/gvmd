@@ -20,7 +20,7 @@ pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.30)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.35)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
@@ -32,7 +32,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.36
+    libgvm_agent_controller>=22.37
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
