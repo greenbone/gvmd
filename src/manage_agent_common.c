@@ -196,7 +196,7 @@ gvmd_agent_connector_free (gvmd_agent_connector_t conn)
 }
 
 /**
- * @brief Verify connectivity to the agent controller for a scanner.
+ * @brief Verify connectivity to the agent controller.
  *
  * @param[in] scanner Scanner row id used to obtain the agent connector.
  *
