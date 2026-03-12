@@ -557,4 +557,9 @@ pg_timezones_iterator_name (iterator_t *);
 gboolean
 pg_timezone_supported (const char *);
 
+int
+type_build_select (const char *, const char *, const get_data_t *, gboolean,
+                   gboolean, const char *, const char *, const char *,
+                   gchar **);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
