@@ -100,6 +100,7 @@ load_gvmd_config (const char *path_override)
       return -1;
     }
 
+  g_debug ("Using gvmd config file '%s'", config_path);
   parsed_config_file = kf;
   return 0;
 }
