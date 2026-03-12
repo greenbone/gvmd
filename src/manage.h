@@ -2893,15 +2893,6 @@ manage_set_radius_info (int, gchar *, gchar *);
 /* Tags */
 
 int
-create_tag (const char *, const char *, const char *, const char *,
-            array_t *, const char *, const char *, tag_t *, gchar **);
-
-int
-modify_tag (const char *, const char *, const char *, const char *,
-            const char *, array_t *, const char *, const char *, const char*,
-            gchar **);
-
-int
 init_tag_iterator (iterator_t*, get_data_t*);
 
 int
