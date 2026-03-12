@@ -299,6 +299,7 @@ set(
   ALL_MISC_SRC
   debug_utils.c
   gvmd.c
+  gvmd_config.c
   gmpd.c
   ipc.c
   lsc_user.c
