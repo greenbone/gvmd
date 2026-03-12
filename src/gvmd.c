@@ -100,6 +100,7 @@
 #include "manage_targets.h"
 #include "manage_users.h"
 #include "gmpd.h"
+#include "gvmd_config.h"
 #include "utils.h"
 
 #ifdef GIT_REV_AVAILABLE
@@ -2843,8 +2844,12 @@ gvmd (int argc, char** argv, char *env[])
 
   init_manage_funcs ();
 
+  /* Initialize config file */
+  if (load_gvmd_config (NULL))
+    exit (EXIT_FAILURE);
+
   /* Initialize runtime flags */
-  runtime_flags_init (NULL);
+  runtime_flags_init ();
 
   /* Process options. */
 
