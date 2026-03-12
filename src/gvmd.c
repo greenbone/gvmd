@@ -2289,6 +2289,7 @@ gvmd (int argc, char** argv, char *env[])
   /* Process options. */
 
   static int auth_timeout = 15;
+  static gchar *gvmd_config_path = NULL;
   static gboolean check_alerts = FALSE;
   static gboolean create_encryption_key = FALSE;
   static gboolean migrate_database = FALSE;
@@ -2532,6 +2533,10 @@ gvmd (int argc, char** argv, char *env[])
           &priorities,
           "Sets the GnuTLS priorities for the Manager socket.",
           "<priorities-string>" },
+        { "gvmd-config", '\0', 0, G_OPTION_ARG_STRING,
+          &gvmd_config_path,
+          "Use the given path for the gvmd system configuration file.",
+          "<path>" },
         { "hashcount", '\0', 0, G_OPTION_ARG_CALLBACK,
            parse_authentication_goption_arg,
           "Use <hashcount> to enhance the computational cost of creating a password hash.",
@@ -2844,13 +2849,6 @@ gvmd (int argc, char** argv, char *env[])
 
   init_manage_funcs ();
 
-  /* Initialize config file */
-  if (load_gvmd_config (NULL))
-    exit (EXIT_FAILURE);
-
-  /* Initialize runtime flags */
-  runtime_flags_init ();
-
   /* Process options. */
 
   option_context = g_option_context_new ("- Manager of the Open Vulnerability Assessment System");
@@ -2864,7 +2862,25 @@ gvmd (int argc, char** argv, char *env[])
     }
   g_option_context_free (option_context);
 
+  /* Setup logging. */
+  rc_name = g_build_filename (GVM_SYSCONF_DIR,
+                              "gvmd_log.conf",
+                              NULL);
+  if (gvm_file_is_readable (rc_name))
+    log_config = load_log_configuration (rc_name);
+  g_free (rc_name);
+  setup_log_handlers (log_config);
+
   sentry_initialized = init_sentry ();
+
+  /* Initialize config file */
+  if (load_gvmd_config (gvmd_config_path))
+    exit (EXIT_FAILURE);
+
+  /* Initialize runtime flags */
+  runtime_flags_init ();
+
+  /* Handle --version option */
   if (print_version)
     {
       printf ("Greenbone Vulnerability Manager %s\n", GVMD_VERSION);
@@ -2991,15 +3007,6 @@ gvmd (int argc, char** argv, char *env[])
   /* Setup initial signal handlers. */
 
   setup_signal_handler (SIGABRT, handle_sigabrt_simple, 1);
-
-  /* Setup logging. */
-  rc_name = g_build_filename (GVM_SYSCONF_DIR,
-                              "gvmd_log.conf",
-                              NULL);
-  if (gvm_file_is_readable (rc_name))
-    log_config = load_log_configuration (rc_name);
-  g_free (rc_name);
-  setup_log_handlers (log_config);
 
   /* Set maximum number of concurrent scan updates */
   set_max_concurrent_scan_updates (max_concurrent_scan_updates);

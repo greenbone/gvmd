@@ -226,6 +226,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </optdesc>
     </option>
     <option>
+      <p><opt>--gvmd-config=<arg>PATH</arg></opt></p>
+      <optdesc>
+        <p>Use the given path for the gvmd system configuration file.</p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--inheritor=<arg>USERNAME</arg></opt></p>
       <optdesc>
         <p>Have USERNAME inherit from deleted user.</p>
