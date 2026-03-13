@@ -15,6 +15,7 @@
 #include "manage_sql_events.h"
 #include "manage_acl.h"
 #include "manage_sql.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tickets.h"
 
 #undef G_LOG_DOMAIN

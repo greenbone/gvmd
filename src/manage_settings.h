@@ -79,7 +79,7 @@
 #define SETTING_UUID_FILE_REPORT "e1a2ae0b-736e-4484-b029-330c9e15b900"
 
 /**
- * @brief UUID of setting.
+ * @brief UUID of 'Export Reports to OPENVAS INTELLIGENCE' setting.
  */
 #define SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE "8f0602d4-431a-4321-bfd7-cfb7eb0af55f"
 
@@ -153,6 +153,10 @@ setting_value_int (const char *, int *);
 void
 init_manage_settings_funcs (setting_value_func,
                             setting_value_int_func);
+
+int
+manage_max_rows (int, int);
+
 
 
 #endif /* not _GVMD_MANAGE_SETTINGS_H */

@@ -107,6 +107,7 @@
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_settings.h"
 #include "manage_tags.h"
 #include "manage_targets.h"
 #include "manage_tls_certificates.h"
@@ -27464,25 +27465,30 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                        modify_setting_data->value,
                                        &errdesc))
             {
-              case 0:
+              case MODIFY_SETTING_RESULT_OK:
                 SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_setting"));
                 break;
-              case 1:
+              case MODIFY_SETTING_RESULT_NOT_FOUND:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
                                     "Failed to find setting"));
                 break;
-              case 2:
+              case MODIFY_SETTING_RESULT_SYNTAX_ERROR:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
                                     "Value validation failed"));
                 break;
-              case 99:
+            case MODIFY_SETTING_RESULT_FEATURE_DISABLED:
+                SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX (
+                  "modify_setting", "Export reports to OPENVAS SECURITY "
+                                    "INTELLIGENCE feature is disabled"));
+                break;
+              case MODIFY_SETTING_RESULT_PERMISSION_DENIED:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_setting",
                                     "Permission denied"));
                 break;
-              case -1:
+              case MODIFY_SETTING_RESULT_ERROR:
                 if (errdesc)
                   {
                     char *buf = make_xml_error_syntax ("modify_setting",
