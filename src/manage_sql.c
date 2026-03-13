@@ -15356,6 +15356,7 @@ report_finished_container_images_str (report_t report)
  */
 struct print_report_context
 {
+  gchar *compliance_levels;   ///< Compliance levels.
   int count_filtered;         ///< Whether to count filtered results.
   report_t delta;             ///< Report to compare with.
   int filtered_result_count;  ///< Filtered result count.
@@ -15413,6 +15414,7 @@ free_f_host (GHashTable *table)
 static void
 print_report_context_cleanup (print_report_context_t *ctx)
 {
+  g_free (ctx->compliance_levels);
   g_free (ctx->tsk_usage_type);
   g_free (ctx->tz);
   g_free (ctx->zone);
@@ -16895,7 +16897,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   FILE *out;
   gchar *term, *sort_field, *levels, *search_phrase;
-  gchar *min_qod, *compliance_levels;
+  gchar *min_qod;
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -16917,7 +16919,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
-  compliance_levels = NULL;
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
@@ -16980,7 +16981,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &compliance_levels,
+                                     &min_qod, &levels, &ctx.compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes,
                                      &overrides, &apply_overrides, &ctx.zone);
@@ -16992,7 +16993,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &compliance_levels,
+                                     &min_qod, &levels, &ctx.compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &ctx.zone);
@@ -17106,15 +17107,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
-      compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
+      ctx.compliance_levels = ctx.compliance_levels ? ctx.compliance_levels : g_strdup ("yniu");
 
-      if (strchr (compliance_levels, 'y'))
+      if (strchr (ctx.compliance_levels, 'y'))
         g_string_append (filters_extra_buffer, "<filter>Yes</filter>");
-      if (strchr (compliance_levels, 'n'))
+      if (strchr (ctx.compliance_levels, 'n'))
         g_string_append (filters_extra_buffer, "<filter>No</filter>");
-      if (strchr (compliance_levels, 'i'))
+      if (strchr (ctx.compliance_levels, 'i'))
         g_string_append (filters_extra_buffer, "<filter>Incomplete</filter>");
-      if (strchr (compliance_levels, 'u'))
+      if (strchr (ctx.compliance_levels, 'u'))
         g_string_append (filters_extra_buffer, "<filter>Undefined</filter>");
     }
   else
@@ -17767,10 +17768,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               "<undefined><filtered>%i</filtered></undefined>"
               "</compliance_count>",
               f_compliance_count,
-              (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
-              (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
-              (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
-              (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
+              (strchr (ctx.compliance_levels, 'y') ? f_compliance_yes : 0),
+              (strchr (ctx.compliance_levels, 'n') ? f_compliance_no : 0),
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_incomplete : 0),
+              (strchr (ctx.compliance_levels, 'u') ? f_compliance_undefined : 0));
       else
         {
           if (ctx.count_filtered)
@@ -17792,13 +17793,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               total_compliance_count,
               f_compliance_count,
               compliance_yes,
-              (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
+              (strchr (ctx.compliance_levels, 'y') ? f_compliance_yes : 0),
               compliance_no,
-              (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
+              (strchr (ctx.compliance_levels, 'n') ? f_compliance_no : 0),
               compliance_incomplete,
-              (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_incomplete : 0),
               compliance_undefined,
-              (strchr (compliance_levels, 'i') ? f_compliance_undefined : 0));
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_undefined : 0));
 
           PRINT (out,
                 "<compliance>"
@@ -18031,7 +18032,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (search_phrase);
   g_free (min_qod);
   g_free (delta_states);
-  g_free (compliance_levels);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
@@ -18060,7 +18060,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
 
-    g_free (compliance_levels);
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
