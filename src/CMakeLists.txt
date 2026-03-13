@@ -444,6 +444,15 @@ add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 
 set(
   ALL_OBJECTS
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(gvmd-config "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+
+set(
+  ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
   $<TARGET_OBJECTS:all-manage-sql-obj>
   $<TARGET_OBJECTS:all-misc-obj>

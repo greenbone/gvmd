@@ -9,6 +9,15 @@
 
 Describe (gvmd_config);
 
+BeforeEach (gvmd_config)
+{
+  unsetenv ("GVMD_ENABLE_AGENTS");
+}
+
+AfterEach (gvmd_config)
+{
+}
+
 static char *
 write_test_config (const char *content)
 {
@@ -22,33 +31,88 @@ write_test_config (const char *content)
   return path;
 }
 
-Ensure (gvmd_config, can_read_and_write_config)
-{
-  const char *conf =
-    "[features]\n"
-    "enable_agents = true\n"
-    "[auth]\n"
-    "jwt_secret_type = shared\n";
-  char *path = write_test_config (conf);
-  GKeyFile *kf;
-
-  assert_that (get_gvmd_config(), is_null);
-
-  assert_that (load_gvmd_config (path), is_equal_to (0));
-  kf = get_gvmd_config ();
-  assert_that (kf, is_not_null);
-
-  remove (path);
-  g_free (path);
-}
-
-Ensure (gvmd_config, load_fails_if_file_is_missing)
+Ensure (gvmd_config, can_handle_missing_config)
 {
   const char *path = "non-existent.conf";
   remove (path);
 
   assert_that (load_gvmd_config (path), is_equal_to (-1));
   assert_that (get_gvmd_config(), is_null);
+}
+
+Ensure (gvmd_config, can_read_boolean_values)
+{
+  const char *conf =
+    "[features]\n"
+    "enable_agents = false\n"
+    "enable_openvasd = true\n";
+  char *path = write_test_config (conf);
+  GKeyFile *kf;
+  gboolean conf_has_value, conf_value;
+
+  assert_that (load_gvmd_config (path), is_equal_to (0));
+  kf = get_gvmd_config ();
+  assert_that (kf, is_not_null);
+
+  conf_has_value = TRUE;
+  conf_value = TRUE;
+  gvmd_config_get_boolean (kf, "invalid_group", "enable_openvasd",
+                           &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_false);
+  assert_that (conf_value, is_false);
+
+  conf_has_value = FALSE;
+  conf_value = TRUE;
+  gvmd_config_get_boolean (kf, "features", "enable_agents",
+                           &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_true);
+  assert_that (conf_value, is_false);
+
+  conf_has_value = FALSE;
+  conf_value = FALSE;
+  gvmd_config_get_boolean (kf, "features", "enable_openvasd",
+                           &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_true);
+  assert_that (conf_value, is_true);
+
+  remove (path);
+  g_free (path);
+}
+
+Ensure (gvmd_config, can_resolve_boolean_values)
+{
+  int value = 123;
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 0, 0, &value);
+  assert_that (value, is_equal_to (123));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 0, &value);
+  assert_that (value, is_equal_to (0));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 1, &value);
+  assert_that (value, is_equal_to (1));
+
+  setenv ("GVMD_ENABLE_AGENTS", "no", 1);
+  value = 123;
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 0, 1, &value);
+  assert_that (value, is_equal_to (0));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 0, &value);
+  assert_that (value, is_equal_to (0));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 1, &value);
+  assert_that (value, is_equal_to (0));
+
+  setenv ("GVMD_ENABLE_AGENTS", "yes", 1);
+  value = 123;
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 0, 0, &value);
+  assert_that (value, is_equal_to (1));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 0, &value);
+  assert_that (value, is_equal_to (1));
+
+  gvmd_config_resolve_boolean ("GVMD_ENABLE_AGENTS", 1, 1, &value);
+  assert_that (value, is_equal_to (1));
 }
 
 int
@@ -60,9 +124,11 @@ main (int argc, char **argv)
   suite = create_test_suite ();
 
   add_test_with_context (suite, gvmd_config,
-                         can_read_and_write_config);
+                         can_handle_missing_config);
   add_test_with_context (suite, gvmd_config,
-                         load_fails_if_file_is_missing);
+                         can_read_boolean_values);
+  add_test_with_context (suite, gvmd_config,
+                         can_resolve_boolean_values);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

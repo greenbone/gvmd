@@ -3920,7 +3920,7 @@ gvmd (int argc, char** argv, char *env[])
 #endif
 
   /* Initialize runtime flags */
-  runtime_flags_init (NULL);
+  runtime_flags_init ();
   /* Append disable commands with runtime flags*/
   runtime_append_disabled_commands (full_disable_commands);
 
