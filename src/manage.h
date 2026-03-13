@@ -2842,47 +2842,6 @@ int
 secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
 
 
-/* Settings. */
-
-int
-manage_max_rows (int, int);
-
-int
-setting_count (const char *);
-
-int
-setting_is_default_ca_cert (const gchar *);
-
-char *
-setting_filter (const char *);
-
-int
-setting_excerpt_size_int ();
-
-void
-init_setting_iterator (iterator_t *, const char *, const char *, int, int, int,
-                       const char *);
-
-const char*
-setting_iterator_uuid (iterator_t*);
-
-const char*
-setting_iterator_name (iterator_t*);
-
-const char*
-setting_iterator_comment (iterator_t*);
-
-const char*
-setting_iterator_value (iterator_t*);
-
-int
-modify_setting (const gchar *, const gchar *, const gchar *, gchar **);
-
-int
-manage_modify_setting (GSList *, const db_conn_info_t *, const gchar *,
-                       const gchar *, const char *);
-
-
 /* Vulns. */
 
 int

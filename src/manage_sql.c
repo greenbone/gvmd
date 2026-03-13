@@ -53,6 +53,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
@@ -31070,9 +31071,9 @@ setting_value_int_sql (const char *uuid, int *value)
  *                       always be set to NULL on success.
  *
  * @return 0 success, 1 failed to find setting, 2 syntax error in value,
- *         99 permission denied, -1 on error.
+ *         3 feature disabled, 99 permission denied, -1 on error.
  */
-int
+modify_setting_result_t
 modify_setting (const gchar *uuid, const gchar *name,
                 const gchar *value_64, gchar **r_errdesc)
 {
@@ -31081,7 +31082,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_setting") == 0)
-    return 99;
+    return MODIFY_SETTING_RESULT_PERMISSION_DENIED;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -31099,12 +31100,12 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (timezone);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
           if (manage_timezone_supported (timezone) == FALSE)
             {
               g_free (timezone);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
       else
@@ -31119,7 +31120,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               SQL_STR_PARAM (current_credentials.uuid), NULL);
 
       g_free (timezone);
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   if (name && (strcmp (name, "Password") == 0))
@@ -31139,7 +31140,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31178,7 +31179,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                       SQL_STR_PARAM (uuid), NULL)
           == 0)
         {
-          return 1;
+          return MODIFY_SETTING_RESULT_NOT_FOUND;
         }
 
       if (value_64 && strlen (value_64))
@@ -31190,7 +31191,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31207,7 +31208,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           while (*val && isdigit (*val)) val++;
           if (*val && strcmp (value, "-1"))
             {
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31254,7 +31255,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           else
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31279,7 +31280,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               || severity_dbl < 0.0 || severity_dbl > 10.0)
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
           else
             current_credentials.default_severity = severity_dbl;
@@ -31293,7 +31294,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               || (strcmp (value, "0") && strcmp (value, "1")))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31302,7 +31303,10 @@ modify_setting (const gchar *uuid, const gchar *name,
           if (!feature_enabled (FEATURE_ID_OSI_EXPORT))
             {
               g_free (value);
-              return 1;
+
+              g_warning("Export Reports to OPENVAS SECURITY INTELLIGENCE Feature"
+                        "is disabled");
+              return MODIFY_SETTING_RESULT_FEATURE_DISABLED;
             }
 
           int value_int;
@@ -31311,7 +31315,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               || (strcmp (value, "0") && strcmp (value, "1")))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31322,7 +31326,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               && strcmp (value, "system_default"))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31333,7 +31337,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               && strcmp (value, "system_default"))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31364,7 +31368,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   /* Export file name format */
@@ -31384,7 +31388,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0)
         setting_name = "Report Export File Name";
       else
-        return -1;
+        return MODIFY_SETTING_RESULT_ERROR;
 
       if (value_64 && strlen (value_64))
         {
@@ -31395,7 +31399,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31407,7 +31411,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       if (strcmp (value, "") == 0)
         {
           g_free (value);
-          return 2;
+          return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
         }
 
       if (sql_int_ps ("SELECT count(*) FROM settings"
@@ -31436,7 +31440,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   /* Resources filters, default resource selections and chart preferences. */
@@ -31683,7 +31687,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31715,10 +31719,10 @@ modify_setting (const gchar *uuid, const gchar *name,
                 SQL_STR_PARAM (setting_name), SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
-  return 1;
+  return MODIFY_SETTING_RESULT_NOT_FOUND;
 }
 
 /**

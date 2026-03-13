@@ -97,6 +97,8 @@
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
+#include "manage_settings.h"
+#include "manage_sql_settings.h"
 #include "manage_targets.h"
 #include "manage_users.h"
 #include "gmpd.h"
