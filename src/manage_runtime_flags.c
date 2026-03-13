@@ -200,8 +200,8 @@ resolve_feature (feature_state_t *feature,
       return;
     }
 
-  feature->enabled
-    = gvmd_config_resolve_boolean (env_name, conf_has_value, conf_value);
+  gvmd_config_resolve_boolean (env_name, conf_has_value, conf_value,
+                               &feature->enabled);
 }
 
 /**
