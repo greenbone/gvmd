@@ -134,11 +134,15 @@ gvmd_config_get_boolean (GKeyFile *kf,
 {
   gboolean b;
 
-  if (!kf || !group || !key || !has_flag || !flag_value)
+  if (!has_flag || !flag_value)
     return;
 
-  if (!g_key_file_has_key (kf, group, key, NULL))
-    return;
+  if (!kf || !group || !key || !g_key_file_has_key (kf, group, key, NULL))
+    {
+      *has_flag = 0;
+      *flag_value = 0;
+      return;
+    }
 
   b = g_key_file_get_boolean (kf, group, key, NULL);
   *has_flag = 1;
@@ -254,6 +258,7 @@ gvmd_config_resolve_boolean (const char *env_name,
   if (env_result == 1)
     {
       *output = env_value;
+      return;
     }
 
   if (conf_has_value)
