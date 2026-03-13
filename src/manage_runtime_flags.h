@@ -36,7 +36,7 @@ typedef enum
 } feature_id_t;
 
 int
-runtime_flags_init (const gchar *config_path);
+runtime_flags_init ();
 
 int
 feature_enabled (feature_id_t);

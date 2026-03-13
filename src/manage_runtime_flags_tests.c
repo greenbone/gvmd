@@ -16,8 +16,8 @@
 # define GVM_SYSCONF_DIR "/tmp"
 #endif
 
+#include "gvmd_config.h"
 #include "manage_runtime_flags.c"
-
 Describe (manage_runtime_flags);
 
 BeforeEach (manage_runtime_flags)
@@ -48,10 +48,7 @@ write_test_config (const char *content)
 
 Ensure (manage_runtime_flags, default_flags_no_config_no_env)
 {
-  const char *nonexistent = "this_file_should_not_exist.conf";
-  remove (nonexistent);
-
-  runtime_flags_init (nonexistent);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -107,7 +104,8 @@ Ensure (manage_runtime_flags, config_enables_agents_when_compiled_in)
 
   char *path = write_test_config (conf);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -129,7 +127,8 @@ Ensure (manage_runtime_flags, config_disables_agents_when_compiled_in)
 
   char *path = write_test_config (conf);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -153,7 +152,8 @@ Ensure (manage_runtime_flags, env_overrides_config_for_agents)
 
   setenv ("GVMD_ENABLE_AGENTS", "1", 1);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -177,7 +177,8 @@ Ensure (manage_runtime_flags, invalid_env_falls_back_to_config)
 
   setenv ("GVMD_ENABLE_AGENTS", "test", 1);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -201,7 +202,8 @@ Ensure (manage_runtime_flags, compiled_out_feature_ignores_env_and_config)
 
   setenv ("GVMD_ENABLE_AGENTS", "1", 1);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
   assert_that (feature_compiled_in (FEATURE_ID_AGENTS), is_equal_to (1));
@@ -222,7 +224,8 @@ Ensure (manage_runtime_flags,
     "enable_agents = false\n";
   char *path = write_test_config (conf);
 
-  runtime_flags_init (path);
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
 
@@ -249,9 +252,10 @@ Ensure (manage_runtime_flags,
   const char *conf =
     "[features]\n"
     "enable_agents = true\n";
-
   char *path = write_test_config (conf);
-  runtime_flags_init (path);
+
+  load_gvmd_config (path);
+  runtime_flags_init ();
 
 #if ENABLE_AGENTS
 

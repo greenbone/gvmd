@@ -299,6 +299,7 @@ set(
   ALL_MISC_SRC
   debug_utils.c
   gvmd.c
+  gvmd_config.c
   gmpd.c
   ipc.c
   lsc_user.c
@@ -440,6 +441,15 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(gvmd-config "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 
 set(
   ALL_OBJECTS

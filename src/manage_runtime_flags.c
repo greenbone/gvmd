@@ -8,6 +8,7 @@
  * @brief Runtime feature flag handling for gvmd.
  */
 
+#include "gvmd_config.h"
 #include "manage_runtime_flags.h"
 
 #include <ctype.h>
@@ -50,22 +51,6 @@
 #endif
 
 /**
- * @brief Get the default system configuration file path for gvmd.
- *
- * @return Path to the system gvmd configuration file.
- */
-static const char *
-get_sysconf_gvmd_config (void)
-{
-  static char *path;
-
-  if (!path)
-    path = g_build_filename (GVM_SYSCONF_DIR, "gvmd.conf", NULL);
-
-  return path;
-}
-
-/**
  * @brief State of a single feature.
  */
 static feature_state_t feature_agents =
@@ -100,86 +85,6 @@ static feature_state_t feature_vt_metadata =
  */
 static feature_state_t feature_osi_export =
   {1, 0};
-
-/**
- * @brief Parse a textual boolean value into an integer.
- *
- * Recognized true values: "1", "true", "yes", "on"
- * Recognized false values: "0", "false", "no", "off"
- * Comparison is case-insensitive and ignores whitespaces.
- *
- * @param[in]  str  Input string to parse.
- * @param[out] out  Parsed value (1 or 0) on success.
- *
- * @return 0 on success, -1 on invalid input or NULL arguments.
- */
-static int
-parse_bool_string (const char *str, int *out)
-{
-  char buf[32];
-  char *p;
-
-  if (!str || !out)
-    return -1;
-
-  strncpy (buf, str, sizeof (buf) - 1);
-  buf[sizeof (buf) - 1] = '\0';
-
-  g_strstrip (buf);
-
-  for (p = buf; *p; ++p)
-    *p = (char) tolower ((unsigned char) *p);
-
-  if (!strcmp (buf, "1") ||
-      !strcmp (buf, "true") ||
-      !strcmp (buf, "yes") ||
-      !strcmp (buf, "on"))
-    {
-      *out = 1;
-      return 0;
-    }
-
-  if (!strcmp (buf, "0") ||
-      !strcmp (buf, "false") ||
-      !strcmp (buf, "no") ||
-      !strcmp (buf, "off"))
-    {
-      *out = 0;
-      return 0;
-    }
-
-  return -1;
-}
-
-/**
- * @brief Read a boolean value from an environment variable.
- *
- * @param[in]  env_name  Name of the environment variable.
- * @param[out] out       Parsed value on success. May be NULL.
- *
- * @return  1 if the variable existed and was parsed successfully,
- *          0 if the variable was not set,
- *         -1 if the variable was set but had an invalid value.
- */
-static int
-read_env_bool (const char *env_name, int *out)
-{
-  const char *val = getenv (env_name);
-  int tmp;
-
-  if (!val)
-    return 0;
-
-  if (parse_bool_string (val, &tmp) == 0)
-    {
-      if (out)
-        *out = tmp;
-      return 1;
-    }
-
-  /* Invalid env value, ignore but could be logged by caller. */
-  return -1;
-}
 
 /**
  * @brief Feature flags as read from the configuration file.
@@ -217,35 +122,6 @@ conf_file_feature_flags_init_empty (struct conf_feature_flags *t)
 }
 
 /**
- * @brief Load a single boolean feature flag from a GKeyFile.
- *
- * @param[in]  kf          Key file handle.
- * @param[in]  group       Group name in the key file.
- * @param[in]  key         Key name inside the group.
- * @param[out] has_flag    Set to 1 if the key was found.
- * @param[out] flag_value  Set to 1 or 0 based on the key value.
- */
-static void
-load_feature_flag (GKeyFile *kf,
-                   const char *group,
-                   const char *key,
-                   int *has_flag,
-                   int *flag_value)
-{
-  gboolean b;
-
-  if (!kf || !group || !key || !has_flag || !flag_value)
-    return;
-
-  if (!g_key_file_has_key (kf, group, key, NULL))
-    return;
-
-  b = g_key_file_get_boolean (kf, group, key, NULL);
-  *has_flag = 1;
-  *flag_value = b ? 1 : 0;
-}
-
-/**
  * @brief Load all feature flags from a gvmd configuration file.
  *
  * @param[in]  config_path  Path to the configuration file.
@@ -255,57 +131,43 @@ load_feature_flag (GKeyFile *kf,
  *         -1 on other I/O or parse errors.
  */
 static int
-load_conf_file_feature_flags (const char *config_path,
-                              struct conf_feature_flags *out)
+load_conf_file_feature_flags (struct conf_feature_flags *out)
 {
   GKeyFile *kf;
-  GError *error = NULL;
 
   if (!out)
     return -1;
 
   conf_file_feature_flags_init_empty (out);
 
-  kf = g_key_file_new ();
-  if (!g_key_file_load_from_file (kf, config_path, G_KEY_FILE_NONE, &error))
-    {
-      if (error && error->domain == G_FILE_ERROR
-          && error->code == G_FILE_ERROR_NOENT)
-        {
-          g_clear_error (&error);
-          g_key_file_unref (kf);
-          return 0;
-        }
+  kf = get_gvmd_config ();
+  if (kf == NULL)
+    return 0;
 
-      if (error)
-        {
-          g_warning ("Failed to load runtime config '%s': %s",
-                     config_path, error->message);
-          g_clear_error (&error);
-        }
-      g_key_file_unref (kf);
-      return -1;
-    }
+  gvmd_config_get_boolean (kf, "features", "enable_agents",
+                           &out->has_agents,
+                           &out->agents);
 
-  load_feature_flag (kf, "features", "enable_agents",
-                     &out->has_agents, &out->agents);
+  gvmd_config_get_boolean (kf, "features", "enable_container_scanning",
+                           &out->has_container_scanning,
+                           &out->container_scanning);
 
-  load_feature_flag (kf, "features", "enable_container_scanning",
-                     &out->has_container_scanning, &out->container_scanning);
+  gvmd_config_get_boolean (kf, "features", "enable_credential_store",
+                           &out->has_credential_store,
+                           &out->credential_store);
 
-  load_feature_flag (kf, "features", "enable_credential_store",
-                     &out->has_credential_store, &out->credential_store);
+  gvmd_config_get_boolean (kf, "features", "enable_openvasd",
+                           &out->has_openvasd,
+                           &out->openvasd);
 
-  load_feature_flag (kf, "features", "enable_openvasd",
-                     &out->has_openvasd, &out->openvasd);
+  gvmd_config_get_boolean (kf, "features", "enable_vt_metadata",
+                           &out->has_vt_metadata,
+                           &out->vt_metadata);
 
-  load_feature_flag (kf, "features", "enable_vt_metadata",
-                     &out->has_vt_metadata, &out->vt_metadata);
+  gvmd_config_get_boolean (kf, "features", "enable_osi_export",
+                           &out->has_osi_export,
+                           &out->osi_export);
 
-  load_feature_flag (kf, "features", "enable_osi_export",
-                     &out->has_osi_export, &out->osi_export);
-
-  g_key_file_unref (kf);
   return 0;
 }
 
@@ -329,9 +191,6 @@ resolve_feature (feature_state_t *feature,
                  int conf_has_value,
                  int conf_value)
 {
-  int env_result;
-  int env_value;
-
   if (!feature)
     return;
 
@@ -341,20 +200,8 @@ resolve_feature (feature_state_t *feature,
       return;
     }
 
-  env_result = read_env_bool (env_name, &env_value);
-  if (env_result == 1)
-    {
-      feature->enabled = env_value;
-      return;
-    }
-
-  if (conf_has_value)
-    {
-      feature->enabled = conf_value ? 1 : 0;
-      return;
-    }
-
-  feature->enabled = 0;
+  gvmd_config_resolve_boolean (env_name, conf_has_value, conf_value,
+                               &feature->enabled);
 }
 
 /**
@@ -383,17 +230,11 @@ append_commands (GString *buf, const char *cmds)
  * @return Always 0 (errors are handled internally and fall back to defaults).
  */
 int
-runtime_flags_init (const gchar *config_path)
+runtime_flags_init ()
 {
   struct conf_feature_flags conf_flags;
-  const char *path;
 
-  if (config_path)
-    path = config_path;
-  else
-    path = get_sysconf_gvmd_config ();
-
-  if (load_conf_file_feature_flags (path, &conf_flags) != 0)
+  if (load_conf_file_feature_flags (&conf_flags) != 0)
     {
       /* Parse error */
       conf_file_feature_flags_init_empty (&conf_flags);
