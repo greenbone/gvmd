@@ -53,6 +53,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
@@ -3562,6 +3563,21 @@ check_db_settings ()
          "  'Auto Cache Rebuild',"
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
+
+  if (feature_enabled (FEATURE_ID_OSI_EXPORT))
+    {
+      if (sql_int ("SELECT count(*) FROM settings"
+                   " WHERE uuid = '" SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE "'"
+                   " AND " ACL_IS_GLOBAL () ";")
+          == 0)
+        sql ("INSERT into settings (uuid, owner, name, comment, value)"
+             " VALUES"
+             " ('" SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE "', NULL,"
+             "  'Export Reports OPENVAS INTELLIGENCE',"
+             "  'Whether to automatically export scan reports to "
+             "OPENVAS SECURITY INTELLIGENCE.',"
+             "  '0');");
+    }
 
   if (sql_int ("SELECT count(*) FROM settings"
                " WHERE uuid = '9246a0f6-c6ad-44bc-86c2-557a527c8fb3'"
@@ -30845,9 +30861,9 @@ setting_value_int_sql (const char *uuid, int *value)
  *                       always be set to NULL on success.
  *
  * @return 0 success, 1 failed to find setting, 2 syntax error in value,
- *         99 permission denied, -1 on error.
+ *         3 feature disabled, 99 permission denied, -1 on error.
  */
-int
+modify_setting_result_t
 modify_setting (const gchar *uuid, const gchar *name,
                 const gchar *value_64, gchar **r_errdesc)
 {
@@ -30856,7 +30872,7 @@ modify_setting (const gchar *uuid, const gchar *name,
   assert (current_credentials.uuid);
 
   if (acl_user_may ("modify_setting") == 0)
-    return 99;
+    return MODIFY_SETTING_RESULT_PERMISSION_DENIED;
 
   if (r_errdesc)
     *r_errdesc = NULL;
@@ -30864,37 +30880,37 @@ modify_setting (const gchar *uuid, const gchar *name,
   if (name && (strcmp (name, "Timezone") == 0))
     {
       gsize value_size;
-      gchar *quoted_timezone, *value;
+      gchar *timezone;
       if (value_64 && strlen (value_64))
         {
-          value = (gchar*) g_base64_decode (value_64, &value_size);
-          if (g_utf8_validate (value, value_size, NULL) == FALSE)
+          timezone = (gchar *) g_base64_decode (value_64, &value_size);
+          if (g_utf8_validate (timezone, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
-              g_free (value);
-              return -1;
+              g_free (timezone);
+              return MODIFY_SETTING_RESULT_ERROR;
             }
-          if (manage_timezone_supported (value) == FALSE)
+          if (manage_timezone_supported (timezone) == FALSE)
             {
-              g_free (value);
-              return 2;
+              g_free (timezone);
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
       else
         {
-          value = g_strdup ("");
+          timezone = g_strdup ("");
           value_size = 0;
         }
-      quoted_timezone = sql_quote (value);
-      g_free (value);
-      sql ("UPDATE users SET timezone = '%s', modification_time = m_now ()"
-           " WHERE uuid = '%s';",
-           quoted_timezone,
-           current_credentials.uuid);
-      g_free (quoted_timezone);
-      return 0;
+
+      sql_ps ("UPDATE users SET timezone = $1, modification_time = m_now ()"
+              " WHERE uuid = $2;",
+              SQL_STR_PARAM (timezone),
+              SQL_STR_PARAM (current_credentials.uuid), NULL);
+
+      g_free (timezone);
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   if (name && (strcmp (name, "Password") == 0))
@@ -30914,7 +30930,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -30932,6 +30948,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
+               || strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE) == 0
                || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
                || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
@@ -30942,21 +30959,17 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0))
     {
       gsize value_size;
-      gchar *value, *quoted_uuid, *quoted_value;
+      gchar *value;
 
       assert (current_credentials.username);
 
-      quoted_uuid = sql_quote (uuid);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND " ACL_IS_GLOBAL () ";",
-                   quoted_uuid,
-                   current_credentials.uuid)
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND " ACL_IS_GLOBAL () ";",
+                      SQL_STR_PARAM (uuid), NULL)
           == 0)
         {
-          g_free (quoted_uuid);
-          return 1;
+          return MODIFY_SETTING_RESULT_NOT_FOUND;
         }
 
       if (value_64 && strlen (value_64))
@@ -30968,7 +30981,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -30985,8 +30998,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           while (*val && isdigit (*val)) val++;
           if (*val && strcmp (value, "-1"))
             {
-              g_free (quoted_uuid);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31032,9 +31044,8 @@ modify_setting (const gchar *uuid, const gchar *name,
           /* Invalid value */
           else
             {
-              g_free (quoted_uuid);
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31059,7 +31070,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               || severity_dbl < 0.0 || severity_dbl > 10.0)
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
           else
             current_credentials.default_severity = severity_dbl;
@@ -31073,7 +31084,28 @@ modify_setting (const gchar *uuid, const gchar *name,
               || (strcmp (value, "0") && strcmp (value, "1")))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
+            }
+        }
+
+      if (strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_OPENVAS_INTELLIGENCE) == 0)
+        {
+          if (!feature_enabled (FEATURE_ID_OSI_EXPORT))
+            {
+              g_free (value);
+
+              g_warning("Export Reports to OPENVAS SECURITY INTELLIGENCE Feature"
+                        "is disabled");
+              return MODIFY_SETTING_RESULT_FEATURE_DISABLED;
+            }
+
+          int value_int;
+          /* Export Reports OPENVAS INTELLIGENCE */
+          if (sscanf (value, "%d", &value_int) != 1
+              || (strcmp (value, "0") && strcmp (value, "1")))
+            {
+              g_free (value);
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31084,7 +31116,7 @@ modify_setting (const gchar *uuid, const gchar *name,
               && strcmp (value, "system_default"))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
@@ -31095,46 +31127,38 @@ modify_setting (const gchar *uuid, const gchar *name,
               && strcmp (value, "system_default"))
             {
               g_free (value);
-              return 2;
+              return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
             }
         }
 
-      quoted_value = sql_quote (value);
-      g_free (value);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   quoted_uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             quoted_uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value), SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  (SELECT name FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
-             "   LIMIT 1),"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL ()
-             "   LIMIT 1),"
-             "  '%s');",
-             quoted_uuid,
-             current_credentials.uuid,
-             quoted_uuid,
-             quoted_uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  (SELECT name FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL ()
+                "   LIMIT 1),"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL ()
+                "   LIMIT 1),"
+                "  $3);",
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (value), NULL);
 
-      g_free (quoted_uuid);
-      g_free (quoted_value);
-
-      return 0;
+      g_free (value);
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   /* Export file name format */
@@ -31144,7 +31168,7 @@ modify_setting (const gchar *uuid, const gchar *name,
           || strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0))
     {
       gsize value_size;
-      gchar *value, *quoted_value;
+      gchar *value;
 
       assert (current_credentials.uuid);
       if (strcmp (uuid, SETTING_UUID_FILE_DETAILS) == 0)
@@ -31154,7 +31178,7 @@ modify_setting (const gchar *uuid, const gchar *name,
       else if (strcmp (uuid, SETTING_UUID_FILE_REPORT) == 0)
         setting_name = "Report Export File Name";
       else
-        return -1;
+        return MODIFY_SETTING_RESULT_ERROR;
 
       if (value_64 && strlen (value_64))
         {
@@ -31165,7 +31189,7 @@ modify_setting (const gchar *uuid, const gchar *name,
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31173,45 +31197,40 @@ modify_setting (const gchar *uuid, const gchar *name,
           value = g_strdup ("");
           value_size = 0;
         }
-      quoted_value = sql_quote (value);
 
       if (strcmp (value, "") == 0)
         {
           g_free (value);
-          g_free (quoted_value);
-          return 2;
+          return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
         }
 
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value),
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  '%s',"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
-             "  '%s');",
-             uuid,
-             current_credentials.uuid,
-             setting_name,
-             uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  $3,"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL () "),"
+                "  $4);",
+                SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (setting_name),
+                SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      g_free (quoted_value);
-
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
   /* Resources filters, default resource selections and chart preferences. */
@@ -31444,21 +31463,21 @@ modify_setting (const gchar *uuid, const gchar *name,
 
   if (setting_name)
     {
-      gchar *quoted_value, *value;
+      gchar *value;
       gsize value_size;
 
       assert (current_credentials.username);
 
       if (value_64 && strlen (value_64))
         {
-          value = (gchar*) g_base64_decode (value_64, &value_size);
+          value = (gchar *) g_base64_decode (value_64, &value_size);
           if (g_utf8_validate (value, value_size, NULL) == FALSE)
             {
               if (r_errdesc)
                 *r_errdesc = g_strdup ("Value cannot be decoded to"
                                        " valid UTF-8");
               g_free (value);
-              return -1;
+              return MODIFY_SETTING_RESULT_ERROR;
             }
         }
       else
@@ -31467,41 +31486,33 @@ modify_setting (const gchar *uuid, const gchar *name,
           value_size = 0;
         }
 
-      quoted_value = sql_quote (value);
-
-      if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '%s'"
-                   " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-                   uuid,
-                   current_credentials.uuid))
-        sql ("UPDATE settings SET value = '%s'"
-             " WHERE uuid = '%s'"
-             " AND owner = (SELECT id FROM users WHERE uuid = '%s');",
-             quoted_value,
-             uuid,
-             current_credentials.uuid);
+      if (sql_int_ps ("SELECT count(*) FROM settings"
+                      " WHERE uuid = $1"
+                      " AND owner = (SELECT id FROM users WHERE uuid = $2);",
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid), NULL))
+        sql_ps ("UPDATE settings SET value = $1"
+                " WHERE uuid = $2"
+                " AND owner = (SELECT id FROM users WHERE uuid = $3);",
+                SQL_STR_PARAM (value), SQL_STR_PARAM (uuid),
+                SQL_STR_PARAM (current_credentials.uuid), NULL);
       else
-        sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
-             " VALUES"
-             " ('%s',"
-             "  (SELECT id FROM users WHERE uuid = '%s'),"
-             "  '%s',"
-             "  (SELECT comment FROM settings"
-             "   WHERE uuid = '%s' AND " ACL_IS_GLOBAL () "),"
-             "  '%s');",
-             uuid,
-             current_credentials.uuid,
-             setting_name,
-             uuid,
-             quoted_value);
+        sql_ps ("INSERT INTO settings (uuid, owner, name, comment, value)"
+                " VALUES"
+                " ($1,"
+                "  (SELECT id FROM users WHERE uuid = $2),"
+                "  $3,"
+                "  (SELECT comment FROM settings"
+                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL () "),"
+                "  $4);",
+                SQL_STR_PARAM (uuid), SQL_STR_PARAM (current_credentials.uuid),
+                SQL_STR_PARAM (setting_name), SQL_STR_PARAM (value), NULL);
 
       g_free (value);
-      g_free (quoted_value);
-
-      return 0;
+      return MODIFY_SETTING_RESULT_OK;
     }
 
-  return 1;
+  return MODIFY_SETTING_RESULT_NOT_FOUND;
 }
 
 /**
