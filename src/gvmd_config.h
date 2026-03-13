@@ -23,7 +23,7 @@ void
 gvmd_config_get_boolean (GKeyFile *, const char *, const char *,
                          int *, int *);
 
-gboolean
-gvmd_config_resolve_boolean (const char *, gboolean, gboolean);
+void
+gvmd_config_resolve_boolean (const char *, gboolean, gboolean, gboolean*);
 
 #endif /* _GVMD_GVMD_CONFIG_H */

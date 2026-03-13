@@ -236,21 +236,26 @@ read_env_bool (const char *env_name, int *out)
  * @param[in]     env_name       Environment variable name.
  * @param[in]     conf_has_value Non-zero if configuration provided a value.
  * @param[in]     conf_value     Value from configuration (1 or 0).
+ * @param[out]    output         Pointer to boolean result.
  */
-gboolean
+void
 gvmd_config_resolve_boolean (const char *env_name,
                              gboolean conf_has_value,
-                             gboolean conf_value)
+                             gboolean conf_value,
+                             gboolean *output)
 {
   gboolean env_value;
   int env_result;
 
+  if (output == NULL)
+    return;
+
   env_result = read_env_bool (env_name, &env_value);
   if (env_result == 1)
-    return env_value;
+    {
+      *output = env_value;
+    }
 
   if (conf_has_value)
-    return conf_value ? TRUE : FALSE;
-
-  return FALSE;
+    *output = conf_value ? TRUE : FALSE;
 }
