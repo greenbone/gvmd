@@ -3774,6 +3774,38 @@ migrate_271_to_272 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 272 to version 273.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_272_to_273 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 272. */
+
+  if (manage_db_version () != 272)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add hostname to report_hosts for container scanning
+  sql ("ALTER TABLE IF EXISTS report_hosts"
+       " ADD COLUMN IF NOT EXISTS hostname text DEFAULT '';");
+
+  /* Set the database version to 273. */
+  set_db_version (273);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3852,6 +3884,7 @@ static migrator_t database_migrators[] = {
   {270, migrate_269_to_270},
   {271, migrate_270_to_271},
   {272, migrate_271_to_272},
+  {273, migrate_272_to_273},
   /* End marker. */
   {-1, NULL}};
 

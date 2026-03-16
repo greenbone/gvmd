@@ -7733,7 +7733,8 @@ result_detection_reference (result_t result, report_t report,
                               " WHERE report_host = (SELECT id"
                               "                      FROM report_hosts"
                               "                      WHERE report = %llu"
-                              "                      AND host = '%s')"
+                              "                      AND host = '%s'"
+                              "                      LIMIT 1)"
                               " AND name = 'detected_at'"
                               " AND source_name = (SELECT nvt"
                               "                    FROM results"
@@ -7753,7 +7754,8 @@ result_detection_reference (result_t result, report_t report,
                   " WHERE report_host = (SELECT id"
                   "                      FROM report_hosts"
                   "                      WHERE report = %llu"
-                  "                      AND host = '%s')"
+                  "                      AND host = '%s'"
+                  "                      LIMIT 1)"
                   " AND name = 'detected_by@%s'"
                   " AND source_name = (SELECT nvt"
                   "                    FROM results"
@@ -7768,7 +7770,8 @@ result_detection_reference (result_t result, report_t report,
                       " WHERE report_host = (SELECT id"
                       "                      FROM report_hosts"
                       "                      WHERE report = %llu"
-                      "                      AND host = '%s')"
+                      "                      AND host = '%s'"
+                      "                      LIMIT 1)"
                       " AND name = 'detected_by'"
                       " AND source_name = (SELECT nvt"
                       "                    FROM results"
@@ -7787,7 +7790,8 @@ result_detection_reference (result_t result, report_t report,
                          " WHERE report_host = (SELECT id"
                          "                      FROM report_hosts"
                          "                      WHERE report = %llu"
-                         "                      AND host = '%s')"
+                         "                      AND host = '%s'"
+                         "                      LIMIT 1)"
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
@@ -12851,7 +12855,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
     {
       init_ps_iterator (iterator,
                         "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port, max_port, report,"
+                        " iso_time (end_time), current_port,"
+                        " max_port, hostname, report,"
                         " (SELECT uuid FROM reports WHERE id = report),"
                         " (SELECT uuid FROM hosts"
                         "  WHERE id = (SELECT host FROM host_identifiers"
@@ -12876,7 +12881,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
     {
       init_ps_iterator (iterator,
                         "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port, max_port, report,"
+                        " iso_time (end_time), current_port, max_port,"
+                        " hostname, report,"
                         " (SELECT uuid FROM reports WHERE id = report),"
                         " ''"
                         " FROM report_hosts"
@@ -12887,6 +12893,45 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
                         host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
                         NULL);
     }
+}
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  report    Report whose hosts the iterator loops over.
+ * @param[in]  host      Host to iterate over.
+ * @param[in]  hostname  Hostname.
+ */
+void
+init_report_host_iterator_hostname (iterator_t* iterator,
+                                    report_t report,
+                                    const char *host,
+                                    const char *hostname)
+{
+  init_ps_iterator (iterator,
+                    "SELECT id, host, iso_time (start_time),"
+                    " iso_time (end_time), current_port, max_port,"
+                    " hostname, report,"
+                    " (SELECT uuid FROM reports WHERE id = report),"
+                    " (SELECT uuid FROM hosts"
+                    "  WHERE id = (SELECT host FROM host_identifiers"
+                    "              WHERE source_type = 'Report Host'"
+                    "              AND name = 'ip'"
+                    "              AND source_id = (SELECT uuid"
+                    "                               FROM reports"
+                    "                               WHERE id = report)"
+                    "              AND value = report_hosts.host"
+                    "              LIMIT 1))"
+                    " FROM report_hosts"
+                    " WHERE report = $1"
+                    "   AND host = $2"
+                    "   AND hostname = $3"
+                    " ORDER BY order_inet (host);",
+                    SQL_RESOURCE_PARAM (report),
+                    SQL_STR_PARAM (host),
+                    SQL_STR_PARAM (hostname),
+                    NULL);
 }
 
 
@@ -12967,6 +13012,15 @@ host_iterator_max_port (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the hostname from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The hostname of the host.
+ */
+DEF_ACCESS (host_iterator_hostname, 6);
+
+/**
  * @brief Get the asset UUID from a host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12975,7 +13029,7 @@ host_iterator_max_port (iterator_t* iterator)
  *         only before calling cleanup_iterator.
  */
 static
-DEF_ACCESS (host_iterator_asset_uuid, 8);
+DEF_ACCESS (host_iterator_asset_uuid, 9);
 
 /**
  * @brief Initialise a report errors iterator.
@@ -13437,72 +13491,6 @@ set_scan_host_start_time_ctime (report_t report, const char* host,
          parse_utc_ctime (timestamp), report, quoted_host);
   else
     manage_report_host_add (report, host, parse_utc_ctime (timestamp), 0);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  End time. In ISO format.
- */
-void
-set_scan_host_end_time_isotime (report_t report, const char* host,
-                                const char* timestamp)
-{
-  gchar *quoted_host;
-  int end_time;
-
-  if (host == NULL || timestamp == NULL)
-    return;
-
-  end_time = parse_iso_time (timestamp);
-  if (end_time <= 0)
-    return;
-
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         end_time, report, quoted_host);
-  else
-    manage_report_host_add (report, host, 0, end_time);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the start time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  Start time. In ISO format.
- */
-void
-set_scan_host_start_time_isotime (report_t report, const char* host,
-                                  const char* timestamp)
-{
-  gchar *quoted_host;
-  int start_time;
-
-  if (host == NULL || timestamp == NULL)
-    return;
-
-  start_time = parse_iso_time (timestamp);
-  if (start_time <= 0)
-    return;
-
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET start_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         start_time, report, quoted_host);
-  else
-    manage_report_host_add (report, host, start_time, 0);
   g_free (quoted_host);
 }
 
@@ -16253,6 +16241,159 @@ print_report_host_xml (print_report_context_t *ctx,
   return 0;
 }
 
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Print the XML for a report's host to a file stream.
+ * @param[in]  ctx                      Printing context.
+ * @param[in]  stream                   File stream to write to.
+ * @param[in]  hosts                    Host iterator.
+ * @param[in]  lean                     Whether to return lean report.
+ * @param[in]  host_summary_buffer      Host sumary buffer.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_container_scan_report_host_xml (print_report_context_t *ctx,
+                                      FILE *stream,
+                                      iterator_t *hosts,
+                                      int lean,
+                                      GString *host_summary_buffer)
+{
+  int ports_count;
+
+  const char* host = host_iterator_host (hosts);
+  const char* hostname = host_iterator_hostname (hosts);
+
+  gchar *host_key = create_host_key (host,
+                                     hostname,
+                                     CONTAINER_SCANNER_HOST_KEY_SEPARATOR);
+
+  ports_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_ports, host_key));
+
+  host_summary_append (host_summary_buffer,
+                       host,
+                       host_iterator_start_time (hosts),
+                       host_iterator_end_time (hosts));
+  PRINT (stream,
+          "<host>"
+          "<ip>%s</ip>",
+          host);
+
+  if (host_iterator_asset_uuid (hosts)
+      && strlen (host_iterator_asset_uuid (hosts)))
+    PRINT (stream,
+            "<asset asset_id=\"%s\"/>",
+            host_iterator_asset_uuid (hosts));
+  else if (lean == 0)
+    PRINT (stream,
+           "<asset asset_id=\"\"/>");
+
+  int holes_count, warnings_count, infos_count;
+  int logs_count, false_positives_count;
+  int criticals_count = 0;
+
+  criticals_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_criticals, host_key));
+  holes_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_holes, host_key));
+  warnings_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_warnings, host_key));
+  infos_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_infos, host_key));
+  logs_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_logs, host_key));
+  false_positives_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_false_positives,
+                              host_key));
+
+  PRINT (stream,
+        "<start>%s</start>"
+        "<end>%s</end>"
+        "<port_count><page>%d</page></port_count>"
+        "<result_count>"
+        "<page>%d</page>"
+        "<critical><page>%d</page></critical>"
+        "<hole deprecated='1'><page>%d</page></hole>"
+        "<high><page>%d</page></high>"
+        "<warning deprecated='1'><page>%d</page></warning>"
+        "<medium><page>%d</page></medium>"
+        "<info deprecated='1'><page>%d</page></info>"
+        "<low><page>%d</page></low>"
+        "<log><page>%d</page></log>"
+        "<false_positive><page>%d</page></false_positive>"
+        "</result_count>",
+        host_iterator_start_time (hosts),
+        host_iterator_end_time (hosts)
+          ? host_iterator_end_time (hosts)
+          : "",
+        ports_count,
+        (criticals_count + holes_count + warnings_count + infos_count
+          + logs_count + false_positives_count),
+        criticals_count,
+        holes_count,
+        holes_count,
+        warnings_count,
+        warnings_count,
+        infos_count,
+        infos_count,
+        logs_count,
+        false_positives_count);
+
+  g_free (host_key);
+
+  if (print_report_host_details_xml
+        (host_iterator_report_host (hosts), stream, lean))
+    {
+      return -1;
+    }
+
+  PRINT (stream,
+          "</host>");
+
+  return 0;
+}
+
+/**
+ * @brief Print report hosts for an XML report
+ *
+ * @param[in]  ctx  Printing context.
+ * @param[in]  stream  File stream to write to.
+ * @param[in]  hosts   Host iterator.
+ * @param[in]  lean    Whether to return lean report.
+ * @param[in]  host_summary_buffer  Buffer to append host summary to.
+ */
+static int
+print_container_scan_report_hosts_xml (print_report_context_t *ctx,
+                                       FILE *stream,
+                                       iterator_t *hosts,
+                                       int lean,
+                                       GString *host_summary_buffer)
+{
+  while (next (hosts))
+    {
+      if (print_container_scan_report_host_xml (ctx,
+                                                stream,
+                                                hosts,
+                                                lean,
+                                                host_summary_buffer))
+        {
+          g_warning ("%s: Failed to print host XML", __func__);
+          return -1;
+        }
+    }
+  return 0;
+}
+
+#endif // ENABLE_CONTAINER_SCANNING
+
 /**
  * @brief Init delta iterator for print_report_xml.
  *
@@ -16914,6 +17055,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_count;
   print_report_context_t ctx = {0};
 
+  #if ENABLE_CONTAINER_SCANNING
+  gboolean is_container_scanning_report = FALSE;
+  #endif
+
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
@@ -17349,6 +17494,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           char *oci_uuid, *oci_name, *oci_comment;
           int in_trash;
 
+          is_container_scanning_report = TRUE;
+
           in_trash = task_oci_image_target_in_trash (task);
 
           oci_uuid = in_trash
@@ -17636,9 +17783,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               0); /* Delta fields. */
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
+
+          gchar *host_key;
+#if ENABLE_CONTAINER_SCANNING
+          if (is_container_scanning_report)
+            host_key = create_host_key (result_iterator_host (&results),
+                                        result_iterator_hostname (&results),
+                                        CONTAINER_SCANNER_HOST_KEY_SEPARATOR);
+          else
+#endif
+            host_key = g_strdup (result_iterator_host (&results));
+
           if (result_hosts_only)
-            array_add_new_string (result_hosts,
-                                  result_iterator_host (&results));
+            array_add_new_string (result_hosts, host_key);
 
           if (strcmp (ctx.tsk_usage_type, "audit") == 0)
             {
@@ -17676,16 +17833,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (f_host_result_counts)
                 {
-                  const char *result_host = result_iterator_host (&results);
                   int result_count
                         = GPOINTER_TO_INT
                             (g_hash_table_lookup (f_host_result_counts,
-                                                  result_host));
+                                                  host_key));
 
                   g_hash_table_replace (f_host_result_counts,
-                                        g_strdup (result_host),
+                                        g_strdup (host_key),
                                         GINT_TO_POINTER (result_count + 1));
-              }
+                }
             }
           else
             {
@@ -17737,16 +17893,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (f_host_result_counts)
                 {
-                  const char *result_host = result_iterator_host (&results);
                   int result_count
                         = GPOINTER_TO_INT
-                            (g_hash_table_lookup (f_host_result_counts, result_host));
+                            (g_hash_table_lookup (f_host_result_counts, host_key));
 
                   g_hash_table_replace (f_host_result_counts,
-                                        g_strdup (result_host),
+                                        g_strdup (host_key),
                                         GINT_TO_POINTER (result_count + 1));
                 }
            }
+           g_free (host_key);
         }
       PRINT (out, "</results>");
     }
@@ -17918,42 +18074,96 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       gchar *result_host;
       int index = 0;
       array_terminate (result_hosts);
-      while ((result_host = g_ptr_array_index (result_hosts, index++)))
+      iterator_t hosts;
+
+#if ENABLE_CONTAINER_SCANNING
+      if (is_container_scanning_report)
         {
-          gboolean present;
-          iterator_t hosts;
-          init_report_host_iterator (&hosts, report, result_host, 0);
-          present = next (&hosts);
-          if (present)
+          while ((result_host = g_ptr_array_index (result_hosts, index++)))
             {
-              if (print_report_host_xml (&ctx,
-                                         out,
-                                         &hosts,
-                                         result_host,
-                                         ctx.tsk_usage_type,
-                                         lean,
-                                         host_summary_buffer))
+              gchar *host, *hostname;
+              if (parse_host_key (result_host,
+                                  CONTAINER_SCANNER_HOST_KEY_SEPARATOR,
+                                  &host,
+                                  &hostname) < 0)
                 {
                   goto failed_print_report_host;
                 }
+              init_report_host_iterator_hostname (&hosts, report, host, hostname);
+              g_free (host);
+              g_free (hostname);
+
+              if (print_container_scan_report_hosts_xml (&ctx,
+                                                         out,
+                                                         &hosts,
+                                                         lean,
+                                                         host_summary_buffer))
+                {
+                  cleanup_iterator (&hosts);
+                  goto failed_print_report_host;
+                }
             }
-          cleanup_iterator (&hosts);
         }
+     else
+#endif /* ENABLE_CONTAINER_SCANNING */
+        {
+          while ((result_host = g_ptr_array_index (result_hosts, index++)))
+            {
+              gboolean present;
+              init_report_host_iterator (&hosts, report, result_host, 0);
+              present = next (&hosts);
+              if (present)
+                {
+                  if (print_report_host_xml (&ctx,
+                                             out,
+                                             &hosts,
+                                             result_host,
+                                             ctx.tsk_usage_type,
+                                             lean,
+                                             host_summary_buffer))
+                    {
+                      cleanup_iterator (&hosts);
+                      goto failed_print_report_host;
+                    }
+                }
+            }
+        }
+        cleanup_iterator (&hosts);
     }
   else if (get->details)
     {
       iterator_t hosts;
       init_report_host_iterator (&hosts, report, NULL, 0);
-      while (next (&hosts))
+#if ENABLE_CONTAINER_SCANNING
+      if (is_container_scanning_report)
         {
-          if (print_report_host_xml (&ctx,
-                                     out,
-                                     &hosts,
-                                     NULL,
-                                     ctx.tsk_usage_type,
-                                     lean,
-                                     host_summary_buffer))
-            goto failed_print_report_host;
+          if (print_container_scan_report_hosts_xml (&ctx,
+                                                     out,
+                                                     &hosts,
+                                                     lean,
+                                                     host_summary_buffer))
+            {
+              cleanup_iterator (&hosts);
+              goto failed_print_report_host;
+            }
+        }
+      else
+#endif /* ENABLE_CONTAINER_SCANNING */
+        {
+          while (next (&hosts))
+            {
+              if (print_report_host_xml (&ctx,
+                                         out,
+                                         &hosts,
+                                         NULL,
+                                         ctx.tsk_usage_type,
+                                         lean,
+                                         host_summary_buffer))
+                {
+                  cleanup_iterator (&hosts);
+                  goto failed_print_report_host;
+                }
+            }
         }
       cleanup_iterator (&hosts);
     }
