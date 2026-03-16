@@ -136,39 +136,17 @@ insert_container_scan_report_host_detail (report_t report,
                                           const char *value,
                                           const char *hash_value)
 {
-  char *quoted_host, *quoted_hostname;
-  char *quoted_source_name, *quoted_source_type;
-  char *quoted_source_desc, *quoted_name, *quoted_value;
-  char *quoted_hash_value;
-
-  quoted_host = sql_quote (host ? host : "");
-  quoted_hostname = sql_quote (hostname ? hostname : "");
-  quoted_source_type = sql_quote (s_type ? s_type : "");
-  quoted_source_name = sql_quote (s_name ? s_name : "");
-  quoted_source_desc = sql_quote (s_desc ? s_desc : "");
-  quoted_name = sql_quote (name ? name : "");
-  quoted_value = sql_quote (value ? value : "");
-  quoted_hash_value = sql_quote (hash_value ? hash_value : "");
-
-  sql ("INSERT INTO report_host_details"
-       " (report_host, source_type, source_name, source_description,"
-       "  name, value, hash_value)"
-       " VALUES"
-       " ((SELECT id FROM report_hosts"
-       "   WHERE report = %llu AND host = '%s' AND hostname = '%s'),"
-       "  '%s', '%s', '%s', '%s', '%s', '%s');",
-       report, quoted_host, quoted_hostname, quoted_source_type,
-       quoted_source_name, quoted_source_desc, quoted_name,
-       quoted_value, quoted_hash_value);
-
-  g_free (quoted_host);
-  g_free (quoted_hostname);
-  g_free (quoted_source_type);
-  g_free (quoted_source_name);
-  g_free (quoted_source_desc);
-  g_free (quoted_name);
-  g_free (quoted_value);
-  g_free (quoted_hash_value);
+  sql_ps ("INSERT INTO report_host_details"
+          " (report_host, source_type, source_name, source_description,"
+          "  name, value, hash_value)"
+          " VALUES"
+          " ((SELECT id FROM report_hosts"
+          "   WHERE report = $1 AND host = $2 AND hostname = $3),"
+          "  $4, $5, $6, $7, $8, $9);",
+          SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+          SQL_STR_PARAM (hostname), SQL_STR_PARAM (s_type),
+          SQL_STR_PARAM (s_name), SQL_STR_PARAM (s_desc), SQL_STR_PARAM (name),
+          SQL_STR_PARAM (value), SQL_STR_PARAM (hash_value), NULL);
 }
 
 /**
@@ -189,25 +167,22 @@ manage_container_scan_report_host_add (report_t report,
                                        time_t start,
                                        time_t end)
 {
-  char *quoted_host = sql_quote (host);
-  char *quoted_hostname = sql_quote (hostname);
   resource_t report_host;
 
-  sql ("INSERT INTO report_hosts"
-       " (report, host, hostname, start_time, end_time, current_port, max_port)"
-       " SELECT %llu, '%s', '%s', %lld, %lld, 0, 0"
-       " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = %llu"
-       "                   AND host = '%s' AND hostname = '%s');",
-       report, quoted_host, quoted_hostname,
-       (long long) start, (long long) end, report,
-       quoted_host, quoted_hostname);
+  sql_ps ("INSERT INTO report_hosts"
+          " (report, host, hostname, start_time, end_time, current_port, max_port)"
+          " SELECT $1, $2, $3, $4, $5, 0, 0"
+          " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = $1"
+          "                   AND host = $2 AND hostname = $3);",
+          SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+          SQL_STR_PARAM (hostname), SQL_INT_PARAM (start),
+          SQL_INT_PARAM (end), NULL);
 
-  report_host = sql_int64_0 ("SELECT id FROM report_hosts"
-                             " WHERE report = %llu AND host = '%s'"
-                             " AND hostname = '%s';",
-                             report, quoted_host, quoted_hostname);
-  g_free (quoted_host);
-  g_free (quoted_hostname);
+  report_host = sql_int64_0_ps ("SELECT id FROM report_hosts"
+                                " WHERE report = $1 AND host = $2"
+                                " AND hostname = $3;",
+                                SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+                                SQL_STR_PARAM (hostname), NULL);
   return report_host;
 }
 
@@ -225,7 +200,6 @@ set_container_scan_host_end_time_isotime (report_t report,
                                           const char* hostname,
                                           const char* timestamp)
 {
-  gchar *quoted_host;
   int end_time;
 
   if (host == NULL || hostname == NULL || timestamp == NULL)
@@ -235,19 +209,20 @@ set_container_scan_host_end_time_isotime (report_t report,
   if (end_time <= 0)
     return;
 
-  quoted_host = sql_quote (host);
-  gchar *quoted_hostname = sql_quote (hostname);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s' AND hostname = '%s';",
-               report, quoted_host, quoted_hostname))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s' AND hostname = '%s';",
-         end_time, report, quoted_host, quoted_hostname);
+  if (sql_int_ps ("SELECT COUNT(*) FROM report_hosts"
+                  " WHERE report = $1 AND host = $2 AND hostname = $3;",
+                  SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+                  SQL_STR_PARAM (hostname), NULL))
+    sql_ps ("UPDATE report_hosts SET end_time = $1"
+            " WHERE report = $2 AND host = $3 AND hostname = $4;",
+             SQL_INT_PARAM (end_time), SQL_RESOURCE_PARAM (report),
+             SQL_STR_PARAM (host), SQL_STR_PARAM (hostname), NULL);
   else
-    manage_container_scan_report_host_add (report, host, hostname,
-                                           0, end_time);
-  g_free (quoted_host);
-  g_free (quoted_hostname);
+    manage_container_scan_report_host_add (report,
+                                           host,
+                                           hostname,
+                                           0,
+                                           end_time);
 }
 
 /**
@@ -264,7 +239,6 @@ set_container_scan_host_start_time_isotime (report_t report,
                                             const char* hostname,
                                             const char* timestamp)
 {
-  gchar *quoted_host;
   int start_time;
 
   if (host == NULL || hostname == NULL || timestamp == NULL)
@@ -274,20 +248,18 @@ set_container_scan_host_start_time_isotime (report_t report,
   if (start_time <= 0)
     return;
 
-  quoted_host = sql_quote (host);
-  gchar *quoted_hostname = sql_quote (hostname);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s'"
-               " AND hostname = '%s';",
-               report, quoted_host, quoted_hostname))
-    sql ("UPDATE report_hosts SET start_time = %i"
-         " WHERE report = %llu AND host = '%s' AND hostname = '%s';",
-         start_time, report, quoted_host, quoted_hostname);
+  if (sql_int_ps ("SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = $1 AND host = $2"
+               " AND hostname = $3;",
+               SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+               SQL_STR_PARAM (hostname), NULL))
+    sql_ps ("UPDATE report_hosts SET start_time = $1"
+            " WHERE report = $2 AND host = $3 AND hostname = $4;",
+            SQL_INT_PARAM (start_time), SQL_RESOURCE_PARAM (report),
+            SQL_STR_PARAM (host), SQL_STR_PARAM (hostname), NULL);
   else
     manage_container_scan_report_host_add (report, host, hostname,
                                            start_time, 0);
-  g_free (quoted_host);
-  g_free (quoted_hostname);
 }
 
 /**
@@ -315,7 +287,7 @@ check_container_scan_host_detail_exists (report_t report, const char *host,
                                          GHashTable *hashed_host_details)
 {
   char *hash_string;
-  long long int report_host;
+  resource_t report_host;
   int return_value = 0;
 
   hash_string = g_strdup_printf ("%llu-%s-%s-%s-%s-%s-%s-%s", report, host,
@@ -335,41 +307,38 @@ check_container_scan_host_detail_exists (report_t report, const char *host,
     {
         g_hash_table_insert (hashed_host_details, g_strdup(*detail_hash_value),
                         GINT_TO_POINTER(1));
-        sql_int64 (&report_host, "SELECT id FROM report_hosts"
-                                " WHERE report = %llu AND host = '%s'"
-                                " AND hostname = '%s';",
-                  report, host, hostname);
+        sql_int64_ps (&report_host, "SELECT id FROM report_hosts"
+                                    " WHERE report = $1 AND host = $2"
+                                    " AND hostname = $3;",
+                                    SQL_RESOURCE_PARAM (report),
+                                    SQL_STR_PARAM (host),
+                                    SQL_STR_PARAM (hostname),
+                                    NULL);
 
-        if (sql_int ("SELECT EXISTS"
-                    " (SELECT * FROM report_host_details"
-                    "  WHERE report_host = %llu and hash_value = '%s');",
-                    report_host, *detail_hash_value))
-          {
-            gchar *quoted_host = sql_quote (host);
-            gchar *quoted_s_type = sql_quote (s_type);
-            gchar *quoted_s_name = sql_quote (s_name);
-            gchar *quoted_s_desc = sql_quote (s_desc);
-            gchar *quoted_name = sql_quote (name);
-            gchar *quoted_value = sql_quote (value);
-
-            if (sql_int ("SELECT EXISTS"
+        if (sql_int_ps ("SELECT EXISTS"
                         " (SELECT * FROM report_host_details"
-                        "   WHERE report_host = %llu and hash_value = '%s'"
-                        "   and source_type = '%s' and source_name = '%s'"
-                        "   and source_description = '%s'"
-                        "   and  name = '%s' and value = '%s'"
-                        " );",
-                        report_host, *detail_hash_value, quoted_s_type,
-                        quoted_s_name, quoted_s_desc, quoted_name, quoted_value))
+                        "  WHERE report_host = $1 and hash_value = $2);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        SQL_STR_PARAM (*detail_hash_value),
+                        NULL))
+          {
+            if (sql_int_ps ("SELECT EXISTS"
+                            " (SELECT * FROM report_host_details"
+                            "   WHERE report_host = $1 and hash_value = $2"
+                            "   and source_type = $3 and source_name = $4"
+                            "   and source_description = $5"
+                            "   and  name = $6 and value = $7);",
+                            SQL_RESOURCE_PARAM (report_host),
+                            SQL_STR_PARAM (*detail_hash_value),
+                            SQL_STR_PARAM (s_type),
+                            SQL_STR_PARAM (s_name),
+                            SQL_STR_PARAM (s_desc),
+                            SQL_STR_PARAM (name),
+                            SQL_STR_PARAM (value),
+                            NULL))
               {
                 return_value = 1;
               }
-            g_free (quoted_host);
-            g_free (quoted_s_type);
-            g_free (quoted_s_name);
-            g_free (quoted_s_desc);
-            g_free (quoted_name);
-            g_free (quoted_value);
           }
     }
 
