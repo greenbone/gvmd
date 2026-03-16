@@ -10,6 +10,7 @@
 
 #if ENABLE_AGENTS
 #include "manage_agent_common.h"
+
 #include "manage_sql.h"
 
 #include <assert.h>
@@ -76,20 +77,24 @@ agent_uuid_list_from_group (agent_group_t group)
   while (next (&it))
     {
       const char *uuid = agent_group_agent_iterator_uuid (&it);
-      if (uuid && *uuid) count++;
+      if (uuid && *uuid)
+        count++;
     }
 
-  if (count == 0) return NULL;
+  if (count == 0)
+    return NULL;
 
   agent_uuid_list_t list = agent_uuid_list_new (count);
-  if (!list) return NULL;
+  if (!list)
+    return NULL;
 
   int i = 0;
   init_agent_group_agents_iterator (&it, group);
   while (next (&it))
     {
       const char *uuid = agent_group_agent_iterator_uuid (&it);
-      if (!uuid || !*uuid) continue;
+      if (!uuid || !*uuid)
+        continue;
       list->agent_uuids[i++] = g_strdup (uuid);
     }
 
@@ -100,7 +105,8 @@ agent_uuid_list_from_group (agent_group_t group)
  * @brief Initialize a new GVMD agent connector from a scanner.
  *
  * Builds and configures a connection to the agent controller using
- * scanner information.
+ * scanner information. If the scanner host is a Unix domain socket path,
+ * the connector is configured to use UDS instead of TCP.
  *
  * @param[in] scanner  Scanner ID used to resolve connection info.
  * @return Allocated gvmd_agent_connector_t or NULL on failure.
@@ -117,7 +123,9 @@ gvmd_agent_connector_new_from_scanner (scanner_t scanner)
   char *cert = scanner_key_pub (scanner);
   char *key = scanner_key_priv (scanner);
 
-  if (!host || port <= 0)
+  gboolean is_socket_path = host && *host != '\0' && g_path_is_absolute (host);
+
+  if (!host || *host == '\0' || (!is_socket_path && port <= 0))
     {
       g_warning ("%s: Invalid scanner host or port", __func__);
       g_free (host);
@@ -138,10 +146,21 @@ gvmd_agent_connector_new_from_scanner (scanner_t scanner)
     g_malloc0 (sizeof (struct gvmd_agent_connector));
   conn->base = agent_controller_connector_new ();
 
-  agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_HOST, host);
-  agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_PORT, &port);
-  agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_PROTOCOL,
-                                      protocol);
+  if (is_socket_path)
+    {
+      g_debug ("%s: Falling back to socket: %s", __func__, host);
+      agent_controller_connector_builder (
+        conn->base, AGENT_CONTROLLER_UNIX_SOCKET_PATH, host);
+    }
+  else
+    {
+      agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_HOST,
+                                          host);
+      agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_PORT,
+                                          &port);
+      agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_PROTOCOL,
+                                          protocol);
+    }
 
   if (ca_cert)
     agent_controller_connector_builder (conn->base, AGENT_CONTROLLER_CA_CERT,
@@ -174,6 +193,32 @@ gvmd_agent_connector_free (gvmd_agent_connector_t conn)
     return;
   agent_controller_connector_free (conn->base);
   g_free (conn);
+}
+
+/**
+ * @brief Verify connectivity to the agent controller.
+ *
+ * @param[in] scanner Scanner row id used to obtain the agent connector.
+ *
+ * @return 0 if the connection and configuration retrieval succeed,
+ *         1 if the agent configuration could not be obtained.
+ */
+int
+verify_agent_controller_connection (scanner_t scanner)
+{
+  gvmd_agent_connector_t connector = NULL;
+  agent_controller_scan_agent_config_t agent_config = NULL;
+
+  connector = gvmd_agent_connector_new_from_scanner (scanner);
+  agent_config = agent_controller_get_scan_agent_config (connector->base);
+
+  gvmd_agent_connector_free (connector);
+
+  if (agent_config == NULL)
+    return 1;
+
+  agent_controller_scan_agent_config_free (agent_config);
+  return 0;
 }
 
 #endif // ENABLE_AGENTS

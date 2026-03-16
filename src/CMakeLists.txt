@@ -20,7 +20,7 @@ pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.30)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.35)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
@@ -32,7 +32,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=22.36
+    libgvm_agent_controller>=22.37
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -299,6 +299,7 @@ set(
   ALL_MISC_SRC
   debug_utils.c
   gvmd.c
+  gvmd_config.c
   gmpd.c
   ipc.c
   lsc_user.c
@@ -440,6 +441,15 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(gvmd-config "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 
 set(
   ALL_OBJECTS
@@ -681,75 +691,5 @@ add_custom_target(
 
 add_custom_target(check COMMENT "Checking code...")
 add_dependencies(check cppcheck)
-
-## Tag files
-
-set(
-  C_FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/gvmd.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmpd.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_agent_installers.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_base.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_delete.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_get.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_configs.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_oci_image_targets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_port_lists.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_report_formats.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tickets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/gmp_tls_certificates.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_utils.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_acl.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_agent_installers.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_alerts.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_asset_keys.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_events.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_configs.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_get.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_groups.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_oci_image_targets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_permissions.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_port_lists.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_preferences.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_runtime_flags.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_report_formats.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_roles.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_tags.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_authentication.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_agent_installers.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_alerts.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_assets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_events.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_filters.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_groups.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_configs.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_nvts.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_oci_image_targets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_permissions_cache.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_port_lists.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_report_formats.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_resources.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_roles.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_secinfo.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tags.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_targets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tickets.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_tls_certificates.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_sql_users.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_migrators.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/manage_users.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_user.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/lsc_crypt.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/sql.c"
-  "${CMAKE_CURRENT_SOURCE_DIR}/utils.c"
-)
-add_custom_target(etags COMMENT "Building TAGS..." COMMAND etags ${C_FILES})
-add_custom_target(ctags COMMENT "Building tags..." COMMAND ctags ${C_FILES})
-add_custom_target(tags COMMENT "Building tags files...")
-add_dependencies(tags etags ctags)
 
 ## End

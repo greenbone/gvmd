@@ -11,4 +11,10 @@
 char*
 tag_uuid (tag_t);
 
+int
+copy_tag (const char *, const char *, const char *, tag_t *);
+
+int
+delete_tag (const char *, int);
+
 #endif /* not _GVMD_MANAGE_TAGS_H */

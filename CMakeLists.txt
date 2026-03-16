@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.18.2 LANGUAGES C)
+project(gvm VERSION 26.19.1 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -96,7 +96,7 @@ include(CPack)
 
 ## Variables
 
-set(GVMD_DATABASE_VERSION 272)
+set(GVMD_DATABASE_VERSION 273)
 
 set(GVMD_SCAP_DATABASE_VERSION 22)
 

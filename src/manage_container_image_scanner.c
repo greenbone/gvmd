@@ -114,6 +114,290 @@ container_image_target_credential (oci_image_target_t target)
 }
 
 /**
+ * @brief Insert a host detail into a container scan report.
+ *
+ * @param[in]   report      The detail's report.
+ * @param[in]   host        The detail's host.
+ * @param[in]   s_type      The detail's source type.
+ * @param[in]   s_name      The detail's source name.
+ * @param[in]   s_desc      The detail's source description.
+ * @param[in]   name        The detail's name.
+ * @param[in]   value       The detail's value.
+ * @param[in]   hash_value  The detail's hash value.
+ */
+static void
+insert_container_scan_report_host_detail (report_t report,
+                                          const char *host,
+                                          const char *hostname,
+                                          const char *s_type,
+                                          const char *s_name,
+                                          const char *s_desc,
+                                          const char *name,
+                                          const char *value,
+                                          const char *hash_value)
+{
+  sql_ps ("INSERT INTO report_host_details"
+          " (report_host, source_type, source_name, source_description,"
+          "  name, value, hash_value)"
+          " VALUES"
+          " ((SELECT id FROM report_hosts"
+          "   WHERE report = $1 AND host = $2 AND hostname = $3),"
+          "  $4, $5, $6, $7, $8, $9);",
+          SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+          SQL_STR_PARAM (hostname), SQL_STR_PARAM (s_type),
+          SQL_STR_PARAM (s_name), SQL_STR_PARAM (s_desc), SQL_STR_PARAM (name),
+          SQL_STR_PARAM (value), SQL_STR_PARAM (hash_value), NULL);
+}
+
+/**
+ * @brief Add a report host.
+ *
+ * @param[in]  report   UUID of resource.
+ * @param[in]  host     Host.
+ * @param[in]  hostname Hostname.
+ * @param[in]  start    Start time.
+ * @param[in]  end      End time.
+ *
+ * @return Report host.
+ */
+static report_host_t
+manage_container_scan_report_host_add (report_t report,
+                                       const char *host,
+                                       const char *hostname,
+                                       time_t start,
+                                       time_t end)
+{
+  resource_t report_host;
+
+  sql_ps ("INSERT INTO report_hosts"
+          " (report, host, hostname, start_time, end_time, current_port, max_port)"
+          " SELECT $1, $2, $3, $4, $5, 0, 0"
+          " WHERE NOT EXISTS (SELECT 1 FROM report_hosts WHERE report = $1"
+          "                   AND host = $2 AND hostname = $3);",
+          SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+          SQL_STR_PARAM (hostname), SQL_INT_PARAM (start),
+          SQL_INT_PARAM (end), NULL);
+
+  report_host = sql_int64_0_ps ("SELECT id FROM report_hosts"
+                                " WHERE report = $1 AND host = $2"
+                                " AND hostname = $3;",
+                                SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+                                SQL_STR_PARAM (hostname), NULL);
+  return report_host;
+}
+
+/**
+ * @brief Set the end time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  hostname   Hostname.
+ * @param[in]  timestamp  End time. In ISO format.
+ */
+static void
+set_container_scan_host_end_time_isotime (report_t report,
+                                          const char* host,
+                                          const char* hostname,
+                                          const char* timestamp)
+{
+  int end_time;
+
+  if (host == NULL || hostname == NULL || timestamp == NULL)
+    return;
+
+  end_time = parse_iso_time (timestamp);
+  if (end_time <= 0)
+    return;
+
+  if (sql_int_ps ("SELECT COUNT(*) FROM report_hosts"
+                  " WHERE report = $1 AND host = $2 AND hostname = $3;",
+                  SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+                  SQL_STR_PARAM (hostname), NULL))
+    sql_ps ("UPDATE report_hosts SET end_time = $1"
+            " WHERE report = $2 AND host = $3 AND hostname = $4;",
+             SQL_INT_PARAM (end_time), SQL_RESOURCE_PARAM (report),
+             SQL_STR_PARAM (host), SQL_STR_PARAM (hostname), NULL);
+  else
+    manage_container_scan_report_host_add (report,
+                                           host,
+                                           hostname,
+                                           0,
+                                           end_time);
+}
+
+/**
+ * @brief Set the start time of a scanned host.
+ *
+ * @param[in]  report     Report associated with the scan.
+ * @param[in]  host       Host.
+ * @param[in]  hostname   Hostname.
+ * @param[in]  timestamp  Start time. In ISO format.
+ */
+static void
+set_container_scan_host_start_time_isotime (report_t report,
+                                            const char* host,
+                                            const char* hostname,
+                                            const char* timestamp)
+{
+  int start_time;
+
+  if (host == NULL || hostname == NULL || timestamp == NULL)
+    return;
+
+  start_time = parse_iso_time (timestamp);
+  if (start_time <= 0)
+    return;
+
+  if (sql_int_ps ("SELECT COUNT(*) FROM report_hosts"
+               " WHERE report = $1 AND host = $2"
+               " AND hostname = $3;",
+               SQL_RESOURCE_PARAM (report), SQL_STR_PARAM (host),
+               SQL_STR_PARAM (hostname), NULL))
+    sql_ps ("UPDATE report_hosts SET start_time = $1"
+            " WHERE report = $2 AND host = $3 AND hostname = $4;",
+            SQL_INT_PARAM (start_time), SQL_RESOURCE_PARAM (report),
+            SQL_STR_PARAM (host), SQL_STR_PARAM (hostname), NULL);
+  else
+    manage_container_scan_report_host_add (report, host, hostname,
+                                           start_time, 0);
+}
+
+/**
+ * @brief Check if host detail exists.
+ *
+ * @param[in]  report      Report.
+ * @param[in]  host        Host.
+ * @param[in]  hostname    Hostname.
+ * @param[in]  s_type      Source type.
+ * @param[in]  s_name      Source name.
+ * @param[in]  s_desc      Source description.
+ * @param[in]  name        Name.
+ * @param[in]  value       Value.
+ * @param[out] detail_hash_value  The generated hash value.
+ * @param[out] hashed_host_details  A GHashtable containing hashed host details.
+ *
+ * @return     "1" if result already exists, else "0"
+ */
+static int
+check_container_scan_host_detail_exists (report_t report, const char *host,
+                                         const char *hostname, const char *s_type,
+                                         const char *s_name, const char *s_desc,
+                                         const char *name, const char *value,
+                                         char **detail_hash_value,
+                                         GHashTable *hashed_host_details)
+{
+  char *hash_string;
+  resource_t report_host;
+  int return_value = 0;
+
+  hash_string = g_strdup_printf ("%llu-%s-%s-%s-%s-%s-%s-%s", report, host,
+                                 hostname, s_type, s_name, s_desc, name, value);
+  *detail_hash_value = get_md5_hash_from_string (hash_string);
+
+  /* The hash map is used to to filter duplicates that may exist within
+   * the same batch of results fetched from the scanner even before
+   * insertion in the database while the SQL is used to check for duplicates
+   * across batches. */
+
+  if (g_hash_table_contains (hashed_host_details, *detail_hash_value))
+    {
+      return_value = 1;
+    }
+  else
+    {
+        g_hash_table_insert (hashed_host_details, g_strdup(*detail_hash_value),
+                        GINT_TO_POINTER(1));
+        sql_int64_ps (&report_host, "SELECT id FROM report_hosts"
+                                    " WHERE report = $1 AND host = $2"
+                                    " AND hostname = $3;",
+                                    SQL_RESOURCE_PARAM (report),
+                                    SQL_STR_PARAM (host),
+                                    SQL_STR_PARAM (hostname),
+                                    NULL);
+
+        if (sql_int_ps ("SELECT EXISTS"
+                        " (SELECT * FROM report_host_details"
+                        "  WHERE report_host = $1 and hash_value = $2);",
+                        SQL_RESOURCE_PARAM (report_host),
+                        SQL_STR_PARAM (*detail_hash_value),
+                        NULL))
+          {
+            if (sql_int_ps ("SELECT EXISTS"
+                            " (SELECT * FROM report_host_details"
+                            "   WHERE report_host = $1 and hash_value = $2"
+                            "   and source_type = $3 and source_name = $4"
+                            "   and source_description = $5"
+                            "   and  name = $6 and value = $7);",
+                            SQL_RESOURCE_PARAM (report_host),
+                            SQL_STR_PARAM (*detail_hash_value),
+                            SQL_STR_PARAM (s_type),
+                            SQL_STR_PARAM (s_name),
+                            SQL_STR_PARAM (s_desc),
+                            SQL_STR_PARAM (name),
+                            SQL_STR_PARAM (value),
+                            NULL))
+              {
+                return_value = 1;
+              }
+          }
+    }
+
+  if (return_value)
+    {
+      g_debug ("Captured duplicate report host detail, report: %llu hash_value: %s",
+                report, *detail_hash_value);
+      g_debug ("Hash string: %s", hash_string);
+    }
+  g_free (hash_string);
+  return return_value;
+}
+
+/**
+ * @brief Create a key for host and hostname combination.
+ *
+ * @param[in]  host      Host IP address.
+ * @param[in]  hostname  Hostname.
+ * @param[in]  separator Separator to use to combine host and hostname in the key.
+ *
+ * @return Key for host and hostname combination.
+ */
+gchar*
+create_host_key (const gchar *host, const gchar *hostname,
+                 const gchar *separator)
+{
+  return g_strdup_printf ("%s%s%s",
+                          host ? host : "",
+                          separator,
+                          hostname ? hostname : "");
+}
+
+/**
+ * @brief Parse host and hostname from a key.
+ *
+ * @param[in]  key       Host and hostname combination.
+ * @param[in]  separator Separator used in the key.
+ * @param[out] host      Host.
+ * @param[out] hostname  Hostname.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+parse_host_key (const char *key, const char *separator,
+                char **host, char **hostname)
+{
+  gchar **parts = g_strsplit (key, separator, -1);
+  if (g_strv_length (parts) != 2)
+    {
+      g_strfreev (parts);
+      return -1;
+    }
+  *host = g_strdup (parts[0]);
+  *hostname = g_strdup (parts[1]);
+  g_strfreev (parts);
+  return 0;
+}
+
+/**
  * @brief Add a container image scan result to a report.
  *
  * @param[in]      res           The container image scan result.
@@ -134,41 +418,52 @@ add_container_image_scan_result (http_scanner_result_t res,
   test_id = res->oid;
 
   host = extract_sha256_digest_if_found (res->ip_address);
-  hostname = res->hostname;
+  hostname = res->hostname ?: "";
   port = res->port;
   desc = res->message;
 
   if (host)
-    manage_report_host_add (rep_aux->report, host, 0, 0);
+    manage_container_scan_report_host_add (rep_aux->report,
+                                           host,
+                                           hostname,
+                                           0, 0);
 
   if (strcmp (type, "host_detail") == 0)
     {
       gchar *hash_value = NULL;
-      if (!check_host_detail_exists (rep_aux->report, host,
-                                     res->detail_source_type,
-                                     res->detail_source_name,
-                                     res->detail_source_description,
-                                     res->detail_name,
-                                     res->detail_value,
-                                     &hash_value,
-                                     rep_aux->hash_hostdetails))
+      if (!check_container_scan_host_detail_exists (rep_aux->report,
+                                                    host, hostname,
+                                                    res->detail_source_type,
+                                                    res->detail_source_name,
+                                                    res->detail_source_description,
+                                                    res->detail_name,
+                                                    res->detail_value,
+                                                    &hash_value,
+                                                    rep_aux->hash_hostdetails))
         {
-          insert_report_host_detail (rep_aux->report, host,
-                                     res->detail_source_type,
-                                     res->detail_source_name,
-                                     res->detail_source_description,
-                                     res->detail_name,
-                                     res->detail_value,
-                                     hash_value);
+          insert_container_scan_report_host_detail (rep_aux->report,
+                                                    host, hostname,
+                                                    res->detail_source_type,
+                                                    res->detail_source_name,
+                                                    res->detail_source_description,
+                                                    res->detail_name,
+                                                    res->detail_value,
+                                                    hash_value);
         }
     }
   else if (strcmp (type, "host_start") == 0)
     {
-      set_scan_host_start_time_isotime (rep_aux->report, host, desc);
+      set_container_scan_host_start_time_isotime (rep_aux->report,
+                                                  host,
+                                                  hostname,
+                                                  desc);
     }
   else if (strcmp (type, "host_end") == 0)
     {
-      set_scan_host_end_time_isotime (rep_aux->report, host, desc);
+      set_container_scan_host_end_time_isotime (rep_aux->report,
+                                                host,
+                                                hostname,
+                                                desc);
     }
   else
     {

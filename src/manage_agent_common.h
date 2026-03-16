@@ -49,6 +49,9 @@ gvmd_agent_connector_new_from_scanner (scanner_t scanner);
 void
 gvmd_agent_connector_free (gvmd_agent_connector_t conn);
 
+int
+verify_agent_controller_connection (scanner_t scanner);
+
 agent_uuid_list_t
 agent_uuid_list_new (int count);
 

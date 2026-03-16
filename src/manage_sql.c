@@ -7749,7 +7749,8 @@ result_detection_reference (result_t result, report_t report,
                               " WHERE report_host = (SELECT id"
                               "                      FROM report_hosts"
                               "                      WHERE report = %llu"
-                              "                      AND host = '%s')"
+                              "                      AND host = '%s'"
+                              "                      LIMIT 1)"
                               " AND name = 'detected_at'"
                               " AND source_name = (SELECT nvt"
                               "                    FROM results"
@@ -7769,7 +7770,8 @@ result_detection_reference (result_t result, report_t report,
                   " WHERE report_host = (SELECT id"
                   "                      FROM report_hosts"
                   "                      WHERE report = %llu"
-                  "                      AND host = '%s')"
+                  "                      AND host = '%s'"
+                  "                      LIMIT 1)"
                   " AND name = 'detected_by@%s'"
                   " AND source_name = (SELECT nvt"
                   "                    FROM results"
@@ -7784,7 +7786,8 @@ result_detection_reference (result_t result, report_t report,
                       " WHERE report_host = (SELECT id"
                       "                      FROM report_hosts"
                       "                      WHERE report = %llu"
-                      "                      AND host = '%s')"
+                      "                      AND host = '%s'"
+                      "                      LIMIT 1)"
                       " AND name = 'detected_by'"
                       " AND source_name = (SELECT nvt"
                       "                    FROM results"
@@ -7803,7 +7806,8 @@ result_detection_reference (result_t result, report_t report,
                          " WHERE report_host = (SELECT id"
                          "                      FROM report_hosts"
                          "                      WHERE report = %llu"
-                         "                      AND host = '%s')"
+                         "                      AND host = '%s'"
+                         "                      LIMIT 1)"
                          " AND source_name = '%s'"
                          " AND name != 'detected_at'"
                          " AND value = '%s';",
@@ -10604,16 +10608,20 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[1])",                           \
       "oci_image_registry",                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(regexp_match(hostname,"                                               \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
       "oci_image_path",                                                       \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[2])",                           \
       "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },
 
@@ -10801,16 +10809,20 @@ where_qod (int min_qod)
     /* ^ 45 = 35 */                                                           \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[1])",                           \
       "oci_image_registry",                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "(regexp_match(hostname,"                                               \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[2]",                  \
       "oci_image_path",                                                       \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(regexp_match(hostname,"                                               \
-      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3]",                  \
+    { "coalesce((regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[3],"                  \
+      "         (regexp_match(hostname,"                                      \
+      " '^oci:\\/\\/([^\\/]+)\\/([^\\/]+)$'))[2])",                           \
       "oci_image_short_name",                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 50 = 40 */                                                           \
@@ -12859,7 +12871,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
     {
       init_ps_iterator (iterator,
                         "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port, max_port, report,"
+                        " iso_time (end_time), current_port,"
+                        " max_port, hostname, report,"
                         " (SELECT uuid FROM reports WHERE id = report),"
                         " (SELECT uuid FROM hosts"
                         "  WHERE id = (SELECT host FROM host_identifiers"
@@ -12884,7 +12897,8 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
     {
       init_ps_iterator (iterator,
                         "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port, max_port, report,"
+                        " iso_time (end_time), current_port, max_port,"
+                        " hostname, report,"
                         " (SELECT uuid FROM reports WHERE id = report),"
                         " ''"
                         " FROM report_hosts"
@@ -12895,6 +12909,45 @@ init_report_host_iterator (iterator_t* iterator, report_t report, const char *ho
                         host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
                         NULL);
     }
+}
+
+/**
+ * @brief Initialise a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ * @param[in]  report    Report whose hosts the iterator loops over.
+ * @param[in]  host      Host to iterate over.
+ * @param[in]  hostname  Hostname.
+ */
+void
+init_report_host_iterator_hostname (iterator_t* iterator,
+                                    report_t report,
+                                    const char *host,
+                                    const char *hostname)
+{
+  init_ps_iterator (iterator,
+                    "SELECT id, host, iso_time (start_time),"
+                    " iso_time (end_time), current_port, max_port,"
+                    " hostname, report,"
+                    " (SELECT uuid FROM reports WHERE id = report),"
+                    " (SELECT uuid FROM hosts"
+                    "  WHERE id = (SELECT host FROM host_identifiers"
+                    "              WHERE source_type = 'Report Host'"
+                    "              AND name = 'ip'"
+                    "              AND source_id = (SELECT uuid"
+                    "                               FROM reports"
+                    "                               WHERE id = report)"
+                    "              AND value = report_hosts.host"
+                    "              LIMIT 1))"
+                    " FROM report_hosts"
+                    " WHERE report = $1"
+                    "   AND host = $2"
+                    "   AND hostname = $3"
+                    " ORDER BY order_inet (host);",
+                    SQL_RESOURCE_PARAM (report),
+                    SQL_STR_PARAM (host),
+                    SQL_STR_PARAM (hostname),
+                    NULL);
 }
 
 
@@ -12975,6 +13028,15 @@ host_iterator_max_port (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the hostname from a host iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The hostname of the host.
+ */
+DEF_ACCESS (host_iterator_hostname, 6);
+
+/**
  * @brief Get the asset UUID from a host iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12983,7 +13045,7 @@ host_iterator_max_port (iterator_t* iterator)
  *         only before calling cleanup_iterator.
  */
 static
-DEF_ACCESS (host_iterator_asset_uuid, 8);
+DEF_ACCESS (host_iterator_asset_uuid, 9);
 
 /**
  * @brief Initialise a report errors iterator.
@@ -13445,72 +13507,6 @@ set_scan_host_start_time_ctime (report_t report, const char* host,
          parse_utc_ctime (timestamp), report, quoted_host);
   else
     manage_report_host_add (report, host, parse_utc_ctime (timestamp), 0);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the end time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  End time. In ISO format.
- */
-void
-set_scan_host_end_time_isotime (report_t report, const char* host,
-                                const char* timestamp)
-{
-  gchar *quoted_host;
-  int end_time;
-
-  if (host == NULL || timestamp == NULL)
-    return;
-
-  end_time = parse_iso_time (timestamp);
-  if (end_time <= 0)
-    return;
-
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET end_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         end_time, report, quoted_host);
-  else
-    manage_report_host_add (report, host, 0, end_time);
-  g_free (quoted_host);
-}
-
-/**
- * @brief Set the start time of a scanned host.
- *
- * @param[in]  report     Report associated with the scan.
- * @param[in]  host       Host.
- * @param[in]  timestamp  Start time. In ISO format.
- */
-void
-set_scan_host_start_time_isotime (report_t report, const char* host,
-                                  const char* timestamp)
-{
-  gchar *quoted_host;
-  int start_time;
-
-  if (host == NULL || timestamp == NULL)
-    return;
-
-  start_time = parse_iso_time (timestamp);
-  if (start_time <= 0)
-    return;
-
-  quoted_host = sql_quote (host);
-  if (sql_int ("SELECT COUNT(*) FROM report_hosts"
-               " WHERE report = %llu AND host = '%s';",
-               report, quoted_host))
-    sql ("UPDATE report_hosts SET start_time = %i"
-         " WHERE report = %llu AND host = '%s';",
-         start_time, report, quoted_host);
-  else
-    manage_report_host_add (report, host, start_time, 0);
   g_free (quoted_host);
 }
 
@@ -16097,6 +16093,8 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 
 /**
  * @brief Print the XML for a report's host to a file stream.
+ *
+ * @param[in]  ctx                      Printing context.
  * @param[in]  stream                   File stream to write to.
  * @param[in]  hosts                    Host iterator.
  * @param[in]  host                     Single host to iterate over.
@@ -16104,38 +16102,17 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  usage_type               Report usage type.
  * @param[in]  lean                     Whether to return lean report.
  * @param[in]  host_summary_buffer      Host sumary buffer.
- * @param[in]  f_host_ports             Hashtable for host ports.
- * @param[in]  f_host_criticals         Hashtable for host criticals.
- * @param[in]  f_host_holes             Hashtable for host holes.
- * @param[in]  f_host_warnings          Hashtable for host host warnings.
- * @param[in]  f_host_infos             Hashtable for host infos.
- * @param[in]  f_host_logs              Hashtable for host logs.
- * @param[in]  f_host_false_positives   Hashtable for host false positives.
- * @param[in]  f_host_compliant         Hashtable for host compliant results.
- * @param[in]  f_host_notcompliant      Hashtable for host non compliant results.
- * @param[in]  f_host_incomplete        Hashtable for host incomplete resuls.
- * @param[in]  f_host_undefined         Hashtable for host undefined results.
  *
  * @return 0 on success, -1 error.
  */
 static int
-print_report_host_xml (FILE *stream,
+print_report_host_xml (print_report_context_t *ctx,
+                       FILE *stream,
                        iterator_t *hosts,
                        const char *host,
                        gchar *usage_type,
                        int lean,
-                       GString *host_summary_buffer,
-                       GHashTable *f_host_ports,
-                       GHashTable *f_host_criticals,
-                       GHashTable *f_host_holes,
-                       GHashTable *f_host_warnings,
-                       GHashTable *f_host_infos,
-                       GHashTable *f_host_logs,
-                       GHashTable *f_host_false_positives,
-                       GHashTable *f_host_compliant,
-                       GHashTable *f_host_notcompliant,
-                       GHashTable *f_host_incomplete,
-                       GHashTable *f_host_undefined)
+                       GString *host_summary_buffer)
 {
   const char *current_host;
   int ports_count;
@@ -16144,7 +16121,7 @@ print_report_host_xml (FILE *stream,
 
   ports_count
     = GPOINTER_TO_INT
-        (g_hash_table_lookup (f_host_ports, current_host));
+        (g_hash_table_lookup (ctx->f_host_ports, current_host));
 
   host_summary_append (host_summary_buffer,
                        host ? host : host_iterator_host (hosts),
@@ -16170,16 +16147,16 @@ print_report_host_xml (FILE *stream,
 
       yes_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_compliant, current_host));
+            (g_hash_table_lookup (ctx->f_host_compliant, current_host));
       no_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_notcompliant, current_host));
+            (g_hash_table_lookup (ctx->f_host_notcompliant, current_host));
       incomplete_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_incomplete, current_host));
+            (g_hash_table_lookup (ctx->f_host_incomplete, current_host));
       undefined_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup (f_host_undefined, current_host));
+            (g_hash_table_lookup (ctx->f_host_undefined, current_host));
 
       PRINT (stream,
             "<start>%s</start>"
@@ -16216,22 +16193,22 @@ print_report_host_xml (FILE *stream,
 
       criticals_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_criticals, current_host));
+            (g_hash_table_lookup (ctx->f_host_criticals, current_host));
       holes_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_holes, current_host));
+            (g_hash_table_lookup (ctx->f_host_holes, current_host));
       warnings_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_warnings, current_host));
+            (g_hash_table_lookup (ctx->f_host_warnings, current_host));
       infos_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_infos, current_host));
+            (g_hash_table_lookup (ctx->f_host_infos, current_host));
       logs_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_logs, current_host));
+            (g_hash_table_lookup (ctx->f_host_logs, current_host));
       false_positives_count
         = GPOINTER_TO_INT
-            (g_hash_table_lookup ( f_host_false_positives,
+            (g_hash_table_lookup (ctx->f_host_false_positives,
                                   current_host));
 
       PRINT (stream,
@@ -16279,6 +16256,159 @@ print_report_host_xml (FILE *stream,
 
   return 0;
 }
+
+#if ENABLE_CONTAINER_SCANNING
+/**
+ * @brief Print the XML for a report's host to a file stream.
+ * @param[in]  ctx                      Printing context.
+ * @param[in]  stream                   File stream to write to.
+ * @param[in]  hosts                    Host iterator.
+ * @param[in]  lean                     Whether to return lean report.
+ * @param[in]  host_summary_buffer      Host sumary buffer.
+ *
+ * @return 0 on success, -1 error.
+ */
+static int
+print_container_scan_report_host_xml (print_report_context_t *ctx,
+                                      FILE *stream,
+                                      iterator_t *hosts,
+                                      int lean,
+                                      GString *host_summary_buffer)
+{
+  int ports_count;
+
+  const char* host = host_iterator_host (hosts);
+  const char* hostname = host_iterator_hostname (hosts);
+
+  gchar *host_key = create_host_key (host,
+                                     hostname,
+                                     CONTAINER_SCANNER_HOST_KEY_SEPARATOR);
+
+  ports_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_ports, host_key));
+
+  host_summary_append (host_summary_buffer,
+                       host,
+                       host_iterator_start_time (hosts),
+                       host_iterator_end_time (hosts));
+  PRINT (stream,
+          "<host>"
+          "<ip>%s</ip>",
+          host);
+
+  if (host_iterator_asset_uuid (hosts)
+      && strlen (host_iterator_asset_uuid (hosts)))
+    PRINT (stream,
+            "<asset asset_id=\"%s\"/>",
+            host_iterator_asset_uuid (hosts));
+  else if (lean == 0)
+    PRINT (stream,
+           "<asset asset_id=\"\"/>");
+
+  int holes_count, warnings_count, infos_count;
+  int logs_count, false_positives_count;
+  int criticals_count = 0;
+
+  criticals_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_criticals, host_key));
+  holes_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_holes, host_key));
+  warnings_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_warnings, host_key));
+  infos_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_infos, host_key));
+  logs_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_logs, host_key));
+  false_positives_count
+    = GPOINTER_TO_INT
+        (g_hash_table_lookup (ctx->f_host_false_positives,
+                              host_key));
+
+  PRINT (stream,
+        "<start>%s</start>"
+        "<end>%s</end>"
+        "<port_count><page>%d</page></port_count>"
+        "<result_count>"
+        "<page>%d</page>"
+        "<critical><page>%d</page></critical>"
+        "<hole deprecated='1'><page>%d</page></hole>"
+        "<high><page>%d</page></high>"
+        "<warning deprecated='1'><page>%d</page></warning>"
+        "<medium><page>%d</page></medium>"
+        "<info deprecated='1'><page>%d</page></info>"
+        "<low><page>%d</page></low>"
+        "<log><page>%d</page></log>"
+        "<false_positive><page>%d</page></false_positive>"
+        "</result_count>",
+        host_iterator_start_time (hosts),
+        host_iterator_end_time (hosts)
+          ? host_iterator_end_time (hosts)
+          : "",
+        ports_count,
+        (criticals_count + holes_count + warnings_count + infos_count
+          + logs_count + false_positives_count),
+        criticals_count,
+        holes_count,
+        holes_count,
+        warnings_count,
+        warnings_count,
+        infos_count,
+        infos_count,
+        logs_count,
+        false_positives_count);
+
+  g_free (host_key);
+
+  if (print_report_host_details_xml
+        (host_iterator_report_host (hosts), stream, lean))
+    {
+      return -1;
+    }
+
+  PRINT (stream,
+          "</host>");
+
+  return 0;
+}
+
+/**
+ * @brief Print report hosts for an XML report
+ *
+ * @param[in]  ctx  Printing context.
+ * @param[in]  stream  File stream to write to.
+ * @param[in]  hosts   Host iterator.
+ * @param[in]  lean    Whether to return lean report.
+ * @param[in]  host_summary_buffer  Buffer to append host summary to.
+ */
+static int
+print_container_scan_report_hosts_xml (print_report_context_t *ctx,
+                                       FILE *stream,
+                                       iterator_t *hosts,
+                                       int lean,
+                                       GString *host_summary_buffer)
+{
+  while (next (hosts))
+    {
+      if (print_container_scan_report_host_xml (ctx,
+                                                stream,
+                                                hosts,
+                                                lean,
+                                                host_summary_buffer))
+        {
+          g_warning ("%s: Failed to print host XML", __func__);
+          return -1;
+        }
+    }
+  return 0;
+}
+
+#endif // ENABLE_CONTAINER_SCANNING
 
 /**
  * @brief Init delta iterator for print_report_xml.
@@ -16800,6 +16930,43 @@ print_report_init_zone (print_report_context_t *ctx)
 }
 
 /**
+ * @brief Init the f_hosts_* hashtables.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+static void
+print_report_init_f_hosts (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit") == 0)
+    {
+      ctx->f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                        g_free, NULL);
+      ctx->f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                      g_free, NULL);
+      ctx->f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+    }
+  else
+    {
+      ctx->f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx->f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx->f_host_false_positives = g_hash_table_new_full (g_str_hash,
+                                                           g_str_equal,
+                                                           g_free, NULL);
+    }
+}
+
+/**
  * @brief Get result count totals for print_report_xml_start.
  *
  * @param[in]  ctx  Printing context.
@@ -16903,6 +17070,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_incomplete, f_compliance_undefined;
   int f_compliance_count;
   print_report_context_t ctx = {0};
+
+  #if ENABLE_CONTAINER_SCANNING
+  gboolean is_container_scanning_report = FALSE;
+  #endif
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
@@ -17339,6 +17510,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           char *oci_uuid, *oci_name, *oci_comment;
           int in_trash;
 
+          is_container_scanning_report = TRUE;
+
           in_trash = task_oci_image_target_in_trash (task);
 
           oci_uuid = in_trash
@@ -17568,33 +17741,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     /* Quiet erroneous compiler warning. */
     result_hosts = NULL;
 
-  if (strcmp (ctx.tsk_usage_type, "audit") == 0)
-    {
-      ctx.f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-      ctx.f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                       g_free, NULL);
-      ctx.f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                     g_free, NULL);
-      ctx.f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-    }
-  else
-    {
-      ctx.f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-      ctx.f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      ctx.f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                   g_free, NULL);
-      ctx.f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      ctx.f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                               g_free, NULL);
-      ctx.f_host_false_positives = g_hash_table_new_full (g_str_hash,
-                                                          g_str_equal,
-                                                          g_free, NULL);
-    }
+  print_report_init_f_hosts (&ctx);
 
   if (delta && get->details)
     {
@@ -17652,9 +17799,19 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                               0); /* Delta fields. */
           PRINT_XML (out, buffer->str);
           g_string_free (buffer, TRUE);
+
+          gchar *host_key;
+#if ENABLE_CONTAINER_SCANNING
+          if (is_container_scanning_report)
+            host_key = create_host_key (result_iterator_host (&results),
+                                        result_iterator_hostname (&results),
+                                        CONTAINER_SCANNER_HOST_KEY_SEPARATOR);
+          else
+#endif
+            host_key = g_strdup (result_iterator_host (&results));
+
           if (result_hosts_only)
-            array_add_new_string (result_hosts,
-                                  result_iterator_host (&results));
+            array_add_new_string (result_hosts, host_key);
 
           if (strcmp (ctx.tsk_usage_type, "audit") == 0)
             {
@@ -17692,16 +17849,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (f_host_result_counts)
                 {
-                  const char *result_host = result_iterator_host (&results);
                   int result_count
                         = GPOINTER_TO_INT
                             (g_hash_table_lookup (f_host_result_counts,
-                                                  result_host));
+                                                  host_key));
 
                   g_hash_table_replace (f_host_result_counts,
-                                        g_strdup (result_host),
+                                        g_strdup (host_key),
                                         GINT_TO_POINTER (result_count + 1));
-              }
+                }
             }
           else
             {
@@ -17753,16 +17909,16 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
               if (f_host_result_counts)
                 {
-                  const char *result_host = result_iterator_host (&results);
                   int result_count
                         = GPOINTER_TO_INT
-                            (g_hash_table_lookup (f_host_result_counts, result_host));
+                            (g_hash_table_lookup (f_host_result_counts, host_key));
 
                   g_hash_table_replace (f_host_result_counts,
-                                        g_strdup (result_host),
+                                        g_strdup (host_key),
                                         GINT_TO_POINTER (result_count + 1));
                 }
            }
+           g_free (host_key);
         }
       PRINT (out, "</results>");
     }
@@ -17934,62 +18090,96 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       gchar *result_host;
       int index = 0;
       array_terminate (result_hosts);
-      while ((result_host = g_ptr_array_index (result_hosts, index++)))
+      iterator_t hosts;
+
+#if ENABLE_CONTAINER_SCANNING
+      if (is_container_scanning_report)
         {
-          gboolean present;
-          iterator_t hosts;
-          init_report_host_iterator (&hosts, report, result_host, 0);
-          present = next (&hosts);
-          if (present)
+          while ((result_host = g_ptr_array_index (result_hosts, index++)))
             {
-              if (print_report_host_xml (out,
-                                         &hosts,
-                                         result_host,
-                                         ctx.tsk_usage_type,
-                                         lean,
-                                         host_summary_buffer,
-                                         ctx.f_host_ports,
-                                         ctx.f_host_criticals,
-                                         ctx.f_host_holes,
-                                         ctx.f_host_warnings,
-                                         ctx.f_host_infos,
-                                         ctx.f_host_logs,
-                                         ctx.f_host_false_positives,
-                                         ctx.f_host_compliant,
-                                         ctx.f_host_notcompliant,
-                                         ctx.f_host_incomplete,
-                                         ctx.f_host_undefined))
+              gchar *host, *hostname;
+              if (parse_host_key (result_host,
+                                  CONTAINER_SCANNER_HOST_KEY_SEPARATOR,
+                                  &host,
+                                  &hostname) < 0)
                 {
                   goto failed_print_report_host;
                 }
+              init_report_host_iterator_hostname (&hosts, report, host, hostname);
+              g_free (host);
+              g_free (hostname);
+
+              if (print_container_scan_report_hosts_xml (&ctx,
+                                                         out,
+                                                         &hosts,
+                                                         lean,
+                                                         host_summary_buffer))
+                {
+                  cleanup_iterator (&hosts);
+                  goto failed_print_report_host;
+                }
             }
-          cleanup_iterator (&hosts);
         }
+     else
+#endif /* ENABLE_CONTAINER_SCANNING */
+        {
+          while ((result_host = g_ptr_array_index (result_hosts, index++)))
+            {
+              gboolean present;
+              init_report_host_iterator (&hosts, report, result_host, 0);
+              present = next (&hosts);
+              if (present)
+                {
+                  if (print_report_host_xml (&ctx,
+                                             out,
+                                             &hosts,
+                                             result_host,
+                                             ctx.tsk_usage_type,
+                                             lean,
+                                             host_summary_buffer))
+                    {
+                      cleanup_iterator (&hosts);
+                      goto failed_print_report_host;
+                    }
+                }
+            }
+        }
+        cleanup_iterator (&hosts);
     }
   else if (get->details)
     {
       iterator_t hosts;
       init_report_host_iterator (&hosts, report, NULL, 0);
-      while (next (&hosts))
+#if ENABLE_CONTAINER_SCANNING
+      if (is_container_scanning_report)
         {
-          if (print_report_host_xml (out,
-                                     &hosts,
-                                     NULL,
-                                     ctx.tsk_usage_type,
-                                     lean,
-                                     host_summary_buffer,
-                                     ctx.f_host_ports,
-                                     ctx.f_host_criticals,
-                                     ctx.f_host_holes,
-                                     ctx.f_host_warnings,
-                                     ctx.f_host_infos,
-                                     ctx.f_host_logs,
-                                     ctx.f_host_false_positives,
-                                     ctx.f_host_compliant,
-                                     ctx.f_host_notcompliant,
-                                     ctx.f_host_incomplete,
-                                     ctx.f_host_undefined))
-            goto failed_print_report_host;
+          if (print_container_scan_report_hosts_xml (&ctx,
+                                                     out,
+                                                     &hosts,
+                                                     lean,
+                                                     host_summary_buffer))
+            {
+              cleanup_iterator (&hosts);
+              goto failed_print_report_host;
+            }
+        }
+      else
+#endif /* ENABLE_CONTAINER_SCANNING */
+        {
+          while (next (&hosts))
+            {
+              if (print_report_host_xml (&ctx,
+                                         out,
+                                         &hosts,
+                                         NULL,
+                                         ctx.tsk_usage_type,
+                                         lean,
+                                         host_summary_buffer))
+                {
+                  cleanup_iterator (&hosts);
+                  goto failed_print_report_host;
+                }
+            }
         }
       cleanup_iterator (&hosts);
     }
@@ -27922,128 +28112,6 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
 }
 #endif
 
-#if ENABLE_AGENTS
-/**
- * @brief Get an Agent Control sensor's version info.
- *
- * @param[in]   iterator    Scanner object iterator.
- * @param[out]  name        Scanner name.
- * @param[out]  version     Scanner version.
- *
- * @return 0 success, 1 for failure.
- */
-int
-agent_control_get_version_from_iterator (iterator_t *iterator,
-                                         char **name,
-                                         char **version)
-{
-  int port;
-  const char *host, *ca_pub, *key_pub, *key_priv;
-  const char *protocol = "https";
-  agent_controller_connector_t connection;
-
-  assert (iterator);
-
-  host = scanner_iterator_host (iterator);
-  port = scanner_iterator_port (iterator);
-  ca_pub = scanner_iterator_ca_pub (iterator);
-  key_pub = scanner_iterator_key_pub (iterator);
-  key_priv = scanner_iterator_key_priv (iterator);
-
-  if (!ca_pub || !key_pub)
-    {
-      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
-      protocol = "http";
-    }
-
-  connection = agent_controller_connector_new ();
-  if (!connection)
-    return 1;
-
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
-
-  /*
-   The following block has to be replaced by something like:
-
-        agent_controller_get_version (name, version);
-        agent_controller_connector_free (connection);
-        if (name == NULL && version == NULL)
-          return 1;
-
-   as soon as the required endpoint is available.
-   */
-  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
-  agent_controller_connector_free (connection);
-  if (agents == NULL)
-    return 1;
-  *name = g_strdup ("TestName");
-  *version = g_strdup ("TestVersion");
-  agent_controller_agent_list_free (agents);
-
-  return 0;
-}
-
-/**
- * @brief Get an Agent Control scanner's preferences info.
- *
- * @param[in]   iterator    Scanner object iterator.
- * @param[out]  desc        Scanner description.
- * @param[out]  params      Scanner parameters.
- *
- * @return 0 success, 1 for failure.
- */
-int
-agent_control_get_details_from_iterator (iterator_t *iterator, char **desc,
-                                         GSList **params)
-{
-  int port;
-  const char *host, *ca_pub, *key_pub, *key_priv;
-  const char *protocol = "https";
-  agent_controller_connector_t connection;
-
-  assert (iterator);
-
-  host = scanner_iterator_host (iterator);
-  port = scanner_iterator_port (iterator);
-  ca_pub = scanner_iterator_ca_pub (iterator);
-  key_pub = scanner_iterator_key_pub (iterator);
-  key_priv = scanner_iterator_key_priv (iterator);
-
-  if (!ca_pub || !key_pub)
-    {
-      g_debug ("%s: Falling back to HTTP due to missing CA or cert", __func__);
-      protocol = "http";
-    }
-
-  connection = agent_controller_connector_new ();
-  if (!connection)
-    return 1;
-
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_HOST, host);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PROTOCOL, protocol);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CA_CERT, ca_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_KEY, key_priv);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_CERT, key_pub);
-  agent_controller_connector_builder (connection, AGENT_CONTROLLER_PORT, (void *) &port);
-
-  *desc = g_strdup_printf ("Agent Control Scanner on %s://%s:%d", protocol, host, port);
-
-  agent_controller_agent_list_t agents = agent_controller_get_agents (connection);
-  agent_controller_connector_free (connection);
-
-  if (agents == NULL)
-    return 1;
-
-  agent_controller_agent_list_free (agents);
-  return 0;
-}
-#endif
-
 /**
  * @brief Verify a scanner.
  *
@@ -28086,22 +28154,17 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
 #if ENABLE_AGENTS
-  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER)
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER
+           || scanner_iterator_type (&scanner)
+                == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     {
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_agent_controller_connection (scanner_row_id);
       cleanup_iterator (&scanner);
-      return 0;
-    }
-  else if (scanner_iterator_type (&scanner) ==
-           SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
-    {
-      char *name;
-      int ret = agent_control_get_version_from_iterator (&scanner, &name,
-                                                         version);
-      cleanup_iterator (&scanner);
-      g_free (name);
 
-      if (ret)
+      if (res == 1)
         return 2;
+
       return 0;
     }
 #endif
@@ -33380,45 +33443,6 @@ find_tag_with_permission (const char* uuid, tag_t* tag,
 }
 
 /**
- * @brief Create a tag from an existing tag.
- *
- * @param[in]  name        Name of new tag.  NULL to copy from existing.
- * @param[in]  comment     Comment on new tag.  NULL to copy from existing.
- * @param[in]  tag_id      UUID of existing tag.
- * @param[out] new_tag_return  New tag.
- *
- * @return 0 success, 2 failed to find existing tag,
- *         99 permission denied, -1 error.
- */
-int
-copy_tag (const char* name, const char* comment, const char *tag_id,
-          tag_t* new_tag_return)
-{
-  int ret = 0;
-  tag_t new_tag, old_tag;
-
-  ret = copy_resource ("tag", name, comment, tag_id,
-                       "value, resource_type, active",
-                       1, &new_tag, &old_tag);
-
-  if (ret)
-    return ret;
-
-  if (new_tag_return)
-    *new_tag_return = new_tag;
-
-  sql ("INSERT INTO tag_resources"
-       " (tag, resource_type, resource, resource_uuid, resource_location)"
-       " SELECT"
-       "  %llu, resource_type, resource, resource_uuid, resource_location"
-       "   FROM tag_resources"
-       "  WHERE tag = %llu",
-       new_tag, old_tag);
-
-  return 0;
-}
-
-/**
  * @brief Create a tag.
  *
  * @param[in]  name          Name of the tag.
@@ -33533,96 +33557,6 @@ create_tag (const char * name, const char * comment, const char * value,
   if (tag)
     *tag = new_tag;
 
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Delete a tag.
- *
- * @param[in]  tag_id     UUID of tag.
- * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
- *
- * @return 0 success, 2 failed to find tag, 99 permission denied, -1 error.
- */
-int
-delete_tag (const char *tag_id, int ultimate)
-{
-  tag_t tag = 0;
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("delete_tag") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (find_tag_with_permission (tag_id, &tag, "delete_tag"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (tag == 0)
-    {
-      if (find_trash ("tag", tag_id, &tag))
-        {
-          sql_rollback ();
-          return -1;
-        }
-      if (tag == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-      if (ultimate == 0)
-        {
-          /* It's already in the trashcan. */
-          sql_commit ();
-          return 0;
-        }
-
-      permissions_set_orphans ("tag", tag, LOCATION_TRASH);
-
-      sql ("DELETE FROM tag_resources_trash WHERE tag = %llu", tag);
-      sql ("DELETE FROM tags_trash WHERE id = %llu;", tag);
-      sql_commit ();
-      return 0;
-    }
-
-  if (ultimate == 0)
-    {
-      tag_t trash_tag;
-
-      sql ("INSERT INTO tags_trash"
-           " (uuid, owner, name, comment, creation_time,"
-           "  modification_time, resource_type, active, value)"
-           " SELECT uuid, owner, name, comment, creation_time,"
-           "        modification_time, resource_type, active, value"
-           " FROM tags WHERE id = %llu;",
-           tag);
-
-      trash_tag = sql_last_insert_id ();
-
-      sql ("INSERT INTO tag_resources_trash"
-           "  (tag, resource_type, resource, resource_uuid, resource_location)"
-           " SELECT"
-           "   %llu, resource_type, resource, resource_uuid, resource_location"
-           " FROM tag_resources WHERE tag = %llu;",
-           trash_tag, tag);
-
-      permissions_set_locations ("tag", tag, trash_tag, LOCATION_TRASH);
-    }
-  else
-    {
-      permissions_set_orphans ("tag", tag, LOCATION_TABLE);
-      tags_remove_resource ("tag", tag, LOCATION_TABLE);
-    }
-
-  sql ("DELETE FROM tag_resources WHERE tag = %llu", tag);
-  sql ("DELETE FROM tags WHERE id = %llu;", tag);
   sql_commit ();
 
   return 0;

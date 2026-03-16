@@ -17744,10 +17744,9 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
       case SCANNER_TYPE_AGENT_CONTROLLER:
       case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
         {
-          char *desc = NULL;
-          GSList *params = NULL;
+          scanner_t scanner_row_id = get_iterator_resource (scanners);
 
-          if (!agent_control_get_details_from_iterator (scanners, &desc, &params))
+          if (!verify_agent_controller_connection (scanner_row_id))
             {
               SENDF_TO_CLIENT_OR_FAIL
                ("<info><scanner><name>agent-controller</name><version>0.1</version>"
@@ -17764,8 +17763,6 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
               "<daemon><name/><version/></daemon>"
               "<protocol><name/><version/></protocol><description/><params/>"
               "</info>");
-          g_free (desc);
-          g_slist_free (params);
         }
         break;
 #endif

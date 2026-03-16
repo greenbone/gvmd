@@ -1177,12 +1177,6 @@ void
 set_scan_host_start_time_ctime (report_t, const char*, const char*);
 
 void
-set_scan_host_start_time_isotime (report_t, const char*, const char*);
-
-void
-set_scan_host_end_time_isotime (report_t, const char*, const char* );
-
-void
 set_scan_host_end_time_ctime (report_t, const char*, const char*);
 
 int
@@ -1454,6 +1448,10 @@ cleanup_result_nvts ();
 
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
+
+void
+init_report_host_iterator_hostname (iterator_t*, report_t, const char *,
+                                    const char *);
 
 const char*
 host_iterator_host (iterator_t*);
@@ -2895,14 +2893,8 @@ manage_set_radius_info (int, gchar *, gchar *);
 /* Tags */
 
 int
-copy_tag (const char*, const char*, const char*, tag_t*);
-
-int
 create_tag (const char *, const char *, const char *, const char *,
             array_t *, const char *, const char *, tag_t *, gchar **);
-
-int
-delete_tag (const char *, int);
 
 int
 modify_tag (const char *, const char *, const char *, const char *,
