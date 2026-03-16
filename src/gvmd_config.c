@@ -54,6 +54,8 @@ load_gvmd_config (const char *path_override)
   GKeyFile *kf;
   GError *error = NULL;
 
+  if (parsed_config_file)
+    g_key_file_free (parsed_config_file);
   parsed_config_file = NULL;
 
   if (path_override && strcmp (path_override, ""))

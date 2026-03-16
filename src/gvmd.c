@@ -3919,8 +3919,6 @@ gvmd (int argc, char** argv, char *env[])
   g_string_append (full_disable_commands, "get_license,modify_license");
 #endif
 
-  /* Initialize runtime flags */
-  runtime_flags_init ();
   /* Append disable commands with runtime flags*/
   runtime_append_disabled_commands (full_disable_commands);
 
