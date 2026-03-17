@@ -2907,18 +2907,6 @@ tag_resource_iterator_name (iterator_t*);
 int
 tag_resource_iterator_readable (iterator_t*);
 
-int
-tag_in_use (tag_t);
-
-int
-trash_tag_in_use (tag_t);
-
-int
-tag_writable (tag_t);
-
-int
-trash_tag_writable (tag_t);
-
 
 /* Resource aggregates */
 

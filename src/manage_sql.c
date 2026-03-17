@@ -32989,59 +32989,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 }
 
 
-/* Tags */
-
-/**
- * @brief Return whether a tag is in use by a task.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if in use, else 0.
- */
-int
-tag_in_use (tag_t tag)
-{
-  return 0;
-}
-
-/**
- * @brief Return whether a trashcan tag is referenced by a task.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_tag_in_use (tag_t tag)
-{
-  return 0;
-}
-
-/**
- * @brief Return whether a tag is writable.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if writable, else 0.
- */
-int
-tag_writable (tag_t tag)
-{
-  return 1;
-}
-
-/**
- * @brief Return whether a trashcan tag is writable.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_tag_writable (tag_t tag)
-{
-  return 0;
-}
+/* SQL construction */
 
 /**
  * @brief Return whether a column is one containing timestamp.
