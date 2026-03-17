@@ -12,6 +12,18 @@ char*
 tag_uuid (tag_t);
 
 int
+tag_in_use (tag_t);
+
+int
+trash_tag_in_use (tag_t);
+
+int
+tag_writable (tag_t);
+
+int
+trash_tag_writable (tag_t);
+
+int
 copy_tag (const char *, const char *, const char *, tag_t *);
 
 int
