@@ -2908,9 +2908,6 @@ int
 tag_resource_iterator_readable (iterator_t*);
 
 int
-resource_tag_count (const char*, resource_t, int);
-
-int
 tag_in_use (tag_t);
 
 int
