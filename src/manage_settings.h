@@ -86,7 +86,7 @@
 /**
  * @brief UUID of 'Export Reports to SECURITY INTELLIGENCE' setting.
  */
-#define SETTING_UUID_EXPORT_REPORTS_SECURITY_INTELLIGENCE "8f0602d4-431a-4321-bfd7-cfb7eb0af55f"
+#define SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT "8f0602d4-431a-4321-bfd7-cfb7eb0af55f"
 
 /**
  * @brief UUID of 'Debian LSC Package Maintainer' setting.
