@@ -69,4 +69,7 @@ resource_tag_iterator_comment (iterator_t *);
 int
 resource_tag_exists (const char *, resource_t, int);
 
+int
+resource_tag_count (const char *, resource_t, int);
+
 #endif /* not _GVMD_MANAGE_TAGS_H */
