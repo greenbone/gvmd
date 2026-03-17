@@ -32992,57 +32992,6 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 /* Tags */
 
 /**
- * @brief Filter columns for Tag name iterator.
- */
-#define TAG_NAME_ITERATOR_FILTER_COLUMNS                         \
- { "name", "resource_type", NULL }
-
-/**
- * @brief Tag name iterator columns.
- */
-#define TAG_NAME_ITERATOR_COLUMNS                                \
- {                                                               \
-   { "name", NULL, KEYWORD_TYPE_STRING },                        \
-   { "resource_type", NULL, KEYWORD_TYPE_STRING },               \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
- }
-
-/**
- * @brief Initialise a iterator of tag names.
- *
- * @param[in]  iterator    Iterator.
- * @param[in]  get         GET params.
- *
- * @return 0 success, -1 error.
- */
-int
-init_tag_name_iterator (iterator_t* iterator, get_data_t *get)
-{
-  static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = TAG_NAME_ITERATOR_COLUMNS;
-
-  return init_get_iterator (iterator,
-                            "tag",
-                            get,
-                            columns,
-                            columns,
-                            filter_columns,
-                            1,
-                            NULL,
-                            NULL,
-                            TRUE);
-}
-
-/**
- * @brief Get the name from a Tag name iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The tag name.
- */
-DEF_ACCESS (tag_name_iterator_name, 0);
-
-/**
  * @brief Initialise a iterator of tags attached to a resource.
  *
  * @param[in]  iterator         Iterator.

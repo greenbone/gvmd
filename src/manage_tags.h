@@ -44,4 +44,10 @@ tag_iterator_value (iterator_t *);
 int
 tag_iterator_resources (iterator_t *);
 
+int
+init_tag_name_iterator (iterator_t *, get_data_t *);
+
+const char*
+tag_name_iterator_name (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TAGS_H */

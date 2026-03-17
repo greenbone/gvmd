@@ -2908,12 +2908,6 @@ int
 tag_resource_iterator_readable (iterator_t*);
 
 int
-init_tag_name_iterator (iterator_t*, get_data_t*);
-
-const char*
-tag_name_iterator_name (iterator_t*);
-
-int
 init_resource_tag_iterator (iterator_t*, const char*, resource_t, int,
                             const char*, int);
 

@@ -1164,3 +1164,38 @@ tag_iterator_resources (iterator_t* iterator)
   ret = iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 3);
   return ret;
 }
+
+/**
+ * @brief Initialise a iterator of tag names.
+ *
+ * @param[in]  iterator    Iterator.
+ * @param[in]  get         GET params.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+init_tag_name_iterator (iterator_t* iterator, get_data_t *get)
+{
+  static const char *filter_columns[] = TAG_NAME_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TAG_NAME_ITERATOR_COLUMNS;
+
+  return init_get_iterator (iterator,
+                            "tag",
+                            get,
+                            columns,
+                            columns,
+                            filter_columns,
+                            1,
+                            NULL,
+                            NULL,
+                            TRUE);
+}
+
+/**
+ * @brief Get the name from a Tag name iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The tag name.
+ */
+DEF_ACCESS (tag_name_iterator_name, 0);
