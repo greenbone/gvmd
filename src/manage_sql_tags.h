@@ -43,6 +43,22 @@
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                      \
  }
 
+/**
+ * @brief Filter columns for Tag name iterator.
+ */
+#define TAG_NAME_ITERATOR_FILTER_COLUMNS                         \
+ { "name", "resource_type", NULL }
+
+/**
+ * @brief Tag name iterator columns.
+ */
+#define TAG_NAME_ITERATOR_COLUMNS                                \
+ {                                                               \
+   { "name", NULL, KEYWORD_TYPE_STRING },                        \
+   { "resource_type", NULL, KEYWORD_TYPE_STRING },               \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
+ }
+
 void
 tags_remove_resource (const char *, resource_t, int);
 
