@@ -103,19 +103,37 @@ flowchart LR
     gvmd-->|GMP response|client
 ```
 
-Adding a new Root Element with token as first sub-element
+Adding a `<token>` sub-element to the `authenticate` GMP command as an
+alternative to username and password:
+
+```xml
+<authenticate>
+  <credentials>
+    <token><!-- JSON Web Token --></token>
+  </credentials>
+</authenticate>
+<!-- standard GMP commands for example get_tasks -->
+<get_tasks ...>...</get_tasks>
+```
+
+Optional: Adding new Root Element expecting `<authenticate>` as
+first sub-element:
 
 ```xml
 <request>
-  <token><!-- JSON Web Token --></token>
+  <authenticate>
+    <credentials>
+      <token><!-- JSON Web Token --></token>
+    </credentials>
+  </authenticate>
   <!-- standard GMP commands for example get_tasks -->
   <get_tasks ...>...</get_tasks>
 </request>
 ```
 
 > [!NOTE]
-> `<token>` needs to be the first sub-element to be able to work with gvmd's
-> state machine at the moment.
+> `<authenticate>` needs to be the first sub-element to be able to work with
+> gvmd's state machine at the moment.
 
 ## Authentication Workflow
 

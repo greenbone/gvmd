@@ -6,6 +6,10 @@
 #ifndef _GVMD_MANAGE_AUTHENTICATION_H
 #define _GVMD_MANAGE_AUTHENTICATION_H
 
+#if ENABLE_JWT_AUTH
+#include <glib.h>
+#include <gvm/auth/gvm_auth.h>
+#endif /* ENABLE_JWT_AUTH */
 
 enum manage_authentication_rc
 {
@@ -24,5 +28,17 @@ manage_authentication_hash (const char *password);
 enum manage_authentication_rc
 manage_authentication_verify (const char *hash, const char *password);
 
-#endif
+#if ENABLE_JWT_AUTH
 
+int
+load_jwt_secrets ();
+
+gvm_jwt_decode_secret_t
+get_jwt_decode_secret ();
+
+gvm_jwt_encode_secret_t
+get_jwt_encode_secret ();
+
+#endif /* ENABLE_JWT_AUTH */
+
+#endif /* _GVMD_MANAGE_AUTHENTICATION_H */

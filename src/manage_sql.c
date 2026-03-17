@@ -96,6 +96,11 @@
 #include <gvm/base/pwpolicy.h>
 #include <gvm/base/logging.h>
 #include <bsd/unistd.h>
+
+#if ENABLE_JWT_AUTH
+#include <gvm/auth/gvm_auth.h>
+#endif
+
 #include <gvm/util/fileutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/uuidutils.h>
@@ -5249,18 +5254,72 @@ authenticate_any_method (const gchar *username, const gchar *password,
   return ret;
 }
 
+#if ENABLE_JWT_AUTH
+/**
+ * @brief Generate a new JSON web token for the given username.
+ *
+ * @param[in]  username   Username to generate token for.
+ * @param[out] token_ret  Return pointer for newly allocated token.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+generate_jwt_for_user (const char *username, gchar **token_ret)
+{
+  gvm_jwt_generate_token_err_t generate_token_err
+    = GVM_JWT_GENERATE_TOKEN_ERR_INTERNAL_ERROR;
+
+  gvm_jwt_encode_secret_t secret;
+  char *token;
+
+  *token_ret = NULL;
+
+  secret = get_jwt_encode_secret ();
+  if (secret == NULL)
+    {
+      g_warning ("%s: No JWT encode secret set", __func__);
+      return -1;
+    }
+
+  token = gvm_jwt_generate_token (secret, username, 600, &generate_token_err);
+
+  if (generate_token_err != GVM_JWT_GENERATE_TOKEN_ERR_OK)
+    {
+      g_warning ("%s: Error getting token: %s",
+                 __func__,
+                 gvm_jwt_generate_token_strerror (generate_token_err));
+      return -1;
+    }
+
+  // Duplicate string to ensure it can be freed with g_free.
+  *token_ret = token ? g_strdup (token) : NULL;
+  gvm_auth_str_free (token);
+  return 0;
+}
+#endif /* ENABLE_JWT_AUTH */
+
 /**
  * @brief Authenticate credentials.
  *
  * @param[in]  credentials  Credentials.
  *
- * @return 0 authentication success, 1 authentication failure, 99 permission
- *         denied, -1 error.
+ * @return 0 authentication success, 1 authentication failure,
+ *         2 token auth unavailable (disabled or error),
+ *         99 permission denied, -1 error.
  */
 int
 authenticate (credentials_t* credentials)
 {
-  if (credentials->username && credentials->password)
+  if (credentials->jwt)
+    {
+#if ENABLE_JWT_AUTH
+      g_warning ("%s: token authentication is not implemented yet", __func__);
+      return 2;
+#else /* ENABLE_JWT_AUTH */
+      return 2;
+#endif /* ENABLE_JWT_AUTH */
+    }
+  else if (credentials->username && credentials->password)
     {
       int fail;
       auth_method_t auth_method;
@@ -5315,6 +5374,24 @@ authenticate (credentials_t* credentials)
               credentials->uuid = NULL;
               credentials->role = NULL;
               return 99;
+            }
+
+          if (credentials->jwt_requested)
+            {
+#if ENABLE_JWT_AUTH
+              char *new_jwt = NULL;
+              if (generate_jwt_for_user (credentials->username, &new_jwt))
+                {
+                  free (credentials->uuid);
+                  credentials->uuid = NULL;
+                  credentials->role = NULL;
+                  return 2;
+                }
+              g_free (credentials->jwt);
+              credentials->jwt = new_jwt;
+#else /* ENABLE_JWT_AUTH */
+              return 2;
+#endif /* ENABLE_JWT_AUTH */
             }
 
           manage_session_init (credentials->uuid);

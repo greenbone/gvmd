@@ -266,3 +266,31 @@ gvmd_config_resolve_boolean (const char *env_name,
   if (conf_has_value)
     *output = conf_value ? TRUE : FALSE;
 }
+
+/**
+ * @brief Get a string from env variable or a config file value.
+ *
+ * If the env variable is set, it will take precedence over the value from
+ *  the config file.
+ *
+ * @param[in]  env_name   Name of the environment variable.
+ * @param[in]  kf         Config as a GKeyFile*
+ * @param[in]  kf_group   Group in the config to get value from.
+ * @param[in]  kf_key     Key in the config to get value from.
+ *
+ * @return Value if available, else NULL.
+ */
+gchar *
+gvmd_get_env_or_config_string (const char *env_name,
+                               GKeyFile *kf,
+                               const char *kf_group,
+                               const char *kf_key)
+{
+  const char *env_value = g_getenv (env_name);
+  if (env_value)
+    return g_strdup (env_value);
+  else if (kf)
+    return g_key_file_get_string (kf, kf_group, kf_key, NULL);
+
+  return NULL;
+}

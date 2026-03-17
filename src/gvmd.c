@@ -2913,6 +2913,9 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_CREDENTIAL_STORES == 1
       printf ("Credential stores are enabled\n");
 #endif
+#if ENABLE_JWT_AUTH == 1
+      printf ("JWT authentication is enabled\n");
+#endif
       printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -3273,6 +3276,12 @@ gvmd (int argc, char** argv, char *env[])
       g_warning ("%s: A migrate is in progress", __func__);
       return EXIT_FAILURE;
     }
+
+  /* Setup JWT authentication */
+#if ENABLE_JWT_AUTH
+  if (feature_enabled (FEATURE_ID_JWT_AUTH))
+    load_jwt_secrets ();
+#endif
 
   /* Handle non-migrate options.
    *

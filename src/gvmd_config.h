@@ -26,4 +26,8 @@ gvmd_config_get_boolean (GKeyFile *, const char *, const char *,
 void
 gvmd_config_resolve_boolean (const char *, gboolean, gboolean, gboolean*);
 
+gchar *
+gvmd_get_env_or_config_string (const char *, GKeyFile *, const char *,
+                               const char *);
+
 #endif /* _GVMD_GVMD_CONFIG_H */

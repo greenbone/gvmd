@@ -3588,6 +3588,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </p>
     </description>
     <pattern>
+@IF_ENABLE_JWT_AUTH@
+      <attrib>
+        <name>token</name>
+        <summary>Whether to request a token from the manager</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+@ENDIF_ENABLE_JWT_AUTH@
       <e>credentials</e>
     </pattern>
     <ele>
@@ -3625,6 +3633,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </attrib>
         <e>role</e>
         <e>timezone</e>
+@IF_ENABLE_JWT_AUTH@
+        <o><e>token</e></o>
+@ENDIF_ENABLE_JWT_AUTH@
       </pattern>
       <ele>
         <name>role</name>
@@ -3645,6 +3656,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           timezone
         </pattern>
       </ele>
+@IF_ENABLE_JWT_AUTH@
+      <ele>
+        <name>token</name>
+        <summary>An authentication token if requested</summary>
+        <pattern>text</pattern>
+      </ele>
+@ENDIF_ENABLE_JWT_AUTH@
     </response>
     <example>
       <summary>Authenticate with a good password</summary>

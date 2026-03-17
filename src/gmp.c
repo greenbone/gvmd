@@ -4918,7 +4918,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         if (strcasecmp ("GET_VERSION", element_name) == 0)
           set_client_state (CLIENT_GET_VERSION);
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
-          set_client_state (CLIENT_AUTHENTICATE);
+          {
+            const gchar* attribute;
+            if (find_attribute (attribute_names, attribute_values,
+                                "token", &attribute))
+              current_credentials.jwt_requested = strcmp (attribute, "0");
+            set_client_state (CLIENT_AUTHENTICATE);
+          }
         else
           {
             /** @todo If a real GMP command, return STATUS_ERROR_MUST_AUTH. */
@@ -4950,7 +4956,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("AUTHENTICATE", element_name) == 0)
           {
+            const gchar* attribute;
             free_credentials (&current_credentials);
+            if (find_attribute (attribute_names, attribute_values,
+                                "token", &attribute))
+              current_credentials.jwt_requested = strcmp (attribute, "0");
             set_client_state (CLIENT_AUTHENTICATE);
           }
 #if ENABLE_AGENTS
@@ -13745,6 +13755,16 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
     compiled_in, enabled, "ENABLE_SECURITY_INTELLIGENCE_EXPORT");
 
+  /* JWT_AUTH */
+  compiled_in = feature_compiled_in (FEATURE_ID_JWT_AUTH) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_JWT_AUTH) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_JWT_AUTH");
+
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
   set_client_state (CLIENT_AUTHENTIC);
 }
@@ -21313,6 +21333,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               {
                 const char *zone;
                 char *pw_warning;
+                GString *response;
 
                 zone = (current_credentials.timezone
                         && strlen (current_credentials.timezone))
@@ -21352,37 +21373,48 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
                 manage_session_set_timezone (zone);
 
+                response = g_string_new ("");
+                buffer_xml_append_printf (
+                  response,
+                  "<authenticate_response"
+                  " status=\"" STATUS_OK "\""
+                  " status_text=\"" STATUS_OK_TEXT "\">"
+                  "<role>%s</role>"
+                  "<timezone>%s</timezone>",
+                  current_credentials.role
+                    ? current_credentials.role
+                    : "",
+                  zone
+                );
+
                 pw_warning = gvm_validate_password
                               (current_credentials.password,
                                current_credentials.username);
 
                 if (pw_warning)
-                  SENDF_TO_CLIENT_OR_FAIL
-                  ("<authenticate_response"
-                    " status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">"
-                    "<role>%s</role>"
-                    "<timezone>%s</timezone>"
-                    "<password_warning>%s</password_warning>"
-                    "</authenticate_response>",
-                    current_credentials.role
-                      ? current_credentials.role
-                      : "",
-                    zone,
-                    pw_warning ? pw_warning : "");
-                else
-                  SENDF_TO_CLIENT_OR_FAIL
-                  ("<authenticate_response"
-                    " status=\"" STATUS_OK "\""
-                    " status_text=\"" STATUS_OK_TEXT "\">"
-                    "<role>%s</role>"
-                    "<timezone>%s</timezone>"
-                    "</authenticate_response>",
-                    current_credentials.role
-                      ? current_credentials.role
-                      : "",
-                    zone);
+                  {
+                    buffer_xml_append_printf (
+                      response,
+                      "<password_warning>%s</password_warning>",
+                      pw_warning
+                    );
+                  }
 
+                if (current_credentials.jwt_requested
+                    && current_credentials.jwt)
+                  {
+                    buffer_xml_append_printf (
+                      response,
+                      "<token>%s</token>",
+                      current_credentials.jwt
+                    );
+                  }
+
+                g_string_append (response, "</authenticate_response>");
+
+                SEND_TO_CLIENT_OR_FAIL (response->str);
+
+                g_string_free (response, TRUE);
                 free (pw_warning);
                 set_client_state (CLIENT_AUTHENTIC);
 
@@ -21393,6 +21425,15 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          current_credentials.username ?: "", client_address);
               free_credentials (&current_credentials);
               SEND_TO_CLIENT_OR_FAIL (XML_ERROR_AUTH_FAILED ("authenticate"));
+              set_client_state (CLIENT_TOP);
+              break;
+            case 2:   /* Token authentication unavailable. */
+              g_warning ("Authentication failure for '%s' from %s",
+                         current_credentials.username ?: "", client_address);
+              free_credentials (&current_credentials);
+              SEND_TO_CLIENT_OR_FAIL (
+                XML_ERROR_UNAVAILABLE ("authenticate",
+                                       "Token authentication unavailable"));
               set_client_state (CLIENT_TOP);
               break;
             case 99:   /* Authentication failed. */
