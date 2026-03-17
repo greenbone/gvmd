@@ -1,3 +1,10 @@
+[authentication]
+jwt_secret_type = ecdsa
+jwt_decode_secret_path = @GVMD_STATE_DIR@/jwt/ecdsa-public.pem
+jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/ecdsa-private.pem
+# jwt_decode_secret = <INSERT_SECRET_HERE>
+# jwt_encode_secret = <INSERT_SECRET_HERE>
+
 [features]
 enable_agents = false
 enable_container_scanning = false
@@ -5,3 +12,4 @@ enable_credential_store = false
 enable_openvasd = false
 enable_vt_metadata = false
 enable_security_intelligence_export = false
+enable_jwt_auth = false

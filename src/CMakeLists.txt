@@ -14,7 +14,7 @@ find_package(Threads)
 ## might occur.
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
-pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.30)
+pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.39)
 pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.34)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
@@ -51,6 +51,12 @@ if(ENABLE_CONTAINER_SCANNING)
 else(ENABLE_CONTAINER_SCANNING)
   message(STATUS "ENABLE_CONTAINER_SCANNING flag is not enabled")
 endif(ENABLE_CONTAINER_SCANNING)
+
+if(ENABLE_JWT_AUTH)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.1.3)
+else(ENABLE_JWT_AUTH)
+  message(STATUS "ENABLE_JWT_AUTH flag is not enabled")
+endif(ENABLE_JWT_AUTH)
 
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
@@ -384,6 +390,7 @@ target_link_libraries(
   ${GLIB_LDFLAGS}
   ${GTHREAD_LDFLAGS}
   ${LIBGVM_AGENT_CONTROLLER_LDFLAGS}
+  ${LIBGVM_AUTH_LDFLAGS}
   ${LIBGVM_BASE_LDFLAGS}
   ${LIBGVM_UTIL_LDFLAGS}
   ${LIBGVM_OSP_LDFLAGS}

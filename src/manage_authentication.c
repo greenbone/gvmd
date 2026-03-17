@@ -10,7 +10,9 @@
  * General authentication functions.
  */
 
+#include "gvmd_config.h"
 #include "manage_authentication.h"
+#include "manage_runtime_flags.h"
 #include <gvm/util/passwordbasedauthentication.h>
 
 #include <stdlib.h>
@@ -124,3 +126,266 @@ manage_authentication_verify (const char *hash, const char *password)
 
   return rc;
 }
+
+#if ENABLE_JWT_AUTH
+
+/**
+ * @brief The type of secret used for JSON web tokens (JWTs).
+ */
+gvm_jwt_secret_type_t jwt_secret_type = 0;
+
+/**
+ * @brief Secret for decoding JSON web tokens (JWTs).
+ */
+static gvm_jwt_decode_secret_t jwt_decode_secret = NULL;
+
+/**
+ * @brief Secret for encoding JSON web tokens (JWTs).
+ */
+static gvm_jwt_encode_secret_t jwt_encode_secret = NULL;
+
+
+#define AUTH_CONFIG_GROUP "authentication"
+
+/**
+ * @brief Create the JWT decode secret from data or a file.
+ *
+ * @param[in]  secret_type    The expected JWT secret type.
+ * @param[in]  secret_str     The secret data, will override file.
+ * @param[in]  secret_path    Path to the secret file if secret_str is not set.
+ * @param[out] decode_secret  Output of the decode secret.
+ *
+ * @return 0 success, -1 error
+ */
+static int
+load_jwt_decode_secret (gvm_jwt_secret_type_t secret_type,
+                        const char *secret_str,
+                        const char *secret_path,
+                        gvm_jwt_decode_secret_t *decode_secret)
+{
+  gvm_jwt_new_secret_err_t secret_err = GVM_JWT_NEW_SECRET_ERR_INTERNAL_ERROR;
+  *decode_secret = NULL;
+
+  if (secret_str)
+    {
+      g_debug ("%s: Using secret given directly", __func__);
+      *decode_secret = gvm_jwt_new_decode_secret (secret_type, secret_str,
+                                                  &secret_err);
+    }
+  else
+    {
+      GError *error = NULL;
+      gchar *secret_from_file = NULL;
+      if (! g_file_get_contents (secret_path, &secret_from_file, NULL, &error))
+        {
+          g_warning ("Could not read JWT decode secret file: %s",
+                     error->message);
+          g_error_free (error);
+          return -1;
+        }
+      g_debug ("%s: Using secret from file '%s'", __func__, secret_path);
+      *decode_secret = gvm_jwt_new_decode_secret (secret_type,
+                                                  secret_from_file,
+                                                  &secret_err);
+      g_free (secret_from_file);
+    }
+
+  if (*decode_secret == NULL || secret_err != GVM_JWT_NEW_SECRET_ERR_OK)
+    {
+      g_warning ("Could not parse JWT decode secret: %s",
+                 gvm_jwt_new_secret_strerror (secret_err));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Create the JWT encode secret from data or a file.
+ *
+ * @param[in]  secret_type    The expected JWT secret type.
+ * @param[in]  secret_str     The secret data, will override file.
+ * @param[in]  secret_path    Path to the secret file if secret_str is not set.
+ * @param[out] decode_secret  Output of the decode secret.
+ *
+ * @return 0 success, -1 error
+ */
+static int
+load_jwt_encode_secret (gvm_jwt_secret_type_t secret_type,
+                        const char *secret_str,
+                        const char *secret_path,
+                        gvm_jwt_encode_secret_t *encode_secret)
+{
+  gvm_jwt_new_secret_err_t secret_err = GVM_JWT_NEW_SECRET_ERR_INTERNAL_ERROR;
+  *encode_secret = NULL;
+
+  if (secret_str)
+    {
+      g_debug ("%s: Using secret given directly", __func__);
+      *encode_secret = gvm_jwt_new_encode_secret (secret_type, secret_str,
+                                                  &secret_err);
+    }
+  else if (secret_path)
+    {
+      GError *error = NULL;
+      gchar *secret_from_file = NULL;
+      if (! g_file_get_contents (secret_path, &secret_from_file, NULL, &error))
+        {
+          g_warning ("Could not read JWT encode secret file: %s",
+                     error->message);
+          g_error_free (error);
+          return -1;
+        }
+      g_debug ("%s: Using secret from file '%s'", __func__, secret_path);
+      *encode_secret = gvm_jwt_new_encode_secret (secret_type,
+                                                  secret_from_file,
+                                                  &secret_err);
+      g_free (secret_from_file);
+    }
+
+  if (*encode_secret == NULL || secret_err != GVM_JWT_NEW_SECRET_ERR_OK)
+    {
+      g_warning ("Could not parse JWT encode secret: %s",
+                 gvm_jwt_new_secret_strerror (secret_err));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Load the JWT secrets according to the gvmd config file.
+ */
+int
+load_jwt_secrets ()
+{
+  GKeyFile *kf = get_gvmd_config ();
+  gchar *secret_str = NULL, *secret_path = NULL;
+  gchar *secret_type_str;
+  gvm_jwt_secret_type_t new_secret_type;
+  gvm_jwt_decode_secret_t new_decode_secret = NULL;
+  gvm_jwt_encode_secret_t new_encode_secret = NULL;
+  int ret;
+
+  // Free old secrets
+  jwt_secret_type = 0;
+  if (jwt_decode_secret)
+    {
+      gvm_jwt_decode_secret_free (jwt_decode_secret);
+      jwt_decode_secret = NULL;
+    }
+  if (jwt_encode_secret)
+    {
+      gvm_jwt_encode_secret_free (jwt_encode_secret);
+      jwt_encode_secret = NULL;
+    }
+
+  // Set new secret type
+  secret_type_str
+    = gvmd_get_env_or_config_string ("GVMD_JWT_SECRET_TYPE",
+                                     kf,
+                                     AUTH_CONFIG_GROUP,
+                                     "jwt_secret_type");
+
+  if (secret_type_str == NULL || strcmp (secret_type_str, "") == 0)
+    {
+      g_debug ("No JWT secret type set");
+      return 0;
+    }
+
+  if (strcasecmp (secret_type_str, "shared") == 0)
+    new_secret_type = GVM_JWT_SECRET_TYPE_SHARED;
+  else if (strcasecmp (secret_type_str, "ECDSA") == 0
+           || strcasecmp (secret_type_str, "ECDSA PEM") == 0)
+    new_secret_type = GVM_JWT_SECRET_TYPE_EC_PEM;
+  else if (strcasecmp (secret_type_str, "RSA") == 0
+           || strcasecmp (secret_type_str, "RSA PEM") == 0)
+    new_secret_type = GVM_JWT_SECRET_TYPE_RSA_PEM;
+  g_free (secret_type_str);
+
+  if (secret_type_str == 0)
+    {
+      g_warning ("Unknown JWT secret type '%s'", secret_type_str);
+      return -1;
+    }
+
+  // Get decode secret
+  ret = 0;
+  secret_str
+    = gvmd_get_env_or_config_string ("GVMD_JWT_DECODE_SECRET",
+                                     kf,
+                                     AUTH_CONFIG_GROUP,
+                                     "jwt_decode_secret");
+  secret_path
+    = gvmd_get_env_or_config_string ("GVMD_JWT_DECODE_SECRET_PATH",
+                                     kf,
+                                     AUTH_CONFIG_GROUP,
+                                     "jwt_decode_secret_path");
+  if (secret_str || secret_path)
+    ret = load_jwt_decode_secret (new_secret_type, secret_str, secret_path,
+                                  &new_decode_secret);
+  else
+    g_debug ("No JWT decode secret set");
+
+  g_free (secret_str);
+  g_free (secret_path);
+
+  if (ret)
+    return -1;
+
+  // Get encode secret
+  ret = 0;
+  secret_str
+    = gvmd_get_env_or_config_string ("GVMD_JWT_ENCODE_SECRET",
+                                     kf,
+                                     AUTH_CONFIG_GROUP,
+                                     "jwt_encode_secret");
+  secret_path
+    = gvmd_get_env_or_config_string ("GVMD_JWT_ENCODE_SECRET_PATH",
+                                     kf,
+                                     AUTH_CONFIG_GROUP,
+                                     "jwt_encode_secret_path");
+  if (secret_str || secret_path)
+    ret = load_jwt_encode_secret (new_secret_type, secret_str, secret_path,
+                                  &new_encode_secret);
+  else
+    g_debug ("No JWT encode secret set");
+  g_free (secret_str);
+  g_free (secret_path);
+
+  if (ret)
+    {
+      gvm_jwt_decode_secret_free (new_decode_secret);
+      return -1;
+    }
+
+  jwt_secret_type = new_secret_type;
+  jwt_decode_secret = new_decode_secret;
+  jwt_encode_secret = new_encode_secret;
+
+  return 0;
+}
+
+/**
+ * @brief Gets the JWT decode secret.
+ *
+ * @return The JWT decode secret.
+ */
+gvm_jwt_decode_secret_t
+get_jwt_decode_secret ()
+{
+  return jwt_decode_secret;
+}
+
+/**
+ * @brief Gets the JWT encode secret.
+ *
+ * @return The JWT encode secret.
+ */
+gvm_jwt_encode_secret_t
+get_jwt_encode_secret ()
+{
+  return jwt_encode_secret;
+}
+
+#endif /* ENABLE_JWT_AUTH */

@@ -87,6 +87,12 @@ static feature_state_t feature_security_intelligence_export =
   {1, 0};
 
 /**
+ * @brief State of a single feature.
+ */
+static feature_state_t feature_jwt_auth =
+  {ENABLE_JWT_AUTH, 0};
+
+/**
  * @brief Feature flags as read from the configuration file.
  */
 struct conf_feature_flags
@@ -108,6 +114,9 @@ struct conf_feature_flags
 
   int has_security_intelligence_export;         ///< Whether flag is present.
   int security_intelligence_export;             ///< Value of flag.
+
+  int has_jwt_auth;           ///< Whether flag is present.
+  int jwt_auth;               ///< Value of flag.
 };
 
 /**
@@ -167,6 +176,10 @@ load_conf_file_feature_flags (struct conf_feature_flags *out)
   gvmd_config_get_boolean (kf, "features", "enable_security_intelligence_export",
                            &out->has_security_intelligence_export,
                            &out->security_intelligence_export);
+
+  gvmd_config_get_boolean (kf, "features", "enable_jwt_auth",
+                           &out->has_jwt_auth,
+                           &out->jwt_auth);
 
   return 0;
 }
@@ -270,6 +283,11 @@ runtime_flags_init ()
                    conf_flags.has_security_intelligence_export,
                    conf_flags.security_intelligence_export);
 
+  resolve_feature (&feature_jwt_auth,
+                   "GVMD_ENABLE_JWT_AUTH",
+                   conf_flags.has_jwt_auth,
+                   conf_flags.jwt_auth);
+
   return 0;
 }
 
@@ -301,6 +319,8 @@ feature_enabled (feature_id_t t)
       return feature_vt_metadata.enabled;
     case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
       return feature_security_intelligence_export.enabled;
+    case FEATURE_ID_JWT_AUTH:
+      return feature_jwt_auth.enabled;
     default:
       return 0;
     }
@@ -330,6 +350,8 @@ feature_compiled_in (feature_id_t t)
       return feature_vt_metadata.compiled_in;
     case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
       return feature_security_intelligence_export.compiled_in;
+    case FEATURE_ID_JWT_AUTH:
+      return feature_jwt_auth.enabled;
     default:
       return 0;
     }

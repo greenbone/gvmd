@@ -709,7 +709,14 @@ cmake -DENABLE_AGENTS=1 ..
 
 This flag ensures that gvmd is built with support for Agent Control and can interact with agent-based components.
 
-## Set the Agent Owner
+To fully enable the feature, it also has to be toggled on in the gvmd configuration file:
+
+```
+[features]
+enable_agents = true
+```
+
+### Set the Agent Owner
 
 Agent resources retrieved from the Agent Control service are associated with a user. gvmd requires an "Agent Owner" to be configured in order to import and manage agents properly.
 
@@ -717,6 +724,53 @@ Use the following command to set the Agent Owner:
 
 ```bash
 gvmd --modify-setting 1ee1f106-8b2e-461c-b426-7f5d76001b29 --value <uuid_of_user>
+```
+
+## Enabling JSON web token (JWT) authentication
+
+To enable JSON web token authentication, make sure to configure your build with the `ENABLE_JWT_AUTH` flag enabled.
+
+In your CMake configuration:
+
+```bash
+cmake -DENABLE_JWT_AUTH=1 ..
+```
+
+This flag ensures that gvmd is built with JWT authentication support.
+
+To fully enable the feature, it also has to be toggled on in the gvmd configuration file:
+
+```
+[features]
+enable_jwt_auth = true
+```
+
+### Setting up the secrets for JWT authentication
+
+To allow `gvmd` to issue and validate JSON web tokens on its own,
+both a "decode" and "encode" secret need to be specified in the configuration
+file together with the type of secret to use.
+
+Typically these are specified as paths to an ECDSA or RSA public and private
+key:
+
+```
+[authentication]
+jwt_secret_type = ecdsa
+jwt_decode_secret_path = /var/lib/gvm/gvmd/jwt/ecdsa-public.pem
+jwt_encode_secret_path = /var/lib/gvm/gvmd/jwt/ecdsa-private.pem
+```
+
+Note that for RSA keys the `jwt_secret_type` option needs to be set to `rsa`.
+
+It is also possible to use a simple shared secret string and to specify the
+secret directly in the config file:
+
+```
+[authentication]
+jwt_secret_type = shared
+jwt_decode_secret = <INSERT_SECRET_HERE>
+jwt_encode_secret = <INSERT_SECRET_HERE>
 ```
 
 ## Static code analysis with the Clang Static Analyzer
