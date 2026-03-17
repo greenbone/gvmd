@@ -2892,24 +2892,6 @@ manage_set_radius_info (int, gchar *, gchar *);
 
 /* Tags */
 
-int
-init_tag_iterator (iterator_t*, get_data_t*);
-
-int
-tag_count (const get_data_t *get);
-
-const char*
-tag_iterator_resource_type (iterator_t*);
-
-int
-tag_iterator_active (iterator_t*);
-
-const char*
-tag_iterator_value (iterator_t*);
-
-int
-tag_iterator_resources (iterator_t*);
-
 resource_t
 tag_resource_iterator_id (iterator_t*);
 

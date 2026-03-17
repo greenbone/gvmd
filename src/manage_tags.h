@@ -26,4 +26,22 @@ modify_tag (const char *, const char *, const char *, const char *,
             const char *, array_t *, const char *, const char *, const char*,
             gchar **);
 
+int
+tag_count (const get_data_t *);
+
+int
+init_tag_iterator (iterator_t *, get_data_t *);
+
+const char*
+tag_iterator_resource_type (iterator_t *);
+
+int
+tag_iterator_active (iterator_t *);
+
+const char*
+tag_iterator_value (iterator_t *);
+
+int
+tag_iterator_resources (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TAGS_H */
