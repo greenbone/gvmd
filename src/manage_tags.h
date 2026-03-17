@@ -50,4 +50,20 @@ init_tag_name_iterator (iterator_t *, get_data_t *);
 const char*
 tag_name_iterator_name (iterator_t *);
 
+int
+init_resource_tag_iterator (iterator_t *, const char *, resource_t, int,
+                            const char *, int);
+
+const char*
+resource_tag_iterator_uuid (iterator_t *);
+
+const char*
+resource_tag_iterator_name (iterator_t *);
+
+const char*
+resource_tag_iterator_value (iterator_t *);
+
+const char*
+resource_tag_iterator_comment (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TAGS_H */

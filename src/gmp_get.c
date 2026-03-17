@@ -16,6 +16,7 @@
 #include "manage_filters.h"
 #include "manage_permissions.h"
 #include "manage_settings.h"
+#include "manage_tags.h"
 
 #include <stdlib.h>
 #include <string.h>
