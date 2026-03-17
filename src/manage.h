@@ -2908,22 +2908,6 @@ int
 tag_resource_iterator_readable (iterator_t*);
 
 int
-init_resource_tag_iterator (iterator_t*, const char*, resource_t, int,
-                            const char*, int);
-
-const char*
-resource_tag_iterator_uuid (iterator_t*);
-
-const char*
-resource_tag_iterator_name (iterator_t*);
-
-const char*
-resource_tag_iterator_value (iterator_t*);
-
-const char*
-resource_tag_iterator_comment (iterator_t*);
-
-int
 resource_tag_exists (const char*, resource_t, int);
 
 int

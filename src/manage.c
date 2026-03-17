@@ -56,6 +56,7 @@
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
+#include "manage_tags.h"
 #include "sql.h"
 #include "utils.h"
 
