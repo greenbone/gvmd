@@ -3573,7 +3573,7 @@ check_db_settings ()
         sql ("INSERT into settings (uuid, owner, name, comment, value)"
              " VALUES"
              " ('" SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT "', NULL,"
-             "  'Export Reports OPENVAS INTELLIGENCE',"
+             "  'SECURITY INTELLIGENCE Export',"
              "  'Whether to automatically export scan reports to "
              "OPENVAS SECURITY INTELLIGENCE.',"
              "  '0');");
