@@ -83,7 +83,7 @@ static feature_state_t feature_vt_metadata =
 /**
  * @brief State of a single feature.
  */
-static feature_state_t feature_osi_export =
+static feature_state_t feature_security_intelligence_export =
   {1, 0};
 
 /**
@@ -106,8 +106,8 @@ struct conf_feature_flags
   int has_vt_metadata;         ///< Whether flag is present.
   int vt_metadata;             ///< Value of flag.
 
-  int has_osi_export;         ///< Whether flag is present.
-  int osi_export;             ///< Value of flag.
+  int has_security_intelligence_export;         ///< Whether flag is present.
+  int security_intelligence_export;             ///< Value of flag.
 };
 
 /**
@@ -164,9 +164,9 @@ load_conf_file_feature_flags (struct conf_feature_flags *out)
                            &out->has_vt_metadata,
                            &out->vt_metadata);
 
-  gvmd_config_get_boolean (kf, "features", "enable_osi_export",
-                           &out->has_osi_export,
-                           &out->osi_export);
+  gvmd_config_get_boolean (kf, "features", "enable_security_intelligence_export",
+                           &out->has_security_intelligence_export,
+                           &out->security_intelligence_export);
 
   return 0;
 }
@@ -265,10 +265,10 @@ runtime_flags_init ()
                    conf_flags.has_vt_metadata,
                    conf_flags.vt_metadata);
 
-  resolve_feature (&feature_osi_export,
-                   "GVMD_ENABLE_OSI_EXPORT",
-                   conf_flags.has_osi_export,
-                   conf_flags.osi_export);
+  resolve_feature (&feature_security_intelligence_export,
+                   "GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT",
+                   conf_flags.has_security_intelligence_export,
+                   conf_flags.security_intelligence_export);
 
   return 0;
 }
@@ -299,8 +299,8 @@ feature_enabled (feature_id_t t)
       return feature_credential_stores.enabled;
     case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.enabled;
-    case FEATURE_ID_OSI_EXPORT:
-      return feature_osi_export.enabled;
+    case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
+      return feature_security_intelligence_export.enabled;
     default:
       return 0;
     }
@@ -328,8 +328,8 @@ feature_compiled_in (feature_id_t t)
       return feature_credential_stores.compiled_in;
     case FEATURE_ID_VT_METADATA:
       return feature_vt_metadata.compiled_in;
-    case FEATURE_ID_OSI_EXPORT:
-      return feature_osi_export.compiled_in;
+    case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
+      return feature_security_intelligence_export.compiled_in;
     default:
       return 0;
     }

@@ -3564,15 +3564,15 @@ check_db_settings ()
          "  'Whether to rebuild report caches on changes affecting severity.',"
          "  '1');");
 
-  if (feature_enabled (FEATURE_ID_OSI_EXPORT))
+  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
       if (sql_int ("SELECT count(*) FROM settings"
-                   " WHERE uuid = '" SETTING_UUID_EXPORT_REPORTS_SECURITY_INTELLIGENCE "'"
+                   " WHERE uuid = '" SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT "'"
                    " AND " ACL_IS_GLOBAL () ";")
           == 0)
         sql ("INSERT into settings (uuid, owner, name, comment, value)"
              " VALUES"
-             " ('" SETTING_UUID_EXPORT_REPORTS_SECURITY_INTELLIGENCE "', NULL,"
+             " ('" SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT "', NULL,"
              "  'Export Reports OPENVAS INTELLIGENCE',"
              "  'Whether to automatically export scan reports to "
              "OPENVAS SECURITY INTELLIGENCE.',"
@@ -31158,7 +31158,7 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   if (uuid && (strcmp (uuid, SETTING_UUID_AUTO_CACHE_REBUILD) == 0
-               || strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_SECURITY_INTELLIGENCE) == 0
+               || strcmp (uuid, SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT) == 0
                || strcmp (uuid, SETTING_UUID_AUTO_REFRESH) == 0
                || strcmp (uuid, SETTING_UUID_DEFAULT_SEVERITY) == 0
                || strcmp (uuid, SETTING_UUID_DYNAMIC_SEVERITY) == 0
@@ -31298,9 +31298,9 @@ modify_setting (const gchar *uuid, const gchar *name,
             }
         }
 
-      if (strcmp (uuid, SETTING_UUID_EXPORT_REPORTS_SECURITY_INTELLIGENCE) == 0)
+      if (strcmp (uuid, SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT) == 0)
         {
-          if (!feature_enabled (FEATURE_ID_OSI_EXPORT))
+          if (!feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
             {
               g_free (value);
 

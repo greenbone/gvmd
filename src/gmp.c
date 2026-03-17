@@ -13736,14 +13736,14 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     compiled_in, enabled, "FEED_VT_METADATA");
 
   /* REPORT_EXPORT */
-  compiled_in = feature_compiled_in (FEATURE_ID_OSI_EXPORT) ? 1 : 0;
+  compiled_in = feature_compiled_in (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT) ? 1 : 0;
   if (compiled_in)
-    enabled = feature_enabled (FEATURE_ID_OSI_EXPORT) ? 1 : 0;
+    enabled = feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT) ? 1 : 0;
   else
     enabled = 0;
   SENDF_TO_CLIENT_OR_FAIL (
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
-    compiled_in, enabled, "ENABLE_OSI_EXPORT");
+    compiled_in, enabled, "ENABLE_SECURITY_INTELLIGENCE_EXPORT");
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
   set_client_state (CLIENT_AUTHENTIC);
