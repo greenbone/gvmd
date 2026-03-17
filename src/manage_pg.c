@@ -1283,28 +1283,44 @@ manage_create_sql_functions ()
             "  WHERE report_hosts.report = $1;"
             "$$ LANGUAGE SQL;");
 
-      sql ("CREATE OR REPLACE FUNCTION report_result_host_count (report integer,"
-            "                                                    min_qod integer)"
-            " RETURNS bigint AS $$"
-            "  SELECT CASE"
-            "         WHEN EXISTS (SELECT id"
-            "                      FROM tasks"
-            "                      WHERE id = (SELECT task"
-            "                                  FROM reports WHERE id = $1)"
-            "                        AND oci_image_target IS NOT NULL)"
-            "         THEN (SELECT count (DISTINCT id) FROM report_hosts"
-            "               WHERE report_hosts.report = $1"
-            "               AND EXISTS (SELECT * FROM results"
-            "                           WHERE results.host = report_hosts.host"
-            "                             AND results.hostname = report_hosts.hostname"
-            "                             AND results.qod >= $2))"
-            "         ELSE (SELECT count (DISTINCT id) FROM report_hosts"
-            "               WHERE report_hosts.report = $1"
-            "               AND EXISTS (SELECT * FROM results"
-            "                           WHERE results.host = report_hosts.host"
-            "                             AND results.qod >= $2))"
-            "         END;"
-            "$$ LANGUAGE SQL;");
+      /* column hostname in table report_hosts was added in version 273 */
+      if (current_db_version >= 273)
+          {
+            sql ("CREATE OR REPLACE FUNCTION report_result_host_count (report integer,"
+                 "                                                     min_qod integer)"
+                 " RETURNS bigint AS $$"
+                 "  SELECT CASE"
+                 "         WHEN EXISTS (SELECT id"
+                 "                      FROM tasks"
+                 "                      WHERE id = (SELECT task"
+                 "                                  FROM reports WHERE id = $1)"
+                 "                        AND oci_image_target IS NOT NULL)"
+                 "         THEN (SELECT count (DISTINCT id) FROM report_hosts"
+                 "               WHERE report_hosts.report = $1"
+                 "               AND EXISTS (SELECT * FROM results"
+                 "                           WHERE results.host = report_hosts.host"
+                 "                             AND results.hostname = report_hosts.hostname"
+                 "                             AND results.qod >= $2))"
+                 "         ELSE (SELECT count (DISTINCT id) FROM report_hosts"
+                 "               WHERE report_hosts.report = $1"
+                 "               AND EXISTS (SELECT * FROM results"
+                 "                           WHERE results.host = report_hosts.host"
+                 "                             AND results.qod >= $2))"
+                 "         END;"
+                 "$$ LANGUAGE SQL;");
+          }
+      else
+          {
+            sql ("CREATE OR REPLACE FUNCTION report_result_host_count (report integer,"
+                 "                                                     min_qod integer)"
+                 " RETURNS bigint AS $$"
+                 "  SELECT count (DISTINCT id) FROM report_hosts"
+                 "  WHERE report_hosts.report = $1"
+                 "    AND EXISTS (SELECT * FROM results"
+                 "                WHERE results.host = report_hosts.host"
+                 "                  AND results.qod >= $2)"
+                 "$$ LANGUAGE SQL;");
+          }
 
       sql ("CREATE OR REPLACE FUNCTION severity_class ()"
            " RETURNS text AS $$"
