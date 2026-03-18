@@ -12,6 +12,18 @@ char*
 tag_uuid (tag_t);
 
 int
+tag_in_use (tag_t);
+
+int
+trash_tag_in_use (tag_t);
+
+int
+tag_writable (tag_t);
+
+int
+trash_tag_writable (tag_t);
+
+int
 copy_tag (const char *, const char *, const char *, tag_t *);
 
 int
@@ -65,5 +77,11 @@ resource_tag_iterator_value (iterator_t *);
 
 const char*
 resource_tag_iterator_comment (iterator_t *);
+
+int
+resource_tag_exists (const char *, resource_t, int);
+
+int
+resource_tag_count (const char *, resource_t, int);
 
 #endif /* not _GVMD_MANAGE_TAGS_H */
