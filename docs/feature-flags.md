@@ -24,6 +24,7 @@ enable_credential_store = false
 enable_openvasd = false
 enable_vt_metadata = false
 enable_security_intelligence_export = false
+enable_jwt_auth = false
 ```
 
 Each line is optional.
@@ -41,7 +42,7 @@ If a line is missing, gvmd does not apply a value from the config file.
 | Credential Stores                   | `ENABLE_CREDENTIAL_STORES`                                | `GVMD_ENABLE_CREDENTIAL_STORES`             | `enable_credential_store`                 |
 | VT Metadata Feed                    | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`                   | `enable_vt_metadata`                      |
 | Security Intelligence Report Export | Always exists in binary                                   | `GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT`  | `enable_security_intelligence_export`     |
-
+| JSON web token authentication       | `ENABLE_JWT_AUTH`                                         | `GVMD_ENABLE_JWT_AUTH`                      | `enable_jwt_auth`                         |
 ---
 
 ## Accepted Runtime Values
@@ -136,6 +137,9 @@ Exact example response:
   </feature>
   <feature compiled_in="1" enabled="0">
   <name>ENABLE_SECURITY_INTELLIGENCE_EXPORT</name>
+  </feature>
+  <feature compiled_in="1" enabled="0">
+  <name>ENABLE_JWT_AUTH</name>
   </feature>
 </get_features_response>
 ```
