@@ -301,13 +301,15 @@ load_jwt_secrets ()
   else if (strcasecmp (secret_type_str, "RSA") == 0
            || strcasecmp (secret_type_str, "RSA PEM") == 0)
     new_secret_type = GVM_JWT_SECRET_TYPE_RSA_PEM;
-  g_free (secret_type_str);
-
-  if (secret_type_str == 0)
+  else
     {
       g_warning ("Unknown JWT secret type '%s'", secret_type_str);
+      g_free (secret_type_str);
       return -1;
     }
+
+  g_free (secret_type_str);
+
 
   // Get decode secret
   ret = 0;
