@@ -3373,6 +3373,21 @@ create_tables ()
        "  resource_uuid text,"
        "  resource_location integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS integration_configs"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  service_type text NOT NULL,"
+       "  service_url text NOT NULL,"
+       "  service_cacert text,"
+       "  oidc_url text NOT NULL,"
+       "  oidc_client_id text NOT NULL,"
+       "  oidc_client_secret text NOT NULL,"
+       "  creation_time integer,"
+       "  modification_time integer);");
+
   /* Create result views. */
 
   /* Create functions, so that current_severity is created for
