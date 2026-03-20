@@ -108,7 +108,6 @@
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_settings.h"
-#include "manage_sql_resources.h"
 #include "manage_tags.h"
 #include "manage_targets.h"
 #include "manage_tls_certificates.h"
@@ -21367,15 +21366,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                current_credentials.uuid,
                                zone);
                     zone = "UTC";
-
-                    user_t user;
-                    if (find_resource_no_acl ("user",
-                                              current_credentials.uuid,
-                                              &user) == 0
-                        && user)
-                      {
-                        user_set_timezone (user, zone);
-                      }
+                    user_set_timezone (current_credentials.uuid,
+                                       zone);
                   }
 
                 if (setenv ("TZ", zone, 1) == -1)
