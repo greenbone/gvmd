@@ -1067,3 +1067,27 @@ path_is_in_directory (const gchar *path, const gchar *directory)
   g_free (canonicalized_path);
   return is_in_dir;
 }
+
+/**
+ * @brief Check whether a string is NULL, empty, or contains only whitespace.
+ *
+ * @param str Input string.
+ *
+ * @return TRUE if the string is NULL, empty (""), or only whitespace;
+ *         FALSE otherwise.
+ */
+gboolean
+string_empty (const gchar *str)
+{
+  if (str == NULL)
+    return TRUE;
+
+  while (*str != '\0')
+    {
+      if (!g_ascii_isspace (*str))
+        return FALSE;
+      str++;
+    }
+
+  return TRUE;
+}
