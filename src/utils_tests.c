@@ -160,6 +160,21 @@ Ensure (utils, path_is_in_directory_returns_false_if_path_is_not_in_dir)
   assert_that (path_is_in_directory (path4, directory), is_false);
 }
 
+Ensure (utils, string_empty_all_string_empty_cases)
+{
+  assert_that (string_empty (NULL), is_equal_to (TRUE));
+  assert_that (string_empty (""), is_equal_to (TRUE));
+  assert_that (string_empty ("   "), is_equal_to (TRUE));
+  assert_that (string_empty ("\t\t"), is_equal_to (TRUE));
+  assert_that (string_empty ("\n\n"), is_equal_to (TRUE));
+  assert_that (string_empty (" \t\n\r "), is_equal_to (TRUE));
+
+  assert_that (string_empty ("abc"), is_equal_to (FALSE));
+  assert_that (string_empty ("  abc"), is_equal_to (FALSE));
+  assert_that (string_empty ("abc   "), is_equal_to (FALSE));
+  assert_that (string_empty (" \t abc \n "), is_equal_to (FALSE));
+}
+
 /* Test suite. */
 
 int
@@ -188,6 +203,8 @@ main (int argc, char **argv)
                          path_is_in_directory_returns_true_if_path_is_in_dir);
   add_test_with_context (
     suite, utils, path_is_in_directory_returns_false_if_path_is_not_in_dir);
+
+  add_test_with_context (suite, utils, string_empty_all_string_empty_cases);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
