@@ -60,7 +60,7 @@ static integration_config_response_t
 modify_integration_config_row (integration_config_data_t config,
                                const gchar *secret)
 {
-  if (!config || string_empty (config->uuid))
+  if (!config || str_blank (config->uuid))
     return INTEGRATION_CONFIG_INVALID_DATA;
 
   sql_ps ("UPDATE integration_configs SET"
@@ -95,11 +95,11 @@ integration_config_is_all_empty (integration_config_data_t config)
   if (!config)
     return TRUE;
 
-  return string_empty (config->service_url)
-         && string_empty (config->service_cacert)
-         && string_empty (config->oidc_url)
-         && string_empty (config->oidc_client_id)
-         && string_empty (config->oidc_client_secret);
+  return str_blank (config->service_url)
+         && str_blank (config->service_cacert)
+         && str_blank (config->oidc_url)
+         && str_blank (config->oidc_client_id)
+         && str_blank (config->oidc_client_secret);
 }
 
 /**
@@ -114,16 +114,16 @@ integration_config_data_validate (integration_config_data_t data)
 {
   if (data == NULL)
     return INTEGRATION_CONFIG_INVALID_DATA;
-  if (string_empty (data->service_url))
+  if (str_blank (data->service_url))
     return INTEGRATION_CONFIG_MISSING_SERVICE_URL;
 
-  if (string_empty (data->oidc_url))
+  if (str_blank (data->oidc_url))
     return INTEGRATION_CONFIG_MISSING_OIDC_URL;
 
-  if (string_empty (data->oidc_client_id))
+  if (str_blank (data->oidc_client_id))
     return INTEGRATION_CONFIG_MISSING_OIDC_CLIENT_ID;
 
-  if (string_empty (data->oidc_client_secret))
+  if (str_blank (data->oidc_client_secret))
     return INTEGRATION_CONFIG_MISSING_OIDC_CLIENT_SECRET;
 
   return INTEGRATION_CONFIG_SUCCESS;
@@ -153,17 +153,19 @@ modify_integration_config (integration_config_data_t config)
     }
   if (strcmp (owner_uuid, current_credentials.uuid) != 0)
     {
+      g_free (owner_uuid);
       return INTEGRATION_CONFIG_INVALID_OWNER;
     }
 
   find_resource_no_acl ("user", owner_uuid, &owner);
+  g_free (owner_uuid);
 
   if (owner == 0)
     {
       return INTEGRATION_CONFIG_INVALID_OWNER;
     }
 
-  if (!config || string_empty (config->uuid))
+  if (!config || str_blank (config->uuid))
     return INTEGRATION_CONFIG_INVALID_DATA;
 
   if (find_resource ("integration_config", config->uuid, &row_id))
@@ -245,7 +247,7 @@ check_db_integration_configs ()
   char *owner_uuid = NULL;
   user_t owner;
   setting_value (SETTING_UUID_INTEGRATION_CONFIG_OWNER, &owner_uuid);
-  if (!owner_uuid || string_empty (owner_uuid))
+  if (!owner_uuid || str_blank (owner_uuid))
     return;
 
   find_resource_no_acl ("user", owner_uuid, &owner);

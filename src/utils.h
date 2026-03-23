@@ -107,6 +107,6 @@ gboolean
 path_is_in_directory (const gchar *, const gchar *);
 
 gboolean
-string_empty (const gchar *str);
+str_blank (const gchar *);
 
 #endif /* not _GVMD_UTILS_H */

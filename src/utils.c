@@ -1077,7 +1077,7 @@ path_is_in_directory (const gchar *path, const gchar *directory)
  *         FALSE otherwise.
  */
 gboolean
-string_empty (const gchar *str)
+str_blank (const gchar *str)
 {
   if (str == NULL)
     return TRUE;
