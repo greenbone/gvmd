@@ -36,6 +36,15 @@ gvmd --modify-setting 78eceaec-3385-11ea-b237-28d24461215b --value "$uid"
 # set the agent owner
 gvmd --modify-setting 1ee1f106-8b2e-461c-b426-7f5d76001b29 --value "$uid"
 
+if [ -n $INTEGRATION_CONFIG_USER ] && [ -n $INTEGRATION_CONFIG_USER_INIT_PASSWORD ]; then
+  # create integration config user
+  gvmd --create-user=$INTEGRATION_CONFIG_USER --password=$INTEGRATION_CONFIG_USER_INIT_PASSWORD || true
+
+  # set the integration configs owner
+  uid=$(gvmd --get-users --verbose | grep "^$INTEGRATION_CONFIG_USER " | awk '{print $2}')
+  gvmd --modify-setting e15e8a57-0285-439b-929a-068880b410b4 --value "$uid"
+fi
+
 echo "starting gvmd"
 gvmd $GVMD_ARGS ||
     (echo "Starting gvmd failed" && exit 1)
