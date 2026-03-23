@@ -29,7 +29,6 @@ static const gchar *OIDC_CLIENT_SECRET_TYPE = "oidc_client_secret";
 static void
 create_security_intelligence_config (user_t owner)
 {
-  g_warning ("Creating security_intelligence config");
   sql_ps ("INSERT INTO integration_configs (uuid, name, comment, owner,"
           " creation_time, modification_time, service_url,"
           " service_cacert, oidc_url, oidc_client_id, oidc_client_secret) "
