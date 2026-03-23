@@ -359,10 +359,10 @@ init_integration_config_iterator_one (iterator_t *iterator, const gchar *uuid)
 const gchar *
 integration_config_iterator_encrypted_oidc_client_secret (iterator_t *iterator)
 {
-  const gchar *secret = NULL;
-  const gchar *unencrypted =
+  const gchar *secret =
     integration_config_iterator_oidc_client_secret (iterator);
-  if (!unencrypted)
+
+  if (!secret)
     return NULL;
 
   /* Initialize encryption context. */
