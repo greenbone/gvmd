@@ -12,6 +12,7 @@
 
 #include <assert.h>
 #include "manage_settings.h"
+#include "manage.h" // for current_credentials
 
 #undef G_LOG_DOMAIN
 /**
@@ -76,4 +77,17 @@ init_manage_settings_funcs (setting_value_func setting_value_f,
 {
   setting_value_internal = setting_value_f;
   setting_value_int_internal = setting_value_int_f;
+}
+
+/**
+ * @brief Return the Note/Override Excerpt Size user setting as an int.
+ *
+ * @return The excerpt size.
+ */
+int
+setting_excerpt_size_int ()
+{
+  if (current_credentials.excerpt_size <= 0)
+    return EXCERPT_SIZE_DEFAULT;
+  return current_credentials.excerpt_size;
 }

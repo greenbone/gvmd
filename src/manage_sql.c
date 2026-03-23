@@ -30914,19 +30914,6 @@ setting_count (const char *filter)
 }
 
 /**
- * @brief Return the Note/Override Excerpt Size user setting as an int.
- *
- * @return The excerpt size.
- */
-int
-setting_excerpt_size_int ()
-{
-  if (current_credentials.excerpt_size <= 0)
-    return EXCERPT_SIZE_DEFAULT;
-  return current_credentials.excerpt_size;
-}
-
-/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
