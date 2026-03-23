@@ -8,5 +8,7 @@
 
 #include "manage_settings.h"
 
+char *
+setting_timezone ();
 
 #endif // not _GVMD_MANAGE_SQL_SETTINGS_H
