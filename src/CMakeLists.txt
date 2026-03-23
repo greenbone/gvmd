@@ -245,6 +245,7 @@ set(
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_roles.c
+  manage_sql_settings.c
   manage_sql_tags.c
   manage_sql_targets.c
   manage_sql_tickets.c

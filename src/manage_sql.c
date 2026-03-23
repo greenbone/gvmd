@@ -30914,23 +30914,6 @@ setting_count (const char *filter)
 }
 
 /**
- * @brief Return the uuid of a resource filter from settings.
- *
- * @param[in]  resource  Resource (eg. Filters, Targets, CPE).
- *
- * @return resource filter uuid in settings if it exists, "" otherwise.
- */
-char *
-setting_filter (const char *resource)
-{
-  return sql_string ("SELECT value FROM settings WHERE name = '%s Filter'"
-                     " AND " ACL_GLOBAL_OR_USER_OWNS () ""
-                     " ORDER BY coalesce (owner, 0) DESC;",
-                     resource,
-                     current_credentials.uuid);
-}
-
-/**
  * @brief Return the Note/Override Excerpt Size user setting as an int.
  *
  * @return The excerpt size.
