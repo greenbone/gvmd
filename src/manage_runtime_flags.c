@@ -402,4 +402,13 @@ runtime_append_disabled_commands (GString *buf)
         "modify_credential_store,"
         "verify_credential_store");
     }
+
+  /* SECURITY_INTELLIGENCE_EXPORT */
+  if (!feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+    {
+      append_commands (
+        buf,
+        "get_integration_configs,"
+        "modify_integration_config");
+    }
 }
