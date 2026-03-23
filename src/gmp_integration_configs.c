@@ -313,8 +313,6 @@ modify_integration_config_run (gmp_parser_t *gmp_parser, GError **error)
 
   config_uuid = entity_attribute (root, "uuid");
 
-  g_warning ("uuid = %s", config_uuid);
-
   if (!acl_user_may ("modify_integration_config"))
     {
       SEND_TO_CLIENT_OR_FAIL (

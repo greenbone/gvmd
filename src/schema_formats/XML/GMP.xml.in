@@ -16516,6 +16516,264 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_integration_configs</name>
+    <summary>Get integration configurations</summary>
+    <description>
+      <p>
+        The client uses the get_integration_configs command to retrieve a list of
+        integration configurations.
+      </p>
+    </description>
+    <pattern>
+      <o><e>integration_config_id</e></o>
+      <o><e>filter</e></o>
+      <o><e>filt_id</e></o>
+    </pattern>
+    <ele>
+      <name>integration_config_id</name>
+      <summary>UUID of a specific integration configuration</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filter</name>
+      <summary>Filter term</summary>
+      <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>filt_id</name>
+      <summary>Filter UUID</summary>
+      <pattern><type>uuid</type></pattern>
+      <required>0</required>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>integration_config</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>integration_configs</e></o>
+        <o><e>integration_config_count</e></o>
+      </pattern>
+      <ele>
+        <name>integration_config</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>service</e>
+          <e>oidc</e>
+        </pattern>
+        <ele>
+          <name>service</name>
+          <summary>Service configuration</summary>
+          <pattern>
+            <e>url</e>
+          </pattern>
+          <ele>
+            <name>url</name>
+            <summary>Service URL</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>oidc</name>
+          <summary>OIDC configuration</summary>
+          <pattern>
+            <e>url</e>
+            <e>client</e>
+          </pattern>
+          <ele>
+            <name>url</name>
+            <summary>OIDC provider URL</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+          <ele>
+            <name>client</name>
+            <summary>OIDC client configuration</summary>
+            <pattern>
+              <e>id</e>
+            </pattern>
+            <ele>
+              <name>id</name>
+              <summary>OIDC client ID</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          <e>field</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>integration_configs</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>integration_config_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+      </ele>
+    </response>
+    <example>
+      <request>
+        <get_integration_configs/>
+      </request>
+      <response>
+        <get_integration_configs_response status="200" status_text="OK">
+          <integration_config id="1e1ee952-84b6-42cf-8431-2db3c5b5ca73">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Security Intelligence Integration Configuration</name>
+            <comment/>
+            <creation_time>2026-03-20T15:21:22Z</creation_time>
+            <modification_time>2026-03-20T15:27:56Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+          </integration_config>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <integration_configs start="1" max="1000"/>
+          <integration_config_count>1<filtered>1</filtered><page>1</page></integration_config_count>
+        </get_integration_configs_response>
+      </response>
+    </example>
+    <example>
+      <request>
+        <get_integration_configs integration_config_id="1e1ee952-84b6-42cf-8431-2db3c5b5ca73" detail="1"/>
+      </request>
+      <response>
+        <get_integration_configs_response status="200" status_text="OK">
+          <integration_config id="1e1ee952-84b6-42cf-8431-2db3c5b5ca73">
+            <owner>
+              <name>username</name>
+            </owner>
+            <name>Security Intelligence Integration Configuration</name>
+            <comment/>
+            <creation_time>2026-03-20T15:21:22Z</creation_time>
+            <modification_time>2026-03-20T15:27:56Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <service>
+              <url>https://osi.example.com</url>
+            </service>
+            <oidc>
+              <url>https://oidc.example.com</url>
+              <client>
+                <id>client-id</id>
+              </client>
+            </oidc>
+          </integration_config>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <integration_configs start="1" max="1000"/>
+          <integration_config_count>1<filtered>1</filtered><page>1</page></integration_config_count>
+        </get_integration_configs_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_license</name>
     <summary>Get the current license</summary>
     <description>
@@ -31353,6 +31611,114 @@ END:VCALENDAR
       <response>
         <modify_group_response status="200" status_text="OK">
         </modify_group_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>modify_integration_config</name>
+    <summary>Modify an integration configuration</summary>
+    <description>
+      <p>
+        The client uses the modify_integration_config command to modify an
+        existing integration configuration.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>uuid</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <e>service</e>
+      <e>oidc</e>
+    </pattern>
+    <ele>
+      <name>service</name>
+      <summary>Service configuration</summary>
+      <pattern>
+        <e>url</e>
+        <o><e>cacert</e></o>
+      </pattern>
+      <ele>
+        <name>url</name>
+        <summary>Service URL</summary>
+        <pattern><type>text</type></pattern>
+        <required>1</required>
+      </ele>
+      <ele>
+        <name>cacert</name>
+        <summary>CA certificate used to validate the service endpoint</summary>
+        <pattern><type>text</type></pattern>
+        <required>0</required>
+      </ele>
+    </ele>
+    <ele>
+      <name>oidc</name>
+      <summary>OIDC configuration</summary>
+      <pattern>
+        <e>url</e>
+        <e>client</e>
+      </pattern>
+      <ele>
+        <name>url</name>
+        <summary>OIDC provider URL</summary>
+        <pattern><type>text</type></pattern>
+        <required>1</required>
+      </ele>
+      <ele>
+        <name>client</name>
+        <summary>OIDC client configuration</summary>
+        <pattern>
+          <e>id</e>
+          <e>secret</e>
+        </pattern>
+        <ele>
+          <name>id</name>
+          <summary>OIDC client ID</summary>
+          <pattern><type>text</type></pattern>
+          <required>1</required>
+        </ele>
+        <ele>
+          <name>secret</name>
+          <summary>OIDC client secret</summary>
+          <pattern><type>text</type></pattern>
+          <required>1</required>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify an integration configuration</summary>
+      <request>
+        <modify_integration_config uuid="1e1ee952-84b6-42cf-8431-2db3c5b5ca73">
+          <service>
+            <url>https://osi.example.com</url>
+            <cacert>--- Certificate content ---</cacert>
+          </service>
+          <oidc>
+            <url>https://oidc.example.com</url>
+            <client>
+              <id>client-id</id>
+              <secret>client-secret</secret>
+            </client>
+          </oidc>
+        </modify_integration_config>
+      </request>
+      <response>
+        <modify_integration_config_response status="200" status_text="OK"/>
       </response>
     </example>
   </command>
