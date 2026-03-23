@@ -132,10 +132,6 @@ integration_config_data_validate (integration_config_data_t data)
 /**
  * @brief Create, update, or delete an integration configuration.
  *
- * Validates the given configuration and stores it in the database. If all
- * configurable fields are empty, the existing configuration is removed
- * instead. Sensitive data is encrypted before insert or update.
- *
  * @param[in] config  Integration configuration data.
  *
  * @return Result of the create, update, or delete operation.
@@ -148,6 +144,24 @@ modify_integration_config (integration_config_data_t config)
   gchar *secret = NULL;
   char *encryption_key_uid = NULL;
   integration_config_t row_id;
+  char *owner_uuid = NULL;
+  user_t owner = 0;
+  setting_value (SETTING_UUID_INTEGRATION_CONFIG_OWNER, &owner_uuid);
+  if (owner_uuid == NULL)
+    {
+      return INTEGRATION_CONFIG_INVALID_OWNER;
+    }
+  if (strcmp (owner_uuid, current_credentials.uuid) != 0)
+    {
+      return INTEGRATION_CONFIG_INVALID_OWNER;
+    }
+
+  find_resource_no_acl ("user", owner_uuid, &owner);
+
+  if (owner == 0)
+    {
+      return INTEGRATION_CONFIG_INVALID_OWNER;
+    }
 
   if (!config || string_empty (config->uuid))
     return INTEGRATION_CONFIG_INVALID_DATA;
@@ -158,15 +172,7 @@ modify_integration_config (integration_config_data_t config)
     return INTEGRATION_CONFIG_NOT_FOUND;
 
   if (integration_config_is_all_empty (config))
-    {
-      config->service_url = g_strdup ("");
-      config->service_cacert = g_strdup ("");
-      config->oidc_url = g_strdup ("");
-      config->oidc_client_id = g_strdup ("");
-      config->oidc_client_secret = g_strdup ("");
-      modify_integration_config_row (config, g_strdup (""));
-      return INTEGRATION_CONFIG_SUCCESS;
-    }
+    return modify_integration_config_row (config, "");
 
   response = integration_config_data_validate (config);
   if (response != INTEGRATION_CONFIG_SUCCESS)
