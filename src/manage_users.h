@@ -109,6 +109,6 @@ manage_set_password (GSList *, const db_conn_info_t *, const gchar *,
                      const gchar *);
 
 int
-user_set_timezone (const gchar *, const gchar *);
+current_user_set_timezone (const gchar *);
 
 #endif /* not _GVMD_MANAGE_USERS_H */

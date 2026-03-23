@@ -21366,8 +21366,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                current_credentials.uuid,
                                zone);
                     zone = "UTC";
-                    user_set_timezone (current_credentials.uuid,
-                                       zone);
+                    current_user_set_timezone (zone);
                   }
 
                 if (setenv ("TZ", zone, 1) == -1)

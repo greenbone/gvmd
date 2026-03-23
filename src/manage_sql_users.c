@@ -2436,22 +2436,24 @@ all_users_array ()
 }
 
 /**
- * @brief Sets the timezone of a user.
+ * @brief Set the timezone of the current user.
  *
- * @param[in] user_id  The UUID of the user to set the timezone of
- * @param[in] zone     The timezone to set
+ * @param[in]  zone  The timezone to set
  *
- * @return 0 success, 1 invalid timezone
+ * @return 0 success, 1 invalid timezone, 2 no current user
  */
 int
-user_set_timezone (const gchar *user_id, const gchar *zone)
+current_user_set_timezone (const gchar *zone)
 {
   gchar *quoted_user_id;
 
   if (manage_timezone_supported (zone) == FALSE)
     return 1;
 
-  quoted_user_id = sql_quote (user_id);
+  if (current_credentials.uuid == 0)
+    return 2;
+
+  quoted_user_id = sql_quote (current_credentials.uuid);
 
   sql_ps ("UPDATE users SET timezone = $1"
           " WHERE uuid = $2",
