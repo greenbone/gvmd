@@ -1302,3 +1302,85 @@ DEF_ACCESS (resource_tag_iterator_value, 3);
  * @return The comment of the tag.
  */
 DEF_ACCESS (resource_tag_iterator_comment, 4);
+
+/**
+ * @brief Check if there are tags attached to a resource.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource     Resource.
+ * @param[in]  active_only  Whether to count only active tags.
+ *
+ * @return 1 if resource has tags, else 0.
+ */
+int
+resource_tag_exists (const char* type, resource_t resource, int active_only)
+{
+  int ret;
+
+  assert (type);
+  assert (resource);
+
+  ret = sql_int ("SELECT EXISTS (SELECT *"
+                 "               FROM tags"
+                 "               WHERE resource_type = '%s'"
+                 "               AND EXISTS"
+                 "                   (SELECT * FROM tag_resources"
+                 "                    WHERE tag = tags.id"
+                 "                    AND resource = %llu"
+                 "                    AND resource_location = %d"
+                 "                    AND tags.resource_type"
+                 "                        = tag_resources.resource_type)"
+                 "               %s);",
+                 type,
+                 resource,
+                 LOCATION_TABLE,
+                 active_only ? "AND active=1": "");
+
+  return ret;
+}
+
+/**
+ * @brief Count number of tags attached to a resource.
+ *
+ * @param[in]  type         Resource type.
+ * @param[in]  resource     Resource.
+ * @param[in]  active_only  Whether to count only active tags.
+ *
+ * @return Total number of tags attached to the resource.
+ */
+int
+resource_tag_count (const char* type, resource_t resource, int active_only)
+{
+  int ret;
+  const char *parent_type;
+
+  assert (type);
+  assert (resource);
+
+  if (type_is_report_subtype (type))
+    parent_type = "report";
+  else if (type_is_task_subtype (type))
+    parent_type = "task";
+  else if (type_is_config_subtype (type))
+    parent_type = "config";
+  else
+    parent_type = type;
+
+  ret = sql_int ("SELECT count (id)"
+                " FROM tags"
+                " WHERE resource_type = '%s'"
+                "   AND EXISTS"
+                "     (SELECT * FROM tag_resources"
+                "      WHERE tag = tags.id"
+                "        AND resource = %llu"
+                "        AND resource_location = %d"
+                "        AND tag_resources.resource_type = '%s')"
+                "   %s;",
+                type,
+                resource,
+                LOCATION_TABLE,
+                parent_type,
+                active_only ? "AND active=1": "");
+
+  return ret;
+}

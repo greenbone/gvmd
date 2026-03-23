@@ -15433,6 +15433,7 @@ report_finished_container_images_str (report_t report)
  */
 struct print_report_context
 {
+  gchar *compliance_levels;   ///< Compliance levels.
   int count_filtered;         ///< Whether to count filtered results.
   report_t delta;             ///< Report to compare with.
   int filtered_result_count;  ///< Filtered result count.
@@ -15490,6 +15491,7 @@ free_f_host (GHashTable *table)
 static void
 print_report_context_cleanup (print_report_context_t *ctx)
 {
+  g_free (ctx->compliance_levels);
   g_free (ctx->tsk_usage_type);
   g_free (ctx->tz);
   g_free (ctx->zone);
@@ -17125,7 +17127,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   FILE *out;
   gchar *term, *sort_field, *levels, *search_phrase;
-  gchar *min_qod, *compliance_levels;
+  gchar *min_qod;
   gchar *delta_states, *timestamp;
   int min_qod_int;
   char *uuid, *tsk_uuid = NULL, *start_time, *end_time;
@@ -17151,7 +17153,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
   levels = NULL;
-  compliance_levels = NULL;
   delta_states = NULL;
   min_qod = NULL;
   search_phrase = NULL;
@@ -17214,7 +17215,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term ? term : get->filter,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &compliance_levels,
+                                     &min_qod, &levels, &ctx.compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes,
                                      &overrides, &apply_overrides, &ctx.zone);
@@ -17226,7 +17227,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       manage_report_filter_controls (term,
                                      &first_result, &max_results, &sort_field,
                                      &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &compliance_levels,
+                                     &min_qod, &levels, &ctx.compliance_levels,
                                      &delta_states, &search_phrase,
                                      &search_phrase_exact, &notes, &overrides,
                                      &apply_overrides, &ctx.zone);
@@ -17340,15 +17341,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   if (strcmp (ctx.tsk_usage_type, "audit") == 0)
     {
-      compliance_levels = compliance_levels ? compliance_levels : g_strdup ("yniu");
+      ctx.compliance_levels = ctx.compliance_levels ? ctx.compliance_levels : g_strdup ("yniu");
 
-      if (strchr (compliance_levels, 'y'))
+      if (strchr (ctx.compliance_levels, 'y'))
         g_string_append (filters_extra_buffer, "<filter>Yes</filter>");
-      if (strchr (compliance_levels, 'n'))
+      if (strchr (ctx.compliance_levels, 'n'))
         g_string_append (filters_extra_buffer, "<filter>No</filter>");
-      if (strchr (compliance_levels, 'i'))
+      if (strchr (ctx.compliance_levels, 'i'))
         g_string_append (filters_extra_buffer, "<filter>Incomplete</filter>");
-      if (strchr (compliance_levels, 'u'))
+      if (strchr (ctx.compliance_levels, 'u'))
         g_string_append (filters_extra_buffer, "<filter>Undefined</filter>");
     }
   else
@@ -18012,10 +18013,10 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               "<undefined><filtered>%i</filtered></undefined>"
               "</compliance_count>",
               f_compliance_count,
-              (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
-              (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
-              (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
-              (strchr (compliance_levels, 'u') ? f_compliance_undefined : 0));
+              (strchr (ctx.compliance_levels, 'y') ? f_compliance_yes : 0),
+              (strchr (ctx.compliance_levels, 'n') ? f_compliance_no : 0),
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_incomplete : 0),
+              (strchr (ctx.compliance_levels, 'u') ? f_compliance_undefined : 0));
       else
         {
           if (ctx.count_filtered)
@@ -18037,13 +18038,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
               total_compliance_count,
               f_compliance_count,
               compliance_yes,
-              (strchr (compliance_levels, 'y') ? f_compliance_yes : 0),
+              (strchr (ctx.compliance_levels, 'y') ? f_compliance_yes : 0),
               compliance_no,
-              (strchr (compliance_levels, 'n') ? f_compliance_no : 0),
+              (strchr (ctx.compliance_levels, 'n') ? f_compliance_no : 0),
               compliance_incomplete,
-              (strchr (compliance_levels, 'i') ? f_compliance_incomplete : 0),
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_incomplete : 0),
               compliance_undefined,
-              (strchr (compliance_levels, 'i') ? f_compliance_undefined : 0));
+              (strchr (ctx.compliance_levels, 'i') ? f_compliance_undefined : 0));
 
           PRINT (out,
                 "<compliance>"
@@ -18330,7 +18331,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   g_free (search_phrase);
   g_free (min_qod);
   g_free (delta_states);
-  g_free (compliance_levels);
 
   if (host_summary && host_summary_buffer)
     *host_summary = g_string_free (host_summary_buffer, FALSE);
@@ -18359,7 +18359,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     if (host_summary_buffer)
         g_string_free (host_summary_buffer, TRUE);
 
-    g_free (compliance_levels);
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
@@ -33002,141 +33001,7 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
 }
 
 
-/* Tags */
-
-/**
- * @brief Check if there are tags attached to a resource.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource     Resource.
- * @param[in]  active_only  Whether to count only active tags.
- *
- * @return 1 if resource has tags, else 0.
- */
-int
-resource_tag_exists (const char* type, resource_t resource, int active_only)
-{
-  int ret;
-
-  assert (type);
-  assert (resource);
-
-  ret = sql_int ("SELECT EXISTS (SELECT *"
-                 "               FROM tags"
-                 "               WHERE resource_type = '%s'"
-                 "               AND EXISTS"
-                 "                   (SELECT * FROM tag_resources"
-                 "                    WHERE tag = tags.id"
-                 "                    AND resource = %llu"
-                 "                    AND resource_location = %d"
-                 "                    AND tags.resource_type"
-                 "                        = tag_resources.resource_type)"
-                 "               %s);",
-                 type,
-                 resource,
-                 LOCATION_TABLE,
-                 active_only ? "AND active=1": "");
-
-  return ret;
-}
-
-/**
- * @brief Count number of tags attached to a resource.
- *
- * @param[in]  type         Resource type.
- * @param[in]  resource     Resource.
- * @param[in]  active_only  Whether to count only active tags.
- *
- * @return Total number of tags attached to the resource.
- */
-int
-resource_tag_count (const char* type, resource_t resource, int active_only)
-{
-  int ret;
-  const char *parent_type;
-
-  assert (type);
-  assert (resource);
-
-  if (type_is_report_subtype (type))
-    parent_type = "report";
-  else if (type_is_task_subtype (type))
-    parent_type = "task";
-  else if (type_is_config_subtype (type))
-    parent_type = "config";
-  else
-    parent_type = type;
-
-  ret = sql_int ("SELECT count (id)"
-                " FROM tags"
-                " WHERE resource_type = '%s'"
-                "   AND EXISTS"
-                "     (SELECT * FROM tag_resources"
-                "      WHERE tag = tags.id"
-                "        AND resource = %llu"
-                "        AND resource_location = %d"
-                "        AND tag_resources.resource_type = '%s')"
-                "   %s;",
-                type,
-                resource,
-                LOCATION_TABLE,
-                parent_type,
-                active_only ? "AND active=1": "");
-
-  return ret;
-}
-
-/**
- * @brief Return whether a tag is in use by a task.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if in use, else 0.
- */
-int
-tag_in_use (tag_t tag)
-{
-  return 0;
-}
-
-/**
- * @brief Return whether a trashcan tag is referenced by a task.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if in use, else 0.
- */
-int
-trash_tag_in_use (tag_t tag)
-{
-  return 0;
-}
-
-/**
- * @brief Return whether a tag is writable.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if writable, else 0.
- */
-int
-tag_writable (tag_t tag)
-{
-  return 1;
-}
-
-/**
- * @brief Return whether a trashcan tag is writable.
- *
- * @param[in]  tag  Tag.
- *
- * @return 1 if writable, else 0.
- */
-int
-trash_tag_writable (tag_t tag)
-{
-  return 0;
-}
+/* SQL construction */
 
 /**
  * @brief Return whether a column is one containing timestamp.
