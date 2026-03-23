@@ -110,6 +110,7 @@ command_t gmp_commands[]
     {"GET_FILTERS", "Get all filters."},
     {"GET_GROUPS", "Get all groups."},
     {"GET_INFO", "Get raw information for a given item."},
+    {"GET_INTEGRATION_CONFIGS", "Get integration configurations."},
     {"GET_LICENSE", "Get license information." },
     {"GET_NOTES", "Get all notes."},
     {"GET_NVTS", "Get one or all available NVTs."},
@@ -154,6 +155,7 @@ command_t gmp_commands[]
 #endif /* ENABLE_CREDENTIAL_STORES */
     {"MODIFY_FILTER", "Modify an existing filter."},
     {"MODIFY_GROUP", "Modify an existing group."},
+    {"MODIFY_INTEGRATION_CONFIG", "Modify integration configuration."},
     {"MODIFY_LICENSE", "Modify the existing license."},
     {"MODIFY_NOTE", "Modify an existing note."},
 #if ENABLE_CONTAINER_SCANNING

@@ -3379,7 +3379,6 @@ create_tables ()
        "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
        "  name text NOT NULL,"
        "  comment text,"
-       "  service_type text NOT NULL,"
        "  service_url text NOT NULL,"
        "  service_cacert text,"
        "  oidc_url text NOT NULL,"

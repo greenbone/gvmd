@@ -28,6 +28,7 @@ typedef resource_t credential_t;
 typedef resource_t filter_t;
 typedef resource_t group_t;
 typedef resource_t host_t;
+typedef resource_t integration_config_t;
 typedef resource_t note_t;
 typedef resource_t nvt_t;
 typedef resource_t oci_image_target_t;
