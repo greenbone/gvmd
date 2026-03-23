@@ -222,7 +222,7 @@ get_integration_configs_run (gmp_parser_t *gmp_parser, GError **error)
                 count,
                 filtered);
 
-  get_integration_configs_reset (get_integration_configs_data);
+  get_integration_configs_reset ();
 }
 
 /* MODIFY_INTEGRATION_CONFIG */
