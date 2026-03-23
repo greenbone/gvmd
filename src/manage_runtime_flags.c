@@ -238,8 +238,6 @@ append_commands (GString *buf, const char *cmds)
 /**
  * @brief Initialize runtime feature flags from config file and environment.
  *
- * @param[in] config_path  Optional configuration file path, or NULL.
- *
  * @return Always 0 (errors are handled internally and fall back to defaults).
  */
 int
