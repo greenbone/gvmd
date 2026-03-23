@@ -107,6 +107,13 @@ modify_credential_store
 verify_credential_store
 ```
 
+### Security intelligence export disabled - these commands are hidden
+
+```
+get_integration_configs
+modify_integration_config
+```
+
 ## Extended get_features Response
 
 To help clients understand which features are compiled-in and enabled at runtime, the `get_features` command now returns
