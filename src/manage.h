@@ -21,6 +21,7 @@
 #include "manage_configs.h"
 #include "manage_events.h"
 #include "manage_get.h"
+#include "manage_integration_configs.h"
 #include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"

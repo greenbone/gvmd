@@ -178,6 +178,7 @@ set(
   manage_get.c
   manage_groups.c
   manage_http_scanner.c
+  manage_integration_configs.c
   manage_license.c
   manage_openvas.c
   manage_osp.c
@@ -233,6 +234,7 @@ set(
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
+  manage_sql_integration_configs.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_permissions.c
@@ -283,6 +285,7 @@ set(
   gmp_tickets.c
   gmp_tls_certificates.c
   gmp_oci_image_targets.c
+  gmp_integration_configs.c
 )
 
 if(ENABLE_AGENTS)
