@@ -36,3 +36,15 @@ setting_filter (const char *resource)
                      resource,
                      current_credentials.uuid);
 }
+
+/**
+ * @brief Return the user's timezone.
+ *
+ * @return User Severity Class in settings if it exists, else NULL.
+ */
+char *
+setting_timezone ()
+{
+  return sql_string ("SELECT timezone FROM users WHERE uuid = '%s'",
+                     current_credentials.uuid);
+}

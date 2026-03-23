@@ -54,6 +54,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
@@ -250,9 +251,6 @@ set_credential_password (credential_t, const char *);
 static void
 set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
-
-static char *
-setting_timezone ();
 
 
 /* Variables. */
@@ -30923,18 +30921,6 @@ int
 setting_dynamic_severity_int ()
 {
   return current_credentials.dynamic_severity;
-}
-
-/**
- * @brief Return the user's timezone.
- *
- * @return User Severity Class in settings if it exists, else NULL.
- */
-static char *
-setting_timezone ()
-{
-  return sql_string ("SELECT timezone FROM users WHERE uuid = '%s'",
-                     current_credentials.uuid);
 }
 
 /**
