@@ -2445,22 +2445,17 @@ all_users_array ()
 int
 current_user_set_timezone (const gchar *zone)
 {
-  gchar *quoted_user_id;
-
   if (manage_timezone_supported (zone) == FALSE)
     return 1;
 
   if (current_credentials.uuid == 0)
     return 2;
 
-  quoted_user_id = sql_quote (current_credentials.uuid);
-
   sql_ps ("UPDATE users SET timezone = $1"
           " WHERE uuid = $2",
           SQL_STR_PARAM (zone),
-          SQL_STR_PARAM (quoted_user_id),
+          SQL_STR_PARAM (current_credentials.uuid),
           NULL);
 
-  g_free (quoted_user_id);
   return 0;
 }
