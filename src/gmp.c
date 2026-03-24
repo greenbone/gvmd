@@ -4191,6 +4191,7 @@ typedef enum
   CLIENT_AUTHENTICATE,
   CLIENT_AUTHENTICATE_CREDENTIALS,
   CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD,
+  CLIENT_AUTHENTICATE_CREDENTIALS_TOKEN,
   CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME,
 #if ENABLE_AGENTS
   CLIENT_CREATE_AGENT_GROUP,
@@ -6420,6 +6421,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_USERNAME);
         else if (strcasecmp ("PASSWORD", element_name) == 0)
           set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD);
+        else if (strcasecmp ("TOKEN", element_name) == 0)
+          set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS_TOKEN);
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_SCANNER:
@@ -21397,9 +21400,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   zone
                 );
 
-                pw_warning = gvm_validate_password
-                              (current_credentials.password,
-                               current_credentials.username);
+                if (current_credentials.jwt)
+                  // Skip password validation for passwordless auth methods
+                  pw_warning = NULL;
+                else
+                  pw_warning = gvm_validate_password
+                                (current_credentials.password,
+                                 current_credentials.username);
 
                 if (pw_warning)
                   {
@@ -21474,6 +21481,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
+        set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
+        break;
+
+      case CLIENT_AUTHENTICATE_CREDENTIALS_TOKEN:
         set_client_state (CLIENT_AUTHENTICATE_CREDENTIALS);
         break;
 
@@ -29406,6 +29417,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_AUTHENTICATE_CREDENTIALS_PASSWORD:
         append_to_credentials_password (&current_credentials, text, text_len);
+        break;
+
+      case CLIENT_AUTHENTICATE_CREDENTIALS_TOKEN:
+        gvm_append_text (&(current_credentials.jwt), text, text_len);
         break;
 
 #if ENABLE_AGENTS
