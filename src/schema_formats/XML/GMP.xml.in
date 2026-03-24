@@ -3601,8 +3601,19 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ele>
       <name>credentials</name>
       <pattern>
+@IF_ENABLE_JWT_AUTH@
+        <or>
+          <g>
+            <e>username</e>
+            <e>password</e>
+          </g>
+          <e>token</e>
+        </or>
+@ENDIF_ENABLE_JWT_AUTH@
+@IF_NOT_ENABLE_JWT_AUTH@
         <e>username</e>
         <e>password</e>
+@ENDIF_NOT_ENABLE_JWT_AUTH@
       </pattern>
       <ele>
         <name>username</name>
@@ -3618,6 +3629,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           text
         </pattern>
       </ele>
+@IF_ENABLE_JWT_AUTH@
+      <ele>
+        <name>token</name>
+        <summary>
+          An access token, usually from a previous authenticate response
+        </summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
+@ENDIF_ENABLE_JWT_AUTH@
     </ele>
     <response>
       <pattern>

@@ -5316,8 +5316,49 @@ authenticate (credentials_t* credentials)
   if (credentials->jwt)
     {
 #if ENABLE_JWT_AUTH
-      g_warning ("%s: token authentication is not implemented yet", __func__);
-      return 2;
+      const char *sub;
+      gvm_jwt_claims_t claims = NULL;
+      gvm_jwt_validate_token_err_t validate_token_err
+        = GVM_JWT_VALIDATE_TOKEN_ERR_INTERNAL_ERROR;
+      gvm_jwt_decode_secret_t decode_secret = NULL;
+
+      decode_secret = get_jwt_decode_secret ();
+      if (decode_secret == NULL)
+        return 2;
+
+      validate_token_err = gvm_jwt_validate_token (decode_secret,
+                                                   credentials->jwt,
+                                                   &claims);
+      switch (validate_token_err)
+        {
+          case GVM_JWT_VALIDATE_TOKEN_ERR_OK:
+            break;
+          case GVM_JWT_VALIDATE_TOKEN_ERR_VALIDATION_FAILED:
+            g_debug ("%s: token validation failed", __func__);
+            return 1;
+          default:
+            g_warning ("%s: Error validating JWT: %s",
+                      __func__,
+                      gvm_jwt_validate_token_strerror (validate_token_err));
+            return 2;
+        }
+
+      sub = gvm_jwt_claims_get_sub (claims);
+      if (sub == NULL)
+        {
+          g_debug ("%s: subject (username) missing in token claims", __func__);
+          gvm_jwt_claims_free (claims);
+          return 1;
+        }
+
+      credentials->username = g_strdup (sub);
+      gvm_jwt_claims_free (claims);
+
+      credentials->uuid = sql_string_ps ("SELECT uuid FROM users"
+                                         " WHERE name = $1",
+                                         SQL_STR_PARAM (credentials->username),
+                                         NULL);
+
 #else /* ENABLE_JWT_AUTH */
       return 2;
 #endif /* ENABLE_JWT_AUTH */
@@ -5366,44 +5407,54 @@ authenticate (credentials_t* credentials)
                                           quoted_method);
           g_free (quoted_name);
           g_free (quoted_method);
-
-          if (credentials->uuid == NULL)
-            /* Can happen if user is deleted while logged in to GSA. */
-            return 1;
-
-          if (credentials_setup (credentials))
-            {
-              free (credentials->uuid);
-              credentials->uuid = NULL;
-              credentials->role = NULL;
-              return 99;
-            }
-
-          if (credentials->jwt_requested)
-            {
-#if ENABLE_JWT_AUTH
-              char *new_jwt = NULL;
-              if (generate_jwt_for_user (credentials->username, &new_jwt))
-                {
-                  free (credentials->uuid);
-                  credentials->uuid = NULL;
-                  credentials->role = NULL;
-                  return 2;
-                }
-              g_free (credentials->jwt);
-              credentials->jwt = new_jwt;
-#else /* ENABLE_JWT_AUTH */
-              return 2;
-#endif /* ENABLE_JWT_AUTH */
-            }
-
-          manage_session_init (credentials->uuid);
-
-          return 0;
         }
-      return fail;
+      else
+        return fail;
     }
-  return 1;
+  else
+    {
+      g_debug ("%s: credentials missing or incomplete", __func__);
+      return 1;
+    }
+
+  /* Authentication succeeded and user found. */
+
+  if (credentials->uuid == NULL)
+    {
+      /* Can happen if user is deleted while logged in to GSA. */
+      g_debug ("%s: user %s not found", __func__, credentials->username);
+      return 1;
+    }
+
+  if (credentials_setup (credentials))
+    {
+      free (credentials->uuid);
+      credentials->uuid = NULL;
+      credentials->role = NULL;
+      return 99;
+    }
+
+  if (credentials->jwt_requested)
+    {
+#if ENABLE_JWT_AUTH
+      char *new_jwt = NULL;
+      if (generate_jwt_for_user (credentials->username, &new_jwt))
+        {
+          free (credentials->uuid);
+          credentials->uuid = NULL;
+          credentials->role = NULL;
+          return 2;
+        }
+      g_free (credentials->jwt);
+      credentials->jwt = new_jwt;
+#else /* ENABLE_JWT_AUTH */
+      return 2;
+#endif /* ENABLE_JWT_AUTH */
+    }
+
+  manage_session_init (credentials->uuid);
+
+  return 0;
 }
 
 /**
