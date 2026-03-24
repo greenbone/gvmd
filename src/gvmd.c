@@ -3280,7 +3280,7 @@ gvmd (int argc, char** argv, char *env[])
   /* Setup JWT authentication */
 #if ENABLE_JWT_AUTH
   if (feature_enabled (FEATURE_ID_JWT_AUTH))
-    load_jwt_secrets ();
+    load_authentication_config ();
 #endif
 
   /* Handle non-migrate options.

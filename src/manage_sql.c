@@ -5282,7 +5282,9 @@ generate_jwt_for_user (const char *username, gchar **token_ret)
       return -1;
     }
 
-  token = gvm_jwt_generate_token (secret, username, 600, &generate_token_err);
+  token = gvm_jwt_generate_token (secret, username,
+                                  get_access_token_lifetime (),
+                                  &generate_token_err);
 
   if (generate_token_err != GVM_JWT_GENERATE_TOKEN_ERR_OK)
     {

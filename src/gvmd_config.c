@@ -237,7 +237,7 @@ read_env_bool (const char *env_name, int *out)
  * Resolution order:
  *  - If an environment variable is set and valid, use that.
  *  - Else, if a config file value exists, use that.
- *  - Else, default to FALSE.
+ *  - Else, use previously set default value.
  *
  * @param[in]     env_name       Environment variable name.
  * @param[in]     conf_has_value Non-zero if configuration provided a value.
@@ -265,6 +265,116 @@ gvmd_config_resolve_boolean (const char *env_name,
 
   if (conf_has_value)
     *output = conf_value ? TRUE : FALSE;
+}
+
+/**
+ * @brief Load a single integer value from a GKeyFile.
+ *
+ * @param[in]  kf             Key file handle.
+ * @param[in]  group          Group name in the key file.
+ * @param[in]  key            Key name inside the group.
+ * @param[out] has_value   Set to 1 if the key was found, else set to 0.
+ * @param[out] value       Set to the key value if it was found, else set to 0.
+ */
+void
+gvmd_config_get_int (GKeyFile *kf,
+                     const char *group,
+                     const char *key,
+                     int *has_value,
+                     int *value)
+{
+  int tmp;
+  GError *error = NULL;
+
+  if (!has_value || !value)
+    return;
+
+  if (!kf || !group || !key || !g_key_file_has_key (kf, group, key, NULL))
+    {
+      *has_value = 0;
+      *value = 0;
+      return;
+    }
+
+  tmp = g_key_file_get_integer (kf, group, key, &error);
+  if (error)
+    {
+      g_error_free (error);
+      *has_value = 0;
+      *value = 0;
+      return;
+    }
+
+  *value = tmp;
+  *has_value = 1;
+}
+
+/**
+ * @brief Read an integer value from an environment variable.
+ *
+ * @param[in]  env_name  Name of the environment variable.
+ * @param[out] out       Parsed value on success. May be NULL.
+ *
+ * @return  1 if the variable existed and was parsed successfully,
+ *          0 if the variable was not set,
+ *         -1 if the variable was set but had an invalid value.
+ */
+static int
+read_env_int (const char *env_name, int *out)
+{
+  char *end = NULL;
+  const char *val = getenv (env_name);
+  long tmp;
+
+  if (!val)
+    return 0;
+
+  tmp = strtol (val, &end, 10);
+  if (end != NULL && end != val)
+    {
+      if (out)
+        *out = tmp;
+      return 1;
+    }
+
+  /* Invalid env value, ignore but could be logged by caller. */
+  return -1;
+}
+
+/**
+ * @brief Resolve the effective state of a single integer config value.
+ *
+ * Resolution order:
+ *  - If an environment variable is set and valid, use that.
+ *  - Else, if a config file value exists, use that.
+ *  - Else, use previously set default value.
+ *
+ * @param[in]     env_name       Environment variable name.
+ * @param[in]     conf_has_value Non-zero if configuration provided a value.
+ * @param[in]     conf_value     Value from configuration.
+ * @param[out]    output         Pointer to integer result.
+ */
+void
+gvmd_config_resolve_int (const char *env_name,
+                         gboolean conf_has_value,
+                         int conf_value,
+                         int *output)
+{
+  gboolean env_value;
+  int env_result;
+
+  if (output == NULL)
+    return;
+
+  env_result = read_env_int (env_name, &env_value);
+  if (env_result == 1)
+    {
+      *output = env_value;
+      return;
+    }
+
+  if (conf_has_value)
+    *output = conf_value;
 }
 
 /**

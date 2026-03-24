@@ -31,7 +31,10 @@ manage_authentication_verify (const char *hash, const char *password);
 #if ENABLE_JWT_AUTH
 
 int
-load_jwt_secrets ();
+load_authentication_config ();
+
+int
+get_access_token_lifetime ();
 
 gvm_jwt_decode_secret_t
 get_jwt_decode_secret ();
