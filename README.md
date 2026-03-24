@@ -62,6 +62,44 @@ that you use the Greenbone Enterprise TRIAL, a prepared virtual
 machine with a readily available setup. Information regarding the virtual machine
 is available at <https://www.greenbone.net/en/testnow>.
 
+## Configuration
+
+The configuration of gvmd is handled via the following methods:
+
+* Settings that can be changed globally via the `--modify-setting` command line
+  option.
+* Command line options given to the main gvmd process when starting it.
+* A configuration file (`gvmd.conf`) that is located in `${GVM_SYSCONF_DIR}`
+  (`etc/gvm` in the given installation prefix for the default build setup).
+
+#### Authentication options
+
+Options for the GMP authentication can be found in `[authentication]` section
+of the config file. These are:
+
+| Config file key        | Environment variable        | Type       | Default value | Description                                         |
+| ---------------------- | --------------------------- | ---------- | ------------- | --------------------------------------------------- |
+| access_token_lifetime  | GVMD_ACCESS_TOKEN_LIFETIME  | integer    | 60            | Lifetime of access tokens issued by gvmd in seconds |
+| jwt_decode_secret      | GVMD_JWT_DECODE_SECRET      | string     |               | Secret to decode / verify JWTs                      |
+| jwt_decode_secret_path | GVMD_JWT_DECODE_SECRET_PATH | file path  |               | Path to the secret to decode / verify JWTs          |
+| jwt_encode_secret      | GVMD_JWT_ENCODE_SECRET      | string     |               | Secret to encode / generate JWTs                    |
+| jwt_encode_secret_path | GVMD_JWT_ENCODE_SECRET_PATH | file path  |               | Path to the secret to encode / generate JWTs        |
+| jwt_secret_type        | GVMD_JWT_SECRET_TYPE        | string     |               | Type of secret to use for JWT signatures            |
+
+For gvmd to be able to verify JSON web tokens in the `<authenticate>` GMP
+command, both the JWT secret type and a decode secret must be given. For it
+to be able to generate JWTs, the secret type and an encode secret must be
+given. The supported secret types are `ECDSA`, `RSA` and `shared`.
+
+#### Feature flags
+
+The `[features]` section of the configuration file and the corresponding
+environment variables are used to enable optional features as long as they
+also have been enabled at build time.
+
+For a list of the feature flags and more information see the separate
+feature flags documentation.
+
 ## Support
 
 For any question on the usage of `gvmd` please use the [Greenbone Community
