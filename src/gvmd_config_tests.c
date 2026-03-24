@@ -12,6 +12,7 @@ Describe (gvmd_config);
 BeforeEach (gvmd_config)
 {
   unsetenv ("GVMD_ENABLE_AGENTS");
+  unsetenv ("GVMD_ACCESS_TOKEN_LIFETIME");
 }
 
 AfterEach (gvmd_config)
@@ -79,6 +80,44 @@ Ensure (gvmd_config, can_read_boolean_values)
   g_free (path);
 }
 
+Ensure (gvmd_config, can_read_integer_values)
+{
+  const char *conf =
+    "[authentication]\n"
+    "access_token_lifetime = 30\n"
+    "invalid_value = xyz\n";
+  char *path = write_test_config (conf);
+  GKeyFile *kf;
+  gboolean conf_has_value, conf_value;
+
+  assert_that (load_gvmd_config (path), is_equal_to (0));
+  kf = get_gvmd_config ();
+
+  conf_has_value = FALSE;
+  conf_value = 0;
+  gvmd_config_get_int (kf, "authentication", "access_token_lifetime",
+                       &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_true);
+  assert_that (conf_value, is_equal_to (30));
+
+  conf_has_value = FALSE;
+  conf_value = 123;
+  gvmd_config_get_int (kf, "authentication", "invalid_value",
+                       &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_false);
+  assert_that (conf_value, is_equal_to (0));
+
+  conf_has_value = FALSE;
+  conf_value = 123;
+  gvmd_config_get_int (kf, "authentication", "invalid_value",
+                       &conf_has_value, &conf_value);
+  assert_that (conf_has_value, is_false);
+  assert_that (conf_value, is_equal_to (0));
+
+  remove (path);
+  g_free (path);
+}
+
 Ensure (gvmd_config, can_resolve_boolean_values)
 {
   int value = 123;
@@ -115,6 +154,42 @@ Ensure (gvmd_config, can_resolve_boolean_values)
   assert_that (value, is_equal_to (1));
 }
 
+Ensure (gvmd_config, can_resolve_integer_values)
+{
+  int value = 123;
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 0, &value);
+  assert_that (value, is_equal_to (123));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  assert_that (value, is_equal_to (0));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  assert_that (value, is_equal_to (10));
+
+  setenv ("GVMD_ACCESS_TOKEN_LIFETIME", "invalid", 1);
+  value = 123;
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 1, &value);
+  assert_that (value, is_equal_to (123));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  assert_that (value, is_equal_to (0));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  assert_that (value, is_equal_to (10));
+
+  setenv ("GVMD_ACCESS_TOKEN_LIFETIME", "20", 1);
+  value = 123;
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 1, &value);
+  assert_that (value, is_equal_to (20));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  assert_that (value, is_equal_to (20));
+
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  assert_that (value, is_equal_to (20));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -129,6 +204,10 @@ main (int argc, char **argv)
                          can_read_boolean_values);
   add_test_with_context (suite, gvmd_config,
                          can_resolve_boolean_values);
+  add_test_with_context (suite, gvmd_config,
+                         can_read_integer_values);
+  add_test_with_context (suite, gvmd_config,
+                         can_resolve_integer_values);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

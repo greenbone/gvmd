@@ -130,6 +130,17 @@ manage_authentication_verify (const char *hash, const char *password)
 #if ENABLE_JWT_AUTH
 
 /**
+ * @brief Default lifetime for access tokens in seconds
+ */
+#define DEFAULT_ACCESS_TOKEN_LIFETIME 60
+
+/**
+ * @brief Lifetime for access tokens in seconds
+ */
+int
+access_token_lifetime = DEFAULT_ACCESS_TOKEN_LIFETIME;
+
+/**
  * @brief The type of secret used for JSON web tokens (JWTs).
  */
 gvm_jwt_secret_type_t jwt_secret_type = 0;
@@ -145,6 +156,9 @@ static gvm_jwt_decode_secret_t jwt_decode_secret = NULL;
 static gvm_jwt_encode_secret_t jwt_encode_secret = NULL;
 
 
+/**
+ * @brief Group name for authentication settings in the config file
+ */
 #define AUTH_CONFIG_GROUP "authentication"
 
 /**
@@ -255,11 +269,14 @@ load_jwt_encode_secret (gvm_jwt_secret_type_t secret_type,
 
 /**
  * @brief Load the JWT secrets according to the gvmd config file.
+ *
+ * @param[in]  kf  GKeyFile to get config values from.
+ *
+ * @return 0 success, -1 error
  */
-int
-load_jwt_secrets ()
+static int
+load_jwt_secrets (GKeyFile *kf)
 {
-  GKeyFile *kf = get_gvmd_config ();
   gchar *secret_str = NULL, *secret_path = NULL;
   gchar *secret_type_str;
   gvm_jwt_secret_type_t new_secret_type;
@@ -366,6 +383,37 @@ load_jwt_secrets ()
   jwt_encode_secret = new_encode_secret;
 
   return 0;
+}
+
+/**
+ * @brief Load the authentication configuration options and files.
+ *
+ * @return 0 success, -1 error
+ */
+int
+load_authentication_config ()
+{
+  int has_value, value;
+  GKeyFile *kf = get_gvmd_config ();
+
+  access_token_lifetime = DEFAULT_ACCESS_TOKEN_LIFETIME;
+  gvmd_config_get_int (kf, AUTH_CONFIG_GROUP, "access_token_lifetime",
+                    &has_value, &value);
+  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", has_value, value,
+                            &access_token_lifetime);
+
+  return load_jwt_secrets (kf);
+}
+
+/**
+ * @brief Get the access token lifetime in seconds
+ *
+ * @return The access token lifetime in seconds
+ */
+int
+get_access_token_lifetime ()
+{
+  return access_token_lifetime;
 }
 
 /**
