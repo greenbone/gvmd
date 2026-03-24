@@ -838,7 +838,9 @@ int
 scanner_type_supports_unix_sockets (scanner_type_t scanner_type)
 {
   if (scanner_type == SCANNER_TYPE_OPENVAS
-      || scanner_type == SCANNER_TYPE_OSP_SENSOR)
+      || scanner_type == SCANNER_TYPE_OSP_SENSOR
+      || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER
+      || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     return 1;
   return 0;
 }
