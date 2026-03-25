@@ -132,13 +132,13 @@ manage_authentication_verify (const char *hash, const char *password)
 /**
  * @brief Default lifetime for access tokens in seconds
  */
-#define DEFAULT_ACCESS_TOKEN_LIFETIME 60
+#define DEFAULT_JWT_ACCESS_DURATION 60
 
 /**
  * @brief Lifetime for access tokens in seconds
  */
 int
-access_token_lifetime = DEFAULT_ACCESS_TOKEN_LIFETIME;
+jwt_access_duration = DEFAULT_JWT_ACCESS_DURATION;
 
 /**
  * @brief The type of secret used for JSON web tokens (JWTs).
@@ -396,11 +396,11 @@ load_authentication_config ()
   int has_value, value;
   GKeyFile *kf = get_gvmd_config ();
 
-  access_token_lifetime = DEFAULT_ACCESS_TOKEN_LIFETIME;
-  gvmd_config_get_int (kf, AUTH_CONFIG_GROUP, "access_token_lifetime",
+  jwt_access_duration = DEFAULT_JWT_ACCESS_DURATION;
+  gvmd_config_get_int (kf, AUTH_CONFIG_GROUP, "jwt_access_duration",
                     &has_value, &value);
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", has_value, value,
-                            &access_token_lifetime);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", has_value, value,
+                            &jwt_access_duration);
 
   return load_jwt_secrets (kf);
 }
@@ -411,9 +411,9 @@ load_authentication_config ()
  * @return The access token lifetime in seconds
  */
 int
-get_access_token_lifetime ()
+get_jwt_access_duration ()
 {
-  return access_token_lifetime;
+  return jwt_access_duration;
 }
 
 /**

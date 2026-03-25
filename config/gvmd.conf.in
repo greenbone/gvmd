@@ -1,5 +1,5 @@
 [authentication]
-access_token_lifetime = 60
+jwt_access_duration = 60
 jwt_secret_type = ecdsa
 jwt_decode_secret_path = @GVMD_STATE_DIR@/jwt/ecdsa-public.pem
 jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/ecdsa-private.pem

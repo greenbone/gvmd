@@ -12,7 +12,7 @@ Describe (gvmd_config);
 BeforeEach (gvmd_config)
 {
   unsetenv ("GVMD_ENABLE_AGENTS");
-  unsetenv ("GVMD_ACCESS_TOKEN_LIFETIME");
+  unsetenv ("GVMD_JWT_ACCESS_DURATION");
 }
 
 AfterEach (gvmd_config)
@@ -84,7 +84,7 @@ Ensure (gvmd_config, can_read_integer_values)
 {
   const char *conf =
     "[authentication]\n"
-    "access_token_lifetime = 30\n"
+    "jwt_access_duration = 30\n"
     "invalid_value = xyz\n";
   char *path = write_test_config (conf);
   GKeyFile *kf;
@@ -95,7 +95,7 @@ Ensure (gvmd_config, can_read_integer_values)
 
   conf_has_value = FALSE;
   conf_value = 0;
-  gvmd_config_get_int (kf, "authentication", "access_token_lifetime",
+  gvmd_config_get_int (kf, "authentication", "jwt_access_duration",
                        &conf_has_value, &conf_value);
   assert_that (conf_has_value, is_true);
   assert_that (conf_value, is_equal_to (30));
@@ -158,35 +158,35 @@ Ensure (gvmd_config, can_resolve_integer_values)
 {
   int value = 123;
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 0, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 0, &value);
   assert_that (value, is_equal_to (123));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 0, &value);
   assert_that (value, is_equal_to (0));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
   assert_that (value, is_equal_to (10));
 
-  setenv ("GVMD_ACCESS_TOKEN_LIFETIME", "invalid", 1);
+  setenv ("GVMD_JWT_ACCESS_DURATION", "invalid", 1);
   value = 123;
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 1, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
   assert_that (value, is_equal_to (123));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 0, &value);
   assert_that (value, is_equal_to (0));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
   assert_that (value, is_equal_to (10));
 
-  setenv ("GVMD_ACCESS_TOKEN_LIFETIME", "20", 1);
+  setenv ("GVMD_JWT_ACCESS_DURATION", "20", 1);
   value = 123;
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 0, 1, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
   assert_that (value, is_equal_to (20));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 0, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 0, &value);
   assert_that (value, is_equal_to (20));
 
-  gvmd_config_resolve_int ("GVMD_ACCESS_TOKEN_LIFETIME", 1, 10, &value);
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
   assert_that (value, is_equal_to (20));
 }
 

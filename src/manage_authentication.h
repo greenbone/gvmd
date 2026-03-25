@@ -34,7 +34,7 @@ int
 load_authentication_config ();
 
 int
-get_access_token_lifetime ();
+get_jwt_access_duration ();
 
 gvm_jwt_decode_secret_t
 get_jwt_decode_secret ();
