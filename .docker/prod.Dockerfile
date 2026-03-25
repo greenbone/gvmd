@@ -6,7 +6,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # enables openvasd feature toggle.
 ARG FEATURE_TOGGLE=""
 
-FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION} AS builder
+FROM ghcr.io/greenbone/gvm-libs:${GVM_LIBS_VERSION} AS builder
 ARG FEATURE_TOGGLE
 
 COPY . /source
@@ -19,7 +19,7 @@ RUN sh /source/.github/install-dependencies.sh \
 RUN cmake -DCMAKE_BUILD_TYPE=Release ${FEATURE_TOGGLE} -B/build /source && \
     DESTDIR=/install cmake --build /build -j$(nproc) -- install
 
-FROM registry.community.greenbone.net/community/gvm-libs:${GVM_LIBS_VERSION}
+FROM ghcr.io/greenbone/gvm-libs:${GVM_LIBS_VERSION}
 
 ARG DEBIAN_FRONTEND=noninteractive
 
