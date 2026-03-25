@@ -1168,9 +1168,10 @@ stop_container_image_task (task_t task)
       goto end_stop_openvasd;
     }
   http_scanner_response_cleanup (response);
-  response = http_scanner_delete_scan (connector);
-  http_scanner_response_cleanup (response);
+
+  ret = delete_http_scanner_scan_with_retry (connector, scan_id);
   g_free (scan_id);
+
 end_stop_openvasd:
   http_scanner_connector_free (connector);
   set_task_end_time_epoch (task, time (NULL));

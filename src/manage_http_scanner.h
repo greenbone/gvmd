@@ -32,5 +32,8 @@ handle_http_scanner_scan (http_scanner_connector_t,
                           void (*)
                             (task_t, report_t, GSList *, time_t, time_t));
 
+int
+delete_http_scanner_scan_with_retry (http_scanner_connector_t, const char *);
+
 #endif // MANAGE_HTTP_SCANNER_H
 #endif // not _GVMD_MANAGE_HTTP_SCANNER_H

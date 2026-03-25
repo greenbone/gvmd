@@ -388,4 +388,75 @@ handle_http_scanner_scan (http_scanner_connector_t connector,
   return rc;
 }
 
+/**
+ * @brief Delete a scan on the HTTP scanner with retries.
+ *        On retries, it will attempt to stop the scan
+ *        before deleting it.
+ *
+ * @param[in]   connector  The connector to the scanner.
+ * @param[in]   scan_id    The scan ID to delete.
+ *
+ * @return 0 if success, -1 if error.
+ */
+int
+delete_http_scanner_scan_with_retry (http_scanner_connector_t connector,
+                                     const char *scan_id)
+{
+  int delete_retry;
+  http_scanner_resp_t response;
+  int ret = 0;
+
+  if (connector == NULL)
+    {
+      g_warning ("%s: Could not connect to http scanner", __func__);
+      return -1;
+    }
+
+  delete_retry = get_scanner_connection_retry ();
+  while (delete_retry >= 0)
+    {
+      response = http_scanner_delete_scan (connector);
+      if (response->code == 204)
+        {
+          break;
+        }
+      else if (response->code == 406)
+        {
+          if (delete_retry > 0)
+            {
+              g_warning ("%s: Scan %s is still running and cannot be deleted yet,"
+                         " retrying stop and delete.",
+                         __func__, scan_id);
+
+              http_scanner_resp_t stop_response = http_scanner_stop_scan (connector);
+              if (stop_response->code != 204)
+                {
+                  g_warning ("%s: Failed to stop scan %s: %ld",
+                             __func__, scan_id, stop_response->code);
+                }
+              http_scanner_response_cleanup (stop_response);
+              gvm_sleep (3);
+
+              delete_retry--;
+              continue;
+            }
+          else
+            {
+              g_warning ("%s: Scan %s is not deleted, no more retries left",
+                         __func__, scan_id);
+              break;
+            }
+        }
+      else
+        {
+          g_warning ("%s: Failed to delete scan %s: %ld",
+                     __func__, scan_id, response->code);
+          ret = -1;
+          break;
+        }
+    }
+  http_scanner_response_cleanup (response);
+  return ret;
+}
+
 #endif /* ENABLE_HTTP_SCANNER */
