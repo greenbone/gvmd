@@ -79,7 +79,7 @@ of the config file. These are:
 
 | Config file key        | Environment variable        | Type       | Default value | Description                                         |
 | ---------------------- | --------------------------- | ---------- | ------------- | --------------------------------------------------- |
-| access_token_lifetime  | GVMD_ACCESS_TOKEN_LIFETIME  | integer    | 60            | Lifetime of access tokens issued by gvmd in seconds |
+| jwt_access_duration    | GVMD_JWT_ACCESS_DURATION    | integer    | 60            | Lifetime of access tokens issued by gvmd in seconds |
 | jwt_decode_secret      | GVMD_JWT_DECODE_SECRET      | string     |               | Secret to decode / verify JWTs                      |
 | jwt_decode_secret_path | GVMD_JWT_DECODE_SECRET_PATH | file path  |               | Path to the secret to decode / verify JWTs          |
 | jwt_encode_secret      | GVMD_JWT_ENCODE_SECRET      | string     |               | Secret to encode / generate JWTs                    |
