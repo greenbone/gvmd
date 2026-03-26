@@ -32,6 +32,7 @@ COPY --from=builder /install/ /
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
 COPY .docker/setup-mta.sh /usr/local/bin/setup-mta
+COPY .docker/setup-directories.sh /usr/local/bin/setup-directories
 
 RUN addgroup --gid 1001 --system gvmd && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
