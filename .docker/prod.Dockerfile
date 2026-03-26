@@ -49,4 +49,6 @@ RUN mkdir -p /run/gvmd && \
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint" ]
 
+HEALTHCHECK --interval=30s --timeout=3s --start-period=240s --retries=3 CMD echo "<get_version/>" | socat - UNIX-CONNECT:/run/gvmd/gvmd.sock
+
 CMD [ "/usr/local/bin/start-gvmd" ]
