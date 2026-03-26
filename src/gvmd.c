@@ -3915,6 +3915,7 @@ gvmd (int argc, char** argv, char *env[])
   if (pidfile_create (GVMD_PID_PATH))
     {
       gvm_close_sentry ();
+      g_critical ("Could not write PID file at %s.", GVMD_PID_PATH);
       exit (EXIT_FAILURE);
     }
 
