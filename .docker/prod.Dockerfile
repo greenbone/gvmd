@@ -6,9 +6,11 @@ ARG DEBIAN_FRONTEND=noninteractive
 # enables openvasd feature toggle.
 ARG FEATURE_TOGGLE=""
 
+FROM ghcr.io/greenbone/gvm-auth-lib:latest AS gvm_auth
 FROM ghcr.io/greenbone/gvm-libs:${GVM_LIBS_VERSION} AS builder
 ARG FEATURE_TOGGLE
 
+COPY --from=gvm_auth /install/ /
 COPY . /source
 WORKDIR /source
 
@@ -28,6 +30,7 @@ RUN --mount=type=bind,source=.github,target=/source/ \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /install/ /
+COPY --from=gvm_auth /install/ /
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
