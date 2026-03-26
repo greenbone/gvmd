@@ -9,6 +9,7 @@
  */
 
 #include "gvmd_config.h"
+#include "utils.h"
 #include <ctype.h>
 
 #undef G_LOG_DOMAIN
@@ -330,7 +331,7 @@ read_env_int (const char *env_name, int *out)
     return 0;
 
   tmp = strtol (val, &end, 10);
-  if (end != NULL && end != val)
+  if (end != NULL && end != val && str_blank (end))
     {
       if (out)
         *out = tmp;

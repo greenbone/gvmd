@@ -167,7 +167,7 @@ Ensure (gvmd_config, can_resolve_integer_values)
   gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
   assert_that (value, is_equal_to (10));
 
-  setenv ("GVMD_JWT_ACCESS_DURATION", "invalid", 1);
+  setenv ("GVMD_JWT_ACCESS_DURATION", "invalid 456", 1);
   value = 123;
   gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
   assert_that (value, is_equal_to (123));
@@ -178,6 +178,11 @@ Ensure (gvmd_config, can_resolve_integer_values)
   gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
   assert_that (value, is_equal_to (10));
 
+  setenv ("GVMD_JWT_ACCESS_DURATION", "456 invalid", 1);
+  value = 123;
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
+  assert_that (value, is_equal_to (123));
+
   setenv ("GVMD_JWT_ACCESS_DURATION", "20", 1);
   value = 123;
   gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
@@ -187,6 +192,11 @@ Ensure (gvmd_config, can_resolve_integer_values)
   assert_that (value, is_equal_to (20));
 
   gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 1, 10, &value);
+  assert_that (value, is_equal_to (20));
+
+  setenv ("GVMD_JWT_ACCESS_DURATION", " \t20 \t ", 1);
+  value = 123;
+  gvmd_config_resolve_int ("GVMD_JWT_ACCESS_DURATION", 0, 1, &value);
   assert_that (value, is_equal_to (20));
 }
 
