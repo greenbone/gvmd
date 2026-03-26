@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-#!/bin/bash
-
+. setup-directories
 . setup-mta
+
 exec gosu gvmd "$@"
