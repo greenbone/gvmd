@@ -5359,6 +5359,13 @@ authenticate (credentials_t* credentials)
                                          SQL_STR_PARAM (credentials->username),
                                          NULL);
 
+      if (credentials->uuid == NULL)
+        {
+          g_debug ("%s: user '%s' not found",
+                     __func__, credentials->username);
+          return 1;
+        }
+
 #else /* ENABLE_JWT_AUTH */
       return 2;
 #endif /* ENABLE_JWT_AUTH */
