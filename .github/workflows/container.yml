@@ -44,7 +44,7 @@ jobs:
           - build:
               name: jwt auth
               prefix: jwt-auth
-              build-args: "FEATURE_TOGGLE= -DENABLE_JWT_AUTH=1"
+              build-args: "FEATURE_TOGGLE=-DENABLE_JWT_AUTH=1"
     name: Build and Push Container Images (${{ matrix.build.name }})
     uses: greenbone/workflows/.github/workflows/container-build-push-gea.yml@main
     with:
