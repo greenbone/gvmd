@@ -29,13 +29,16 @@ RUN --mount=type=bind,source=.github,target=/source/ \
     sh /source/install-dependencies.sh /source/runtime-dependencies.list \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /install/ /
-COPY --from=gvm_auth /install/ /
-
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
 COPY .docker/entrypoint.sh /usr/local/bin/entrypoint
 COPY .docker/setup-mta.sh /usr/local/bin/setup-mta
 COPY .docker/setup-directories.sh /usr/local/bin/setup-directories
+
+COPY --from=builder /install/ /
+COPY --from=gvm_auth /install/ /
+
+# ensure copied libraries are found by the linker
+RUN ldconfig
 
 RUN addgroup --gid 1001 --system gvmd && \
     adduser --no-create-home --shell /bin/false --disabled-password --uid 1001 --system --group gvmd
