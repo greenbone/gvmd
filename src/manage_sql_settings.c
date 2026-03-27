@@ -79,6 +79,97 @@ setting_auto_cache_rebuild_int ()
 }
 
 /**
+ * @brief Get the value of a setting as a string.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Freshly allocated value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value_sql (const char *uuid, char **value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = NULL;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_string
+             ("SELECT value"
+              " FROM settings"
+              " WHERE uuid = '%s'"
+              " AND " ACL_GLOBAL_OR_USER_OWNS ()
+              /* Force the user's setting to come before the default. */
+              " ORDER BY coalesce (owner, 0) DESC;",
+              quoted_uuid,
+              current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
+ * @brief Get the value of a setting.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value_int_sql (const char *uuid, int *value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = -1;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_int ("SELECT value"
+                    " FROM settings"
+                    " WHERE uuid = '%s'"
+                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
+                    /* Force the user's setting to come before the default. */
+                    " ORDER BY coalesce (owner, 0) DESC;",
+                    quoted_uuid,
+                    current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Count number of settings.
  *
  * @param[in]  filter           Filter term.
