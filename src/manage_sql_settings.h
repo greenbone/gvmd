@@ -30,4 +30,16 @@
 char *
 setting_timezone ();
 
+int
+setting_dynamic_severity_int ();
+
+int
+setting_auto_cache_rebuild_int ();
+
+int
+setting_value_sql (const char *, char **);
+
+int
+setting_value_int_sql (const char *, int *);
+
 #endif // not _GVMD_MANAGE_SQL_SETTINGS_H

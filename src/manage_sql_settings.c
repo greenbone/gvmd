@@ -50,6 +50,126 @@ setting_timezone ()
 }
 
 /**
+ * @brief Return the Dynamic Severity user setting as an int.
+ *
+ * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
+ *         or does not exist.
+ */
+int
+setting_dynamic_severity_int ()
+{
+  return current_credentials.dynamic_severity;
+}
+
+/**
+ * @brief Return the Auto Cache Rebuild user setting as an int.
+ *
+ * @return 1 if cache is rebuilt automatically, 0 if not.
+ */
+int
+setting_auto_cache_rebuild_int ()
+{
+  return sql_int ("SELECT coalesce"
+                  "        ((SELECT value FROM settings"
+                  "          WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
+                  "          AND " ACL_USER_OWNS () ""
+                  "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
+                  "         '1');",
+                  current_credentials.uuid);
+}
+
+/**
+ * @brief Get the value of a setting as a string.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Freshly allocated value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value_sql (const char *uuid, char **value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = NULL;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_string
+             ("SELECT value"
+              " FROM settings"
+              " WHERE uuid = '%s'"
+              " AND " ACL_GLOBAL_OR_USER_OWNS ()
+              /* Force the user's setting to come before the default. */
+              " ORDER BY coalesce (owner, 0) DESC;",
+              quoted_uuid,
+              current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
+ * @brief Get the value of a setting.
+ *
+ * @param[in]   uuid   UUID of setting.
+ * @param[out]  value  Value.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+setting_value_int_sql (const char *uuid, int *value)
+{
+  gchar *quoted_uuid;
+
+  if (value == NULL || uuid == NULL)
+    return -1;
+
+  quoted_uuid = sql_quote (uuid);
+
+  if (sql_int ("SELECT count (*)"
+               " FROM settings"
+               " WHERE uuid = '%s'"
+               " AND " ACL_GLOBAL_OR_USER_OWNS () ";",
+               quoted_uuid,
+               current_credentials.uuid)
+      == 0)
+    {
+      *value = -1;
+      g_free (quoted_uuid);
+      return -1;
+    }
+
+  *value = sql_int ("SELECT value"
+                    " FROM settings"
+                    " WHERE uuid = '%s'"
+                    " AND " ACL_GLOBAL_OR_USER_OWNS ()
+                    /* Force the user's setting to come before the default. */
+                    " ORDER BY coalesce (owner, 0) DESC;",
+                    quoted_uuid,
+                    current_credentials.uuid);
+
+  g_free (quoted_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Count number of settings.
  *
  * @param[in]  filter           Filter term.
