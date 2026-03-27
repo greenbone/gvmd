@@ -16,6 +16,7 @@
 #include "manage_asset_keys.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
