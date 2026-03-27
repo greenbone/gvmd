@@ -436,9 +436,6 @@ setting_value_int_sql (const char *, int *);
 int
 setting_auto_cache_rebuild_int ();
 
-int
-setting_dynamic_severity_int ();
-
 void
 add_role_permission_resource (const gchar *, const gchar *, const gchar *,
                               const gchar *);

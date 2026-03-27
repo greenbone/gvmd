@@ -30853,18 +30853,6 @@ manage_empty_trashcan ()
 /* Settings. */
 
 /**
- * @brief Return the Dynamic Severity user setting as an int.
- *
- * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
- *         or does not exist.
- */
-int
-setting_dynamic_severity_int ()
-{
-  return current_credentials.dynamic_severity;
-}
-
-/**
  * @brief Return the Auto Cache Rebuild user setting as an int.
  *
  * @return 1 if cache is rebuilt automatically, 0 if not.

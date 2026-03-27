@@ -50,6 +50,18 @@ setting_timezone ()
 }
 
 /**
+ * @brief Return the Dynamic Severity user setting as an int.
+ *
+ * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
+ *         or does not exist.
+ */
+int
+setting_dynamic_severity_int ()
+{
+  return current_credentials.dynamic_severity;
+}
+
+/**
  * @brief Count number of settings.
  *
  * @param[in]  filter           Filter term.

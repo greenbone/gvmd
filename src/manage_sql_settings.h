@@ -30,4 +30,7 @@
 char *
 setting_timezone ();
 
+int
+setting_dynamic_severity_int ();
+
 #endif // not _GVMD_MANAGE_SQL_SETTINGS_H
