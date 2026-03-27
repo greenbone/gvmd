@@ -8,6 +8,7 @@
 #include "manage_acl.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_users.h"
 #include "manage_sql_tags.h"
 #include "sql.h"

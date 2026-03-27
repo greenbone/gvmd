@@ -62,6 +62,23 @@ setting_dynamic_severity_int ()
 }
 
 /**
+ * @brief Return the Auto Cache Rebuild user setting as an int.
+ *
+ * @return 1 if cache is rebuilt automatically, 0 if not.
+ */
+int
+setting_auto_cache_rebuild_int ()
+{
+  return sql_int ("SELECT coalesce"
+                  "        ((SELECT value FROM settings"
+                  "          WHERE uuid = '" SETTING_UUID_AUTO_CACHE_REBUILD "'"
+                  "          AND " ACL_USER_OWNS () ""
+                  "          ORDER BY coalesce (owner, 0) DESC LIMIT 1),"
+                  "         '1');",
+                  current_credentials.uuid);
+}
+
+/**
  * @brief Count number of settings.
  *
  * @param[in]  filter           Filter term.
