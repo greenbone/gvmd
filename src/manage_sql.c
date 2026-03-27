@@ -31573,19 +31573,6 @@ setting_name (const gchar *uuid)
 }
 
 /**
- * @brief Check whether a setting is the Default CA Cert setting.
- *
- * @param[in]  uuid  UUID of setting.
- *
- * @return 1 if Default CA Cert, else 0.
- */
-int
-setting_is_default_ca_cert (const gchar *uuid)
-{
-  return strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0;
-}
-
-/**
  * @brief Get the description of a setting.
  *
  * @param[in]  uuid  UUID of setting.
