@@ -8,6 +8,25 @@
 
 #include "manage_settings.h"
 
+/**
+ * @brief Filter columns for setting iterator.
+ */
+#define SETTING_ITERATOR_FILTER_COLUMNS \
+ { "name", "comment", "value", NULL }
+
+/**
+ * @brief Setting iterator columns.
+ */
+#define SETTING_ITERATOR_COLUMNS                              \
+ {                                                            \
+   { "id" , NULL, KEYWORD_TYPE_INTEGER },                     \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                     \
+   { "name", NULL, KEYWORD_TYPE_STRING },                     \
+   { "comment", NULL, KEYWORD_TYPE_STRING },                  \
+   { "value", NULL, KEYWORD_TYPE_STRING },                    \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                       \
+ }
+
 char *
 setting_timezone ();
 
