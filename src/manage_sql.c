@@ -31504,8 +31504,10 @@ modify_setting (const gchar *uuid, const gchar *name,
                 " ($1,"
                 "  (SELECT id FROM users WHERE uuid = $2),"
                 "  $3,"
-                "  (SELECT comment FROM settings"
-                "   WHERE uuid = $1 AND " ACL_IS_GLOBAL () "),"
+                "  (SELECT coalesce ((SELECT comment FROM settings"
+                "                     WHERE uuid = $1"
+                "                     AND " ACL_IS_GLOBAL () "),"
+                "                    '')),"
                 "  $4);",
                 SQL_STR_PARAM (uuid), SQL_STR_PARAM (current_credentials.uuid),
                 SQL_STR_PARAM (setting_name), SQL_STR_PARAM (value), NULL);
