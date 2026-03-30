@@ -2,9 +2,15 @@ name: "Build and Test"
 
 on:
   push:
-    branches: [main, stable, oldstable]
+    branches:
+      - main
+      - stable
+      - oldstable
   pull_request:
-    branches: [main, stable, oldstable]
+    branches:
+      - main
+      - stable
+      - oldstable
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,7 +32,7 @@ jobs:
   scan-build:
     name: scan-build (clang static analyzer)
     runs-on: ubuntu-latest
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
+    container: ghcr.io/greenbone/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v6
@@ -72,7 +78,7 @@ jobs:
               name: "with container scanning"
               container: stable
               flags: "-DENABLE_OPENVASD=1 -DENABLE_CONTAINER_SCANNING=1"
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:${{ matrix.build.container }}
+    container: ghcr.io/greenbone/gvm-libs:${{ matrix.build.container }}
     steps:
       - uses: actions/checkout@v6
       - name: Install build dependencies
@@ -86,7 +92,7 @@ jobs:
   test-units:
     name: Unit Tests
     runs-on: ubuntu-latest
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
+    container: ghcr.io/greenbone/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v6

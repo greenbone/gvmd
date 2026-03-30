@@ -22,7 +22,7 @@ jobs:
   build-gmp-doc:
     name: Build GMP documentation
     runs-on: ubuntu-latest
-    container: ${{ vars.SELF_HOSTED_REGISTRY || 'registry.community.greenbone.net' }}/community/gvm-libs:stable
+    container: ghcr.io/greenbone/gvm-libs:stable
     steps:
       - name: Check out gvmd
         uses: actions/checkout@v6
