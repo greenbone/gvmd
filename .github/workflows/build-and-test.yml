@@ -114,7 +114,7 @@ jobs:
         run: CTEST_OUTPUT_ON_FAILURE=1 cmake --build build -- tests test
       - name: Upload test coverage to Codecov
         if: github.repository == 'greenbone/gvmd'
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: build/coverage/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
