@@ -30850,32 +30850,6 @@ manage_empty_trashcan ()
 }
 
 
-/* Settings. */
-
-/**
- * @brief Return max, adjusted according to maximum allowed rows.
- *
- * @param[in]  max  Max.
- * @param[in]  ignore_max_rows_per_page  Whether to ignore "Max Rows Per Page"
- *
- * @return Adjusted max.
- */
-int
-manage_max_rows (int max, int ignore_max_rows_per_page)
-{
-  int max_rows;
-
-  if (current_credentials.uuid == NULL
-      || ignore_max_rows_per_page
-      || setting_value_int (SETTING_UUID_MAX_ROWS_PER_PAGE, &max_rows))
-    return max;
-
-  if (max_rows && (max < 0 || max > max_rows))
-    return max_rows;
-  return max;
-}
-
-
 /* Vulns. */
 
 /**
