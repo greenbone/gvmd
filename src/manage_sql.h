@@ -447,6 +447,9 @@ gchar *
 new_severity_clause (int, int);
 
 void
+reports_clear_count_cache (const gchar *);
+
+void
 reports_clear_count_cache_dynamic ();
 
 GHashTable *
