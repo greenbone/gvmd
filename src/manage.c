@@ -46,6 +46,7 @@
 #include "manage_report_configs.h"
 #include "manage_report_formats.h"
 #include "manage_scan_queue.h"
+#include "manage_settings.h"
 #include "manage_oci_image_targets.h"
 #include "manage_http_scanner.h"
 #include "manage_runtime_flags.h"

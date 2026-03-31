@@ -44,6 +44,7 @@
 #include "manage_preferences.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_filters.h"
 #include "manage_sql_resources.h"

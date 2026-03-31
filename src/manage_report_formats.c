@@ -12,6 +12,7 @@
 
 #include "manage_report_formats.h"
 #include "gmp_report_formats.h"
+#include "manage_settings.h"
 #include "manage_sql.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_report_formats.h"

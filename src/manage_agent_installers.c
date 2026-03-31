@@ -14,6 +14,7 @@
 #include "manage_agent_installers.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_agent_installers.h"
+#include "manage_sql_settings.h"
 #include "manage_users.h"
 
 #include <gvm/util/jsonpull.h>

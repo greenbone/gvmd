@@ -15,7 +15,6 @@
 #include "manage_agent_installers.h"
 #include "manage_filter_utils.h"
 #include "manage_resources.h"
-#include "manage_settings.h"
 
 #include "manage_alerts.h"
 #include "manage_configs.h"

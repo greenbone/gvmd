@@ -15,6 +15,7 @@
 #include "manage_acl.h"
 #include "manage_sql.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_settings.h"
 #include <glib/gstdio.h>
 #include <cjson/cJSON.h>
 #include <gvm/util/json.h>
