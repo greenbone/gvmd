@@ -6,6 +6,9 @@
 #include "manage_sql_settings.h"
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
+#include "manage_sql_configs.h"
+#include "manage_sql_port_lists.h"
+#include "manage_sql_report_formats.h"
 #include "manage_sql_users.h"
 #include "sql.h"
 
@@ -995,4 +998,394 @@ modify_setting (const gchar *uuid, const gchar *name,
     }
 
   return MODIFY_SETTING_RESULT_NOT_FOUND;
+}
+
+/**
+ * @brief Normalise the value of a setting.
+ *
+ * @param[in]  uuid   UUID of setting.
+ * @param[in]  value  Value of setting, to verify.
+ *
+ * @return Normalised value.
+ */
+static gchar *
+setting_normalise (const gchar *uuid, const gchar *value)
+{
+  if (value == NULL)
+    return NULL;
+
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    {
+      int max_rows;
+      max_rows = atoi (value);
+      if (max_rows < 0)
+        return NULL;
+      return g_strdup_printf ("%i", max_rows);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      return g_strstrip (g_strdup (value));
+    }
+
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      GString *normalised;
+      gchar **split, **point;
+
+      normalised = g_string_new ("");
+      point = split = g_strsplit (value, ",", 0);
+
+      while (*point)
+        {
+          g_string_append_printf (normalised,
+                                  "%s%s",
+                                  point == split ? "" : ",",
+                                  g_strstrip (*point));
+          point++;
+        }
+
+      g_strfreev (split);
+
+      g_string_ascii_down (normalised);
+
+      return g_string_free (normalised, FALSE);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0)
+        return NULL;
+      return g_strdup_printf ("%i", threshold);
+    }
+
+  return g_strdup (value);
+}
+
+/**
+ * @brief Verify the value of a setting.
+ *
+ * @param[in]  uuid   UUID of setting.
+ * @param[in]  value  Value of setting, to verify.
+ * @param[in]  user   User setting is to apply to, or NULL.
+ *
+ * @return 0 if valid, else 1.
+ */
+static int
+setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
+{
+  if (value == NULL)
+    return 0;
+
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return 0;
+
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    {
+      int max_rows;
+      max_rows = atoi (value);
+      if (user)
+        {
+          if (max_rows < -1)
+            return 1;
+        }
+      else if (max_rows < 0)
+        return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    {
+      if (g_regex_match_simple
+            ("^([[:alnum:]\\-_]*@[[:alnum:]\\-_][[:alnum:]\\-_.]*)?$",
+            value, 0, 0) == FALSE)
+        return 1;
+    }
+
+  if ((strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0
+     || (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0 )
+     || (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0 ))
+    && strlen (value))
+    {
+      user_t value_user;
+      gchar *quoted_uuid;
+
+      quoted_uuid = sql_quote (value);
+      switch (sql_int64 (&value_user,
+                         "SELECT id FROM users WHERE uuid = '%s';",
+                         quoted_uuid))
+        {
+          case 0:
+            break;
+          case 1:        /* Too few rows in result of query. */
+            g_free (quoted_uuid);
+            return 1;
+          default:       /* Programming error. */
+            assert (0);
+          case -1:
+            g_free (quoted_uuid);
+            return 1;
+        }
+      g_free (quoted_uuid);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    {
+      gchar **split, **point;
+
+      point = split = g_strsplit (value, ",", 0);
+      while (*point)
+        {
+          if (g_regex_match_simple ("^[-0123456789abcdefABCDEF]{36}$",
+                                    g_strstrip (*point), 0, 0)
+              == FALSE)
+            {
+              g_strfreev (split);
+              return 1;
+            }
+          point++;
+        }
+      g_strfreev (split);
+    }
+
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    {
+      int threshold;
+      threshold = atoi (value);
+      if (threshold < 0 || threshold > (INT_MAX / 1048576))
+        return 1;
+    }
+
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    {
+      if (strcmp (value, "0") && strcmp (value, "1"))
+        return 1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Get the description of a setting.
+ *
+ * @param[in]  uuid  UUID of setting.
+ *
+ * @return Setting description.
+ */
+static const gchar *
+setting_description (const gchar *uuid)
+{
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "User who is given ownership of new Agents.";
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return "Default CA Certificate for Scanners";
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    return "The default maximum number of rows displayed in any listing.";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Maintainer email address used in generated Debian LSC packages.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "User who is given ownership of new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Roles given access to new resources from feed.";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "Buffer size threshold in MiB for running buffered SQL statements"
+           " in SecInfo updates before the end of the file being processed.";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "Version of the CVE-CPE matching used in CVE scans.";
+  if (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0)
+    return "User who is given ownership of integration configs.";
+
+  return NULL;
+}
+
+/**
+ * @brief Get the name of a setting.
+ *
+ * @param[in]  uuid  UUID of setting.
+ *
+ * @return Setting name.
+ */
+static const gchar *
+setting_name (const gchar *uuid)
+{
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+    return "Agent Owner";
+  if (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+    return "Default CA Cert";
+  if (strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE) == 0)
+    return "Max Rows Per Page";
+  if (strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER) == 0)
+    return "Debian LSC Package Maintainer";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+    return "Feed Import Owner";
+  if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+    return "Feed Import Roles";
+  if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+    return "SecInfo SQL Buffer Threshold";
+  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+    return "CVE-CPE Matching Version";
+  if (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0)
+    return "Integration Configs Owner";
+
+  return NULL;
+}
+
+/**
+ * @brief Change value of a setting.
+ *
+ * @param[in]  log_config      Log configuration.
+ * @param[in]  database        Location of manage database.
+ * @param[in]  name            Name of user.
+ * @param[in]  uuid            UUID of setting.
+ * @param[in]  value           New value.
+ *
+ * @return 0 success, 1 failed to find user, 2 value out of range, 3 error in
+ *         setting uuid, 4 modifying setting for a single user forbidden,
+ *         5 syntax error in setting value, -1 error.
+ */
+int
+manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
+                       const gchar *name, const gchar *uuid, const char *value)
+{
+  int ret;
+  gchar *quoted_name, *quoted_description, *quoted_value, *normalised;
+
+  g_info ("   Modifying setting.");
+
+  if (strcmp (uuid, SETTING_UUID_AGENT_OWNER)
+      && strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT)
+      && strcmp (uuid, SETTING_UUID_MAX_ROWS_PER_PAGE)
+      && strcmp (uuid, SETTING_UUID_LSC_DEB_MAINTAINER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
+      && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
+      && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD)
+      && strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION)
+      && strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER))
+    {
+      fprintf (stderr, "Error in setting UUID.\n");
+      return 3;
+    }
+
+  ret = manage_option_setup (log_config, database,
+                             0 /* avoid_db_check_inserts */);
+  if (ret)
+    return ret;
+
+  sql_begin_immediate ();
+
+  if (setting_verify (uuid, value, name))
+    {
+      sql_rollback ();
+      fprintf (stderr, "Syntax error in setting value.\n");
+      manage_option_cleanup ();
+      return 5;
+    }
+
+  if (name)
+    {
+      user_t user;
+
+      if ((strcmp (uuid, SETTING_UUID_AGENT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_DEFAULT_CA_CERT) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+          || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
+          || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
+          || (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
+          || (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0))
+        {
+          sql_rollback ();
+          fprintf (stderr,
+                   "Modifying this setting for a single user is forbidden.\n");
+          manage_option_cleanup ();
+          return 4;
+        }
+
+      if (find_user_by_name (name, &user))
+        {
+          sql_rollback ();
+          fprintf (stderr, "Internal error.\n");
+          manage_option_cleanup ();
+          return -1;
+        }
+
+      if (user == 0)
+        {
+          sql_rollback ();
+          fprintf (stderr, "Failed to find user.\n");
+          manage_option_cleanup ();
+          return 1;
+        }
+
+      sql ("DELETE FROM settings"
+           " WHERE uuid = '%s'"
+           " AND owner = %llu;",
+           uuid,
+           user);
+
+      normalised = setting_normalise (uuid, value);
+      if (normalised)
+        {
+          quoted_value = sql_quote (normalised);
+          g_free (normalised);
+          quoted_name = sql_quote (setting_name (uuid));
+          quoted_description = sql_quote (setting_description (uuid));
+          sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+               " VALUES ('%s', %llu, '%s', '%s', '%s');",
+               uuid,
+               user,
+               quoted_name,
+               quoted_description,
+               quoted_value);
+          g_free (quoted_value);
+          g_free (quoted_name);
+          g_free (quoted_description);
+        }
+    }
+  else
+    {
+      sql ("DELETE FROM settings"
+           " WHERE uuid = '%s'"
+           " AND owner IS NULL;",
+           uuid);
+
+      normalised = setting_normalise (uuid, value);
+      if (normalised)
+        {
+          quoted_value = sql_quote (normalised);
+          g_free (normalised);
+          quoted_name = sql_quote (setting_name (uuid));
+          quoted_description = sql_quote (setting_description (uuid));
+          sql ("INSERT INTO settings (uuid, owner, name, comment, value)"
+               " VALUES ('%s', NULL, '%s', '%s', '%s');",
+               uuid,
+               quoted_name,
+               quoted_description,
+               quoted_value);
+          g_free (quoted_value);
+          g_free (quoted_name);
+          g_free (quoted_description);
+
+          if (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
+            {
+              migrate_predefined_configs ();
+              migrate_predefined_port_lists ();
+              if (migrate_predefined_report_formats ())
+                {
+                  sql_rollback ();
+                  manage_option_cleanup ();
+                  return -1;
+                }
+            }
+
+          if (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0)
+            {
+              check_db_integration_configs ();
+            }
+        }
+    }
+
+  sql_commit ();
+  manage_option_cleanup ();
+  return 0;
 }
