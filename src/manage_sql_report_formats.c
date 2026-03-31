@@ -17,6 +17,7 @@
 #include "manage_sql_report_configs.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_users.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "sql.h"
 #include "utils.h"

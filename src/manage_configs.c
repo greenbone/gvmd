@@ -15,6 +15,7 @@
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_permissions.h"
+#include "manage_sql_settings.h"
 #include "manage_users.h"
 #include "utils.h"
 

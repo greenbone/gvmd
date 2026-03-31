@@ -19,6 +19,7 @@
 #include "manage_sql.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
+#include "manage_sql_settings.h"
 #include "sql.h"
 #include "utils.h"
 

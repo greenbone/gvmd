@@ -17,6 +17,7 @@
 #include "manage_agents.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_settings.h"
 
 #include <assert.h>
 

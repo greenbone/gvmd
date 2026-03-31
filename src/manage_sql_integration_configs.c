@@ -8,10 +8,11 @@
  * @brief SQL backend implementation for integration config management in GVMD.
  *
  */
-#include "manage_sql_integration_configs.h"
 
+#include "manage_sql_integration_configs.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_settings.h"
 
 #undef G_LOG_DOMAIN
 /**
