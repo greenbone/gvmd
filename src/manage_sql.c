@@ -34,6 +34,7 @@
 #include "manage_report_formats.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
+#include "manage_scanner_relays.h"
 #include "manage_sql_credential_stores.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
@@ -54,6 +55,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_scanner_relays.h"
 #include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
@@ -26842,6 +26844,10 @@ create_scanner (const char* name, const char *comment, const char *host,
 {
   int iport, itype, irelay_port, unix_socket, relay_unix_socket = 0;
   credential_t credential;
+  gboolean use_relay_from_file = FALSE;
+  const char *used_relay_host;
+  char *file_relay_host = NULL;
+  int ifile_relay_port = 0;
 
   assert (name);
 
@@ -26927,37 +26933,58 @@ create_scanner (const char* name, const char *comment, const char *host,
         }
     }
 
-  if (relay_host == NULL || strcmp (relay_host, "") == 0)
+  if (relays_managed_externally ())
     {
-      irelay_port = 0;
+      int ret = get_single_relay_from_file (itype,
+                                            host,
+                                            iport,
+                                            &file_relay_host,
+                                            &ifile_relay_port);
+      use_relay_from_file = (ret == 0);
     }
-  else if (relay_unix_socket)
+
+  if (use_relay_from_file)
     {
-      if (! scanner_type_supports_unix_sockets (itype))
-        {
-          sql_rollback ();
-          return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
-        }
-      irelay_port = 0;
+      irelay_port = ifile_relay_port;
+      used_relay_host = file_relay_host;
     }
   else
     {
-      irelay_port = atoi (relay_port ?: "0");
-      if (irelay_port <= 0 || irelay_port > 65535)
+      if (relay_host == NULL || strcmp (relay_host, "") == 0)
         {
-          sql_rollback ();
-          return CREATE_SCANNER_INVALID_RELAY_PORT;
+          used_relay_host = NULL;
+          irelay_port = 0;
         }
-      if (gvm_get_host_type (host) == -1)
+      else if (relay_unix_socket)
         {
-          sql_rollback ();
-          return CREATE_SCANNER_INVALID_RELAY_HOST;
+          if (! scanner_type_supports_unix_sockets (itype))
+            {
+              sql_rollback ();
+              return CREATE_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+            }
+          used_relay_host = relay_host;
+          irelay_port = 0;
+        }
+      else
+        {
+          irelay_port = atoi (relay_port ?: "0");
+          used_relay_host = relay_host;
+          if (irelay_port <= 0 || irelay_port > 65535)
+            {
+              sql_rollback ();
+              return CREATE_SCANNER_INVALID_RELAY_PORT;
+            }
+          if (gvm_get_host_type (host) == -1)
+            {
+              sql_rollback ();
+              return CREATE_SCANNER_INVALID_RELAY_HOST;
+            }
         }
     }
 
   if (unix_socket)
     insert_scanner (name, comment, host, ca_pub, iport, itype,
-                    relay_host, irelay_port, new_scanner);
+                    used_relay_host, irelay_port, new_scanner);
   else
     {
       credential = 0;
@@ -26968,11 +26995,13 @@ create_scanner (const char* name, const char *comment, const char *host,
           if (find_credential_with_permission
               (credential_id, &credential, "get_credentials"))
             {
+              g_free (file_relay_host);
               sql_rollback ();
               return CREATE_SCANNER_INTERNAL_ERROR;
             }
           if (credential == 0)
             {
+              g_free (file_relay_host);
               sql_rollback ();
               return CREATE_SCANNER_CREDENTIAL_NOT_FOUND;
             }
@@ -26980,6 +27009,7 @@ create_scanner (const char* name, const char *comment, const char *host,
                        " WHERE id = %llu;",
                        credential))
             {
+              g_free (file_relay_host);
               sql_rollback ();
               return CREATE_SCANNER_CREDENTIAL_NOT_CC;
             }
@@ -26987,6 +27017,7 @@ create_scanner (const char* name, const char *comment, const char *host,
 
       insert_scanner (name, comment, host, ca_pub, iport, itype,
                       relay_host, irelay_port, new_scanner);
+      g_free (file_relay_host);
 
       if (credential)
         {
@@ -27048,11 +27079,12 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                 const char *ca_pub, const char *credential_id,
                 const char *relay_host, const char *relay_port)
 {
-  gchar *used_host, *used_relay_host;
+  gboolean use_relay_from_file = FALSE;
+  gchar *used_host, *file_relay_host = NULL, *used_relay_host;
   gchar *quoted_name, *quoted_comment, *quoted_host, *quoted_relay_host;
   scanner_t scanner = 0;
   credential_t credential = 0;
-  int itype, iport, irelay_port;
+  int itype, iport, ifile_relay_port = 0, irelay_port;
   int unix_socket, relay_unix_socket, credential_given;
 
   assert (current_credentials.uuid);
@@ -27118,12 +27150,6 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     iport = sql_int ("SELECT port FROM scanners WHERE id = %llu;",
                      scanner);
 
-  if (relay_port)
-    irelay_port = atoi (relay_port);
-  else
-    irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
-                           scanner);
-
   if (host)
     used_host = g_strdup (host);
   else
@@ -27131,12 +27157,36 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                             " WHERE id = %llu;",
                             scanner);
 
-  if (relay_host)
-    used_relay_host = g_strdup (relay_host);
+  if (relays_managed_externally ())
+    {
+      int ret = get_single_relay_from_file (itype,
+                                            used_host,
+                                            iport,
+                                            &file_relay_host,
+                                            &ifile_relay_port);
+      use_relay_from_file = (ret == 0);
+    }
+
+  if (use_relay_from_file)
+    {
+      irelay_port = ifile_relay_port;
+      used_relay_host = file_relay_host;
+    }
   else
-    used_relay_host = sql_string ("SELECT relay_host FROM scanners"
-                                  " WHERE id = %llu;",
-                                  scanner);
+    {
+      if (relay_port)
+        irelay_port = atoi (relay_port);
+      else
+        irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
+                              scanner);
+
+      if (relay_host)
+        used_relay_host = g_strdup (relay_host);
+      else
+        used_relay_host = sql_string ("SELECT relay_host FROM scanners"
+                                      " WHERE id = %llu;",
+                                      scanner);
+    }
 
   unix_socket = used_host && (*used_host == '/');
   relay_unix_socket = used_relay_host && (*used_relay_host == '/');
@@ -27320,8 +27370,9 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         sql ("UPDATE scanners SET credential = NULL WHERE id = %llu;",
              scanner);
     }
+
   sql_commit ();
-  return 0;
+  return MODIFY_SCANNER_SUCCESS;
 }
 
 /**

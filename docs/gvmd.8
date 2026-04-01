@@ -180,6 +180,9 @@ Rebuild all SCAP data.
 \fB--relay-mapper=\fIFILE\fB\f1
 Executable for automatically mapping scanner hosts to relays. If the option is empty or not given, automatic mapping is disabled. This option is deprecated and relays should be set explictly in the relay_... fields of scanners. 
 .TP
+\fB--relays-path=\fIFILE\fB\f1
+Path to an externally managed JSON file used to automatically update the relays of scanners. These will overwrite any relays set manually. 
+.TP
 \fB--role=\fIROLE\fB\f1
 Role for --create-user and --get-users.
 .TP
