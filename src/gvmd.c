@@ -97,6 +97,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
+#include "manage_scanner_relays.h"
 #include "manage_settings.h"
 #include "manage_targets.h"
 #include "manage_users.h"
@@ -2357,6 +2358,7 @@ gvmd (int argc, char** argv, char *env[])
   static gchar *scanner_name = NULL;
   static gchar *rc_name = NULL;
   static gchar *relay_mapper = NULL;
+  static gchar *relays_path = NULL;
   static gboolean rebuild = FALSE;
   static gchar *rebuild_gvmd_data = NULL;
   static gboolean rebuild_scap = FALSE;
@@ -2689,6 +2691,12 @@ gvmd (int argc, char** argv, char *env[])
           " If the option is empty or not given, automatic mapping"
           " is disabled. This option is deprecated and relays should be"
           " set explictly in the relay_... fields of scanners.",
+          "<file>" },
+        { "relays-path", '\0', 0, G_OPTION_ARG_FILENAME,
+          &relays_path,
+          "Path to an externally managed JSON file used to automatically"
+          " update the relays of scanners. These will overwrite any relays"
+          " set manually.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,
@@ -3093,6 +3101,12 @@ gvmd (int argc, char** argv, char *env[])
     }
   else
     g_debug ("Relay mapper disabled.");
+
+  /* Set relays file path */
+  if (relays_path && strcmp (relays_path, ""))
+    {
+      set_relays_path (relays_path);
+    }
 
   /*
    * Set up scan queue

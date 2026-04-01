@@ -199,6 +199,7 @@ set(
   manage_pg.c
   manage_scan_handler.c
   manage_scan_queue.c
+  manage_scanner_relays.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
   manage_tags.c
@@ -245,6 +246,7 @@ set(
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_roles.c
+  manage_sql_scanner_relays.c
   manage_sql_settings.c
   manage_sql_tags.c
   manage_sql_targets.c
