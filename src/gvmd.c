@@ -2696,7 +2696,8 @@ gvmd (int argc, char** argv, char *env[])
           &relays_path,
           "Path to an externally managed JSON file used to automatically"
           " update the relays of scanners. These will overwrite any relays"
-          " set manually.",
+          " set manually and remove the relays for scanners not listed"
+          " in the file.",
           "<file>" },
         { "role", '\0', 0, G_OPTION_ARG_STRING,
           &role,

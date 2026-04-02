@@ -93,7 +93,6 @@
 #include <gvm/util/versionutils.h>
 #include <gvm/gmp/gmp.h>
 
-
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

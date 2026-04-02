@@ -76,19 +76,19 @@ update_all_scanner_relays_from_item (relays_list_item_t *item,
 {
   iterator_t iterator;
 
-  if (item->protocol && strcmp (item->protocol, ""))
+  if (item->scanner_type && strcmp (item->scanner_type, ""))
     {
       scanner_type_t sc_type;
-      if (strcasecmp (item->protocol, "agent-control") == 0)
+      if (strcasecmp (item->scanner_type, "agent-control") == 0)
         sc_type = SCANNER_TYPE_AGENT_CONTROLLER_SENSOR;
-      else if (strcasecmp (item->protocol, "openvasd") == 0)
+      else if (strcasecmp (item->scanner_type, "openvasd") == 0)
         sc_type = SCANNER_TYPE_OPENVASD_SENSOR;
-      else if (strcasecmp (item->protocol, "osp") == 0)
+      else if (strcasecmp (item->scanner_type, "osp") == 0)
         sc_type = SCANNER_TYPE_OSP_SENSOR;
       else
         {
-          g_warning ("%s: relay with unknown protocol '%s'",
-                     __func__, item->protocol);
+          g_warning ("%s: relay with unknown scanner type '%s'",
+                     __func__, item->scanner_type);
           return 0;
         }
 

@@ -428,7 +428,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <p>
           Path to an externally managed JSON file used to automatically
           update the relays of scanners. These will overwrite any relays
-          set manually.
+          set manually and remove the relays for scanners not listed
+          in the file.
         </p>
       </optdesc>
     </option>
