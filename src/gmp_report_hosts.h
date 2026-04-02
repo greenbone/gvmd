@@ -14,10 +14,9 @@
 /* GET_REPORT_HOSTS. */
 
 void
-get_report_hosts_start (const gchar **,
-                            const gchar **);
+get_report_hosts_start (const gchar **, const gchar **);
 
 void
-get_report_hosts_run (gmp_parser_t *gmp_parser, GError **error);
+get_report_hosts_run (gmp_parser_t *, GError **);
 
 #endif //_GVM_GMP_REPORT_HOSTS_H
