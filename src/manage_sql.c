@@ -16408,9 +16408,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_count;
   print_report_context_t ctx = {0};
 
-  #if ENABLE_CONTAINER_SCANNING
   gboolean is_container_scanning_report = FALSE;
-  #endif
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
@@ -17421,7 +17419,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     host_summary_buffer = NULL;
 
-  if (get->details && result_hosts_only)
+  if (get->details)
     {
       if (print_report_hosts_xml (&ctx,
                                   out,
@@ -17429,33 +17427,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   get,
                                   ctx.tsk_usage_type,
                                   lean,
-  #if ENABLE_CONTAINER_SCANNING
                                   is_container_scanning_report,
-  #else
-                                  FALSE,
-  #endif
-                                  TRUE,          /* result_hosts_only */
-                                  result_hosts,  /* result_hosts */
-                                  host_summary_buffer))
-        {
-          goto failed_print_report_host;
-        }
-    }
-  else if (get->details)
-    {
-      if (print_report_hosts_xml (&ctx,
-                                  out,
-                                  report,
-                                  get,
-                                  ctx.tsk_usage_type,
-                                  lean,
-  #if ENABLE_CONTAINER_SCANNING
-                                  is_container_scanning_report,
-  #else
-                                  FALSE,
-  #endif
-                                  FALSE, /* result_hosts_only */
-                                  NULL,  /* result_hosts */
+                                  result_hosts_only,
+                                  result_hosts,
                                   host_summary_buffer))
         {
           goto failed_print_report_host;
