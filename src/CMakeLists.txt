@@ -280,16 +280,16 @@ set(
   gmp_configs.c
   gmp_delete.c
   gmp_get.c
+  gmp_integration_configs.c
   gmp_license.c
   gmp_logout.c
+  gmp_oci_image_targets.c
   gmp_port_lists.c
   gmp_report_configs.c
   gmp_report_formats.c
+  gmp_report_hosts.c
   gmp_tickets.c
   gmp_tls_certificates.c
-  gmp_oci_image_targets.c
-  gmp_integration_configs.c
-  gmp_report_hosts.c
 )
 
 if(ENABLE_AGENTS)

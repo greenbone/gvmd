@@ -615,9 +615,9 @@ void
 print_report_context_cleanup (print_report_context_t *);
 
 const char *
-report_compliance_from_counts (const int*,
-                               const int*,
-                               const int*,
-                               const int*);
+report_compliance_from_counts (const int *,
+                               const int *,
+                               const int *,
+                               const int *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

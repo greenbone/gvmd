@@ -16,24 +16,23 @@
 #include "manage_report_hosts.h"
 #include "manage_sql.h"
 
+int
+print_report_hosts_xml (print_report_context_t *,
+                        FILE *,
+                        report_t,
+                        const get_data_t *,
+                        const gchar *,
+                        int lean,
+                        gboolean,
+                        gboolean,
+                        array_t *,
+                        GString *);
 
 int
-print_report_hosts_xml(print_report_context_t*,
-                       FILE*,
-                       report_t,
-                       const get_data_t*,
-                       const gchar*,
-                       int lean,
-                       gboolean,
-                       gboolean,
-                       array_t*,
-                       GString*);
-
-int
-fill_filtered_result_hosts(array_t**,
-                           const get_data_t*,
-                           report_t,
-                           iterator_t*,
-                           gboolean);
+fill_filtered_result_hosts (array_t **,
+                            const get_data_t *,
+                            report_t,
+                            iterator_t *,
+                            gboolean);
 
 #endif /* _GVM_MANAGE_SQL_REPORT_HOSTS_H */

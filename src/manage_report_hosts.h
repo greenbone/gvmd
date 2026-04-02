@@ -22,26 +22,26 @@
 #include "gmp_base.h"
 
 void
-init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
+init_report_host_iterator (iterator_t *, report_t, const char *, report_host_t);
 
 void
-init_report_host_iterator_hostname (iterator_t*, report_t, const char *,
+init_report_host_iterator_hostname (iterator_t *, report_t, const char *,
                                     const char *);
 
 const char*
-host_iterator_host (iterator_t*);
+host_iterator_host (iterator_t *);
 
 const char*
-host_iterator_start_time (iterator_t*);
+host_iterator_start_time (iterator_t *);
 
 const char*
-host_iterator_end_time (iterator_t*);
+host_iterator_end_time (iterator_t *);
 
 int
-host_iterator_current_port (iterator_t*);
+host_iterator_current_port (iterator_t *);
 
 int
-host_iterator_max_port (iterator_t*);
+host_iterator_max_port (iterator_t *);
 
 int
 manage_send_report_hosts (report_t ,
