@@ -15692,7 +15692,6 @@ print_report_context_cleanup (print_report_context_t *ctx)
   free_f_host (ctx->f_host_undefined);
 }
 
-
 /**
  * @brief Init the f_hosts_* hashtables.
  *

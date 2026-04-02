@@ -88,7 +88,6 @@ manage_send_report_hosts (report_t report,
   results_initialized = 0;
   result_hosts_only = 0;
 
-
   if (get == NULL)
     {
       g_warning ("%s: get is NULL", __func__);
@@ -100,6 +99,10 @@ manage_send_report_hosts (report_t report,
   ctx.tsk_usage_type = g_strdup (usage_type);
 
   print_report_init_f_hosts (&ctx);
+
+  // Initialize host_ports
+  ctx.f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                            g_free, NULL);
 
   /* Derive filter controls, including whether only hosts with results
    * should be included.
