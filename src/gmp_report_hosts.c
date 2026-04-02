@@ -9,6 +9,11 @@
 #include "manage.h"
 #include "manage_acl.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
 
 /**
  * @brief Command data for the get_report_hosts command.
