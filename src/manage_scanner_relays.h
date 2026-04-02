@@ -21,7 +21,7 @@ typedef struct {
   int original_port;    ///< Original port of the scanner
   char *relay_host;     ///< Host or socket path of the relay
   int relay_port;       ///< Port of the relay
-  char *protocol;       ///< Protocol string defining the scanner type.
+  char *scanner_type;   ///< Scanner type string defining the scanner type.
 } relays_list_item_t;
 
 const char *

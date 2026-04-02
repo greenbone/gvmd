@@ -129,7 +129,7 @@ extract_relay_fields_from_json_item (cJSON *json_item,
   item_out->original_port = 0;
   item_out->relay_host = NULL;
   item_out->relay_port = 0;
-  item_out->protocol = NULL;
+  item_out->scanner_type = NULL;
 
   if (json_item == NULL)
     {
@@ -145,12 +145,26 @@ extract_relay_fields_from_json_item (cJSON *json_item,
                           &item_out->relay_host);
   gvm_json_obj_check_int (json_item, "relay_port",
                           &item_out->relay_port);
-  gvm_json_obj_check_str (json_item, "protocol",
-                          &item_out->protocol);
+  gvm_json_obj_check_str (json_item, "scanner_type",
+                          &item_out->scanner_type);
 
   if (item_out->original_host == NULL)
     {
       g_debug ("%s: mandatory original_host field missing or not a string",
+               __func__);
+      return -1;
+    }
+
+  if (item_out->relay_host == NULL)
+    {
+      g_debug ("%s: mandatory relay_host field missing or not a string",
+               __func__);
+      return -1;
+    }
+
+  if (item_out->scanner_type == NULL)
+    {
+      g_debug ("%s: mandatory scanner_type field missing or not a string",
                __func__);
       return -1;
     }
@@ -182,6 +196,7 @@ update_all_scanner_relays_from_json (cJSON *parsed_file,
   updated_scanners
     = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
+  sql_begin_immediate ();
   update_all_scanner_relays_start ();
 
   cJSON_ArrayForEach (json_item, relays)
@@ -193,6 +208,7 @@ update_all_scanner_relays_from_json (cJSON *parsed_file,
       if (update_all_scanner_relays_from_item (&parsed_item, updated_scanners))
         {
           g_hash_table_destroy (updated_scanners);
+          sql_rollback ();
           return -1;
         }
     }
@@ -207,6 +223,7 @@ update_all_scanner_relays_from_json (cJSON *parsed_file,
                  "updated according to relays file");
     }
   g_hash_table_destroy (updated_scanners);
+  sql_commit ();
   return 0;
 }
 
@@ -243,7 +260,7 @@ sync_scanner_relays ()
   if (stat_buffer.st_mtime <= db_mod_time)
     {
       g_debug ("%s: relays file not modified since last sync", __func__);
-      return -1;
+      return 0;
     }
 
   if (! g_file_get_contents (relays_path, &file_contents, &file_size, &error))
@@ -254,6 +271,7 @@ sync_scanner_relays ()
     }
 
   parsed_file = cJSON_ParseWithLength (file_contents, file_size);
+  g_free (file_contents);
   if (parsed_file == NULL)
     {
       g_warning ("%s: could not parse JSON", __func__);
@@ -272,28 +290,28 @@ sync_scanner_relays ()
 }
 
 /**
- * @brief Check if a scanner type matches a relays file "protocol" string.
+ * @brief Check if a scanner type matches a relays file type string.
  *
- * @param[in]  scanner_type  The scanner type to check
- * @param[in]  protocol      The protocol string from the relays file to check
+ * @param[in]  scanner_type       The scanner type to check
+ * @param[in]  relay_scanner_type The relay scanner type from the relays file
  *
  * @return TRUE if the two match, FALSE otherwise
  */
 static gboolean
-scanner_type_matches_relay_protocol (int scanner_type,
-                                     const char *protocol)
+scanner_type_matches_relay (int scanner_type,
+                            const char *relay_scanner_type)
 {
   switch (scanner_type)
   {
     case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
-      return protocol == NULL
-             || strcasecmp (protocol, "agent-control") == 0;
+      return relay_scanner_type == NULL
+             || strcasecmp (relay_scanner_type, "agent-control") == 0;
     case SCANNER_TYPE_OPENVASD_SENSOR:
-      return protocol == NULL
-             || strcasecmp (protocol, "openvasd") == 0;
+      return relay_scanner_type == NULL
+             || strcasecmp (relay_scanner_type, "openvasd") == 0;
     case SCANNER_TYPE_OSP_SENSOR:
-      return protocol == NULL
-             || strcasecmp (protocol, "osp") == 0;
+      return relay_scanner_type == NULL
+             || strcasecmp (relay_scanner_type, "osp") == 0;
     default:
       return FALSE;
   }
@@ -339,6 +357,7 @@ get_single_relay_from_file (int scanner_type,
     }
 
   parsed_file = cJSON_ParseWithLength (file_contents, file_size);
+  g_free (file_contents);
   if (parsed_file == NULL)
     {
       g_warning ("%s: could not parse JSON", __func__);
@@ -356,8 +375,8 @@ get_single_relay_from_file (int scanner_type,
       relays_list_item_t parsed_item;
       if (extract_relay_fields_from_json_item (json_item, &parsed_item))
         continue;
-      if (scanner_type_matches_relay_protocol (scanner_type,
-                                               parsed_item.protocol)
+      if (scanner_type_matches_relay (scanner_type,
+                                      parsed_item.scanner_type)
           && (parsed_item.original_port == 0
               || parsed_item.original_port == original_port)
           && (strcmp (original_host, parsed_item.original_host) == 0))
@@ -367,5 +386,6 @@ get_single_relay_from_file (int scanner_type,
           *relay_port = parsed_item.relay_port;
         }
     }
+  cJSON_Delete (parsed_file);
   return 0;
 }
