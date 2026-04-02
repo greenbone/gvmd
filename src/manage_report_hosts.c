@@ -32,9 +32,7 @@
  * @param[in]  usage_type                    Task usage type.
  * @param[in]  is_container_scanning_report  Whether this is a container scan report.
  * @param[in]  lean                          Whether to send lean host data.
- * @param[in]  send                          Function to write to client.
- * @param[in]  send_data_1                   Second argument to @p send.
- * @param[in]  send_data_2                   Third argument to @p send.
+ * @param[in]  parser                        gmp_parser_t to write to client.
  *
  * @return 0 on success, -1 on error, 2 if filter was not found.
  */
@@ -44,11 +42,7 @@ manage_send_report_hosts (report_t report,
                           const gchar *usage_type,
                           gboolean is_container_scanning_report,
                           int lean,
-                          gboolean (*send) (const char *,
-                                            int (*) (const char *, void *),
-                                            void *),
-                          int (*send_data_1) (const char *, void *),
-                          void *send_data_2)
+                          gmp_parser_t *parser)
 {
   print_report_context_t ctx;
   gchar *xml_file;
@@ -268,7 +262,8 @@ manage_send_report_hosts (report_t report,
       if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
         {
           chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-          if (send (chunk, send_data_1, send_data_2))
+          if (send_to_client (chunk, parser->client_writer,
+                              parser->client_writer_data))
             {
               g_warning ("%s: send error", __func__);
               ret = -1;

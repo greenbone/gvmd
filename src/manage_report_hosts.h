@@ -19,6 +19,8 @@
 #include <glib.h>
 #include <stdio.h>
 
+#include "gmp_base.h"
+
 void
 init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
 
@@ -47,11 +49,7 @@ manage_send_report_hosts (report_t ,
                           const gchar *,
                           gboolean,
                           int,
-                          gboolean (*) (const char *,
-                                            int (*) (const char *, void *),
-                                            void *),
-                          int (*) (const char *, void *),
-                          void *);
+                          gmp_parser_t *);
 
 gchar *
 report_hosts_extra_where (const gchar *);
