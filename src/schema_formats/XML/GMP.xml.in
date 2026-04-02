@@ -21487,6 +21487,573 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_hosts</name>
+    <summary>Get hosts from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_hosts command to get host information
+        from a single report.
+      </p>
+      <p>
+        This command is a host-focused subset of get_reports intended to support
+        pagination and reduced response sizes when only host data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes host entries.
+        Otherwise only filter, sort and count information is returned.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get hosts from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter report hosts</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether to apply Overrides</summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum QoD of the results</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether to limit the response to hosts having results matching the
+              filter
+            </summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>ip</name>
+            <type>text</type>
+            <summary>IP address of the host</summary>
+          </column>
+          <column>
+            <name>asset_id</name>
+            <type>uuid</type>
+            <summary>UUID of the associated asset</summary>
+          </column>
+          <column>
+            <name>start</name>
+            <type>iso_time</type>
+            <summary>Host scan start time</summary>
+          </column>
+          <column>
+            <name>end</name>
+            <type>iso_time</type>
+            <summary>Host scan end time</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Highest severity of matching results for the host</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report hosts</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include host details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>host</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_hosts</e></o>
+        <o><e>report_host_count</e></o>
+      </pattern>
+      <ele>
+        <name>host</name>
+        <summary>A host from the selected report</summary>
+        <pattern>
+          <e>ip</e>
+          <o><e>asset</e></o>
+          <o><e>start</e></o>
+          <o><e>end</e></o>
+          <o><e>port_count</e></o>
+          <o><e>result_count</e></o>
+          <any><e>detail</e></any>
+        </pattern>
+        <ele>
+          <name>ip</name>
+          <summary>IP address of the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>asset</name>
+          <summary>Asset associated with the host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>start</name>
+          <summary>Host scan start time</summary>
+          <pattern>iso_time</pattern>
+        </ele>
+        <ele>
+          <name>end</name>
+          <summary>Host scan end time</summary>
+          <pattern>iso_time</pattern>
+        </ele>
+        <ele>
+          <name>port_count</name>
+          <summary>Count of ports on the current page</summary>
+          <pattern>
+            <e>page</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of ports on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary>Counts of results for the host on the current page</summary>
+          <pattern>
+            <e>page</e>
+            <e>critical</e>
+            <e>hole</e>
+            <e>high</e>
+            <e>warning</e>
+            <e>medium</e>
+            <e>info</e>
+            <e>low</e>
+            <e>log</e>
+            <e>false_positive</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of results on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>critical</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>hole</name>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>high</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>medium</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>info</name>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>low</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>log</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>false_positive</name>
+            <pattern><e>page</e></pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>detail</name>
+          <summary>A detail of the host</summary>
+          <pattern>
+            <e>name</e>
+            <e>value</e>
+            <o><e>source</e></o>
+            <o><e>extra</e></o>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the host detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>Value of the host detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>source</name>
+            <summary>Source of the host detail</summary>
+            <pattern>
+              <e>type</e>
+              <e>name</e>
+              <o><e>description</e></o>
+            </pattern>
+            <ele>
+              <name>type</name>
+              <summary>Type of source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>description</name>
+              <summary>Description of source</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>extra</name>
+            <summary>Extra information for the detail</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_hosts</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report host</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report hosts</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_host_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report hosts after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report hosts on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get hosts of a report with details</summary>
+      <request>
+        <get_report_hosts report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                          details="1"
+                          filter="levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0">
+        </get_report_hosts>
+      </request>
+      <response>
+        <get_report_hosts_response status="200" status_text="OK">
+          <host>
+            <ip>192.168.178.87</ip>
+            <asset asset_id="49c2947e-17ab-429b-b68d-e183b4387da7"/>
+            <start>2026-03-30T06:44:34Z</start>
+            <end>2026-03-30T06:45:44Z</end>
+            <port_count>
+              <page>0</page>
+            </port_count>
+            <result_count>
+              <page>0</page>
+              <critical>
+                <page>0</page>
+              </critical>
+              <hole deprecated="1">
+                <page>0</page>
+              </hole>
+              <high>
+                <page>0</page>
+              </high>
+              <warning deprecated="1">
+                <page>0</page>
+              </warning>
+              <medium>
+                <page>0</page>
+              </medium>
+              <info deprecated="1">
+                <page>0</page>
+              </info>
+              <low>
+                <page>0</page>
+              </low>
+              <log>
+                <page>0</page>
+              </log>
+              <false_positive>
+                <page>0</page>
+              </false_positive>
+            </result_count>
+            <detail>
+              <name>hostname</name>
+              <value>levoit-purifier.fritz.box</value>
+              <source>
+                <type>nvt</type>
+                <name>1.3.6.1.4.1.25623.1.0.103997</name>
+                <description>Host Details</description>
+              </source>
+              <extra/>
+            </detail>
+          </host>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_hosts start="1" max="100"/>
+          <report_host_count>1<filtered>1</filtered><page>0</page></report_host_count>
+        </get_report_hosts_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_reports</name>
     <summary>Get one or many reports</summary>
     <description>
