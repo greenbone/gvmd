@@ -49,6 +49,7 @@
 #include "manage_settings.h"
 #include "manage_oci_image_targets.h"
 #include "manage_http_scanner.h"
+#include "manage_report_hosts.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
