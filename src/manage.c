@@ -51,6 +51,7 @@
 #include "manage_http_scanner.h"
 #include "manage_report_hosts.h"
 #include "manage_runtime_flags.h"
+#include "manage_scanner_relays.h"
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
 #include "manage_sql_resources.h"
@@ -4219,6 +4220,8 @@ manage_sync (sigset_t *sigmask_current,
 
   reinit_manage_process ();
   manage_session_init (current_credentials.uuid);
+
+  sync_scanner_relays ();
 
   if (feed_sync_required ())
     {

@@ -423,6 +423,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </optdesc>
     </option>
     <option>
+      <p><opt>--relays-path=<arg>FILE</arg></opt></p>
+      <optdesc>
+        <p>
+          Path to an externally managed JSON file used to automatically
+          update the relays of scanners. These will overwrite any relays
+          set manually and remove the relays for scanners not listed
+          in the file.
+        </p>
+      </optdesc>
+    </option>
+    <option>
       <p><opt>--role=<arg>ROLE</arg></opt></p>
       <optdesc>
         <p>Role for --create-user and --get-users.</p>
