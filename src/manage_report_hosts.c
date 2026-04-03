@@ -64,7 +64,6 @@ manage_send_report_hosts (report_t report,
   int result_hosts_only;
   array_t *result_hosts;
   iterator_t results;
-  GString *host_summary_buffer;
   int results_initialized;
 
   memset (&ctx, 0, sizeof (ctx));
@@ -76,7 +75,6 @@ manage_send_report_hosts (report_t report,
   xml_file = NULL;
   stream = NULL;
   result_hosts = NULL;
-  host_summary_buffer = NULL;
   results_initialized = 0;
   result_hosts_only = 0;
 
@@ -153,8 +151,6 @@ manage_send_report_hosts (report_t report,
       goto cleanup;
     }
 
-  host_summary_buffer = g_string_new ("");
-
   ret = print_report_hosts_xml (&ctx,
                                 stream,
                                 report,
@@ -164,13 +160,8 @@ manage_send_report_hosts (report_t report,
                                 is_container_scanning_report,
                                 result_hosts_only,
                                 result_hosts,
-                                host_summary_buffer);
+                                NULL);
 
-  if (host_summary_buffer)
-    {
-      g_string_free (host_summary_buffer, TRUE);
-      host_summary_buffer = NULL;
-    }
 
   if (fclose (stream))
     {
@@ -238,9 +229,6 @@ manage_send_report_hosts (report_t report,
 cleanup:
   if (stream)
     fclose (stream);
-
-  if (host_summary_buffer)
-    g_string_free (host_summary_buffer, TRUE);
 
   if (results_initialized)
     cleanup_iterator (&results);
