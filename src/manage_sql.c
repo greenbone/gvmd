@@ -116,6 +116,7 @@
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
 #include "manage_sql_agent_installers.h"
+#include "manage_sql_report_hosts.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -12989,198 +12990,6 @@ cleanup_result_nvts ()
 }
 
 /**
- * @brief Initialise a host iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  report    Report whose hosts the iterator loops over.
- * @param[in]  host      Single host to iterate over.  All hosts if NULL.
- * @param[in]  report_host  Single report host to iterate over.  All if 0.
- */
-void
-init_report_host_iterator (iterator_t* iterator, report_t report, const char *host,
-                           report_host_t report_host)
-{
-  if (report)
-    {
-      init_ps_iterator (iterator,
-                        "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port,"
-                        " max_port, hostname, report,"
-                        " (SELECT uuid FROM reports WHERE id = report),"
-                        " (SELECT uuid FROM hosts"
-                        "  WHERE id = (SELECT host FROM host_identifiers"
-                        "              WHERE source_type = 'Report Host'"
-                        "              AND name = 'ip'"
-                        "              AND source_id = (SELECT uuid"
-                        "                               FROM reports"
-                        "                               WHERE id = report)"
-                        "              AND value = report_hosts.host"
-                        "              LIMIT 1))"
-                        " FROM report_hosts"
-                        " WHERE ($1 = 0 OR id = $1)"
-                        "   AND report = $2"
-                        "   AND ($3::text IS NULL OR host = $3)"
-                        " ORDER BY order_inet (host);",
-                        SQL_RESOURCE_PARAM (report_host),
-                        SQL_RESOURCE_PARAM (report),
-                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
-                        NULL);
-    }
-  else
-    {
-      init_ps_iterator (iterator,
-                        "SELECT id, host, iso_time (start_time),"
-                        " iso_time (end_time), current_port, max_port,"
-                        " hostname, report,"
-                        " (SELECT uuid FROM reports WHERE id = report),"
-                        " ''"
-                        " FROM report_hosts"
-                        " WHERE ($1 = 0 OR id = $1)"
-                        "   AND ($2::text IS NULL OR host = $2)"
-                        " ORDER BY order_inet (host);",
-                        SQL_RESOURCE_PARAM (report_host),
-                        host ? SQL_STR_PARAM (host) : SQL_NULL_PARAM,
-                        NULL);
-    }
-}
-
-/**
- * @brief Initialise a host iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  report    Report whose hosts the iterator loops over.
- * @param[in]  host      Host to iterate over.
- * @param[in]  hostname  Hostname.
- */
-void
-init_report_host_iterator_hostname (iterator_t* iterator,
-                                    report_t report,
-                                    const char *host,
-                                    const char *hostname)
-{
-  init_ps_iterator (iterator,
-                    "SELECT id, host, iso_time (start_time),"
-                    " iso_time (end_time), current_port, max_port,"
-                    " hostname, report,"
-                    " (SELECT uuid FROM reports WHERE id = report),"
-                    " (SELECT uuid FROM hosts"
-                    "  WHERE id = (SELECT host FROM host_identifiers"
-                    "              WHERE source_type = 'Report Host'"
-                    "              AND name = 'ip'"
-                    "              AND source_id = (SELECT uuid"
-                    "                               FROM reports"
-                    "                               WHERE id = report)"
-                    "              AND value = report_hosts.host"
-                    "              LIMIT 1))"
-                    " FROM report_hosts"
-                    " WHERE report = $1"
-                    "   AND host = $2"
-                    "   AND hostname = $3"
-                    " ORDER BY order_inet (host);",
-                    SQL_RESOURCE_PARAM (report),
-                    SQL_STR_PARAM (host),
-                    SQL_STR_PARAM (hostname),
-                    NULL);
-}
-
-
-/**
- * @brief Get the report host from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Report host.
- */
-report_host_t
-host_iterator_report_host (iterator_t* iterator)
-{
-  if (iterator->done) return 0;
-  return (report_host_t) iterator_int64 (iterator, 0);
-}
-
-/**
- * @brief Get the host from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The host of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-DEF_ACCESS (host_iterator_host, 1);
-
-/**
- * @brief Get the start time from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The start time of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-DEF_ACCESS (host_iterator_start_time, 2);
-
-/**
- * @brief Get the end time from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The end time of the host.  Caller must use only before calling
- *         cleanup_iterator.
- */
-DEF_ACCESS (host_iterator_end_time, 3);
-
-/**
- * @brief Get the current port from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Current port.
- */
-int
-host_iterator_current_port (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, 4);
-  return ret;
-}
-
-/**
- * @brief Get the max port from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Current port.
- */
-int
-host_iterator_max_port (iterator_t* iterator)
-{
-  int ret;
-  if (iterator->done) return -1;
-  ret = iterator_int (iterator, 5);
-  return ret;
-}
-
-/**
- * @brief Get the hostname from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The hostname of the host.
- */
-DEF_ACCESS (host_iterator_hostname, 6);
-
-/**
- * @brief Get the asset UUID from a host iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The UUID of the assset associate with the host.  Caller must use
- *         only before calling cleanup_iterator.
- */
-static
-DEF_ACCESS (host_iterator_asset_uuid, 9);
-
-/**
  * @brief Initialise a report errors iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -13337,69 +13146,6 @@ init_report_host_details_iterator (iterator_t* iterator,
                  "       AND report_host_details.value = 'EXIT_NOTVULN';",
                  report_host, report_host);
 }
-
-/**
- * @brief Get the name from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The name of the report host detail.  Caller must use only before
- *         calling cleanup_iterator.
- */
-DEF_ACCESS (report_host_details_iterator_name, 1);
-
-/**
- * @brief Get the value from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The value of the report host detail.  Caller must use only before
- *         calling cleanup_iterator.
- */
-DEF_ACCESS (report_host_details_iterator_value, 2);
-
-/**
- * @brief Get the source type from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source type of the report host detail.  Caller must use only
- *         before calling cleanup_iterator.
- */
-static
-DEF_ACCESS (report_host_details_iterator_source_type, 3);
-
-/**
- * @brief Get the source name from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source name of the report host detail.  Caller must use only
- *         before calling cleanup_iterator.
- */
-DEF_ACCESS (report_host_details_iterator_source_name, 4);
-
-/**
- * @brief Get the source description from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return The source description of the report host detail.  Caller must use
- *         only before calling cleanup_iterator.
- */
-static
-DEF_ACCESS (report_host_details_iterator_source_desc, 5);
-
-/**
- * @brief Get the extra info from a report host details iterator.
- *
- * @param[in]  iterator  Iterator.
- *
- * @return Extra info of the report host detail.  Caller must use
- *         only before calling cleanup_iterator.
- */
-static
-DEF_ACCESS (report_host_details_iterator_extra, 6);
 
 /**
  * @brief Set the end time of a task.
@@ -15489,49 +15235,6 @@ report_finished_container_images_str (report_t report)
 }
 
 /**
- * @brief Context info for print_report_xml_start.
- */
-struct print_report_context
-{
-  gchar *compliance_levels;   ///< Compliance levels.
-  int count_filtered;         ///< Whether to count filtered results.
-  report_t delta;             ///< Report to compare with.
-  int filtered_result_count;  ///< Filtered result count.
-  const get_data_t *get;      ///< GET command data.
-  gchar *tz;                  ///< TZ.
-  gchar *zone;                ///< Zone.
-  char *old_tz_override;      ///< Old TZ.
-  report_t report;            ///< Report.
-  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
-  // Counts.
-  int criticals;              ///< Number of criticals.
-  int holes;                  ///< Number of holes.
-  int infos;                  ///< Number of infos.
-  int logs;                   ///< Number of logs.
-  int warnings;               ///< Number of warnings.
-  int false_positives;        ///< Number of false positives.
-  int total_result_count;     ///< Total number of results.
-  // Filtered counts.
-  GHashTable *f_host_criticals;       ///< Criticals per host.
-  GHashTable *f_host_false_positives; ///< False positives per host.
-  GHashTable *f_host_holes;           ///< Holes per host.
-  GHashTable *f_host_infos;           ///< Infos per host.
-  GHashTable *f_host_logs;            ///< Logs per hosts.
-  GHashTable *f_host_ports;           ///< Ports per host.
-  GHashTable *f_host_warnings;        ///< Warnings per hosts.
-  // Filtered counts: audit.
-  GHashTable *f_host_compliant;       ///< Compliants per host.
-  GHashTable *f_host_incomplete;      ///< Incompletes per host.
-  GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
-  GHashTable *f_host_undefined;       ///< Undefineds per host.
-};
-
-/**
- * @brief Context type for print_report_xml_start.
- */
-typedef struct print_report_context print_report_context_t;
-
-/**
  * @brief Free f_hosts_ field for print_report_context_cleanup.
  *
  * @param[in]  table  Hash table.
@@ -15541,145 +15244,6 @@ free_f_host (GHashTable *table)
 {
   if (table)
     g_hash_table_destroy (table);
-}
-
-/**
- * @brief Free the members of a context.
- *
- * @param[in]  ctx  Printing context.
- */
-static void
-print_report_context_cleanup (print_report_context_t *ctx)
-{
-  g_free (ctx->compliance_levels);
-  g_free (ctx->tsk_usage_type);
-  g_free (ctx->tz);
-  g_free (ctx->zone);
-  free (ctx->old_tz_override);
-  // Filtered counts.
-  free_f_host (ctx->f_host_false_positives);
-  free_f_host (ctx->f_host_holes);
-  free_f_host (ctx->f_host_infos);
-  free_f_host (ctx->f_host_logs);
-  free_f_host (ctx->f_host_ports);
-  free_f_host (ctx->f_host_warnings);
-  // Filtered counts: audit.
-  free_f_host (ctx->f_host_compliant);
-  free_f_host (ctx->f_host_criticals);
-  free_f_host (ctx->f_host_incomplete);
-  free_f_host (ctx->f_host_notcompliant);
-  free_f_host (ctx->f_host_undefined);
-}
-
-/**
- * @brief Write report host detail to file stream.
- *
- * On error close stream.
- *
- * @param[in]   stream    Stream to write to.
- * @param[in]   details   Report host details iterator.
- * @param[in]   lean      Whether to return reduced info.
- *
- * @return 0 success, -1 error.
- */
-static int
-print_report_host_detail (FILE *stream, iterator_t *details, int lean)
-{
-  const char *name, *value;
-
-  name = report_host_details_iterator_name (details);
-  value = report_host_details_iterator_value (details);
-
-  if (lean)
-    {
-      /* Skip certain host details. */
-
-      if (strcmp (name, "EXIT_CODE") == 0
-          && strcmp (value, "EXIT_NOTVULN") == 0)
-        return 0;
-
-      if (strcmp (name, "scanned_with_scanner") == 0)
-        return 0;
-
-      if (strcmp (name, "scanned_with_feedtype") == 0)
-        return 0;
-
-      if (strcmp (name, "scanned_with_feedversion") == 0)
-        return 0;
-
-      if (strcmp (name, "OS") == 0)
-        return 0;
-
-      if (strcmp (name, "traceroute") == 0)
-        return 0;
-    }
-
-  PRINT (stream,
-        "<detail>"
-        "<name>%s</name>"
-        "<value>%s</value>"
-        "<source>",
-        name,
-        value);
-
-  if (lean == 0)
-    PRINT (stream,
-           "<type>%s</type>",
-           report_host_details_iterator_source_type (details));
-
-  PRINT (stream,
-        "<name>%s</name>",
-        report_host_details_iterator_source_name (details));
-
-  if (report_host_details_iterator_source_desc (details)
-      && strlen (report_host_details_iterator_source_desc (details)))
-    PRINT (stream,
-           "<description>%s</description>",
-           report_host_details_iterator_source_desc (details));
-  else if (lean == 0)
-    PRINT (stream,
-           "<description></description>");
-
-  PRINT (stream,
-        "</source>");
-
-  if (report_host_details_iterator_extra (details)
-      && strlen (report_host_details_iterator_extra (details)))
-    PRINT (stream,
-           "<extra>%s</extra>",
-           report_host_details_iterator_extra (details));
-  else if (lean == 0)
-    PRINT (stream,
-           "<extra></extra>");
-
-  PRINT (stream,
-        "</detail>");
-
-  return 0;
-}
-
-/**
- * @brief Print the XML for a report's host details to a file stream.
- * @param[in]  report_host  The report host.
- * @param[in]  stream       File stream to write to.
- * @param[in]  lean         Report host details iterator.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_host_details_xml (report_host_t report_host, FILE *stream,
-                               int lean)
-{
-  iterator_t details;
-
-  init_report_host_details_iterator
-   (&details, report_host);
-  while (next (&details))
-    if (print_report_host_detail (stream, &details, lean))
-      return -1;
-  cleanup_iterator (&details);
-
-  return 0;
 }
 
 /**
@@ -16103,6 +15667,71 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
 }
 
 /**
+ * @brief Free the members of a context.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+void
+print_report_context_cleanup (print_report_context_t *ctx)
+{
+  g_free (ctx->compliance_levels);
+  g_free (ctx->tsk_usage_type);
+  g_free (ctx->tz);
+  g_free (ctx->zone);
+  free (ctx->old_tz_override);
+  // Filtered counts.
+  free_f_host (ctx->f_host_false_positives);
+  free_f_host (ctx->f_host_holes);
+  free_f_host (ctx->f_host_infos);
+  free_f_host (ctx->f_host_logs);
+  free_f_host (ctx->f_host_ports);
+  free_f_host (ctx->f_host_warnings);
+  // Filtered counts: audit.
+  free_f_host (ctx->f_host_compliant);
+  free_f_host (ctx->f_host_criticals);
+  free_f_host (ctx->f_host_incomplete);
+  free_f_host (ctx->f_host_notcompliant);
+  free_f_host (ctx->f_host_undefined);
+}
+
+/**
+ * @brief Init the f_hosts_* hashtables.
+ *
+ * @param[in]  ctx  Printing context.
+ */
+void
+print_report_init_f_hosts (print_report_context_t *ctx)
+{
+  if (strcmp (ctx->tsk_usage_type, "audit") == 0)
+    {
+      ctx->f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                        g_free, NULL);
+      ctx->f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                      g_free, NULL);
+      ctx->f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+    }
+  else
+    {
+      ctx->f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                     g_free, NULL);
+      ctx->f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                    g_free, NULL);
+      ctx->f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, NULL);
+      ctx->f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                g_free, NULL);
+      ctx->f_host_false_positives = g_hash_table_new_full (g_str_hash,
+                                                           g_str_equal,
+                                                           g_free, NULL);
+    }
+}
+
+/**
  * @brief Calculate the progress of a report.
  *
  * @param[in]  report     Report.
@@ -16153,397 +15782,6 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
     }
   return 0;
 }
-
-/**
- * @brief Print the XML for a report to a file.
- *
- * @param[in]  host_summary_buffer  Summary.
- * @param[in]  host                 Host.
- * @param[in]  start_iso            Start time, in ISO format.
- * @param[in]  end_iso              End time, in ISO format.
- */
-static void
-host_summary_append (GString *host_summary_buffer, const char *host,
-                     const char *start_iso, const char *end_iso)
-{
-  if (host_summary_buffer)
-    {
-      char start[200], end[200];
-
-      if (start_iso)
-        {
-          struct tm start_tm;
-
-          memset (&start_tm, 0, sizeof (struct tm));
-          #if !defined(__GLIBC__)
-            if (strptime (start_iso, "%Y-%m-%dT%H:%M:%S", &start_tm) == NULL)
-          #else
-            if (strptime (start_iso, "%FT%H:%M:%S", &start_tm) == NULL)
-          #endif
-            {
-              g_warning ("%s: Failed to parse start", __func__);
-              return;
-            }
-
-          if (strftime (start, 200, "%b %d, %H:%M:%S", &start_tm) == 0)
-            {
-              g_warning ("%s: Failed to format start", __func__);
-              return;
-            }
-        }
-      else
-        strcpy (start, "(not started)");
-
-      if (end_iso)
-        {
-          struct tm end_tm;
-
-          memset (&end_tm, 0, sizeof (struct tm));
-          #if !defined(__GLIBC__)
-            if (strptime (end_iso, "%Y-%m-%dT%H:%M:%S", &end_tm) == NULL)
-          #else
-            if (strptime (end_iso, "%FT%H:%M:%S", &end_tm) == NULL)
-          #endif
-            {
-              g_warning ("%s: Failed to parse end", __func__);
-              return;
-            }
-
-          if (strftime (end, 200, "%b %d, %H:%M:%S", &end_tm) == 0)
-            {
-              g_warning ("%s: Failed to format end", __func__);
-              return;
-            }
-        }
-      else
-        strcpy (end, "(not finished)");
-
-      g_string_append_printf (host_summary_buffer,
-                              "   %-15s   %-16s   %s\n",
-                              host,
-                              start,
-                              end);
-    }
-}
-
-/**
- * @brief Print the XML for a report's host to a file stream.
- *
- * @param[in]  ctx                      Printing context.
- * @param[in]  stream                   File stream to write to.
- * @param[in]  hosts                    Host iterator.
- * @param[in]  host                     Single host to iterate over.
- *                                        All hosts if NULL.
- * @param[in]  usage_type               Report usage type.
- * @param[in]  lean                     Whether to return lean report.
- * @param[in]  host_summary_buffer      Host sumary buffer.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_report_host_xml (print_report_context_t *ctx,
-                       FILE *stream,
-                       iterator_t *hosts,
-                       const char *host,
-                       gchar *usage_type,
-                       int lean,
-                       GString *host_summary_buffer)
-{
-  const char *current_host;
-  int ports_count;
-
-  current_host = host_iterator_host (hosts);
-
-  ports_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_ports, current_host));
-
-  host_summary_append (host_summary_buffer,
-                       host ? host : host_iterator_host (hosts),
-                       host_iterator_start_time (hosts),
-                       host_iterator_end_time (hosts));
-  PRINT (stream,
-          "<host>"
-          "<ip>%s</ip>",
-          host ? host : host_iterator_host (hosts));
-
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-            "<asset asset_id=\"%s\"/>",
-            host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-           "<asset asset_id=\"\"/>");
-
-  if (strcmp (usage_type, "audit") == 0)
-    {
-      int yes_count, no_count, incomplete_count, undefined_count;
-
-      yes_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_compliant, current_host));
-      no_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_notcompliant, current_host));
-      incomplete_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_incomplete, current_host));
-      undefined_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_undefined, current_host));
-
-      PRINT (stream,
-            "<start>%s</start>"
-            "<end>%s</end>"
-            "<port_count><page>%d</page></port_count>"
-            "<compliance_count>"
-            "<page>%d</page>"
-            "<yes><page>%d</page></yes>"
-            "<no><page>%d</page></no>"
-            "<incomplete><page>%d</page></incomplete>"
-            "<undefined><page>%d</page></undefined>"
-            "</compliance_count>"
-            "<host_compliance>%s</host_compliance>",
-            host_iterator_start_time (hosts),
-            host_iterator_end_time (hosts)
-              ? host_iterator_end_time (hosts)
-              : "",
-            ports_count,
-            (yes_count + no_count + incomplete_count + undefined_count),
-            yes_count,
-            no_count,
-            incomplete_count,
-            undefined_count,
-            report_compliance_from_counts (&yes_count,
-                                            &no_count,
-                                            &incomplete_count,
-                                            &undefined_count));
-    }
-  else
-    {
-      int holes_count, warnings_count, infos_count;
-      int logs_count, false_positives_count;
-      int criticals_count = 0;
-
-      criticals_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_criticals, current_host));
-      holes_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_holes, current_host));
-      warnings_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_warnings, current_host));
-      infos_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_infos, current_host));
-      logs_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_logs, current_host));
-      false_positives_count
-        = GPOINTER_TO_INT
-            (g_hash_table_lookup (ctx->f_host_false_positives,
-                                  current_host));
-
-      PRINT (stream,
-            "<start>%s</start>"
-            "<end>%s</end>"
-            "<port_count><page>%d</page></port_count>"
-            "<result_count>"
-            "<page>%d</page>"
-            "<critical><page>%d</page></critical>"
-            "<hole deprecated='1'><page>%d</page></hole>"
-            "<high><page>%d</page></high>"
-            "<warning deprecated='1'><page>%d</page></warning>"
-            "<medium><page>%d</page></medium>"
-            "<info deprecated='1'><page>%d</page></info>"
-            "<low><page>%d</page></low>"
-            "<log><page>%d</page></log>"
-            "<false_positive><page>%d</page></false_positive>"
-            "</result_count>",
-            host_iterator_start_time (hosts),
-            host_iterator_end_time (hosts)
-              ? host_iterator_end_time (hosts)
-              : "",
-            ports_count,
-            (criticals_count + holes_count + warnings_count + infos_count
-              + logs_count + false_positives_count),
-            criticals_count,
-            holes_count,
-            holes_count,
-            warnings_count,
-            warnings_count,
-            infos_count,
-            infos_count,
-            logs_count,
-            false_positives_count);
-    }
-
-  if (print_report_host_details_xml
-        (host_iterator_report_host (hosts), stream, lean))
-    {
-      return -1;
-    }
-
-  PRINT (stream,
-          "</host>");
-
-  return 0;
-}
-
-#if ENABLE_CONTAINER_SCANNING
-/**
- * @brief Print the XML for a report's host to a file stream.
- * @param[in]  ctx                      Printing context.
- * @param[in]  stream                   File stream to write to.
- * @param[in]  hosts                    Host iterator.
- * @param[in]  lean                     Whether to return lean report.
- * @param[in]  host_summary_buffer      Host sumary buffer.
- *
- * @return 0 on success, -1 error.
- */
-static int
-print_container_scan_report_host_xml (print_report_context_t *ctx,
-                                      FILE *stream,
-                                      iterator_t *hosts,
-                                      int lean,
-                                      GString *host_summary_buffer)
-{
-  int ports_count;
-
-  const char* host = host_iterator_host (hosts);
-  const char* hostname = host_iterator_hostname (hosts);
-
-  gchar *host_key = create_host_key (host,
-                                     hostname,
-                                     CONTAINER_SCANNER_HOST_KEY_SEPARATOR);
-
-  ports_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_ports, host_key));
-
-  host_summary_append (host_summary_buffer,
-                       host,
-                       host_iterator_start_time (hosts),
-                       host_iterator_end_time (hosts));
-  PRINT (stream,
-          "<host>"
-          "<ip>%s</ip>",
-          host);
-
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-            "<asset asset_id=\"%s\"/>",
-            host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-           "<asset asset_id=\"\"/>");
-
-  int holes_count, warnings_count, infos_count;
-  int logs_count, false_positives_count;
-  int criticals_count = 0;
-
-  criticals_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_criticals, host_key));
-  holes_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_holes, host_key));
-  warnings_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_warnings, host_key));
-  infos_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_infos, host_key));
-  logs_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_logs, host_key));
-  false_positives_count
-    = GPOINTER_TO_INT
-        (g_hash_table_lookup (ctx->f_host_false_positives,
-                              host_key));
-
-  PRINT (stream,
-        "<start>%s</start>"
-        "<end>%s</end>"
-        "<port_count><page>%d</page></port_count>"
-        "<result_count>"
-        "<page>%d</page>"
-        "<critical><page>%d</page></critical>"
-        "<hole deprecated='1'><page>%d</page></hole>"
-        "<high><page>%d</page></high>"
-        "<warning deprecated='1'><page>%d</page></warning>"
-        "<medium><page>%d</page></medium>"
-        "<info deprecated='1'><page>%d</page></info>"
-        "<low><page>%d</page></low>"
-        "<log><page>%d</page></log>"
-        "<false_positive><page>%d</page></false_positive>"
-        "</result_count>",
-        host_iterator_start_time (hosts),
-        host_iterator_end_time (hosts)
-          ? host_iterator_end_time (hosts)
-          : "",
-        ports_count,
-        (criticals_count + holes_count + warnings_count + infos_count
-          + logs_count + false_positives_count),
-        criticals_count,
-        holes_count,
-        holes_count,
-        warnings_count,
-        warnings_count,
-        infos_count,
-        infos_count,
-        logs_count,
-        false_positives_count);
-
-  g_free (host_key);
-
-  if (print_report_host_details_xml
-        (host_iterator_report_host (hosts), stream, lean))
-    {
-      return -1;
-    }
-
-  PRINT (stream,
-          "</host>");
-
-  return 0;
-}
-
-/**
- * @brief Print report hosts for an XML report
- *
- * @param[in]  ctx  Printing context.
- * @param[in]  stream  File stream to write to.
- * @param[in]  hosts   Host iterator.
- * @param[in]  lean    Whether to return lean report.
- * @param[in]  host_summary_buffer  Buffer to append host summary to.
- */
-static int
-print_container_scan_report_hosts_xml (print_report_context_t *ctx,
-                                       FILE *stream,
-                                       iterator_t *hosts,
-                                       int lean,
-                                       GString *host_summary_buffer)
-{
-  while (next (hosts))
-    {
-      if (print_container_scan_report_host_xml (ctx,
-                                                stream,
-                                                hosts,
-                                                lean,
-                                                host_summary_buffer))
-        {
-          g_warning ("%s: Failed to print host XML", __func__);
-          return -1;
-        }
-    }
-  return 0;
-}
-
-#endif // ENABLE_CONTAINER_SCANNING
 
 /**
  * @brief Init delta iterator for print_report_xml.
@@ -17064,42 +16302,6 @@ print_report_init_zone (print_report_context_t *ctx)
   return 0;
 }
 
-/**
- * @brief Init the f_hosts_* hashtables.
- *
- * @param[in]  ctx  Printing context.
- */
-static void
-print_report_init_f_hosts (print_report_context_t *ctx)
-{
-  if (strcmp (ctx->tsk_usage_type, "audit") == 0)
-    {
-      ctx->f_host_compliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                     g_free, NULL);
-      ctx->f_host_notcompliant = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                        g_free, NULL);
-      ctx->f_host_incomplete = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                      g_free, NULL);
-      ctx->f_host_undefined = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                     g_free, NULL);
-    }
-  else
-    {
-      ctx->f_host_criticals = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                     g_free, NULL);
-      ctx->f_host_holes = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                 g_free, NULL);
-      ctx->f_host_warnings = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                    g_free, NULL);
-      ctx->f_host_infos = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                 g_free, NULL);
-      ctx->f_host_logs = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                                g_free, NULL);
-      ctx->f_host_false_positives = g_hash_table_new_full (g_str_hash,
-                                                           g_str_equal,
-                                                           g_free, NULL);
-    }
-}
 
 /**
  * @brief Get result count totals for print_report_xml_start.
@@ -17206,9 +16408,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   int f_compliance_count;
   print_report_context_t ctx = {0};
 
-  #if ENABLE_CONTAINER_SCANNING
   gboolean is_container_scanning_report = FALSE;
-  #endif
 
   /* Init some vars to prevent warnings from older compilers. */
   max_results = -1;
@@ -17255,42 +16455,27 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   assert (get);
 
-  if ((get->filt_id && strlen (get->filt_id)
-       && strcmp (get->filt_id, FILT_ID_NONE))
-      || (get->filter && strlen (get->filter)))
+  int ret = manage_report_filter_controls_from_get (get,
+                                                    &term,
+                                                    &first_result,
+                                                    &max_results,
+                                                    &sort_field,
+                                                    &sort_order,
+                                                    &result_hosts_only,
+                                                    &min_qod,
+                                                    &levels,
+                                                    &ctx.compliance_levels,
+                                                    &delta_states,
+                                                    &search_phrase,
+                                                    &search_phrase_exact,
+                                                    &notes,
+                                                    &overrides,
+                                                    &apply_overrides,
+                                                    &ctx.zone);
+  if (ret)
     {
-      term = NULL;
-      if (get->filt_id && strlen (get->filt_id)
-          && strcmp (get->filt_id, FILT_ID_NONE))
-        {
-          term = filter_term (get->filt_id);
-          if (term == NULL)
-            {
-              fclose (out);
-              return 2;
-            }
-        }
-
-      /* Set the filter parameters from the filter term. */
-      manage_report_filter_controls (term ? term : get->filter,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &ctx.compliance_levels,
-                                     &delta_states, &search_phrase,
-                                     &search_phrase_exact, &notes,
-                                     &overrides, &apply_overrides, &ctx.zone);
-    }
-  else
-    {
-      term = g_strdup ("");
-      /* Set the filter parameters to defaults */
-      manage_report_filter_controls (term,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &ctx.compliance_levels,
-                                     &delta_states, &search_phrase,
-                                     &search_phrase_exact, &notes, &overrides,
-                                     &apply_overrides, &ctx.zone);
+      fclose (out);
+      return ret;
     }
 
   max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
@@ -18219,103 +17404,21 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   else
     host_summary_buffer = NULL;
 
-  if (get->details && result_hosts_only)
+  if (get->details)
     {
-      gchar *result_host;
-      int index = 0;
-      array_terminate (result_hosts);
-      iterator_t hosts;
-
-#if ENABLE_CONTAINER_SCANNING
-      if (is_container_scanning_report)
+      if (print_report_hosts_xml (&ctx,
+                                  out,
+                                  report,
+                                  get,
+                                  ctx.tsk_usage_type,
+                                  lean,
+                                  is_container_scanning_report,
+                                  result_hosts_only,
+                                  result_hosts,
+                                  host_summary_buffer))
         {
-          while ((result_host = g_ptr_array_index (result_hosts, index++)))
-            {
-              gchar *host, *hostname;
-              if (parse_host_key (result_host,
-                                  CONTAINER_SCANNER_HOST_KEY_SEPARATOR,
-                                  &host,
-                                  &hostname) < 0)
-                {
-                  goto failed_print_report_host;
-                }
-              init_report_host_iterator_hostname (&hosts, report, host, hostname);
-              g_free (host);
-              g_free (hostname);
-
-              if (print_container_scan_report_hosts_xml (&ctx,
-                                                         out,
-                                                         &hosts,
-                                                         lean,
-                                                         host_summary_buffer))
-                {
-                  cleanup_iterator (&hosts);
-                  goto failed_print_report_host;
-                }
-            }
+          goto failed_print_report_host;
         }
-     else
-#endif /* ENABLE_CONTAINER_SCANNING */
-        {
-          while ((result_host = g_ptr_array_index (result_hosts, index++)))
-            {
-              gboolean present;
-              init_report_host_iterator (&hosts, report, result_host, 0);
-              present = next (&hosts);
-              if (present)
-                {
-                  if (print_report_host_xml (&ctx,
-                                             out,
-                                             &hosts,
-                                             result_host,
-                                             ctx.tsk_usage_type,
-                                             lean,
-                                             host_summary_buffer))
-                    {
-                      cleanup_iterator (&hosts);
-                      goto failed_print_report_host;
-                    }
-                }
-            }
-        }
-        cleanup_iterator (&hosts);
-    }
-  else if (get->details)
-    {
-      iterator_t hosts;
-      init_report_host_iterator (&hosts, report, NULL, 0);
-#if ENABLE_CONTAINER_SCANNING
-      if (is_container_scanning_report)
-        {
-          if (print_container_scan_report_hosts_xml (&ctx,
-                                                     out,
-                                                     &hosts,
-                                                     lean,
-                                                     host_summary_buffer))
-            {
-              cleanup_iterator (&hosts);
-              goto failed_print_report_host;
-            }
-        }
-      else
-#endif /* ENABLE_CONTAINER_SCANNING */
-        {
-          while (next (&hosts))
-            {
-              if (print_report_host_xml (&ctx,
-                                         out,
-                                         &hosts,
-                                         NULL,
-                                         ctx.tsk_usage_type,
-                                         lean,
-                                         host_summary_buffer))
-                {
-                  cleanup_iterator (&hosts);
-                  goto failed_print_report_host;
-                }
-            }
-        }
-      cleanup_iterator (&hosts);
     }
 
   /* Print TLS certificates */
@@ -18586,16 +17689,6 @@ manage_report (report_t report, report_t delta_report, const get_data_t *get,
 
   return output;
 }
-
-/**
- * @brief Size of base64 chunk in manage_send_report.
- */
-#define MANAGE_SEND_REPORT_CHUNK64_SIZE 262144
-
-/**
- * @brief Size of file chunk in manage_send_report.
- */
-#define MANAGE_SEND_REPORT_CHUNK_SIZE (MANAGE_SEND_REPORT_CHUNK64_SIZE * 3 / 4)
 
 /**
  * @brief Generate a report.

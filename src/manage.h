@@ -21,6 +21,7 @@
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_integration_configs.h"
+#include "manage_report_hosts.h"
 #include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"
@@ -1445,28 +1446,6 @@ result_iterator_delta_hostname (iterator_t*);
 
 int
 cleanup_result_nvts ();
-
-void
-init_report_host_iterator (iterator_t*, report_t, const char *, report_host_t);
-
-void
-init_report_host_iterator_hostname (iterator_t*, report_t, const char *,
-                                    const char *);
-
-const char*
-host_iterator_host (iterator_t*);
-
-const char*
-host_iterator_start_time (iterator_t*);
-
-const char*
-host_iterator_end_time (iterator_t*);
-
-int
-host_iterator_current_port (iterator_t*);
-
-int
-host_iterator_max_port (iterator_t*);
 
 int
 collate_message_type (void* data, int, const void*, int, const void*);

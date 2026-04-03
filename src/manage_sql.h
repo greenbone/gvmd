@@ -165,6 +165,61 @@ struct report_aux {
 
 /* Variables */
 
+
+
+/**
+ * @brief Size of base64 chunk in manage_send_report.
+ */
+#define MANAGE_SEND_REPORT_CHUNK64_SIZE 262144
+
+/**
+ * @brief Size of file chunk in manage_send_report.
+ */
+#define MANAGE_SEND_REPORT_CHUNK_SIZE (MANAGE_SEND_REPORT_CHUNK64_SIZE * 3 / 4)
+
+/**
+ * @brief Context info for print_report_xml_start.
+ */
+struct print_report_context
+{
+ gchar *compliance_levels;   ///< Compliance levels.
+ int count_filtered;         ///< Whether to count filtered results.
+ report_t delta;             ///< Report to compare with.
+ int filtered_result_count;  ///< Filtered result count.
+ const get_data_t *get;      ///< GET command data.
+ gchar *tz;                  ///< TZ.
+ gchar *zone;                ///< Zone.
+ char *old_tz_override;      ///< Old TZ.
+ report_t report;            ///< Report.
+ gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+ // Counts.
+ int criticals;              ///< Number of criticals.
+ int holes;                  ///< Number of holes.
+ int infos;                  ///< Number of infos.
+ int logs;                   ///< Number of logs.
+ int warnings;               ///< Number of warnings.
+ int false_positives;        ///< Number of false positives.
+ int total_result_count;     ///< Total number of results.
+ // Filtered counts.
+ GHashTable *f_host_criticals;       ///< Criticals per host.
+ GHashTable *f_host_false_positives; ///< False positives per host.
+ GHashTable *f_host_holes;           ///< Holes per host.
+ GHashTable *f_host_infos;           ///< Infos per host.
+ GHashTable *f_host_logs;            ///< Logs per hosts.
+ GHashTable *f_host_ports;           ///< Ports per host.
+ GHashTable *f_host_warnings;        ///< Warnings per hosts.
+ // Filtered counts: audit.
+ GHashTable *f_host_compliant;       ///< Compliants per host.
+ GHashTable *f_host_incomplete;      ///< Incompletes per host.
+ GHashTable *f_host_notcompliant;    ///< Notcompliants per host.
+ GHashTable *f_host_undefined;       ///< Undefineds per host.
+};
+
+/**
+ * @brief Context type for print_report_xml_start.
+ */
+typedef struct print_report_context print_report_context_t;
+
 extern db_conn_info_t gvmd_db_conn_info;
 
 /**
@@ -552,5 +607,17 @@ int
 type_build_select (const char *, const char *, const get_data_t *, gboolean,
                    gboolean, const char *, const char *, const char *,
                    gchar **);
+
+void
+print_report_init_f_hosts (print_report_context_t *);
+
+void
+print_report_context_cleanup (print_report_context_t *);
+
+const char *
+report_compliance_from_counts (const int *,
+                               const int *,
+                               const int *,
+                               const int *);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

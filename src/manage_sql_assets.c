@@ -14,6 +14,7 @@
 #include "manage_sql_oci_image_targets.h"
 #endif
 #include "manage_asset_keys.h"
+#include "manage_report_hosts.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_settings.h"

@@ -91,6 +91,7 @@
 #include "gmp_port_lists.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_formats.h"
+#include "gmp_report_hosts.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
 #include "manage.h"
@@ -4549,6 +4550,7 @@ typedef enum
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_FORMATS,
+  CLIENT_GET_REPORT_HOSTS,
   CLIENT_GET_RESOURCE_NAMES,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
@@ -5876,6 +5878,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
+
+        ELSE_GET_START (report_hosts, REPORT_HOSTS)
+
         else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
           {
             const gchar* typebuf;
@@ -22110,6 +22115,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
+
+      CASE_GET_END (REPORT_HOSTS, report_hosts);
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);

@@ -771,6 +771,14 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *usage_type = get_data_get_extra (get, "usage_type");
       extra_where = reports_extra_where (0, NULL, usage_type);
     }
+  else if (strcmp (type, "report_host") == 0)
+    {
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          extra_where = report_hosts_extra_where (report_uuid);
+        }
+    }
   else if (strcmp (type, "result") == 0)
     {
       extra_where

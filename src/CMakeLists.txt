@@ -188,6 +188,7 @@ set(
   manage_resources.c
   manage_report_configs.c
   manage_report_formats.c
+  manage_report_hosts.c
   manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
@@ -245,6 +246,7 @@ set(
   manage_sql_report_configs.c
   manage_sql_report_formats.c
   manage_sql_resources.c
+  manage_sql_report_hosts.c
   manage_sql_roles.c
   manage_sql_scanner_relays.c
   manage_sql_settings.c
@@ -280,15 +282,16 @@ set(
   gmp_configs.c
   gmp_delete.c
   gmp_get.c
+  gmp_integration_configs.c
   gmp_license.c
   gmp_logout.c
+  gmp_oci_image_targets.c
   gmp_port_lists.c
   gmp_report_configs.c
   gmp_report_formats.c
+  gmp_report_hosts.c
   gmp_tickets.c
   gmp_tls_certificates.c
-  gmp_oci_image_targets.c
-  gmp_integration_configs.c
 )
 
 if(ENABLE_AGENTS)
