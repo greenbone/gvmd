@@ -10,9 +10,8 @@
  * Non-SQL report hosts code for the GVM management layer.
  */
 
-#include "manage_filters.h"
 #include "manage_report_hosts.h"
-
+#include "manage_filters.h"
 #include "manage_settings.h"
 #include "manage_sql_report_hosts.h"
 
