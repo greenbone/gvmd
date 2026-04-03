@@ -93,7 +93,6 @@ get_report_hosts_run (gmp_parser_t *gmp_parser, GError **error)
 
   count = 0;
   usage_type = NULL;
-  is_container_scanning_report = FALSE;
 
   if (get_report_hosts_data.report_id == NULL)
     {
@@ -173,7 +172,9 @@ get_report_hosts_run (gmp_parser_t *gmp_parser, GError **error)
     usage_type,
     is_container_scanning_report,
     get_report_hosts_data.lean,
-    gmp_parser);
+    send_to_client,
+    gmp_parser->client_writer,
+    gmp_parser->client_writer_data);
 
   g_free (usage_type);
 

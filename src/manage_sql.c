@@ -16455,42 +16455,27 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
   assert (get);
 
-  if ((get->filt_id && strlen (get->filt_id)
-       && strcmp (get->filt_id, FILT_ID_NONE))
-      || (get->filter && strlen (get->filter)))
+  int ret = manage_report_filter_controls_from_get (get,
+                                                    &term,
+                                                    &first_result,
+                                                    &max_results,
+                                                    &sort_field,
+                                                    &sort_order,
+                                                    &result_hosts_only,
+                                                    &min_qod,
+                                                    &levels,
+                                                    &ctx.compliance_levels,
+                                                    &delta_states,
+                                                    &search_phrase,
+                                                    &search_phrase_exact,
+                                                    &notes,
+                                                    &overrides,
+                                                    &apply_overrides,
+                                                    &ctx.zone);
+  if (ret)
     {
-      term = NULL;
-      if (get->filt_id && strlen (get->filt_id)
-          && strcmp (get->filt_id, FILT_ID_NONE))
-        {
-          term = filter_term (get->filt_id);
-          if (term == NULL)
-            {
-              fclose (out);
-              return 2;
-            }
-        }
-
-      /* Set the filter parameters from the filter term. */
-      manage_report_filter_controls (term ? term : get->filter,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &ctx.compliance_levels,
-                                     &delta_states, &search_phrase,
-                                     &search_phrase_exact, &notes,
-                                     &overrides, &apply_overrides, &ctx.zone);
-    }
-  else
-    {
-      term = g_strdup ("");
-      /* Set the filter parameters to defaults */
-      manage_report_filter_controls (term,
-                                     &first_result, &max_results, &sort_field,
-                                     &sort_order, &result_hosts_only,
-                                     &min_qod, &levels, &ctx.compliance_levels,
-                                     &delta_states, &search_phrase,
-                                     &search_phrase_exact, &notes, &overrides,
-                                     &apply_overrides, &ctx.zone);
+      fclose (out);
+      return ret;
     }
 
   max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
