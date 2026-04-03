@@ -451,6 +451,117 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
 }
 
 /**
+ * @brief Derive report filter control values from GET filter input.
+ *
+ * The caller owns any allocated output strings and must free them.
+ *
+ * @param[in]  get                  GET command data.
+ * @param[out] term                 Resolved filter term.
+ * @param[out] first_result         First result offset.
+ * @param[out] max_results          Maximum number of results.
+ * @param[out] sort_field           Sort field.
+ * @param[out] sort_order           Sort order.
+ * @param[out] result_hosts_only    Whether only hosts with matching results
+ *                                  should be included.
+ * @param[out] min_qod              Minimum QoD.
+ * @param[out] levels               Severity levels filter.
+ * @param[out] compliance_levels    Compliance levels filter.
+ * @param[out] delta_states         Delta states filter.
+ * @param[out] search_phrase        Search phrase.
+ * @param[out] search_phrase_exact  Whether search phrase must match exactly.
+ * @param[out] notes                Whether notes are enabled.
+ * @param[out] overrides            Whether overrides are enabled.
+ * @param[out] apply_overrides      Whether overrides should be applied.
+ * @param[out] zone                 Timezone.
+ *
+ * @return 0 on success, 2 if the referenced filter was not found, -1 on error.
+ */
+int
+manage_report_filter_controls_from_get (const get_data_t *get,
+                                        gchar **term,
+                                        int *first_result,
+                                        int *max_results,
+                                        gchar **sort_field,
+                                        int *sort_order,
+                                        int *result_hosts_only,
+                                        gchar **min_qod,
+                                        gchar **levels,
+                                        gchar **compliance_levels,
+                                        gchar **delta_states,
+                                        gchar **search_phrase,
+                                        int *search_phrase_exact,
+                                        int *notes,
+                                        int *overrides,
+                                        int *apply_overrides,
+                                        gchar **zone)
+{
+  gchar *local_term;
+
+  if (get == NULL || term == NULL)
+    {
+      g_warning ("%s: invalid argument", __func__);
+      return -1;
+    }
+
+  *term = NULL;
+  local_term = NULL;
+
+  if ((get->filt_id && strlen (get->filt_id)
+       && strcmp (get->filt_id, FILT_ID_NONE))
+      || (get->filter && strlen (get->filter)))
+    {
+      if (get->filt_id && strlen (get->filt_id)
+          && strcmp (get->filt_id, FILT_ID_NONE))
+        {
+          local_term = filter_term (get->filt_id);
+          if (local_term == NULL)
+            return 2;
+        }
+
+      manage_report_filter_controls (local_term ? local_term : get->filter,
+                                     first_result,
+                                     max_results,
+                                     sort_field,
+                                     sort_order,
+                                     result_hosts_only,
+                                     min_qod,
+                                     levels,
+                                     compliance_levels,
+                                     delta_states,
+                                     search_phrase,
+                                     search_phrase_exact,
+                                     notes,
+                                     overrides,
+                                     apply_overrides,
+                                     zone);
+    }
+  else
+    {
+      local_term = g_strdup ("");
+
+      manage_report_filter_controls (local_term,
+                                     first_result,
+                                     max_results,
+                                     sort_field,
+                                     sort_order,
+                                     result_hosts_only,
+                                     min_qod,
+                                     levels,
+                                     compliance_levels,
+                                     delta_states,
+                                     search_phrase,
+                                     search_phrase_exact,
+                                     notes,
+                                     overrides,
+                                     apply_overrides,
+                                     zone);
+    }
+
+  *term = local_term;
+  return 0;
+}
+
+/**
  * @brief Append relation to filter.
  *
  * @param[in]  clean     Filter.

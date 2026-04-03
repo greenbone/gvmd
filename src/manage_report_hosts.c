@@ -15,7 +15,7 @@
 #include "manage_settings.h"
 #include "manage_sql_report_hosts.h"
 
-#include <util/fileutils.h>
+#include <gvm/util/fileutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -31,7 +31,9 @@
  * @param[in]  usage_type                    Task usage type.
  * @param[in]  is_container_scanning_report  Whether this is a container scan report.
  * @param[in]  lean                          Whether to send lean host data.
- * @param[in]  parser                        gmp_parser_t to write to client.
+ * @param[in]  send                          Function to write to client.
+ * @param[in]  send_data_1                   Second argument to @p send.
+ * @param[in]  send_data_2                   Third argument to @p send.
  *
  * @return 0 on success, -1 on error, 2 if filter was not found.
  */
@@ -41,7 +43,11 @@ manage_send_report_hosts (report_t report,
                           const gchar *usage_type,
                           gboolean is_container_scanning_report,
                           int lean,
-                          gmp_parser_t *parser)
+                          gboolean (*send) (const char *,
+                                            int (*) (const char *, void *),
+                                            void *),
+                          int (*send_data_1) (const char *, void *),
+                          void *send_data_2)
 {
   print_report_context_t ctx;
   gchar *xml_file;
@@ -51,17 +57,10 @@ manage_send_report_hosts (report_t report,
   gchar *delta_states;
   gchar *search_phrase;
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
+  gboolean xml_dir_created = FALSE;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
   FILE *stream;
   int ret;
-  int first_result;
-  int max_results;
-  int sort_order;
-  gchar *min_qod;
-  int apply_overrides;
-  int search_phrase_exact;
-  int notes;
-  int overrides;
   int result_hosts_only;
   array_t *result_hosts;
   iterator_t results;
@@ -91,75 +90,34 @@ manage_send_report_hosts (report_t report,
   ctx.report = report;
   ctx.tsk_usage_type = g_strdup (usage_type);
 
+  /* Derive filter controls, including whether only hosts with results
+   * should be included.
+   */
+  ret = manage_report_filter_controls_from_get (get,
+                                                &term,
+                                                NULL,
+                                                NULL,
+                                                &sort_field,
+                                                NULL,
+                                                &result_hosts_only,
+                                                NULL,
+                                                &levels,
+                                                &ctx.compliance_levels,
+                                                &delta_states,
+                                                &search_phrase,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                &ctx.zone);
+  if (ret)
+    goto cleanup;
+
   print_report_init_f_hosts (&ctx);
 
   // Initialize host_ports
   ctx.f_host_ports = g_hash_table_new_full (g_str_hash, g_str_equal,
                                             g_free, NULL);
-
-  /* Derive filter controls, including whether only hosts with results
-   * should be included.
-   */
-  if ((get->filt_id && strlen (get->filt_id)
-       && strcmp (get->filt_id, FILT_ID_NONE))
-      || (get->filter && strlen (get->filter)))
-    {
-      if (get->filt_id && strlen (get->filt_id)
-          && strcmp (get->filt_id, FILT_ID_NONE))
-        {
-          term = filter_term (get->filt_id);
-          if (term == NULL)
-            return 2;
-        }
-
-      manage_report_filter_controls (term ? term : get->filter,
-                                     &first_result,
-                                     &max_results,
-                                     &sort_field,
-                                     &sort_order,
-                                     &result_hosts_only,
-                                     &min_qod,
-                                     &levels,
-                                     &ctx.compliance_levels,
-                                     &delta_states,
-                                     &search_phrase,
-                                     &search_phrase_exact,
-                                     &notes,
-                                     &overrides,
-                                     &apply_overrides,
-                                     &ctx.zone);
-    }
-  else
-    {
-      term = g_strdup ("");
-
-      manage_report_filter_controls (term,
-                                     &first_result,
-                                     &max_results,
-                                     &sort_field,
-                                     &sort_order,
-                                     &result_hosts_only,
-                                     &min_qod,
-                                     &levels,
-                                     &ctx.compliance_levels,
-                                     &delta_states,
-                                     &search_phrase,
-                                     &search_phrase_exact,
-                                     &notes,
-                                     &overrides,
-                                     &apply_overrides,
-                                     &ctx.zone);
-    }
-
-  max_results = manage_max_rows (max_results, get->ignore_max_rows_per_page);
-  (void) first_result;
-  (void) max_results;
-  (void) sort_order;
-  (void) min_qod;
-  (void) search_phrase_exact;
-  (void) notes;
-  (void) overrides;
-  (void) apply_overrides;
 
   if (mkdtemp (xml_dir) == NULL)
     {
@@ -167,6 +125,8 @@ manage_send_report_hosts (report_t report,
       ret = -1;
       goto cleanup;
     }
+
+  xml_dir_created = TRUE;
 
   if (get->details && result_hosts_only)
     {
@@ -261,8 +221,7 @@ manage_send_report_hosts (report_t report,
       if (left < MANAGE_SEND_REPORT_CHUNK_SIZE)
         {
           chunk[MANAGE_SEND_REPORT_CHUNK_SIZE - left] = '\0';
-          if (send_to_client (chunk, parser->client_writer,
-                              parser->client_writer_data))
+          if (send (chunk, send_data_1, send_data_2))
             {
               g_warning ("%s: send error", __func__);
               ret = -1;
@@ -295,11 +254,10 @@ cleanup:
   g_free (levels);
   g_free (delta_states);
   g_free (search_phrase);
-  g_free (min_qod);
 
   print_report_context_cleanup (&ctx);
 
-  if (xml_dir[0] != '\0')
+  if (xml_dir_created)
     gvm_file_remove_recurse (xml_dir);
 
   return ret;
