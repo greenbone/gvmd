@@ -21502,6 +21502,10 @@ END:VCALENDAR
         If the "details" attribute is set, the response includes host entries.
         Otherwise only filter, sort and count information is returned.
       </p>
+      <p>
+        Currently "lean" omits selected optional or redundant XML elements from the
+        report hosts output to reduce response size.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -21524,11 +21528,6 @@ END:VCALENDAR
             </summary>
           </option>
           <option>
-            <name>rows</name>
-            <type>integer</type>
-            <summary>Number of items to return</summary>
-          </option>
-          <option>
             <name>sort</name>
             <type>text</type>
             <summary>Column to sort by in ascending order</summary>
@@ -21537,16 +21536,6 @@ END:VCALENDAR
             <name>sort-reverse</name>
             <type>text</type>
             <summary>Column to sort by in descending order</summary>
-          </option>
-          <option>
-            <name>apply_overrides</name>
-            <type>boolean</type>
-            <summary>Whether to apply Overrides</summary>
-          </option>
-          <option>
-            <name>min_qod</name>
-            <type>integer</type>
-            <summary>Minimum QoD of the results</summary>
           </option>
           <option>
             <name>levels</name>
@@ -21597,6 +21586,11 @@ END:VCALENDAR
         <name>filt_id</name>
         <summary>ID of filter to use to filter report hosts</summary>
         <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether to return a streamlined response</summary>
+        <type>boolean</type>
       </attrib>
       <attrib>
         <name>details</name>
