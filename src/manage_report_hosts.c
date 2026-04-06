@@ -95,19 +95,19 @@ manage_send_report_hosts (report_t report,
                                                 &term,
                                                 NULL,
                                                 NULL,
-                                                &sort_field,
+                                                NULL,
                                                 NULL,
                                                 &result_hosts_only,
                                                 NULL,
-                                                &levels,
-                                                &ctx.compliance_levels,
-                                                &delta_states,
-                                                &search_phrase,
                                                 NULL,
                                                 NULL,
                                                 NULL,
                                                 NULL,
-                                                &ctx.zone);
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL);
   if (ret)
     goto cleanup;
 
