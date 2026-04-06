@@ -21506,6 +21506,11 @@ END:VCALENDAR
         Currently "lean" omits selected optional or redundant XML elements from the
         report hosts output to reduce response size.
       </p>
+      <p>
+        The filter affects the selection of matching results and the derived host
+        information returned by the command. When "result_hosts_only" is set, only
+        hosts with matching results are included.
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -21516,7 +21521,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>filter</name>
-        <summary>Filter term to use to filter report hosts</summary>
+        <summary>Filter term to use for report host retrieval</summary>
         <type>text</type>
         <filter_keywords>
           <option>
