@@ -373,3 +373,49 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
 
   return 0;
 }
+
+/**
+ * @brief Print report port XML, returning either full details or only the count.
+ *
+ * @param[in]  ctx              Printing context.
+ * @param[in]  report           The report.
+ * @param[in]  out              File stream.
+ * @param[in]  get              Result get data.
+ * @param[in]  details          Boolean flag whether to include full details
+ * @param[in]  first_result     The result to start from.  The results are 0
+ *                              indexed.
+ * @param[in]  max_results      The maximum number of results returned.
+ * @param[in]  sort_order       Whether to sort ascending or descending.
+ * @param[in]  sort_field       Field to sort on.
+ * @param[in,out] results       Result iterator.  For caller to reuse.
+ *
+ * @return 0 on success, -1 error.
+ */
+int
+print_report_port_xml_summary_or_details (print_report_context_t *ctx,
+                                          report_t report, FILE *out,
+                                          const get_data_t *get, int details,
+                                          int first_result, int max_results,
+                                          int sort_order,
+                                          const char *sort_field,
+                                          iterator_t *results)
+{
+  if (details == 0)
+    {
+      PRINT (out,
+             "<ports"
+             " start=\"%i\""
+             " max=\"%i\">"
+             "<count>%i</count>"
+             "</ports>",
+             /* Add 1 for 1 indexing. */
+             first_result + 1,
+             max_results,
+             report_port_count (report));
+
+      return 0;
+    }
+
+  return print_report_port_xml (ctx, report, out, get, first_result,
+                                max_results, sort_order, sort_field, results);
+}
