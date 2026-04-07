@@ -22,6 +22,7 @@
 #include "manage_get.h"
 #include "manage_integration_configs.h"
 #include "manage_report_hosts.h"
+#include "manage_report_ports.h"
 #include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"
