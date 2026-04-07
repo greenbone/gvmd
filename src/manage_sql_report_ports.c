@@ -23,10 +23,10 @@
  */
 struct result_buffer
 {
-  gchar *host;                  ///< Host.
-  gchar *port;                  ///< Port.
-  gchar *severity;              ///< Severity.
-  double severity_double;       ///< Severity.
+  gchar *host;            ///< Host.
+  gchar *port;            ///< Port.
+  gchar *severity;        ///< Severity.
+  double severity_double; ///< Severity.
 };
 
 /**
@@ -44,7 +44,7 @@ typedef struct result_buffer result_buffer_t;
  *
  * @return Freshly allocated result buffer.
  */
-static result_buffer_t*
+static result_buffer_t *
 result_buffer_new (const gchar *host, const gchar *port, const gchar *severity,
                    double severity_double)
 {
@@ -85,8 +85,8 @@ static gint
 compare_severity_desc (gconstpointer arg_one, gconstpointer arg_two)
 {
   double one_severity, two_severity;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
+  gchar *one = *((gchar **) arg_one);
+  gchar *two = *((gchar **) arg_two);
   gint host;
 
   one += strlen (one) + 1;
@@ -105,8 +105,8 @@ compare_severity_desc (gconstpointer arg_one, gconstpointer arg_two)
         return 1;
       else
         {
-          one = *((gchar**) arg_one);
-          two = *((gchar**) arg_two);
+          one = *((gchar **) arg_one);
+          two = *((gchar **) arg_two);
           return strcmp (two, one);
         }
     }
@@ -127,8 +127,8 @@ static gint
 compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
 {
   double one_severity, two_severity;
-  gchar *one = *((gchar**) arg_one);
-  gchar *two = *((gchar**) arg_two);
+  gchar *one = *((gchar **) arg_one);
+  gchar *two = *((gchar **) arg_two);
   gint host;
 
   one += strlen (one) + 1;
@@ -147,8 +147,8 @@ compare_severity_asc (gconstpointer arg_one, gconstpointer arg_two)
         return 1;
       else
         {
-          one = *((gchar**) arg_one);
-          two = *((gchar**) arg_two);
+          one = *((gchar **) arg_one);
+          two = *((gchar **) arg_two);
           return strcmp (one, two);
         }
     }
@@ -170,8 +170,8 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
   int host;
   result_buffer_t *one, *two;
 
-  one = *((result_buffer_t**) arg_one);
-  two = *((result_buffer_t**) arg_two);
+  one = *((result_buffer_t **) arg_one);
+  two = *((result_buffer_t **) arg_two);
 
   host = strcmp (one->host, two->host);
   if (host == 0)
@@ -236,7 +236,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                        iterator_t *results)
 {
   result_buffer_t *last_item;
-  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar*));
+  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
 
   init_result_get_iterator (results, get, report, NULL, NULL);
 
@@ -275,7 +275,6 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
           g_array_append_val (ports, item);
           last_item = item;
         }
-
     }
 
   /* Handle sorting by threat and ROWID. */
@@ -329,14 +328,14 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
   /* Write to file from the buffer. */
 
   PRINT (out,
-           "<ports"
-           " start=\"%i\""
-           " max=\"%i\">"
-           "<count>%i</count>",
-           /* Add 1 for 1 indexing. */
-           first_result + 1,
-           max_results,
-           report_port_count (report));
+         "<ports"
+         " start=\"%i\""
+         " max=\"%i\">"
+         "<count>%i</count>",
+         /* Add 1 for 1 indexing. */
+         first_result + 1,
+         max_results,
+         report_port_count (report));
   {
     result_buffer_t *item;
     int index = 0;
@@ -346,7 +345,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
         int port_count;
 
         port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
-                                                           item->host));
+          item->host));
 
         PRINT (out,
                "<port>"
@@ -360,7 +359,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                item->severity_double,
                severity_to_level (g_strtod (item->severity, NULL), 0));
 
-        if (g_str_has_prefix(item->port, "general/") == FALSE)
+        if (g_str_has_prefix (item->port, "general/") == FALSE)
           {
             g_hash_table_replace (ctx->f_host_ports,
                                   g_strdup (item->host),
