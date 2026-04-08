@@ -13,8 +13,7 @@ contain arbitrary data which in our case should be the user's permissions.
 - [GMP Authentication](#gmp-authentication)
 - [GMP Requests with Token](#gmp-requests-with-token)
 - [Authentication Workflow](#authentication-workflow)
-  - [Step 1](#step-1)
-  - [Step 2](#step-2)
+  - [Steps of the authentication process](#steps-of-the-authentication-process)
 
 ## JWT Format
 
@@ -137,119 +136,135 @@ first sub-element:
 
 ## Authentication Workflow
 
-It is intended to support generating [JSON Web Tokens][JWT] in gvmd and also to
-use it as an authentication mechanism in gvmd.
+It is intended to support generating [JSON Web Tokens][JWT] in gvmd as
+access tokens that can be used for authentication in later GMP connections.
 
-We can implement this solution in two steps
+These are valid only for a short time, so gvmd will also create refresh
+tokens with a longer lifetime that can be used to generate a new access
+token as part of the authentication.
 
-1. Provide a JWT from [GMP authentication](#gmp-authentication)
-2. Allow to use JWT in [GMP commands](#gmp-requests-with-token)
+Additionally, gvmd will also take on the session handling, which is currently
+part of gsad. For this, the refresh tokens will also serve as session
+identifiers.
+Whenever a refresh token is used, gvmd will check its session storage if
+the session is still valid. Sessions will be invalidated by either expiring
+or with the GMP logout command.
 
-In an additional later step the generation of the JWT can be moved into an own
-service.
+In an additional later step the session handling and token generation
+can be moved into a separate service.
 
 >[!NOTE]
 > An idea is to implement JWT generation and validation in a Rust library and
 > call it from C in gvmd. This will allow for an easy migration to a Rust based
 > authentication service in future.
 
-### Step 1
+### Steps of the authentication process
 
-gvmd creates token on [request for a client](#gmp-authentication). It doesn't
-support [using token in GMP requests](#gmp-requests-with-token) yet.
+When a user authenticates with username and password, gvmd creates an access
+token and a refresh token as part of the [`<authenticate>` GMP response](#gmp-authentication).
+
+As long as the access token is valid, it can be used for the authentication
+required by other commands like getting the list of tasks.
+
+If the access token expires, GSA can send a refresh request that contains
+both the access token and the refresh token. If the access token is otherwise
+valid and the refresh token is valid for an active session, a new access
+token will be returned.
 
 ```mermaid
 ---
 title: Authentication and getting the List of Tasks (JWT generation support)
 ---
 sequenceDiagram
+
     actor User
     participant GSA
     participant gsad
     participant gvmd
 
-    User-->>GSA: Login with username+password
+    User->>GSA: Login with username+password
     activate GSA
-    GSA-->>gsad: username+password
+    GSA->>gsad: Login with username+password
     activate gsad
-    gsad-->>gvmd: GMP authenticate with username+password (token="1")
+    gsad->>gvmd: GMP authenticate with username+password (token="1")
     activate gvmd
-    gvmd-->>gsad: GMP authenticate response with JWT
+    gvmd->>gvmd: Create session for user + refresh token
+    gvmd-->>gsad: GMP authenticate response with access JWT + refresh token
     deactivate gvmd
-    gsad-->>gsad: Store JWT as Session Token
-    gsad-->>GSA: JWT
+    gsad-->>GSA: Login success message with JWT + refresh token
     deactivate gsad
     GSA-->>User: Login Successful
     deactivate GSA
 
-    User-->>GSA: List Tasks
-    activate GSA
-    GSA-->>gsad: Request with JWT
-    activate gsad
-    gsad-->>gsad: Use JWT to get username+password from Session Store
-    gsad-->>gvmd: GMP authenticate request with username+password (token="0")
-    activate gvmd
-    alt username+password is valid
-      gvmd-->>gsad: GMP authenticate response OK
-      gsad-->>gvmd: GMP get_tasks request
-      gvmd-->>gsad: GMP get_tasks response
-      deactivate gvmd
-      gsad-->>GSA: Response
-      deactivate gsad
-      GSA-->>User: List Tasks
-      deactivate GSA
-    else username+password are invalid
-      gvmd-->>gsad: GMP authenticate response error
-      gsad-->>GSA: Error
-      GSA-->>User: Login Page
-    end
-```
-
-### Step 2
-
-gvmd creates token on [request for a client](#gmp-authentication) and supports
-[using token in GMP requests](#gmp-requests-with-token) now.
-
-```mermaid
----
-title: Authentication and getting the List of Tasks (full JWT support)
----
-sequenceDiagram
-    actor User
-    participant GSA
-    participant gsad
-    participant gvmd
-
-    User-->>GSA: Login with username+password
-    activate GSA
-    GSA-->>gsad: username+password
-    activate gsad
-    gsad-->>gvmd: GMP authenticate with username+password
-    activate gvmd
-    gvmd-->>gsad: GMP authenticate response with JWT
-    deactivate gvmd
-    gsad-->>GSA: JWT
-    deactivate gsad
-    GSA-->>User: Login Successful
-    deactivate GSA
-
-    User-->>GSA: List Tasks
-    activate GSA
-    GSA-->>gsad: Request with JWT
-    activate gsad
-    gsad-->>gvmd: GMP get_tasks Request with JWT
-    activate gvmd
     alt JWT is valid
-      gvmd-->>gsad: GMP get_tasks Response OK
-      gsad-->>GSA: Response
-      GSA-->>User: List of Tasks
-    else JWT not valid
-      gvmd-->>gsad: GMP get_tasks Response Error Unauthenticated
-      deactivate gvmd
-      gsad-->>GSA: Error Unauthenticated
-      deactivate gsad
-      GSA-->>User: Login Page
-      deactivate GSA
+        User->>GSA: List Tasks
+        activate GSA
+        GSA->>gsad: get_tasks request with JWT
+        activate gsad
+        gsad->>gvmd: GMP authenticate with JWT
+        activate gvmd
+        gvmd-->>gsad: GMP authenticate success
+        gsad->>gvmd: GMP get_tasks request
+        gvmd-->>gsad: GMP get_tasks response
+        deactivate gvmd
+        gsad-->>GSA: get_tasks response
+        deactivate gsad
+        GSA-->>User: Tasks page
+        deactivate GSA
+    else JWT is expired
+        User->>GSA: List Tasks
+        activate GSA
+        GSA->>gsad: Request with JWT and refresh token
+        activate gsad
+        gsad->>gvmd: GMP authenticate with JWT
+        activate gvmd
+        gvmd-->>gsad: GMP authenticate failure: token expired
+        deactivate gvmd
+        gsad-->>GSA: failure response: token expired
+        deactivate gsad
+        GSA->>gsad: Refresh request (JWT + refresh token)
+        activate gsad
+        gsad->>gvmd: GMP authenticate with JWT + refresh token
+        activate gvmd
+        gvmd->>gvmd: Verify session using refresh token
+        gvmd-->>gsad: GMP authenticate success with new JWT
+        deactivate gvmd
+        gsad-->>GSA: Refresh success with new JWT
+        deactivate gsad
+        GSA->>gsad: get_tasks request with new JWT
+        activate gsad
+        gsad->>gvmd: GMP authenticate with new JWT
+        activate gvmd
+        gvmd-->>gsad: GMP authenticate success
+        gsad->>gvmd: GMP get_tasks request
+        gvmd-->>gsad: GMP get_tasks response
+        deactivate gvmd
+        gsad-->>GSA: get_tasks response
+        deactivate gsad
+        GSA-->>User: Tasks page
+        deactivate GSA
+    else JWT and refresh token expired
+        User->>GSA: List Tasks
+        activate GSA
+        GSA->>gsad: Request with JWT and refresh token
+        activate gsad
+        gsad->>gvmd: GMP authenticate with JWT
+        activate gvmd
+        gvmd-->>gsad: GMP authenticate failure: token expired
+        deactivate gvmd
+        gsad-->>GSA: failure response: token expired
+        deactivate gsad
+        GSA->>gsad: Refresh request (JWT + refresh token)
+        activate gsad
+        gsad->>gvmd: GMP authenticate with JWT + refresh token
+        activate gvmd
+        gvmd->>gvmd: Verify session using refresh token
+        gvmd-->>gsad: GMP authenticate failure: token expired
+        deactivate gvmd
+        gsad-->>GSA: failure response: session invalid
+        deactivate gsad
+        GSA-->>User: New login required
+        deactivate GSA
     end
 ```
 
