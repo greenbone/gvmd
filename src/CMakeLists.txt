@@ -292,6 +292,7 @@ set(
   gmp_report_configs.c
   gmp_report_formats.c
   gmp_report_hosts.c
+  gmp_report_ports.c
   gmp_tickets.c
   gmp_tls_certificates.c
 )

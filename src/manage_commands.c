@@ -126,6 +126,7 @@ command_t gmp_commands[]
     {"GET_REPORT_CONFIGS", "Get all report configs."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_REPORT_HOSTS", "Get all report hosts for specific report."},
+    {"GET_REPORT_PORTS", "Get all report ports for specific report."},
     {"GET_RESULTS", "Get results."},
     {"GET_ROLES", "Get all roles."},
     {"GET_SCANNERS", "Get all scanners."},
