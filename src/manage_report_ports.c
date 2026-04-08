@@ -31,6 +31,7 @@
  * @param[in]  send                          Function to write to client.
  * @param[in]  send_data_1                   Second argument to @p send.
  * @param[in]  send_data_2                   Third argument to @p send.
+ * @param[in,out]  filtered_count            Filtered port count.
  *
  * @return 0 on success, -1 on error, 2 if filter was not found.
  */
@@ -42,7 +43,8 @@ manage_send_report_ports (report_t report,
                                             int (*) (const char *, void *),
                                             void *),
                           int (*send_data_1) (const char *, void *),
-                          void *send_data_2)
+                          void *send_data_2,
+                          int *filtered_count)
 {
   print_report_context_t ctx;
   gchar *xml_file;
@@ -133,7 +135,8 @@ manage_send_report_ports (report_t report,
                                                   max_results,
                                                   sort_order,
                                                   sort_field,
-                                                  &results);
+                                                  &results,
+                                                  filtered_count);
 
   if (fclose (stream))
     {

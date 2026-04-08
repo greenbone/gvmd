@@ -216,16 +216,17 @@ report_port_count (report_t report)
 /**
  * @brief Print the XML for a report port summary to a file.
  *
- * @param[in]  ctx              Printing context.
- * @param[in]  report           The report.
- * @param[in]  out              File stream.
- * @param[in]  get              Result get data.
- * @param[in]  first_result     The result to start from.  The results are 0
- *                              indexed.
- * @param[in]  max_results      The maximum number of results returned.
- * @param[in]  sort_order       Whether to sort ascending or descending.
- * @param[in]  sort_field       Field to sort on.
- * @param[in,out] results       Result iterator.  For caller to reuse.
+ * @param[in]  ctx                Printing context.
+ * @param[in]  report             The report.
+ * @param[in]  out                File stream.
+ * @param[in]  get                Result get data.
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  sort_order         Whether to sort ascending or descending.
+ * @param[in]  sort_field         Field to sort on.
+ * @param[in,out] results         Result iterator.  For caller to reuse.
+ * @param[in,out] filtered_count  Filtered port count.
  *
  * @return 0 on success, -1 error.
  */
@@ -233,7 +234,7 @@ int
 print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                        const get_data_t *get, int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       iterator_t *results)
+                       iterator_t *results, int *filtered_count)
 {
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
@@ -370,6 +371,11 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
           }
         result_buffer_free (item);
       }
+
+    /* Set filtered count of the ports if exists */
+    if (filtered_count)
+      *filtered_count = ports->len;
+
     g_array_free (ports, TRUE);
   }
   PRINT (out, "</ports>");
@@ -380,17 +386,18 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
 /**
  * @brief Print report port XML, returning either full details or only the count.
  *
- * @param[in]  ctx              Printing context.
- * @param[in]  report           The report.
- * @param[in]  out              File stream.
- * @param[in]  get              Result get data.
- * @param[in]  details          Boolean flag whether to include full details
- * @param[in]  first_result     The result to start from.  The results are 0
- *                              indexed.
- * @param[in]  max_results      The maximum number of results returned.
- * @param[in]  sort_order       Whether to sort ascending or descending.
- * @param[in]  sort_field       Field to sort on.
- * @param[in,out] results       Result iterator.  For caller to reuse.
+ * @param[in]  ctx                Printing context.
+ * @param[in]  report             The report.
+ * @param[in]  out                File stream.
+ * @param[in]  get                Result get data.
+ * @param[in]  details            Boolean flag whether to include full details
+ * @param[in]  first_result       The result to start from.  The results are 0
+ *                                indexed.
+ * @param[in]  max_results        The maximum number of results returned.
+ * @param[in]  sort_order         Whether to sort ascending or descending.
+ * @param[in]  sort_field         Field to sort on.
+ * @param[in,out] results         Result iterator.  For caller to reuse.
+ * @param[in,out] filtered_count  Filtered port count.
  *
  * @return 0 on success, -1 error.
  */
@@ -401,7 +408,8 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
                                           int first_result, int max_results,
                                           int sort_order,
                                           const char *sort_field,
-                                          iterator_t *results)
+                                          iterator_t *results,
+                                          int *filtered_count)
 {
   if (details == 0)
     {
@@ -427,5 +435,6 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
 
   return print_report_port_xml (ctx, report, out, &get_ignore_pagination,
                                 first_result,
-                                max_results, sort_order, sort_field, results);
+                                max_results, sort_order, sort_field, results,
+                                filtered_count);
 }

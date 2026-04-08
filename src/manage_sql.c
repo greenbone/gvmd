@@ -16597,7 +16597,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
     {
       reuse_result_iterator = 1;
       if (print_report_port_xml (&ctx, report, out, get, first_result,
-                                 max_results, sort_order, sort_field, &results))
+                                 max_results, sort_order, sort_field, &results,
+                                 NULL))
         {
           g_free (term);
           g_hash_table_destroy (ctx.f_host_ports);
