@@ -86,7 +86,6 @@ get_report_ports_run (gmp_parser_t *gmp_parser, GError **error)
   int ret, filtered, count;
 
   count = 0;
-  // int ret;
   usage_type = NULL;
 
   if (get_report_ports_data.report_id == NULL)
