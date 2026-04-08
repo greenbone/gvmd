@@ -22053,6 +22053,405 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_ports</name>
+    <summary>Get ports from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_ports command to get port information
+        from a single report.
+      </p>
+      <p>
+        This command is a port-focused subset of get_reports intended to support
+        pagination and reduced response sizes when only port data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes port entries.
+        Otherwise only the total port count together with filter, sort and count
+        information is returned.
+      </p>
+      <p>
+        The filter affects the selection of matching results and the derived port
+        information returned by the command.
+      </p>
+      <p>
+        Port entries in "general/..." form are not included in the returned port
+        list and are not counted as report ports.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get ports from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report port retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>IP address of the host</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>text</type>
+            <summary>Port of the result</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Highest severity of matching results for the port</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report ports</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include port details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>ports</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_ports</e></o>
+        <o><e>report_port_count</e></o>
+      </pattern>
+      <ele>
+        <name>ports</name>
+        <summary>Port information from the selected report</summary>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report port</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report ports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <e>count</e>
+          <any><e>port</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of report ports</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>A port from the selected report</summary>
+          <pattern>
+            <e>host</e>
+            text
+            <e>severity</e>
+            <e>threat</e>
+          </pattern>
+          <ele>
+            <name>host</name>
+            <summary>IP address of the host</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Highest severity of matching results for the port</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <summary>Threat level derived from the severity</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_ports</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report port</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report ports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_port_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report ports after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report ports on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get ports of a report with details</summary>
+      <request>
+        <get_report_ports report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                          details="1"
+                          filter="levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0">
+        </get_report_ports>
+      </request>
+      <response>
+        <get_report_ports_response status="200" status_text="OK">
+          <ports start="1" max="100">
+            <count>11</count>
+            <port><host>127.0.0.1</host>25/tcp<severity>5.0</severity><threat>Medium</threat></port>
+            <port><host>127.0.0.1</host>8083/tcp<severity>5.0</severity><threat>Medium</threat></port>
+            <port><host>127.0.0.1</host>22/tcp<severity>2.6</severity><threat>Low</threat></port>
+          </ports>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_ports start="1" max="100"/>
+          <report_port_count>11<filtered>3</filtered><page>0</page></report_port_count>
+        </get_report_ports_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get only report port count information</summary>
+      <request>
+        <get_report_ports report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                          details="0">
+        </get_report_ports>
+      </request>
+      <response>
+        <get_report_ports_response status="200" status_text="OK">
+          <ports start="1" max="100">
+            <count>11</count>
+          </ports>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_ports start="1" max="100"/>
+          <report_port_count>11<filtered>24505</filtered><page>0</page></report_port_count>
+        </get_report_ports_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_reports</name>
     <summary>Get one or many reports</summary>
     <description>
