@@ -28,5 +28,7 @@ manage_send_report_ports (report_t ,
                                        void*),
                           int (*) (const char *, void *),
                           void *);
+int
+report_port_count (report_t report);
 
 #endif //_GVM_MANAGE_REPORT_PORTS_H

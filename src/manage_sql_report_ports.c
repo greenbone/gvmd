@@ -203,7 +203,7 @@ compare_port_severity (gconstpointer arg_one, gconstpointer arg_two)
  *
  * @return Ports count.
  */
-static int
+int
 report_port_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT port) FROM results"
@@ -248,6 +248,9 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
       const char *port = result_iterator_port (results);
       const char *host = result_iterator_host (results);
       double cvss_double;
+
+      if (port == NULL || g_str_has_prefix (port, "general/"))
+        continue;
 
       cvss_double = result_iterator_severity_double (results);
 
@@ -415,7 +418,14 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
 
       return 0;
     }
+  /* Copy the get with ignored pagination for result iterator*/
+  get_data_t get_ignore_pagination;
 
-  return print_report_port_xml (ctx, report, out, get, first_result,
+  memcpy (&get_ignore_pagination, get, sizeof (get_ignore_pagination));
+  get_ignore_pagination.ignore_pagination = 1;
+  get_ignore_pagination.ignore_max_rows_per_page = 1;
+
+  return print_report_port_xml (ctx, report, out, &get_ignore_pagination,
+                                first_result,
                                 max_results, sort_order, sort_field, results);
 }
