@@ -27,7 +27,8 @@ manage_send_report_ports (report_t ,
                                        int (*)(const char*, void*),
                                        void*),
                           int (*) (const char *, void *),
-                          void *);
+                          void *,
+                          int *);
 int
 report_port_count (report_t report);
 
