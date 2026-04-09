@@ -2067,10 +2067,6 @@ gboolean
 find_note_with_permission (const char*, note_t*, const char *);
 
 int
-create_note (const char*, const char*, const char*, const char*, const char*,
-             const char*, const char*, task_t, result_t, note_t*);
-
-int
 copy_note (const char*, note_t*);
 
 int

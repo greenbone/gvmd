@@ -101,6 +101,7 @@
 #include "manage_assets.h"
 #include "manage_filters.h"
 #include "manage_groups.h"
+#include "manage_notes.h"
 #include "manage_oci_image_targets.h"
 #include "manage_permissions.h"
 #include "manage_port_lists.h"
