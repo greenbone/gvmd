@@ -289,6 +289,42 @@ fail:
 }
 
 /**
+ * @brief Print report TLS certificates XML, returning either full details
+ *        or only the count.
+ *
+ * @param[in]  report              The report.
+ * @param[in]  out                 File stream.
+ * @param[in]  details             Boolean flag whether to include full details.
+ * @param[in]  result_hosts_only   Whether to restrict output to @p result_hosts.
+ * @param[in]  result_hosts        Array of host strings to use when
+ *                                 @p result_hosts_only is true.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+print_report_tls_certificates_xml_summary_or_details (report_t report,
+                                                      FILE *out,
+                                                      int details,
+                                                      gboolean result_hosts_only,
+                                                      array_t *result_hosts)
+{
+  if (details == 0)
+    {
+      PRINT (out,
+             "<tls_certificates>"
+             "<count>%i</count>"
+             "</tls_certificates>",
+             report_ssl_cert_count (report));
+      return 0;
+    }
+
+  return print_report_tls_certificates_xml (report,
+                                            result_hosts_only,
+                                            result_hosts,
+                                            out);
+}
+
+/**
  * @brief Count a report's total number of found SSL Certificates.
  *
  * @param[in]  report  Report.
