@@ -16,4 +16,7 @@ create_note (const char *, const char *, const char *, const char *,
 int
 copy_note (const char *, note_t *);
 
+int
+delete_note (const char *, int);
+
 #endif /* not _GVMD_MANAGE_NOTES_H */

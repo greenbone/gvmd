@@ -5,7 +5,9 @@
 
 #include "manage_sql_notes.h"
 #include "manage_acl.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
+#include "manage_sql_tags.h"
 #include "sql.h"
 
 #undef G_LOG_DOMAIN
@@ -155,4 +157,87 @@ copy_note (const char *note_id, note_t* new_note)
                         "nvt, text, hosts, port, severity, task, result,"
                         "end_time",
                         1, new_note, NULL);
+}
+
+/**
+ * @brief Delete a note.
+ *
+ * @param[in]  note_id    UUID of note.
+ * @param[in]  ultimate   Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 2 failed to find note, 99 permission denied, -1 error.
+ */
+int
+delete_note (const char *note_id, int ultimate)
+{
+  note_t note = 0;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_note") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  if (find_note_with_permission (note_id, &note, "delete_note"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (note == 0)
+    {
+      if (find_trash ("note", note_id, &note))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (note == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      permissions_set_orphans ("note", note, LOCATION_TRASH);
+      tags_remove_resource ("note", note, LOCATION_TRASH);
+
+      sql ("DELETE FROM notes_trash WHERE id = %llu;", note);
+      sql_commit ();
+      return 0;
+    }
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO notes_trash"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, severity, task, result, end_time)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, severity, task, result, end_time"
+           " FROM notes WHERE id = %llu;",
+           note);
+
+      permissions_set_locations ("note", note,
+                                 sql_last_insert_id (),
+                                 LOCATION_TRASH);
+      tags_set_locations ("note", note,
+                          sql_last_insert_id (),
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("note", note, LOCATION_TABLE);
+      tags_remove_resource ("note", note, LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM notes WHERE id = %llu;", note);
+
+  sql_commit ();
+  return 0;
 }
