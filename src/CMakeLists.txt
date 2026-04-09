@@ -190,6 +190,7 @@ set(
   manage_report_formats.c
   manage_report_hosts.c
   manage_report_ports.c
+  manage_report_tls_certificates.c
   manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
