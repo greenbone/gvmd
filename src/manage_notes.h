@@ -13,4 +13,7 @@ create_note (const char *, const char *, const char *, const char *,
              const char *, const char *, const char *, task_t, result_t,
              note_t *);
 
+int
+copy_note (const char *, note_t *);
+
 #endif /* not _GVMD_MANAGE_NOTES_H */
