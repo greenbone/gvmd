@@ -602,6 +602,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           || (strcmp (type, "report") == 0)
           || (strcmp (type, "report_host") == 0)
           || (strcmp (type, "report_port") == 0)
+          || (strcmp (type, "report_tls_certificate") == 0)
           || (strcmp (type, "result") == 0)
           || (strcmp (type, "vuln") == 0))
         {
@@ -622,6 +623,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
               || (strcmp (type, "report") == 0)
               || (strcmp (type, "report_host") == 0)
               || (strcmp (type, "report_port") == 0)
+              || (strcmp (type, "report_tls_certificate") == 0)
               || (strcmp (type, "result") == 0))
             {
               value = filter_term_value (new_filter, "apply_overrides");
@@ -644,6 +646,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           || (strcmp (type, "report") == 0)
           || (strcmp (type, "report_host") == 0)
           || (strcmp (type, "report_port") == 0)
+          || (strcmp (type, "report_tls_certificate") == 0)
           || (strcmp (type, "result") == 0))
         filter = manage_clean_filter("apply_overrides="
                                      G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)

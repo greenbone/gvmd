@@ -313,7 +313,8 @@ type_owned (const char* type)
          && type_is_info_subtype (type) == 0
          && strcasecmp (type, "vuln")
          && strcasecmp (type, "report_host")
-         && strcasecmp (type, "report_port");
+         && strcasecmp (type, "report_port")
+         && strcasecmp (type, "report_tls_certificate");
 }
 
 /**
