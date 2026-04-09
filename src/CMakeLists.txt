@@ -180,6 +180,7 @@ set(
   manage_http_scanner.c
   manage_integration_configs.c
   manage_license.c
+  manage_notes.c
   manage_openvas.c
   manage_osp.c
   manage_permissions.c
@@ -238,6 +239,7 @@ set(
   manage_sql_filters.c
   manage_sql_groups.c
   manage_sql_integration_configs.c
+  manage_sql_notes.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
   manage_sql_permissions.c
