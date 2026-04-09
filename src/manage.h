@@ -2067,11 +2067,6 @@ gboolean
 find_note_with_permission (const char*, note_t*, const char *);
 
 int
-modify_note (const gchar *, const char *, const char *, const char *,
-             const char *, const char *, const char *, const char *,
-             const gchar *, const gchar *);
-
-int
 note_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
