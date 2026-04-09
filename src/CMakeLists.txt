@@ -352,6 +352,14 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Checking whitespace..."
   )
+
+  add_custom_target(
+    check-newlines
+    ALL
+    COMMAND ${CMAKE_SOURCE_DIR}/tools/check-newlines
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Checking that files end in newlines..."
+  )
 endif(NOT CMAKE_BUILD_TYPE MATCHES "Release")
 
 ## Program

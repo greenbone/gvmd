@@ -1,0 +1,8 @@
+#!/bin/sh
+
+FOUND=0
+for FILE in *.c *.h; do
+  test "$(tail -c 1 "$FILE" | wc -l)" -eq 0 && echo "$(pwd)/$FILE:$(( $(wc -l < "$FILE") + 1 )): error: missing trailing newline" && FOUND=1
+done
+
+exit $FOUND
