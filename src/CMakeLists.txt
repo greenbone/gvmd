@@ -249,6 +249,7 @@ set(
   manage_sql_resources.c
   manage_sql_report_hosts.c
   manage_sql_report_ports.c
+  manage_sql_report_tls_certificates.c
   manage_sql_roles.c
   manage_sql_scanner_relays.c
   manage_sql_settings.c
