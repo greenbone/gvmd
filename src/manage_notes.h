@@ -27,4 +27,7 @@ modify_note (const gchar *, const char *, const char *, const char *,
              const char *, const char *, const char *, const char *,
              const gchar *, const gchar *);
 
+gboolean
+find_note_with_permission (const char*, note_t*, const char *);
+
 #endif /* not _GVMD_MANAGE_NOTES_H */

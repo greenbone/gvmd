@@ -2063,9 +2063,6 @@ credential_encrypted_value (credential_t, const char*);
 
 /* Notes. */
 
-gboolean
-find_note_with_permission (const char*, note_t*, const char *);
-
 int
 note_count (const get_data_t *, nvt_t, result_t, task_t);
 
