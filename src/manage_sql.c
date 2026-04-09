@@ -22529,24 +22529,6 @@ nvt_exists (const char* nvt)
 }
 
 /**
- * @brief Create a note from an existing note.
- *
- * @param[in]  note_id   UUID of existing note.
- * @param[out] new_note  New note.
- *
- * @return 0 success, 1 note exists already, 2 failed to find existing
- *         note, -1 error.
- */
-int
-copy_note (const char *note_id, note_t* new_note)
-{
-  return copy_resource ("note", NULL, NULL, note_id,
-                        "nvt, text, hosts, port, severity, task, result,"
-                        "end_time",
-                        1, new_note, NULL);
-}
-
-/**
  * @brief Delete a note.
  *
  * @param[in]  note_id    UUID of note.
