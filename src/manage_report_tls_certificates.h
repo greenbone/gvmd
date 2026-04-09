@@ -27,4 +27,7 @@ manage_send_report_tls_certificates (report_t ,
                                      int (*) (const char *, void *),
                                      void *);
 
+int
+report_ssl_cert_count (report_t report);
+
 #endif //_GVM_MANAGE_REPORT_TLS_CERTIFICATES_H
