@@ -19,4 +19,7 @@ copy_note (const char *, note_t *);
 int
 delete_note (const char *, int);
 
+int
+note_uuid (note_t, char **);
+
 #endif /* not _GVMD_MANAGE_NOTES_H */

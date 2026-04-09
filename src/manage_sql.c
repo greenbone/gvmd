@@ -22529,22 +22529,6 @@ nvt_exists (const char* nvt)
 }
 
 /**
- * @brief Return the UUID of a note.
- *
- * @param[in]   note  Note.
- * @param[out]  id    Pointer to a newly allocated string.
- *
- * @return 0.
- */
-int
-note_uuid (note_t note, char ** id)
-{
-  *id = sql_string ("SELECT uuid FROM notes WHERE id = %llu;",
-                    note);
-  return 0;
-}
-
-/**
  * @brief Modify a note.
  *
  * @param[in]  note_id     Note.

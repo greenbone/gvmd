@@ -2067,9 +2067,6 @@ gboolean
 find_note_with_permission (const char*, note_t*, const char *);
 
 int
-note_uuid (note_t, char **);
-
-int
 modify_note (const gchar *, const char *, const char *, const char *,
              const char *, const char *, const char *, const char *,
              const gchar *, const gchar *);

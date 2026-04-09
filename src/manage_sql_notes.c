@@ -241,3 +241,19 @@ delete_note (const char *note_id, int ultimate)
   sql_commit ();
   return 0;
 }
+
+/**
+ * @brief Return the UUID of a note.
+ *
+ * @param[in]   note  Note.
+ * @param[out]  id    Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+note_uuid (note_t note, char ** id)
+{
+  *id = sql_string ("SELECT uuid FROM notes WHERE id = %llu;",
+                    note);
+  return 0;
+}
