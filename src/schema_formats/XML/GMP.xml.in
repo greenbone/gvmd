@@ -22452,6 +22452,212 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_tls_certificates</name>
+    <summary>Get TLS certificates from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_tls_certificates command to retrieve
+        TLS certificate information from a single report.
+      </p>
+      <p>
+        This command is a TLS-certificate-focused subset of get_reports intended
+        to support pagination and reduced response sizes when only TLS certificate
+        data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes TLS certificate
+        entries. Otherwise only the total TLS certificate count together with
+        filter, sort and count information is returned.
+      </p>
+      <p>
+        The filter affects the selection of matching results and therefore the
+        TLS certificates derived from those results.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get TLS certificates from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for TLS certificate retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>IP address of the host</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>text</type>
+            <summary>Port where the certificate was observed</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of matching results</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include TLS certificate details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>tls_certificates</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_tls_certificates</e></o>
+        <o><e>report_tls_certificate_count</e></o>
+      </pattern>
+      <ele>
+        <name>tls_certificates</name>
+        <summary>TLS certificate information from the selected report</summary>
+        <pattern>
+          <e>count</e>
+          <any><e>tls_certificate</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of TLS certificates</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>tls_certificate</name>
+          <summary>A TLS certificate entry</summary>
+          <pattern>
+            <e>name</e>
+            <e>certificate</e>
+            <e>sha256_fingerprint</e>
+            <e>md5_fingerprint</e>
+            <e>valid</e>
+            <e>activation_time</e>
+            <e>expiration_time</e>
+            <e>subject_dn</e>
+            <e>issuer_dn</e>
+            <e>serial</e>
+            <e>host</e>
+            <e>ports</e>
+          </pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_tls_certificates</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_tls_certificate_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of TLS certificates after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of TLS certificates on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get only TLS certificate count</summary>
+      <request>
+        <get_report_tls_certificates report_id="..." details="0"/>
+      </request>
+      <response>
+        <get_report_tls_certificates_response status="200" status_text="OK">
+          <tls_certificates>
+            <count>3</count>
+          </tls_certificates>
+        </get_report_tls_certificates_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get TLS certificates with details</summary>
+      <request>
+        <get_report_tls_certificates report_id="..." details="1"/>
+      </request>
+      <response>
+        <get_report_tls_certificates_response status="200" status_text="OK">
+          <tls_certificates>
+            <tls_certificate>
+              <name>...</name>
+              <certificate format="DER">...</certificate>
+              <sha256_fingerprint>...</sha256_fingerprint>
+              <md5_fingerprint>...</md5_fingerprint>
+              <valid>1</valid>
+              <activation_time>...</activation_time>
+              <expiration_time>...</expiration_time>
+              <subject_dn>...</subject_dn>
+              <issuer_dn>...</issuer_dn>
+              <serial>...</serial>
+            </tls_certificate>
+          </tls_certificates>
+        </get_report_tls_certificates_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_reports</name>
     <summary>Get one or many reports</summary>
     <description>
