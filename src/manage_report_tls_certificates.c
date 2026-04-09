@@ -26,7 +26,7 @@
 
 
 /**
- * @brief Send report hosts XML to the client.
+ * @brief Send report TLS certificates XML to the client.
  *
  * @param[in]  report                        Report.
  * @param[in]  get                           GET command data.
@@ -42,17 +42,14 @@ manage_send_report_tls_certificates (report_t report,
                                      const get_data_t *get,
                                      gboolean is_container_scanning_report,
                                      gboolean (*send) (const char *,
-                                       int (*) (const char *, void *),
+                                       int (*) (const char *,
+                                                void *),
                                        void *),
                                      int (*send_data_1) (const char *, void *),
                                      void *send_data_2)
 {
   gchar *xml_file;
   gchar *term;
-  gchar *sort_field;
-  gchar *levels;
-  gchar *delta_states;
-  gchar *search_phrase;
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
   gboolean xml_dir_created = FALSE;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
@@ -62,11 +59,8 @@ manage_send_report_tls_certificates (report_t report,
   array_t *result_hosts;
   iterator_t results;
   int results_initialized;
+
   term = NULL;
-  sort_field = NULL;
-  levels = NULL;
-  delta_states = NULL;
-  search_phrase = NULL;
   xml_file = NULL;
   stream = NULL;
   result_hosts = NULL;
@@ -136,10 +130,12 @@ manage_send_report_tls_certificates (report_t report,
       goto cleanup;
     }
 
-  ret = print_report_tls_certificates_xml (report,
-                                           result_hosts_only,
-                                           result_hosts,
-                                           stream);
+  ret = print_report_tls_certificates_xml_summary_or_details (
+    report,
+    stream,
+    get->details,
+    result_hosts_only,
+    result_hosts);
 
   if (fclose (stream))
     {
@@ -216,10 +212,6 @@ cleanup:
 
   g_free (xml_file);
   g_free (term);
-  g_free (sort_field);
-  g_free (levels);
-  g_free (delta_states);
-  g_free (search_phrase);
 
   if (xml_dir_created)
     gvm_file_remove_recurse (xml_dir);

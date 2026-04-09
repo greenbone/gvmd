@@ -21,4 +21,11 @@ print_report_tls_certificates_xml (report_t,
                                    array_t *,
                                    FILE *);
 
+int
+print_report_tls_certificates_xml_summary_or_details (report_t,
+                                                      FILE *,
+                                                      int,
+                                                      gboolean,
+                                                      array_t *);
+
 #endif //_GVM_MANAGE_SQL_REPORT_TLS_CERTIFICATES_H
