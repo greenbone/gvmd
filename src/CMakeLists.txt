@@ -346,7 +346,7 @@ add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
 
 if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   add_custom_target(
-    check-whitespace
+    check-trailing-space
     ALL
     # once for output
     COMMAND
@@ -355,7 +355,7 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
     # again for exit code
     COMMAND ! grep --quiet "[ ]$$" *.c *.h
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Checking whitespace..."
+    COMMENT "Checking for trailing space..."
   )
 
   add_custom_target(
