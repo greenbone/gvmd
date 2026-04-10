@@ -19018,6 +19018,7 @@ manage_task_remove_file (const gchar *task_id, const char *name)
  *         certain fields may be edited, 18 failed to find agent group,
  *         19 failed to find OCI image target,
  *         20 cannot set asset preferences for container image task,
+ *         21 target and scanner types mismatch,
  *         -1 error.
  */
 int
@@ -19209,6 +19210,8 @@ modify_task (const gchar *task_id, const gchar *name,
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
         return 16;
+      else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE)
+        return 21;
       else if (find_target_with_permission (target_id,
                                             &target,
                                             "get_targets"))
