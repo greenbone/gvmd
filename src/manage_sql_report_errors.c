@@ -189,6 +189,7 @@ report_error_count (report_t report)
 
 /**
  * @brief Print the XML for a report's error messages to a file stream.
+ *
  * @param[in]  report   The report.
  * @param[in]  stream   File stream to write to.
  *
@@ -216,4 +217,27 @@ print_report_errors_xml (report_t report, FILE *stream)
   PRINT (stream, "</errors>");
 
   return 0;
+}
+
+/**
+ * @brief Print report error XML, returning either full details or only the count.
+ *
+ * @param[in]  report   The report.
+ * @param[in]  stream   File stream to write to.
+ * @param[in]  details  Boolean flag whether to include full details
+ *
+ * @return 0 on success, -1 error.
+ */
+int
+print_report_errors_xml_summary_or_details (report_t report, FILE *stream,
+                                            int details)
+{
+  if (details == 0)
+    {
+      PRINT (stream, "<errors><count>%i</count></errors>",
+             report_error_count (report));
+      return 0;
+    }
+
+  return print_report_errors_xml (report, stream);
 }
