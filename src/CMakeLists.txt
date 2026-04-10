@@ -248,6 +248,7 @@ set(
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_configs.c
+  manage_sql_report_errors.c
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_report_hosts.c

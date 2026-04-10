@@ -1198,9 +1198,6 @@ void
 init_report_iterator_task (iterator_t*, task_t);
 
 void
-init_report_errors_iterator (iterator_t*, report_t);
-
-void
 init_report_awaiting_processing_iterator (iterator_t*, int);
 
 const char*
