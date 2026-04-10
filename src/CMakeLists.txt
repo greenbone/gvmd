@@ -296,6 +296,7 @@ set(
   gmp_oci_image_targets.c
   gmp_port_lists.c
   gmp_report_configs.c
+  gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c
   gmp_report_ports.c
