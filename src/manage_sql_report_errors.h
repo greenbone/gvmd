@@ -54,4 +54,7 @@ report_error_count (report_t);
 int
 print_report_errors_xml (report_t, FILE *);
 
+int
+print_report_errors_xml_summary_or_details (report_t, FILE *, int);
+
 #endif //_GVM_MANAGE_SQL_REPORT_ERRORS_H
