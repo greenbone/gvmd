@@ -620,4 +620,10 @@ report_compliance_from_counts (const int *,
                                const int *,
                                const int *);
 
+gboolean
+nvt_exists (const char *);
+
+int
+validate_results_port (const char *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

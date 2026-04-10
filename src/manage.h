@@ -2064,27 +2064,6 @@ credential_encrypted_value (credential_t, const char*);
 
 /* Notes. */
 
-gboolean
-find_note_with_permission (const char*, note_t*, const char *);
-
-int
-create_note (const char*, const char*, const char*, const char*, const char*,
-             const char*, const char*, task_t, result_t, note_t*);
-
-int
-copy_note (const char*, note_t*);
-
-int
-delete_note (const char *, int);
-
-int
-note_uuid (note_t, char **);
-
-int
-modify_note (const gchar *, const char *, const char *, const char *,
-             const char *, const char *, const char *, const char *,
-             const gchar *, const gchar *);
-
 int
 note_count (const get_data_t *, nvt_t, result_t, task_t);
 
