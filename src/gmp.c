@@ -90,6 +90,7 @@
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
 #include "gmp_report_configs.h"
+#include "gmp_report_errors.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
 #include "gmp_report_ports.h"
@@ -4552,6 +4553,7 @@ typedef enum
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_CONFIGS,
+  CLIENT_GET_REPORT_ERRORS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_REPORT_HOSTS,
   CLIENT_GET_REPORT_PORTS,
@@ -5883,6 +5885,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
+
+        ELSE_GET_START (report_errors, REPORT_ERRORS)
 
         ELSE_GET_START (report_hosts, REPORT_HOSTS)
 
@@ -22124,6 +22128,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
+
+      CASE_GET_END (REPORT_ERRORS, report_errors);
 
       CASE_GET_END (REPORT_HOSTS, report_hosts);
 
