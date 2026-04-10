@@ -348,12 +348,7 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Release")
   add_custom_target(
     check-trailing-space
     ALL
-    # once for output
-    COMMAND
-      grep -Hn "[ ]$$" *.c *.h | sed
-      "'s/^\\(.\\+:.\\+:\\)/\\1 error: trailing space: /'"
-    # again for exit code
-    COMMAND ! grep --quiet "[ ]$$" *.c *.h
+    COMMAND ${CMAKE_SOURCE_DIR}/tools/check-trailing-space
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Checking for trailing space..."
   )
