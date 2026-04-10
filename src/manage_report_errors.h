@@ -51,12 +51,6 @@ report_errors_iterator_nvt_name (iterator_t *);
 const char *
 report_errors_iterator_nvt_cvss (iterator_t *);
 
-const char *
-report_errors_iterator_scan_nvt_version (iterator_t *);
-
-const char *
-report_errors_iterator_severity (iterator_t *);
-
 int
 report_error_count (report_t);
 
