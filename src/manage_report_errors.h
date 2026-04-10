@@ -24,4 +24,40 @@ manage_send_report_errors (report_t ,
                            int (*) (const char *, void *),
                            void *);
 
+void
+init_report_errors_iterator (iterator_t *, report_t);
+
+const char *
+report_errors_iterator_host (iterator_t *);
+
+const char *
+report_errors_iterator_severity (iterator_t *);
+
+const char *
+report_errors_iterator_scan_nvt_version (iterator_t *);
+
+const char *
+report_errors_iterator_port (iterator_t *);
+
+const char *
+report_errors_iterator_nvt_oid (iterator_t *);
+
+const char *
+report_errors_iterator_desc (iterator_t *);
+
+const char *
+report_errors_iterator_nvt_name (iterator_t *);
+
+const char *
+report_errors_iterator_nvt_cvss (iterator_t *);
+
+const char *
+report_errors_iterator_scan_nvt_version (iterator_t *);
+
+const char *
+report_errors_iterator_severity (iterator_t *);
+
+int
+report_error_count (report_t);
+
 #endif //_GVM_MANAGE_REPORT_ERRORS_H
