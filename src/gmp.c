@@ -5857,6 +5857,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_CONFIGS);
           }
+
+        ELSE_GET_START (report_errors, REPORT_ERRORS)
+
         else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5885,8 +5888,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_FORMATS);
           }
-
-        ELSE_GET_START (report_errors, REPORT_ERRORS)
 
         ELSE_GET_START (report_hosts, REPORT_HOSTS)
 
@@ -22125,11 +22126,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_report_configs (gmp_parser, error);
         break;
 
+      CASE_GET_END (REPORT_ERRORS, report_errors);
+
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
-
-      CASE_GET_END (REPORT_ERRORS, report_errors);
 
       CASE_GET_END (REPORT_HOSTS, report_hosts);
 
