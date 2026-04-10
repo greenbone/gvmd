@@ -20751,6 +20751,468 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_errors</name>
+    <summary>Get error messages from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_errors command to get error message
+        information from a single report.
+      </p>
+      <p>
+        This command is an error-focused subset of get_reports intended to support
+        pagination and reduced response sizes when only report error data is
+        needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes error entries.
+        Otherwise only the total error count together with filter, sort and count
+        information is returned.
+      </p>
+      <p>
+        The filter affects the selection of matching results and the derived error
+        information returned by the command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get errors from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report error retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>host</name>
+            <type>text</type>
+            <summary>IP address of the host</summary>
+          </column>
+          <column>
+            <name>port</name>
+            <type>text</type>
+            <summary>Port of the result</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the error result</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report errors</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include error details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>errors</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_errors</e></o>
+        <o><e>report_error_count</e></o>
+      </pattern>
+      <ele>
+        <name>errors</name>
+        <summary>Error information from the selected report</summary>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report error</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report errors</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <e>count</e>
+          <any><e>error</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of report errors</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>error</name>
+          <summary>An error from the selected report</summary>
+          <pattern>
+            <e>host</e>
+            <e>port</e>
+            <e>description</e>
+            <e>nvt</e>
+            <e>scan_nvt_version</e>
+            <e>severity</e>
+          </pattern>
+          <ele>
+            <name>host</name>
+            <summary>IP address of the host</summary>
+            <pattern>
+              text
+              <o><e>asset</e></o>
+            </pattern>
+            <ele>
+              <name>asset</name>
+              <summary>Asset linked to the host</summary>
+              <pattern>
+                <attrib>
+                  <name>asset_id</name>
+                  <summary>ID of the asset</summary>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>port</name>
+            <summary>Port of the error result</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the error</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <summary>NVT associated with the error</summary>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <summary>OID of the NVT</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
+              <e>type</e>
+              <e>name</e>
+              <e>cvss_base</e>
+            </pattern>
+            <ele>
+              <name>type</name>
+              <summary>Type of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>cvss_base</name>
+              <summary>CVSS base score of the NVT</summary>
+              <pattern>real</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>scan_nvt_version</name>
+            <summary>NVT version at scan time</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Severity at scan time of the error</summary>
+            <pattern>real</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_errors</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report error</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report errors</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_error_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report errors after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report errors on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get errors of a report with details</summary>
+      <request>
+        <get_report_errors report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                           details="1"
+                           filter="levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0">
+        </get_report_errors>
+      </request>
+      <response>
+        <get_report_errors_response status="200" status_text="OK">
+          <errors start="1" max="100">
+            <count>1</count>
+            <error>
+              <host>127.0.0.1<asset asset_id="9fd3aff1-4550-42cb-8339-1b6776f555d0"/></host>
+              <port>general/tcp</port>
+              <description>NVT timed out after 320 seconds.</description>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.12241">
+                <type>nvt</type>
+                <name>Do not print on AppSocket and socketAPI printers</name>
+                <cvss_base>0.0</cvss_base>
+              </nvt>
+              <scan_nvt_version>2025-01-22T08:32:30Z</scan_nvt_version>
+              <severity>-3</severity>
+            </error>
+          </errors>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_errors start="1" max="100"/>
+          <report_error_count>1<filtered>1</filtered><page>0</page></report_error_count>
+        </get_report_errors_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get only report error count information</summary>
+      <request>
+        <get_report_errors report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                           details="0">
+        </get_report_errors>
+      </request>
+      <response>
+        <get_report_errors_response status="200" status_text="OK">
+          <errors start="1" max="100">
+            <count>1</count>
+          </errors>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_errors start="1" max="100"/>
+          <report_error_count>1<filtered>1</filtered><page>0</page></report_error_count>
+        </get_report_errors_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_formats</name>
     <summary>Get one or many report formats</summary>
     <description>
