@@ -1,0 +1,9 @@
+#!/bin/sh
+
+FOUND=0
+for FILE in *.c *.h; do
+  grep -qn "[ ]$" "$FILE" && FOUND=1
+  grep -Hn "[ ]$" "$FILE" | sed "s/^\(.\+:.\:.\+\)/\1 error: trailing space/"
+done
+
+exit $FOUND
