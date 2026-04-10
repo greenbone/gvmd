@@ -2060,60 +2060,6 @@ gchar*
 credential_encrypted_value (credential_t, const char*);
 
 
-/* Notes. */
-
-int
-note_count (const get_data_t *, nvt_t, result_t, task_t);
-
-int
-init_note_iterator (iterator_t*, const get_data_t*, nvt_t, result_t, task_t);
-
-int
-init_note_iterator_all (iterator_t* iterator, get_data_t *get);
-
-const char*
-note_iterator_nvt_oid (iterator_t*);
-
-time_t
-note_iterator_creation_time (iterator_t*);
-
-time_t
-note_iterator_modification_time (iterator_t*);
-
-const char*
-note_iterator_text (iterator_t*);
-
-const char*
-note_iterator_hosts (iterator_t*);
-
-const char*
-note_iterator_port (iterator_t*);
-
-const char*
-note_iterator_threat (iterator_t*);
-
-task_t
-note_iterator_task (iterator_t*);
-
-result_t
-note_iterator_result (iterator_t*);
-
-time_t
-note_iterator_end_time (iterator_t*);
-
-int
-note_iterator_active (iterator_t*);
-
-const char*
-note_iterator_nvt_name (iterator_t *);
-
-const char *
-note_iterator_nvt_type (iterator_t *);
-
-const char*
-note_iterator_severity (iterator_t *);
-
-
 /* Overrides. */
 
 gboolean
