@@ -10,6 +10,8 @@
 #include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 
+#include <ctype.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -341,5 +343,346 @@ delete_override (const char *override_id, int ultimate)
   g_free (users_where);
 
   sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Modify an override.
+ *
+ * @param[in]  override_id  Override.
+ * @param[in]  active       NULL or -2 leave as is, -1 on, 0 off, n on for n
+ *                          days.
+ * @param[in]  nvt         OID of noted NVT.
+ * @param[in]  text        Override text.
+ * @param[in]  hosts       Hosts to apply override to, NULL for any host.
+ * @param[in]  port        Port to apply override to, NULL for any port.
+ * @param[in]  threat      Threat to apply override to, "" or NULL for any threat.
+ * @param[in]  new_threat  Threat to override result to.
+ * @param[in]  severity    Severity to apply override to, "" or NULL for any threat.
+ * @param[in]  new_severity Severity score to override "Alarm" type results to.
+ * @param[in]  task_id     Task to apply override to, 0 for any task.
+ * @param[in]  result_id   Result to apply override to, 0 for any result.
+ *
+ * @return 0 success, -1 error, 1 syntax error in active, 2 invalid port,
+ *         3 invalid severity score, 4 failed to find NVT, 5 failed to find
+ *         override, 6 failed to find task, 7 failed to find result,
+ *         8 invalid threat, 9 invalid new_threat, 10 invalid new_severity,
+ *         11 missing new_severity.
+ */
+int
+modify_override (const gchar *override_id, const char *active, const char *nvt,
+                 const char *text, const char *hosts, const char *port,
+                 const char *threat, const char *new_threat,
+                 const char *severity, const char *new_severity,
+                 const gchar *task_id, const gchar *result_id)
+{
+  gchar *quoted_text, *quoted_hosts, *quoted_port, *quoted_severity;
+  double severity_dbl, new_severity_dbl;
+  gchar *quoted_nvt;
+  GHashTable *reports;
+  GString *cache_invalidated_sql;
+  int cache_invalidated;
+  override_t override;
+  task_t task;
+  result_t result;
+
+  reports = NULL;
+  cache_invalidated = 0;
+
+  override = 0;
+  if (find_override_with_permission (override_id, &override, "modify_override"))
+    return -1;
+  if (override == 0)
+    return 5;
+
+  task = 0;
+  if (task_id)
+    {
+      if (find_task_with_permission (task_id, &task, NULL))
+        return -1;
+      if (task == 0)
+        {
+          if (find_trash_task_with_permission (task_id, &task, NULL))
+            return -1;
+          if (task == 0)
+            return 6;
+        }
+    }
+
+  result = 0;
+  if (result_id)
+    {
+      if (find_result_with_permission (result_id, &result, NULL))
+        return -1;
+      if (result == 0)
+        return 7;
+    }
+
+  if (text == NULL)
+    return -1;
+
+  if (port && validate_results_port (port))
+    return 2;
+
+  if (nvt && !nvt_exists (nvt))
+    return 4;
+
+  severity_dbl = 0.0;
+  if (severity != NULL && strcmp (severity, ""))
+    {
+      if (sscanf (severity, "%lf", &severity_dbl) != 1
+          || ((severity_dbl < 0.0 || severity_dbl > 10.0)
+              && severity_dbl != SEVERITY_LOG))
+        return 3;
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else if (threat != NULL && strcmp (threat, ""))
+    {
+      if (strcmp (threat, "Alarm") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Critical") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "High") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Medium") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Low") == 0)
+        severity_dbl = 0.1;
+      else if (strcmp (threat, "Log") == 0)
+        severity_dbl = SEVERITY_LOG;
+      else
+        return 8;
+
+      quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
+    }
+  else
+    quoted_severity = g_strdup ("NULL");
+
+  new_severity_dbl = 0.0;
+  if (new_severity != NULL && strcmp (new_severity, ""))
+    {
+      if (sscanf (new_severity, "%lf", &new_severity_dbl) != 1
+          || ((new_severity_dbl < 0.0 || new_severity_dbl > 10.0)
+              && new_severity_dbl != SEVERITY_LOG
+              && new_severity_dbl != SEVERITY_FP))
+        {
+          g_free (quoted_severity);
+          return 10;
+        }
+    }
+  else if (new_threat != NULL && strcmp (new_threat, ""))
+    {
+      if (strcmp (new_threat, "Alarm") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "Critical") == 0)
+        new_severity_dbl = 10.0;
+      else if (strcmp (new_threat, "High") == 0)
+        new_severity_dbl = 8.9;
+      else if (strcmp (new_threat, "Medium") == 0)
+        new_severity_dbl = 5.0;
+      else if (strcmp (new_threat, "Low") == 0)
+        new_severity_dbl = 2.0;
+      else if (strcmp (new_threat, "Log") == 0)
+        new_severity_dbl = SEVERITY_LOG;
+      else
+        {
+          g_free (quoted_severity);
+          return 9;
+        }
+    }
+  else
+    {
+      g_free (quoted_severity);
+      return 11;
+    }
+
+  quoted_text = sql_insert (text);
+  quoted_hosts = sql_insert (hosts);
+  quoted_port = sql_insert (port);
+  quoted_nvt = nvt ? sql_quote (nvt) : NULL;
+
+  // Tests if a cache rebuild is necessary.
+  //  The "active" status is checked separately
+  cache_invalidated_sql = g_string_new ("");
+
+  g_string_append_printf (cache_invalidated_sql,
+                          "SELECT (cast (new_severity AS numeric) != %1.1f)",
+                          new_severity_dbl);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " OR (task != %llu)",
+                          task);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " OR (result != %llu)",
+                          result);
+
+  if (strcmp (quoted_severity, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (severity IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (cast (severity AS numeric) != %1.1f)",
+                            severity_dbl);
+
+  if (strcmp (quoted_hosts, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts != %s)",
+                            quoted_hosts);
+
+  if (strcmp (quoted_port, "NULL") == 0)
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (hosts IS NOT NULL)");
+  else
+    g_string_append_printf (cache_invalidated_sql,
+                            " OR (port != %s)",
+                            quoted_port);
+
+  g_string_append_printf (cache_invalidated_sql,
+                          " FROM overrides WHERE id = %llu",
+                          override);
+
+  if (sql_int ("%s", cache_invalidated_sql->str))
+    {
+      cache_invalidated = 1;
+    }
+
+  g_string_free (cache_invalidated_sql, TRUE);
+
+  // Check active status for changes, get old reports for rebuild if necessary
+  //  and update override.
+  result_nvt_notice (quoted_nvt);
+  if ((active == NULL) || (strcmp (active, "-2") == 0))
+    {
+      if (cache_invalidated)
+        reports = reports_for_override (override);
+
+      sql ("UPDATE overrides SET"
+           " modification_time = %i,"
+           " text = %s,"
+           " hosts = %s,"
+           " port = %s,"
+           " severity = %s,"
+           " %s%s%s"
+           " %s%s%s"
+           " new_severity = %f,"
+           " task = %llu,"
+           " result = %llu"
+           " WHERE id = %llu;",
+           time (NULL),
+           quoted_text,
+           quoted_hosts,
+           quoted_port,
+           quoted_severity,
+           nvt ? "nvt = '" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
+           new_severity_dbl,
+           task,
+           result,
+           override);
+    }
+  else
+    {
+      const char *point;
+      point = active;
+      int new_end_time;
+
+      if (strcmp (point, "-1"))
+        {
+          while (*point && isdigit (*point)) point++;
+          if (*point)
+            {
+              return 1;
+            }
+        }
+
+      new_end_time = (strcmp (active, "-1")
+                        ? (strcmp (active, "0")
+                            ? (time (NULL) + atoi (active) * 60 * 60 * 24)
+                            : 1)
+                        : 0);
+
+      if (cache_invalidated == 0
+          && sql_int ("SELECT end_time != %d FROM overrides"
+                      " WHERE id = %llu",
+                      new_end_time, override))
+        cache_invalidated = 1;
+
+      if (cache_invalidated)
+        reports = reports_for_override (override);
+
+      sql ("UPDATE overrides SET"
+           " end_time = %i,"
+           " modification_time = %i,"
+           " text = %s,"
+           " hosts = %s,"
+           " port = %s,"
+           " severity = %s,"
+           " %s%s%s"
+           " %s%s%s"
+           " new_severity = %f,"
+           " task = %llu,"
+           " result = %llu"
+           " WHERE id = %llu;",
+           new_end_time,
+           time (NULL),
+           quoted_text,
+           quoted_hosts,
+           quoted_port,
+           quoted_severity,
+           nvt ? "nvt = '" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "'," : "",
+           nvt ? "result_nvt = (SELECT id FROM result_nvts WHERE nvt='" : "",
+           nvt ? quoted_nvt : "",
+           nvt ? "')," : "",
+           new_severity_dbl,
+           task,
+           result,
+           override);
+    }
+
+  g_free (quoted_text);
+  g_free (quoted_hosts);
+  g_free (quoted_port);
+  g_free (quoted_severity);
+  g_free (quoted_nvt);
+
+  if (cache_invalidated)
+    {
+      GHashTableIter reports_iter;
+      report_t *reports_ptr;
+      gchar *users_where;
+      int auto_cache_rebuild;
+
+      users_where = acl_users_with_access_where ("override", override_id, NULL,
+                                                 "id");
+
+      reports_add_for_override (reports, override);
+
+      g_hash_table_iter_init (&reports_iter, reports);
+      reports_ptr = NULL;
+      auto_cache_rebuild = setting_auto_cache_rebuild_int ();
+      while (g_hash_table_iter_next (&reports_iter,
+                                    ((gpointer*)&reports_ptr), NULL))
+        {
+          if (auto_cache_rebuild)
+            report_cache_counts (*reports_ptr, 0, 1, users_where);
+          else
+            report_clear_count_cache (*reports_ptr, 0, 1, users_where);
+        }
+      g_free (users_where);
+    }
+
+  if (reports)
+    g_hash_table_destroy (reports);
+
   return 0;
 }

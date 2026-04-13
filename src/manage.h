@@ -2069,11 +2069,6 @@ int
 override_uuid (override_t, char **);
 
 int
-modify_override (const gchar *, const char *, const char *, const char *,
-                 const char *, const char *, const char *, const char *,
-                 const char *, const char *, const gchar *, const gchar *);
-
-int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int
