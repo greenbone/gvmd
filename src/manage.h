@@ -2066,9 +2066,6 @@ gboolean
 find_override_with_permission (const char*, override_t*, const char *);
 
 int
-override_uuid (override_t, char **);
-
-int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
 
 int

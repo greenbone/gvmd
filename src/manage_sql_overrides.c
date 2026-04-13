@@ -347,6 +347,22 @@ delete_override (const char *override_id, int ultimate)
 }
 
 /**
+ * @brief Return the UUID of an override.
+ *
+ * @param[in]   override  Override.
+ * @param[out]  id        Pointer to a newly allocated string.
+ *
+ * @return 0.
+ */
+int
+override_uuid (override_t override, char ** id)
+{
+  *id = sql_string ("SELECT uuid FROM overrides WHERE id = %llu;",
+                    override);
+  return 0;
+}
+
+/**
  * @brief Modify an override.
  *
  * @param[in]  override_id  Override.
