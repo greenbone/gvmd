@@ -626,4 +626,7 @@ nvt_exists (const char *);
 int
 validate_results_port (const char *);
 
+void
+result_nvt_notice (const gchar *);
+
 #endif /* not _GVMD_MANAGE_SQL_H */

@@ -183,6 +183,7 @@ set(
   manage_notes.c
   manage_openvas.c
   manage_osp.c
+  manage_overrides.c
   manage_permissions.c
   manage_port_lists.c
   manage_preferences.c
@@ -244,6 +245,7 @@ set(
   manage_sql_notes.c
   manage_sql_nvts.c
   manage_sql_secinfo.c
+  manage_sql_overrides.c
   manage_sql_permissions.c
   manage_sql_permissions_cache.c
   manage_sql_port_lists.c
