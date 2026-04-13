@@ -5,8 +5,10 @@
 
 #include "manage_sql_overrides.h"
 #include "manage_acl.h"
+#include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_settings.h"
+#include "manage_sql_tags.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -230,4 +232,114 @@ copy_override (const char *override_id, override_t* new_override)
                         "nvt, text, hosts, port, severity, new_severity, task,"
                         " result, end_time, result_nvt",
                         1, new_override, NULL);
+}
+
+/**
+ * @brief Delete a override.
+ *
+ * @param[in]  override_id  UUID of override.
+ * @param[in]  ultimate     Whether to remove entirely, or to trashcan.
+ *
+ * @return 0 success, 2 failed to find override, 99 permission denied, -1 error.
+ */
+int
+delete_override (const char *override_id, int ultimate)
+{
+  override_t override;
+  GHashTable *reports;
+  GHashTableIter reports_iter;
+  report_t *reports_ptr;
+  gchar *users_where;
+  int auto_cache_rebuild;
+
+  sql_begin_immediate ();
+
+  if (acl_user_may ("delete_override") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  override = 0;
+
+  if (find_override_with_permission (override_id, &override, "delete_override"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (override == 0)
+    {
+      if (find_trash ("override", override_id, &override))
+        {
+          sql_rollback ();
+          return -1;
+        }
+      if (override == 0)
+        {
+          sql_rollback ();
+          return 2;
+        }
+      if (ultimate == 0)
+        {
+          /* It's already in the trashcan. */
+          sql_commit ();
+          return 0;
+        }
+
+      permissions_set_orphans ("override", override, LOCATION_TRASH);
+      tags_remove_resource ("override", override, LOCATION_TRASH);
+
+      sql ("DELETE FROM overrides_trash WHERE id = %llu;", override);
+      sql_commit ();
+      return 0;
+    }
+
+  reports = reports_for_override (override);
+
+  users_where = acl_users_with_access_where ("override", override_id, NULL,
+                                             "id");
+
+  if (ultimate == 0)
+    {
+      sql ("INSERT INTO overrides_trash"
+           " (uuid, owner, nvt, creation_time, modification_time, text, hosts,"
+           "  port, severity, new_severity, task, result, end_time, result_nvt)"
+           " SELECT uuid, owner, nvt, creation_time, modification_time, text,"
+           "        hosts, port, severity, new_severity,task,"
+           "        result, end_time, result_nvt"
+           " FROM overrides WHERE id = %llu;",
+           override);
+
+      permissions_set_locations ("override", override,
+                                 sql_last_insert_id (),
+                                 LOCATION_TRASH);
+      tags_set_locations ("override", override,
+                          sql_last_insert_id (),
+                          LOCATION_TRASH);
+    }
+  else
+    {
+      permissions_set_orphans ("override", override, LOCATION_TABLE);
+      tags_remove_resource ("override", override, LOCATION_TABLE);
+    }
+
+  sql ("DELETE FROM overrides WHERE id = %llu;", override);
+
+  g_hash_table_iter_init (&reports_iter, reports);
+  reports_ptr = NULL;
+  auto_cache_rebuild = setting_auto_cache_rebuild_int ();
+  while (g_hash_table_iter_next (&reports_iter,
+                                 ((gpointer*)&reports_ptr), NULL))
+    {
+      if (auto_cache_rebuild)
+        report_cache_counts (*reports_ptr, 0, 1, users_where);
+      else
+        report_clear_count_cache (*reports_ptr, 0, 1, users_where);
+    }
+  g_hash_table_destroy (reports);
+  g_free (users_where);
+
+  sql_commit ();
+  return 0;
 }

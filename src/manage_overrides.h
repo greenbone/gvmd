@@ -16,4 +16,7 @@ create_override (const char *, const char *, const char *, const char *,
 int
 copy_override (const char *, override_t *);
 
+int
+delete_override (const char *, int);
+
 #endif /* not _GVMD_MANAGE_OVERRIDES_H */
