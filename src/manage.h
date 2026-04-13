@@ -2062,9 +2062,6 @@ credential_encrypted_value (credential_t, const char*);
 
 /* Overrides. */
 
-gboolean
-find_override_with_permission (const char*, override_t*, const char *);
-
 int
 override_count (const get_data_t *, nvt_t, result_t, task_t);
 
