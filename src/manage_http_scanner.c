@@ -45,21 +45,42 @@ http_scanner_connect (scanner_t scanner, const char *scan_id)
   key_pub = scanner_key_pub (scanner);
   key_priv = scanner_key_priv (scanner);
 
-  /* Determine protocol based on certificate presence */
-  if (ca_pub && key_pub && key_priv)
-    protocol = "https";
-  else
-    protocol = "http";
+  gboolean is_socket_path = host && *host != '\0' && g_path_is_absolute (host);
+
+  if (!host || *host == '\0' || (!is_socket_path && port <= 0))
+    {
+      g_warning ("%s: Invalid scanner host or port", __func__);
+      g_free (host);
+      g_free (ca_pub);
+      g_free (key_pub);
+      g_free (key_priv);
+      return NULL;
+    }
 
   connection = http_scanner_connector_new ();
 
-  http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_PORT,
-                                  (void *) &port);
+  if (is_socket_path)
+    {
+      g_debug ("%s: Using Unix domain socket: %s", __func__, host);
+      http_scanner_connector_builder (connection, HTTP_SCANNER_UNIX_SOCKET_PATH, host);
+    }
+  else
+    {
+      /* Determine protocol based on certificates presence */
+      protocol = (ca_pub && key_pub && key_priv) ? "https" : "http";
+
+      http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
+      http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
+      http_scanner_connector_builder (connection, HTTP_SCANNER_PORT,
+                                      (void *) &port);
+    }
+
+  if (ca_pub)
+    http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
+  if (key_priv)
+    http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
+  if (key_pub)
+    http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
 
   if (scan_id && scan_id[0] != '\0')
     http_scanner_connector_builder (connection, HTTP_SCANNER_SCAN_ID, scan_id);
