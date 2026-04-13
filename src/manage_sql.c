@@ -24844,7 +24844,7 @@ osp_get_details_from_iterator (iterator_t *iterator, char **desc,
  */
 int
 openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
-                               GSList **params)
+                                    GSList **params)
 {
   int port;
   http_scanner_connector_t connection;
@@ -24856,22 +24856,10 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
   ca_pub = scanner_iterator_ca_pub (iterator);
   key_pub = scanner_iterator_key_pub (iterator);
   key_priv = scanner_iterator_key_priv (iterator);
+  protocol = ca_pub && key_pub && key_priv ? "https" : "http";
 
-  /* Determine protocol based on certificate presence */
-  if (ca_pub && key_pub && key_priv)
-    protocol = "https";
-  else
-    protocol = "http";
-
-  connection = http_scanner_connector_new ();
-
-  http_scanner_connector_builder (connection, HTTP_SCANNER_HOST, host);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_PROTOCOL, protocol);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_CA_CERT, ca_pub);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_KEY, key_priv);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_CERT, key_pub);
-  http_scanner_connector_builder (connection, HTTP_SCANNER_PORT, (void *) &port);
-
+  scanner_t scanner_row_id = get_iterator_resource (iterator);
+  connection = http_scanner_connect (scanner_row_id, NULL);
   if (!connection)
     return 1;
 
