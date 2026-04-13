@@ -2066,11 +2066,6 @@ gboolean
 find_override_with_permission (const char*, override_t*, const char *);
 
 int
-create_override (const char*, const char*, const char*, const char*,
-                 const char*, const char*, const char*, const char*,
-                 const char*, task_t, result_t, override_t*);
-
-int
 override_uuid (override_t, char **);
 
 int
