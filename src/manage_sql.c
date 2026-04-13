@@ -22093,24 +22093,6 @@ override_uuid (override_t override, char ** id)
 }
 
 /**
- * @brief Create a override from an existing override.
- *
- * @param[in]  override_id   UUID of existing override.
- * @param[out] new_override  New override.
- *
- * @return 0 success, 1 override exists already, 2 failed to find existing
- *         override, -1 error.
- */
-int
-copy_override (const char *override_id, override_t* new_override)
-{
-  return copy_resource ("override", NULL, NULL, override_id,
-                        "nvt, text, hosts, port, severity, new_severity, task,"
-                        " result, end_time, result_nvt",
-                        1, new_override, NULL);
-}
-
-/**
  * @brief Delete a override.
  *
  * @param[in]  override_id  UUID of override.
