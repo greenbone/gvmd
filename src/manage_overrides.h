@@ -20,6 +20,9 @@ int
 delete_override (const char *, int);
 
 int
+override_uuid (override_t, char **);
+
+int
 modify_override (const gchar *, const char *, const char *, const char *,
                  const char *, const char *, const char *, const char *,
                  const char *, const char *, const gchar *, const gchar *);

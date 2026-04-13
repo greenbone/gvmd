@@ -22077,22 +22077,6 @@ find_override_with_permission (const char* uuid, override_t* override,
 }
 
 /**
- * @brief Return the UUID of an override.
- *
- * @param[in]   override  Override.
- * @param[out]  id        Pointer to a newly allocated string.
- *
- * @return 0.
- */
-int
-override_uuid (override_t override, char ** id)
-{
-  *id = sql_string ("SELECT uuid FROM overrides WHERE id = %llu;",
-                    override);
-  return 0;
-}
-
-/**
  * @brief Filter columns for override iterator.
  */
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \
