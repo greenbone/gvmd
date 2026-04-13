@@ -2069,9 +2069,6 @@ int
 override_uuid (override_t, char **);
 
 int
-copy_override (const char*, override_t*);
-
-int
 delete_override (const char *, int);
 
 int
