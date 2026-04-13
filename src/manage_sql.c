@@ -22058,25 +22058,6 @@ nvt_exists (const char* nvt)
 /* Overrides. */
 
 /**
- * @brief Find a override for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of override.
- * @param[out]  override    Override return, 0 if successfully failed to find
- *                          override.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find override), TRUE on
- *         error.
- */
-gboolean
-find_override_with_permission (const char* uuid, override_t* override,
-                               const char *permission)
-{
-  return find_resource_with_permission ("override", uuid, override, permission,
-                                        0);
-}
-
-/**
  * @brief Filter columns for override iterator.
  */
 #define OVERRIDE_ITERATOR_FILTER_COLUMNS                                      \

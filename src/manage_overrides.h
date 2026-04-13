@@ -27,4 +27,7 @@ modify_override (const gchar *, const char *, const char *, const char *,
                  const char *, const char *, const char *, const char *,
                  const char *, const char *, const gchar *, const gchar *);
 
+gboolean
+find_override_with_permission (const char *, override_t *, const char *);
+
 #endif /* not _GVMD_MANAGE_OVERRIDES_H */
