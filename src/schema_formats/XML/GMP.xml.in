@@ -5030,11 +5030,13 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <pattern>
       <e>text</e>
       <e>nvt</e>
+      <or>
+        <e>new_severity</e>
+        <e>new_threat</e>
+      </or>
       <o><e>active</e></o>
       <o><e>copy</e></o>
       <o><e>hosts</e></o>
-      <o><e>new_severity</e></o>
-      <o><e>new_threat</e></o>
       <o><e>port</e></o>
       <o><e>result</e></o>
       <o><e>severity</e></o>
