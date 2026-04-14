@@ -2060,67 +2060,6 @@ gchar*
 credential_encrypted_value (credential_t, const char*);
 
 
-/* Overrides. */
-
-int
-override_count (const get_data_t *, nvt_t, result_t, task_t);
-
-int
-init_override_iterator (iterator_t*, const get_data_t*, nvt_t, result_t,
-                        task_t);
-
-int
-init_override_iterator_all (iterator_t* iterator, get_data_t *get);
-
-const char*
-override_iterator_nvt_oid (iterator_t*);
-
-time_t
-override_iterator_creation_time (iterator_t*);
-
-time_t
-override_iterator_modification_time (iterator_t*);
-
-const char*
-override_iterator_text (iterator_t*);
-
-const char*
-override_iterator_hosts (iterator_t*);
-
-const char*
-override_iterator_port (iterator_t*);
-
-const char*
-override_iterator_threat (iterator_t*);
-
-const char*
-override_iterator_new_threat (iterator_t*);
-
-task_t
-override_iterator_task (iterator_t*);
-
-result_t
-override_iterator_result (iterator_t*);
-
-time_t
-override_iterator_end_time (iterator_t*);
-
-int
-override_iterator_active (iterator_t*);
-
-const char*
-override_iterator_nvt_name (iterator_t *);
-
-const char *
-override_iterator_nvt_type (iterator_t *);
-
-const char*
-override_iterator_severity (iterator_t *);
-
-const char*
-override_iterator_new_severity (iterator_t *);
-
-
 /* System reports. */
 
 /**
