@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * gpgme
-* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.34 (or 22.37 if you ENABLE_CONTAINER_SCANNING or
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 22.34 (or 22.41 if you ENABLE_CONTAINER_SCANNING or
   ENABLE_OPENVASD or ENABLE_AGENTS)
 * libical >= 1.0.0
 * libbsd
