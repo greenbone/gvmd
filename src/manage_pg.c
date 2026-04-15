@@ -18,6 +18,7 @@
 #include "manage_sql.h"
 #include "manage_utils.h"
 #include "manage_acl.h"
+#include "manage_runtime_flags.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -3114,6 +3115,19 @@ create_tables ()
        "  value text,"
        "  UNIQUE (report_config, name));");
 
+  if (feature_enabled(FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+    {
+      sql ("CREATE TABLE IF NOT EXISTS report_exports"
+           " (id SERIAL PRIMARY KEY,"
+           "  report_id integer NOT NULL,"
+           "  status text,"
+           "  reason text,"
+           "  retry_count integer,"
+           "  next_retry_time integer,"
+           "  creation_time integer,"
+           "  modification_time integer);");
+    }
+
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -3545,6 +3559,19 @@ create_tables ()
   sql ("SELECT create_index ('tls_certificate_origins_by_origin_id_and_type',"
        "                     'tls_certificate_origins',"
        "                     'origin_id, origin_type')");
+
+  if (feature_enabled(FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+    {
+      sql ("SELECT create_index"
+           "    ('report_exports_by_report_id',"
+           "     'report_exports',"
+           "     'report_id');");
+
+      sql ("SELECT create_index"
+           "    ('report_exports_by_status_and_retry_time',"
+           "     'report_exports',"
+           "     'status, next_retry_time');");
+    }
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
