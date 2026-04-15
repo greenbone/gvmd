@@ -5,20 +5,59 @@
 
 
 #include "manage_report_exports.h"
+#include "manage_settings.h"
 #include "manage_sql.h"
 
+/**
+ * @brief Checks if the automatic export to security intelligence is enabled
+ *        for given report
+ *
+ * @param  report  The report to check
+ *
+ * @return TRUE if enabled, FALSE otherwise
+ */
+gboolean
+export_enabled_for_report (report_t report)
+{
+  return !!sql_int_ps (
+    "SELECT s.value FROM reports AS r"
+    " INNER JOIN settings AS s ON r.owner = s.owner"
+    " WHERE r.id = $1"
+    " AND s.uuid = $2",
+    SQL_INT_PARAM (report),
+    SQL_STR_PARAM (SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT), NULL);
+}
 
-void
+/**
+ * @brief Queue the given report for automatic export to security intelligence
+ *
+ * @param  report  The report to queue
+ *
+ * @return 0 on success, -1 on failure
+ */
+int
 queue_report_for_export (const report_t report)
 {
+  if (!export_enabled_for_report (report))
+    return -1;
+
   sql_ps ("INSERT INTO report_exports (report_id, status, retry_count,"
           "                            reason, next_retry_time,"
           "                            creation_time, modification_time)"
           " VALUES ($1, 'report_export_requested', 0, 'Queued',"
           "         m_now(), m_now(), m_now())",
           SQL_INT_PARAM (report), NULL);
+
+  return 0;
 }
 
+/**
+ * @brief Update report export status with a reason
+ *
+ * @param  report   The report ID that is in export queue
+ * @param  status   The new status
+ * @param  reason   The reason for the status
+ */
 void
 set_report_export_status_and_reason (report_t report, const gchar *status,
                                      const gchar *reason)
@@ -32,6 +71,12 @@ set_report_export_status_and_reason (report_t report, const gchar *status,
           NULL);
 }
 
+/**
+ * @brief Update report export next retry time
+ *
+ * @param  report           The report ID that is in export queue
+ * @param  next_retry_time  The new next retry time
+ */
 void
 set_report_export_next_retry_time (report_t report, long long next_retry_time)
 {
@@ -41,6 +86,12 @@ set_report_export_next_retry_time (report_t report, long long next_retry_time)
           SQL_INT_PARAM (next_retry_time), SQL_INT_PARAM (report), NULL);
 }
 
+/**
+ * @brief Update report export retry count
+ *
+ * @param  report           The report ID that is in export queue
+ * @param  retry_count      The new retry count
+ */
 void
 set_report_export_retry_count (report_t report, int retry_count)
 {

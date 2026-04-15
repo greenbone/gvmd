@@ -44,6 +44,7 @@
 #include "manage_osp.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
+#include "manage_report_exports.h"
 #include "manage_report_formats.h"
 #include "manage_scan_queue.h"
 #include "manage_settings.h"
@@ -2339,6 +2340,10 @@ fork_cve_scan_handler (task_t task, target_t target)
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_DONE);
   set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+    {
+      queue_report_for_export (global_current_report);
+    }
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
   gvm_close_sentry ();
@@ -7493,6 +7498,10 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+        {
+          queue_report_for_export (global_current_report);
+        }
       set_task_end_time_epoch (task, time (NULL));
       set_scan_end_time_epoch (global_current_report, time (NULL));
 
@@ -7518,6 +7527,10 @@ fork_openvasd_scan_handler (task_t task, target_t target, int from,
       hosts_set_details (global_current_report);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+        {
+          queue_report_for_export (global_current_report);
+        }
     }
   else if (rc == -1 || rc == -2)
     {
@@ -7857,6 +7870,10 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+        {
+          queue_report_for_export (global_current_report);
+        }
       set_task_end_time_epoch (task, time (NULL));
       set_scan_end_time_epoch (global_current_report, time (NULL));
 
@@ -7882,6 +7899,10 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       asset_snapshots_agent (global_current_report, task, agent_group);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
+      if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+        {
+          queue_report_for_export (global_current_report);
+        }
     }
   else if (rc == -1)
     {
