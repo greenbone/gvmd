@@ -42,16 +42,16 @@ report_export_iterator_status (iterator_t *iterator);
 const char *
 report_export_iterator_reason (iterator_t *iterator);
 
-long long
+int
 report_export_iterator_retry_count (iterator_t *iterator);
 
-long long
+time_t
 report_export_iterator_next_retry_time (iterator_t *iterator);
 
-long long
+time_t
 report_export_iterator_creation_time (iterator_t *iterator);
 
-long long
+time_t
 report_export_iterator_modification_time (iterator_t *iterator);
 
 #endif // _GVMD_MANAGE_SQL_REPORT_EXPORT_H
