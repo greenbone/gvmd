@@ -39,10 +39,10 @@ init_report_export_iterator_due_exports (iterator_t *iterator);
 report_t
 report_export_iterator_report_id (iterator_t *iterator);
 
-const char *
+const gchar *
 report_export_iterator_status (iterator_t *iterator);
 
-const char *
+const gchar *
 report_export_iterator_reason (iterator_t *iterator);
 
 int
