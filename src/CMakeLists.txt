@@ -270,6 +270,7 @@ set(
   manage_sql_nvts_common.c
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
+  manage_sql_report_exports.c
 )
 
 if(ENABLE_AGENTS)
