@@ -66,9 +66,8 @@ init_report_export_iterator_due_exports (iterator_t *iterator)
                               "    creation_time, modification_time"
                               " FROM report_exports"
                               " WHERE   next_retry_time < m_now()"
-                              " AND "
-                              "     (status = 'report_export_requested'"
-                              "     OR status = 'report_export_failed')");
+                              " AND     status IN ('report_export_requested',"
+                              "                    'report_export_failed')");
 
   return 0;
 }
