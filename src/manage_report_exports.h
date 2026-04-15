@@ -17,7 +17,7 @@
 #include "manage_resources_types.h"
 
 gboolean
-export_enabled_for_report (report_t report);
+export_enabled_for_report_owner (report_t report);
 
 int
 queue_report_for_export (report_t report);
@@ -27,7 +27,7 @@ set_report_export_status_and_reason (report_t report, const gchar *status,
                                      const gchar *reason);
 
 void
-set_report_export_next_retry_time (report_t report, long long next_retry_time);
+set_report_export_next_retry_time (report_t report, time_t next_retry_time);
 
 void
 set_report_export_retry_count (report_t report, int retry_count);
