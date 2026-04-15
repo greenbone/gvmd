@@ -13392,12 +13392,6 @@ set_report_scan_run_status (report_t report, task_status_t status)
   if (setting_auto_cache_rebuild_int ())
     report_cache_counts (report, 0, 0, NULL);
 
-  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT)
-      && status == TASK_STATUS_DONE)
-    {
-      queue_report_for_export (report);
-    }
-
   return 0;
 }
 

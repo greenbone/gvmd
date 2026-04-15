@@ -16,7 +16,10 @@
 #include "iterator.h"
 #include "manage_resources_types.h"
 
-void
+gboolean
+export_enabled_for_report (report_t report);
+
+int
 queue_report_for_export (report_t report);
 
 void
