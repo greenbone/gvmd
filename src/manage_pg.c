@@ -3115,18 +3115,15 @@ create_tables ()
        "  value text,"
        "  UNIQUE (report_config, name));");
 
-  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
-    {
-      sql ("CREATE TABLE IF NOT EXISTS report_exports"
-           " (id SERIAL PRIMARY KEY,"
-           "  report_id integer NOT NULL,"
-           "  status text,"
-           "  reason text,"
-           "  retry_count integer,"
-           "  next_retry_time integer,"
-           "  creation_time integer,"
-           "  modification_time integer);");
-    }
+  sql ("CREATE TABLE IF NOT EXISTS report_exports"
+       " (id SERIAL PRIMARY KEY,"
+       "  report_id integer NOT NULL,"
+       "  status text,"
+       "  reason text,"
+       "  retry_count integer,"
+       "  next_retry_time integer,"
+       "  creation_time integer,"
+       "  modification_time integer);");
 
   sql ("CREATE TABLE IF NOT EXISTS report_formats"
        " (id SERIAL PRIMARY KEY,"
@@ -3560,18 +3557,15 @@ create_tables ()
        "                     'tls_certificate_origins',"
        "                     'origin_id, origin_type')");
 
-  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
-    {
-      sql ("SELECT create_index"
-           "    ('report_exports_by_report_id',"
-           "     'report_exports',"
-           "     'report_id');");
+  sql ("SELECT create_index"
+       "    ('report_exports_by_report_id',"
+       "     'report_exports',"
+       "     'report_id');");
 
-      sql ("SELECT create_index"
-           "    ('report_exports_by_status_and_retry_time',"
-           "     'report_exports',"
-           "     'status, next_retry_time');");
-    }
+  sql ("SELECT create_index"
+       "    ('report_exports_by_status_and_retry_time',"
+       "     'report_exports',"
+       "     'status, next_retry_time');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
