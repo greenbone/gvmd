@@ -3115,7 +3115,7 @@ create_tables ()
        "  value text,"
        "  UNIQUE (report_config, name));");
 
-  if (feature_enabled(FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
       sql ("CREATE TABLE IF NOT EXISTS report_exports"
            " (id SERIAL PRIMARY KEY,"
@@ -3560,7 +3560,7 @@ create_tables ()
        "                     'tls_certificate_origins',"
        "                     'origin_id, origin_type')");
 
-  if (feature_enabled(FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+  if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
       sql ("SELECT create_index"
            "    ('report_exports_by_report_id',"
