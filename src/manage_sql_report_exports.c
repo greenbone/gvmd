@@ -116,12 +116,12 @@ DEF_ACCESS (report_export_iterator_reason, 3);
  * @return Retry count, or 0 if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-long long
+int
 report_export_iterator_retry_count (iterator_t *iterator)
 {
   if (iterator->done)
     return 0;
-  return iterator_int64 (iterator, 4);
+  return iterator_int (iterator, 4);
 }
 
 /**
@@ -132,7 +132,7 @@ report_export_iterator_retry_count (iterator_t *iterator)
  * @return Next retry time, or 0 if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-long long
+time_t
 report_export_iterator_next_retry_time (iterator_t *iterator)
 {
   if (iterator->done)
@@ -148,7 +148,7 @@ report_export_iterator_next_retry_time (iterator_t *iterator)
  * @return Creation time, or 0 if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-long long
+time_t
 report_export_iterator_creation_time (iterator_t *iterator)
 {
   if (iterator->done)
@@ -164,7 +164,7 @@ report_export_iterator_creation_time (iterator_t *iterator)
  * @return Modification time, or 0 if iteration is complete. Freed by
  *         cleanup_iterator.
  */
-long long
+time_t
 report_export_iterator_modification_time (iterator_t *iterator)
 {
   if (iterator->done)
