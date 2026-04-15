@@ -17,7 +17,7 @@
  * @return TRUE if enabled, FALSE otherwise
  */
 gboolean
-export_enabled_for_report (report_t report)
+export_enabled_for_report_owner (report_t report)
 {
   return !!sql_int_ps (
     "SELECT s.value FROM reports AS r"
@@ -38,7 +38,7 @@ export_enabled_for_report (report_t report)
 int
 queue_report_for_export (const report_t report)
 {
-  if (!export_enabled_for_report (report))
+  if (!export_enabled_for_report_owner (report))
     return -1;
 
   sql_ps ("INSERT INTO report_exports (report_id, status, retry_count,"
@@ -78,7 +78,7 @@ set_report_export_status_and_reason (report_t report, const gchar *status,
  * @param  next_retry_time  The new next retry time
  */
 void
-set_report_export_next_retry_time (report_t report, long long next_retry_time)
+set_report_export_next_retry_time (report_t report, time_t next_retry_time)
 {
   sql_ps ("UPDATE report_exports"
           "   SET next_retry_time = $1"

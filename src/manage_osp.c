@@ -1116,10 +1116,6 @@ handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
       report_add_result (global_current_report, result);
       set_task_run_status (task, TASK_STATUS_DONE);
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
-      if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
-        {
-          queue_report_for_export (global_current_report);
-        }
       set_task_end_time_epoch (task, time (NULL));
       set_scan_end_time_epoch (global_current_report, time (NULL));
 

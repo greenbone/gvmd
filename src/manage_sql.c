@@ -31,7 +31,6 @@
 #include "manage_filters.h"
 #include "manage_groups.h"
 #include "manage_port_lists.h"
-#include "manage_report_exports.h"
 #include "manage_report_formats.h"
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
@@ -13391,7 +13390,6 @@ set_report_scan_run_status (report_t report, task_status_t status)
        report);
   if (setting_auto_cache_rebuild_int ())
     report_cache_counts (report, 0, 0, NULL);
-
   return 0;
 }
 
