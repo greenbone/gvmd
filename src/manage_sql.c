@@ -15945,6 +15945,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              "<ssl_certs><count>%i</count></ssl_certs>",
              report_ssl_cert_count (report));
 
+      if (!get->details)
+        {
+          PRINT (out,
+                 "<ports><count>%i</count></ports>",
+                 report_port_count (report));
+        }
+
     }
 
   if (task && tsk_uuid)
