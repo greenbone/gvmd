@@ -24042,6 +24042,184 @@ END:VCALENDAR
         </get_reports_response>
       </response>
     </example>
+    <example>
+      <summary>Get a report in XML with no details</summary>
+      <request>
+        <get_reports report_id="f2d54f16-5001-4bf4-9b6f-75af1c1cac18" filter="levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1"
+                          details="0" lean="1">
+        </get_reports>
+      </request>
+      <response>
+        <get_reports_response status="200" status_text="OK">
+          <report id="f2d54f16-5001-4bf4-9b6f-75af1c1cac18" format_id="" config_id="" extension="" content_type="application/xml">
+            <owner>
+              <name>testuser</name>
+            </owner>
+            <name>2026-04-08T06:47:41Z</name>
+            <comment/>
+            <creation_time>2026-04-08T06:47:41Z</creation_time>
+            <modification_time>2026-04-08T07:32:43Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <task id="e966a693-5c95-47d2-92ab-718306bdd735">
+              <name>openvasd-full-fast</name>
+            </task>
+            <report id="f2d54f16-5001-4bf4-9b6f-75af1c1cac18">
+              <gmp>
+                <version>22.8</version>
+              </gmp>
+              <sort>
+                <field>severity<order>descending</order></field>
+              </sort>
+              <filters id="">
+                <term>apply_overrides=0 levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1</term>
+                <filter>Critical</filter>
+                <filter>High</filter>
+                <filter>Medium</filter>
+                <filter>Low</filter>
+                <keywords>
+                  <keyword>
+                    <column>apply_overrides</column>
+                    <relation>=</relation>
+                    <value>0</value>
+                  </keyword>
+                  <keyword>
+                    <column>levels</column>
+                    <relation>=</relation>
+                    <value>chml</value>
+                  </keyword>
+                  <keyword>
+                    <column>rows</column>
+                    <relation>=</relation>
+                    <value>10</value>
+                  </keyword>
+                  <keyword>
+                    <column>min_qod</column>
+                    <relation>=</relation>
+                    <value>70</value>
+                  </keyword>
+                  <keyword>
+                    <column>first</column>
+                    <relation>=</relation>
+                    <value>1</value>
+                  </keyword>
+                  <keyword>
+                    <column>sort-reverse</column>
+                    <relation>=</relation>
+                    <value>severity</value>
+                  </keyword>
+                  <keyword>
+                    <column>result_hosts_only</column>
+                    <relation>=</relation>
+                    <value>1</value>
+                  </keyword>
+                </keywords>
+              </filters>
+              <user_tags>
+                <count>1</count>
+                <tag id="f81348d7-73e4-4e26-9fb4-7e93cee35a1c">
+                  <name>default:test</name>
+                  <value>this is a test tag</value>
+                  <comment/>
+                </tag>
+              </user_tags>
+              <scan_run_status>Done</scan_run_status>
+              <hosts>
+                <count>1</count>
+              </hosts>
+              <closed_cves>
+                <count>0</count>
+              </closed_cves>
+              <vulns>
+                <count>68</count>
+              </vulns>
+              <os>
+                <count>1</count>
+              </os>
+              <apps>
+                <count>13</count>
+              </apps>
+              <ssl_certs>
+                <count>3</count>
+              </ssl_certs>
+              <ports>
+                <count>10</count>
+              </ports>
+              <task id="e966a693-5c95-47d2-92ab-718306bdd735">
+                <name>openvasd-full-fast</name>
+                <comment/>
+                <target id="57cead44-b14e-4526-b3e5-2a6aae779a9b">
+                  <trash>0</trash>
+                  <name>another-localhost</name>
+                  <comment/>
+                </target>
+                <progress>100</progress>
+              </task>
+              <timestamp>2026-04-08T06:47:41Z</timestamp>
+              <scan_start>2026-04-08T06:47:50Z</scan_start>
+              <timezone>UTC</timezone>
+              <timezone_abbrev>UTC</timezone_abbrev>
+              <result_count>100<full>100</full><filtered>5</filtered><critical><full>3</full><filtered>0</filtered></critical><hole deprecated="1"><full>10</full><filtered>1</filtered></hole><high><full>10</full><filtered>1</filtered></high><info deprecated="1"><full>4</full><filtered>1</filtered></info><low><full>4</full><filtered>1</filtered></low><log><full>68</full><filtered>0</filtered></log><warning deprecated="1"><full>15</full><filtered>3</filtered></warning><medium><full>15</full><filtered>3</filtered></medium><false_positive><full>0</full><filtered>0</filtered></false_positive></result_count>
+              <severity>
+                <full>9.8</full>
+                <filtered>7.3</filtered>
+              </severity>
+              <scan_end>2026-04-08T07:32:43Z</scan_end>
+              <errors>
+                <count>1</count>
+                <error>
+                  <host>127.0.0.1<asset asset_id="9fd3aff1-4550-42cb-8339-1b6776f555d0"/></host>
+                  <port>general/tcp</port>
+                  <description>NVT timed out after 320 seconds.</description>
+                  <nvt oid="1.3.6.1.4.1.25623.1.0.12241">
+                    <type>nvt</type>
+                    <name>Do not print on AppSocket and socketAPI printers</name>
+                    <cvss_base>0.0</cvss_base>
+                  </nvt>
+                  <scan_nvt_version>2025-01-22T08:32:30Z</scan_nvt_version>
+                  <severity>-3</severity>
+                </error>
+              </errors>
+            </report>
+          </report>
+          <filters id="">
+            <term>apply_overrides=0 min_qod=70 first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <reports start="1" max="1000"/>
+          <report_count>298<filtered>1</filtered><page>1</page></report_count>
+        </get_reports_response>
+      </response>
+    </example>
   </command>
   <command>
     <name>get_resource_names</name>

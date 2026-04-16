@@ -15951,7 +15951,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                  "<ports><count>%i</count></ports>",
                  report_port_count (report));
         }
-
     }
 
   if (task && tsk_uuid)
