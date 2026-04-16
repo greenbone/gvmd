@@ -250,7 +250,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
       const char *host = result_iterator_host (results);
       double cvss_double;
 
-      if (port == NULL || g_str_has_prefix (port, "general/"))
+      if (port == NULL)
         continue;
 
       cvss_double = result_iterator_severity_double (results);
