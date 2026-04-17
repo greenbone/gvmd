@@ -33,6 +33,7 @@ fill_filtered_result_hosts (array_t **,
                             const get_data_t *,
                             report_t,
                             iterator_t *,
-                            gboolean);
+                            gboolean,
+                            print_report_context_t *);
 
 #endif /* _GVM_MANAGE_SQL_REPORT_HOSTS_H */

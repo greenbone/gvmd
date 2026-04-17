@@ -799,13 +799,62 @@ print_report_hosts_xml (print_report_context_t *ctx,
 }
 
 /**
+ * @brief Update filtered per-host result counts in the report context.
+ *
+ * @param ctx       Report print context holding per-host count tables.
+ * @param results   Result iterator positioned at the current result.
+ * @param host_key  Key identifying the host for aggregation.
+ */
+static void
+update_filtered_host_result_counts (print_report_context_t *ctx,
+                                    iterator_t *results,
+                                    const gchar *host_key)
+{
+  GHashTable *f_host_result_counts = NULL;
+  const char *level;
+
+  if (ctx == NULL || results == NULL || host_key == NULL)
+    return;
+
+  level = result_iterator_level (results);
+  if (level == NULL)
+    return;
+
+  if (strcasecmp (level, "log") == 0)
+    f_host_result_counts = ctx->f_host_logs;
+  else if (strcasecmp (level, "critical") == 0)
+    f_host_result_counts = ctx->f_host_criticals;
+  else if (strcasecmp (level, "high") == 0)
+    f_host_result_counts = ctx->f_host_holes;
+  else if (strcasecmp (level, "medium") == 0)
+    f_host_result_counts = ctx->f_host_warnings;
+  else if (strcasecmp (level, "low") == 0)
+    f_host_result_counts = ctx->f_host_infos;
+  else if (strcasecmp (level, "false positive") == 0)
+    f_host_result_counts = ctx->f_host_false_positives;
+
+  if (f_host_result_counts)
+    {
+      int result_count;
+
+      result_count = GPOINTER_TO_INT
+        (g_hash_table_lookup (f_host_result_counts, host_key));
+
+      g_hash_table_replace (f_host_result_counts,
+                            g_strdup (host_key),
+                            GINT_TO_POINTER (result_count + 1));
+    }
+}
+
+/**
  * @brief Initialize the result iterator and collect all result hosts.
  *
  * @param result_hosts Array to be filled with host keys (must be initialized).
- * @param results Result iterator to use.
  * @param get Request data used for iterator initialization.
  * @param report Report identifier.
+ * @param results Result iterator to use.
  * @param is_container_scanning_report Whether to generate container-aware host keys.
+ * @param ctx Report print context used to store filtered per-host counts.
  *
  * @return 0 on success, non-zero on failure.
  */
@@ -814,7 +863,8 @@ fill_filtered_result_hosts (array_t **result_hosts,
                             const get_data_t *get,
                             report_t report,
                             iterator_t *results,
-                            gboolean is_container_scanning_report)
+                            gboolean is_container_scanning_report,
+                            print_report_context_t *ctx)
 {
   int ret;
 
@@ -841,6 +891,9 @@ fill_filtered_result_hosts (array_t **result_hosts,
         host_key = g_strdup (result_iterator_host (results));
 
       array_add_new_string (*result_hosts, host_key);
+
+      if (ctx != NULL)
+        update_filtered_host_result_counts (ctx, results, host_key);
     }
 
   return 0;
