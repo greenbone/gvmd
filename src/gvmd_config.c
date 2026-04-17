@@ -361,7 +361,7 @@ gvmd_config_resolve_int (const char *env_name,
                          int conf_value,
                          int *output)
 {
-  gboolean env_value;
+  int env_value;
   int env_result;
 
   if (output == NULL)

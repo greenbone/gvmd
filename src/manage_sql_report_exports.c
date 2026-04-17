@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-
+#include "gvmd_config.h"
 #include "manage_report_exports.h"
 #include "manage_settings.h"
 #include "manage_sql.h"
 
 /**
  * @brief Checks if the automatic export to security intelligence is enabled
- *        for given report
+ *        by the owner of the given report
  *
  * @param  report  The report to check
  *
@@ -112,13 +112,23 @@ set_report_export_retry_count (report_t report, int retry_count)
 int
 init_report_export_iterator_due_exports (iterator_t *iterator)
 {
-  init_iterator (iterator, "SELECT id, report_id, status, reason,"
-                              "    retry_count, next_retry_time,"
-                              "    creation_time, modification_time"
-                              " FROM report_exports"
-                              " WHERE   next_retry_time < m_now()"
-                              " AND     status IN ('report_export_requested',"
-                              "                    'report_export_failed')");
+  static int max_retry_count = 0;
+  if (max_retry_count < 1)
+    {
+      gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", 1, 10,
+                               &max_retry_count);
+    }
+
+  init_ps_iterator (iterator,
+                    "SELECT id, report_id, status, reason,"
+                    "    retry_count, next_retry_time,"
+                    "    creation_time, modification_time"
+                    " FROM report_exports"
+                    " WHERE   next_retry_time < m_now()"
+                    " AND     retry_count < $1"
+                    " AND     status IN ('report_export_requested',"
+                    "                    'report_export_failed')",
+                    SQL_INT_PARAM (max_retry_count), NULL);
 
   return 0;
 }
