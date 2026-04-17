@@ -8310,7 +8310,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("USAGE_TYPE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_USAGE_TYPE);
-        ELSE_READ_OVER_CREATE_TASK;
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TASK_OBSERVERS:
         if (strcasecmp ("GROUP", element_name) == 0)
@@ -8321,7 +8321,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               array_add (create_task_data->groups, g_strdup (attribute));
             set_client_state (CLIENT_CREATE_TASK_OBSERVERS_GROUP);
           }
-        ELSE_READ_OVER_CREATE_TASK;
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TASK_PREFERENCES:
         if (strcasecmp ("PREFERENCE", element_name) == 0)
@@ -8332,14 +8332,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_task_data->preference->value = NULL;
             set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE);
           }
-        ELSE_READ_OVER_CREATE_TASK;
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE:
         if (strcasecmp ("SCANNER_NAME", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME);
         else if (strcasecmp ("VALUE", element_name) == 0)
           set_client_state (CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_VALUE);
-        ELSE_READ_OVER_CREATE_TASK;
+        ELSE_READ_OVER;
 
       case CLIENT_CREATE_TICKET:
         create_ticket_element_start (gmp_parser, element_name,
