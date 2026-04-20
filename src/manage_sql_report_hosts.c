@@ -590,6 +590,7 @@ print_report_host_xml (print_report_context_t *ctx,
  * @param[in]  hosts                Host iterator.
  * @param[in]  lean                 Whether to return lean report.
  * @param[in]  host_summary_buffer  Host summary buffer.
+ * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
  * @return 0 on success, -1 error.
  */
@@ -598,12 +599,14 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
                                       FILE *stream,
                                       iterator_t *hosts,
                                       int lean,
-                                      GString *host_summary_buffer)
+                                      GString *host_summary_buffer,
+                                      gboolean is_get_report_hosts)
 {
   int ports_count;
   const char *host;
   const char *hostname;
   gchar *host_key;
+  host_max_severity_t *max_severity = NULL;
 
   int holes_count, warnings_count, infos_count;
   int logs_count, false_positives_count;
@@ -691,14 +694,36 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
          logs_count,
          false_positives_count);
 
-  g_free (host_key);
-
-  if (print_report_host_details_xml (host_iterator_report_host (hosts),
-                                     stream,
-                                     lean))
-    return -1;
+  if (is_get_report_hosts)
+    {
+      /* get_report_hosts: print severity/threat instead of host details */
+      max_severity = g_hash_table_lookup (ctx->f_host_max_severity,
+                                          host_key);
+      /* application info is not included in container scanning host details
+       * for consistency always returns 0.
+       */
+      if (max_severity)
+        PRINT (stream,
+             "<app_count><page>0</page></app_count>"
+             "<severity>%1.1f</severity>"
+             "<threat>%s</threat>",
+             max_severity->severity_double,
+             severity_to_level (g_strtod (max_severity->severity, NULL), 0));
+    }
+  else
+    {
+      if (print_report_host_details_xml (host_iterator_report_host (hosts),
+                                         stream,
+                                         lean))
+        {
+          g_free (host_key);
+          return -1;
+        }
+    }
 
   PRINT (stream, "</host>");
+
+  g_free (host_key);
 
   return 0;
 }
@@ -711,6 +736,7 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
  * @param[in]  hosts                Host iterator.
  * @param[in]  lean                 Whether to return lean report.
  * @param[in]  host_summary_buffer  Host summary buffer.
+ * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
  * @return 0 on success, -1 error.
  */
@@ -719,7 +745,8 @@ print_container_scan_report_hosts_xml (print_report_context_t *ctx,
                                        FILE *stream,
                                        iterator_t *hosts,
                                        int lean,
-                                       GString *host_summary_buffer)
+                                       GString *host_summary_buffer,
+                                       gboolean is_get_report_hosts)
 {
   while (next (hosts))
     {
@@ -727,7 +754,8 @@ print_container_scan_report_hosts_xml (print_report_context_t *ctx,
                                                 stream,
                                                 hosts,
                                                 lean,
-                                                host_summary_buffer))
+                                                host_summary_buffer,
+                                                is_get_report_hosts))
         {
           g_warning ("%s: Failed to print host XML", __func__);
           return -1;
@@ -824,7 +852,8 @@ print_report_hosts_xml (print_report_context_t *ctx,
                 stream,
                 &hosts,
                 lean,
-                host_summary_buffer))
+                host_summary_buffer,
+                is_get_report_hosts))
                 {
                   cleanup_iterator (&hosts);
                   return -1;
@@ -845,7 +874,8 @@ print_report_hosts_xml (print_report_context_t *ctx,
             stream,
             &hosts,
             lean,
-            host_summary_buffer))
+            host_summary_buffer,
+            is_get_report_hosts))
             {
               cleanup_iterator (&hosts);
               return -1;
