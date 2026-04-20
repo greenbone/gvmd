@@ -844,17 +844,14 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
         }
     }
 
+  g_free (host_key);
+
   if (print_report_host_details_xml (host_iterator_report_host (hosts),
                                      stream,
                                      lean))
-    {
-      g_free (host_key);
-      return -1;
-    }
+    return -1;
 
   PRINT (stream, "</host>");
-
-  g_free (host_key);
 
   return 0;
 }
