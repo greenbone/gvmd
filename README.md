@@ -100,6 +100,15 @@ also have been enabled at build time.
 For a list of the feature flags and more information see the separate
 feature flags documentation.
 
+#### Security Intelligence export
+
+Options for the security intelligence export can be found in `[security_intelligence_export]` section
+of the config file. These are:
+
+| Config file key        | Environment variable           | Type      | Default value | Description                                                              |
+|------------------------|--------------------------------|-----------|---------------|--------------------------------------------------------------------------|
+| max_retries            | GVMD_REPORT_EXPORT_MAX_RETRIES | integer   | 10            | The maximum retry attemps for exporting reports to security intelligence |
+
 ## Support
 
 For any question on the usage of `gvmd` please use the [Greenbone Community
