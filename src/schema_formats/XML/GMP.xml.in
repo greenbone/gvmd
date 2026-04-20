@@ -21967,6 +21967,11 @@ END:VCALENDAR
         Otherwise only filter, sort and count information is returned.
       </p>
       <p>
+        Host entries include summary information derived from matching results,
+        such as application count, best OS information, hostname, severity and
+        threat, as well as host detail elements.
+      </p>
+      <p>
         Currently "lean" omits selected optional or redundant XML elements from the
         report hosts output to reduce response size.
       </p>
@@ -22095,6 +22100,12 @@ END:VCALENDAR
           <o><e>end</e></o>
           <o><e>port_count</e></o>
           <o><e>result_count</e></o>
+          <o><e>app_count</e></o>
+          <o><e>best_os_cpe</e></o>
+          <o><e>best_os_txt</e></o>
+          <o><e>hostname</e></o>
+          <o><e>severity</e></o>
+          <o><e>threat</e></o>
           <any><e>detail</e></any>
         </pattern>
         <ele>
@@ -22245,6 +22256,43 @@ END:VCALENDAR
               <pattern><t>integer</t></pattern>
             </ele>
           </ele>
+        </ele>
+        <ele>
+          <name>app_count</name>
+          <summary>Count of applications for the host on the current page</summary>
+          <pattern>
+            <e>page</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of applications on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>best_os_cpe</name>
+          <summary>Best detected operating system CPE for the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>best_os_txt</name>
+          <summary>Best detected operating system name for the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>hostname</name>
+          <summary>Hostname of the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>Highest severity of matching results for the host</summary>
+          <pattern>severity</pattern>
+        </ele>
+        <ele>
+          <name>threat</name>
+          <summary>Threat level derived from the highest severity</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>detail</name>
@@ -22413,41 +22461,41 @@ END:VCALENDAR
       <request>
         <get_report_hosts report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
                           details="1"
-                          filter="levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0">
+                          filter="levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1">
         </get_report_hosts>
       </request>
       <response>
         <get_report_hosts_response status="200" status_text="OK">
           <host>
-            <ip>192.168.178.87</ip>
-            <asset asset_id="49c2947e-17ab-429b-b68d-e183b4387da7"/>
-            <start>2026-03-30T06:44:34Z</start>
-            <end>2026-03-30T06:45:44Z</end>
+            <ip>127.0.0.1</ip>
+            <asset asset_id="9fd3aff1-4550-42cb-8339-1b6776f555d0"/>
+            <start>2026-04-08T06:48:21Z</start>
+            <end>2026-04-08T07:32:37Z</end>
             <port_count>
-              <page>0</page>
+              <page>4</page>
             </port_count>
             <result_count>
-              <page>0</page>
+              <page>5</page>
               <critical>
                 <page>0</page>
               </critical>
               <hole deprecated="1">
-                <page>0</page>
+                <page>1</page>
               </hole>
               <high>
-                <page>0</page>
+                <page>1</page>
               </high>
               <warning deprecated="1">
-                <page>0</page>
+                <page>3</page>
               </warning>
               <medium>
-                <page>0</page>
+                <page>3</page>
               </medium>
               <info deprecated="1">
-                <page>0</page>
+                <page>1</page>
               </info>
               <low>
-                <page>0</page>
+                <page>1</page>
               </low>
               <log>
                 <page>0</page>
@@ -22456,19 +22504,24 @@ END:VCALENDAR
                 <page>0</page>
               </false_positive>
             </result_count>
+            <app_count>
+              <page>13</page>
+            </app_count>
+            <best_os_cpe>cpe:/o:canonical:ubuntu_linux:24.04</best_os_cpe>
+            <best_os_txt>Ubuntu 24.04</best_os_txt>
+            <hostname>localhost</hostname>
+            <severity>7.3</severity>
+            <threat>High</threat>
             <detail>
-              <name>hostname</name>
-              <value>levoit-purifier.fritz.box</value>
+              <name>App</name>
+              <value>cpe:/a:ietf:transport_layer_security:1.2</value>
               <source>
-                <type>nvt</type>
-                <name>1.3.6.1.4.1.25623.1.0.103997</name>
-                <description>Host Details</description>
+                <name>1.3.6.1.4.1.25623.1.0.105782</name>
               </source>
-              <extra/>
             </detail>
           </host>
           <filters id="">
-            <term>apply_overrides=0 levels=chml rows=100 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0</term>
+            <term>apply_overrides=0 levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1</term>
             <keywords>
               <keyword>
                 <column>apply_overrides</column>
@@ -22483,7 +22536,7 @@ END:VCALENDAR
               <keyword>
                 <column>rows</column>
                 <relation>=</relation>
-                <value>100</value>
+                <value>10</value>
               </keyword>
               <keyword>
                 <column>min_qod</column>
@@ -22503,14 +22556,14 @@ END:VCALENDAR
               <keyword>
                 <column>result_hosts_only</column>
                 <relation>=</relation>
-                <value>0</value>
+                <value>1</value>
               </keyword>
             </keywords>
           </filters>
           <sort>
             <field>severity<order>descending</order></field>
           </sort>
-          <report_hosts start="1" max="100"/>
+          <report_hosts start="1" max="10"/>
           <report_host_count>1<filtered>1</filtered><page>0</page></report_host_count>
         </get_report_hosts_response>
       </response>
