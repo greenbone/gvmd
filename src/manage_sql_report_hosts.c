@@ -196,6 +196,23 @@ update_filtered_host_max_severity (print_report_context_t *ctx,
 }
 
 /**
+ * @brief Get the number of applications for a report host.
+ *
+ * @param[in]  report_host  Report host.
+ *
+ * @return Number of application entries for the report host.
+ */
+static int
+report_host_app_count (report_host_t report_host)
+{
+  return sql_int_ps ("SELECT count(*) FROM report_host_details"
+                     " WHERE report_host = $1"
+                     "   AND name = 'App';",
+                     SQL_RESOURCE_PARAM (report_host),
+                     NULL);
+}
+
+/**
  * @brief Write report host detail to file stream.
  *
  * @param[in]  stream   Stream to write to.
@@ -540,10 +557,14 @@ print_report_host_xml (print_report_context_t *ctx,
       /* get_report_hosts: print severity/threat instead of host details */
       max_severity = g_hash_table_lookup (ctx->f_host_max_severity,
                                           current_host);
+      int apps_count =
+        report_host_app_count (host_iterator_report_host (hosts));
       if (max_severity)
         PRINT (stream,
+             "<app_count><page>%d</page></app_count>"
              "<severity>%1.1f</severity>"
              "<threat>%s</threat>",
+             apps_count,
              max_severity->severity_double,
              severity_to_level (g_strtod (max_severity->severity, NULL), 0));
     }
@@ -923,7 +944,8 @@ update_filtered_host_port_counts (print_report_context_t *ctx,
   gchar *host_port_key;
   int port_count;
 
-  if (ctx == NULL || host_key == NULL || port == NULL || seen_host_ports == NULL)
+  if (ctx == NULL || host_key == NULL || port == NULL || seen_host_ports ==
+      NULL)
     return;
 
   if (*port == '\0')
@@ -943,7 +965,7 @@ update_filtered_host_port_counts (print_report_context_t *ctx,
   g_hash_table_add (seen_host_ports, host_port_key);
 
   port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
-                                                     host_key));
+    host_key));
 
   g_hash_table_replace (ctx->f_host_ports,
                         g_strdup (host_key),
@@ -1051,9 +1073,9 @@ fill_filtered_result_hosts (array_t **result_hosts,
         {
           update_filtered_host_result_counts (ctx, results, host_key);
           update_filtered_host_port_counts (ctx,
-                                          host_key,
-                                          result_iterator_port (results),
-                                          ctx->f_host_ports);
+                                            host_key,
+                                            result_iterator_port (results),
+                                            ctx->f_host_ports);
 
           if (is_get_report_hosts)
             update_filtered_host_max_severity (ctx, results, host_key);
