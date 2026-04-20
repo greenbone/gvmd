@@ -25950,6 +25950,7 @@ END:VCALENDAR
           <e>credential</e>
           <e>relay_host</e>
           <e>relay_port</e>
+          <o><e>disabled</e></o>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
           <o><e>info</e></o>
@@ -26147,6 +26148,11 @@ END:VCALENDAR
           <name>relay_port</name>
           <summary>Optional relay port of the scanner</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>disabled</name>
+          <summary>Optional Whether the scanner is used by a disabled feature</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>configs</name>
