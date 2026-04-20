@@ -8,6 +8,31 @@
 #include "manage_settings.h"
 #include "manage_sql.h"
 
+
+static int report_export_max_retries = 10;
+
+void
+init_report_exports_from_config ()
+{
+  GKeyFile *kf = get_gvmd_config ();
+  if (kf == NULL)
+    {
+      return;
+    }
+
+  gboolean has_max_retries = FALSE;
+  int max_retries = 0;
+
+  gvmd_config_get_int (kf, "report_export", "max_retries", &has_max_retries,
+                       &max_retries);
+
+  if (has_max_retries)
+    {
+      report_export_max_retries = max_retries;
+      g_warning("max_retries: %d", report_export_max_retries);
+    }
+}
+
 /**
  * @brief Checks if the automatic export to security intelligence is enabled
  *        by the owner of the given report
@@ -38,6 +63,8 @@ export_enabled_for_report_owner (report_t report)
 int
 queue_report_for_export (const report_t report)
 {
+  init_report_exports_from_config();
+
   if (!export_enabled_for_report_owner (report))
     return -1;
 
@@ -112,12 +139,9 @@ set_report_export_retry_count (report_t report, int retry_count)
 int
 init_report_export_iterator_due_exports (iterator_t *iterator)
 {
-  static int max_retry_count = 0;
-  if (max_retry_count < 1)
-    {
-      gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", 1, 10,
-                               &max_retry_count);
-    }
+  int max_retry_count = 0;
+  gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", TRUE,
+                           report_export_max_retries, &max_retry_count);
 
   init_ps_iterator (iterator,
                     "SELECT id, report_id, status, reason,"

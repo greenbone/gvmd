@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: Report export SQL.
+ * @brief GVM management layer: Report exports.
  *
- * SQL report export code for the GVM management layer.
+ * Report export code for the GVM management layer.
  */
 
 #ifndef _GVMD_MANAGE_SQL_REPORT_EXPORT_H
@@ -15,6 +15,9 @@
 
 #include "iterator.h"
 #include "manage_resources_types.h"
+
+void
+init_report_exports_from_config ();
 
 gboolean
 export_enabled_for_report_owner (report_t report);
