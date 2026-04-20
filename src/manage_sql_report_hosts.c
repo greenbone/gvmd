@@ -110,6 +110,29 @@ static
 DEF_ACCESS (host_iterator_asset_uuid, 9);
 
 /**
+ * @brief Get the cpe from a host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The cpe of the host. Caller must use
+ *         only before calling cleanup_iterator.
+ */
+static
+DEF_ACCESS (report_host_os_iterator_cpe, 0);
+
+/**
+ * @brief Get the best_os_txt from a host detail iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The best_os_txt of the host. Caller must use
+ *         only before calling cleanup_iterator.
+ */
+static
+DEF_ACCESS (report_host_os_iterator_name, 1);
+
+
+/**
  * @brief Maximum severity information for a host.
  */
 typedef struct
@@ -210,6 +233,131 @@ report_host_app_count (report_host_t report_host)
                      "   AND name = 'App';",
                      SQL_RESOURCE_PARAM (report_host),
                      NULL);
+}
+
+/**
+ * @brief Initialise an operating system iterator for a report host.
+ *
+ * @param[in]  iterator     Iterator.
+ * @param[in]  report_host  Report host whose OS information is retrieved.
+ */
+void
+init_report_host_os_iterator (iterator_t *iterator, report_host_t report_host)
+{
+  init_ps_iterator (iterator,
+                    "SELECT"
+                    " (SELECT value FROM report_host_details"
+                    "   WHERE report_host = $1 AND name = 'best_os_cpe'"
+                    "   LIMIT 1) AS cpe,"
+                    " (SELECT value FROM report_host_details"
+                    "   WHERE report_host = $1 AND name = 'best_os_txt'"
+                    "   LIMIT 1) AS os_name;",
+                    SQL_RESOURCE_PARAM (report_host),
+                    NULL);
+}
+
+/**
+ * @brief Get the hostname  for a report host.
+ *
+ * @param[in]  report_host  Report host whose OS information is retrieved.
+ *
+ * @return hostname of the report host
+ */
+static char *
+get_report_host_hostname (report_host_t report_host)
+{
+  return sql_string_ps ("SELECT value FROM report_host_details"
+                        "   WHERE report_host = $1 AND name = 'hostname'"
+                        "   LIMIT 1 ;",
+                        SQL_RESOURCE_PARAM (report_host),
+                        NULL);
+}
+
+/**
+ * @brief Print get_report_hosts summary XML for a host.
+ *
+ * Prints application count, OS information, hostname
+ * and maximum severity for the given host.
+ *
+ * @param[in]  ctx          Report print context.
+ * @param[in]  stream       File stream to write to.
+ * @param[in]  report_host  Report host.
+ * @param[in]  host_key     Host key used for per-host aggregations.
+ * @param[in]  lean         Whether to return lean report.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+print_report_host_summary_xml (print_report_context_t *ctx,
+                               FILE *stream,
+                               report_host_t report_host,
+                               const char *host_key,
+                               int lean)
+{
+  iterator_t os_iterator;
+  host_max_severity_t *max_severity;
+  int apps_count;
+  const char *os_cpe = NULL;
+  const char *os_name = NULL;
+  const char *hostname = NULL;
+
+  if (ctx == NULL || stream == NULL || host_key == NULL)
+    return -1;
+
+  apps_count = report_host_app_count (report_host);
+
+  init_report_host_os_iterator (&os_iterator, report_host);
+  if (next (&os_iterator))
+    {
+      os_cpe = report_host_os_iterator_cpe (&os_iterator);
+      os_name = report_host_os_iterator_name (&os_iterator);
+    }
+
+  hostname = get_report_host_hostname (report_host);
+
+  PRINT (stream,
+         "<app_count><page>%d</page></app_count>",
+         apps_count);
+
+  if (os_cpe && strlen (os_cpe))
+    PRINT (stream,
+         "<best_os_cpe>%s</best_os_cpe>",
+         os_cpe);
+  else if (lean == 0)
+    PRINT (stream,
+         "<best_os_cpe></best_os_cpe>");
+
+  if (os_name && strlen (os_name))
+    PRINT (stream,
+         "<best_os_txt>%s</best_os_txt>",
+         os_name);
+  else if (lean == 0)
+    PRINT (stream,
+         "<best_os_txt></best_os_txt>");
+
+  if (hostname && strlen (hostname))
+    PRINT (stream,
+         "<hostname>%s</hostname>",
+         hostname);
+  else if (lean == 0)
+    PRINT (stream,
+         "<hostname></hostname>");
+
+  max_severity = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
+  if (max_severity)
+    PRINT (stream,
+         "<severity>%1.1f</severity>"
+         "<threat>%s</threat>",
+         max_severity->severity_double,
+         severity_to_level (max_severity->severity_double, 0));
+  else if (lean == 0)
+    PRINT (stream,
+         "<severity>0.0</severity>"
+         "<threat>Log</threat>");
+
+  cleanup_iterator (&os_iterator);
+
+  return 0;
 }
 
 /**
@@ -421,7 +569,6 @@ print_report_host_xml (print_report_context_t *ctx,
 {
   const char *current_host;
   int ports_count;
-  host_max_severity_t *max_severity = NULL;
 
   current_host = host_iterator_host (hosts);
 
@@ -554,27 +701,18 @@ print_report_host_xml (print_report_context_t *ctx,
 
   if (is_get_report_hosts)
     {
-      /* get_report_hosts: print severity/threat instead of host details */
-      max_severity = g_hash_table_lookup (ctx->f_host_max_severity,
-                                          current_host);
-      int apps_count =
-        report_host_app_count (host_iterator_report_host (hosts));
-      if (max_severity)
-        PRINT (stream,
-             "<app_count><page>%d</page></app_count>"
-             "<severity>%1.1f</severity>"
-             "<threat>%s</threat>",
-             apps_count,
-             max_severity->severity_double,
-             severity_to_level (g_strtod (max_severity->severity, NULL), 0));
-    }
-  else
-    {
-      if (print_report_host_details_xml (host_iterator_report_host (hosts),
+      if (print_report_host_summary_xml (ctx,
                                          stream,
+                                         host_iterator_report_host (hosts),
+                                         current_host,
                                          lean))
         return -1;
     }
+
+  if (print_report_host_details_xml (host_iterator_report_host (hosts),
+                                     stream,
+                                     lean))
+    return -1;
 
   PRINT (stream, "</host>");
 
@@ -606,7 +744,6 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
   const char *host;
   const char *hostname;
   gchar *host_key;
-  host_max_severity_t *max_severity = NULL;
 
   int holes_count, warnings_count, infos_count;
   int logs_count, false_positives_count;
@@ -696,29 +833,23 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
 
   if (is_get_report_hosts)
     {
-      /* get_report_hosts: print severity/threat instead of host details */
-      max_severity = g_hash_table_lookup (ctx->f_host_max_severity,
-                                          host_key);
-      /* application info is not included in container scanning host details
-       * for consistency always returns 0.
-       */
-      if (max_severity)
-        PRINT (stream,
-             "<app_count><page>0</page></app_count>"
-             "<severity>%1.1f</severity>"
-             "<threat>%s</threat>",
-             max_severity->severity_double,
-             severity_to_level (g_strtod (max_severity->severity, NULL), 0));
-    }
-  else
-    {
-      if (print_report_host_details_xml (host_iterator_report_host (hosts),
+      if (print_report_host_summary_xml (ctx,
                                          stream,
+                                         host_iterator_report_host (hosts),
+                                         host_key,
                                          lean))
         {
           g_free (host_key);
           return -1;
         }
+    }
+
+  if (print_report_host_details_xml (host_iterator_report_host (hosts),
+                                     stream,
+                                     lean))
+    {
+      g_free (host_key);
+      return -1;
     }
 
   PRINT (stream, "</host>");
