@@ -23,8 +23,8 @@ init_report_exports_from_config ()
   gboolean has_max_retries = FALSE;
   int max_retries = 0;
 
-  gvmd_config_get_int (kf, "report_export", "max_retries", &has_max_retries,
-                       &max_retries);
+  gvmd_config_get_int (kf, "security_intelligence_export", "max_retries",
+                       &has_max_retries, &max_retries);
 
   if (has_max_retries)
     {
@@ -63,8 +63,6 @@ export_enabled_for_report_owner (report_t report)
 int
 queue_report_for_export (const report_t report)
 {
-  init_report_exports_from_config();
-
   if (!export_enabled_for_report_owner (report))
     return -1;
 
