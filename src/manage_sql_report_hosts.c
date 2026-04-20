@@ -907,6 +907,50 @@ print_report_hosts_xml (print_report_context_t *ctx,
 }
 
 /**
+ * @brief Update filtered per-host port counts in the report context.
+ *
+ * @param[in,out]  ctx              Report print context holding per-host port counts.
+ * @param[in]      host_key         Key identifying the host for aggregation.
+ * @param[in]      port             Port of the current result.
+ * @param[in,out]  seen_host_ports  Set of already counted host/port pairs.
+ */
+static void
+update_filtered_host_port_counts (print_report_context_t *ctx,
+                                  const gchar *host_key,
+                                  const gchar *port,
+                                  GHashTable *seen_host_ports)
+{
+  gchar *host_port_key;
+  int port_count;
+
+  if (ctx == NULL || host_key == NULL || port == NULL || seen_host_ports == NULL)
+    return;
+
+  if (*port == '\0')
+    return;
+
+  if (g_str_has_prefix (port, "general/"))
+    return;
+
+  host_port_key = g_strdup_printf ("%s|%s", host_key, port);
+
+  if (g_hash_table_lookup (seen_host_ports, host_port_key))
+    {
+      g_free (host_port_key);
+      return;
+    }
+
+  g_hash_table_add (seen_host_ports, host_port_key);
+
+  port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
+                                                     host_key));
+
+  g_hash_table_replace (ctx->f_host_ports,
+                        g_strdup (host_key),
+                        GINT_TO_POINTER (port_count + 1));
+}
+
+/**
  * @brief Update filtered per-host result counts in the report context.
  *
  * @param[in,out] ctx       Report print context holding per-host count tables.
@@ -1006,6 +1050,11 @@ fill_filtered_result_hosts (array_t **result_hosts,
       if (ctx != NULL)
         {
           update_filtered_host_result_counts (ctx, results, host_key);
+          update_filtered_host_port_counts (ctx,
+                                          host_key,
+                                          result_iterator_port (results),
+                                          ctx->f_host_ports);
+
           if (is_get_report_hosts)
             update_filtered_host_max_severity (ctx, results, host_key);
         }
