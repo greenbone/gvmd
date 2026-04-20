@@ -110,6 +110,92 @@ static
 DEF_ACCESS (host_iterator_asset_uuid, 9);
 
 /**
+ * @brief Maximum severity information for a host.
+ */
+typedef struct
+{
+  double severity_double; ///< Numeric severity value.
+  gchar *severity;        ///< Severity string representation.
+} host_max_severity_t;
+
+/**
+ * @brief Free a host maximum severity entry.
+ *
+ * @param[in]  data  Host maximum severity entry.
+ */
+void
+host_max_severity_free (gpointer data)
+{
+  host_max_severity_t *item = data;
+
+  if (item == NULL)
+    return;
+
+  g_free (item->severity);
+  g_free (item);
+}
+
+/**
+ * @brief Create a new host maximum severity entry.
+ *
+ * @param[in]  severity_double  Numeric severity value.
+ * @param[in]  severity         Severity string representation.
+ *
+ * @return Newly allocated host maximum severity entry.
+ */
+static host_max_severity_t *
+host_max_severity_new (double severity_double, const char *severity)
+{
+  host_max_severity_t *item;
+
+  item = g_malloc0 (sizeof (*item));
+  item->severity_double = severity_double;
+  item->severity = g_strdup (severity ? severity : "");
+
+  return item;
+}
+
+/**
+ * @brief Update maximum severity information for a host.
+ *
+ * @param[in,out]  ctx       Report print context holding per-host severity data.
+ * @param[in]      results   Result iterator positioned at the current result.
+ * @param[in]      host_key  Key identifying the host for aggregation.
+ */
+static void
+update_filtered_host_max_severity (print_report_context_t *ctx,
+                                   iterator_t *results,
+                                   const gchar *host_key)
+{
+  host_max_severity_t *item;
+  double cvss_double;
+  const char *severity;
+
+  if (ctx == NULL || results == NULL || host_key == NULL)
+    return;
+
+  cvss_double = result_iterator_severity_double (results);
+  severity = result_iterator_severity (results);
+
+  item = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
+
+  if (item == NULL)
+    {
+      item = host_max_severity_new (cvss_double, severity);
+
+      g_hash_table_replace (ctx->f_host_max_severity,
+                            g_strdup (host_key),
+                            item);
+    }
+  else if (item->severity_double <= cvss_double)
+    {
+      item->severity_double = cvss_double;
+      g_free (item->severity);
+      item->severity = g_strdup (severity ? severity : "");
+    }
+}
+
+/**
  * @brief Write report host detail to file stream.
  *
  * @param[in]  stream   Stream to write to.
@@ -302,6 +388,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
  * @param[in]  usage_type           Report usage type.
  * @param[in]  lean                 Whether to return lean report.
  * @param[in]  host_summary_buffer  Host summary buffer.
+ * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
  * @return 0 on success, -1 error.
  */
@@ -312,10 +399,12 @@ print_report_host_xml (print_report_context_t *ctx,
                        const char *host,
                        gchar *usage_type,
                        int lean,
-                       GString *host_summary_buffer)
+                       GString *host_summary_buffer,
+                       gboolean is_get_report_hosts)
 {
   const char *current_host;
   int ports_count;
+  host_max_severity_t *max_severity = NULL;
 
   current_host = host_iterator_host (hosts);
 
@@ -446,10 +535,25 @@ print_report_host_xml (print_report_context_t *ctx,
              false_positives_count);
     }
 
-  if (print_report_host_details_xml (host_iterator_report_host (hosts),
-                                     stream,
-                                     lean))
-    return -1;
+  if (is_get_report_hosts)
+    {
+      /* get_report_hosts: print severity/threat instead of host details */
+      max_severity = g_hash_table_lookup (ctx->f_host_max_severity,
+                                          current_host);
+      if (max_severity)
+        PRINT (stream,
+             "<severity>%1.1f</severity>"
+             "<threat>%s</threat>",
+             max_severity->severity_double,
+             severity_to_level (g_strtod (max_severity->severity, NULL), 0));
+    }
+  else
+    {
+      if (print_report_host_details_xml (host_iterator_report_host (hosts),
+                                         stream,
+                                         lean))
+        return -1;
+    }
 
   PRINT (stream, "</host>");
 
@@ -626,6 +730,7 @@ print_container_scan_report_hosts_xml (print_report_context_t *ctx,
  * @param[in]  result_hosts_only    Whether to print only hosts with results.
  * @param[in]  result_hosts         Result hosts array, used when result_hosts_only is set.
  * @param[in]  host_summary_buffer  Host summary buffer.
+ * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
  * @return 0 on success, -1 error.
  */
@@ -639,7 +744,8 @@ print_report_hosts_xml (print_report_context_t *ctx,
                         gboolean is_container_scan,
                         gboolean result_hosts_only,
                         array_t *result_hosts,
-                        GString *host_summary_buffer)
+                        GString *host_summary_buffer,
+                        gboolean is_get_report_hosts)
 {
   if (get == NULL)
     {
@@ -760,7 +866,8 @@ print_report_hosts_xml (print_report_context_t *ctx,
                                          result_host,
                                          (gchar *) usage_type,
                                          lean,
-                                         host_summary_buffer))
+                                         host_summary_buffer,
+                                         is_get_report_hosts))
                 {
                   cleanup_iterator (&hosts);
                   return -1;
@@ -786,7 +893,8 @@ print_report_hosts_xml (print_report_context_t *ctx,
                                      NULL,
                                      (gchar *) usage_type,
                                      lean,
-                                     host_summary_buffer))
+                                     host_summary_buffer,
+                                     is_get_report_hosts))
             {
               cleanup_iterator (&hosts);
               return -1;
@@ -801,9 +909,9 @@ print_report_hosts_xml (print_report_context_t *ctx,
 /**
  * @brief Update filtered per-host result counts in the report context.
  *
- * @param ctx       Report print context holding per-host count tables.
- * @param results   Result iterator positioned at the current result.
- * @param host_key  Key identifying the host for aggregation.
+ * @param[in,out] ctx       Report print context holding per-host count tables.
+ * @param[in]     results   Result iterator positioned at the current result.
+ * @param[in]     host_key  Key identifying the host for aggregation.
  */
 static void
 update_filtered_host_result_counts (print_report_context_t *ctx,
@@ -849,12 +957,14 @@ update_filtered_host_result_counts (print_report_context_t *ctx,
 /**
  * @brief Initialize the result iterator and collect all result hosts.
  *
- * @param result_hosts Array to be filled with host keys (must be initialized).
- * @param get Request data used for iterator initialization.
- * @param report Report identifier.
- * @param results Result iterator to use.
- * @param is_container_scanning_report Whether to generate container-aware host keys.
- * @param ctx Report print context used to store filtered per-host counts.
+ * @param[in, out] result_hosts Array to be filled with host keys (must be initialized).
+ * @param[in]      get Request data used for iterator initialization.
+ * @param[in]      report Report identifier.
+ * @param[in, out] results Result iterator to use.
+ * @param[in]      is_container_scanning_report Whether to generate
+ *                                              container-aware host keys.
+ * @param[in, out] ctx  Report print context used to store filtered per-host counts.
+ * @param[in]      is_get_report_hosts  Whether called from get_report_hosts.
  *
  * @return 0 on success, non-zero on failure.
  */
@@ -864,7 +974,8 @@ fill_filtered_result_hosts (array_t **result_hosts,
                             report_t report,
                             iterator_t *results,
                             gboolean is_container_scanning_report,
-                            print_report_context_t *ctx)
+                            print_report_context_t *ctx,
+                            gboolean is_get_report_hosts)
 {
   int ret;
 
@@ -893,7 +1004,11 @@ fill_filtered_result_hosts (array_t **result_hosts,
       array_add_new_string (*result_hosts, host_key);
 
       if (ctx != NULL)
-        update_filtered_host_result_counts (ctx, results, host_key);
+        {
+          update_filtered_host_result_counts (ctx, results, host_key);
+          if (is_get_report_hosts)
+            update_filtered_host_max_severity (ctx, results, host_key);
+        }
     }
 
   return 0;

@@ -208,6 +208,7 @@ struct print_report_context
  GHashTable *f_host_logs;            ///< Logs per hosts.
  GHashTable *f_host_ports;           ///< Ports per host.
  GHashTable *f_host_warnings;        ///< Warnings per hosts.
+ GHashTable *f_host_max_severity;    ///< Max severity per host.
  // Filtered counts: audit.
  GHashTable *f_host_compliant;       ///< Compliants per host.
  GHashTable *f_host_incomplete;      ///< Incompletes per host.

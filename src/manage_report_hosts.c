@@ -133,7 +133,8 @@ manage_send_report_hosts (report_t report,
                                         report,
                                         &results,
                                         is_container_scanning_report,
-                                        &ctx);
+                                        &ctx,
+                                        TRUE);
       if (ret)
         {
           ret = -1;
@@ -161,7 +162,8 @@ manage_send_report_hosts (report_t report,
                                 is_container_scanning_report,
                                 result_hosts_only,
                                 result_hosts,
-                                NULL);
+                                NULL,
+                                TRUE);
 
 
   if (fclose (stream))

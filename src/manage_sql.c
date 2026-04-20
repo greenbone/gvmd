@@ -14917,6 +14917,7 @@ print_report_context_cleanup (print_report_context_t *ctx)
   free_f_host (ctx->f_host_logs);
   free_f_host (ctx->f_host_ports);
   free_f_host (ctx->f_host_warnings);
+  free_f_host (ctx->f_host_max_severity);
   // Filtered counts: audit.
   free_f_host (ctx->f_host_compliant);
   free_f_host (ctx->f_host_criticals);
@@ -14960,6 +14961,11 @@ print_report_init_f_hosts (print_report_context_t *ctx)
                                                            g_str_equal,
                                                            g_free, NULL);
     }
+
+  ctx->f_host_max_severity = g_hash_table_new_full (g_str_hash,
+                                                    g_str_equal,
+                                                    g_free,
+                                                    host_max_severity_free);
 }
 
 /**
@@ -16653,7 +16659,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   is_container_scanning_report,
                                   result_hosts_only,
                                   result_hosts,
-                                  host_summary_buffer))
+                                  host_summary_buffer,
+                                  FALSE))
         {
           goto failed_print_report_host;
         }
