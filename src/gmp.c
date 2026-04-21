@@ -114,6 +114,7 @@
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_settings.h"
+#include "manage_schedules.h"
 #include "manage_tags.h"
 #include "manage_targets.h"
 #include "manage_tls_certificates.h"
