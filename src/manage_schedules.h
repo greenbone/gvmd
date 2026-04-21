@@ -12,4 +12,7 @@ int
 create_schedule (const char *, const char*, const char *,
                  const char *, schedule_t *, gchar **);
 
+int
+copy_schedule (const char *, const char *, const char *, schedule_t *);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */
