@@ -6,6 +6,7 @@
 #include "manage_sql_schedules.h"
 #include "manage.h" // for current_credentials
 #include "manage_acl.h"
+#include "manage_sql_resources.h"
 
 #include <libical/ical.h>
 
@@ -131,4 +132,26 @@ create_schedule (const char* name, const char *comment,
   sql_commit ();
 
   return 0;
+}
+
+/**
+ * @brief Create a schedule from an existing schedule.
+ *
+ * @param[in]  name          Name of new schedule. NULL to copy from existing.
+ * @param[in]  comment       Comment on new schedule. NULL to copy from
+ *                           existing.
+ * @param[in]  schedule_id   UUID of existing schedule.
+ * @param[out] new_schedule  New schedule.
+ *
+ * @return 0 success, 1 schedule exists already, 2 failed to find existing
+ *         schedule, -1 error.
+ */
+int
+copy_schedule (const char* name, const char* comment, const char *schedule_id,
+               schedule_t* new_schedule)
+{
+  return copy_resource ("schedule", name, comment, schedule_id,
+                        "first_time, period, period_months, byday, duration,"
+                        " timezone, icalendar",
+                        1, new_schedule, NULL);
 }
