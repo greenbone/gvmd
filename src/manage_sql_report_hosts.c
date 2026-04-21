@@ -131,53 +131,6 @@ DEF_ACCESS (report_host_os_iterator_cpe, 0);
 static
 DEF_ACCESS (report_host_os_iterator_name, 1);
 
-
-/**
- * @brief Maximum severity information for a host.
- */
-typedef struct
-{
-  double severity_double; ///< Numeric severity value.
-  gchar *severity;        ///< Severity string representation.
-} host_max_severity_t;
-
-/**
- * @brief Free a host maximum severity entry.
- *
- * @param[in]  data  Host maximum severity entry.
- */
-void
-host_max_severity_free (gpointer data)
-{
-  host_max_severity_t *item = data;
-
-  if (item == NULL)
-    return;
-
-  g_free (item->severity);
-  g_free (item);
-}
-
-/**
- * @brief Create a new host maximum severity entry.
- *
- * @param[in]  severity_double  Numeric severity value.
- * @param[in]  severity         Severity string representation.
- *
- * @return Newly allocated host maximum severity entry.
- */
-static host_max_severity_t *
-host_max_severity_new (double severity_double, const char *severity)
-{
-  host_max_severity_t *item;
-
-  item = g_malloc0 (sizeof (*item));
-  item->severity_double = severity_double;
-  item->severity = g_strdup (severity ? severity : "");
-
-  return item;
-}
-
 /**
  * @brief Update maximum severity information for a host.
  *
@@ -190,31 +143,27 @@ update_filtered_host_max_severity (print_report_context_t *ctx,
                                    iterator_t *results,
                                    const gchar *host_key)
 {
-  host_max_severity_t *item;
   double cvss_double;
-  const char *severity;
+  double *existing_severity;
 
   if (ctx == NULL || results == NULL || host_key == NULL)
     return;
 
   cvss_double = result_iterator_severity_double (results);
-  severity = result_iterator_severity (results);
 
-  item = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
+  existing_severity = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
 
-  if (item == NULL)
+  if (existing_severity == NULL)
     {
-      item = host_max_severity_new (cvss_double, severity);
-
+      double *new_severity = g_malloc (sizeof (double));
+      *new_severity = cvss_double;
       g_hash_table_replace (ctx->f_host_max_severity,
                             g_strdup (host_key),
-                            item);
+                            new_severity);
     }
-  else if (item->severity_double <= cvss_double)
+  else if (*existing_severity <= cvss_double)
     {
-      item->severity_double = cvss_double;
-      g_free (item->severity);
-      item->severity = g_strdup (severity ? severity : "");
+      *existing_severity = cvss_double;
     }
 }
 
@@ -295,7 +244,7 @@ print_report_host_summary_xml (print_report_context_t *ctx,
                                int lean)
 {
   iterator_t os_iterator;
-  host_max_severity_t *max_severity;
+  double *max_severity;
   int apps_count;
   const char *os_cpe = NULL;
   const char *os_name = NULL;
@@ -344,12 +293,12 @@ print_report_host_summary_xml (print_report_context_t *ctx,
          "<hostname></hostname>");
 
   max_severity = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
-  if (max_severity)
+  if (*max_severity)
     PRINT (stream,
          "<severity>%1.1f</severity>"
          "<threat>%s</threat>",
-         max_severity->severity_double,
-         severity_to_level (max_severity->severity_double, 0));
+         *max_severity,
+         severity_to_level (*max_severity, 0));
   else if (lean == 0)
     PRINT (stream,
          "<severity>0.0</severity>"

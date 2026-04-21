@@ -38,7 +38,4 @@ fill_filtered_result_hosts (array_t **,
                             print_report_context_t *,
                             gboolean);
 
-void
-host_max_severity_free (gpointer);
-
 #endif /* _GVM_MANAGE_SQL_REPORT_HOSTS_H */
