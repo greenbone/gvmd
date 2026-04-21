@@ -280,3 +280,33 @@ delete_schedule (const char *schedule_id, int ultimate)
   sql_commit ();
   return 0;
 }
+
+/**
+ * @brief Return whether a schedule is in use by a task.
+ *
+ * @param[in]  schedule  Schedule.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+schedule_in_use (schedule_t schedule)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks WHERE schedule = %llu"
+                    " AND hidden = 0;", schedule);
+}
+
+/**
+ * @brief Return whether a trashcan schedule is in use by a task.
+ *
+ * @param[in]  schedule  schedule.
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+trash_schedule_in_use (schedule_t schedule)
+{
+  return !!sql_int ("SELECT count(*) FROM tasks"
+                    " WHERE schedule = %llu"
+                    " AND schedule_location = " G_STRINGIFY (LOCATION_TRASH),
+                    schedule);
+}

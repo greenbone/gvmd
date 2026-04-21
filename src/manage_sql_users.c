@@ -16,6 +16,7 @@
 #include "manage_sql_report_formats.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_roles.h"
+#include "manage_sql_schedules.h"
 #include "manage_sql_settings.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
