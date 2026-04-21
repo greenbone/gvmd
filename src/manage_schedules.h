@@ -18,4 +18,19 @@ copy_schedule (const char *, const char *, const char *, schedule_t *);
 int
 delete_schedule (const char *, int);
 
+int
+trash_schedule_in_use (schedule_t);
+
+int
+schedule_in_use (schedule_t);
+
+int
+trash_schedule_writable (schedule_t);
+
+int
+trash_schedule_readable (schedule_t);
+
+int
+schedule_writable (schedule_t);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */

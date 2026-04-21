@@ -2418,21 +2418,6 @@ const char*
 schedule_iterator_icalendar (iterator_t *);
 
 int
-trash_schedule_in_use (schedule_t);
-
-int
-schedule_in_use (schedule_t);
-
-int
-trash_schedule_writable (schedule_t);
-
-int
-trash_schedule_readable (schedule_t);
-
-int
-schedule_writable (schedule_t);
-
-int
 schedule_count (const get_data_t *);
 
 void
