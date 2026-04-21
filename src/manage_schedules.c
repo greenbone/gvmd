@@ -4,7 +4,6 @@
  */
 
 #include "manage_schedules.h"
-#include "manage.h" // FIX temporarily, for schedule_uuid
 #include "manage_sql.h"
 
 #undef G_LOG_DOMAIN

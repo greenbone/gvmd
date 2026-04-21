@@ -33,4 +33,25 @@ trash_schedule_readable (schedule_t);
 int
 schedule_writable (schedule_t);
 
+char *
+schedule_uuid (schedule_t);
+
+char *
+trash_schedule_uuid (schedule_t);
+
+char *
+schedule_name (schedule_t);
+
+char *
+trash_schedule_name (schedule_t);
+
+int
+schedule_duration (schedule_t);
+
+int
+schedule_period (schedule_t);
+
+int
+schedule_info (schedule_t, int, gchar **, gchar **);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */
