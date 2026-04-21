@@ -2364,9 +2364,6 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
 
-int
-delete_schedule (const char*, int);
-
 void
 manage_auth_allow_all (int);
 
