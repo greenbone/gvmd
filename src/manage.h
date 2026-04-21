@@ -2387,27 +2387,6 @@ manage_schedule (manage_connection_forker_t,
                  gboolean,
                  sigset_t *);
 
-char *
-schedule_uuid (schedule_t);
-
-char *
-trash_schedule_uuid (schedule_t);
-
-char *
-schedule_name (schedule_t);
-
-char *
-trash_schedule_name (schedule_t);
-
-int
-schedule_duration (schedule_t);
-
-int
-schedule_period (schedule_t);
-
-int
-schedule_info (schedule_t, int, gchar **, gchar **);
-
 int
 init_schedule_iterator (iterator_t*, get_data_t *);
 
