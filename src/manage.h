@@ -2365,10 +2365,6 @@ gboolean
 find_schedule_with_permission (const char*, schedule_t*, const char*);
 
 int
-create_schedule (const char *, const char*, const char *,
-                 const char*, schedule_t *, gchar**);
-
-int
 copy_schedule (const char*, const char*, const char *, schedule_t *);
 
 int
