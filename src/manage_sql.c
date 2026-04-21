@@ -14965,7 +14965,7 @@ print_report_init_f_hosts (print_report_context_t *ctx)
   ctx->f_host_max_severity = g_hash_table_new_full (g_str_hash,
                                                     g_str_equal,
                                                     g_free,
-                                                    host_max_severity_free);
+                                                    g_free);
 }
 
 /**
