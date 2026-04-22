@@ -4882,17 +4882,6 @@ set_read_over (gmp_parser_t *gmp_parser)
     }                                                           \
   break
 
-/**
- * @brief Insert else clause for gmp_xml_handle_start_element in create_task.
- */
-#define ELSE_READ_OVER_CREATE_TASK                              \
-  else                                                          \
-    {                                                           \
-      request_delete_task (&create_task_data->task);            \
-      set_read_over (gmp_parser);                               \
-    }                                                           \
-  break
-
 /** @todo Free globals when tags open, in case of duplicate tags. */
 /**
  * @brief Handle the start of a GMP XML element.
