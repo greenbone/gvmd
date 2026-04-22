@@ -780,7 +780,7 @@ resource_count (const char *type, const get_data_t *get)
           find_report_with_permission (report_uuid, &report, "get_reports");
           if (report != 0)
             {
-              return report_application_count (report);
+              return report_applications_count (report);
             }
         }
       return 0;

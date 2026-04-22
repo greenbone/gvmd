@@ -178,7 +178,7 @@ fill_report_applications_severities (const get_data_t *get,
  * @return Number of applications on success, or -1 on error.
  */
 int
-report_application_count (report_t report)
+report_applications_count (report_t report)
 {
   return sql_int (
     "SELECT count(DISTINCT value)"

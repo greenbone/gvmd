@@ -163,7 +163,7 @@ get_report_applications_run (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      count = report_application_count (report);
+      count = report_applications_count (report);
       if (count < 0)
         {
           internal_error_send_to_client (error);
