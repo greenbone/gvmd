@@ -293,7 +293,7 @@ print_report_host_summary_xml (print_report_context_t *ctx,
          "<hostname></hostname>");
 
   max_severity = g_hash_table_lookup (ctx->f_host_max_severity, host_key);
-  if (*max_severity)
+  if (max_severity && *max_severity)
     PRINT (stream,
          "<severity>%1.1f</severity>"
          "<threat>%s</threat>",
