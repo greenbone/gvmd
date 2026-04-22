@@ -20185,6 +20185,384 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_applications</name>
+    <summary>Get applications from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_applications command to get application
+        information from a single report.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes application
+        entries. Otherwise only the total application count together with filter,
+        sort and count information is returned.
+      </p>
+      <p>
+        The filter affects the selection of matching report applications and the
+        derived application information returned by the command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get applications from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report application retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Maximum number of applications to return</summary>
+          </option>
+          <column>
+            <name>name</name>
+            <type>text</type>
+            <summary>Detected application name or CPE</summary>
+          </column>
+          <column>
+            <name>hosts_count</name>
+            <type>integer</type>
+            <summary>Number of hosts on which the application was found</summary>
+          </column>
+          <column>
+            <name>occurrences</name>
+            <type>integer</type>
+            <summary>Number of occurrences of the application in the report</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Maximum severity associated with the application</summary>
+          </column>
+          <column>
+            <name>threat</name>
+            <type>text</type>
+            <summary>Threat level derived from the severity</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report applications</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include application details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>applications</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_applications</e></o>
+        <o><e>report_application_count</e></o>
+      </pattern>
+      <ele>
+        <name>applications</name>
+        <summary>Application information from the selected report</summary>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report application</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report applications</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <e>count</e>
+          <any><e>application</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of report applications</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>application</name>
+          <summary>An application from the selected report</summary>
+          <pattern>
+            <e>name</e>
+            <e>hosts_count</e>
+            <e>occurrences</e>
+            <e>severity</e>
+            <e>threat</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Detected application name or CPE</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>hosts_count</name>
+            <summary>Number of hosts on which the application was found</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>occurrences</name>
+            <summary>Number of occurrences of the application in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Maximum severity associated with the application</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <summary>Threat level derived from the severity</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_applications</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report application</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report applications</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_application_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report applications after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report applications on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get applications of a report with details</summary>
+      <request>
+        <get_report_applications report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                 details="1"
+                                 filter="rows=100 first=1 sort-reverse=severity">
+        </get_report_applications>
+      </request>
+      <response>
+        <get_report_applications_response status="200" status_text="OK">
+          <applications start="1" max="100">
+            <count>2</count>
+            <application>
+              <name>cpe:/a:openssl:openssl</name>
+              <hosts_count>2</hosts_count>
+              <occurrences>5</occurrences>
+              <severity>8.8</severity>
+              <threat>High</threat>
+            </application>
+            <application>
+              <name>cpe:/a:apache:http_server</name>
+              <hosts_count>1</hosts_count>
+              <occurrences>2</occurrences>
+              <severity>5.3</severity>
+              <threat>Medium</threat>
+            </application>
+          </applications>
+          <filters id="">
+            <term>rows=100 first=1 sort-reverse=severity</term>
+            <keywords>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_applications start="1" max="100"/>
+          <report_application_count>2<filtered>2</filtered><page>0</page></report_application_count>
+        </get_report_applications_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get only report application count information</summary>
+      <request>
+        <get_report_applications report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                 details="0">
+        </get_report_applications>
+      </request>
+      <response>
+        <get_report_applications_response status="200" status_text="OK">
+          <applications>
+            <count>2</count>
+          </applications>
+          <filters id="">
+            <term>rows=100 first=1 sort-reverse=severity</term>
+            <keywords>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_applications start="1" max="100"/>
+          <report_application_count>2<filtered>2</filtered><page>0</page></report_application_count>
+        </get_report_applications_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_configs</name>
     <summary>Get one or many report configs</summary>
     <description>
