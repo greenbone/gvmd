@@ -425,3 +425,19 @@ schedule_info (schedule_t schedule, int trash, gchar **icalendar, gchar **zone)
   cleanup_iterator (&schedules);
   return -1;
 }
+
+/**
+ * @brief Find a schedule for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of schedule.
+ * @param[out]  schedule    Schedule return, 0 if successfully failed to find schedule.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find schedule), TRUE on error.
+ */
+gboolean
+find_schedule_with_permission (const char* uuid, schedule_t* schedule,
+                             const char *permission)
+{
+  return find_resource_with_permission ("schedule", uuid, schedule, permission, 0);
+}

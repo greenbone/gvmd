@@ -54,4 +54,7 @@ schedule_period (schedule_t);
 int
 schedule_info (schedule_t, int, gchar **, gchar **);
 
+gboolean
+find_schedule_with_permission (const char *, schedule_t *, const char *);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */
