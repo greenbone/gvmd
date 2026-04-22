@@ -2361,9 +2361,6 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
-gboolean
-find_schedule_with_permission (const char*, schedule_t*, const char*);
-
 void
 manage_auth_allow_all (int);
 
