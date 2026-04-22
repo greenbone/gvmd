@@ -42,6 +42,6 @@ get_report_applications(report_t,
                         const get_data_t *,
                         GPtrArray **);
 int
-report_application_count (report_t);
+report_applications_count (report_t);
 
 #endif //_GVM_MANAGE_REPORT_APPLICATIONS_H
