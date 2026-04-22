@@ -2385,30 +2385,6 @@ manage_schedule (manage_connection_forker_t,
                  sigset_t *);
 
 int
-init_schedule_iterator (iterator_t*, get_data_t *);
-
-const char*
-schedule_iterator_timezone (iterator_t *);
-
-const char*
-schedule_iterator_icalendar (iterator_t *);
-
-int
-schedule_count (const get_data_t *);
-
-void
-init_schedule_task_iterator (iterator_t*, schedule_t);
-
-const char*
-schedule_task_iterator_uuid (iterator_t *);
-
-const char*
-schedule_task_iterator_name (iterator_t *);
-
-int
-schedule_task_iterator_readable (iterator_t*);
-
-int
 modify_schedule (const char *, const char *, const char *, const char*,
                  const char *, gchar **);
 
