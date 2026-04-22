@@ -29,17 +29,19 @@ report_application_t
 report_applications_new(void);
 
 void
-report_applications_free(report_application_t apps);
+report_applications_free(report_application_t);
 
 GPtrArray *
 report_application_list_new (void);
 
 void
-report_application_list_free (GPtrArray *apps);
+report_application_list_free (GPtrArray *);
 
 int
-get_report_applications(report_t report,
-                        const get_data_t *get,
+get_report_applications(report_t,
+                        const get_data_t *,
                         GPtrArray **);
+int
+report_application_count (report_t);
 
 #endif //_GVM_MANAGE_REPORT_APPLICATIONS_H

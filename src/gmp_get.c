@@ -600,6 +600,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
       g_free (filter);
       if ((strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
+          || (strcmp (type, "report_application") == 0)
           || (strcmp (type, "report_error") == 0)
           || (strcmp (type, "report_host") == 0)
           || (strcmp (type, "report_port") == 0)
@@ -622,6 +623,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
 
           if ((strcmp (type, "task") == 0)
               || (strcmp (type, "report") == 0)
+              || (strcmp (type, "report_application") == 0)
               || (strcmp (type, "report_error") == 0)
               || (strcmp (type, "report_host") == 0)
               || (strcmp (type, "report_port") == 0)
@@ -646,6 +648,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
     {
       if ((strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
+          || (strcmp (type, "report_application") == 0)
           || (strcmp (type, "report_error") == 0)
           || (strcmp (type, "report_host") == 0)
           || (strcmp (type, "report_port") == 0)
