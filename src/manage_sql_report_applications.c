@@ -169,3 +169,21 @@ fill_report_applications_severities (const get_data_t *get,
 
   return 0;
 }
+
+/**
+ * @brief Get the number of distinct applications in a report.
+ *
+ * @param[in]  report  Report whose applications to count.
+ *
+ * @return Number of applications on success, or -1 on error.
+ */
+int
+report_application_count (report_t report)
+{
+  return sql_int (
+    "SELECT count(DISTINCT value)"
+    " FROM report_host_details"
+    " WHERE report_host IN (SELECT id FROM report_hosts WHERE report = %llu)"
+    "   AND name = 'App';",
+    report);
+}
