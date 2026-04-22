@@ -28,11 +28,6 @@
 #define G_LOG_DOMAIN "md  utils"
 
 /**
- * @brief Number of seconds in a day.
- */
-#define SECS_PER_DAY 86400
-
-/**
  * @brief Add months to a time.
  *
  * @param[in]  time    Time.
