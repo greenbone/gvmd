@@ -107,24 +107,25 @@ get_report_applications (report_t report,
 
   while (next (&report_apps))
     {
+      const gchar *application_name;
       double *severity_ptr;
-      report_application_t app = report_application_new ();
+      report_application_t app;
 
-      app->application_name = g_strdup (
-        report_app_iterator_application_name (&report_apps));
+      application_name = report_app_iterator_application_name (&report_apps);
+      if (str_blank (application_name))
+        continue;
+
+      app = report_application_new ();
+      app->application_name = g_strdup (application_name);
       app->hosts_count = report_app_iterator_host_count (&report_apps);
       app->occurrences = report_app_iterator_occurrences (&report_apps);
       app->severity_double = 0.0;
 
-      if (!str_blank (app->application_name))
-        {
-          severity_ptr = g_hash_table_lookup (app_severities,
-                                              app->application_name);
-          if (severity_ptr)
-            app->severity_double = *severity_ptr;
+      severity_ptr = g_hash_table_lookup (app_severities, application_name);
+      if (severity_ptr)
+        app->severity_double = *severity_ptr;
 
-          g_ptr_array_add (*report_applications, app);
-        }
+      g_ptr_array_add (*report_applications, app);
     }
 
   cleanup_iterator (&report_apps);

@@ -26,10 +26,10 @@ struct report_application {
 typedef struct report_application *report_application_t;
 
 report_application_t
-report_applications_new(void);
+report_application_new(void);
 
 void
-report_applications_free(report_application_t);
+report_application_free(report_application_t);
 
 GPtrArray *
 report_application_list_new (void);
