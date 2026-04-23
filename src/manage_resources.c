@@ -315,6 +315,7 @@ type_owned (const char* type)
          && strcasecmp (type, "report_application")
          && strcasecmp (type, "report_error")
          && strcasecmp (type, "report_host")
+         && strcasecmp (type, "report_operating_system")
          && strcasecmp (type, "report_port")
          && strcasecmp (type, "report_tls_certificate");
 }
