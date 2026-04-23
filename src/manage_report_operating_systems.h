@@ -38,8 +38,15 @@ report_os_list_free (GPtrArray *);
 
 int
 get_report_operating_systems (report_t,
+                              const get_data_t *,
                               GPtrArray **);
 int
 report_operating_systems_count (report_t);
+
+int
+fill_filtered_report_host_ids (GHashTable **,
+                               const get_data_t *,
+                               report_t ,
+                               iterator_t *);
 
 #endif //_GVM_MANAGE_REPORT_OPERATING_SYSTEMS_H

@@ -21,8 +21,8 @@ report_os_iterator_cpe (iterator_t *);
 const gchar *
 report_os_iterator_os_name (iterator_t *);
 
-int
-report_os_iterator_host_count (iterator_t *);
+report_host_t
+report_os_iterator_report_host_id (iterator_t *);
 
 void
 init_report_os_iterator (iterator_t *, report_t);
