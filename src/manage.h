@@ -2325,10 +2325,6 @@ int
 slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
-/**
-* @brief Seconds of a day
-*/
-#define SECONDS_PER_DAY 86400
 
 /**
  * @brief Seconds between calls to manage_schedule.
