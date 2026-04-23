@@ -99,6 +99,7 @@
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
 #include "manage_scanner_relays.h"
+#include "manage_schedules_schedular.h"
 #include "manage_settings.h"
 #include "manage_targets.h"
 #include "manage_users.h"

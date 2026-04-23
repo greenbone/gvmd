@@ -2387,12 +2387,6 @@ manage_schedule (manage_connection_forker_t,
                  gboolean,
                  sigset_t *);
 
-int
-get_schedule_timeout ();
-
-void
-set_schedule_timeout (int);
-
 
 /* Schema. */
 

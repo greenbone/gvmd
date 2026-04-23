@@ -210,6 +210,7 @@ set(
   manage_scan_queue.c
   manage_scanner_relays.c
   manage_schedules.c
+  manage_schedules_schedular.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
   manage_tags.c

@@ -6,6 +6,7 @@
 #include "manage_sql_schedules.h"
 #include "manage.h" // for current_credentials
 #include "manage_acl.h"
+#include "manage_schedules_schedular.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_tags.h"
