@@ -51,7 +51,7 @@ DEF_ACCESS (report_os_iterator_os_name, 1);
 int
 report_os_iterator_host_count (iterator_t *iterator)
 {
-  return iterator_int (iterator, 1);
+  return iterator_int (iterator, 2);
 }
 
 /**
