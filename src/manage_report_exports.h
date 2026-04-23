@@ -16,6 +16,12 @@
 #include "iterator.h"
 #include "manage_resources_types.h"
 
+
+#define REPORT_EXPORT_STATUS_REQUESTED "report_export_requested"
+#define REPORT_EXPORT_STATUS_STARTED "report_export_started"
+#define REPORT_EXPORT_STATUS_FINISHED "report_export_finished"
+#define REPORT_EXPORT_STATUS_FAILED "report_export_failed"
+
 void
 init_report_exports_from_config ();
 

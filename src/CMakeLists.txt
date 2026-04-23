@@ -215,6 +215,7 @@ set(
   manage_tags.c
   manage_targets.c
   manage_users.c
+  manage_report_export_scheduler.c
 )
 
 if(ENABLE_AGENTS)

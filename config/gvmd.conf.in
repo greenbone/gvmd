@@ -17,3 +17,6 @@ enable_jwt_auth = false
 
 [security_intelligence_export]
 max_retries = 10
+retry_base_delay = 10
+retry_multiplier = 2
+retry_max_delay = 600
