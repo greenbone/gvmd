@@ -83,7 +83,6 @@ int
 get_report_operating_systems (report_t report,
                               GPtrArray **report_os_list)
 {
-  iterator_t results;
   iterator_t report_os;
 
   if (report_os_list == NULL)
@@ -106,7 +105,6 @@ get_report_operating_systems (report_t report,
     }
 
   cleanup_iterator (&report_os);
-  cleanup_iterator (&results);
 
   return 0;
 }
