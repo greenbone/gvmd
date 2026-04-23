@@ -310,6 +310,7 @@ set(
   gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c
+  gmp_report_operating_systems.c
   gmp_report_ports.c
   gmp_report_tls_certificates.c
   gmp_tickets.c

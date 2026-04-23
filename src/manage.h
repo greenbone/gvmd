@@ -24,6 +24,7 @@
 #include "manage_report_applications.h"
 #include "manage_report_errors.h"
 #include "manage_report_hosts.h"
+#include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
 #include "manage_report_tls_certificates.h"
 #include "manage_tasks.h"

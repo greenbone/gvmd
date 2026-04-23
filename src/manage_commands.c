@@ -128,6 +128,7 @@ command_t gmp_commands[]
     {"GET_REPORT_ERRORS", "Get all report errors for specific report."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_REPORT_HOSTS", "Get all report hosts for specific report."},
+    {"GET_REPORT_OPERATING_SYSTEMS", "Get all report operating systems for specific report."},
     {"GET_REPORT_PORTS", "Get all report ports for specific report."},
     {"GET_REPORT_TLS_CERTIFICATES", "Get all report tls certificates for specific report."},
     {"GET_RESULTS", "Get results."},
