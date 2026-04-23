@@ -2392,10 +2392,6 @@ manage_schedule (manage_connection_forker_t,
                  sigset_t *);
 
 int
-modify_schedule (const char *, const char *, const char *, const char*,
-                 const char *, gchar **);
-
-int
 get_schedule_timeout ();
 
 void
