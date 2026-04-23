@@ -194,6 +194,7 @@ set(
   manage_report_errors.c
   manage_report_formats.c
   manage_report_hosts.c
+  manage_report_operating_systems.c
   manage_report_ports.c
   manage_report_tls_certificates.c
   manage_roles.c
@@ -259,6 +260,7 @@ set(
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_report_hosts.c
+  manage_sql_report_operating_systems.c
   manage_sql_report_ports.c
   manage_sql_report_tls_certificates.c
   manage_sql_roles.c
