@@ -58,7 +58,7 @@ get_report_operating_systems_reset ()
  */
 void
 get_report_operating_systems_start (const gchar **attribute_names,
-                               const gchar **attribute_values)
+                                    const gchar **attribute_values)
 {
   const gchar *attribute;
 
@@ -149,7 +149,8 @@ get_report_operating_systems_run (gmp_parser_t *gmp_parser, GError **error)
   if (get_report_os_data.get.details)
     {
       ret = get_report_operating_systems (report,
-                                     &o_systems);
+                                          &get_report_os_data.get,
+                                          &o_systems);
       if (ret)
         {
           internal_error_send_to_client (error);

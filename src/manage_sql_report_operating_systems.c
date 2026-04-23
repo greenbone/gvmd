@@ -18,7 +18,38 @@
 
 #include "manage_sql_report_operating_systems.h"
 
+#include "manage.h"
 #include "sql.h"
+
+/**
+ * @brief Get the report host for a result.
+ *
+ * @param[in]  result  Result whose related report host to return.
+ *
+ * @return Related report host on success, or 0 if not found.
+ */
+static report_host_t
+result_report_host (result_t result)
+{
+  return sql_int (
+    "SELECT rh.id"
+    " FROM results r"
+    " JOIN report_hosts rh"
+    "   ON rh.report = r.report"
+    "  AND ("
+    "       (COALESCE (r.host, '') <> ''"
+    "        AND rh.host = r.host"
+    "        AND COALESCE (rh.hostname, '') = COALESCE (r.hostname, ''))"
+    "       OR"
+    "       (COALESCE (r.host, '') = ''"
+    "        AND COALESCE (r.hostname, '') <> ''"
+    "        AND COALESCE (rh.hostname, '') = COALESCE (r.hostname, ''))"
+    "      )"
+    " WHERE r.id = $1"
+    " LIMIT 1;",
+    SQL_INT_PARAM (result),
+    NULL);
+}
 
 /**
  * @brief Get the cpe from a report os iterator.
@@ -28,7 +59,7 @@
  * @return The cpe value of the report os. Caller must use only
  *         before calling cleanup_iterator.
  */
-DEF_ACCESS (report_os_iterator_cpe, 0);
+DEF_ACCESS (report_os_iterator_cpe, 1);
 
 /**
  * @brief Get the best_os_txt from a report os iterator.
@@ -38,43 +69,36 @@ DEF_ACCESS (report_os_iterator_cpe, 0);
  * @return The best_os_txt value of the report os. Caller must use only
  *         before calling cleanup_iterator.
  */
-DEF_ACCESS (report_os_iterator_os_name, 1);
+DEF_ACCESS (report_os_iterator_os_name, 2);
 
 /**
- * @brief Get the host counts per OS from a report os iterator.
+ * @brief Get the report_host_id per OS from a report os iterator.
  *
  * @param[in]  iterator  Iterator.
  *
  * @return The host counts per OS of the report os. Caller must use only
  *         before calling cleanup_iterator.
  */
-int
-report_os_iterator_host_count (iterator_t *iterator)
+report_host_t
+report_os_iterator_report_host_id (iterator_t *iterator)
 {
-  return iterator_int (iterator, 2);
+  return iterator_int (iterator, 0);
 }
 
-/**
- * @brief Initialise a host iterator.
- *
- * @param[in]  iterator  Iterator.
- * @param[in]  report    Report whose hosts the iterator loops over.
- */
 void
 init_report_os_iterator (iterator_t *iterator, report_t report)
 {
   init_ps_iterator (
     iterator,
-    "SELECT cpe.value AS cpe, txt.value AS os_name,"
-    "       COUNT(DISTINCT rh.id) AS hosts"
+    "SELECT rh.id AS report_host_id, "
+    "       (SELECT value FROM report_host_details "
+    "         WHERE report_host = rh.id AND name = 'best_os_cpe'"
+    "         LIMIT 1) AS cpe, "
+    "       (SELECT value FROM report_host_details"
+    "         WHERE report_host = rh.id AND name = 'best_os_txt'"
+    "         LIMIT 1) AS os_name"
     " FROM report_hosts rh"
-    " LEFT JOIN report_host_details cpe"
-    "  ON cpe.report_host = rh.id AND cpe.name = 'best_os_cpe'"
-    " LEFT JOIN report_host_details txt"
-    "  ON txt.report_host = rh.id AND txt.name = 'best_os_txt'"
-    " WHERE rh.report = $1"
-    " GROUP BY cpe.value, txt.value"
-    " ORDER BY hosts DESC, os_name ASC;",
+    " WHERE rh.report = $1;",
     SQL_RESOURCE_PARAM (report),
     NULL);
 }
@@ -98,4 +122,50 @@ report_operating_systems_count (report_t report)
     "   AND name = 'best_os_cpe';",
     SQL_RESOURCE_PARAM (report),
     NULL);
+}
+
+/**
+ * @brief Initialize the result iterator and collect distinct report host IDs.
+ *
+ * @param[out] report_host_ids  Hash table used as a set of report host IDs.
+ * @param[in]  get              Request data used for iterator initialization.
+ * @param[in]  report           Report identifier.
+ * @param[in,out] results       Result iterator to use.
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+int
+fill_filtered_report_host_ids (GHashTable **report_host_ids,
+                               const get_data_t *get,
+                               report_t report,
+                               iterator_t *results)
+{
+  int ret;
+
+  if (report_host_ids == NULL)
+    return -1;
+
+  *report_host_ids = g_hash_table_new (g_direct_hash, g_direct_equal);
+
+  ret = init_result_get_iterator (results, get, report, NULL, NULL);
+  if (ret)
+    {
+      g_hash_table_destroy (*report_host_ids);
+      *report_host_ids = NULL;
+      return ret;
+    }
+
+  while (next (results))
+    {
+      result_t result;
+      report_host_t report_host;
+
+      result = result_iterator_result (results);
+      report_host = result_report_host (result);
+
+      if (report_host)
+        g_hash_table_add (*report_host_ids, GSIZE_TO_POINTER (report_host));
+    }
+
+  return 0;
 }
