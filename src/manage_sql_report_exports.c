@@ -8,9 +8,11 @@
 #include "manage_settings.h"
 #include "manage_sql.h"
 
-
 static int report_export_max_retries = 10;
 
+/**
+ * @brief Load configuration values from gvmd config
+ */
 void
 init_report_exports_from_config ()
 {
@@ -29,7 +31,8 @@ init_report_exports_from_config ()
   if (has_max_retries)
     {
       report_export_max_retries = max_retries;
-      g_warning("max_retries: %d", report_export_max_retries);
+      g_debug ("set report_export_max_retries from config: %d",
+               report_export_max_retries);
     }
 }
 
@@ -69,7 +72,7 @@ queue_report_for_export (const report_t report)
   sql_ps ("INSERT INTO report_exports (report_id, status, retry_count,"
           "                            reason, next_retry_time,"
           "                            creation_time, modification_time)"
-          " VALUES ($1, 'report_export_requested', 0, 'Queued',"
+          " VALUES ($1, '"REPORT_EXPORT_STATUS_REQUESTED"', 0, 'Queued',"
           "         m_now(), m_now(), m_now())",
           SQL_INT_PARAM (report), NULL);
 
@@ -88,12 +91,10 @@ set_report_export_status_and_reason (report_t report, const gchar *status,
                                      const gchar *reason)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET status = $1, reason = $2"
+          "   SET status = $1, reason = $2, modification_time = m_now()"
           " WHERE report_id = $3",
-          SQL_STR_PARAM (status),
-          SQL_STR_PARAM (reason),
-          SQL_INT_PARAM (report),
-          NULL);
+          SQL_STR_PARAM (status), SQL_STR_PARAM (reason),
+          SQL_INT_PARAM (report), NULL);
 }
 
 /**
@@ -106,7 +107,7 @@ void
 set_report_export_next_retry_time (report_t report, time_t next_retry_time)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET next_retry_time = $1"
+          "   SET next_retry_time = $1, modification_time = m_now()"
           " WHERE report_id = $2",
           SQL_INT_PARAM (next_retry_time), SQL_INT_PARAM (report), NULL);
 }
@@ -121,7 +122,7 @@ void
 set_report_export_retry_count (report_t report, int retry_count)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET retry_count = $1"
+          "   SET retry_count = $1, modification_time = m_now()"
           " WHERE report_id = $2",
           SQL_INT_PARAM (retry_count), SQL_INT_PARAM (report), NULL);
 }
@@ -148,8 +149,8 @@ init_report_export_iterator_due_exports (iterator_t *iterator)
                     " FROM report_exports"
                     " WHERE   next_retry_time < m_now()"
                     " AND     retry_count < $1"
-                    " AND     status IN ('report_export_requested',"
-                    "                    'report_export_failed')",
+                    " AND     status IN ('"REPORT_EXPORT_STATUS_REQUESTED"',"
+                    "                    '"REPORT_EXPORT_STATUS_FAILED"')",
                     SQL_INT_PARAM (max_retry_count), NULL);
 
   return 0;

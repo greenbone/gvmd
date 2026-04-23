@@ -2339,6 +2339,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 #define QUEUE_PERIOD 5
 
 /**
+ * @brief Seconds between calls to fork_report_export
+ */
+#define REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
+
+/**
  * @brief Minimum schedule timeout seconds.
  * This value must be greater than SCHEDULE_PERIOD.
  */
