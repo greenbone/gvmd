@@ -905,7 +905,8 @@ handle_container_image_scan (task_t task,
 {
   scanner_t scanner;
   http_scanner_connector_t connector;
-  int ret;
+  http_scanner_resp_t response;
+  int rc;
 
   scanner = task_scanner (task);
   connector = container_image_scanner_connect (scanner, scan_id);
@@ -916,12 +917,52 @@ handle_container_image_scan (task_t task,
       return -1;
     }
 
-  ret = handle_http_scanner_scan (connector, task, report,
-                                  parse_container_image_scan_report);
+  gboolean started, queued_status_updated;
+  int retry, connection_retry;
 
+  if (connector == NULL)
+    {
+      g_warning ("%s: Could not connect to http scanner", __func__);
+      return -1;
+    }
+
+  response = NULL;
+  started = FALSE;
+  queued_status_updated = FALSE;
+  connection_retry = get_scanner_connection_retry ();
+
+  retry = connection_retry;
+  rc = -1;
+  while (retry >= 0)
+    {
+      int run_status;
+
+      run_status = task_run_status (task);
+      if (run_status == TASK_STATUS_STOPPED
+          || run_status == TASK_STATUS_STOP_REQUESTED)
+        {
+          rc = -4;
+          break;
+        }
+
+      rc = update_http_scanner_scan (connector, task, report,
+                                     parse_container_image_scan_report, &retry,
+                                     &queued_status_updated, &started);
+
+      if (rc <= 0)
+        break;
+
+      if (rc != 1)
+        {
+          retry = connection_retry;
+          gvm_sleep (5);
+        }
+    }
+
+  http_scanner_response_cleanup (response);
   http_scanner_connector_free (connector);
 
-  return ret;
+  return rc;
 }
 
 /**

@@ -13,6 +13,7 @@
 #if ENABLE_HTTP_SCANNER
 #include "manage_http_scanner.h"
 #include "manage_sql.h"
+#include "manage_scan_queue.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -203,210 +204,182 @@ prepare_http_scanner_scan_for_resume (http_scanner_connector_t connector,
 }
 
 /**
- * @brief Handle an ongoing scan on HTTP scanner, until success or failure.
+ * @brief Update the status and results of an HTTP scanner scan.
  *
- * @param[in]   connector  The connector to the scanner.
- * @param[in]   task       The task.
- * @param[in]   report     The report.
- * @param[in]   parse_report_callback  Callback to parse and insert results.
+ * @param[in]      connector  The connector to the scanner.
+ * @param[in]      task       The task of the HTTP scanner scan
+ * @param[in]      report     Row id of the scan report
+ * @param[in]      parse_report_callback  Callback to parse and insert results.
+ * @param[in,out]  retry_ptr              How many times to retry.
+ * @param[in,out]  queued_status_updated  Whether the "queued" status was set.
+ * @param[in,out]  started                Whether the scan was started.
  *
- * @return 0 if success, -1 if error, -2 if scan was stopped,
+ * @return 0 if scan finished, 1 if caller should retry if appropriate,
+ *         2 if scan is running or queued by the scanner,
+ *         -1 if error, -2 if scan was stopped,
  *         -3 if the scan was interrupted, -4 already stopped.
  */
 int
-handle_http_scanner_scan (http_scanner_connector_t connector,
-                          task_t task, report_t report,
+update_http_scanner_scan (http_scanner_connector_t connector, task_t task,
+                          report_t report,
                           void (*parse_report_callback)
-                            (task_t, report_t, GSList *, time_t, time_t))
+                            (task_t, report_t, GSList *, time_t, time_t),
+                          int *retry_ptr, int *queued_status_updated,
+                          int *started)
 {
-  int rc;
-  gboolean started, queued_status_updated;
-  int retry, connection_retry;
-  http_scanner_resp_t response;
+  http_scanner_resp_t response = NULL;
+  int progress = http_scanner_get_scan_progress (connector);
 
-  if (connector == NULL)
+  if (progress < 0 || progress > 100)
     {
-      g_warning ("%s: Could not connect to http scanner", __func__);
+      if (*retry_ptr > 0 && progress == -1)
+        {
+          (*retry_ptr)--;
+          g_warning ("Connection lost with the scanner."
+                      "Trying again in 1 second.");
+          gvm_sleep (1);
+          return 1;
+        }
+      else if (progress == -2)
+        {
+          return -2;
+        }
+      result_t result = make_osp_result
+                          (task, "", "", "",
+                          threat_message_type ("Error"),
+                          "Erroneous scan progress value", "", "",
+                          QOD_DEFAULT, NULL, NULL);
+      report_add_result (report, result);
+      response = http_scanner_delete_scan(connector);
+      http_scanner_response_cleanup (response);
       return -1;
     }
-
-  response = NULL;
-  started = FALSE;
-  queued_status_updated = FALSE;
-  connection_retry = get_scanner_connection_retry ();
-
-  retry = connection_retry;
-  rc = -1;
-  while (retry >= 0)
+  else
     {
-      int run_status, progress;
-
-      run_status = task_run_status (task);
-      if (run_status == TASK_STATUS_STOPPED
-          || run_status == TASK_STATUS_STOP_REQUESTED)
-        {
-          rc = -4;
-          break;
-        }
-
+      /* Get the full report. */
       progress = http_scanner_get_scan_progress (connector);
 
       if (progress < 0 || progress > 100)
         {
-          if (retry > 0 && progress == -1)
+          if (*retry_ptr > 0 && progress == -1)
             {
-              retry--;
-              g_warning ("Connection lost with the scanner."
-                         "Trying again in 1 second.");
+              (*retry_ptr)--;
+              g_warning ("Connection lost with the scanner. "
+                          "Trying again in 1 second.");
               gvm_sleep (1);
-              continue;
+              return 1;
             }
           else if (progress == -2)
             {
-              rc = -2;
-              break;
+              return -2;
             }
           result_t result = make_osp_result
-                             (task, "", "", "",
+                              (task, "", "", "",
                               threat_message_type ("Error"),
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
-          response = http_scanner_delete_scan(connector);
-          rc = -1;
-          break;
+          return -1;
         }
       else
         {
-          /* Get the full report. */
-          progress = http_scanner_get_scan_progress (connector);
+          GSList *results = NULL;
+          static unsigned long result_start = 0;
+          static unsigned long result_end = -1; // get up to the end
+          http_scanner_status_t current_status;
+          time_t start_time, end_time;
+          http_scanner_scan_status_t scan_status;
 
-          if (progress < 0 || progress > 100)
+          if (progress > 0)
+            set_report_slave_progress (report, progress);
+
+          scan_status
+            = http_scanner_parsed_scan_status (connector);
+          start_time = scan_status->start_time;
+          end_time = scan_status->end_time;
+          current_status = scan_status->status;
+          progress = scan_status->progress;
+          g_free (scan_status);
+
+          gvm_sleep (1);
+
+          http_scanner_parsed_results (connector, result_start,
+                                        result_end, &results);
+
+          result_start += g_slist_length (results);
+
+          parse_report_callback (task, report, results, start_time,
+                                  end_time);
+          if (results != NULL)
             {
-              if (retry > 0 && progress == -1)
-                {
-                  retry--;
-                  g_warning ("Connection lost with the scanner. "
-                             "Trying again in 1 second.");
-                  gvm_sleep (1);
-                  continue;
-                }
-              else if (progress == -2)
-                {
-                  rc = -2;
-                  break;
-                }
-              result_t result = make_osp_result
-                                 (task, "", "", "",
-                                  threat_message_type ("Error"),
-                                  "Erroneous scan progress value", "", "",
-                                  QOD_DEFAULT, NULL, NULL);
-              report_add_result (report, result);
-              rc = -1;
-              break;
+              g_slist_free_full (results,
+                                  (GDestroyNotify) http_scanner_result_free);
             }
-          else
+          if (current_status == HTTP_SCANNER_SCAN_STATUS_STORED)
             {
-              GSList *results = NULL;
-              static unsigned long result_start = 0;
-              static unsigned long result_end = -1; // get up to the end
-              http_scanner_status_t current_status;
-              time_t start_time, end_time;
-              http_scanner_scan_status_t scan_status;
-
-              if (progress > 0)
-                set_report_slave_progress (report, progress);
-
-              scan_status
-                = http_scanner_parsed_scan_status (connector);
-              start_time = scan_status->start_time;
-              end_time = scan_status->end_time;
-              current_status = scan_status->status;
-              progress = scan_status->progress;
-              g_free (scan_status);
-
-              gvm_sleep (1);
-
-              http_scanner_parsed_results (connector, result_start,
-                                           result_end, &results);
-
-              result_start += g_slist_length (results);
-
-              parse_report_callback (task, report, results, start_time,
-                                     end_time);
-              if (results != NULL)
+              if (*queued_status_updated == FALSE)
                 {
-                  g_slist_free_full (results,
-                                     (GDestroyNotify) http_scanner_result_free);
-                }
-              if (current_status == HTTP_SCANNER_SCAN_STATUS_STORED)
-                {
-                  if (queued_status_updated == FALSE)
-                    {
-                      set_task_run_status (task, TASK_STATUS_QUEUED);
-                      set_report_scan_run_status (global_current_report,
-                                                  TASK_STATUS_QUEUED);
-                      queued_status_updated = TRUE;
-                    }
-                }
-              else if (current_status == HTTP_SCANNER_SCAN_STATUS_FAILED
-                       || current_status == HTTP_SCANNER_SCAN_STATUS_ERROR)
-                {
-                  result_t result = make_osp_result
-                    (task, "", "", "",
-                     threat_message_type ("Error"),
-                     "Task interrupted unexpectedly", "", "",
-                     QOD_DEFAULT, NULL, NULL);
-                  report_add_result (report, result);
-                  response = http_scanner_delete_scan (connector);
-                  rc = -3;
-                  break;
-                }
-              else if (progress >= 0 && progress < 100
-                  && current_status == HTTP_SCANNER_SCAN_STATUS_STOPPED)
-                {
-                  if (retry > 0)
-                    {
-                      retry--;
-                      g_warning ("Connection lost with the scanner. "
-                                 "Trying again in 1 second.");
-                      gvm_sleep (1);
-                      continue;
-                    }
-
-                  result_t result = make_osp_result
-                    (task, "", "", "",
-                     threat_message_type ("Error"),
-                     "Scan stopped unexpectedly by the server", "", "",
-                     QOD_DEFAULT, NULL, NULL);
-                  report_add_result (report, result);
-                  response = http_scanner_delete_scan (connector);
-                  rc = -1;
-                  break;
-                }
-              else if (progress == 100
-                       && current_status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
-                {
-                  response = http_scanner_delete_scan (connector);
-                  rc = response->code;
-                  break;
-                }
-              else if (current_status == HTTP_SCANNER_SCAN_STATUS_RUNNING
-                       && started == FALSE)
-                {
-                  set_task_run_status (task, TASK_STATUS_RUNNING);
+                  set_task_run_status (task, TASK_STATUS_QUEUED);
                   set_report_scan_run_status (global_current_report,
-                                              TASK_STATUS_RUNNING);
-                  started = TRUE;
+                                              TASK_STATUS_QUEUED);
+                  *queued_status_updated = TRUE;
+                  return 2;
                 }
+            }
+          else if (current_status == HTTP_SCANNER_SCAN_STATUS_FAILED
+                   || current_status == HTTP_SCANNER_SCAN_STATUS_ERROR)
+            {
+              result_t result = make_osp_result
+                (task, "", "", "",
+                  threat_message_type ("Error"),
+                  "Task interrupted unexpectedly", "", "",
+                  QOD_DEFAULT, NULL, NULL);
+              report_add_result (report, result);
+              response = http_scanner_delete_scan (connector);
+              http_scanner_response_cleanup (response);
+              return -3;
+            }
+          else if (progress >= 0 && progress < 100
+                   && current_status == HTTP_SCANNER_SCAN_STATUS_STOPPED)
+            {
+              if (*retry_ptr > 0)
+                {
+                  (*retry_ptr)--;
+                  g_warning ("Connection lost with the scanner. "
+                              "Trying again in 1 second.");
+                  gvm_sleep (1);
+                  return 1;
+                }
+
+              result_t result = make_osp_result
+                (task, "", "", "",
+                  threat_message_type ("Error"),
+                  "Scan stopped unexpectedly by the server", "", "",
+                  QOD_DEFAULT, NULL, NULL);
+              report_add_result (report, result);
+              response = http_scanner_delete_scan (connector);
+              http_scanner_response_cleanup (response);
+              return -1;
+            }
+          else if (progress == 100
+                   && current_status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
+            {
+              response = http_scanner_delete_scan (connector);
+              http_scanner_response_cleanup (response);
+              return 0;
+            }
+          else if (current_status == HTTP_SCANNER_SCAN_STATUS_RUNNING
+                   && *started == FALSE)
+            {
+              set_task_run_status (task, TASK_STATUS_RUNNING);
+              set_report_scan_run_status (global_current_report,
+                                          TASK_STATUS_RUNNING);
+              *started = TRUE;
+              return 2;
             }
         }
-
-      retry = connection_retry;
-      gvm_sleep (5);
     }
-  http_scanner_response_cleanup (response);
-  return rc;
+    return 2;
 }
 
 /**
