@@ -8,6 +8,13 @@
 #include "manage_settings.h"
 #include "manage_sql.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 static int report_export_max_retries = 10;
 
 /**
