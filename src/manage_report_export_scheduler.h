@@ -21,7 +21,8 @@
 typedef enum export_report_result
 {
   EXPORT_REPORT_RESULT_SUCCESS = 0,
-  EXPORT_REPORT_RESULT_FAILURE,
+  EXPORT_REPORT_RESULT_TIMEOUT,
+  EXPORT_REPORT_RESULT_FAILURE = -1,
 } export_report_result_t;
 
 void
@@ -31,6 +32,6 @@ int
 manage_report_export_scheduler ();
 
 export_report_result_t
-export_report (report_t report, int TODO, const char* MORE_TODO);
+export_report (report_t report);
 
 #endif //_GVMD_MANAGE_REPORT_EXPORT_SCHEDULER_H
