@@ -112,7 +112,8 @@ manage_send_report_tls_certificates (report_t report,
                                         report,
                                         &results,
                                         is_container_scanning_report,
-                                        NULL);
+                                        NULL,
+                                        FALSE);
       if (ret)
         {
           ret = -1;

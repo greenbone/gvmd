@@ -21,6 +21,7 @@
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_integration_configs.h"
+#include "manage_report_applications.h"
 #include "manage_report_errors.h"
 #include "manage_report_hosts.h"
 #include "manage_report_ports.h"
@@ -2366,19 +2367,6 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
-gboolean
-find_schedule_with_permission (const char*, schedule_t*, const char*);
-
-int
-create_schedule (const char *, const char*, const char *,
-                 const char*, schedule_t *, gchar**);
-
-int
-copy_schedule (const char*, const char*, const char *, schedule_t *);
-
-int
-delete_schedule (const char*, int);
-
 void
 manage_auth_allow_all (int);
 
@@ -2401,66 +2389,6 @@ int
 manage_schedule (manage_connection_forker_t,
                  gboolean,
                  sigset_t *);
-
-char *
-schedule_uuid (schedule_t);
-
-char *
-trash_schedule_uuid (schedule_t);
-
-char *
-schedule_name (schedule_t);
-
-char *
-trash_schedule_name (schedule_t);
-
-int
-schedule_duration (schedule_t);
-
-int
-schedule_period (schedule_t);
-
-int
-schedule_info (schedule_t, int, gchar **, gchar **);
-
-int
-init_schedule_iterator (iterator_t*, get_data_t *);
-
-const char*
-schedule_iterator_timezone (iterator_t *);
-
-const char*
-schedule_iterator_icalendar (iterator_t *);
-
-int
-trash_schedule_in_use (schedule_t);
-
-int
-schedule_in_use (schedule_t);
-
-int
-trash_schedule_writable (schedule_t);
-
-int
-trash_schedule_readable (schedule_t);
-
-int
-schedule_writable (schedule_t);
-
-int
-schedule_count (const get_data_t *);
-
-void
-init_schedule_task_iterator (iterator_t*, schedule_t);
-
-const char*
-schedule_task_iterator_uuid (iterator_t *);
-
-const char*
-schedule_task_iterator_name (iterator_t *);
-
-int
-schedule_task_iterator_readable (iterator_t*);
 
 int
 modify_schedule (const char *, const char *, const char *, const char*,

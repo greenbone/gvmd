@@ -26,7 +26,8 @@ print_report_hosts_xml (print_report_context_t *,
                         gboolean,
                         gboolean,
                         array_t *,
-                        GString *);
+                        GString *,
+                        gboolean);
 
 int
 fill_filtered_result_hosts (array_t **,
@@ -34,6 +35,7 @@ fill_filtered_result_hosts (array_t **,
                             report_t,
                             iterator_t *,
                             gboolean,
-                            print_report_context_t *);
+                            print_report_context_t *,
+                            gboolean);
 
 #endif /* _GVM_MANAGE_SQL_REPORT_HOSTS_H */

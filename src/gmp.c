@@ -89,6 +89,7 @@
 #include "gmp_logout.h"
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
+#include "gmp_report_applications.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_errors.h"
 #include "gmp_report_formats.h"
@@ -114,6 +115,7 @@
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_settings.h"
+#include "manage_schedules.h"
 #include "manage_tags.h"
 #include "manage_targets.h"
 #include "manage_tls_certificates.h"
@@ -4553,6 +4555,7 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_ERRORS,
   CLIENT_GET_REPORT_FORMATS,
@@ -4875,17 +4878,6 @@ set_read_over (gmp_parser_t *gmp_parser)
 #define ELSE_READ_OVER                                          \
   else                                                          \
     {                                                           \
-      set_read_over (gmp_parser);                               \
-    }                                                           \
-  break
-
-/**
- * @brief Insert else clause for gmp_xml_handle_start_element in create_task.
- */
-#define ELSE_READ_OVER_CREATE_TASK                              \
-  else                                                          \
-    {                                                           \
-      request_delete_task (&create_task_data->task);            \
       set_read_over (gmp_parser);                               \
     }                                                           \
   break
@@ -5849,6 +5841,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORTS);
           }
+
+        ELSE_GET_START (report_applications, REPORT_APPLICATIONS)
+
         else if (strcasecmp ("GET_REPORT_CONFIGS", element_name) == 0)
           {
             get_data_parse_attributes (&get_report_configs_data->get,
@@ -22128,6 +22123,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORTS:
         handle_get_reports (gmp_parser, error);
         break;
+
+      CASE_GET_END (REPORT_APPLICATIONS, report_applications);
 
       case CLIENT_GET_REPORT_CONFIGS:
         handle_get_report_configs (gmp_parser, error);

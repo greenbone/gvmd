@@ -771,6 +771,20 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *usage_type = get_data_get_extra (get, "usage_type");
       extra_where = reports_extra_where (0, NULL, usage_type);
     }
+  else if (strcmp (type, "report_application") == 0)
+    {
+      report_t report;
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (report != 0)
+            {
+              return report_applications_count (report);
+            }
+        }
+      return 0;
+    }
   else if (strcmp (type, "report_error") == 0)
     {
       report_t report;

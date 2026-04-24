@@ -188,6 +188,7 @@ set(
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
+  manage_report_applications.c
   manage_report_configs.c
   manage_report_errors.c
   manage_report_formats.c
@@ -206,6 +207,7 @@ set(
   manage_scan_handler.c
   manage_scan_queue.c
   manage_scanner_relays.c
+  manage_schedules.c
   manage_oci_image_targets.c
   manage_container_image_scanner.c
   manage_tags.c
@@ -251,6 +253,7 @@ set(
   manage_sql_permissions_cache.c
   manage_sql_port_lists.c
   manage_sql_configs.c
+  manage_sql_report_applications.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
   manage_sql_report_formats.c
@@ -260,6 +263,7 @@ set(
   manage_sql_report_tls_certificates.c
   manage_sql_roles.c
   manage_sql_scanner_relays.c
+  manage_sql_schedules.c
   manage_sql_settings.c
   manage_sql_tags.c
   manage_sql_targets.c
@@ -299,6 +303,7 @@ set(
   gmp_logout.c
   gmp_oci_image_targets.c
   gmp_port_lists.c
+  gmp_report_applications.c
   gmp_report_configs.c
   gmp_report_errors.c
   gmp_report_formats.c
