@@ -10,6 +10,13 @@
 
 #include <math.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
 static int retry_base_delay = 10;
 static int retry_multiplier = 2;
 static int retry_max_delay = 600;
