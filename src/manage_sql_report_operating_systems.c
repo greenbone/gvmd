@@ -22,33 +22,47 @@
 #include "sql.h"
 
 /**
- * @brief Get the report host for a result.
+ * @brief Get the report host matching result host information.
  *
- * @param[in]  result  Result whose related report host to return.
+ * @param[in]  report    Report containing the result.
+ * @param[in]  host      Host value from the result.
+ * @param[in]  hostname  Hostname value from the result.
  *
  * @return Related report host on success, or 0 if not found.
  */
 static report_host_t
-result_report_host (result_t result)
+result_report_host (report_t report, const char *host, const char *hostname)
 {
-  return sql_int (
-    "SELECT rh.id"
-    " FROM results r"
-    " JOIN report_hosts rh"
-    "   ON rh.report = r.report"
-    "  AND ("
-    "       (COALESCE (r.host, '') <> ''"
-    "        AND rh.host = r.host"
-    "        AND COALESCE (rh.hostname, '') = COALESCE (r.hostname, ''))"
-    "       OR"
-    "       (COALESCE (r.host, '') = ''"
-    "        AND COALESCE (r.hostname, '') <> ''"
-    "        AND COALESCE (rh.hostname, '') = COALESCE (r.hostname, ''))"
-    "      )"
-    " WHERE r.id = $1"
-    " LIMIT 1;",
-    SQL_INT_PARAM (result),
-    NULL);
+  if (report == 0)
+    return 0;
+
+  if (host && *host)
+    {
+      return sql_int_ps (
+        "SELECT id"
+        " FROM report_hosts"
+        " WHERE report = $1"
+        "   AND host = $2"
+        " LIMIT 1;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (host),
+        NULL);
+    }
+
+  if (hostname && *hostname)
+    {
+      return sql_int_ps (
+        "SELECT id"
+        " FROM report_hosts"
+        " WHERE report = $1"
+        "   AND hostname = $2"
+        " LIMIT 1;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (hostname),
+        NULL);
+    }
+
+  return 0;
 }
 
 /**
@@ -157,11 +171,10 @@ fill_filtered_report_host_ids (GHashTable **report_host_ids,
 
   while (next (results))
     {
-      result_t result;
       report_host_t report_host;
-
-      result = result_iterator_result (results);
-      report_host = result_report_host (result);
+      report_host = result_report_host (report,
+                                        result_iterator_host (results),
+                                        result_iterator_hostname (results));
 
       if (report_host)
         g_hash_table_add (*report_host_ids, GSIZE_TO_POINTER (report_host));
