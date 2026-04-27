@@ -250,7 +250,7 @@ update_http_scanner_scan (http_scanner_connector_t connector, task_t task,
                           "Erroneous scan progress value", "", "",
                           QOD_DEFAULT, NULL, NULL);
       report_add_result (report, result);
-      response = http_scanner_delete_scan(connector);
+      response = http_scanner_delete_scan (connector);
       http_scanner_response_cleanup (response);
       return -1;
     }
