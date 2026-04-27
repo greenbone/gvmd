@@ -6979,7 +6979,7 @@ scan_semaphore_update_start (int add_result_on_error,
  * @param[in]  report The current report (for error result).
  *
  * @return 0 success, -1 error.
-*/
+ */
 int
 scan_semaphore_update_end (int add_result_on_error,
                            task_t task, report_t report)

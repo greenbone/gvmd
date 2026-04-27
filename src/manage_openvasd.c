@@ -625,7 +625,7 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id,
  *
  * @param[in]  task                 The task of the scan
  * @param[in]  handle_progress_rc   Return code from handle_openvasd_scan_start
- * @param[in] discovery             Discovery flag for scan config.
+ * @param[in]  discovery            Discovery flag for scan config.
  *
  * @return The given handle_openvasd_scan_start return code.
  */
