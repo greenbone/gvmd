@@ -17898,12 +17898,6 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           break;
         }
 
-      if (! feature_enabled (FEATURE_ID_CONTAINER_SCANNING)
-          && (scanner_iterator_type (&scanners) == SCANNER_TYPE_CONTAINER_IMAGE))
-        {
-          continue;
-        }
-
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
 
       SENDF_TO_CLIENT_OR_FAIL
@@ -17919,6 +17913,12 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
         scanner_iterator_ca_pub (&scanners) ?: "",
         scanner_iterator_relay_host (&scanners) ?: "",
         scanner_iterator_relay_port (&scanners) ?: 0);
+
+      if (check_scanner_feature (scanner_iterator_type (&scanners))
+           != SCANNER_FEATURE_OK)
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<disabled>1</disabled>");
+        }
 
       if (get_scanners_data->get.details)
         {

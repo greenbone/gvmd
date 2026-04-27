@@ -2854,4 +2854,10 @@ get_vt_verification_collation ();
 void
 set_vt_verification_collation (const char *);
 
+int
+scan_semaphore_update_start (int, task_t, report_t);
+
+int
+scan_semaphore_update_end (int, task_t, report_t);
+
 #endif /* not _GVMD_MANAGE_H */

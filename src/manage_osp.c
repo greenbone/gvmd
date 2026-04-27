@@ -344,77 +344,6 @@ get_osp_scan_status (const char *scan_id, osp_connect_data_t *conn_data)
 }
 
 /**
- * @brief Handles the semaphore for the start of an OSP scan update.
- *
- * @param[in]  add_result_on_error  Whether to create an OSP result on error.
- * @param[in]  task   The current task (for error result).
- * @param[in]  report The current report (for error result).
- *
- * @return 0 success, -1 error.
- */
-static int
-osp_scan_semaphore_update_start (int add_result_on_error,
-                                 task_t task, report_t report)
-{
-  if (get_max_concurrent_scan_updates () == 0)
-    return 0;
-
-  int sem_op_ret = semaphore_op (SEMAPHORE_SCAN_UPDATE, -1, 5);
-  if (sem_op_ret == 1)
-    return 1;
-  else if (sem_op_ret)
-    {
-      g_warning ("%s: error waiting for scan update semaphore",
-                __func__);
-      if (add_result_on_error)
-        {
-          result_t result = make_osp_result
-            (task, "", "", "",
-              threat_message_type ("Error"),
-              "Error waiting for scan update semaphore", "", "",
-              QOD_DEFAULT, NULL, NULL);
-          report_add_result (report, result);
-        }
-      return -1;
-    }
-  return 0;
-}
-
-/**
- * @brief Handles the semaphore for the end of an OSP scan update.
- *
- * @param[in]  add_result_on_error  Whether to create an OSP result on error.
- * @param[in]  task   The current task (for error result).
- * @param[in]  report The current report (for error result).
- *
- * @return 0 success, -1 error.
- */
-static int
-osp_scan_semaphore_update_end (int add_result_on_error,
-                               task_t task, report_t report)
-{
-  if (get_max_concurrent_scan_updates () == 0)
-    return 0;
-
-  if (semaphore_op (SEMAPHORE_SCAN_UPDATE, +1, 0))
-    {
-      g_warning ("%s: error signaling scan update semaphore",
-                __func__);
-      if (add_result_on_error)
-        {
-          result_t result = make_osp_result
-            (task, "", "", "",
-              threat_message_type ("Error"),
-              "Error signaling scan update semaphore", "", "",
-              QOD_DEFAULT, NULL, NULL);
-          report_add_result (report, result);
-        }
-      return -1;
-    }
-  return 0;
-}
-
-/**
  * @brief Prepare a report for resuming an OSP scan
  *
  * @param[in]  task     The task of the scan.
@@ -938,7 +867,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
           g_warning ("Connection lost with the scanner at %s. "
                       "Trying again in 1 second.", conn_data->host);
           gvm_sleep (1);
-          if (osp_scan_semaphore_update_end (TRUE, task, report))
+          if (scan_semaphore_update_end (TRUE, task, report))
             {
               delete_osp_scan (scan_id, conn_data);
               return -3;
@@ -947,7 +876,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
         }
       else if (progress == -2)
         {
-          osp_scan_semaphore_update_end (FALSE, task, report);
+          scan_semaphore_update_end (FALSE, task, report);
           return -2;
         }
       result_t result = make_osp_result
@@ -956,7 +885,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
                           "Erroneous scan progress value", "", "",
                           QOD_DEFAULT, NULL, NULL);
       report_add_result (report, result);
-      osp_scan_semaphore_update_end (FALSE, task, report);
+      scan_semaphore_update_end (FALSE, task, report);
       delete_osp_scan (scan_id, conn_data);
       return -1;
     }
@@ -973,7 +902,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
               (*retry_ptr)--;
               g_warning ("Connection lost with the scanner at %s. "
                           "Trying again in 1 second.", conn_data->host);
-              if (osp_scan_semaphore_update_end (TRUE, task, report))
+              if (scan_semaphore_update_end (TRUE, task, report))
                 {
                   delete_osp_scan (scan_id, conn_data);
                   return -3;
@@ -983,7 +912,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
             }
           else if (progress == -2)
             {
-              osp_scan_semaphore_update_end (FALSE, task, report);
+              scan_semaphore_update_end (FALSE, task, report);
               return -2;
             }
           g_free (report_xml);
@@ -993,7 +922,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
                               "Erroneous scan progress value", "", "",
                               QOD_DEFAULT, NULL, NULL);
           report_add_result (report, result);
-          osp_scan_semaphore_update_end (FALSE, task, report);
+          scan_semaphore_update_end (FALSE, task, report);
           return -1;
         }
       else
@@ -1024,7 +953,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
               delete_osp_scan (scan_id, conn_data);
-              osp_scan_semaphore_update_end (FALSE, task, report);
+              scan_semaphore_update_end (FALSE, task, report);
               return -3;
             }
           else if (progress >= 0 && progress < 100
@@ -1035,7 +964,7 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
                   (*retry_ptr)--;
                   g_warning ("Connection lost with the scanner at %s. "
                               "Trying again in 1 second.", conn_data->host);
-                  if (osp_scan_semaphore_update_end (TRUE, task, report))
+                  if (scan_semaphore_update_end (TRUE, task, report))
                     {
                       delete_osp_scan (scan_id, conn_data);
                       return -3;
@@ -1051,14 +980,14 @@ update_osp_scan (task_t task, report_t report, const char *scan_id,
                   QOD_DEFAULT, NULL, NULL);
               report_add_result (report, result);
               delete_osp_scan (scan_id, conn_data);
-              osp_scan_semaphore_update_end (FALSE, task, report);
+              scan_semaphore_update_end (FALSE, task, report);
               return -1;
             }
           else if (progress == 100
                    && osp_scan_status == OSP_SCAN_STATUS_FINISHED)
             {
               delete_osp_scan (scan_id, conn_data);
-              osp_scan_semaphore_update_end (FALSE, task, report);
+              scan_semaphore_update_end (FALSE, task, report);
               if (*started == FALSE)
                 {
                   set_task_run_status (task, TASK_STATUS_RUNNING);
@@ -1153,7 +1082,7 @@ handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
               break;
             }
 
-          sem_op_ret = osp_scan_semaphore_update_start (TRUE, task, report);
+          sem_op_ret = scan_semaphore_update_start (TRUE, task, report);
           if (sem_op_ret == 1)
             continue;
           else if (sem_op_ret)
@@ -1170,7 +1099,7 @@ handle_osp_scan_start (task_t task, target_t target, const char *scan_id,
           if (rc <= 0)
             break;
 
-          if (osp_scan_semaphore_update_end (TRUE, task, report))
+          if (scan_semaphore_update_end (TRUE, task, report))
             {
               delete_osp_scan (scan_id, conn_data);
               rc = -3;
@@ -1245,7 +1174,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
           break;
         }
 
-      sem_op_ret = osp_scan_semaphore_update_start (TRUE, task, report);
+      sem_op_ret = scan_semaphore_update_start (TRUE, task, report);
       if (sem_op_ret == 1)
         continue;
       else if (sem_op_ret)
@@ -1262,7 +1191,7 @@ handle_osp_scan (task_t task, report_t report, const char *scan_id,
       if (rc <= 0)
         break;
 
-      if (osp_scan_semaphore_update_end (TRUE, task, report))
+      if (scan_semaphore_update_end (TRUE, task, report))
         {
           delete_osp_scan (scan_id, conn_data);
           rc = -3;

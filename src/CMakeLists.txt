@@ -182,6 +182,7 @@ set(
   manage_license.c
   manage_notes.c
   manage_openvas.c
+  manage_openvasd.c
   manage_osp.c
   manage_overrides.c
   manage_permissions.c
