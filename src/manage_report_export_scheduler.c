@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 Greenbone AG
+/* Copyright (C) 2026 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -7,6 +7,7 @@
 
 #include "gvmd_config.h"
 #include "manage_report_exports.h"
+#include "sql.h"
 
 #include <math.h>
 
@@ -95,6 +96,50 @@ calculate_next_retry_time (const int retry_count)
          + MIN (base_delay * (long) pow (multiplier, retry_count), max_delay);
 }
 
+static void
+process_report_export (report_t report, int retry_count)
+{
+  set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_STARTED,
+                                       NULL);
+
+  /* Run the export */
+  export_report_result_t result = export_report (report);
+  gchar *reason = NULL;
+
+  sql_begin_immediate ();
+
+  switch (result)
+    {
+    case EXPORT_REPORT_RESULT_SUCCESS:
+      set_report_export_status_and_reason (report,
+                                           REPORT_EXPORT_STATUS_FINISHED, NULL);
+
+      g_debug ("%s: report export finished, report: %lld", __func__, report);
+
+      break;
+    case EXPORT_REPORT_RESULT_TIMEOUT:
+      reason = g_strdup ("The request has timed out");
+    case EXPORT_REPORT_RESULT_FAILURE:
+      set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_FAILED,
+                                           reason);
+      set_report_export_next_retry_time (
+        report, calculate_next_retry_time (retry_count));
+      set_report_export_retry_count (report, retry_count + 1);
+
+      g_debug ("%s: report export failed, report: %lld, reason: %s", __func__,
+               report, reason);
+      break;
+    }
+
+  if (reason)
+    {
+      g_free (reason);
+      reason = NULL;
+    }
+
+  sql_commit ();
+}
+
 /**
  * @brief  Run report export scheduler, which fetches all due exports
  *         and tries to export them accordingly
@@ -104,58 +149,22 @@ calculate_next_retry_time (const int retry_count)
 int
 manage_report_export_scheduler ()
 {
-  iterator_t it;
+  iterator_t report_exports;
+
+  init_report_exports_from_config ();
+  init_report_export_scheduler_from_config ();
 
   g_debug ("%s: iterating over due exports", __func__);
-  init_report_export_iterator_due_exports (&it);
+  init_report_export_iterator_due_exports (&report_exports);
 
-  while (next (&it))
+  while (next (&report_exports))
     {
-      report_t report = report_export_iterator_report_id (&it);
-      set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_STARTED,
-                                           NULL);
-
-      /* Run the export */
-      export_report_result_t result = export_report (report);
-      int retry_count = 0;
-      gchar *reason = NULL;
-
-      switch (result)
-        {
-        case EXPORT_REPORT_RESULT_SUCCESS:
-          set_report_export_status_and_reason (
-            report, REPORT_EXPORT_STATUS_FINISHED, NULL);
-
-          g_debug ("%s: report export finished, report: %lld", __func__,
-                   report);
-
-          continue;
-        case EXPORT_REPORT_RESULT_TIMEOUT:
-          reason = g_strdup ("The request has timed out");
-        case EXPORT_REPORT_RESULT_FAILURE:
-          retry_count = report_export_iterator_retry_count (&it);
-
-          set_report_export_status_and_reason (
-            report, REPORT_EXPORT_STATUS_FAILED, reason);
-          set_report_export_next_retry_time (
-            report, calculate_next_retry_time (retry_count));
-          set_report_export_retry_count (report, retry_count + 1);
-
-          g_debug ("%s: report export failed, report: %lld, reason: %s",
-                   __func__, report, reason);
-
-          if (reason)
-            {
-              g_free (reason);
-              reason = NULL;
-            }
-
-          continue;
-        }
+      process_report_export (
+        report_export_iterator_report_id (&report_exports),
+        report_export_iterator_retry_count (&report_exports));
     }
 
-  cleanup_iterator (&it);
-
+  cleanup_iterator (&report_exports);
   return 0;
 }
 

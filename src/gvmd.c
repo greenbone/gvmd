@@ -1583,7 +1583,6 @@ fork_report_export_scheduler ()
         }
 
       /* Run report export scheduler */
-      init_report_export_scheduler_from_config ();
       manage_report_export_scheduler ();
 
       cleanup_manage_process (FALSE);
