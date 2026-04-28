@@ -96,6 +96,14 @@ calculate_next_retry_time (const int retry_count)
          + MIN (base_delay * (long) pow (multiplier, retry_count), max_delay);
 }
 
+/**
+ * @brief  Process a single report, which is due for export.
+ *         Used to separate iterating over all reports from the handling
+ *         of the export.
+ *
+ * @param  report       The report ID
+ * @param  retry_count  The current retry count for the given report
+ */
 static void
 process_report_export (report_t report, int retry_count)
 {
