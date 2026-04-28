@@ -44,4 +44,7 @@ get_report_cves (report_t,
                  const get_data_t *,
                  GPtrArray **);
 
+int
+report_cves_count (report_t, const get_data_t *);
+
 #endif //_GVM_MANAGE_REPORT_CVES_H

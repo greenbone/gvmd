@@ -306,3 +306,80 @@ get_report_cves (report_t report,
 
   return 0;
 }
+
+/**
+ * @brief Check whether an NVT has at least one CVE reference.
+ *
+ * @param[in] nvti NVT information to inspect.
+ *
+ * @return TRUE if the NVT has CVE references, FALSE otherwise.
+ */
+static gboolean
+nvti_has_cve_refs (nvti_t *nvti)
+{
+  int i;
+
+  if (nvti == NULL)
+    return FALSE;
+
+  for (i = 0; i < nvti_vtref_len (nvti); i++)
+    {
+      vtref_t *ref;
+
+      ref = nvti_vtref (nvti, i);
+
+      if (vtref_is_cve (ref))
+        return TRUE;
+    }
+
+  return FALSE;
+}
+
+/**
+ * @brief Count report CVE rows from filtered report results.
+ *
+ * @param[in] report  Report to process.
+ * @param[in] get     Report filter and pagination data.
+ *
+ * @return Number of unique report CVE rows.
+ */
+int
+report_cves_count (report_t report, const get_data_t *get)
+{
+  iterator_t results;
+  GHashTable *seen_oids;
+  int count;
+
+  count = 0;
+  seen_oids = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  init_result_get_iterator (&results, get, report, NULL, NULL);
+
+  while (next (&results))
+    {
+      const char *oid;
+      nvti_t *nvti;
+
+      oid = result_iterator_nvt_oid (&results);
+      if (oid == NULL)
+        continue;
+
+      if (g_hash_table_contains (seen_oids, oid))
+        continue;
+
+      nvti = lookup_nvti (oid);
+      if (nvti == NULL)
+        continue;
+
+      if (!nvti_has_cve_refs (nvti))
+        continue;
+
+      g_hash_table_insert (seen_oids, g_strdup (oid), GINT_TO_POINTER (1));
+      count++;
+    }
+
+  cleanup_iterator (&results);
+  g_hash_table_destroy (seen_oids);
+
+  return count;
+}
