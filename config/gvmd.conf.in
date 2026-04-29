@@ -20,3 +20,4 @@ max_retries = 10
 retry_base_delay = 10
 retry_multiplier = 2
 retry_max_delay = 600
+stale_threshold = 720

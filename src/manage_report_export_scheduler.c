@@ -18,21 +18,41 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-static int retry_base_delay = 10;
-static int retry_multiplier = 2;
-static int retry_max_delay = 600;
+static int export_max_retries = 10; /* in seconds */
+static int retry_base_delay = 10;   /* in seconds */
+static int retry_multiplier = 2;    /* in seconds */
+static int retry_max_delay = 600;   /* in seconds */
+static int export_stale_threshold = 720;  /* in minutes */
+
+
+/**
+ * @brief  Type for return result of export_report()
+ */
+typedef enum export_report_result
+{
+  EXPORT_REPORT_RESULT_SUCCESS = 0,
+  EXPORT_REPORT_RESULT_TIMEOUT,
+  EXPORT_REPORT_RESULT_FAILURE = -1,
+} export_report_result_t;
+
+
+static export_report_result_t
+export_report (report_t report);
 
 /**
  * @brief  Load configuration values from gvmd config
  */
-void
-init_report_export_scheduler_from_config ()
+static void
+init_report_export_from_config ()
 {
   GKeyFile *kf = get_gvmd_config ();
   if (kf == NULL)
     {
       return;
     }
+
+  gboolean has_max_retries = FALSE;
+  int max_retries = 0;
 
   gboolean has_base_delay = FALSE;
   int base_delay = 0;
@@ -43,14 +63,26 @@ init_report_export_scheduler_from_config ()
   gboolean has_max_delay = FALSE;
   int max_delay = 0;
 
+  gboolean has_stale_threshold = FALSE;
+  int stale_threshold = 0;
+
+  gvmd_config_get_int (kf, "security_intelligence_export", "max_retries",
+                       &has_max_retries, &max_retries);
   gvmd_config_get_int (kf, "security_intelligence_export", "retry_base_delay",
                        &has_base_delay, &base_delay);
-
   gvmd_config_get_int (kf, "security_intelligence_export", "retry_multiplier",
                        &has_multiplier, &multiplier);
-
   gvmd_config_get_int (kf, "security_intelligence_export", "retry_max_delay",
                        &has_max_delay, &max_delay);
+  gvmd_config_get_int (kf, "security_intelligence_export", "stale_threshold",
+                       &has_stale_threshold, &stale_threshold);
+
+  if (has_max_retries)
+    {
+      export_max_retries = max_retries;
+      g_debug ("set export_max_retries from config: %d",
+               export_max_retries);
+    }
 
   if (has_base_delay)
     {
@@ -69,6 +101,43 @@ init_report_export_scheduler_from_config ()
       retry_max_delay = max_delay;
       g_debug ("set retry_max_delay from config: %d", retry_max_delay);
     }
+
+  if (has_stale_threshold)
+    {
+      export_stale_threshold = stale_threshold;
+      g_debug ("set export_stale_threshold from config: %d",
+               export_stale_threshold);
+    }
+}
+
+/**
+ * @brief  Finds stale exports, and sets their status to 'failed'.
+ */
+static void
+reset_stale_report_exports ()
+{
+  int stale_threshold = 0;
+  gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_STALE_THRESHOLD", TRUE,
+                           export_stale_threshold, &stale_threshold);
+
+  const time_t threshold_timestamp = time (NULL) - (stale_threshold * 60);
+
+  iterator_t report_exports;
+  init_report_export_iterator_stale_exports (&report_exports,
+                                             threshold_timestamp);
+
+  sql_begin_immediate ();
+
+  while (next (&report_exports))
+    {
+      report_t id = report_export_iterator_report_id (&report_exports);
+      set_report_export_status_and_reason (id, REPORT_EXPORT_STATUS_FAILED,
+                                           "Stale threshold has been exceeded");
+
+      g_debug ("%s: found stale report export, report_id: %lld", __func__, id);
+    }
+
+  sql_commit ();
 }
 
 /**
@@ -149,22 +218,20 @@ process_report_export (report_t report, int retry_count)
 }
 
 /**
- * @brief  Run report export scheduler, which fetches all due exports
- *         and tries to export them accordingly
- *
- * @return 0 on success, -1 on failure
+ * @brief  Iterates over due exports and calls process_report_export ()
+ *         for each of them
  */
-int
-manage_report_export_scheduler ()
+static void
+run_due_exports ()
 {
-  iterator_t report_exports;
-
-  init_report_exports_from_config ();
-  init_report_export_scheduler_from_config ();
+  int max_retry_count = 0;
+  gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", TRUE,
+                           export_max_retries, &max_retry_count);
 
   g_debug ("%s: iterating over due exports", __func__);
-  init_report_export_iterator_due_exports (&report_exports);
 
+  iterator_t report_exports;
+  init_report_export_iterator_due_exports (&report_exports, max_retry_count);
   while (next (&report_exports))
     {
       process_report_export (
@@ -173,6 +240,23 @@ manage_report_export_scheduler ()
     }
 
   cleanup_iterator (&report_exports);
+}
+
+/**
+ * @brief  Run report export scheduler, which fetches all due exports
+ *         and tries to export them accordingly
+ *
+ * @return 0 on success, -1 on failure
+ */
+int
+manage_report_export_scheduler ()
+{
+  init_report_export_from_config ();
+
+  reset_stale_report_exports ();
+
+  run_due_exports ();
+
   return 0;
 }
 
@@ -185,7 +269,7 @@ manage_report_export_scheduler ()
  *         EXPORT_REPORT_RESULT_TIMEOUT when the request has timed out
  *         EXPORT_REPORT_RESULT_FAILURE on failure
  */
-export_report_result_t
+static export_report_result_t
 export_report (report_t report)
 {
   (void) report;

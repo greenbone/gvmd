@@ -105,12 +105,13 @@ feature flags documentation.
 Options for the security intelligence export can be found in `[security_intelligence_export]` section
 of the config file. These are:
 
-| Config file key        | Environment variable                | Type      | Default value | Description                                                                                                                     |
-|------------------------|-------------------------------------|-----------|---------------|---------------------------------------------------------------------------------------------------------------------------------|
-| max_retries            | GVMD_REPORT_EXPORT_MAX_RETRIES      | integer   | 10            | The maximum retry attemps for exporting reports to security intelligence                                                        |
-| retry_base_delay       | GVMD_REPORT_EXPORT_RETRY_BASE_DELAY | integer   | 10            | The base delay used to compute timestamp for next export retry attempt (min(base_delay * (multiplier ^ retry_count), max_delay) |
-| retry_multiplier       | GVMD_REPORT_EXPORT_RETRY_MULTIPLIER | integer   | 2             | The multiplier used to compute timestamp for next export retry attempt (see above)                                              |
-| retry_max_delay        | GVMD_REPORT_EXPORT_RETRY_MAX_DELAY  | integer   | 600           | The max delay  used to compute timestamp for next export retry attempt (see above)                                              |
+| Config file key  | Environment variable                | Type    | Default value | Description                                                                                                                          |
+|------------------|-------------------------------------|---------|---------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| max_retries      | GVMD_REPORT_EXPORT_MAX_RETRIES      | integer | 10            | The maximum retry attemps for exporting reports to security intelligence                                                             |
+| retry_base_delay | GVMD_REPORT_EXPORT_RETRY_BASE_DELAY | integer | 10            | The base delay used to compute timestamp for next export retry attempt (min(base_delay * (multiplier ^ retry_count), max_delay)      |
+| retry_multiplier | GVMD_REPORT_EXPORT_RETRY_MULTIPLIER | integer | 2             | The multiplier used to compute timestamp for next export retry attempt (see above)                                                   |
+| retry_max_delay  | GVMD_REPORT_EXPORT_RETRY_MAX_DELAY  | integer | 600           | The max delay  used to compute timestamp for next export retry attempt (see above)                                                   |
+| stale_threshold  | GVMD_REPORT_EXPORT_STALE_THRESHOLD  | integer | 720           | The time, in minutes, after which a started export is considered stale and set to failed (Will then be picked up by scheduler again) |
 
 ## Support
 
