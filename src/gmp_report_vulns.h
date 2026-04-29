@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM GMP layer: Report operating system headers
+ * @brief GVM GMP layer: Report vulnerabilities headers
  *
- * Headers for GMP report operating systems.
+ * Headers for GMP report vulnerabilities.
  */
 
 #ifndef _GVM_GMP_REPORT_CVES_H
@@ -18,9 +18,9 @@
 /* GET_REPORT_CVES. */
 
 void
-get_report_cves_start (const gchar **, const gchar **);
+get_report_vulns_start (const gchar **, const gchar **);
 
 void
-get_report_cves_run (gmp_parser_t *, GError **);
+get_report_vulns_run (gmp_parser_t *, GError **);
 
 #endif //_GVM_GMP_REPORT_CVES_H
