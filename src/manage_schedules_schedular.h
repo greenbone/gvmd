@@ -12,4 +12,9 @@ get_schedule_timeout ();
 void
 set_schedule_timeout (int);
 
+int
+manage_schedule (manage_connection_forker_t,
+                 gboolean,
+                 sigset_t *);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_SCHEDULAR_H */
