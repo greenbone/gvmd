@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM management layer: Report CVEs.
+ * @brief GVM management layer: Report Vulnerabilities.
  *
- * Non-SQL report CVEs code for the GVM management layer.
+ * Non-SQL report Vulnerabilities code for the GVM management layer.
  */
 
 #ifndef _GVM_MANAGE_REPORT_CVES_H
@@ -17,7 +17,7 @@
 
 #include <glib.h>
 
-struct report_cve {
+struct report_vuln {
   gchar *nvt_name;
   gchar *nvt_oid;
   int hosts_count;
@@ -25,26 +25,26 @@ struct report_cve {
   double severity_double;
   GPtrArray *nvt_cves;
 };
-typedef struct report_cve *report_cve_t;
+typedef struct report_vuln *report_vuln_t;
 
-report_cve_t
-report_cve_new(void);
+report_vuln_t
+report_vuln_new(void);
 
 void
-report_cve_free(report_cve_t);
+report_vuln_free(report_vuln_t);
 
 GPtrArray *
-report_cve_list_new (void);
+report_vuln_list_new (void);
 
 void
-report_cve_list_free (GPtrArray *);
+report_vuln_list_free (GPtrArray *);
 
 int
-get_report_cves (report_t,
+get_report_vulns (report_t,
                  const get_data_t *,
                  GPtrArray **);
 
 int
-report_cves_count (report_t, const get_data_t *);
+report_vulns_count (report_t, const get_data_t *);
 
 #endif //_GVM_MANAGE_REPORT_CVES_H

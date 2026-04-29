@@ -91,13 +91,13 @@
 #include "gmp_port_lists.h"
 #include "gmp_report_applications.h"
 #include "gmp_report_configs.h"
-#include "gmp_report_cves.h"
 #include "gmp_report_errors.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
 #include "gmp_report_operating_systems.h"
 #include "gmp_report_ports.h"
 #include "gmp_report_tls_certificates.h"
+#include "gmp_report_vulns.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
 #include "manage.h"
@@ -4558,7 +4558,6 @@ typedef enum
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
   CLIENT_GET_REPORT_APPLICATIONS,
-  CLIENT_GET_REPORT_CVES,
   CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_ERRORS,
   CLIENT_GET_REPORT_FORMATS,
@@ -4566,6 +4565,7 @@ typedef enum
   CLIENT_GET_REPORT_OPERATING_SYSTEMS,
   CLIENT_GET_REPORT_PORTS,
   CLIENT_GET_REPORT_TLS_CERTIFICATES,
+  CLIENT_GET_REPORT_VULNS,
   CLIENT_GET_RESOURCE_NAMES,
   CLIENT_GET_RESULTS,
   CLIENT_GET_ROLES,
@@ -5858,8 +5858,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_REPORT_CONFIGS);
           }
 
-        ELSE_GET_START (report_cves, REPORT_CVES)
-
         ELSE_GET_START (report_errors, REPORT_ERRORS)
 
         else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
@@ -5898,6 +5896,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_GET_START (report_ports, REPORT_PORTS)
 
         ELSE_GET_START (report_tls_certificates, REPORT_TLS_CERTIFICATES)
+
+        ELSE_GET_START (report_vulns, REPORT_VULNS)
 
         else if (strcasecmp ("GET_RESOURCE_NAMES", element_name) == 0)
           {
@@ -22138,8 +22138,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_report_configs (gmp_parser, error);
         break;
 
-      CASE_GET_END (REPORT_CVES, report_cves);
-
       CASE_GET_END (REPORT_ERRORS, report_errors);
 
       case CLIENT_GET_REPORT_FORMATS:
@@ -22153,6 +22151,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_GET_END (REPORT_PORTS, report_ports);
 
       CASE_GET_END (REPORT_TLS_CERTIFICATES, report_tls_certificates);
+
+      CASE_GET_END (REPORT_VULNS, report_vulns);
 
       case CLIENT_GET_RESOURCE_NAMES:
         handle_get_resource_names (gmp_parser, error);

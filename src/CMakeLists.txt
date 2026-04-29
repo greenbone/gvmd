@@ -190,7 +190,6 @@ set(
   manage_preferences.c
   manage_resources.c
   manage_report_applications.c
-  manage_report_cves.c
   manage_report_configs.c
   manage_report_errors.c
   manage_report_formats.c
@@ -198,6 +197,7 @@ set(
   manage_report_operating_systems.c
   manage_report_ports.c
   manage_report_tls_certificates.c
+  manage_report_vulns.c
   manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
@@ -309,13 +309,13 @@ set(
   gmp_port_lists.c
   gmp_report_applications.c
   gmp_report_configs.c
-  gmp_report_cves.c
   gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c
   gmp_report_operating_systems.c
   gmp_report_ports.c
   gmp_report_tls_certificates.c
+  gmp_report_vulns.c
   gmp_tickets.c
   gmp_tls_certificates.c
 )
