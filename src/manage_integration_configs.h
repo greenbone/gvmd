@@ -87,9 +87,6 @@ int
 init_integration_config_iterator_one (iterator_t*, const gchar *);
 
 const gchar *
-integration_config_iterator_service_type (iterator_t *);
-
-const gchar *
 integration_config_iterator_service_url (iterator_t *);
 
 const gchar *

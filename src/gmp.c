@@ -94,6 +94,7 @@
 #include "gmp_report_errors.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
+#include "gmp_report_operating_systems.h"
 #include "gmp_report_ports.h"
 #include "gmp_report_tls_certificates.h"
 #include "gmp_tickets.h"
@@ -4560,6 +4561,7 @@ typedef enum
   CLIENT_GET_REPORT_ERRORS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_REPORT_HOSTS,
+  CLIENT_GET_REPORT_OPERATING_SYSTEMS,
   CLIENT_GET_REPORT_PORTS,
   CLIENT_GET_REPORT_TLS_CERTIFICATES,
   CLIENT_GET_RESOURCE_NAMES,
@@ -5886,6 +5888,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
 
         ELSE_GET_START (report_hosts, REPORT_HOSTS)
+
+        ELSE_GET_START (report_operating_systems, REPORT_OPERATING_SYSTEMS)
 
         ELSE_GET_START (report_ports, REPORT_PORTS)
 
@@ -17894,12 +17898,6 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
           break;
         }
 
-      if (! feature_enabled (FEATURE_ID_CONTAINER_SCANNING)
-          && (scanner_iterator_type (&scanners) == SCANNER_TYPE_CONTAINER_IMAGE))
-        {
-          continue;
-        }
-
       SEND_GET_COMMON (scanner, &get_scanners_data->get, &scanners);
 
       SENDF_TO_CLIENT_OR_FAIL
@@ -17915,6 +17913,12 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
         scanner_iterator_ca_pub (&scanners) ?: "",
         scanner_iterator_relay_host (&scanners) ?: "",
         scanner_iterator_relay_port (&scanners) ?: 0);
+
+      if (check_scanner_feature (scanner_iterator_type (&scanners))
+           != SCANNER_FEATURE_OK)
+        {
+          SENDF_TO_CLIENT_OR_FAIL ("<disabled>1</disabled>");
+        }
 
       if (get_scanners_data->get.details)
         {
@@ -22137,6 +22141,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       CASE_GET_END (REPORT_HOSTS, report_hosts);
+
+      CASE_GET_END (REPORT_OPERATING_SYSTEMS, report_operating_systems);
 
       CASE_GET_END (REPORT_PORTS, report_ports);
 

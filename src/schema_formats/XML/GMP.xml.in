@@ -22948,6 +22948,163 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_operating_systems</name>
+    <summary>Get operating systems from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_operating_systems command to get operating
+        system information from a single report.
+      </p>
+      <p>
+        This command is an operating-system-focused subset of get_reports intended
+        to support reduced response sizes when only operating system data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes operating system
+        entries. Otherwise only the operating system count is returned.
+      </p>
+      <p>
+        Operating system entries include the best detected OS CPE, the best detected
+        OS name and the number of hosts using the same operating system.
+      </p>
+      <p>
+        The filter affects the selection of matching results used to derive the
+        operating system host counts. When "result_hosts_only" is set, only hosts
+        with matching results are included.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get operating systems from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report operating system retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether to limit the response to operating systems of hosts having
+              results matching the filter.
+            </summary>
+          </option>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report operating systems</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include operating system entries</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>operating_systems</e>
+      </pattern>
+      <ele>
+        <name>operating_systems</name>
+        <summary>Operating systems from the selected report</summary>
+        <pattern>
+          <any><e>operating_system</e></any>
+          <o><e>count</e></o>
+        </pattern>
+        <ele>
+          <name>operating_system</name>
+          <summary>An operating system from the selected report</summary>
+          <pattern>
+            <e>best_os_cpe</e>
+            <e>best_os_txt</e>
+            <e>hosts_count</e>
+          </pattern>
+          <ele>
+            <name>best_os_cpe</name>
+            <summary>Best detected operating system CPE</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>best_os_txt</name>
+            <summary>Best detected operating system name</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>hosts_count</name>
+            <summary>Number of hosts using the operating system</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>count</name>
+          <summary>Number of operating systems in the report</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get operating systems of a report with details</summary>
+      <request>
+        <get_report_operating_systems report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                      details="1"
+                                      filter="levels=chml min_qod=70 result_hosts_only=1">
+        </get_report_operating_systems>
+      </request>
+      <response>
+        <get_report_operating_systems_response status="200" status_text="OK">
+          <operating_systems>
+            <operating_system>
+              <best_os_cpe>cpe:/o:canonical:ubuntu_linux:24.04</best_os_cpe>
+              <best_os_txt>Ubuntu 24.04</best_os_txt>
+              <hosts_count>15</hosts_count>
+            </operating_system>
+            <operating_system>
+              <best_os_cpe>cpe:/o:microsoft:windows_11</best_os_cpe>
+              <best_os_txt>Microsoft Windows 11</best_os_txt>
+              <hosts_count>10</hosts_count>
+            </operating_system>
+          </operating_systems>
+        </get_report_operating_systems_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get operating system count of a report</summary>
+      <request>
+        <get_report_operating_systems report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                      details="0">
+        </get_report_operating_systems>
+      </request>
+      <response>
+        <get_report_operating_systems_response status="200" status_text="OK">
+          <operating_systems>
+            <count>2</count>
+          </operating_systems>
+        </get_report_operating_systems_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_ports</name>
     <summary>Get ports from a report</summary>
     <description>
@@ -25950,6 +26107,7 @@ END:VCALENDAR
           <e>credential</e>
           <e>relay_host</e>
           <e>relay_port</e>
+          <o><e>disabled</e></o>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
           <o><e>info</e></o>
@@ -26147,6 +26305,11 @@ END:VCALENDAR
           <name>relay_port</name>
           <summary>Optional relay port of the scanner</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>disabled</name>
+          <summary>Optional Whether the scanner is used by a disabled feature</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>configs</name>

@@ -13,6 +13,7 @@
 #include "manage_sql.h"
 #include "manage_sql_scan_queue.h"
 #include "manage_scan_handler.h"
+#include "manage_openvasd.h"
 #include "manage_users.h"
 #include <gvm/base/gvm_sentry.h>
 #include <unistd.h>
@@ -67,6 +68,50 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
 
 }
 
+#if ENABLE_OPENVASD
+/**
+ * @brief Handle a OpenVASD scan in the gvmd scan queue.
+ *
+ * @param[in]  scan_id    UUID of the scan / report to handle.
+ * @param[in]  report     Row id of the report.
+ * @param[in]  task       Row id of the task.
+ * @param[in]  start_from 0 start from beginning, 1 continue from stopped,
+ *                        2 continue if stopped else start from beginning.
+ *
+ * @return 0 scan finished, 2 scan running,
+ *         -1 if error, -2 if scan was stopped,
+ *         -3 if the scan was interrupted, -4 already stopped.
+ */
+static int
+handle_queued_openvasd_scan (const char *scan_id, report_t report,
+                             task_t task, int start_from)
+{
+  task_status_t status = task_run_status (task);
+  gboolean discovery_scan = FALSE;
+
+  switch (status)
+    {
+      case TASK_STATUS_REQUESTED:
+        {
+          int rc;
+          target_t target = task_target (task);
+          rc = handle_openvasd_scan_start (task, target, scan_id, start_from,
+                                           TRUE, &discovery_scan);
+          /* Set discovery flag to the report */
+          report_set_discovery (report, discovery_scan);
+          return (rc == 0) ? 2 : rc;
+        }
+      default:
+        {
+          time_t yield_time = time (NULL) + get_scan_handler_active_time ();
+          int ret = handle_openvasd_scan (task, report, scan_id, yield_time);
+          return ret;
+        }
+    }
+
+}
+#endif /* ENABLE_OPENVASD */
+
 /**
  * @brief Handle a scan in the gvmd scan queue.
  *
@@ -91,6 +136,11 @@ handle_queued_scan (const char *scan_id, report_t report, task_t task,
       case SCANNER_TYPE_OPENVAS:
       case SCANNER_TYPE_OSP_SENSOR:
         return handle_queued_osp_scan (scan_id, report, task, start_from);
+#if ENABLE_OPENVASD
+      case SCANNER_TYPE_OPENVASD:
+      case SCANNER_TYPE_OPENVASD_SENSOR:
+        return handle_queued_openvasd_scan (scan_id, report, task, start_from);
+#endif /* ENABLE_OPENVASD */
       default:
         {
           g_warning ("%s: Scanner type not supported by queue: %d",

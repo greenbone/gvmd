@@ -24,6 +24,7 @@
 #include "manage_report_applications.h"
 #include "manage_report_errors.h"
 #include "manage_report_hosts.h"
+#include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
 #include "manage_report_tls_certificates.h"
 #include "manage_tasks.h"
@@ -2857,5 +2858,11 @@ get_vt_verification_collation ();
 
 void
 set_vt_verification_collation (const char *);
+
+int
+scan_semaphore_update_start (int, task_t, report_t);
+
+int
+scan_semaphore_update_end (int, task_t, report_t);
 
 #endif /* not _GVMD_MANAGE_H */
