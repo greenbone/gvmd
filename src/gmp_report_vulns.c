@@ -58,7 +58,7 @@ get_report_vulns_reset ()
  */
 void
 get_report_vulns_start (const gchar **attribute_names,
-                       const gchar **attribute_values)
+                        const gchar **attribute_values)
 {
   const gchar *attribute;
 
@@ -83,20 +83,23 @@ get_report_vulns_start (const gchar **attribute_names,
  * @param[in] vuln Report Vulnerability to send.
  */
 static void
-send_report_vuln_xml (gmp_parser_t *gmp_parser, GError **error, report_vuln_t vuln)
+send_report_vuln_xml (gmp_parser_t *gmp_parser, GError **error,
+                      report_vuln_t vuln)
 {
   guint index;
 
   if (vuln == NULL)
     return;
 
-  SEND_TO_CLIENT_OR_FAIL ("<cve_result>");
+  SEND_TO_CLIENT_OR_FAIL ("<vuln>");
 
-  SENDF_TO_CLIENT_OR_FAIL ("<nvt_name>%s</nvt_name>",
+  SENDF_TO_CLIENT_OR_FAIL ("<nvt oid=\"%s\">",
+                           vuln->nvt_oid ? vuln->nvt_oid : "");
+
+  SENDF_TO_CLIENT_OR_FAIL ("<name>%s</name>",
                            vuln->nvt_name ? vuln->nvt_name : "");
 
-  SENDF_TO_CLIENT_OR_FAIL ("<nvt_oid>%s</nvt_oid>",
-                           vuln->nvt_oid ? vuln->nvt_oid : "");
+  SEND_TO_CLIENT_OR_FAIL ("</nvt>");
 
   SEND_TO_CLIENT_OR_FAIL ("<cves>");
 
@@ -127,7 +130,7 @@ send_report_vuln_xml (gmp_parser_t *gmp_parser, GError **error, report_vuln_t vu
   SENDF_TO_CLIENT_OR_FAIL ("<threat>%s</threat>",
                            severity_to_level (vuln->severity_double, 0));
 
-  SEND_TO_CLIENT_OR_FAIL ("</cve_result>");
+  SEND_TO_CLIENT_OR_FAIL ("</vuln>");
 }
 
 /**
@@ -228,7 +231,7 @@ get_report_vulns_run (gmp_parser_t *gmp_parser, GError **error)
 
   SEND_GET_START ("report_vuln");
 
-  SEND_TO_CLIENT_OR_FAIL ("<cve_results>");
+  SEND_TO_CLIENT_OR_FAIL ("<vulns>");
 
   if (get_report_vulns_data.get.details)
     {
@@ -245,7 +248,7 @@ get_report_vulns_run (gmp_parser_t *gmp_parser, GError **error)
       SENDF_TO_CLIENT_OR_FAIL ("<count>%i</count>", count);
     }
 
-  SEND_TO_CLIENT_OR_FAIL ("</cve_results>");
+  SEND_TO_CLIENT_OR_FAIL ("</vulns>");
 
   SEND_GET_END ("report_vuln",
                 &get_report_vulns_data.get,
