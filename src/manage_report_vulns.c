@@ -136,7 +136,7 @@ report_cve_add_nvt_cves (report_vuln_t vuln, nvti_t *nvti)
  * @return Newly allocated report Vulnerability object.
  */
 static report_vuln_t
-report_cve_from_result (iterator_t *results, nvti_t *nvti)
+report_vuln_from_result (iterator_t *results, nvti_t *nvti)
 {
   report_vuln_t vuln;
   const char *oid;
