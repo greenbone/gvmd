@@ -102,7 +102,7 @@ vtref_is_cve (vtref_t *ref)
  * @param[in]     nvti  NVT information containing VT references.
  */
 static void
-report_cve_add_nvt_cves (report_vuln_t vuln, nvti_t *nvti)
+report_vuln_add_nvt_cves (report_vuln_t vuln, nvti_t *nvti)
 {
   int i;
 
