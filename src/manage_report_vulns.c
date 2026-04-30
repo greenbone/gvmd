@@ -216,7 +216,7 @@ report_cve_add_host_once (report_vuln_t vuln,
  * @return Report Vulnerability object for the current NVT OID.
  */
 static report_vuln_t
-lookup_or_create_report_cve (GHashTable *vulns_by_oid,
+lookup_or_create_report_vuln (GHashTable *vulns_by_oid,
                              GPtrArray *report_vulns,
                              iterator_t *results,
                              nvti_t *nvti)
