@@ -2326,10 +2326,6 @@ int
 slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 
 /* Scheduling. */
-/**
-* @brief Seconds of a day
-*/
-#define SECONDS_PER_DAY 86400
 
 /**
  * @brief Seconds between calls to manage_schedule.
@@ -2386,21 +2382,6 @@ manage_rebuild_gvmd_data_from_feed (const char *,
                                     GSList *,
                                     const db_conn_info_t *,
                                     gchar **);
-
-int
-manage_schedule (manage_connection_forker_t,
-                 gboolean,
-                 sigset_t *);
-
-int
-modify_schedule (const char *, const char *, const char *, const char*,
-                 const char *, gchar **);
-
-int
-get_schedule_timeout ();
-
-void
-set_schedule_timeout (int);
 
 
 /* Schema. */

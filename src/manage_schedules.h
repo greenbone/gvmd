@@ -20,6 +20,10 @@ int
 delete_schedule (const char *, int);
 
 int
+modify_schedule (const char *, const char *, const char *, const char *,
+                 const char *, gchar **);
+
+int
 trash_schedule_in_use (schedule_t);
 
 int

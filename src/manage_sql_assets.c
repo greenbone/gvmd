@@ -1843,7 +1843,7 @@ manage_asset_snapshot_delete_stale (int days)
   if (days <= 0)
     return;
 
-  long long seconds = days * SECONDS_PER_DAY;
+  long long seconds = days * 86400;
 
   sql_ps ("DELETE FROM asset_snapshots"
           " WHERE modification_time < (m_now() - $1);",

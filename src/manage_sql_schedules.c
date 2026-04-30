@@ -6,6 +6,7 @@
 #include "manage_sql_schedules.h"
 #include "manage.h" // for current_credentials
 #include "manage_acl.h"
+#include "manage_schedules_schedular.h"
 #include "manage_sql_permissions.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_tags.h"
@@ -278,6 +279,173 @@ delete_schedule (const char *schedule_id, int ultimate)
   sql ("DELETE FROM schedules WHERE id = %llu;", schedule);
 
   sql_commit ();
+  return 0;
+}
+
+/**
+ * @brief Modify a schedule.
+ *
+ * @param[in]   schedule_id  UUID of schedule.
+ * @param[in]   name         Name of schedule.
+ * @param[in]   comment      Comment on schedule.
+ * @param[in]   ical_string  iCalendar string.  Overrides first_time, period,
+ *                           period_months, byday and duration.
+ * @param[in]   zone         Timezone.
+ * @param[out]  error_out    Output for iCalendar errors and warnings.
+ *
+ * @return 0 success, 1 failed to find schedule, 2 schedule with new name exists,
+ *         3 error in type name, 4 schedule_id required,
+ *         6 error in iCalendar, 7 error in zone,
+ *         99 permission denied, -1 internal error.
+ */
+int
+modify_schedule (const char *schedule_id, const char *name, const char *comment,
+                 const char *ical_string, const char *zone, gchar **error_out)
+{
+  gchar *quoted_name, *quoted_comment, *quoted_timezone, *quoted_icalendar;
+  icalcomponent *ical_component;
+  icaltimezone *ical_timezone;
+  schedule_t schedule;
+  time_t new_next_time, ical_first_time, ical_duration;
+  gchar *real_timezone;
+
+  assert (ical_string && strcmp (ical_string, ""));
+
+  if (schedule_id == NULL)
+    return 4;
+
+  sql_begin_immediate ();
+
+  assert (current_credentials.uuid);
+
+  if (acl_user_may ("modify_schedule") == 0)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  schedule = 0;
+  if (find_schedule_with_permission (schedule_id, &schedule, "modify_schedule"))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (schedule == 0)
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  /* Check whether a schedule with the same name exists already. */
+  if (name)
+    {
+      if (resource_with_name_exists (name, "schedule", schedule))
+        {
+          sql_rollback ();
+          return 2;
+        }
+      quoted_name = sql_quote (name);
+    }
+  else
+    quoted_name = NULL;
+
+  /* Update basic data */
+  quoted_comment = comment ? sql_quote (comment) : NULL;
+
+  if (zone == NULL)
+    quoted_timezone = NULL;
+  else
+    {
+      quoted_timezone = g_strstrip (sql_quote (zone));
+      if (strcmp (quoted_timezone, "") == 0)
+        {
+          g_free (quoted_timezone);
+          quoted_timezone = NULL;
+        }
+    }
+
+  sql ("UPDATE schedules SET"
+       " name = %s%s%s,"
+       " comment = %s%s%s,"
+       " timezone = %s%s%s"
+       " WHERE id = %llu;",
+       quoted_name ? "'" : "",
+       quoted_name ? quoted_name : "name",
+       quoted_name ? "'" : "",
+       quoted_comment ? "'" : "",
+       quoted_comment ? quoted_comment : "comment",
+       quoted_comment ? "'" : "",
+       quoted_timezone ? "'" : "",
+       quoted_timezone ? quoted_timezone : "timezone",
+       quoted_timezone ? "'" : "",
+       schedule);
+
+  real_timezone
+    = sql_string ("SELECT timezone FROM schedules WHERE id = %llu;",
+                  schedule);
+
+  /* Update times */
+
+  ical_timezone = icalendar_timezone_from_string (real_timezone);
+  if (ical_timezone == NULL)
+    {
+      g_free (real_timezone);
+      sql_rollback ();
+      return 7;
+    }
+
+  ical_component = icalendar_from_string (ical_string, ical_timezone,
+                                          error_out);
+  if (ical_component == NULL)
+    {
+      g_free (real_timezone);
+      sql_rollback ();
+      return 6;
+    }
+
+  quoted_icalendar = sql_quote (icalcomponent_as_ical_string
+                                  (ical_component));
+
+  ical_first_time = icalendar_first_time_from_vcalendar (ical_component,
+                                                         ical_timezone);
+  ical_duration = icalendar_duration_from_vcalendar (ical_component);
+
+  sql ("UPDATE schedules SET"
+       " icalendar = '%s',"
+       " first_time = %ld,"
+       " period = 0,"
+       " period_months = 0,"
+       " byday = 0,"
+       " duration = %d,"
+       " modification_time = m_now ()"
+       " WHERE id = %llu;",
+       quoted_icalendar,
+       ical_first_time,
+       ical_duration,
+       schedule);
+
+  // Update scheduled next times for tasks
+
+  new_next_time = icalendar_next_time_from_vcalendar (ical_component,
+                                                      time(NULL),
+                                                      real_timezone, 0);
+
+  sql ("UPDATE tasks SET schedule_next_time = %ld"
+       " WHERE schedule = %llu;",
+       new_next_time,
+       schedule);
+
+  g_free (quoted_comment);
+  g_free (quoted_name);
+  g_free (quoted_timezone);
+  g_free (quoted_icalendar);
+
+  free (real_timezone);
+  icalcomponent_free (ical_component);
+
+  sql_commit ();
+
   return 0;
 }
 
