@@ -23740,7 +23740,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>filter</name>
-        <summary>Filter term to use for report CVE retrieval</summary>
+        <summary>Filter term to use for report vulnerability retrieval</summary>
         <type>text</type>
         <filter_keywords>
           <option>
@@ -23778,18 +23778,18 @@ END:VCALENDAR
           <column>
             <name>severity</name>
             <type>severity</type>
-            <summary>Severity of the CVE result</summary>
+            <summary>Severity of the vulnerability</summary>
           </column>
         </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
-        <summary>ID of filter to use to filter report CVEs</summary>
+        <summary>ID of filter to use to filter report vulnerability</summary>
         <type>uuid</type>
       </attrib>
       <attrib>
         <name>details</name>
-        <summary>Whether to include CVE result details</summary>
+        <summary>Whether to include vulnerability details</summary>
         <type>boolean</type>
       </attrib>
     </pattern>

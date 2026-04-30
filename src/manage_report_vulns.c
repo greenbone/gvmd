@@ -148,7 +148,7 @@ report_vuln_from_result (iterator_t *results, nvti_t *nvti)
   vuln->nvt_oid = g_strdup (oid);
   vuln->severity_double = result_iterator_severity_double (results);
 
-  report_cve_add_nvt_cves (vuln, nvti);
+  report_vuln_add_nvt_cves (vuln, nvti);
 
   return vuln;
 }
@@ -217,28 +217,28 @@ report_cve_add_host_once (report_vuln_t vuln,
  */
 static report_vuln_t
 lookup_or_create_report_vuln (GHashTable *vulns_by_oid,
-                             GPtrArray *report_vulns,
-                             iterator_t *results,
-                             nvti_t *nvti)
+                              GPtrArray *report_vulns,
+                              iterator_t *results,
+                              nvti_t *nvti)
 {
   const gchar *oid;
-  report_vuln_t cve;
+  report_vuln_t vuln;
 
   oid = result_iterator_nvt_oid (results);
 
-  cve = g_hash_table_lookup (vulns_by_oid, oid);
+  vuln = g_hash_table_lookup (vulns_by_oid, oid);
 
-  if (cve == NULL)
+  if (vuln == NULL)
     {
-      cve = report_cve_from_result (results, nvti);
+      vuln = report_vuln_from_result (results, nvti);
 
-      g_ptr_array_add (report_vulns, cve);
+      g_ptr_array_add (report_vulns, vuln);
 
       /* Key is owned by vulnerability itself. */
-      g_hash_table_insert (vulns_by_oid, cve->nvt_oid, cve);
+      g_hash_table_insert (vulns_by_oid, vuln->nvt_oid, vuln);
     }
 
-  return cve;
+  return vuln;
 }
 
 /**
@@ -252,8 +252,8 @@ lookup_or_create_report_vuln (GHashTable *vulns_by_oid,
  */
 int
 get_report_vulns (report_t report,
-                 const get_data_t *get,
-                 GPtrArray **report_vulns)
+                  const get_data_t *get,
+                  GPtrArray **report_vulns)
 {
   iterator_t results;
   GHashTable *vulns_by_oid;
@@ -286,10 +286,10 @@ get_report_vulns (report_t report,
       if (nvti == NULL)
         continue;
 
-      vuln = lookup_or_create_report_cve (vulns_by_oid,
-                                         *report_vulns,
-                                         &results,
-                                         nvti);
+      vuln = lookup_or_create_report_vuln (vulns_by_oid,
+                                           *report_vulns,
+                                           &results,
+                                           nvti);
 
       vuln->occurrences++;
 
