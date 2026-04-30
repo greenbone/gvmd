@@ -8,30 +8,12 @@
 #include "manage_settings.h"
 #include "manage_sql.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
-static int report_export_max_retries = 10;
-
-void
-init_report_exports_from_config ()
-{
-  GKeyFile *kf = get_gvmd_config ();
-  if (kf == NULL)
-    {
-      return;
-    }
-
-  gboolean has_max_retries = FALSE;
-  int max_retries = 0;
-
-  gvmd_config_get_int (kf, "security_intelligence_export", "max_retries",
-                       &has_max_retries, &max_retries);
-
-  if (has_max_retries)
-    {
-      report_export_max_retries = max_retries;
-      g_warning("max_retries: %d", report_export_max_retries);
-    }
-}
 
 /**
  * @brief Checks if the automatic export to security intelligence is enabled
@@ -69,7 +51,7 @@ queue_report_for_export (const report_t report)
   sql_ps ("INSERT INTO report_exports (report_id, status, retry_count,"
           "                            reason, next_retry_time,"
           "                            creation_time, modification_time)"
-          " VALUES ($1, 'report_export_requested', 0, 'Queued',"
+          " VALUES ($1, '"REPORT_EXPORT_STATUS_REQUESTED"', 0, 'Queued',"
           "         m_now(), m_now(), m_now())",
           SQL_INT_PARAM (report), NULL);
 
@@ -88,12 +70,10 @@ set_report_export_status_and_reason (report_t report, const gchar *status,
                                      const gchar *reason)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET status = $1, reason = $2"
+          "   SET status = $1, reason = $2, modification_time = m_now()"
           " WHERE report_id = $3",
-          SQL_STR_PARAM (status),
-          SQL_STR_PARAM (reason),
-          SQL_INT_PARAM (report),
-          NULL);
+          SQL_STR_PARAM (status), SQL_STR_PARAM (reason),
+          SQL_INT_PARAM (report), NULL);
 }
 
 /**
@@ -106,7 +86,7 @@ void
 set_report_export_next_retry_time (report_t report, time_t next_retry_time)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET next_retry_time = $1"
+          "   SET next_retry_time = $1, modification_time = m_now()"
           " WHERE report_id = $2",
           SQL_INT_PARAM (next_retry_time), SQL_INT_PARAM (report), NULL);
 }
@@ -121,7 +101,7 @@ void
 set_report_export_retry_count (report_t report, int retry_count)
 {
   sql_ps ("UPDATE report_exports"
-          "   SET retry_count = $1"
+          "   SET retry_count = $1, modification_time = m_now()"
           " WHERE report_id = $2",
           SQL_INT_PARAM (retry_count), SQL_INT_PARAM (report), NULL);
 }
@@ -130,17 +110,15 @@ set_report_export_retry_count (report_t report, int retry_count)
  * @brief Initialize report export iterator to fetch
  *        all exports that are due now
  *
- * @param[out] iterator iterator to initialize
+ * @param[out] iterator    iterator to initialize
+ * @param[in]  max_retries if retry_count is equal to or bigger than
+ *                         this, it will be excluded from the iterator
  *
  * @return 0 on success
  */
 int
-init_report_export_iterator_due_exports (iterator_t *iterator)
+init_report_export_iterator_due_exports (iterator_t *iterator, int max_retries)
 {
-  int max_retry_count = 0;
-  gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", TRUE,
-                           report_export_max_retries, &max_retry_count);
-
   init_ps_iterator (iterator,
                     "SELECT id, report_id, status, reason,"
                     "    retry_count, next_retry_time,"
@@ -148,9 +126,34 @@ init_report_export_iterator_due_exports (iterator_t *iterator)
                     " FROM report_exports"
                     " WHERE   next_retry_time < m_now()"
                     " AND     retry_count < $1"
-                    " AND     status IN ('report_export_requested',"
-                    "                    'report_export_failed')",
-                    SQL_INT_PARAM (max_retry_count), NULL);
+                    " AND     status IN ('"REPORT_EXPORT_STATUS_REQUESTED"',"
+                    "                    '"REPORT_EXPORT_STATUS_FAILED"')",
+                    SQL_INT_PARAM (max_retries), NULL);
+
+  return 0;
+}
+
+/**
+ * @brief  Initialize report export iterator to fetch stale exports
+ *
+ * @param[out]  iterator    iterator to initialize
+ * @param[in]   threshold   only fetch exports where modification_time
+ *                          is older than threshold timestamp
+ *
+ * @return 0 on success
+ */
+int
+init_report_export_iterator_stale_exports (iterator_t *iterator,
+                                           time_t threshold)
+{
+  init_ps_iterator (iterator,
+                    "SELECT id, report_id, status, reason,"
+                    "    retry_count, next_retry_time,"
+                    "    creation_time, modification_time"
+                    " FROM report_exports"
+                    " WHERE   status = '"REPORT_EXPORT_STATUS_STARTED"'"
+                    " AND     modification_time < $1",
+                    SQL_INT_PARAM (threshold), NULL);
 
   return 0;
 }

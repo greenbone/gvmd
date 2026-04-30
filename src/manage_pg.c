@@ -3563,9 +3563,9 @@ create_tables ()
        "     'report_id');");
 
   sql ("SELECT create_index"
-       "    ('report_exports_by_status_and_retry_time',"
+       "    ('report_exports_by_status_retry_count_retry_time',"
        "     'report_exports',"
-       "     'status, next_retry_time');");
+       "     'status, retry_count, next_retry_time');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen

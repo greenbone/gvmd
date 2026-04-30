@@ -27,10 +27,11 @@ prepare_http_scanner_scan_for_resume (http_scanner_connector_t,
                                       char **);
 
 int
-handle_http_scanner_scan (http_scanner_connector_t,
-                          task_t, report_t,
+update_http_scanner_scan (http_scanner_connector_t, task_t,
+                          report_t,
                           void (*)
-                            (task_t, report_t, GSList *, time_t, time_t));
+                            (task_t, report_t, GSList *, time_t, time_t),
+                          int *, int *, int *);
 
 int
 delete_http_scanner_scan_with_retry (http_scanner_connector_t, const char *);

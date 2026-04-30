@@ -22948,6 +22948,163 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_operating_systems</name>
+    <summary>Get operating systems from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_operating_systems command to get operating
+        system information from a single report.
+      </p>
+      <p>
+        This command is an operating-system-focused subset of get_reports intended
+        to support reduced response sizes when only operating system data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes operating system
+        entries. Otherwise only the operating system count is returned.
+      </p>
+      <p>
+        Operating system entries include the best detected OS CPE, the best detected
+        OS name and the number of hosts using the same operating system.
+      </p>
+      <p>
+        The filter affects the selection of matching results used to derive the
+        operating system host counts. When "result_hosts_only" is set, only hosts
+        with matching results are included.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get operating systems from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report operating system retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether to limit the response to operating systems of hosts having
+              results matching the filter.
+            </summary>
+          </option>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report operating systems</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include operating system entries</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>operating_systems</e>
+      </pattern>
+      <ele>
+        <name>operating_systems</name>
+        <summary>Operating systems from the selected report</summary>
+        <pattern>
+          <any><e>operating_system</e></any>
+          <o><e>count</e></o>
+        </pattern>
+        <ele>
+          <name>operating_system</name>
+          <summary>An operating system from the selected report</summary>
+          <pattern>
+            <e>best_os_cpe</e>
+            <e>best_os_txt</e>
+            <e>hosts_count</e>
+          </pattern>
+          <ele>
+            <name>best_os_cpe</name>
+            <summary>Best detected operating system CPE</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>best_os_txt</name>
+            <summary>Best detected operating system name</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>hosts_count</name>
+            <summary>Number of hosts using the operating system</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>count</name>
+          <summary>Number of operating systems in the report</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get operating systems of a report with details</summary>
+      <request>
+        <get_report_operating_systems report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                      details="1"
+                                      filter="levels=chml min_qod=70 result_hosts_only=1">
+        </get_report_operating_systems>
+      </request>
+      <response>
+        <get_report_operating_systems_response status="200" status_text="OK">
+          <operating_systems>
+            <operating_system>
+              <best_os_cpe>cpe:/o:canonical:ubuntu_linux:24.04</best_os_cpe>
+              <best_os_txt>Ubuntu 24.04</best_os_txt>
+              <hosts_count>15</hosts_count>
+            </operating_system>
+            <operating_system>
+              <best_os_cpe>cpe:/o:microsoft:windows_11</best_os_cpe>
+              <best_os_txt>Microsoft Windows 11</best_os_txt>
+              <hosts_count>10</hosts_count>
+            </operating_system>
+          </operating_systems>
+        </get_report_operating_systems_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get operating system count of a report</summary>
+      <request>
+        <get_report_operating_systems report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                      details="0">
+        </get_report_operating_systems>
+      </request>
+      <response>
+        <get_report_operating_systems_response status="200" status_text="OK">
+          <operating_systems>
+            <count>2</count>
+          </operating_systems>
+        </get_report_operating_systems_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_ports</name>
     <summary>Get ports from a report</summary>
     <description>
@@ -23549,6 +23706,461 @@ END:VCALENDAR
             </tls_certificate>
           </tls_certificates>
         </get_report_tls_certificates_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_report_vulns</name>
+    <summary>Get vulnerability information from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_vulns command to get vulnerability-related
+        information from a single report.
+      </p>
+      <p>
+        This command is a vulnerability-focused subset of get_reports intended to support
+        pagination and reduced response sizes when only report vulnerability data is needed.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes aggregated vulnerability
+        result entries. Otherwise only the total vulnerability result count together with
+        filter, sort and count information is returned.
+      </p>
+      <p>
+        The filter affects the selection of matching results and the derived vulnerability
+        information returned by the command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get vulnerabilities from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report vulnerability retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1.
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Severity levels to select</summary>
+          </option>
+          <column>
+            <name>name</name>
+            <type>text</type>
+            <summary>Name of the NVT</summary>
+          </column>
+          <column>
+            <name>oid</name>
+            <type>text</type>
+            <summary>OID of the NVT</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Severity of the vulnerability</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report vulnerability</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include vulnerability details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>vulns</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_vulns</e></o>
+        <o><e>report_vuln_count</e></o>
+      </pattern>
+      <ele>
+        <name>vulns</name>
+        <summary>Aggregated vulnerability information from the selected report</summary>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First vulnerability result</summary>
+            <type>integer</type>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of vulnerability results</summary>
+            <type>integer</type>
+          </attrib>
+          <e>count</e>
+          <any><e>vuln</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of vulnerability results</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>vuln</name>
+          <summary>An aggregated vulnerability result from the selected report</summary>
+          <pattern>
+            <e>nvt</e>
+            <e>cves</e>
+            <e>hosts_count</e>
+            <e>occurrences</e>
+            <e>severity</e>
+            <e>threat</e>
+          </pattern>
+          <ele>
+            <name>nvt</name>
+            <summary>NVT information</summary>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <summary>OID of the NVT</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>cves</name>
+            <summary>CVEs referenced by the NVT</summary>
+            <pattern><any><e>cve</e></any></pattern>
+            <ele>
+              <name>cve</name>
+              <summary>CVE identifier</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>hosts_count</name>
+            <summary>Number of affected hosts</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>occurrences</name>
+            <summary>Number of matching result occurrences</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Severity of the vulnerability result</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <summary>Threat level of the vulnerability result</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_vulns</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report vulnerability result</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report vulnerability results</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_vuln_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report vulnerability results after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report vulnerability results on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get vulnerability results of a report with details</summary>
+      <request>
+        <get_report_vulns report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                         details="1"
+                         filter="levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1">
+        </get_report_vulns>
+      </request>
+      <response>
+        <get_report_vulns_response status="200" status_text="OK">
+          <vulns>
+            <vuln>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.117761">
+                <name>SSL/TLS: Renegotiation DoS Vulnerability (CVE-2011-1473, CVE-2011-5094)</name>
+              </nvt>
+              <cves>
+                <cve>CVE-2011-1473</cve>
+                <cve>CVE-2011-5094</cve>
+              </cves>
+              <hosts_count>1</hosts_count>
+              <occurrences>1</occurrences>
+              <severity>5.0</severity>
+              <threat>Medium</threat>
+            </vuln>
+            <vuln>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.80091">
+                <name>TCP Timestamps Information Disclosure</name>
+              </nvt>
+              <cves>
+                <cve/>
+              </cves>
+              <hosts_count>2</hosts_count>
+              <occurrences>2</occurrences>
+              <severity>2.6</severity>
+              <threat>Low</threat>
+            </vuln>
+            <vuln>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.103190">
+                <name>ICMP Timestamp Reply Information Disclosure</name>
+              </nvt>
+              <cves>
+                <cve>CVE-1999-0524</cve>
+              </cves>
+              <hosts_count>1</hosts_count>
+              <occurrences>1</occurrences>
+              <severity>2.1</severity>
+              <threat>Low</threat>
+            </vuln>
+          </vulns>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_vulns start="1" max="10"/>
+          <report_vuln_count>3<filtered>3</filtered><page>3</page></report_vuln_count>
+        </get_report_vulns_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get only report vulnerability count information</summary>
+      <request>
+        <get_report_vulns report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                         details="0">
+        </get_report_vulns>
+      </request>
+      <response>
+        <get_report_vulns_response status="200" status_text="OK">
+          <vulns>
+            <count>3</count>
+          </vulns>
+          <filters id="">
+            <term>apply_overrides=0 levels=chml rows=10 min_qod=70 first=1 sort-reverse=severity result_hosts_only=1</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_vulns start="1" max="10"/>
+          <report_vuln_count>3<filtered>3</filtered><page>3</page></report_vuln_count>
+        </get_report_vulns_response>
       </response>
     </example>
   </command>
@@ -25950,6 +26562,7 @@ END:VCALENDAR
           <e>credential</e>
           <e>relay_host</e>
           <e>relay_port</e>
+          <o><e>disabled</e></o>
           <o><e>configs</e></o>
           <o><e>tasks</e></o>
           <o><e>info</e></o>
@@ -26147,6 +26760,11 @@ END:VCALENDAR
           <name>relay_port</name>
           <summary>Optional relay port of the scanner</summary>
           <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>disabled</name>
+          <summary>Optional Whether the scanner is used by a disabled feature</summary>
+          <pattern><t>boolean</t></pattern>
         </ele>
         <ele>
           <name>configs</name>

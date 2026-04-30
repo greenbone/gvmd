@@ -94,6 +94,7 @@
 #include "manage_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_nvts.h"
+#include "manage_report_export_scheduler.h"
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
@@ -1529,6 +1530,80 @@ fork_queued_task_actions ()
     }
 }
 
+/**
+ * @brief  Fork process for handling the report export scheduling
+ *
+ * @return 0 on success, -1 on error
+ */
+int
+fork_report_export_scheduler ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+    case 0:
+      /* Child */
+      init_sentry ();
+      setproctitle ("Exporting reports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+      /* Run report export scheduler */
+      manage_report_export_scheduler ();
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return -1;
+
+    default:
+      g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return 0;
+    }
+}
+
+
 #if ENABLE_AGENTS
 /**
  * @brief Forks a process to sync agents from Agent Control scanners.
@@ -1725,6 +1800,7 @@ typedef struct
   time_t last_schedule;    ///< Last time the scheduler management was executed.
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
+  time_t last_report_export; ///< Last time report export was executed
   time_t last_agents_sync; ///< Last time the agents sync was executed.
   time_t last_asset_snapshot_stale_delete; ///< Last time the delete
                                            ///  asset snapshots was executed.
@@ -1822,6 +1898,25 @@ run_queue (periodic_times_t *t)
   set_last_run_time (&t->last_queue, time (NULL));
 }
 
+static void
+run_report_export (periodic_times_t *t)
+{
+  if (!feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
+    {
+      g_debug ("%s: security intelligence runtime flag is disabled; skipping "
+               "report export",
+               __func__);
+      return;
+    }
+
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_report_export, REPORT_EXPORT_PERIOD, now))
+    return;
+
+  fork_report_export_scheduler();
+  set_last_run_time (&t->last_report_export, time (NULL));
+}
+
 /**
  * @brief Run agents sync if due (guarded by ENABLE_AGENTS); updates last on run.
  *
@@ -1875,6 +1970,7 @@ run_periodic_block (periodic_times_t *t)
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
+  run_report_export (t);
   run_asset_snapshot_delete_stale (t);
 }
 

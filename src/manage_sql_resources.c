@@ -807,6 +807,19 @@ resource_count (const char *type, const get_data_t *get)
           extra_where = report_hosts_extra_where (report_uuid);
         }
     }
+  else if (strcmp (type, "report_operating_system") == 0)
+    {
+      report_t report;
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (report != 0)
+            {
+              return report_operating_systems_count (report);
+            }
+        }
+    }
   else if (strcmp (type, "report_port") == 0)
     {
       report_t report;
@@ -831,6 +844,20 @@ resource_count (const char *type, const get_data_t *get)
           if (report != 0)
             {
               return report_ssl_cert_count (report);
+            }
+        }
+      return 0;
+    }
+  else if (strcmp (type, "report_vuln") == 0)
+    {
+      report_t report;
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (report != 0)
+            {
+              return report_vulns_count (report, get);
             }
         }
       return 0;

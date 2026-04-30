@@ -16,8 +16,12 @@
 #include "iterator.h"
 #include "manage_resources_types.h"
 
-void
-init_report_exports_from_config ();
+
+#define REPORT_EXPORT_STATUS_REQUESTED "report_export_requested"
+#define REPORT_EXPORT_STATUS_STARTED "report_export_started"
+#define REPORT_EXPORT_STATUS_FINISHED "report_export_finished"
+#define REPORT_EXPORT_STATUS_FAILED "report_export_failed"
+
 
 gboolean
 export_enabled_for_report_owner (report_t report);
@@ -37,7 +41,11 @@ set_report_export_retry_count (report_t report, int retry_count);
 
 
 int
-init_report_export_iterator_due_exports (iterator_t *iterator);
+init_report_export_iterator_due_exports (iterator_t *iterator, int max_retries);
+
+int
+init_report_export_iterator_stale_exports (iterator_t *iterator,
+                                           time_t threshold);
 
 report_t
 report_export_iterator_report_id (iterator_t *iterator);

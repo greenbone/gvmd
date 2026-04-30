@@ -22,8 +22,10 @@
 #include "manage_get.h"
 #include "manage_integration_configs.h"
 #include "manage_report_applications.h"
+#include "manage_report_vulns.h"
 #include "manage_report_errors.h"
 #include "manage_report_hosts.h"
+#include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
 #include "manage_report_tls_certificates.h"
 #include "manage_tasks.h"
@@ -2340,6 +2342,11 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 #define QUEUE_PERIOD 5
 
 /**
+ * @brief Seconds between calls to fork_report_export
+ */
+#define REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
+
+/**
  * @brief Minimum schedule timeout seconds.
  * This value must be greater than SCHEDULE_PERIOD.
  */
@@ -2852,5 +2859,11 @@ get_vt_verification_collation ();
 
 void
 set_vt_verification_collation (const char *);
+
+int
+scan_semaphore_update_start (int, task_t, report_t);
+
+int
+scan_semaphore_update_end (int, task_t, report_t);
 
 #endif /* not _GVMD_MANAGE_H */

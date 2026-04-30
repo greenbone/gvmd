@@ -182,6 +182,7 @@ set(
   manage_license.c
   manage_notes.c
   manage_openvas.c
+  manage_openvasd.c
   manage_osp.c
   manage_overrides.c
   manage_permissions.c
@@ -193,8 +194,10 @@ set(
   manage_report_errors.c
   manage_report_formats.c
   manage_report_hosts.c
+  manage_report_operating_systems.c
   manage_report_ports.c
   manage_report_tls_certificates.c
+  manage_report_vulns.c
   manage_roles.c
   manage_runtime_flags.c
   manage_authentication.c
@@ -213,6 +216,7 @@ set(
   manage_tags.c
   manage_targets.c
   manage_users.c
+  manage_report_export_scheduler.c
 )
 
 if(ENABLE_AGENTS)
@@ -258,6 +262,7 @@ set(
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_report_hosts.c
+  manage_sql_report_operating_systems.c
   manage_sql_report_ports.c
   manage_sql_report_tls_certificates.c
   manage_sql_roles.c
@@ -307,8 +312,10 @@ set(
   gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c
+  gmp_report_operating_systems.c
   gmp_report_ports.c
   gmp_report_tls_certificates.c
+  gmp_report_vulns.c
   gmp_tickets.c
   gmp_tls_certificates.c
 )
