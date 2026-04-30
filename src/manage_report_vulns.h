@@ -10,8 +10,8 @@
  * Non-SQL report Vulnerabilities code for the GVM management layer.
  */
 
-#ifndef _GVM_MANAGE_REPORT_CVES_H
-#define _GVM_MANAGE_REPORT_CVES_H
+#ifndef _GVM_MANAGE_REPORT_VULNS_H
+#define _GVM_MANAGE_REPORT_VULNS_H
 
 #include "manage_resources.h"
 
@@ -47,4 +47,4 @@ get_report_vulns (report_t,
 int
 report_vulns_count (report_t, const get_data_t *);
 
-#endif //_GVM_MANAGE_REPORT_CVES_H
+#endif //_GVM_MANAGE_REPORT_VULNS_H
