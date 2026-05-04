@@ -138,6 +138,8 @@ reset_stale_report_exports ()
     }
 
   sql_commit ();
+
+  cleanup_iterator (&report_exports);
 }
 
 /**
