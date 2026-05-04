@@ -18,6 +18,8 @@
 | **Alive Test**                   | A method used before scanning to check if a host is reachable (e.g., ICMP ping, TCP connect).                                                            |
 | **Report**                       | The stored output of a scan, including all results, summaries, and metadata.                                                                             |
 | **Compliance Report**            | A report focused on compliance checks against policies or standards (e.g., CIS benchmarks).                                                              |
+| **CIS Benchmarks**               | Simple security rules that tell you how to set up a system safely (like a checklist).                                                                    |
+| **CIS**                          | Center for Internet Security.                                                                                                                            |
 | **Schedule**                     | A configuration that defines when a task runs automatically in a specific period of time.                                                                |
 | **Audit**                        |                                                                                                                                                          |
 | **Owner**                        | The user who created a resource. Ownership is used for access control.                                                                                   |
@@ -99,3 +101,6 @@
 | **Start Scan**                   | Action to begin a scan.                                                                                                                                  |
 | **Stop Scan**                    | Action to stop a running scan.                                                                                                                           |
 | **Resume Scan**                  | Action to continue a paused scan.                                                                                                                        |
+| **Scan Queue**                   | A waiting list for scans. Instead of starting immediately, scans are added here and run one by one by the system.                                        |
+| **Report Export Queue**          | A waiting list for reports to be sent out after a scan finishes.                                                                                         |
+| **Report Export**                | Sending a report to another system (e.g., OSI - Openvas Security Intelligence) after the scan is done.                                                   |
