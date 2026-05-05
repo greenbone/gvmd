@@ -192,6 +192,7 @@ set(
   manage_report_applications.c
   manage_report_closed_cves.c
   manage_report_configs.c
+  manage_report_cves.c
   manage_report_errors.c
   manage_report_formats.c
   manage_report_hosts.c
