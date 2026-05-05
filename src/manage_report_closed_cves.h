@@ -41,4 +41,7 @@ report_closed_cve_list_free (GPtrArray *);
 int
 get_report_closed_cves (report_t, GPtrArray **);
 
+int
+report_closed_cve_count (report_t);
+
 #endif //_GVM_MANAGE_REPORT_CLOSED_CVES_H

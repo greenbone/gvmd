@@ -18,9 +18,6 @@
 void
 init_report_closed_cve_iterator (iterator_t *, report_t);
 
-int
-report_closed_cve_count (report_t);
-
 const gchar *
 report_closed_cve_iterator_host (iterator_t *);
 
