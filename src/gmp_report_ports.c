@@ -67,7 +67,7 @@ get_report_ports_start (const gchar **attribute_names,
       get_report_ports_data.report_id = g_strdup (attribute);
 
       get_data_set_extra (&get_report_ports_data.get, "report_id",
-                          g_strdup (attribute));
+                          attribute);
     }
 }
 

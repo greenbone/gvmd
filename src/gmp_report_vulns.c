@@ -73,7 +73,7 @@ get_report_vulns_start (const gchar **attribute_names,
       get_report_vulns_data.report_id = g_strdup (attribute);
 
       get_data_set_extra (&get_report_vulns_data.get, "report_id",
-                          g_strdup (attribute));
+                          attribute);
     }
 }
 
