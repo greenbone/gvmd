@@ -123,7 +123,6 @@
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
-#include "manage_sql_report_closed_cves.h"
 
 #undef G_LOG_DOMAIN
 /**
