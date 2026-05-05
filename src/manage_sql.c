@@ -123,6 +123,7 @@
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
+#include "manage_sql_report_closed_cves.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -14754,28 +14755,6 @@ report_host_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
-                  report);
-}
-
-/**
- * @brief Count a report's total number of closed cves.
- *
- * @param[in]  report  Report.
- *
- * @return Closed CVE count.
- */
-static int
-report_closed_cve_count (report_t report)
-{
-  return sql_int (" SELECT count(id) FROM nvts"
-                  " WHERE cve != ''"
-                  " AND family IN (" LSC_FAMILY_LIST ")"
-                  " AND oid IN"
-                  " (SELECT source_name FROM report_host_details"
-                  "  WHERE report_host IN "
-                  "   (SELECT id FROM report_hosts WHERE report = %llu)"
-                  "  AND name = 'EXIT_CODE'"
-                  "  AND value = 'EXIT_NOTVULN');",
                   report);
 }
 

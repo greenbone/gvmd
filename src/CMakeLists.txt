@@ -190,6 +190,7 @@ set(
   manage_preferences.c
   manage_resources.c
   manage_report_applications.c
+  manage_report_closed_cves.c
   manage_report_configs.c
   manage_report_errors.c
   manage_report_formats.c
@@ -257,6 +258,7 @@ set(
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_applications.c
+  manage_sql_report_closed_cves.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
   manage_sql_report_formats.c
