@@ -20563,6 +20563,230 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report_closed_cves</name>
+    <summary>Get closed CVEs from a report</summary>
+    <description>
+      <p>
+        The client uses the get_report_closed_cves command to get closed CVE
+        information from a single report.
+      </p>
+      <p>
+        Closed CVEs are derived from local security check NVTs that were executed
+        for a host and returned EXIT_NOTVULN.
+      </p>
+      <p>
+        If details is set, closed CVE entries are returned. Otherwise only the total count is returned.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to get closed CVEs from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include closed CVE details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>closed_cves</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_closed_cves</e></o>
+        <o><e>report_closed_cve_count</e></o>
+      </pattern>
+      <ele>
+        <name>closed_cves</name>
+        <summary>Closed CVE information from the selected report</summary>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report closed CVE</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report closed CVEs</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <e>count</e>
+          <any><e>closed_cve</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Total number of report closed CVEs</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>closed_cve</name>
+          <summary>A closed CVE from the selected report</summary>
+          <pattern>
+            <e>host</e>
+            <e>cve</e>
+            <e>nvt</e>
+            <e>severity</e>
+            <e>threat</e>
+          </pattern>
+          <ele>
+            <name>host</name>
+            <summary>Host associated with the closed CVE</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>cve</name>
+            <summary>CVE identifier</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>nvt</name>
+            <summary>NVT associated with the closed CVE</summary>
+            <pattern>
+              <attrib>
+                <name>oid</name>
+                <summary>OID of the NVT</summary>
+                <type>oid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the NVT</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>CVSS base severity of the NVT</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>threat</name>
+            <summary>Threat level derived from the severity</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_closed_cves</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report closed CVE</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report closed CVEs</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_closed_cve_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report closed CVEs after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report closed CVEs on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get closed CVEs of a report with details</summary>
+      <request>
+        <get_report_closed_cves report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                details="1">
+        </get_report_closed_cves>
+      </request>
+      <response>
+        <get_report_closed_cves_response status="200" status_text="OK">
+          <closed_cves start="1" max="100">
+            <count>1</count>
+            <closed_cve>
+              <host>192.168.1.10</host>
+              <cve>CVE-2009-1234</cve>
+              <nvt oid="1.3.6.1.4.1.25623.1.0.123456">
+                <name>RedHat Security Advisory RHSA-2009:1234</name>
+              </nvt>
+              <severity>7.5</severity>
+              <threat>High</threat>
+            </closed_cve>
+          </closed_cves>
+          <filters id="">
+            <term>rows=100 first=1 sort-reverse=severity</term>
+            <keywords>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>100</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <report_closed_cves start="1" max="100"/>
+          <report_closed_cve_count>1<filtered>1</filtered><page>0</page></report_closed_cve_count>
+        </get_report_closed_cves_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get only report closed CVE count information</summary>
+      <request>
+        <get_report_closed_cves report_id="2f628a42-13f3-4420-9f2b-5754aa1aafe9"
+                                details="0">
+        </get_report_closed_cves>
+      </request>
+      <response>
+        <get_report_closed_cves_response status="200" status_text="OK">
+          <closed_cves>
+            <count>1</count>
+          </closed_cves>
+          <report_closed_cves start="1" max="100"/>
+          <report_closed_cve_count>1<filtered>1</filtered><page>0</page></report_closed_cve_count>
+        </get_report_closed_cves_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_configs</name>
     <summary>Get one or many report configs</summary>
     <description>
