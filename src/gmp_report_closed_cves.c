@@ -70,12 +70,12 @@ get_report_closed_cves_start (const gchar **attribute_names,
                              attribute_values);
 
   if (find_attribute (attribute_names, attribute_values,
-                      "report_id", &attribute))
+                    "report_id", &attribute))
     {
       get_report_closed_cves_data.report_id = g_strdup (attribute);
 
       get_data_set_extra (&get_report_closed_cves_data.get, "report_id",
-                          g_strdup (attribute));
+                          attribute);
     }
 }
 
