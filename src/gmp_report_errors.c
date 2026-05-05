@@ -66,7 +66,7 @@ get_report_errors_start (const gchar **attribute_names,
 
       get_data_set_extra (&get_report_errors_data.get,
                           "report_id",
-                          g_strdup (attribute));
+                          attribute);
     }
 }
 

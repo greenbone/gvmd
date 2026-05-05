@@ -69,7 +69,7 @@ get_report_tls_certificates_start (const gchar **attribute_names,
 
       get_data_set_extra (&get_report_tls_certificates_data.get,
                           "report_id",
-                          g_strdup (attribute));
+                          attribute);
     }
 }
 
