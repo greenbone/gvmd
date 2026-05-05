@@ -186,24 +186,22 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
 
 #if ENABLE_CREDENTIAL_STORES == 0
 
-  openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
-  openvasd_credential_t *snmp_credential;
+  scan_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  scan_credential_t *snmp_credential;
 
-  ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
+  ssh_credential = target_openvas_ssh_credential_db (target);
   if (ssh_credential)
     openvasd_target_add_credential (openvasd_target, ssh_credential);
 
-  smb_credential = (openvasd_credential_t *) target_osp_smb_credential_db (target);
+  smb_credential = target_openvas_smb_credential_db (target);
   if (smb_credential)
     openvasd_target_add_credential (openvasd_target, smb_credential);
 
-  esxi_credential =
-    (openvasd_credential_t *) target_osp_esxi_credential_db (target);
+  esxi_credential = target_openvas_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
 
-  snmp_credential =
-    (openvasd_credential_t *) target_osp_snmp_credential_db (target);
+  snmp_credential = target_openvas_snmp_credential_db (target);
   if (snmp_credential)
     openvasd_target_add_credential (openvasd_target, snmp_credential);
 
