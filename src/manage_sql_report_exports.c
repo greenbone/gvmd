@@ -27,12 +27,14 @@ gboolean
 export_enabled_for_report_owner (report_t report)
 {
   return !!sql_int_ps (
-    "SELECT s.value FROM reports AS r"
-    " INNER JOIN settings AS s ON r.owner = s.owner"
-    " WHERE r.id = $1"
-    " AND s.uuid = $2",
-    SQL_INT_PARAM (report),
-    SQL_STR_PARAM (SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT), NULL);
+    "SELECT COALESCE ((SELECT s.value FROM settings s"
+    "                  WHERE s.uuid = $1 AND s.owner = r.owner),"
+    "                 (SELECT s.value FROM settings s"
+    "                  WHERE s.uuid = $1 AND s.owner IS NULL),"
+    "                 '0')"
+    " FROM reports r WHERE r.id = $2",
+    SQL_STR_PARAM (SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT),
+    SQL_INT_PARAM (report), NULL);
 }
 
 /**
