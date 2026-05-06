@@ -15,6 +15,7 @@
 
 #include "iterator.h"
 #include "manage_resources_types.h"
+#include "manage_integration_configs.h"
 
 
 #define REPORT_EXPORT_STATUS_REQUESTED "report_export_requested"
@@ -22,6 +23,21 @@
 #define REPORT_EXPORT_STATUS_FINISHED "report_export_finished"
 #define REPORT_EXPORT_STATUS_FAILED "report_export_failed"
 
+
+/**
+ * @brief  Type for return result of export_report()
+ */
+typedef enum export_report_result
+{
+  EXPORT_REPORT_RESULT_SUCCESS = 0,
+  EXPORT_REPORT_RESULT_TIMEOUT,
+  EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED,
+  EXPORT_REPORT_RESULT_FAILURE = -1,
+} export_report_result_t;
+
+export_report_result_t
+export_report_security_intelligence (report_t report,
+                                     integration_config_data_t config);
 
 gboolean
 export_enabled_for_report_owner (report_t report);
