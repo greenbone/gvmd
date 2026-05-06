@@ -313,6 +313,7 @@ set(
   gmp_report_applications.c
   gmp_report_closed_cves.c
   gmp_report_configs.c
+  gmp_report_cves.c
   gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c
