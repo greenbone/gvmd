@@ -6,6 +6,7 @@
 #include "manage_report_export_scheduler.h"
 
 #include "gvmd_config.h"
+#include "manage_integration_configs.h"
 #include "manage_report_exports.h"
 #include "sql.h"
 
@@ -24,20 +25,6 @@ static int retry_multiplier = 2;    /* in seconds */
 static int retry_max_delay = 600;   /* in seconds */
 static int export_stale_threshold = 720;  /* in minutes */
 
-
-/**
- * @brief  Type for return result of export_report()
- */
-typedef enum export_report_result
-{
-  EXPORT_REPORT_RESULT_SUCCESS = 0,
-  EXPORT_REPORT_RESULT_TIMEOUT,
-  EXPORT_REPORT_RESULT_FAILURE = -1,
-} export_report_result_t;
-
-
-static export_report_result_t
-export_report (report_t report);
 
 /**
  * @brief  Load configuration values from gvmd config
@@ -110,6 +97,46 @@ init_report_export_from_config ()
     }
 }
 
+static integration_config_data_t
+read_report_export_integration_config ()
+{
+  iterator_t config_it;
+  init_integration_config_iterator_one (
+    &config_it, INTEGRATION_CONFIG_SECURITY_INTELLIGENCE_UUID);
+
+  integration_config_data_t config = integration_config_data_new ();
+
+  if (!next (&config_it))
+    {
+      g_debug ("%s: failed to find integration config '%s'", __func__,
+               INTEGRATION_CONFIG_SECURITY_INTELLIGENCE_UUID);
+
+      cleanup_iterator (&config_it);
+      return NULL;
+    }
+
+  config->row_id = get_iterator_resource (&config_it);
+  config->uuid = g_strdup (get_iterator_uuid (&config_it));
+  config->owner = get_iterator_owner (&config_it);
+  config->name = g_strdup (get_iterator_name (&config_it));
+  config->comment = g_strdup (get_iterator_comment (&config_it));
+  config->service_url =
+    g_strdup (integration_config_iterator_service_url (&config_it));
+  config->service_cacert =
+    g_strdup (integration_config_iterator_service_cacert (&config_it));
+  config->oidc_url =
+    g_strdup (integration_config_iterator_oidc_url (&config_it));
+  config->oidc_client_id =
+    g_strdup (integration_config_iterator_oidc_client_id (&config_it));
+  config->oidc_client_secret = g_strdup (
+    integration_config_iterator_encrypted_oidc_client_secret (&config_it));
+  config->creation_time = get_iterator_creation_time (&config_it);
+  config->modification_time = get_iterator_modification_time (&config_it);
+
+  cleanup_iterator (&config_it);
+  return config;
+}
+
 /**
  * @brief  Finds stale exports, and sets their status to 'failed'.
  */
@@ -174,31 +201,37 @@ calculate_next_retry_time (const int retry_count)
  *
  * @param  report       The report ID
  * @param  retry_count  The current retry count for the given report
+ * @param  config       Integration config for OpenVAS Security Intelligence
+ *                      export
  */
 static void
-process_report_export (report_t report, int retry_count)
+process_report_export (report_t report, int retry_count,
+                       integration_config_data_t config)
 {
   set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_STARTED,
                                        NULL);
 
   /* Run the export */
-  export_report_result_t result = export_report (report);
+  export_report_result_t result =
+    export_report_security_intelligence (report, config);
   gchar *reason = NULL;
 
   sql_begin_immediate ();
 
-  switch (result)
+  if (result == EXPORT_REPORT_RESULT_SUCCESS)
     {
-    case EXPORT_REPORT_RESULT_SUCCESS:
       set_report_export_status_and_reason (report,
                                            REPORT_EXPORT_STATUS_FINISHED, NULL);
 
       g_debug ("%s: report export finished, report: %lld", __func__, report);
+    }
+  else
+    {
+      if (result == EXPORT_REPORT_RESULT_TIMEOUT)
+          reason = g_strdup ("The request has timed out");
+      else if (result == EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED)
+        reason = g_strdup ("Could not generate access_token");
 
-      break;
-    case EXPORT_REPORT_RESULT_TIMEOUT:
-      reason = g_strdup ("The request has timed out");
-    case EXPORT_REPORT_RESULT_FAILURE:
       set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_FAILED,
                                            reason);
       set_report_export_next_retry_time (
@@ -207,7 +240,6 @@ process_report_export (report_t report, int retry_count)
 
       g_debug ("%s: report export failed, report: %lld, reason: %s", __func__,
                report, reason);
-      break;
     }
 
   if (reason)
@@ -230,6 +262,17 @@ run_due_exports ()
   gvmd_config_resolve_int ("GVMD_REPORT_EXPORT_MAX_RETRIES", TRUE,
                            export_max_retries, &max_retry_count);
 
+  integration_config_data_t integration_config =
+    read_report_export_integration_config ();
+  if (!integration_config)
+    {
+      g_warning (
+        "%s: aborting exports, since integration config could not be read",
+        __func__);
+      return;
+    }
+
+
   g_debug ("%s: iterating over due exports", __func__);
 
   iterator_t report_exports;
@@ -238,10 +281,12 @@ run_due_exports ()
     {
       process_report_export (
         report_export_iterator_report_id (&report_exports),
-        report_export_iterator_retry_count (&report_exports));
+        report_export_iterator_retry_count (&report_exports),
+        integration_config);
     }
 
   cleanup_iterator (&report_exports);
+  integration_config_data_free (integration_config);
 }
 
 /**
@@ -260,22 +305,4 @@ manage_report_export_scheduler ()
   run_due_exports ();
 
   return 0;
-}
-
-/**
- * @brief  Export a single report to security intelligence
- *
- * @param  report  The report to export
- *
- * @return EXPORT_REPORT_RESULT_SUCCESS on success
- *         EXPORT_REPORT_RESULT_TIMEOUT when the request has timed out
- *         EXPORT_REPORT_RESULT_FAILURE on failure
- */
-static export_report_result_t
-export_report (report_t report)
-{
-  (void) report;
-  g_debug ("%s: exporting report %lld", __func__, report);
-
-  return EXPORT_REPORT_RESULT_FAILURE;
 }

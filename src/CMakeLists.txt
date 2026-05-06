@@ -230,6 +230,7 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
+  manage_report_exports_security_intelligence.c
 )
 
 if(ENABLE_AGENTS)
