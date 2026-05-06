@@ -126,6 +126,7 @@ command_t gmp_commands[]
     {"GET_REPORT_CONFIGS", "Get all report configs."},
     {"GET_REPORT_APPLICATIONS", "Get all applications for specific report."},
     {"GET_REPORT_CLOSED_CVES", "Get all closed CVEs for specific report."},
+    {"GET_REPORT_CVES", "Get all CVEs for specific report."},
     {"GET_REPORT_ERRORS", "Get all report errors for specific report."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_REPORT_HOSTS", "Get all report hosts for specific report."},

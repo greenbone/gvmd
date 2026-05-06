@@ -92,6 +92,7 @@
 #include "gmp_report_applications.h"
 #include "gmp_report_closed_cves.h"
 #include "gmp_report_configs.h"
+#include "gmp_report_cves.h"
 #include "gmp_report_errors.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
@@ -4561,6 +4562,7 @@ typedef enum
   CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CLOSED_CVES,
   CLIENT_GET_REPORT_CONFIGS,
+  CLIENT_GET_REPORT_CVES,
   CLIENT_GET_REPORT_ERRORS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_REPORT_HOSTS,
@@ -5861,6 +5863,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORT_CONFIGS);
           }
+
+        ELSE_GET_START (report_cves, REPORT_CVES)
 
         ELSE_GET_START (report_errors, REPORT_ERRORS)
 
@@ -22143,6 +22147,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORT_CONFIGS:
         handle_get_report_configs (gmp_parser, error);
         break;
+
+      CASE_GET_END (REPORT_CVES, report_cves);
 
       CASE_GET_END (REPORT_ERRORS, report_errors);
 
