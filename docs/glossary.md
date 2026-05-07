@@ -16,7 +16,7 @@
 | **Scanner**                      | The application that performs the actual vulnerability checks (e.g., OpenVAS, openvasd, agent-controller, container-scanning, sensors).                  |
 | **Scanner Type**                 | The communication type or implementation of the scanner (e.g., ospd-openvas, openvasd, agent-controller, container-scanning, sensors).                   |
 | **Alive Test**                   | A method used before scanning to check if a host is reachable (e.g., ICMP ping, TCP connect).                                                            |
-| **Report**                       | The stored output of a scan, including all results, summaries, and metadata.                                                                             |
+| **Report**                       | The stored output of a scan, including all results, host details, summaries, and metadata.                                                                             |
 | **Compliance Report**            | A report focused on compliance checks against policies or standards (e.g., CIS benchmarks).                                                              |
 | **CIS Benchmarks**               | Simple security rules that tell you how to set up a system safely (like a checklist).                                                                    |
 | **CIS**                          | Center for Internet Security.                                                                                                                            |
