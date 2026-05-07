@@ -227,16 +227,21 @@ print_report_tls_certificates_xml (report_t report,
 
   if (result_hosts_only)
     {
-      gchar *result_host;
-      int index = 0;
+      guint index;
 
-      while ((result_host = g_ptr_array_index (result_hosts, index++)))
+      for (index = 0; result_hosts && index < result_hosts->len; index++)
         {
+          gchar *result_host;
           gboolean present;
           iterator_t hosts;
 
+          result_host = g_ptr_array_index (result_hosts, index);
+          if (result_host == NULL)
+            continue;
+
           init_report_host_iterator (&hosts, report, result_host, 0);
           present = next (&hosts);
+
           if (present)
             {
               report_host_t report_host;
@@ -251,10 +256,9 @@ print_report_tls_certificates_xml (report_t report,
                   goto fail;
                 }
             }
+
           cleanup_iterator (&hosts);
         }
-
-      array_free (result_hosts);
     }
   else
     {
@@ -303,10 +307,10 @@ fail:
  */
 int
 print_report_tls_certificates_xml_summary_or_details (report_t report,
-                                                      FILE *out,
-                                                      int details,
-                                                      gboolean result_hosts_only,
-                                                      array_t *result_hosts)
+  FILE *out,
+  int details,
+  gboolean result_hosts_only,
+  array_t *result_hosts)
 {
   if (details == 0)
     {
@@ -315,6 +319,12 @@ print_report_tls_certificates_xml_summary_or_details (report_t report,
              "<count>%i</count>"
              "</tls_certificates>",
              report_ssl_cert_count (report));
+      return 0;
+    }
+
+  if (result_hosts_only && result_hosts == NULL)
+    {
+      PRINT (out, "<tls_certificates></tls_certificates>");
       return 0;
     }
 
