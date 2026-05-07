@@ -128,13 +128,13 @@ report_closed_cve_count (report_t report)
     "   JOIN nvts n"
     "     ON n.oid = rhd.source_name"
     "   CROSS JOIN LATERAL regexp_split_to_table(n.cve, ',')"
-    "   AS split_cve"
+    "     AS split_cve"
     "   WHERE rh.report = $1"
     "     AND rhd.name = 'EXIT_CODE'"
     "     AND rhd.value = 'EXIT_NOTVULN'"
     "     AND n.cve != ''"
     "     AND n.family IN (" LSC_FAMILY_LIST ")"
-    " );",
+    " ) AS closed_cves;",
     SQL_RESOURCE_PARAM (report),
     NULL);
 }
