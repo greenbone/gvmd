@@ -68,6 +68,85 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   return ret;
 }
 
+#if ENABLE_CREDENTIAL_STORES
+/**
+ * @brief Add credentials to an OpenVASD target from database or
+ *        credential store.
+ *
+ * @param[in]  openvasd_target  The OpenVASD target to add credentials to.
+ * @param[in]  target      The target to get the credentials from.
+ * @param[in]  task        The task for which the OpenVASD target is created.
+ * @param[out] error       Pointer to store error message on failure.
+ *                         Has to be freed by the caller.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+target_openvasd_add_credentials (openvasd_target_t *openvasd_target,
+                                 target_t target,
+                                 task_t task,
+                                 char **error)
+{
+  if (!openvasd_target)
+    {
+      if (error)
+        *error = g_strdup ("OpenVASD target is NULL.");
+      return -1;
+    }
+
+  long long int allow_failed_retrieval_int = 0;
+  gchar *allow_failed_retrieval = task_preference_value (task,
+                                                  "cs_allow_failed_retrieval");
+  if (allow_failed_retrieval)
+    allow_failed_retrieval_int = strtol (allow_failed_retrieval, NULL, 10);
+  g_free (allow_failed_retrieval);
+
+  for (size_t i = 0;
+       i < target_credential_getters_count;
+       i++)
+    {
+      target_credential_return_t cred_ret;
+      scan_credential_t *credential = NULL;
+
+      cred_ret = target_credential_getters[i] (target, &credential);
+
+      switch (cred_ret)
+        {
+          case TARGET_CREDENTIAL_OK:
+            break;
+          case TARGET_CREDENTIAL_NOT_FOUND:
+            continue;
+          case TARGET_CREDENTIAL_TYPE_MISMATCH:
+            g_warning ("%s: Credential type mismatch.", __func__);
+            continue;
+          case TARGET_FAILED_CS_RETRIEVAL:
+             if (allow_failed_retrieval_int == 0)
+               {
+                if (error)
+                   *error = g_strdup ("Failed to retrieve credentials"
+                                      " from credential store.");
+                 return -1;
+               }
+              g_debug ("%s: Failed to retrieve credentials"
+                       " from credential store, but allowed to continue.",
+                       __func__);
+              continue;
+          case TARGET_INTERNAL_ERROR:
+          case TARGET_MISSING_CREDENTIAL:
+          default:
+            if (error)
+              *error = g_strdup ("Internal error retrieving credential.");
+            return -1;
+        }
+
+      if (credential)
+         openvasd_target_add_credential (openvasd_target, credential);
+
+    }
+  return 0;
+}
+#endif /* ENABLE_CREDENTIAL_STORES */
+
 /**
  * @brief Launch an OpenVAS via openvasd task.
  *
@@ -184,26 +263,35 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_free (clean_finished_hosts_str);
   openvasd_targets = g_slist_append (NULL, openvasd_target);
 
-#if ENABLE_CREDENTIAL_STORES == 0
+#if ENABLE_CREDENTIAL_STORES
 
-  openvasd_credential_t *ssh_credential, *smb_credential, *esxi_credential;
-  openvasd_credential_t *snmp_credential;
+  if (target_openvasd_add_credentials (openvasd_target, target, task, error))
+    {
+      if (error && *error)
+        g_warning ("%s: Error adding credentials to OpenVASD target: %s",
+                   __func__, *error);
+      g_slist_free_full (openvasd_targets, (GDestroyNotify) openvasd_target_free);
+      return -1;
+    }
 
-  ssh_credential = (openvasd_credential_t *) target_osp_ssh_credential_db (target);
+#else
+
+  scan_credential_t *ssh_credential, *smb_credential, *esxi_credential;
+  scan_credential_t *snmp_credential;
+
+  ssh_credential = target_openvas_ssh_credential_db (target);
   if (ssh_credential)
     openvasd_target_add_credential (openvasd_target, ssh_credential);
 
-  smb_credential = (openvasd_credential_t *) target_osp_smb_credential_db (target);
+  smb_credential = target_openvas_smb_credential_db (target);
   if (smb_credential)
     openvasd_target_add_credential (openvasd_target, smb_credential);
 
-  esxi_credential =
-    (openvasd_credential_t *) target_osp_esxi_credential_db (target);
+  esxi_credential = target_openvas_esxi_credential_db (target);
   if (esxi_credential)
     openvasd_target_add_credential (openvasd_target, esxi_credential);
 
-  snmp_credential =
-    (openvasd_credential_t *) target_osp_snmp_credential_db (target);
+  snmp_credential = target_openvas_snmp_credential_db (target);
   if (snmp_credential)
     openvasd_target_add_credential (openvasd_target, snmp_credential);
 

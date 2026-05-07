@@ -15,8 +15,8 @@ find_package(Threads)
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
 pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.39)
-pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=22.34)
-pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=22.30)
+pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=23.00)
+pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
@@ -24,7 +24,7 @@ if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.41)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
-  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=22.30)
+  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=23.00)
 else(ENABLE_OPENVASD)
   message(STATUS "ENABLE_OPENVASD flag is not enabled")
 endif(ENABLE_OPENVASD)
@@ -190,7 +190,9 @@ set(
   manage_preferences.c
   manage_resources.c
   manage_report_applications.c
+  manage_report_closed_cves.c
   manage_report_configs.c
+  manage_report_cves.c
   manage_report_errors.c
   manage_report_formats.c
   manage_report_hosts.c
@@ -257,6 +259,7 @@ set(
   manage_sql_port_lists.c
   manage_sql_configs.c
   manage_sql_report_applications.c
+  manage_sql_report_closed_cves.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
   manage_sql_report_formats.c
@@ -308,7 +311,9 @@ set(
   gmp_oci_image_targets.c
   gmp_port_lists.c
   gmp_report_applications.c
+  gmp_report_closed_cves.c
   gmp_report_configs.c
+  gmp_report_cves.c
   gmp_report_errors.c
   gmp_report_formats.c
   gmp_report_hosts.c

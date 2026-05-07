@@ -777,10 +777,41 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_applications_count (report);
+            }
+        }
+      return 0;
+    }
+  else if (strcmp (type, "report_closed_cve") == 0)
+    {
+      report_t report;
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
+          if (report != 0)
+            {
+              return report_closed_cve_count (report);
+            }
+        }
+      return 0;
+    }
+  else if (strcmp (type, "report_cve") == 0)
+    {
+      report_t report;
+      const gchar *report_uuid = get_data_get_extra (get, "report_id");
+      if (!str_blank (report_uuid))
+        {
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
+          if (report != 0)
+            {
+              return report_cves_count (report, get);
             }
         }
       return 0;
@@ -791,7 +822,8 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_error_count (report);
@@ -813,7 +845,8 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_operating_systems_count (report);
@@ -826,7 +859,8 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_port_count (report);
@@ -840,7 +874,8 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_ssl_cert_count (report);
@@ -854,7 +889,8 @@ resource_count (const char *type, const get_data_t *get)
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
         {
-          find_report_with_permission (report_uuid, &report, "get_reports");
+          if (find_report_with_permission (report_uuid, &report, "get_reports"))
+            return 0;
           if (report != 0)
             {
               return report_vulns_count (report, get);
