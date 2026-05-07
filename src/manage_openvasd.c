@@ -43,7 +43,7 @@ static int
 prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
                                   char **error)
 {
-  http_scanner_connector_t connection;
+  http_scanner_connector_t connector;
   int ret;
 
   assert (task);
@@ -51,8 +51,8 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   assert (global_current_report);
   assert (error);
 
-  connection = http_scanner_connect (task_scanner (task), scan_id);
-  if (!connection)
+  connector = http_scanner_connect (task_scanner (task), scan_id);
+  if (!connector)
     {
       *error = g_strdup ("Could not connect to openvasd Scanner");
       return -1;
@@ -60,12 +60,12 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
 
   g_debug ("%s: Preparing scan %s for resume", __func__, scan_id);
 
-  ret = prepare_http_scanner_scan_for_resume (connection, error);
+  ret = prepare_http_scanner_scan_for_resume (connector, error);
 
   if (ret == 1)
     trim_partial_report (global_current_report);
 
-  http_scanner_connector_free (connection);
+  http_scanner_connector_free (connector);
   return ret;
 }
 
@@ -166,7 +166,7 @@ static int
 launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
                          int from, char **error, gboolean *discovery_out)
 {
-  http_scanner_connector_t connection;
+  http_scanner_connector_t connector;
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
@@ -181,7 +181,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   config_t config;
   iterator_t scanner_prefs_iter, families, prefs;
 
-  connection = NULL;
+  connector = NULL;
   config = task_config (task);
 
   alive_test = 0;
@@ -452,8 +452,8 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (vts_hash_table);
 
   /* Start the scan */
-  connection = http_scanner_connect (task_scanner (task), scan_id);
-  if (!connection)
+  connector = http_scanner_connect (task_scanner (task), scan_id);
+  if (!connector)
     {
       if (error)
         *error = g_strdup ("Could not connect to Scanner");
@@ -469,11 +469,11 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   scan_config =
     openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
 
-  response = http_scanner_create_scan (connection, scan_config);
+  response = http_scanner_create_scan (connector, scan_config);
   if (response->code == 201)
     {
       http_scanner_response_cleanup (response);
-      response = http_scanner_start_scan (connection);
+      response = http_scanner_start_scan (connector);
     }
   else
     g_warning ("%s: Failed to create scan: %ld", __func__, response->code);
@@ -484,7 +484,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (scanner_options);
   ret = response->code;
   http_scanner_response_cleanup (response);
-  http_scanner_connector_free (connection);
+  http_scanner_connector_free (connector);
   g_free (scan_config);
 
   return ret;
