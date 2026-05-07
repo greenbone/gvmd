@@ -65,6 +65,7 @@ prepare_openvasd_scan_for_resume (task_t task, const char *scan_id,
   if (ret == 1)
     trim_partial_report (global_current_report);
 
+  http_scanner_connector_free (connection);
   return ret;
 }
 
@@ -483,6 +484,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (scanner_options);
   ret = response->code;
   http_scanner_response_cleanup (response);
+  http_scanner_connector_free (connection);
   g_free (scan_config);
 
   return ret;
