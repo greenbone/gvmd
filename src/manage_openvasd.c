@@ -345,6 +345,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
     g_slist_free_full (openvasd_targets, (GDestroyNotify) openvasd_target_free);
     // Credentials are freed with target
     g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
+    g_hash_table_destroy (vts_hash_table);
     return -1;
   }
 
