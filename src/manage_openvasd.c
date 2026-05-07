@@ -483,6 +483,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   g_hash_table_destroy (scanner_options);
   ret = response->code;
   http_scanner_response_cleanup (response);
+  g_free (scan_config);
 
   return ret;
 }
