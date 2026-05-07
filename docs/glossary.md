@@ -5,7 +5,7 @@
 | **Target**                       | A collection of hosts (IPs, domains, or ranges) that you want to scan. It also includes scan-related options like excluded hosts and alive test methods. |
 | **Asset**                        | A long-term representation of a host. It combines data from multiple scans and keeps history like last seen time, severity counts, and identifiers.      |
 | **Task**                         | A scan definition that links a target, scan configuration, and schedule. It controls how and when scans are executed.                                    |
-| **Scan**                         | A single execution of a task. It runs vulnerability tests against the target and produces results.                                                       |
+| **Scan**                         | A single execution of a task. It runs vulnerability or compliance tests against the target and produces results.                                                       |
 | **Result**                       | A single finding from a scan, such as a detected vulnerability or informational message.                                                                 |
 | **Host Detail**                  | Additional structured information about a host discovered during a scan (e.g., OS, services, applications, ports).                                       |
 | **Host**                         | A single machine (IP address or hostname) within a target that is scanned individually.                                                                  |
