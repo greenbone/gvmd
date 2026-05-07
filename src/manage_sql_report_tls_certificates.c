@@ -259,6 +259,7 @@ print_report_tls_certificates_xml (report_t report,
 
           cleanup_iterator (&hosts);
         }
+      array_free (result_hosts);
     }
   else
     {
@@ -307,10 +308,10 @@ fail:
  */
 int
 print_report_tls_certificates_xml_summary_or_details (report_t report,
-  FILE *out,
-  int details,
-  gboolean result_hosts_only,
-  array_t *result_hosts)
+                                                      FILE *out,
+                                                      int details,
+                                                      gboolean result_hosts_only,
+                                                      array_t *result_hosts)
 {
   if (details == 0)
     {
