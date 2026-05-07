@@ -8,7 +8,7 @@
 | **Scan**                         | A single execution of a task. It runs vulnerability or compliance tests against the target and produces results.                                                       |
 | **Result**                       | A single finding from a scan, such as a detected vulnerability or informational message.                                                                 |
 | **Host Detail**                  | Additional structured information about a host discovered during a scan (e.g., OS, services, applications, ports).                                       |
-| **Host**                         | A single machine (IP address or hostname) within a target that is scanned individually.                                                                  |
+| **Host**                         | A single physical or virtual network device, usually identified by its IP address and/or hostname.                                                                  |
 | **Port**                         | A network port (TCP/UDP) on a host that can be scanned for open services or vulnerabilities.                                                             |
 | **Credential**                   | Authentication data (e.g., username/password, SSH key, SNMP, Kerberos) used to perform deeper, authenticated scans.                                      |
 | **Scan Config**                  | A predefined set of vulnerability tests (VTs) and settings that define what checks are executed during a scan.                                           |
