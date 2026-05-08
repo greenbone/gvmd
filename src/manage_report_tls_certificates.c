@@ -142,7 +142,7 @@ manage_send_report_tls_certificates (report_t report,
   /* Ownership of result_hosts is transferred to
    * print_report_tls_certificates_xml_summary_or_details when details output
    * is requested with result_hosts_only.
-  */
+   */
   if (get->details && result_hosts_only)
     result_hosts = NULL;
 

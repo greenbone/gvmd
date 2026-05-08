@@ -259,6 +259,7 @@ print_report_tls_certificates_xml (report_t report,
 
           cleanup_iterator (&hosts);
         }
+
       array_free (result_hosts);
     }
   else
