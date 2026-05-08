@@ -2069,6 +2069,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <e>results</e>
             <e>hosts</e>
             <e>closed_cves</e>
+            <e>cves</e>
             <e>vulns</e>
             <e>os</e>
             <e>apps</e>
@@ -2934,6 +2935,17 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <ele>
           <name>count</name>
           <summary>The number of closed CVEs</summary>
+        </ele>
+      </ele>
+      <ele>
+        <name>cves</name>
+        <summary></summary>
+        <pattern>
+          <e>count</e>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>The number of CVEs</summary>
         </ele>
       </ele>
       <ele>
@@ -25601,6 +25613,9 @@ END:VCALENDAR
               <closed_cves>
                 <count>0</count>
               </closed_cves>
+              <cves>
+                <count>5</count>
+              </cves>
               <vulns>
                 <count>3</count>
               </vulns>
@@ -25796,6 +25811,9 @@ END:VCALENDAR
               <closed_cves>
                 <count>0</count>
               </closed_cves>
+              <cves>
+                <count>0</count>
+              </cves>
               <vulns>
                 <count>68</count>
               </vulns>
