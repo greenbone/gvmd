@@ -1594,6 +1594,7 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
     {
       const gchar *agent_uuid = agent_uuids->agent_uuids[i];
       gchar *agent_id = NULL;
+      resource_t asset_snapshot = 0;
 
       if (agent_uuid == NULL || *agent_uuid == '\0')
         continue;
@@ -1607,15 +1608,29 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
 
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
-              "  asset_key, agent_id,"
-              "  creation_time, modification_time, scanner)"
+              "  asset_key, creation_time, modification_time, scanner)"
               " VALUES"
-              " (make_uuid (), $1, $2, $3, $4, $5, m_now (), m_now (),"
-              " $6);",
-              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now (), $5);",
+              SQL_RESOURCE_PARAM (task),
+              SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_AGENT),
-              SQL_STR_PARAM (agent_uuid), SQL_STR_PARAM (agent_id),
-              SQL_RESOURCE_PARAM (scanner), NULL);
+              SQL_STR_PARAM (agent_uuid),
+              SQL_RESOURCE_PARAM (scanner),
+              NULL);
+
+      asset_snapshot = sql_last_insert_id ();
+
+      sql_ps ("INSERT INTO asset_snapshot_identifiers"
+              " (asset_snapshot, identifier_type, identifier_value,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " ($1, $2, $3, m_now (), m_now ())"
+              " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+              " DO NOTHING;",
+              SQL_RESOURCE_PARAM (asset_snapshot),
+              SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_AGENT_ID),
+              SQL_STR_PARAM (agent_id),
+              NULL);
 
       g_free (agent_id);
     }
