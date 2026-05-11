@@ -3228,15 +3228,21 @@ create_tables ()
      "  task_id integer,"   /* not a FK: keep snapshots after task deletion */
      "  report_id integer," /* not a FK: keep snapshots after report deletion */
      "  asset_type integer NOT NULL,"
-     "  ip_address text,"
-     "  hostname text,"
-     "  mac_address text,"
-     "  agent_id text,"
-     "  container_digest text,"
      "  asset_key text,"
      "  creation_time integer NOT NULL,"
      "  modification_time integer NOT NULL,"
      "  scanner integer"
+     ");");
+
+  sql ("CREATE TABLE IF NOT EXISTS asset_snapshot_identifiers"
+     " (id SERIAL PRIMARY KEY,"
+     "  asset_snapshot integer"
+     "    REFERENCES asset_snapshots (id) ON DELETE CASCADE,"
+     "  identifier_type integer NOT NULL,"
+     "  identifier_value text NOT NULL,"
+     "  creation_time integer NOT NULL,"
+     "  modification_time integer NOT NULL,"
+     "  UNIQUE (asset_snapshot, identifier_type, identifier_value)"
      ");");
 
   create_tables_nvt ("");

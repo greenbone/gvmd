@@ -3806,6 +3806,130 @@ migrate_272_to_273 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 273 to version 274.
+ *
+ * Move asset snapshot identifiers from asset_snapshots columns into
+ * asset_snapshot_identifiers.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_273_to_274 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 273. */
+
+  if (manage_db_version () != 273)
+    {
+      sql_rollback ();
+      return -1;
+    }
+  /* Create the new identifier table if npt exists. */
+
+  sql ("CREATE TABLE IF NOT EXISTS asset_snapshot_identifiers"
+       " (id SERIAL PRIMARY KEY,"
+       "  asset_snapshot integer"
+       "    REFERENCES asset_snapshots (id) ON DELETE CASCADE,"
+       "  identifier_type integer NOT NULL,"
+       "  identifier_value text NOT NULL,"
+       "  creation_time integer NOT NULL,"
+       "  modification_time integer NOT NULL,"
+       "  UNIQUE (asset_snapshot, identifier_type, identifier_value)"
+       ");");
+
+  /* Back-fill IP addresses.
+   *
+   * ASSET_IDENTIFIER_TYPE_IP = 0
+   */
+  sql ("INSERT INTO asset_snapshot_identifiers"
+       " (asset_snapshot, identifier_type, identifier_value,"
+       "  creation_time, modification_time)"
+       " SELECT id,"
+       "        0,"
+       "        ip_address,"
+       "        creation_time,"
+       "        modification_time"
+       " FROM asset_snapshots"
+       " WHERE ip_address IS NOT NULL"
+       "   AND ip_address <> ''"
+       " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+       " DO NOTHING;");
+
+  /* Back-fill hostnames.
+   *
+   * ASSET_IDENTIFIER_TYPE_HOSTNAME = 1
+   */
+  sql ("INSERT INTO asset_snapshot_identifiers"
+       " (asset_snapshot, identifier_type, identifier_value,"
+       "  creation_time, modification_time)"
+       " SELECT id, 1, hostname, creation_time, modification_time"
+       " FROM asset_snapshots"
+       " WHERE hostname IS NOT NULL"
+       "   AND hostname <> ''"
+       " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+       " DO NOTHING;");
+
+  /* Back-fill MAC addresses.
+   *
+   * ASSET_IDENTIFIER_TYPE_MAC = 2
+   */
+  sql ("INSERT INTO asset_snapshot_identifiers"
+       " (asset_snapshot, identifier_type, identifier_value,"
+       "  creation_time, modification_time)"
+       " SELECT id, 2, mac_address, creation_time, modification_time"
+       " FROM asset_snapshots"
+       " WHERE mac_address IS NOT NULL"
+       "   AND mac_address <> ''"
+       " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+       " DO NOTHING;");
+
+  /* Back-fill agent IDs.
+   *
+   * ASSET_IDENTIFIER_TYPE_AGENT_ID = 3
+   */
+  sql ("INSERT INTO asset_snapshot_identifiers"
+       " (asset_snapshot, identifier_type, identifier_value,"
+       "  creation_time, modification_time)"
+       " SELECT id, 3, agent_id, creation_time, modification_time"
+       " FROM asset_snapshots"
+       " WHERE agent_id IS NOT NULL"
+       "   AND agent_id <> ''"
+       " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+       " DO NOTHING;");
+
+  /* Back-fill container digests.
+   *
+   * ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST = 4
+   */
+  sql ("INSERT INTO asset_snapshot_identifiers"
+       " (asset_snapshot, identifier_type, identifier_value,"
+       "  creation_time, modification_time)"
+       " SELECT id, 4, container_digest, creation_time, modification_time"
+       " FROM asset_snapshots"
+       " WHERE container_digest IS NOT NULL"
+       "   AND container_digest <> ''"
+       " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+       " DO NOTHING;");
+
+  /* Drop old identifier columns after back-filling. */
+  sql ("ALTER TABLE asset_snapshots"
+       " DROP COLUMN IF EXISTS ip_address,"
+       " DROP COLUMN IF EXISTS hostname,"
+       " DROP COLUMN IF EXISTS mac_address,"
+       " DROP COLUMN IF EXISTS agent_id,"
+       " DROP COLUMN IF EXISTS container_digest;");
+
+  /* Set the database version to 274. */
+
+  set_db_version (274);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -3885,6 +4009,7 @@ static migrator_t database_migrators[] = {
   {271, migrate_270_to_271},
   {272, migrate_271_to_272},
   {273, migrate_272_to_273},
+  {274, migrate_273_to_274},
   /* End marker. */
   {-1, NULL}};
 
