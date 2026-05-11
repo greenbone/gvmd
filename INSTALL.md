@@ -725,6 +725,35 @@ Use the following command to set the Agent Owner:
 gvmd --modify-setting 1ee1f106-8b2e-461c-b426-7f5d76001b29 --value <uuid_of_user>
 ```
 
+## Enable Report Export for Openvas Security Intelligence (OSI)
+
+To enable report export to OSI, turn on the feature in the gvmd configuration file.
+
+```ini
+[features]
+enable_security_intelligence_export = true
+```
+
+### Set the Integration Config Owner
+
+Integration configs are associated with a user. gvmd requires an **"Integration Config Owner"** to be configured in order to manage integration configs properly.
+
+Use the following command to set the Integration Config Owner:
+
+```bash
+gvmd --modify-setting e15e8a57-0285-439b-929a-068880b410b4 --value <uuid_of_user>
+```
+
+For the containers setup, environment variables needs to be set in the containers `docker-compose.yaml` file:
+
+```yaml
+# these are needed for integration config user
+INTEGRATION_CONFIG_USER="username"
+INTEGRATION_CONFIG_USER_INIT_PASSWORD="password"
+# enable the security intelligence report export feature
+GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT=true
+```
+
 ## Enabling JSON web token (JWT) authentication
 
 To enable JSON web token authentication, make sure to configure your build with the `ENABLE_JWT_AUTH` flag enabled.
