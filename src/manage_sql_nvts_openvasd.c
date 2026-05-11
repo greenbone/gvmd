@@ -589,9 +589,12 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
                                          &scanner_feed_version);
 
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-  if (scanner_feed_version == NULL)
+  if (scanner_feed_version == NULL
+      || strcmp (scanner_feed_version, "unavailable") == 0)
     {
+      g_warning ("%s: failed to get scanner feed version.", __func__);
       g_free (db_feed_version);
+      g_free (scanner_feed_version);
       return -1;
     }
 
