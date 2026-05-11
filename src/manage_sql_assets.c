@@ -156,15 +156,10 @@ typedef enum
   AS_COL_TASK_ID = 2,
   AS_COL_REPORT_ID = 3,
   AS_COL_ASSET_TYPE = 4,
-  AS_COL_IP_ADDRESS = 5,
-  AS_COL_HOSTNAME = 6,
-  AS_COL_MAC_ADDRESS = 7,
-  AS_COL_AGENT_ID = 8,
-  AS_COL_CONTAINER_DIGEST = 9,
-  AS_COL_ASSET_KEY = 10,
-  AS_COL_CREATION_TIME = 11,
-  AS_COL_MODIFICATION_TIME = 12,
-  AS_COL_SCANNER = 13
+  AS_COL_ASSET_KEY = 5,
+  AS_COL_CREATION_TIME = 6,
+  AS_COL_MODIFICATION_TIME = 7,
+  AS_COL_SCANNER = 8
 } asset_snapshot_col_t;
 
 static int
@@ -1094,8 +1089,7 @@ init_asset_snapshot_iterator (iterator_t *iterator,
 
   gchar *query = g_strdup_printf (
     "SELECT id, uuid, task_id, report_id, asset_type,"
-    "       ip_address, hostname, mac_address, agent_id,"
-    "       container_digest, asset_key, creation_time,"
+    "       asset_key, creation_time,"
     "       modification_time, scanner"
     "  FROM asset_snapshots"
     "%s"
@@ -1124,21 +1118,6 @@ asset_snapshot_iterator_id (iterator_t *it)
 
 /** @brief Get the asset snapshot UUID from the current iterator row. */
 DEF_ACCESS (asset_snapshot_iterator_uuid, AS_COL_UUID)
-
-/** @brief Get the IP address from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_ip_address, AS_COL_IP_ADDRESS);
-
-/** @brief Get the hostname from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_hostname, AS_COL_HOSTNAME);
-
-/** @brief Get the MAC address from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_mac_address, AS_COL_MAC_ADDRESS);
-
-/** @brief Get the agent ID from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_agent_id, AS_COL_AGENT_ID);
-
-/** @brief Get the container digest from the current iterator row. */
-DEF_ACCESS (asset_snapshot_iterator_container_digest, AS_COL_CONTAINER_DIGEST);
 
 /** @brief Get the asset key from the current iterator row. */
 DEF_ACCESS (asset_snapshot_iterator_asset_key, AS_COL_ASSET_KEY);
@@ -1431,9 +1410,10 @@ asset_snapshots_set_target_asset_keys (scanner_t scanner)
   while (next (&it))
     {
       asset_target_obs_t obs = {
-        .ip       = asset_snapshot_iterator_ip_address (&it),
-        .hostname = asset_snapshot_iterator_hostname (&it),
-        .mac      = asset_snapshot_iterator_mac_address (&it),
+        // todo this will be handled in the target merge algorithm
+        // .ip       = asset_snapshot_iterator_ip_address (&it),
+        // .hostname = asset_snapshot_iterator_hostname (&it),
+        // .mac      = asset_snapshot_iterator_mac_address (&it),
       };
 
       asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
@@ -1606,6 +1586,8 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
           continue;
         }
 
+      sql_begin_immediate ();
+
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
               "  asset_key, creation_time, modification_time, scanner)"
@@ -1631,6 +1613,8 @@ asset_snapshots_agent (report_t report, task_t task, agent_group_t group)
               SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_AGENT_ID),
               SQL_STR_PARAM (agent_id),
               NULL);
+
+      sql_commit ();
 
       g_free (agent_id);
     }
@@ -1660,6 +1644,8 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
   while (next (&hosts))
     {
       const char *digest;
+      asset_snapshot_t asset_snapshot;
+
       digest = host_iterator_host (&hosts);
 
       if (!digest || !*digest)
@@ -1670,17 +1656,34 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
 
       g_hash_table_add (seen, g_strdup (digest));
 
+      sql_begin_immediate ();
+
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
-              "  container_digest,"
               "  creation_time, modification_time, scanner)"
               " VALUES"
-              " (make_uuid (), $1, $2, $3, $4, m_now (), m_now (),"
-              " $5);",
-              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              " (make_uuid (), $1, $2, $3, m_now (), m_now (), $4);",
+              SQL_RESOURCE_PARAM (task),
+              SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_CONTAINER_IMAGE),
+              SQL_RESOURCE_PARAM (scanner),
+              NULL);
+
+      asset_snapshot = sql_last_insert_id ();
+
+      sql_ps ("INSERT INTO asset_snapshot_identifiers"
+              " (asset_snapshot, identifier_type, identifier_value,"
+              "  creation_time, modification_time)"
+              " VALUES"
+              " ($1, $2, $3, m_now (), m_now ())"
+              " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+              " DO NOTHING;",
+              SQL_RESOURCE_PARAM (asset_snapshot),
+              SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST),
               SQL_STR_PARAM (digest),
-              SQL_RESOURCE_PARAM (scanner), NULL);
+              NULL);
+
+      sql_commit ();
     }
 
   cleanup_iterator (&hosts);
@@ -1697,18 +1700,44 @@ asset_snapshots_insert_container_image (report_t report, task_t task)
 static gchar *
 get_asset_key_by_container_digest (const gchar *digest)
 {
-
   if (!digest || !*digest)
     return NULL;
 
-  gchar *key = sql_string_ps (
-    "SELECT asset_key FROM asset_snapshots"
-    " WHERE container_digest = $1"
-    "   AND asset_key IS NOT NULL"
-    " ORDER BY modification_time DESC LIMIT 1;",
-    SQL_STR_PARAM (digest), NULL);
+  return sql_string_ps (
+    "SELECT asset_snapshots.asset_key"
+    " FROM asset_snapshots"
+    " JOIN asset_snapshot_identifiers"
+    "   ON asset_snapshot_identifiers.asset_snapshot = asset_snapshots.id"
+    " WHERE asset_snapshot_identifiers.identifier_type = $1"
+    "   AND asset_snapshot_identifiers.identifier_value = $2"
+    "   AND asset_snapshots.asset_key IS NOT NULL"
+    " ORDER BY asset_snapshots.modification_time DESC"
+    " LIMIT 1;",
+    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST),
+    SQL_STR_PARAM (digest),
+    NULL);
+}
 
-  return key;
+/**
+ * @brief Lookup container digest identifier for an asset snapshot.
+ *
+ * @param[in] asset_snapshot  Asset snapshot row ID.
+ *
+ * @return Duplicated container digest string or NULL if not found.
+ */
+static gchar *
+get_container_digest_by_asset_snapshot (asset_snapshot_t asset_snapshot)
+{
+  return sql_string_ps (
+    "SELECT identifier_value"
+    " FROM asset_snapshot_identifiers"
+    " WHERE asset_snapshot = $1"
+    "   AND identifier_type = $2"
+    " ORDER BY id"
+    " LIMIT 1;",
+    SQL_RESOURCE_PARAM (asset_snapshot),
+    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST),
+    NULL);
 }
 
 /**
@@ -1728,9 +1757,10 @@ asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
     {
       asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
 
-      const char *digest = asset_snapshot_iterator_container_digest (&it);
-
+      gchar *digest = NULL;
       gchar *asset_key = NULL;
+
+      digest = get_container_digest_by_asset_snapshot (row_id);
 
       if (digest && *digest)
         asset_key = get_asset_key_by_container_digest (digest);
@@ -1756,6 +1786,7 @@ asset_snapshots_set_asset_keys_container_image (report_t report, task_t task)
                   NULL);
         }
 
+      g_free (digest);
       g_free (asset_key);
     }
 
