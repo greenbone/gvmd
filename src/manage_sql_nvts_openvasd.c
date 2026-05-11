@@ -652,6 +652,8 @@ manage_update_nvt_cache_openvasd ()
       return ret;
     }
 
+  g_free (db_feed_version);
+  g_free (scanner_feed_version);
   return ret;
 #else
   g_debug ("%s: Openvasd feature is disabled", __func__);
