@@ -871,11 +871,11 @@ target_openvas_ssh_credential_db (target_t target)
       scan_credential = scan_credential_new (type, "ssh", ssh_port);
       free (ssh_port);
       scan_credential_set_auth_data (scan_credential,
-                                    "username",
-                                    credential_iterator_login (&iter));
+                                     "username",
+                                     credential_iterator_login (&iter));
       scan_credential_set_auth_data (scan_credential,
-                                    "password",
-                                    credential_iterator_password (&iter));
+                                     "password",
+                                     credential_iterator_password (&iter));
 
       if (strcmp (type, "usk") == 0)
         {
@@ -883,11 +883,11 @@ target_openvas_ssh_credential_db (target_t target)
           gchar *base64 = g_base64_encode ((guchar *) private_key,
                                            strlen (private_key));
           scan_credential_set_auth_data (scan_credential,
-                                        "private", base64);
+                                         "private", base64);
           g_free (base64);
         }
 
-      if(ssh_elevate_credential)
+      if (ssh_elevate_credential)
         {
           const char *elevate_type;
 
@@ -897,7 +897,7 @@ target_openvas_ssh_credential_db (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              scan_credential_free(scan_credential);
+              scan_credential_free (scan_credential);
               return NULL;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
@@ -905,16 +905,16 @@ target_openvas_ssh_credential_db (target_t target)
             {
               g_warning ("%s: SSH Elevate Credential not of type up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
-              scan_credential_free(scan_credential);
+              scan_credential_free (scan_credential);
               return NULL;
             }
           scan_credential_set_auth_data (scan_credential,
-                                        "priv_username",
-                                        credential_iterator_login
+                                         "priv_username",
+                                         credential_iterator_login
                                           (&ssh_elevate_iter));
           scan_credential_set_auth_data (scan_credential,
-                                        "priv_password",
-                                        credential_iterator_password
+                                         "priv_password",
+                                         credential_iterator_password
                                           (&ssh_elevate_iter));
           cleanup_iterator (&ssh_elevate_iter);
         }
