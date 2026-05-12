@@ -435,6 +435,61 @@ asset_merge_decision_init (asset_merge_decision_t *out)
 }
 
 /**
+ * @brief Check whether a candidate has a usable asset_key.
+ *
+ * @param[in] candidate  Candidate to check.
+ *
+ * @return TRUE if candidate has a non-empty asset_key.
+ */
+static gboolean
+asset_candidate_has_key (const asset_candidate_t *candidate)
+{
+  return candidate && candidate->asset_key && *candidate->asset_key;
+}
+
+/**
+ * @brief Add a merge index to a merge decision.
+ *
+ * Creates the merge index array lazily.
+ *
+ * @param[in,out] out             Merge decision.
+ * @param[in]     idx             Candidate index to merge.
+ * @param[in]     candidates_len  Number of candidates, used as initial size.
+ */
+static void
+asset_merge_decision_add_merge_index (asset_merge_decision_t *out,
+                                      size_t idx,
+                                      size_t candidates_len)
+{
+  if (!out)
+    return;
+
+  if (!out->merge_indices)
+    out->merge_indices =
+      g_array_sized_new (FALSE, FALSE, sizeof (size_t), candidates_len);
+
+  g_array_append_val (out->merge_indices, idx);
+}
+
+/**
+ * @brief Remove an empty merge index array from a decision.
+ *
+ * @param[in,out] out  Merge decision.
+ */
+static void
+asset_merge_decision_clear_empty_merges (asset_merge_decision_t *out)
+{
+  if (!out || !out->merge_indices)
+    return;
+
+  if (out->merge_indices->len == 0)
+    {
+      g_array_free (out->merge_indices, TRUE);
+      out->merge_indices = NULL;
+    }
+}
+
+/**
  * @brief Decide the asset_key for a target observation.
  *
  * Rules:
@@ -459,7 +514,6 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
   time_t best_last_seen = (time_t) 0;
   size_t best_idx = 0;
   gboolean found_containing_candidate = FALSE;
-  gboolean found_subset_candidate = FALSE;
 
   if (!out)
     return;
@@ -474,14 +528,14 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
 
   /*
    * An existing candidate contains all identifiers from the new observation.
-   * Reuse the existing candidate asset_key.
+   * Reuse the best matching existing candidate asset_key.
    */
   for (size_t i = 0; i < candidates_len; i++)
     {
       const asset_candidate_t *candidate = &candidates[i];
       float score;
 
-      if (!candidate->asset_key || !*candidate->asset_key)
+      if (!asset_candidate_has_key (candidate))
         continue;
 
       if (!asset_identifier_map_is_subset (obs->identifiers,
@@ -503,9 +557,35 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
 
   if (found_containing_candidate)
     {
+      const asset_candidate_t *selected = &candidates[best_idx];
+
       out->needs_new_key = 0;
       out->selected_index = best_idx;
-      out->selected_key = candidates[best_idx].asset_key;
+      out->selected_key = selected->asset_key;
+
+      /*
+       * Merge equivalent or narrower candidates into the selected key.
+       * This covers the exact-same-identifiers case too.
+       */
+      for (size_t i = 0; i < candidates_len; i++)
+        {
+          const asset_candidate_t *candidate = &candidates[i];
+
+          if (i == best_idx)
+            continue;
+
+          if (!asset_candidate_has_key (candidate))
+            continue;
+
+          if (g_strcmp0 (candidate->asset_key, selected->asset_key) == 0)
+            continue;
+
+          if (asset_identifier_map_is_subset (candidate->identifiers,
+                                              selected->identifiers))
+            asset_merge_decision_add_merge_index (out, i, candidates_len);
+        }
+
+      asset_merge_decision_clear_empty_merges (out);
       return;
     }
 
@@ -513,25 +593,19 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
    * The new observation contains one or more old candidates.
    * Caller creates a new key and merges those candidates into it.
    */
-  out->merge_indices =
-    g_array_sized_new (FALSE, FALSE, sizeof (size_t), candidates_len);
-
   for (size_t i = 0; i < candidates_len; i++)
     {
       const asset_candidate_t *candidate = &candidates[i];
 
-      if (!candidate->asset_key || !*candidate->asset_key)
+      if (!asset_candidate_has_key (candidate))
         continue;
 
       if (asset_identifier_map_is_subset (candidate->identifiers,
                                           obs->identifiers))
-        {
-          found_subset_candidate = TRUE;
-          g_array_append_val (out->merge_indices, i);
-        }
+        asset_merge_decision_add_merge_index (out, i, candidates_len);
     }
 
-  if (found_subset_candidate)
+  if (out->merge_indices && out->merge_indices->len > 0)
     {
       out->needs_new_key = 1;
       out->selected_key = NULL;
@@ -540,14 +614,8 @@ asset_keys_target_merge_decide (const asset_target_obs_t *obs,
     }
 
   /*
-   * There is no full match. Create a new key and do not merge.
+   * There is no full containment. Create a new key and do not merge.
    */
-  if (out->merge_indices)
-    {
-      g_array_free (out->merge_indices, TRUE);
-      out->merge_indices = NULL;
-    }
-
   out->needs_new_key = 1;
   out->selected_key = NULL;
   out->selected_index = 0;
