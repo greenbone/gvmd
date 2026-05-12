@@ -301,7 +301,7 @@ target_openvas_ssh_credential (target_t target,
 
   if (credential)
     {
-      iterator_t iter, ssh_elevate_iter;
+      iterator_t iter;
       const char *type;
       char *ssh_port;
       scan_credential_t *scan_credential;
@@ -349,6 +349,7 @@ target_openvas_ssh_credential (target_t target,
       free (ssh_port);
       if (ssh_elevate_credential)
         {
+          iterator_t ssh_elevate_iter;
           const char *elevate_type;
 
           init_credential_iterator_one (&ssh_elevate_iter,
