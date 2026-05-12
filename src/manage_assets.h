@@ -18,18 +18,6 @@ typedef enum
  ASSET_TYPE_CONTAINER_IMAGE = 2
 } asset_type_t;
 
-/**
- * @brief Types of asset identifiers represented in asset snapshot identifiers.
- */
-typedef enum
-{
- ASSET_IDENTIFIER_TYPE_IP = 0,
- ASSET_IDENTIFIER_TYPE_HOSTNAME = 1,
- ASSET_IDENTIFIER_TYPE_MAC = 2,
- ASSET_IDENTIFIER_TYPE_AGENT_ID = 3,
- ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST = 4,
-} asset_identifier_type_t;
-
 char*
 host_uuid (resource_t);
 

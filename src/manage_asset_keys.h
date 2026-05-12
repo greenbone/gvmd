@@ -26,13 +26,29 @@
 #define MATCH_MAC      (1u << 2)  ///< Candidate matches the observed MAC address.
 
 /**
+ * @brief Types of asset identifiers represented in asset snapshot identifiers.
+ */
+typedef enum
+{
+ ASSET_IDENTIFIER_TYPE_IP = 0,
+ ASSET_IDENTIFIER_TYPE_HOSTNAME = 1,
+ ASSET_IDENTIFIER_TYPE_MAC = 2,
+ ASSET_IDENTIFIER_TYPE_AGENT_ID = 3,
+ ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST = 4,
+} asset_identifier_type_t;
+
+/**
  * @brief Observed target identifiers for a single asset snapshot row.
  */
 typedef struct
 {
-    const char* ip; ///< Observed IP address (may be NULL or "").
-    const char* hostname; ///< Observed hostname (may be NULL or "").
-    const char* mac; ///< Observed MAC address (may be NULL or "").
+ /**
+  * Map of identifier type to string set.
+  *
+  * Key:   GINT_TO_POINTER (ASSET_IDENTIFIER_TYPE_*)
+  * Value: GHashTable* used as a set of gchar* identifier values.
+  */
+ GHashTable *identifiers;
 } asset_target_obs_t;
 
 /**
@@ -40,12 +56,17 @@ typedef struct
  */
 typedef struct
 {
-    const char* asset_key; ///< Existing asset_key for this candidate.
-    time_t last_seen; ///< Last seen timestamp for this asset_key.
-    unsigned match_mask; ///< Bitmask of MATCH_* flags for this candidate.
-    const char* ip; ///< IP address of this candidate
-    const char* hostname; ///< Hostname of this candidate
-    const char* mac; ///< MAC address of this candidate
+ const char *asset_key; ///< Existing asset_key for this candidate.
+ time_t last_seen;      ///< Last seen timestamp for this asset_key.
+ unsigned match_mask;   ///< Bitmask of MATCH_* flags for this candidate.
+
+ /**
+  * Map of identifier type to string set.
+  *
+  * Key:   GINT_TO_POINTER (ASSET_IDENTIFIER_TYPE_*)
+  * Value: GHashTable* used as a set of gchar* identifier values.
+  */
+ GHashTable *identifiers;
 } asset_candidate_t;
 
 /**
@@ -69,5 +90,26 @@ asset_keys_target_merge_decide (const asset_target_obs_t*,
 
 void
 asset_merge_decision_reset (asset_merge_decision_t* );
+
+GHashTable *
+asset_identifier_map_new ();
+
+GHashTable *
+asset_identifier_map_ensure_values (GHashTable *,int);
+
+void
+asset_identifier_map_add (GHashTable *, int, const char *);
+
+asset_target_obs_t *
+asset_target_obs_new ();
+
+void
+asset_target_obs_free (asset_target_obs_t *);
+
+asset_candidate_t *
+asset_candidate_new (const char *);
+
+void
+asset_candidate_free (asset_candidate_t *);
 
 #endif /* _GVMD_MANAGE_ASSET_KEYS_H */
