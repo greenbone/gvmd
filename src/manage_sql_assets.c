@@ -1056,6 +1056,206 @@ identifier_free (identifier_t *identifier)
 }
 
 /**
+ * @brief Check whether an interface name should be ignored for asset matching.
+ *
+ * @param[in] iface  Interface name, for example "docker0" or "eth0".
+ *           ref: https://wiki.netmodule.com/documentation/abbreviations
+ *
+ * @return TRUE if the interface should be ignored, else FALSE.
+ */
+static gboolean
+asset_identifier_ignore_iface (const char *iface)
+{
+  if (!iface || !*iface)
+    return FALSE;
+
+  return
+    /* Docker bridge interfaces, for example docker0. */
+    g_str_has_prefix (iface, "docker")
+
+    /* Loopback interface, usually 127.0.0.1 / ::1. */
+    || g_strcmp0 (iface, "lo") == 0
+
+    /* Linux bridge interfaces, often used by containers/VM networking. */
+    || g_str_has_prefix (iface, "br-")
+
+    /* Virtual ethernet pairs, often used by containers/network namespaces. */
+    || g_str_has_prefix (iface, "veth")
+
+    /* libvirt virtual bridge interfaces, for example virbr0. */
+    || g_str_has_prefix (iface, "virbr")
+
+    /* Tunnel interfaces, for example VPN/tun devices. */
+    || g_str_has_prefix (iface, "tun")
+
+    /* TAP virtual network interfaces, often used by VMs/VPNs. */
+    || g_str_has_prefix (iface, "tap");
+}
+
+/**
+ * @brief Insert one identifier for an asset snapshot.
+ *
+ * Duplicate identifiers for the same snapshot are ignored.
+ *
+ * @param[in] asset_snapshot    Asset snapshot ID.
+ * @param[in] identifier_type   Identifier type, for example IP, hostname or MAC.
+ * @param[in] identifier_value  Identifier value to store.
+ */
+static void
+asset_snapshot_insert_identifier (asset_snapshot_t asset_snapshot,
+                                  int identifier_type,
+                                  const char *identifier_value)
+{
+  if (!asset_snapshot || !identifier_value || !*identifier_value)
+    return;
+
+  sql_ps ("INSERT INTO asset_snapshot_identifiers"
+          " (asset_snapshot, identifier_type, identifier_value,"
+          "  creation_time, modification_time)"
+          " VALUES"
+          " ($1, $2, $3, m_now (), m_now ())"
+          " ON CONFLICT (asset_snapshot, identifier_type, identifier_value)"
+          " DO NOTHING;",
+          SQL_RESOURCE_PARAM (asset_snapshot),
+          SQL_INT_PARAM (identifier_type),
+          SQL_STR_PARAM (identifier_value),
+          NULL);
+}
+
+/**
+ * @brief Insert identifiers from a MAC-Ifaces host detail value.
+ *
+ * Expected value format is "interface|mac|ip". Virtual interfaces such as
+ * docker0 are ignored completely.
+ *
+ * @param[in] asset_snapshot  Asset snapshot ID.
+ * @param[in] value           MAC-Ifaces value to parse.
+ */
+static void
+asset_snapshot_insert_mac_iface_identifiers (asset_snapshot_t asset_snapshot,
+                                             const char *value)
+{
+  gchar **parts;
+
+  if (!asset_snapshot || !value || !*value)
+    return;
+
+  parts = g_strsplit (value, "|", 3);
+
+  if (!parts[0] || asset_identifier_ignore_iface (parts[0]))
+    {
+      g_strfreev (parts);
+      return;
+    }
+
+  if (parts[1] && *parts[1])
+    asset_snapshot_insert_identifier (asset_snapshot,
+                                      ASSET_IDENTIFIER_TYPE_MAC,
+                                      parts[1]);
+
+  if (parts[2] && *parts[2])
+    asset_snapshot_insert_identifier (asset_snapshot,
+                                      ASSET_IDENTIFIER_TYPE_IP,
+                                      parts[2]);
+
+  g_strfreev (parts);
+}
+
+/**
+ * @brief Insert identifiers from a NIC_IPS host detail value.
+ *
+ * The value is expected to contain one IP address.
+ *
+ * @param[in] asset_snapshot  Asset snapshot ID.
+ * @param[in] value           NIC_IPS value to store.
+ */
+static void
+asset_snapshot_insert_nic_ips_identifier (asset_snapshot_t asset_snapshot,
+                                          const char *value)
+{
+  if (!asset_snapshot || !value || !*value)
+    return;
+
+  asset_snapshot_insert_identifier (asset_snapshot,
+                                    ASSET_IDENTIFIER_TYPE_IP,
+                                    value);
+}
+
+/**
+ * @brief Initialize iterator for asset identifiers from report host details.
+ *
+ * Reads NIC_IPS and MAC-Ifaces values for one host in a report.
+ *
+ * @param[out] iterator  Iterator to initialize.
+ * @param[in]  report    Report ID.
+ * @param[in]  host      Report host value, usually the IP address.
+ */
+static void
+init_asset_snapshot_host_detail_identifier_iterator (iterator_t *iterator,
+                                                     report_t report,
+                                                     const char *host)
+{
+  g_return_if_fail (iterator);
+
+  if (!report || !host || !*host)
+    {
+      init_iterator (iterator, "SELECT NULL, NULL WHERE FALSE;");
+      return;
+    }
+
+  init_ps_iterator (iterator,
+                    "SELECT rhd.name, rhd.value"
+                    " FROM report_hosts rh"
+                    " JOIN report_host_details rhd"
+                    "   ON rhd.report_host = rh.id"
+                    " WHERE rh.report = $1"
+                    "   AND rh.host = $2"
+                    "   AND rhd.name IN ('NIC_IPS', 'MAC-Ifaces');",
+                    SQL_RESOURCE_PARAM (report),
+                    SQL_STR_PARAM (host),
+                    NULL);
+}
+
+/**
+ * @brief Insert asset identifiers found in report host details.
+ *
+ * Reads NIC_IPS and MAC-Ifaces details for one host in a report and stores the
+ * extracted IP and MAC identifiers for the given asset snapshot.
+ *
+ * @param[in] asset_snapshot  Asset snapshot ID.
+ * @param[in] report          Report ID.
+ * @param[in] host            Report host value, usually the IP address.
+ */
+static void
+asset_snapshot_insert_host_detail_identifiers (asset_snapshot_t asset_snapshot,
+                                               report_t report,
+                                               const char *host)
+{
+  iterator_t it;
+
+  if (!asset_snapshot || !report || !host || !*host)
+    return;
+
+  init_asset_snapshot_host_detail_identifier_iterator (&it, report, host);
+
+  while (next (&it))
+    {
+      const char *name = iterator_string (&it, 0);
+      const char *value = iterator_string (&it, 1);
+
+      if (!name || !value || !*value)
+        continue;
+
+      if (strcmp (name, "NIC_IPS") == 0)
+        asset_snapshot_insert_nic_ips_identifier (asset_snapshot, value);
+      else if (strcmp (name, "MAC-Ifaces") == 0)
+        asset_snapshot_insert_mac_iface_identifiers (asset_snapshot, value);
+    }
+
+  cleanup_iterator (&it);
+}
+
+/**
  * @brief Initialize iterator for asset_snapshots filtered by task/report.
  *
  * @param[out] iterator          Iterator to initialize.
@@ -1149,135 +1349,179 @@ asset_target_get_last_modification_time (const char *asset_key)
   return modification_time;
 }
 
-/**
- * @brief Add candidates for a given property value (target assets).
- *
- * @param[in,out] candidates  Array of (asset_candidate_t*) to extend.
- * @param[in]     value       Value to match (may be NULL/"").
- * @param[in]     match_bit   Which property is being matched (MATCH_MAC /
- *                            MATCH_HOSTNAME / MATCH_IP). Also ORed into
- *                            match_mask for the candidate.
- * @param[in]     scanner     Scanner id of the task used for distinguishing
- *                            networks
- */
-static void
-asset_target_add_candidates (GPtrArray  *candidates,
-                             const char *value,
-                             unsigned    match_bit,
-                             scanner_t scanner)
-{
-  iterator_t it;
-  const char *sql = NULL;
+// todo these functions will be refactored/replaced when manage_asset_keys is completed
+// /**
+//  * @brief Check whether a string array contains a value.
+//  *
+//  * @param[in] array  Array of strings.
+//  * @param[in] value  Value to search for.
+//  *
+//  * @return TRUE if value exists in array, else FALSE.
+//  */
+// static gboolean
+// string_array_contains (GPtrArray *array, const char *value)
+// {
+//   if (!array || !value || !*value)
+//     return FALSE;
+//
+//   for (guint i = 0; i < array->len; i++)
+//     {
+//       const char *item = g_ptr_array_index (array, i);
+//
+//       if (g_strcmp0 (item, value) == 0)
+//         return TRUE;
+//     }
+//
+//   return FALSE;
+// }
+//
+// /**
+//  * @brief Add a string value to an array if it is not already present.
+//  *
+//  * @param[in,out] array  Array of strings.
+//  * @param[in]     value  Value to add.
+//  */
+// static void
+// string_array_add_unique (GPtrArray *array, const char *value)
+// {
+//   if (!array || !value || !*value)
+//     return;
+//
+//   if (string_array_contains (array, value))
+//     return;
+//
+//   g_ptr_array_add (array, g_strdup (value));
+// }
 
-  if (!value || !*value)
-    return;
-
-  switch (match_bit)
-    {
-    case MATCH_MAC:
-      sql =
-        "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-        "  FROM asset_snapshots"
-        " WHERE mac_address = $1"
-        "   AND asset_type = $2"
-        "   AND asset_key IS NOT NULL"
-        "   AND scanner = $3"
-        " ORDER BY asset_key;";
-      break;
-    case MATCH_HOSTNAME:
-      sql =
-        "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-        "  FROM asset_snapshots"
-        " WHERE hostname = $1"
-        "   AND asset_type = $2"
-        "   AND asset_key IS NOT NULL"
-        "   AND scanner= $3"
-        " ORDER BY asset_key;";
-      break;
-    case MATCH_IP:
-      sql =
-        "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-        "  FROM asset_snapshots"
-        " WHERE ip_address = $1"
-        "   AND asset_type = $2"
-        "   AND asset_key IS NOT NULL"
-        "   AND scanner= $3"
-        " ORDER BY asset_key;";
-      break;
-    default:
-      return;
-    }
-
-  init_ps_iterator (&it,
-                    sql,
-                    SQL_STR_PARAM (value),
-                    SQL_INT_PARAM (ASSET_TYPE_TARGET),
-                    SQL_RESOURCE_PARAM (scanner),
-                    NULL);
-
-  while (next (&it))
-    {
-      const char *key      = iterator_string (&it, 0);
-      const char *ip       = iterator_string (&it, 1);
-      const char *hostname = iterator_string (&it, 2);
-      const char *mac      = iterator_string (&it, 3);
-
-      if (!key || !*key)
-        continue;
-
-      asset_candidate_t *candidate = NULL;
-
-      /* find existing candidate by asset_key */
-      for (guint i = 0; i < candidates->len; i++)
-        {
-          asset_candidate_t *c = g_ptr_array_index (candidates, i);
-          if (g_strcmp0 (c->asset_key, key) == 0)
-            {
-              candidate = c;
-              break;
-            }
-        }
-
-      /* create if missing */
-      if (!candidate)
-        {
-          candidate = g_malloc0 (sizeof (*candidate));
-          candidate->asset_key = g_strdup (key);
-          candidate->last_seen = 0;
-          g_ptr_array_add (candidates, candidate);
-        }
-
-      /* always record how we matched this key */
-      candidate->match_mask |= match_bit;
-
-      /* always set the matched property from 'value' (prevents empty fields) */
-      if (match_bit == MATCH_MAC)
-        {
-          if (!candidate->mac || !*candidate->mac)
-            candidate->mac = g_strdup (value);
-        }
-      else if (match_bit == MATCH_HOSTNAME)
-        {
-          if (!candidate->hostname || !*candidate->hostname)
-            candidate->hostname = g_strdup (value);
-        }
-      else if (match_bit == MATCH_IP)
-        {
-          if (!candidate->ip || !*candidate->ip)
-            candidate->ip = g_strdup (value);
-        }
-
-      /* fill any missing fields from DB row only if not empty */
-      if (!candidate->ip && ip && *ip)
-        candidate->ip = g_strdup (ip);
-      if (!candidate->hostname && hostname && *hostname)
-        candidate->hostname = g_strdup (hostname);
-      if (!candidate->mac && mac && *mac)
-        candidate->mac = g_strdup (mac);
-    }
-
-  cleanup_iterator (&it);
-}
+// /**
+//  * @brief Add candidates for a given property value (target assets).
+//  *
+//  * @param[in,out] candidates  Array of (asset_candidate_t*) to extend.
+//  * @param[in]     value       Value to match (may be NULL/"").
+//  * @param[in]     match_bit   Which property is being matched (MATCH_MAC /
+//  *                            MATCH_HOSTNAME / MATCH_IP). Also ORed into
+//  *                            match_mask for the candidate.
+//  * @param[in]     scanner     Scanner id of the task used for distinguishing
+//  *                            networks
+//  */
+// static void
+// asset_target_add_candidates (GPtrArray  *candidates,
+//                              const char *value,
+//                              unsigned    match_bit,
+//                              scanner_t scanner)
+// {
+//   iterator_t it;
+//   const char *sql = NULL;
+//
+//   if (!value || !*value)
+//     return;
+//
+//   switch (match_bit)
+//     {
+//     case MATCH_MAC:
+//       sql =
+//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
+//         "  FROM asset_snapshots"
+//         " WHERE mac_address = $1"
+//         "   AND asset_type = $2"
+//         "   AND asset_key IS NOT NULL"
+//         "   AND scanner = $3"
+//         " ORDER BY asset_key;";
+//       break;
+//     case MATCH_HOSTNAME:
+//       sql =
+//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
+//         "  FROM asset_snapshots"
+//         " WHERE hostname = $1"
+//         "   AND asset_type = $2"
+//         "   AND asset_key IS NOT NULL"
+//         "   AND scanner= $3"
+//         " ORDER BY asset_key;";
+//       break;
+//     case MATCH_IP:
+//       sql =
+//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
+//         "  FROM asset_snapshots"
+//         " WHERE ip_address = $1"
+//         "   AND asset_type = $2"
+//         "   AND asset_key IS NOT NULL"
+//         "   AND scanner= $3"
+//         " ORDER BY asset_key;";
+//       break;
+//     default:
+//       return;
+//     }
+//
+//   init_ps_iterator (&it,
+//                     sql,
+//                     SQL_STR_PARAM (value),
+//                     SQL_INT_PARAM (ASSET_TYPE_TARGET),
+//                     SQL_RESOURCE_PARAM (scanner),
+//                     NULL);
+//
+//   while (next (&it))
+//     {
+//       const char *key      = iterator_string (&it, 0);
+//       const char *ip       = iterator_string (&it, 1);
+//       const char *hostname = iterator_string (&it, 2);
+//       const char *mac      = iterator_string (&it, 3);
+//
+//       if (!key || !*key)
+//         continue;
+//
+//       asset_candidate_t *candidate = NULL;
+//
+//       /* find existing candidate by asset_key */
+//       for (guint i = 0; i < candidates->len; i++)
+//         {
+//           asset_candidate_t *c = g_ptr_array_index (candidates, i);
+//           if (g_strcmp0 (c->asset_key, key) == 0)
+//             {
+//               candidate = c;
+//               break;
+//             }
+//         }
+//
+//       /* create if missing */
+//       if (!candidate)
+//         {
+//           candidate = g_malloc0 (sizeof (*candidate));
+//           candidate->asset_key = g_strdup (key);
+//           candidate->last_seen = 0;
+//           g_ptr_array_add (candidates, candidate);
+//         }
+//
+//       /* always record how we matched this key */
+//       candidate->match_mask |= match_bit;
+//
+//       /* always set the matched property from 'value' (prevents empty fields) */
+//       // if (match_bit == MATCH_MAC)
+//       //   {
+//       //     if (!candidate->mac || !*candidate->mac)
+//       //       candidate->mac = g_strdup (value);
+//       //   }
+//       // else if (match_bit == MATCH_HOSTNAME)
+//       //   {
+//       //     if (!candidate->hostname || !*candidate->hostname)
+//       //       candidate->hostname = g_strdup (value);
+//       //   }
+//       // else if (match_bit == MATCH_IP)
+//       //   {
+//       //     if (!candidate->ip || !*candidate->ip)
+//       //       candidate->ip = g_strdup (value);
+//       //   }
+//       //
+//       // /* fill any missing fields from DB row only if not empty */
+//       // if (!candidate->ip && ip && *ip)
+//       //   candidate->ip = g_strdup (ip);
+//       // if (!candidate->hostname && hostname && *hostname)
+//       //   candidate->hostname = g_strdup (hostname);
+//       // if (!candidate->mac && mac && *mac)
+//       //   candidate->mac = g_strdup (mac);
+//     }
+//
+//   cleanup_iterator (&it);
+// }
 
 /**
  * @brief Resolve and persist the asset_key for a single target snapshot row.
@@ -1301,11 +1545,11 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
   size_t cand_len = 0;
   asset_merge_decision_t decision;
 
-  /* Collect candidates */
-  asset_target_add_candidates (candidates, obs->mac, MATCH_MAC, scanner);
-  asset_target_add_candidates (candidates, obs->hostname, MATCH_HOSTNAME,
-                               scanner);
-  asset_target_add_candidates (candidates, obs->ip,MATCH_IP, scanner);
+  // /* Collect candidates */
+  // asset_target_add_candidates (candidates, obs->mac, MATCH_MAC, scanner);
+  // asset_target_add_candidates (candidates, obs->hostname, MATCH_HOSTNAME,
+  //                              scanner);
+  // asset_target_add_candidates (candidates, obs->ip,MATCH_IP, scanner);
 
   /* Build flat array for algorithm */
   cand_len = candidates->len;
@@ -1378,9 +1622,9 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
     {
       asset_candidate_t *c = g_ptr_array_index (candidates, i);
       g_free ((gchar *) c->asset_key);
-      g_free ((gchar *) c->ip);
-      g_free ((gchar *) c->hostname);
-      g_free ((gchar *) c->mac);
+      // g_free ((gchar *) c->ip);
+      // g_free ((gchar *) c->hostname);
+      // g_free ((gchar *) c->mac);
       g_free (c);
     }
 
@@ -1428,13 +1672,15 @@ asset_snapshots_set_target_asset_keys (scanner_t scanner)
 /**
  * @brief Insert one asset snapshot per host from snapshot host identifiers.
  *
- * @param[in]  report     Report that the host identifiers come from.
- * @param[in]  task       Task that produced the report.
- * @param[in]  task       Scanner that produced the task.
+ * @param[in]  report   Report that the host identifiers come from.
+ * @param[in]  task     Task that produced the report.
+ * @param[in]  scanner  Scanner that produced the task.
  */
 static void
 asset_snapshots_insert_target (report_t report, task_t task, scanner_t scanner)
 {
+  GHashTable *seen;
+
   if (!snapshot_identifier_hosts || snapshot_identifier_hosts->len == 0)
     {
       g_debug (
@@ -1443,33 +1689,35 @@ asset_snapshots_insert_target (report_t report, task_t task, scanner_t scanner)
       goto cleanup;
     }
 
-  GHashTable *seen = g_hash_table_new_full (g_str_hash, g_str_equal,
-                                            g_free, NULL);
+  seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
   for (guint host_index = 0;
        snapshot_identifier_hosts && host_index < snapshot_identifier_hosts->len;
        host_index++)
     {
-      const gchar *ip = g_ptr_array_index (snapshot_identifier_hosts, host_index);
-      if (!ip || !*ip)
-          continue;
-
-      if (report_host_noticeable (report, ip) == 0)
-          continue;
-
-      if (g_hash_table_contains (seen, ip))
-          continue;
-
-      g_hash_table_add (seen, g_strdup (ip));
-
+      const gchar *ip;
       const gchar *hostname = NULL;
       const gchar *mac = NULL;
+      asset_snapshot_t asset_snapshot = 0;
+
+      ip = g_ptr_array_index (snapshot_identifier_hosts, host_index);
+      if (!ip || !*ip)
+        continue;
+
+      if (report_host_noticeable (report, ip) == 0)
+        continue;
+
+      if (g_hash_table_contains (seen, ip))
+        continue;
+
+      g_hash_table_add (seen, g_strdup (ip));
 
       if (snapshot_identifiers && snapshot_identifiers->len > 0)
         {
           for (guint i = 0; i < snapshot_identifiers->len; i++)
             {
               identifier_t *id = g_ptr_array_index (snapshot_identifiers, i);
+
               if (!id || !id->ip || g_strcmp0 (id->ip, ip) != 0)
                 continue;
 
@@ -1485,16 +1733,34 @@ asset_snapshots_insert_target (report_t report, task_t task, scanner_t scanner)
 
       sql_ps ("INSERT INTO asset_snapshots"
               " (uuid, task_id, report_id, asset_type,"
-              "  ip_address, hostname, mac_address,"
               "  creation_time, modification_time, scanner)"
               " VALUES"
-              " (make_uuid (), $1, $2, $3, $4, $5, $6, m_now (),"
-              " m_now (), $7);",
-              SQL_RESOURCE_PARAM (task), SQL_RESOURCE_PARAM (report),
+              " (make_uuid (), $1, $2, $3, m_now (), m_now (), $4);",
+              SQL_RESOURCE_PARAM (task),
+              SQL_RESOURCE_PARAM (report),
               SQL_INT_PARAM (ASSET_TYPE_TARGET),
-              SQL_STR_PARAM (ip), SQL_STR_PARAM (hostname),
-              SQL_STR_PARAM (mac),
-              SQL_RESOURCE_PARAM (scanner), NULL);
+              SQL_RESOURCE_PARAM (scanner),
+              NULL);
+
+      asset_snapshot = sql_last_insert_id ();
+
+      asset_snapshot_insert_identifier (asset_snapshot,
+                                        ASSET_IDENTIFIER_TYPE_IP,
+                                        ip);
+
+      if (hostname && *hostname)
+        asset_snapshot_insert_identifier (asset_snapshot,
+                                          ASSET_IDENTIFIER_TYPE_HOSTNAME,
+                                          hostname);
+
+      if (mac && *mac)
+        asset_snapshot_insert_identifier (asset_snapshot,
+                                          ASSET_IDENTIFIER_TYPE_MAC,
+                                          mac);
+
+      asset_snapshot_insert_host_detail_identifiers (asset_snapshot,
+                                                     report,
+                                                     ip);
     }
 
   g_hash_table_destroy (seen);
@@ -1506,6 +1772,7 @@ cleanup:
       array_terminate (snapshot_identifiers);
       snapshot_identifiers = NULL;
     }
+
   if (snapshot_identifier_hosts)
     {
       array_terminate (snapshot_identifier_hosts);
