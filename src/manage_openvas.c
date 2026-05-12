@@ -898,6 +898,7 @@ target_openvas_ssh_credential_db (target_t target)
               g_warning ("%s: SSH Elevate Credential not found.", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               scan_credential_free (scan_credential);
+              cleanup_iterator (&iter);
               return NULL;
             }
           elevate_type = credential_iterator_type (&ssh_elevate_iter);
@@ -906,6 +907,7 @@ target_openvas_ssh_credential_db (target_t target)
               g_warning ("%s: SSH Elevate Credential not of type up", __func__);
               cleanup_iterator (&ssh_elevate_iter);
               scan_credential_free (scan_credential);
+              cleanup_iterator (&iter);
               return NULL;
             }
           scan_credential_set_auth_data (scan_credential,
