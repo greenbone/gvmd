@@ -277,6 +277,55 @@ set_auth_data_snmp_from_credential_store (iterator_t *iter,
 }
 
 /**
+ * @brief Get the SSH elevate credential for target_openvas_ssh_credential
+ *
+ * @param[in]  ssh_elevate_credential  Elevate credential.
+ * @param[out] scan_credential         Credential.
+ *
+ * @return A target_credential_return_t return code.
+ */
+static target_credential_return_t
+get_ssh_elevate_credential (credential_t ssh_elevate_credential,
+                            scan_credential_t *scan_credential)
+{
+  iterator_t ssh_elevate_iter;
+  const char *elevate_type;
+
+  init_credential_iterator_one (&ssh_elevate_iter,
+                                ssh_elevate_credential);
+  if (!next (&ssh_elevate_iter))
+    {
+      g_warning ("%s: SSH Elevate Credential not found.", __func__);
+      cleanup_iterator (&ssh_elevate_iter);
+      return TARGET_INTERNAL_ERROR;
+    }
+  elevate_type = credential_iterator_type (&ssh_elevate_iter);
+  if (strcmp (elevate_type, "up") == 0)
+    {
+      set_auth_data_ssh_from_db (&ssh_elevate_iter, scan_credential, 1);
+    }
+  else if (strcmp (elevate_type, "cs_up") == 0)
+    {
+      if (set_auth_data_ssh_from_credential_store (&ssh_elevate_iter,
+                                                   scan_credential, 1))
+        {
+          cleanup_iterator (&ssh_elevate_iter);
+          g_warning ("%s: Failed to retrieve SSH elevate"
+                     " credential from credential store.", __func__);
+          return TARGET_FAILED_CS_RETRIEVAL;
+        }
+    }
+  else
+    {
+      g_warning ("%s: SSH Elevate Credential not of type up or cs_up", __func__);
+      cleanup_iterator (&ssh_elevate_iter);
+      return TARGET_CREDENTIAL_TYPE_MISMATCH;
+    }
+  cleanup_iterator (&ssh_elevate_iter);
+  return TARGET_CREDENTIAL_OK;
+}
+
+/**
  * @brief Get the SSH credential of a target from database or credential store
  *        as an scan_credential_t
  *
@@ -349,43 +398,15 @@ target_openvas_ssh_credential (target_t target,
       free (ssh_port);
       if (ssh_elevate_credential)
         {
-          iterator_t ssh_elevate_iter;
-          const char *elevate_type;
+          target_credential_return_t ret;
 
-          init_credential_iterator_one (&ssh_elevate_iter,
-                                        ssh_elevate_credential);
-          if (!next (&ssh_elevate_iter))
+          ret = get_ssh_elevate_credential (ssh_elevate_credential,
+                                            scan_credential);
+          if (ret)
             {
-              g_warning ("%s: SSH Elevate Credential not found.", __func__);
-              cleanup_iterator (&ssh_elevate_iter);
               scan_credential_free (scan_credential);
-              return TARGET_INTERNAL_ERROR;
+              return ret;
             }
-          elevate_type = credential_iterator_type (&ssh_elevate_iter);
-          if (strcmp (elevate_type, "up") == 0)
-            {
-              set_auth_data_ssh_from_db (&ssh_elevate_iter, scan_credential, 1);
-            }
-          else if (strcmp (elevate_type, "cs_up") == 0)
-            {
-              if (set_auth_data_ssh_from_credential_store (&ssh_elevate_iter,
-                                                           scan_credential, 1))
-                {
-                  cleanup_iterator (&ssh_elevate_iter);
-                  scan_credential_free (scan_credential);
-                  g_warning ("%s: Failed to retrieve SSH elevate"
-                             " credential from credential store.", __func__);
-                  return TARGET_FAILED_CS_RETRIEVAL;
-                }
-            }
-          else
-            {
-              g_warning ("%s: SSH Elevate Credential not of type up or cs_up", __func__);
-              cleanup_iterator (&ssh_elevate_iter);
-              scan_credential_free (scan_credential);
-              return TARGET_CREDENTIAL_TYPE_MISMATCH;
-            }
-          cleanup_iterator (&ssh_elevate_iter);
         }
       cleanup_iterator (&iter);
       *ssh_credential = scan_credential;
