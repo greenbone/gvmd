@@ -404,6 +404,7 @@ target_openvas_ssh_credential (target_t target,
                                             scan_credential);
           if (ret)
             {
+              cleanup_iterator (&iter);
               scan_credential_free (scan_credential);
               return ret;
             }
