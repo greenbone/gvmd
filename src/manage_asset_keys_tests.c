@@ -588,6 +588,43 @@ Ensure (manage_asset_keys, asset_candidate_new_returns_null_for_empty_key)
   assert_that (asset_candidate_new (""), is_null);
 }
 
+Ensure (manage_asset_keys,
+        reuses_existing_key_and_merges_equivalent_candidate)
+{
+  asset_target_obs_t *o = asset_target_obs_new ();
+  obs_add_ip (o, "192.168.178.64");
+  obs_add_hostname (o, "gateway.fritz.box");
+  obs_add_mac (o, "08:00:27:06:62:DB");
+
+  asset_candidate_t *older = candidate_new_test ("old-key", 10);
+  candidate_add_ip (older, "192.168.178.64");
+  candidate_add_hostname (older, "gateway.fritz.box");
+  candidate_add_mac (older, "08:00:27:06:62:DB");
+
+  asset_candidate_t *newer = candidate_new_test ("selected-key", 20);
+  candidate_add_ip (newer, "192.168.178.64");
+  candidate_add_hostname (newer, "gateway.fritz.box");
+  candidate_add_mac (newer, "08:00:27:06:62:DB");
+
+  asset_candidate_t *ptrs[] = {older, newer};
+  asset_candidate_t *candidates = candidate_array_from_ptrs (ptrs, 2);
+
+  asset_merge_decision_t d;
+  asset_keys_target_merge_decide (o, candidates, 2, &d);
+
+  assert_false (d.needs_new_key);
+  assert_string_equal (d.selected_key, "selected-key");
+  assert_that (d.selected_index, is_equal_to (1));
+
+  size_t expected[] = {0};
+  assert_merge_indices_equal (&d, expected, 1);
+
+  asset_merge_decision_reset (&d);
+  asset_target_obs_free (o);
+  g_free (candidates);
+  candidate_ptrs_free (ptrs, 2);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -626,6 +663,8 @@ main (int argc, char **argv)
                          cleanup_asset_merge_decision_null_is_safe);
   add_test_with_context (suite, manage_asset_keys,
                          asset_candidate_new_returns_null_for_empty_key);
+  add_test_with_context (suite, manage_asset_keys,
+                         reuses_existing_key_and_merges_equivalent_candidate);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
