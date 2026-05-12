@@ -177,7 +177,6 @@ asset_candidate_new (const char *asset_key)
   candidate = g_malloc0 (sizeof (*candidate));
   candidate->asset_key = g_strdup (asset_key);
   candidate->last_seen = 0;
-  candidate->match_mask = 0;
   candidate->identifiers = asset_identifier_map_new ();
 
   return candidate;

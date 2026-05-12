@@ -18,14 +18,6 @@
 #include <stddef.h>
 
 /**
- * @brief Match flags indicating which observed properties match a candidate
- *        asset_key.
- */
-#define MATCH_IP       (1u << 0)  ///< Candidate matches the observed IP address.
-#define MATCH_HOSTNAME (1u << 1)  ///< Candidate matches the observed hostname.
-#define MATCH_MAC      (1u << 2)  ///< Candidate matches the observed MAC address.
-
-/**
  * @brief Types of asset identifiers represented in asset snapshot identifiers.
  */
 typedef enum
@@ -58,7 +50,6 @@ typedef struct
 {
  const char *asset_key; ///< Existing asset_key for this candidate.
  time_t last_seen;      ///< Last seen timestamp for this asset_key.
- unsigned match_mask;   ///< Bitmask of MATCH_* flags for this candidate.
 
  /**
   * Map of identifier type to string set.
