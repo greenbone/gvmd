@@ -437,8 +437,8 @@ update_scanner_preferences_openvasd (scanner_t scan)
  * @return 0 success, 1 VT integrity check failed, -1 error.
  */
 int
-update_nvt_cache_openvasd (gchar *db_feed_version,
-                           gchar *scanner_feed_version, int rebuild)
+update_nvt_cache_openvasd (const gchar *db_feed_version,
+                           const gchar *scanner_feed_version, int rebuild)
 {
 #if ENABLE_OPENVASD
   if (!feature_enabled (FEATURE_ID_OPENVASD_SCANNER))
@@ -559,7 +559,8 @@ nvts_feed_info_internal_from_openvasd (const gchar *scanner_uuid,
  * @param[out] db_feed_version_out       Output of database feed version.
  * @param[out] scanner_feed_version_out  Output of scanner feed version.
  *
- * @return 0 VTs feed current, -1 error, 1 VT update needed.
+ * @return -1 error (*_version_out params will be NULL), 0 VTs feed current,
+ *         1 VT update needed.
  */
 int
 nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
@@ -582,19 +583,22 @@ nvts_feed_version_status_internal_openvasd (gchar **db_feed_version_out,
 
   db_feed_version = nvts_feed_version ();
   g_debug ("%s: db_feed_version: %s", __func__, db_feed_version);
-  if (db_feed_version_out && db_feed_version)
-    *db_feed_version_out = g_strdup (db_feed_version);
 
   nvts_feed_info_internal_from_openvasd (SCANNER_UUID_DEFAULT,
                                          &scanner_feed_version);
 
   g_debug ("%s: scanner_feed_version: %s", __func__, scanner_feed_version);
-  if (scanner_feed_version == NULL)
+  if (scanner_feed_version == NULL
+      || strcmp (scanner_feed_version, "unavailable") == 0)
     {
+      g_warning ("%s: failed to get scanner feed version.", __func__);
       g_free (db_feed_version);
+      g_free (scanner_feed_version);
       return -1;
     }
 
+  if (db_feed_version_out && db_feed_version)
+    *db_feed_version_out = g_strdup (db_feed_version);
   if (scanner_feed_version_out && scanner_feed_version)
     *scanner_feed_version_out = g_strdup (scanner_feed_version);
 
@@ -649,6 +653,8 @@ manage_update_nvt_cache_openvasd ()
       return ret;
     }
 
+  g_free (db_feed_version);
+  g_free (scanner_feed_version);
   return ret;
 #else
   g_debug ("%s: Openvasd feature is disabled", __func__);
@@ -692,6 +698,8 @@ update_or_rebuild_nvts_openvasd (int update)
   if (ret != 0)
     ret = -1;
 
+  g_free (db_feed_version);
+  g_free (scanner_feed_version);
   return ret;
 #else
   g_debug ("%s: Openvasd feature is disabled", __func__);
