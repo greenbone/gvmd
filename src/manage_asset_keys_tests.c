@@ -58,14 +58,13 @@ obs_add_mac (asset_target_obs_t *obs, const char *mac)
 /**
  * @brief Create a test candidate.
  *
- * @param[in] key         Asset key.
- * @param[in] match_mask  Match mask.
- * @param[in] last_seen   Last seen timestamp.
+ * @param[in] key        Asset key.
+ * @param[in] last_seen  Last seen timestamp.
  *
  * @return Initialized candidate. Must be freed with asset_candidate_free.
  */
 static asset_candidate_t *
-candidate_new_test (const char *key, unsigned match_mask, time_t last_seen)
+candidate_new_test (const char *key, time_t last_seen)
 {
   asset_candidate_t *candidate;
 
@@ -73,7 +72,6 @@ candidate_new_test (const char *key, unsigned match_mask, time_t last_seen)
   if (!candidate)
     return NULL;
 
-  candidate->match_mask = match_mask;
   candidate->last_seen = last_seen;
 
   return candidate;
@@ -189,7 +187,7 @@ assert_merge_indices_equal (const asset_merge_decision_t *d,
 
 Ensure (manage_asset_keys, returns_new_key_if_observed_is_null)
 {
-  asset_candidate_t *c1 = candidate_new_test ("k1", MATCH_MAC, 10);
+  asset_candidate_t *c1 = candidate_new_test ("k1", 10);
   candidate_add_mac (c1, "m");
 
   asset_candidate_t *ptrs[] = {c1};
@@ -211,7 +209,7 @@ Ensure (manage_asset_keys, returns_new_key_if_observed_has_no_identifiers)
 {
   asset_target_obs_t *o = asset_target_obs_new ();
 
-  asset_candidate_t *c1 = candidate_new_test ("k1", MATCH_MAC, 10);
+  asset_candidate_t *c1 = candidate_new_test ("k1", 10);
   candidate_add_mac (c1, "m");
 
   asset_candidate_t *ptrs[] = {c1};
@@ -253,10 +251,10 @@ Ensure (manage_asset_keys, returns_new_key_if_candidates_do_not_match)
   obs_add_hostname (o, "h");
   obs_add_mac (o, "m");
 
-  asset_candidate_t *c1 = candidate_new_test ("k1", 0, 100);
+  asset_candidate_t *c1 = candidate_new_test ("k1", 100);
   candidate_add_ip (c1, "9.9.9.9");
 
-  asset_candidate_t *c2 = candidate_new_test ("k2", 0, 200);
+  asset_candidate_t *c2 = candidate_new_test ("k2", 200);
   candidate_add_mac (c2, "other-mac");
 
   asset_candidate_t *ptrs[] = {c1, c2};
@@ -296,7 +294,7 @@ Ensure (manage_asset_keys, ignores_empty_asset_keys)
                             ASSET_IDENTIFIER_TYPE_IP,
                             "1.2.3.4");
 
-  asset_candidate_t *valid = candidate_new_test ("k3", MATCH_IP, 10);
+  asset_candidate_t *valid = candidate_new_test ("k3", 10);
   candidate_add_ip (valid, "1.2.3.4");
 
   asset_candidate_t candidates[] = {empty_key, null_key, *valid};
@@ -325,11 +323,11 @@ Ensure (manage_asset_keys,
   obs_add_mac (o, "m");
 
   asset_candidate_t *ip_and_hostname =
-    candidate_new_test ("ip_and_hostname", MATCH_IP | MATCH_HOSTNAME, 999);
+    candidate_new_test ("ip_and_hostname", 999);
   candidate_add_ip (ip_and_hostname, "1.2.3.4");
   candidate_add_hostname (ip_and_hostname, "h");
 
-  asset_candidate_t *mac_only = candidate_new_test ("mac_only", MATCH_MAC, 1);
+  asset_candidate_t *mac_only = candidate_new_test ("mac_only", 1);
   candidate_add_mac (mac_only, "m");
 
   asset_candidate_t *ptrs[] = {ip_and_hostname, mac_only};
@@ -360,10 +358,10 @@ Ensure (manage_asset_keys, decide_by_last_seen_when_score_equal)
   asset_target_obs_t *o = asset_target_obs_new ();
   obs_add_ip (o, "1.2.3.4");
 
-  asset_candidate_t *older = candidate_new_test ("older", MATCH_IP, 10);
+  asset_candidate_t *older = candidate_new_test ("older", 10);
   candidate_add_ip (older, "1.2.3.4");
 
-  asset_candidate_t *newer = candidate_new_test ("newer", MATCH_IP, 20);
+  asset_candidate_t *newer = candidate_new_test ("newer", 20);
   candidate_add_ip (newer, "1.2.3.4");
 
   asset_candidate_t *ptrs[] = {older, newer};
@@ -389,7 +387,7 @@ Ensure (manage_asset_keys,
   obs_add_ip (o, "A");
   obs_add_ip (o, "B");
 
-  asset_candidate_t *candidate = candidate_new_test ("old", MATCH_IP, 10);
+  asset_candidate_t *candidate = candidate_new_test ("old", 10);
   candidate_add_ip (candidate, "A");
   candidate_add_ip (candidate, "B");
   candidate_add_ip (candidate, "C");
@@ -419,7 +417,7 @@ Ensure (manage_asset_keys,
   obs_add_ip (o, "B");
   obs_add_ip (o, "C");
 
-  asset_candidate_t *candidate = candidate_new_test ("old", MATCH_IP, 10);
+  asset_candidate_t *candidate = candidate_new_test ("old", 10);
   candidate_add_ip (candidate, "A");
   candidate_add_ip (candidate, "B");
 
@@ -448,7 +446,7 @@ Ensure (manage_asset_keys,
   obs_add_ip (o, "A");
   obs_add_ip (o, "C");
 
-  asset_candidate_t *candidate = candidate_new_test ("old", MATCH_IP, 10);
+  asset_candidate_t *candidate = candidate_new_test ("old", 10);
   candidate_add_ip (candidate, "A");
   candidate_add_ip (candidate, "B");
 
@@ -476,13 +474,13 @@ Ensure (manage_asset_keys,
   obs_add_ip (o, "B");
   obs_add_hostname (o, "host");
 
-  asset_candidate_t *c1 = candidate_new_test ("old-ip-a", MATCH_IP, 10);
+  asset_candidate_t *c1 = candidate_new_test ("old-ip-a", 10);
   candidate_add_ip (c1, "A");
 
-  asset_candidate_t *c2 = candidate_new_test ("old-host", MATCH_HOSTNAME, 20);
+  asset_candidate_t *c2 = candidate_new_test ("old-host", 20);
   candidate_add_hostname (c2, "host");
 
-  asset_candidate_t *c3 = candidate_new_test ("not-subset", MATCH_IP, 30);
+  asset_candidate_t *c3 = candidate_new_test ("not-subset", 30);
   candidate_add_ip (c3, "A");
   candidate_add_ip (c3, "X");
 
@@ -510,7 +508,7 @@ Ensure (manage_asset_keys,
   asset_target_obs_t *o = asset_target_obs_new ();
   obs_add_ip (o, "A");
 
-  asset_candidate_t *candidate = candidate_new_test ("empty", 0, 10);
+  asset_candidate_t *candidate = candidate_new_test ("empty", 10);
 
   asset_candidate_t *ptrs[] = {candidate};
   asset_candidate_t *candidates = candidate_array_from_ptrs (ptrs, 1);
@@ -554,7 +552,7 @@ Ensure (manage_asset_keys, cleanup_asset_merge_decision)
   obs_add_ip (o, "A");
   obs_add_ip (o, "B");
 
-  asset_candidate_t *candidate = candidate_new_test ("old", MATCH_IP, 10);
+  asset_candidate_t *candidate = candidate_new_test ("old", 10);
   candidate_add_ip (candidate, "A");
 
   asset_candidate_t *ptrs[] = {candidate};
