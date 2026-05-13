@@ -156,7 +156,7 @@ asset_target_obs_free (asset_target_obs_t *obs)
   if (obs->identifiers)
     g_hash_table_destroy (obs->identifiers);
 
-  obs->identifiers = NULL;
+  g_free (obs);
 }
 
 /**
