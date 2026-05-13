@@ -396,8 +396,9 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 
   if (strlen (msg))
     {
-      assert (strlen (msg)
-              <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
+      if (strlen (msg)
+          > (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end))
+        return TRUE;
       memmove (to_client + to_client_end, msg, strlen (msg));
       g_debug ("-> client: %s", msg);
       to_client_end += strlen (msg);
