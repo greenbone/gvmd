@@ -1349,209 +1349,317 @@ asset_target_get_last_modification_time (const char *asset_key)
   return modification_time;
 }
 
-// todo these functions will be refactored/replaced when manage_asset_keys is completed
-// /**
-//  * @brief Check whether a string array contains a value.
-//  *
-//  * @param[in] array  Array of strings.
-//  * @param[in] value  Value to search for.
-//  *
-//  * @return TRUE if value exists in array, else FALSE.
-//  */
-// static gboolean
-// string_array_contains (GPtrArray *array, const char *value)
-// {
-//   if (!array || !value || !*value)
-//     return FALSE;
-//
-//   for (guint i = 0; i < array->len; i++)
-//     {
-//       const char *item = g_ptr_array_index (array, i);
-//
-//       if (g_strcmp0 (item, value) == 0)
-//         return TRUE;
-//     }
-//
-//   return FALSE;
-// }
-//
-// /**
-//  * @brief Add a string value to an array if it is not already present.
-//  *
-//  * @param[in,out] array  Array of strings.
-//  * @param[in]     value  Value to add.
-//  */
-// static void
-// string_array_add_unique (GPtrArray *array, const char *value)
-// {
-//   if (!array || !value || !*value)
-//     return;
-//
-//   if (string_array_contains (array, value))
-//     return;
-//
-//   g_ptr_array_add (array, g_strdup (value));
-// }
+/**
+ * @brief Load target observation identifiers from an asset snapshot.
+ *
+ * @param[in,out] obs             Observation to fill.
+ * @param[in]     asset_snapshot  Asset snapshot ID.
+ */
+static void
+asset_target_obs_load_from_snapshot (asset_target_obs_t *obs,
+                                     asset_snapshot_t asset_snapshot)
+{
+  iterator_t it;
 
-// /**
-//  * @brief Add candidates for a given property value (target assets).
-//  *
-//  * @param[in,out] candidates  Array of (asset_candidate_t*) to extend.
-//  * @param[in]     value       Value to match (may be NULL/"").
-//  * @param[in]     match_bit   Which property is being matched (MATCH_MAC /
-//  *                            MATCH_HOSTNAME / MATCH_IP). Also ORed into
-//  *                            match_mask for the candidate.
-//  * @param[in]     scanner     Scanner id of the task used for distinguishing
-//  *                            networks
-//  */
-// static void
-// asset_target_add_candidates (GPtrArray  *candidates,
-//                              const char *value,
-//                              unsigned    match_bit,
-//                              scanner_t scanner)
-// {
-//   iterator_t it;
-//   const char *sql = NULL;
-//
-//   if (!value || !*value)
-//     return;
-//
-//   switch (match_bit)
-//     {
-//     case MATCH_MAC:
-//       sql =
-//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-//         "  FROM asset_snapshots"
-//         " WHERE mac_address = $1"
-//         "   AND asset_type = $2"
-//         "   AND asset_key IS NOT NULL"
-//         "   AND scanner = $3"
-//         " ORDER BY asset_key;";
-//       break;
-//     case MATCH_HOSTNAME:
-//       sql =
-//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-//         "  FROM asset_snapshots"
-//         " WHERE hostname = $1"
-//         "   AND asset_type = $2"
-//         "   AND asset_key IS NOT NULL"
-//         "   AND scanner= $3"
-//         " ORDER BY asset_key;";
-//       break;
-//     case MATCH_IP:
-//       sql =
-//         "SELECT DISTINCT asset_key, ip_address, hostname, mac_address"
-//         "  FROM asset_snapshots"
-//         " WHERE ip_address = $1"
-//         "   AND asset_type = $2"
-//         "   AND asset_key IS NOT NULL"
-//         "   AND scanner= $3"
-//         " ORDER BY asset_key;";
-//       break;
-//     default:
-//       return;
-//     }
-//
-//   init_ps_iterator (&it,
-//                     sql,
-//                     SQL_STR_PARAM (value),
-//                     SQL_INT_PARAM (ASSET_TYPE_TARGET),
-//                     SQL_RESOURCE_PARAM (scanner),
-//                     NULL);
-//
-//   while (next (&it))
-//     {
-//       const char *key      = iterator_string (&it, 0);
-//       const char *ip       = iterator_string (&it, 1);
-//       const char *hostname = iterator_string (&it, 2);
-//       const char *mac      = iterator_string (&it, 3);
-//
-//       if (!key || !*key)
-//         continue;
-//
-//       asset_candidate_t *candidate = NULL;
-//
-//       /* find existing candidate by asset_key */
-//       for (guint i = 0; i < candidates->len; i++)
-//         {
-//           asset_candidate_t *c = g_ptr_array_index (candidates, i);
-//           if (g_strcmp0 (c->asset_key, key) == 0)
-//             {
-//               candidate = c;
-//               break;
-//             }
-//         }
-//
-//       /* create if missing */
-//       if (!candidate)
-//         {
-//           candidate = g_malloc0 (sizeof (*candidate));
-//           candidate->asset_key = g_strdup (key);
-//           candidate->last_seen = 0;
-//           g_ptr_array_add (candidates, candidate);
-//         }
-//
-//       /* always record how we matched this key */
-//       candidate->match_mask |= match_bit;
-//
-//       /* always set the matched property from 'value' (prevents empty fields) */
-//       // if (match_bit == MATCH_MAC)
-//       //   {
-//       //     if (!candidate->mac || !*candidate->mac)
-//       //       candidate->mac = g_strdup (value);
-//       //   }
-//       // else if (match_bit == MATCH_HOSTNAME)
-//       //   {
-//       //     if (!candidate->hostname || !*candidate->hostname)
-//       //       candidate->hostname = g_strdup (value);
-//       //   }
-//       // else if (match_bit == MATCH_IP)
-//       //   {
-//       //     if (!candidate->ip || !*candidate->ip)
-//       //       candidate->ip = g_strdup (value);
-//       //   }
-//       //
-//       // /* fill any missing fields from DB row only if not empty */
-//       // if (!candidate->ip && ip && *ip)
-//       //   candidate->ip = g_strdup (ip);
-//       // if (!candidate->hostname && hostname && *hostname)
-//       //   candidate->hostname = g_strdup (hostname);
-//       // if (!candidate->mac && mac && *mac)
-//       //   candidate->mac = g_strdup (mac);
-//     }
-//
-//   cleanup_iterator (&it);
-// }
+  if (!obs || !obs->identifiers || !asset_snapshot)
+    return;
+
+  init_ps_iterator (&it,
+                    "SELECT identifier_type, identifier_value"
+                    " FROM asset_snapshot_identifiers"
+                    " WHERE asset_snapshot = $1"
+                    "   AND identifier_type IN ($2, $3, $4);",
+                    SQL_RESOURCE_PARAM (asset_snapshot),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_IP),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_HOSTNAME),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_MAC),
+                    NULL);
+
+  while (next (&it))
+    {
+      int type = iterator_int (&it, 0);
+      const char *value = iterator_string (&it, 1);
+
+      if (!value || !*value)
+        continue;
+
+      asset_identifier_map_add (obs->identifiers, type, value);
+    }
+
+  cleanup_iterator (&it);
+}
 
 /**
- * @brief Resolve and persist the asset_key for a single target snapshot row.
+ * @brief Check whether an identifier type is used for target matching.
  *
- * Collects candidate target assets by matching the observation's identifiers
- * (MAC, hostname, IP), runs the target-merge decision algorithm, then updates
- * the snapshot row to the selected key (or generates a new UUID if required).
+ * @param[in] identifier_type  Identifier type.
  *
- * @param[in] row_id   The asset_snapshots.id of the target snapshot row to update.
- * @param[in] obs      The observation (mac/hostname/ip) used to find candidates and
- *                     drive the merge decision.
- * @param[in] scanner  Scanner id of the task used for distinguishing networks
+ * @return TRUE if the identifier type is supported for target matching.
+ */
+static gboolean
+asset_identifier_type_is_target_matchable (int identifier_type)
+{
+  return identifier_type == ASSET_IDENTIFIER_TYPE_IP
+         || identifier_type == ASSET_IDENTIFIER_TYPE_HOSTNAME
+         || identifier_type == ASSET_IDENTIFIER_TYPE_MAC;
+}
+
+/**
+ * @brief Find an existing candidate by asset_key.
+ *
+ * @param[in] candidates  Candidate array.
+ * @param[in] asset_key   Asset key to find.
+ *
+ * @return Existing candidate, or NULL if not found.
+ */
+static asset_candidate_t *
+asset_candidate_find (GPtrArray *candidates, const char *asset_key)
+{
+  if (!candidates || !asset_key || !*asset_key)
+    return NULL;
+
+  for (guint i = 0; i < candidates->len; i++)
+    {
+      asset_candidate_t *candidate = g_ptr_array_index (candidates, i);
+
+      if (g_strcmp0 (candidate->asset_key, asset_key) == 0)
+        return candidate;
+    }
+
+  return NULL;
+}
+
+/**
+ * @brief Find or create a candidate by asset_key.
+ *
+ * @param[in,out] candidates  Candidate array.
+ * @param[in]     asset_key   Asset key.
+ *
+ * @return Existing or newly created candidate, or NULL on error.
+ */
+static asset_candidate_t *
+asset_candidate_find_or_add (GPtrArray *candidates, const char *asset_key)
+{
+  asset_candidate_t *candidate;
+
+  if (!candidates || !asset_key || !*asset_key)
+    return NULL;
+
+  candidate = asset_candidate_find (candidates, asset_key);
+  if (candidate)
+    return candidate;
+
+  candidate = asset_candidate_new (asset_key);
+  if (!candidate)
+    return NULL;
+
+  g_ptr_array_add (candidates, candidate);
+
+  return candidate;
+}
+
+/**
+ * @brief Load all identifiers for a candidate asset_key.
+ *
+ * Loads identifiers from all target snapshots with the same asset_key and
+ * scanner.
+ *
+ * @param[in,out] candidate  Candidate to fill.
+ * @param[in]     scanner    Scanner ID.
+ */
+static void
+asset_candidate_load_identifiers (asset_candidate_t *candidate,
+                                  scanner_t scanner)
+{
+  iterator_t identifier;
+
+  if (!candidate || !candidate->asset_key || !*candidate->asset_key
+      || !candidate->identifiers)
+    return;
+
+  init_ps_iterator (&identifier,
+                    "SELECT DISTINCT i.identifier_type, i.identifier_value"
+                    " FROM asset_snapshots s"
+                    " JOIN asset_snapshot_identifiers i"
+                    "   ON i.asset_snapshot = s.id"
+                    " WHERE s.asset_type = $1"
+                    "   AND s.asset_key = $2"
+                    "   AND s.scanner = $3"
+                    "   AND i.identifier_type IN ($4, $5, $6);",
+                    SQL_INT_PARAM (ASSET_TYPE_TARGET),
+                    SQL_STR_PARAM (candidate->asset_key),
+                    SQL_RESOURCE_PARAM (scanner),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_IP),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_HOSTNAME),
+                    SQL_INT_PARAM (ASSET_IDENTIFIER_TYPE_MAC),
+                    NULL);
+
+  while (next (&identifier))
+    {
+      int type = iterator_int (&identifier, 0);
+      const char *value = iterator_string (&identifier, 1);
+
+      if (!value || !*value)
+        continue;
+
+      asset_identifier_map_add (candidate->identifiers, type, value);
+    }
+
+  cleanup_iterator (&identifier);
+}
+
+/**
+ * @brief Add candidates matching one identifier value.
+ *
+ * Finds existing target asset_keys with the same identifier value.
+ *
+ * @param[in,out] candidates        Candidate array.
+ * @param[in]     identifier_type   Identifier type.
+ * @param[in]     identifier_value  Identifier value.
+ * @param[in]     scanner           Scanner ID.
+ */
+static void
+asset_target_add_candidates_for_identifier (GPtrArray *candidates,
+                                            int identifier_type,
+                                            const char *identifier_value,
+                                            scanner_t scanner)
+{
+  iterator_t it;
+
+  if (!candidates || !identifier_value || !*identifier_value)
+    return;
+
+  if (!asset_identifier_type_is_target_matchable (identifier_type))
+    return;
+
+  init_ps_iterator (&it,
+                    "SELECT DISTINCT s.asset_key"
+                    " FROM asset_snapshots s"
+                    " JOIN asset_snapshot_identifiers i"
+                    "   ON i.asset_snapshot = s.id"
+                    " WHERE s.asset_type = $1"
+                    "   AND s.asset_key IS NOT NULL"
+                    "   AND s.scanner = $2"
+                    "   AND i.identifier_type = $3"
+                    "   AND i.identifier_value = $4"
+                    " ORDER BY s.asset_key;",
+                    SQL_INT_PARAM (ASSET_TYPE_TARGET),
+                    SQL_RESOURCE_PARAM (scanner),
+                    SQL_INT_PARAM (identifier_type),
+                    SQL_STR_PARAM (identifier_value),
+                    NULL);
+
+  while (next (&it))
+    {
+      const char *asset_key = iterator_string (&it, 0);
+
+      if (!asset_key || !*asset_key)
+        continue;
+
+      asset_candidate_find_or_add (candidates, asset_key);
+    }
+
+  cleanup_iterator (&it);
+}
+
+/**
+ * @brief Add candidates matching values from one identifier set.
+ *
+ * @param[in,out] candidates       Candidate array.
+ * @param[in]     identifier_type  Identifier type.
+ * @param[in]     values           String set of identifier values.
+ * @param[in]     scanner          Scanner ID.
+ */
+static void
+asset_target_add_candidates_for_values (GPtrArray *candidates,
+                                        int identifier_type,
+                                        GHashTable *values,
+                                        scanner_t scanner)
+{
+  GHashTableIter iter;
+  gpointer key, value;
+
+  if (!candidates || !values)
+    return;
+
+  g_hash_table_iter_init (&iter, values);
+  while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+      const char *identifier_value = key;
+
+      asset_target_add_candidates_for_identifier (candidates,
+                                                  identifier_type,
+                                                  identifier_value,
+                                                  scanner);
+    }
+}
+
+/**
+ * @brief Add candidates matching any identifier in an observation.
+ *
+ * A candidate is added if any IP, hostname or MAC identifier matches.
+ *
+ * @param[in,out] candidates  Candidate array.
+ * @param[in]     obs         Target observation.
+ * @param[in]     scanner     Scanner ID.
+ */
+static void
+asset_target_add_candidates (GPtrArray *candidates,
+                             const asset_target_obs_t *obs,
+                             scanner_t scanner)
+{
+  GHashTableIter iter;
+  gpointer key, value;
+
+  if (!candidates || !obs || !obs->identifiers)
+    return;
+
+  g_hash_table_iter_init (&iter, obs->identifiers);
+  while (g_hash_table_iter_next (&iter, &key, &value))
+    {
+      int identifier_type = GPOINTER_TO_INT (key);
+      GHashTable *values = value;
+
+      asset_target_add_candidates_for_values (candidates,
+                                              identifier_type,
+                                              values,
+                                              scanner);
+    }
+
+  for (guint i = 0; i < candidates->len; i++)
+    {
+      asset_candidate_t *candidate = g_ptr_array_index (candidates, i);
+
+      asset_candidate_load_identifiers (candidate, scanner);
+      candidate->last_seen =
+        asset_target_get_last_modification_time (candidate->asset_key);
+    }
+}
+
+/**
+ * @brief Resolve and persist the asset_key for a single target snapshot row
+ *
+ * @param[in] row_id   Asset snapshot ID to update.
+ * @param[in] obs      Observation identifiers for the snapshot.
+ * @param[in] scanner  Scanner ID.
  */
 static void
 asset_target_merge_apply_sql (asset_snapshot_t row_id,
                               const asset_target_obs_t *obs,
                               scanner_t scanner)
 {
-  GPtrArray *candidates = g_ptr_array_new ();
+  GPtrArray *candidates;
   asset_candidate_t *cand_array = NULL;
   size_t cand_len = 0;
   asset_merge_decision_t decision;
+  gchar *new_key = NULL;
+  const char *selected_key;
 
-  // /* Collect candidates */
-  // asset_target_add_candidates (candidates, obs->mac, MATCH_MAC, scanner);
-  // asset_target_add_candidates (candidates, obs->hostname, MATCH_HOSTNAME,
-  //                              scanner);
-  // asset_target_add_candidates (candidates, obs->ip,MATCH_IP, scanner);
+  candidates =
+    g_ptr_array_new_with_free_func ((GDestroyNotify) asset_candidate_free);
 
-  /* Build flat array for algorithm */
+  asset_target_add_candidates (candidates, obs, scanner);
+
   cand_len = candidates->len;
   if (cand_len > 0)
     {
@@ -1559,26 +1667,20 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
 
       for (guint i = 0; i < cand_len; i++)
         {
-          asset_candidate_t *c = g_ptr_array_index (candidates, i);
-          cand_array[i] = *c;
-
-          cand_array[i].last_seen = asset_target_get_last_modification_time (
-            c->asset_key);
+          asset_candidate_t *candidate = g_ptr_array_index (candidates, i);
+          cand_array[i] = *candidate;
         }
     }
 
   /* Decide */
   asset_keys_target_merge_decide (obs, cand_array, cand_len, &decision);
 
-
   /* Choose key */
-  gchar *new_key = NULL;
-  const char *selected_key =
+  selected_key =
     decision.needs_new_key
       ? (new_key = gvm_uuid_make ())
       : decision.selected_key;
 
-  /* Apply */
   if (selected_key && *selected_key)
     {
       sql_ps ("UPDATE asset_snapshots"
@@ -1594,10 +1696,12 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
           for (guint i = 0; i < decision.merge_indices->len; i++)
             {
               size_t idx = g_array_index (decision.merge_indices, size_t, i);
+              const char *need_to_merge;
+
               if (idx >= cand_len)
                 continue;
 
-              const char *need_to_merge = cand_array[idx].asset_key;
+              need_to_merge = cand_array[idx].asset_key;
               if (!need_to_merge || !*need_to_merge)
                 continue;
 
@@ -1617,30 +1721,19 @@ asset_target_merge_apply_sql (asset_snapshot_t row_id,
         }
     }
 
-  /* Cleanup */
-  for (guint i = 0; i < candidates->len; i++)
-    {
-      asset_candidate_t *c = g_ptr_array_index (candidates, i);
-      g_free ((gchar *) c->asset_key);
-      // g_free ((gchar *) c->ip);
-      // g_free ((gchar *) c->hostname);
-      // g_free ((gchar *) c->mac);
-      g_free (c);
-    }
-
-  g_ptr_array_free (candidates, TRUE);
-  g_free (cand_array);
-  g_free (new_key);
   asset_merge_decision_reset (&decision);
+  g_free (new_key);
+  g_free (cand_array);
+  g_ptr_array_free (candidates, TRUE);
 }
 
 /**
- * @brief Set asset_key for asset_snapshots rows of a report.
+ * @brief Set asset_key for target asset snapshot rows.
  *
- * Uses the target merge algorithm:
- * - Collect candidate asset_keys filter by scanner (network)
- * - Decide best key via asset_target_merge_decide()
- * - Set asset_key and merge connected assets
+ * Loads identifiers from asset_snapshot_identifiers, collects candidate
+ * asset_keys for the same scanner, and applies the target merge decision.
+ *
+ * @param[in] scanner  Scanner ID.
  */
 static void
 asset_snapshots_set_target_asset_keys (scanner_t scanner)
@@ -1653,17 +1746,19 @@ asset_snapshots_set_target_asset_keys (scanner_t scanner)
 
   while (next (&it))
     {
-      asset_target_obs_t obs = {
-        // todo this will be handled in the target merge algorithm
-        // .ip       = asset_snapshot_iterator_ip_address (&it),
-        // .hostname = asset_snapshot_iterator_hostname (&it),
-        // .mac      = asset_snapshot_iterator_mac_address (&it),
-      };
+      asset_snapshot_t row_id;
+      asset_target_obs_t *obs;
 
-      asset_snapshot_t row_id = asset_snapshot_iterator_id (&it);
+      row_id = asset_snapshot_iterator_id (&it);
+      if (!row_id)
+        continue;
 
-      /* Delegate all logic to the merge apply helper */
-      asset_target_merge_apply_sql (row_id, &obs, scanner);
+      obs = asset_target_obs_new ();
+
+      asset_target_obs_load_from_snapshot (obs, row_id);
+      asset_target_merge_apply_sql (row_id, obs, scanner);
+
+      asset_target_obs_free (obs);
     }
 
   cleanup_iterator (&it);
