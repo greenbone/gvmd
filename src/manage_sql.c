@@ -17803,6 +17803,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
                             " oci_image_target_location, usage_type,"
+                            " agent_group, agent_group_location,"
                             " alterable",
                             1, &new, &old);
   if (ret)
