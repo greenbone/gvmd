@@ -22932,8 +22932,11 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   if (unix_socket)
-    insert_scanner (name, comment, host, ca_pub, iport, itype,
-                    used_relay_host, irelay_port, new_scanner);
+    {
+      insert_scanner (name, comment, host, ca_pub, iport, itype,
+                      used_relay_host, irelay_port, new_scanner);
+      g_free (file_relay_host);
+    }
   else
     {
       credential = 0;
