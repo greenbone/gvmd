@@ -323,7 +323,8 @@ scanner_type_matches_relay (int scanner_type,
  * @param[in]  scanner_type   The type of scanner to match
  * @param[in]  original_host  Original host of the scanner to match
  * @param[in]  original_port  Original port of the scanner to match, 0 for any
- * @param[out] relay_host     Output of the relay host
+ * @param[out] relay_host     Destination address for freshly allocated relay
+ *                            host. Caller must g_free.
  * @param[out] relay_port     Output of the relay port
  *
  * @return 0 success, -1 error
