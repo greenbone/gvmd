@@ -564,6 +564,15 @@ add_unit_test(manage-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-scanner-relays "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
   $<TARGET_OBJECTS:all-manage-obj>
   $<TARGET_OBJECTS:all-manage-sql-obj>
   $<TARGET_OBJECTS:all-sql-obj>

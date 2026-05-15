@@ -350,6 +350,12 @@ get_single_relay_from_file (int scanner_type,
   *relay_host = NULL;
   *relay_port = 0;
 
+  if (relays_path == NULL || strcmp (relays_path, "") == 0)
+    {
+      g_warning ("%s: relays_path not set", __func__);
+      return -1;
+    }
+
   if (! g_file_get_contents (relays_path, &file_contents, &file_size, &error))
     {
       g_warning ("%s: could not read file: %s", __func__, error->message);
