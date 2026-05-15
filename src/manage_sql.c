@@ -22968,7 +22968,7 @@ create_scanner (const char* name, const char *comment, const char *host,
         }
 
       insert_scanner (name, comment, host, ca_pub, iport, itype,
-                      relay_host, irelay_port, new_scanner);
+                      used_relay_host, irelay_port, new_scanner);
       g_free (file_relay_host);
 
       if (credential)
