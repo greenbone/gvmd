@@ -17803,6 +17803,7 @@ copy_task (const char* name, const char* comment, const char *task_id,
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
                             " oci_image_target_location, usage_type,"
+                            " agent_group, agent_group_location,"
                             " alterable",
                             1, &new, &old);
   if (ret)
@@ -22931,8 +22932,11 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   if (unix_socket)
-    insert_scanner (name, comment, host, ca_pub, iport, itype,
-                    used_relay_host, irelay_port, new_scanner);
+    {
+      insert_scanner (name, comment, host, ca_pub, iport, itype,
+                      used_relay_host, irelay_port, new_scanner);
+      g_free (file_relay_host);
+    }
   else
     {
       credential = 0;
@@ -23260,6 +23264,8 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                    credential))
         {
           sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
           return MODIFY_SCANNER_CREDENTIAL_NOT_CC;
         }
     }
@@ -23270,6 +23276,8 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       if (resource_with_name_exists (name, "scanner", scanner))
         {
           sql_rollback ();
+          g_free (used_host);
+          g_free (used_relay_host);
           return MODIFY_SCANNER_ALREADY_EXISTS;
         }
     }
@@ -23278,6 +23286,8 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
   quoted_comment = comment ? sql_insert (comment) : g_strdup ("comment");
   quoted_host = sql_insert (used_host);
   quoted_relay_host = sql_insert (used_relay_host);
+  g_free (used_host);
+  g_free (used_relay_host);
 
   sql ("UPDATE scanners SET name = %s, comment = %s, type = %d,"
        " host = %s, port = %d, relay_host = %s, relay_port = %d,"
