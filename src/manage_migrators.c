@@ -3930,6 +3930,40 @@ migrate_273_to_274 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 274 to version 275.
+ *
+ * Add scheduler_cron_time to agent groups.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_274_to_275 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 274. */
+  if (manage_db_version () != 274)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Add scheduler_cron_time to agent groups. */
+  sql ("ALTER TABLE IF EXISTS agent_groups"
+       " ADD COLUMN IF NOT EXISTS scheduler_cron_time TEXT;");
+
+  sql ("ALTER TABLE IF EXISTS agent_groups_trash"
+       " ADD COLUMN IF NOT EXISTS scheduler_cron_time TEXT;");
+
+  /* Set the database version to 275. */
+  set_db_version (275);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4010,6 +4044,7 @@ static migrator_t database_migrators[] = {
   {272, migrate_271_to_272},
   {273, migrate_272_to_273},
   {274, migrate_273_to_274},
+  {275, migrate_274_to_275},
   /* End marker. */
   {-1, NULL}};
 
