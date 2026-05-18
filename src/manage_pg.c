@@ -2917,6 +2917,7 @@ create_tables ()
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
     "  comment TEXT,"
+    "  scheduler_cron_time TEXT,"
     "  creation_time INTEGER,"
     "  modification_time INTEGER);");
 
@@ -2932,6 +2933,7 @@ create_tables ()
     "  scanner INTEGER NOT NULL REFERENCES scanners (id) ON DELETE RESTRICT,"
     "  name text UNIQUE NOT NULL,"
     "  comment text,"
+    "  scheduler_cron_time TEXT,"
     "  creation_time integer,"
     "  modification_time integer);");
 
