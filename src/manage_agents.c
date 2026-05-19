@@ -291,6 +291,41 @@ convert_agent_data_list_to_agent_control_list (
 }
 
 /**
+ * @brief Prepare an agent controller update list
+ *        based on existing agents and an update configuration.
+ *
+ * @param agents list of existing agents to be updated
+ * @param update update configuration containing new values for the agents
+ * @param out_list list to be populated with the updated agent information.
+ *
+ * @return AGENT_RESPONSE_SUCCESS on success, otherwise an error code on failure
+ */
+static agent_response_t
+prepare_agent_update_list_from_agents_and_update (
+  agent_controller_agent_list_t agents, agent_controller_agent_update_t update,
+  agent_controller_agent_update_list_t out_list)
+{
+  if (!agents || agents->count == 0 || !update || !out_list)
+    return AGENT_RESPONSE_INVALID_ARGUMENT;
+
+  for (int i = 0; i < agents->count; ++i)
+    {
+      agent_controller_agent_t agent_base = agents->agents[i];
+      agent_controller_agent_update_t agent_update =
+        agent_controller_agent_update_new ();
+      agent_update->authorized = update->authorized;
+      agent_update->update_to_latest = update->update_to_latest;
+      agent_update->update_config = copy_agent_controller_scan_agent_config (
+        update->update_config);
+      agent_update->base_config = copy_agent_controller_scan_agent_config (
+        agent_base->config);
+      agent_update->agent_id = g_strdup (agent_base->agent_id);
+      out_list->updates[i] = agent_update;
+    }
+  return AGENT_RESPONSE_SUCCESS;
+}
+
+/**
  * @brief Retrieve agent controller agents from GVMD UUIDs.
  *
  * Filters and converts a list of agent UUIDs to agent controller format.
@@ -721,14 +756,27 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
       return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
     }
 
+  agent_controller_agent_update_list_t update_list = agent_controller_agent_update_list_new (agent_control_list->count);
+  agent_response_t prepare_response = prepare_agent_update_list_from_agents_and_update (agent_control_list, agent_update, update_list);
+  if (prepare_response != AGENT_RESPONSE_SUCCESS)
+    {
+      g_warning ("%s: Failed to prepare agent update list ", __func__);
+      agent_controller_agent_update_list_free (update_list);
+      agent_controller_agent_list_free (agent_control_list);
+      gvmd_agent_connector_free (connector);
+      manage_option_cleanup ();
+      return prepare_response;
+    }
+
   int update_result = agent_controller_update_agents (
-    connector->base, agent_control_list, agent_update, errors);
+    connector->base, update_list, errors);
 
   if (update_result < 0 && errors && *errors && (*errors)->len > 0)
     {
       g_warning ("%s: agent_controller_update_agents rejected", __func__);
       agent_controller_agent_list_free (agent_control_list);
       gvmd_agent_connector_free (connector);
+      agent_controller_agent_update_list_free (update_list);
       manage_option_cleanup ();
       return AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED;
     }
@@ -737,6 +785,7 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
     {
       g_warning ("%s: agent_controller_update_agents failed", __func__);
       agent_controller_agent_list_free (agent_control_list);
+      agent_controller_agent_update_list_free (update_list);
       gvmd_agent_connector_free (connector);
       manage_option_cleanup ();
       return AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED;
@@ -750,6 +799,7 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
     {
       g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
       agent_controller_agent_list_free (agent_control_list);
+      agent_controller_agent_update_list_free (update_list);
       gvmd_agent_connector_free (connector);
       manage_option_cleanup ();
       return result;
@@ -757,6 +807,7 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
 
   // Cleanup
   agent_controller_agent_list_free (agent_control_list);
+  agent_controller_agent_update_list_free (update_list);
   gvmd_agent_connector_free (connector);
   manage_option_cleanup ();
 
@@ -913,7 +964,8 @@ manage_agents_sync_from_agent_controllers (gboolean *log_token)
   if (lr == 1)
     {
       /* Another process is already syncing */
-      g_debug ("%s: Agent sync already running (%s)", __func__, AGENT_SYNC_LOCK_NAME);
+      g_debug ("%s: Agent sync already running (%s)", __func__,
+               AGENT_SYNC_LOCK_NAME);
       return 0;
     }
   if (lr != 0)
@@ -926,7 +978,7 @@ manage_agents_sync_from_agent_controllers (gboolean *log_token)
   int ret = 0;
 
   iterator_t scanner_iterator;
-  get_data_t get = { 0 };
+  get_data_t get = {0};
 
   if (init_scanner_iterator (&scanner_iterator, &get) != 0)
     {
@@ -970,10 +1022,10 @@ manage_agents_sync_from_agent_controllers (gboolean *log_token)
 
   cleanup_iterator (&scanner_iterator);
 
-  out_unlock:
-    if (lockfile_unlock (&lockfile_agent_sync))
-      g_warning ("%s: Error releasing agent sync lock (%s)",
-                 __func__, AGENT_SYNC_LOCK_NAME);
+out_unlock:
+  if (lockfile_unlock (&lockfile_agent_sync))
+    g_warning ("%s: Error releasing agent sync lock (%s)",
+             __func__, AGENT_SYNC_LOCK_NAME);
 
   return ret;
 }
