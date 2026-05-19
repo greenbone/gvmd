@@ -26,12 +26,8 @@
  * @brief Score weights.
  *
  * For target assets:
- * - Hostname, MAC and IP are treated as weak
- * identifiers because none of them is guaranteed to uniquely identify a target
- * machine.
- *
- * SCORE_STRONG is kept for consistency with the scoring model and for future
- * identifier types that may be considered strong.
+ * - MAC is treated as strong
+ * - hostname and IP are treated as weak
  */
 #define SCORE_STRONG 1.0f
 #define SCORE_WEAK   0.4f
@@ -388,7 +384,7 @@ candidate_score (const asset_candidate_t *candidate,
   score += (float) asset_identifier_map_intersection_count_for_type (
     candidate->identifiers,
     obs->identifiers,
-    ASSET_IDENTIFIER_TYPE_MAC) * SCORE_WEAK;
+    ASSET_IDENTIFIER_TYPE_MAC) * SCORE_STRONG;
 
   score += (float) asset_identifier_map_intersection_count_for_type (
     candidate->identifiers,
@@ -495,8 +491,8 @@ asset_merge_decision_clear_empty_merges (asset_merge_decision_t *out)
  * Rules:
  * - If an existing candidate contains all observed identifiers, reuse the best
  *   matching candidate key.
- * - Else if the observation contains one or more existing candidates, caller
- *   should create a new key and merge those candidate keys into it.
+ * - If the observation also connects other matching candidates, merge those
+ *   candidate keys into the selected best match.
  * - Else create a new key and do not merge.
  *
  * @param[in]     obs             Observed identifiers (ip/hostname/mac).

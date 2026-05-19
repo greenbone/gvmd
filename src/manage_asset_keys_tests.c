@@ -380,6 +380,29 @@ Ensure (manage_asset_keys, decide_by_last_seen_when_score_equal)
   candidate_ptrs_free (ptrs, 2);
 }
 
+Ensure (manage_asset_keys, candidate_score_treats_mac_as_strong)
+{
+  asset_target_obs_t *o = asset_target_obs_new ();
+  obs_add_ip (o, "1.2.3.4");
+  obs_add_hostname (o, "host");
+  obs_add_mac (o, "aa:bb:cc:dd:ee:ff");
+
+  asset_candidate_t *mac_match = candidate_new_test ("mac-match", 10);
+  candidate_add_mac (mac_match, "aa:bb:cc:dd:ee:ff");
+
+  asset_candidate_t *ip_and_hostname_match =
+    candidate_new_test ("ip-host-match", 20);
+  candidate_add_ip (ip_and_hostname_match, "1.2.3.4");
+  candidate_add_hostname (ip_and_hostname_match, "host");
+
+  assert_true (candidate_score (mac_match, o)
+               > candidate_score (ip_and_hostname_match, o));
+
+  asset_target_obs_free (o);
+  asset_candidate_free (mac_match);
+  asset_candidate_free (ip_and_hostname_match);
+}
+
 Ensure (manage_asset_keys,
         reuses_existing_key_when_candidate_contains_observation)
 {
@@ -645,6 +668,8 @@ main (int argc, char **argv)
                          creates_new_key_when_no_candidate_contains_all_observed_identifiers);
   add_test_with_context (suite, manage_asset_keys,
                          decide_by_last_seen_when_score_equal);
+  add_test_with_context (suite, manage_asset_keys,
+                         candidate_score_treats_mac_as_strong);
   add_test_with_context (suite, manage_asset_keys,
                          reuses_existing_key_when_candidate_contains_observation);
   add_test_with_context (suite, manage_asset_keys,
