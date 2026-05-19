@@ -507,7 +507,7 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
         }
 
       build_agent_config_from_entity (cfg_e, cfg);
-      update->config = cfg;
+      update->update_config = cfg;
     }
 
   if ((e = entity_child (root, "comment")))
