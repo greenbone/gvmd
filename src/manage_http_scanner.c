@@ -361,8 +361,7 @@ update_http_scanner_scan (http_scanner_connector_t connector, task_t task,
               http_scanner_response_cleanup (response);
               return -1;
             }
-          else if (progress == 100
-                   && current_status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
+          else if (current_status == HTTP_SCANNER_SCAN_STATUS_SUCCEEDED)
             {
               response = http_scanner_delete_scan (connector);
               http_scanner_response_cleanup (response);
