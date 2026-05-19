@@ -86,4 +86,42 @@ schedule_task_iterator_name (iterator_t *);
 int
 schedule_task_iterator_readable (iterator_t *);
 
+int
+init_task_schedule_iterator (iterator_t *);
+
+void
+cleanup_task_schedule_iterator (iterator_t *);
+
+task_t
+task_schedule_iterator_task (iterator_t *);
+
+const char *
+task_schedule_iterator_task_uuid (iterator_t *);
+
+schedule_t task_schedule_iterator_schedule (iterator_t *);
+
+const char *
+task_schedule_iterator_icalendar (iterator_t *);
+
+const char *
+task_schedule_iterator_timezone (iterator_t *);
+
+const char *
+task_schedule_iterator_owner_uuid (iterator_t *);
+
+const char *
+task_schedule_iterator_owner_name (iterator_t *);
+
+gboolean
+task_schedule_iterator_timed_out (iterator_t *);
+
+gboolean
+task_schedule_iterator_start_due (iterator_t *);
+
+gboolean
+task_schedule_iterator_stop_due (iterator_t *);
+
+time_t
+task_schedule_iterator_initial_offset (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */
