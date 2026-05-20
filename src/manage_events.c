@@ -90,6 +90,7 @@ alert_secinfo_count (alert_t alert, char *filter_id)
       current_credentials.uuid = NULL;
     }
 
+  g_free (secinfo_type);
   return db_count;
 }
 
