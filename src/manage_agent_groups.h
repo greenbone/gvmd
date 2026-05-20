@@ -31,6 +31,7 @@ struct agent_group_data
   gchar *uuid;
   gchar *name;
   gchar *comment;
+  gchar *scheduler_cron_time;
   user_t owner;
   scanner_t scanner;
   time_t creation_time;
@@ -66,6 +67,15 @@ modify_agent_group (agent_group_t agent_group,
                     agent_group_data_t group_data,
                     agent_uuid_list_t agent_uuids);
 
+agent_group_resp_t
+create_and_sync_agent_group (agent_group_data_t group_data,
+                             agent_uuid_list_t agent_uuids);
+
+agent_group_resp_t
+modify_and_sync_agent_group (agent_group_t agent_group,
+                             agent_group_data_t group_data,
+                             agent_uuid_list_t agent_uuids);
+
 int
 delete_agent_group (const gchar *agent_group_uuid, int ultimate);
 
@@ -83,6 +93,9 @@ agent_group_iterator_scanner_name (iterator_t *iterator);
 
 const char*
 agent_group_iterator_scanner_id (iterator_t *iterator);
+
+const char*
+agent_group_iterator_scheduler_cron_time (iterator_t *iterator);
 
 int
 copy_agent_group (const char *name,
@@ -148,6 +161,12 @@ trash_agent_group_name (agent_group_t agent_group);
 
 char *
 trash_agent_group_comment (agent_group_t agent_group);
+
+agent_group_resp_t
+map_get_scanner_result_to_agent_group_resp (int);
+
+gboolean
+user_has_get_access_to_scanner (scanner_t);
 
 #endif // not _GVMD_MANAGE_AGENT_GROUPS_H
 #endif // ENABLE_AGENTS

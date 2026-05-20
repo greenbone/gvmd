@@ -95,7 +95,7 @@ dup_str_ptr_array (const GPtrArray *src)
  *         NULL if @p src is NULL or if any allocation fails. On failure, any
  *         partially allocated memory is released.
  */
-static agent_controller_agent_config_t
+agent_controller_agent_config_t
 copy_agent_controller_scan_agent_config (
   agent_controller_agent_config_t src)
 {

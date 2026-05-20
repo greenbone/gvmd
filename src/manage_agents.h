@@ -137,6 +137,9 @@ modify_and_resync_agents_with_update_list (scanner_t,
                                            agent_controller_agent_update_list_t,
                                            GPtrArray **);
 
+agent_controller_agent_config_t
+copy_agent_controller_scan_agent_config (agent_controller_agent_config_t);
+
 agent_response_t
 delete_and_resync_agents (agent_uuid_list_t agent_uuids);
 
