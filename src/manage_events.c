@@ -142,6 +142,7 @@ condition_met (task_t task, report_t report, alert_t alert,
 
               db_count = alert_secinfo_count (alert, filter_id);
 
+              g_free (filter_id);
               if (db_count >= count)
                 return 1;
               break;
