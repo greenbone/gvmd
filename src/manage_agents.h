@@ -133,6 +133,11 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
                           GPtrArray **errors);
 
 agent_response_t
+modify_and_resync_agents_with_update_list (scanner_t,
+                                           agent_controller_agent_update_list_t,
+                                           GPtrArray **);
+
+agent_response_t
 delete_and_resync_agents (agent_uuid_list_t agent_uuids);
 
 int
