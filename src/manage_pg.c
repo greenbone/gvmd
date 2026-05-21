@@ -2031,11 +2031,18 @@ create_view_result_vt_epss ()
 {
   sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
 
-  if (sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-               "               WHERE table_catalog = '%s'"
-               "               AND table_schema = 'scap'"
-               "               AND table_name = 'cves')"
-               " ::integer;",
+  if (sql_int ("SELECT ("
+               "  EXISTS (SELECT 1 FROM information_schema.tables"
+               "          WHERE table_catalog = '%s'"
+               "          AND table_schema = 'scap'"
+               "          AND table_name = 'cves')"
+               "  AND"
+               "  EXISTS (SELECT 1 FROM information_schema.tables"
+               "          WHERE table_catalog = '%s'"
+               "          AND table_schema = 'scap'"
+               "          AND table_name = 'epss_scores')"
+               ")::integer;",
+               sql_database (),
                sql_database ()))
     sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
          "  SELECT cve AS vt_id,"
