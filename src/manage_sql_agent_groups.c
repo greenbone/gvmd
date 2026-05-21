@@ -699,8 +699,9 @@ DEF_ACCESS (agent_group_iterator_scheduler_cron_time,
 /**
  * @brief Copy an agent group including its agent assignments.
  *
- * @param[in]  comment         Optional new comment.
- * @param[in]  group_uuid      UUID of the agent group to copy.
+ * @param [in] name                Name for the new agent group.
+ * @param[in]  comment             Optional new comment.
+ * @param[in]  group_uuid          UUID of the agent group to copy.
  * @param[out] new_group_return    Output: ID of the newly created agent group.
  *
  * @return 0 on success, 1 if already exists, 2 if not found, 99 permission denied, -1 on error.
@@ -719,7 +720,8 @@ copy_agent_group (const char *name,
   sql_begin_immediate ();
 
   // Copy core resource fields into new row
-  ret = copy_resource_lock ("agent_group", name, comment, group_uuid, "scanner", 1, &new_group,
+  ret = copy_resource_lock ("agent_group", name, comment, group_uuid,
+                            "scanner, scheduler_cron_time", 1, &new_group,
                             &old_group);
   if (ret)
   {
