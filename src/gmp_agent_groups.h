@@ -24,9 +24,9 @@ void
 get_agent_groups_run (gmp_parser_t *, GError **);
 
 void
-create_agent_group_start (gmp_parser_t *gmp_parser,
-                          const gchar **attribute_names,
-                          const gchar **attribute_values);
+create_agent_group_start (gmp_parser_t *,
+                          const gchar **,
+                          const gchar **);
 
 void
 create_agent_group_element_start (gmp_parser_t *, const gchar *,
@@ -55,7 +55,7 @@ modify_agent_group_start (gmp_parser_t *,
                           const gchar **);
 
 void
-modify_agent_group_element_text (const gchar *text, gsize text_len);
+modify_agent_group_element_text (const gchar *, gsize);
 
 void
 modify_agent_group_run (gmp_parser_t *, GError **);

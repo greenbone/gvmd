@@ -20,21 +20,19 @@ void
 get_agents_start (const gchar **, const gchar **);
 
 void
-get_agents_run (gmp_parser_t *gmp_parser, GError **error);
+get_agents_run (gmp_parser_t *, GError **);
 
 /* MODIFY_AGENT. */
 
 void
-modify_agent_element_start (gmp_parser_t *gmp_parser, const gchar *name,
-                             const gchar **attribute_names,
-                             const gchar **attribute_values);
+modify_agent_element_start (gmp_parser_t *, const gchar *,
+                             const gchar **, const gchar **);
 
 void
-modify_agent_start (gmp_parser_t *gmp_parser, const gchar **attribute_names,
-                     const gchar **attribute_values);
+modify_agent_start (gmp_parser_t *, const gchar **, const gchar **);
 
 void
-modify_agent_element_text (const gchar *text, gsize text_len);
+modify_agent_element_text (const gchar *, gsize);
 
 int
 modify_agent_element_end (gmp_parser_t *gmp_parser, GError **error,

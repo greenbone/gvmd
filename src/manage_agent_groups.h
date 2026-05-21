@@ -56,64 +56,62 @@ agent_group_data_t
 agent_group_data_new ();
 
 void
-agent_group_data_free (agent_group_data_t data);
+agent_group_data_free (agent_group_data_t);
 
 agent_group_resp_t
-create_agent_group (agent_group_data_t group_data,
-                    agent_uuid_list_t agent_uuids);
+create_agent_group (agent_group_data_t, agent_uuid_list_t);
 
 agent_group_resp_t
-modify_agent_group (agent_group_t agent_group,
-                    agent_group_data_t group_data,
-                    agent_uuid_list_t agent_uuids);
+modify_agent_group (agent_group_t,
+                    agent_group_data_t,
+                    agent_uuid_list_t);
 
 agent_group_resp_t
-create_and_sync_agent_group (agent_group_data_t group_data,
-                             agent_uuid_list_t agent_uuids);
+create_and_sync_agent_group (agent_group_data_t, agent_uuid_list_t);
 
 agent_group_resp_t
-modify_and_sync_agent_group (agent_group_t agent_group,
-                             agent_group_data_t group_data,
-                             agent_uuid_list_t agent_uuids);
+modify_and_sync_agent_group (agent_group_t,
+                             agent_group_data_t,
+                             agent_uuid_list_t);
 
 int
-delete_agent_group (const gchar *agent_group_uuid, int ultimate);
+delete_agent_group (const gchar *, int);
 
 int
-agent_group_count (const get_data_t *get);
+agent_group_count (const get_data_t *);
 
 int
-init_agent_group_iterator (iterator_t *iterator, get_data_t *get);
+init_agent_group_iterator (iterator_t *, get_data_t *);
 
 scanner_t
-agent_group_iterator_scanner (iterator_t *iterator);
+agent_group_iterator_scanner (iterator_t *);
 
 const char*
-agent_group_iterator_scanner_name (iterator_t *iterator);
+agent_group_iterator_scanner_name (iterator_t *);
 
 const char*
-agent_group_iterator_scanner_id (iterator_t *iterator);
+agent_group_iterator_scanner_id (iterator_t *);
 
 const char*
-agent_group_iterator_scheduler_cron_time (iterator_t *iterator);
+agent_group_iterator_scheduler_cron_time (iterator_t *);
 
 int
-copy_agent_group (const char *name,
-                  const char *comment,
-                  const char *group_uuid,
-                  agent_group_t *new_group_return);
+copy_agent_group (const char *,
+                  const char *,
+                  const char *,
+                  agent_group_t *);
 
 char *
-agent_group_uuid (agent_group_t group_id);
+agent_group_uuid (agent_group_t);
 
 char *
-agent_group_name (agent_group_t group_id);
+agent_group_name (agent_group_t);
 
 char *
-agent_group_comment (agent_group_t group_id);
+agent_group_comment (agent_group_t);
 
 agent_group_t
-agent_group_id_by_uuid (const gchar *agent_group_uuid);
+agent_group_id_by_uuid (const gchar *);
 
 int
 agent_group_in_use (agent_group_t);
@@ -122,10 +120,10 @@ int
 trash_agent_group_in_use (agent_group_t);
 
 int
-agent_group_readable (agent_group_t agent_group);
+agent_group_readable (agent_group_t);
 
 int
-trash_agent_group_readable (agent_group_t agent_group);
+trash_agent_group_readable (agent_group_t);
 
 int
 agent_group_writable (agent_group_t);
@@ -134,33 +132,33 @@ int
 trash_agent_group_writable (agent_group_t);
 
 void
-delete_agent_groups_by_scanner (scanner_t scanner);
+delete_agent_groups_by_scanner (scanner_t);
 
 void
-init_agent_group_agents_iterator (iterator_t *iterator,
-                                  agent_group_t group_id);
+init_agent_group_agents_iterator (iterator_t *,
+                                  agent_group_t);
 
 const char*
-agent_group_agent_iterator_uuid (iterator_t *iterator);
+agent_group_agent_iterator_uuid (iterator_t *);
 
 const char*
-agent_group_agent_iterator_name (iterator_t *iterator);
+agent_group_agent_iterator_name (iterator_t *);
 
 gboolean
-find_agent_group_with_permission (const char* uuid, agent_group_t* agent_group,
-                                  const char *permission);
+find_agent_group_with_permission (const char* uuid, agent_group_t*,
+                                  const char *);
 
 scanner_t
-agent_group_scanner (agent_group_t agent_group);
+agent_group_scanner (agent_group_t);
 
 char *
-trash_agent_group_uuid (agent_group_t agent_group);
+trash_agent_group_uuid (agent_group_t);
 
 char *
-trash_agent_group_name (agent_group_t agent_group);
+trash_agent_group_name (agent_group_t);
 
 char *
-trash_agent_group_comment (agent_group_t agent_group);
+trash_agent_group_comment (agent_group_t);
 
 agent_group_resp_t
 map_get_scanner_result_to_agent_group_resp (int);

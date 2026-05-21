@@ -105,32 +105,32 @@ typedef enum
 } agent_response_t;
 
 void
-agent_ip_data_list_free (agent_ip_data_list_t ip_list);
+agent_ip_data_list_free (agent_ip_data_list_t);
 
 void
-agent_data_free (agent_data_t data);
+agent_data_free (agent_data_t);
 
 agent_ip_data_list_t
-agent_ip_data_list_new (int count);
+agent_ip_data_list_new (int);
 
 void
-agent_ip_data_free (agent_ip_data_t ip_data);
+agent_ip_data_free (agent_ip_data_t);
 
 void
-agent_data_list_free (agent_data_list_t agents);
+agent_data_list_free (agent_data_list_t);
 
 agent_response_t
-sync_agents_from_agent_controller (gvmd_agent_connector_t connector);
+sync_agents_from_agent_controller (gvmd_agent_connector_t);
 
 agent_response_t
-get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
-                                 agent_data_list_t out_list);
+get_agents_by_scanner_and_uuids (scanner_t, agent_uuid_list_t,
+                                 agent_data_list_t);
 
 agent_response_t
-modify_and_resync_agents (agent_uuid_list_t agent_uuids,
-                          agent_controller_agent_update_t agent_update,
-                          const gchar *comment,
-                          GPtrArray **errors);
+modify_and_resync_agents (agent_uuid_list_t,
+                          agent_controller_agent_update_t,
+                          const gchar *,
+                          GPtrArray **);
 
 agent_response_t
 modify_and_resync_agents_with_update_list (scanner_t,
@@ -141,98 +141,98 @@ agent_controller_agent_config_t
 copy_agent_controller_scan_agent_config (agent_controller_agent_config_t);
 
 agent_response_t
-delete_and_resync_agents (agent_uuid_list_t agent_uuids);
+delete_and_resync_agents (agent_uuid_list_t);
 
 int
 manage_agents_sync_from_agent_controllers (gboolean *);
 
 int
-init_agent_iterator (iterator_t *iterator, get_data_t *get);
+init_agent_iterator (iterator_t *iterator, get_data_t *);
 
 void
-init_agent_uuid_list_iterator (iterator_t *iterator,
-                               agent_uuid_list_t uuid_list);
+init_agent_uuid_list_iterator (iterator_t *,
+                               agent_uuid_list_t);
 
 agent_ip_data_list_t
-load_agent_ip_addresses (const gchar *agent_id);
+load_agent_ip_addresses (const gchar *);
 
 const gchar *
-agent_iterator_agent_id (iterator_t *iterator);
+agent_iterator_agent_id (iterator_t *);
 
 const gchar *
-agent_iterator_hostname (iterator_t *iterator);
+agent_iterator_hostname (iterator_t *);
 
 const gchar *
-agent_iterator_connection_status (iterator_t *iterator);
+agent_iterator_connection_status (iterator_t *);
 
 const gchar *
-agent_iterator_config (iterator_t *iterator);
+agent_iterator_config (iterator_t *);
 
 int
-agent_iterator_authorized (iterator_t *iterator);
+agent_iterator_authorized (iterator_t *);
 
 time_t
-agent_iterator_last_update (iterator_t *iterator);
+agent_iterator_last_update (iterator_t *);
 
 time_t
-agent_iterator_last_updater_heartbeat (iterator_t *iterator);
+agent_iterator_last_updater_heartbeat (iterator_t *);
 
 scanner_t
-agent_iterator_scanner (iterator_t *iterator);
+agent_iterator_scanner (iterator_t *);
 
 const gchar *
-agent_iterator_updater_version (iterator_t *iterator);
+agent_iterator_updater_version (iterator_t *);
 
 const gchar *
-agent_iterator_agent_version (iterator_t *iterator);
+agent_iterator_agent_version (iterator_t *);
 
 const gchar *
-agent_iterator_operating_system (iterator_t *iterator);
+agent_iterator_operating_system (iterator_t *);
 
 const gchar *
-agent_iterator_architecture (iterator_t *iterator);
+agent_iterator_architecture (iterator_t *);
 
 int
-agent_iterator_update_to_latest (iterator_t *iterator);
+agent_iterator_update_to_latest (iterator_t *);
 
 int
-agent_iterator_agent_update_available (iterator_t *iterator);
+agent_iterator_agent_update_available (iterator_t *);
 
 int
-agent_iterator_updater_update_available (iterator_t *iterator);
+agent_iterator_updater_update_available (iterator_t *);
 
 const gchar*
-agent_iterator_latest_agent_version (iterator_t* iterator);
+agent_iterator_latest_agent_version (iterator_t*);
 
 const gchar*
-agent_iterator_latest_updater_version (iterator_t* iterator);
+agent_iterator_latest_updater_version (iterator_t*);
 
 int
-agent_count (const get_data_t *get);
+agent_count (const get_data_t *);
 
 int
-agent_writable (agent_t agent);
+agent_writable (agent_t);
 
 int
-agent_in_use (agent_t agent);
+agent_in_use (agent_t);
 
 void
-delete_agents_by_scanner_and_uuids (scanner_t scanner,
-                                    agent_uuid_list_t agent_uuids);
+delete_agents_by_scanner_and_uuids (scanner_t,
+                                    agent_uuid_list_t);
 
 gboolean
-agents_in_use (agent_uuid_list_t agent_uuids);
+agents_in_use (agent_uuid_list_t);
 
 agent_response_t
-get_agent_controller_agents_from_uuids (scanner_t scanner,
-                                        agent_uuid_list_t agent_uuids,
-                                        agent_controller_agent_list_t out_list);
+get_agent_controller_agents_from_uuids (scanner_t,
+                                        agent_uuid_list_t,
+                                        agent_controller_agent_list_t);
 
 const gchar *
-agent_response_to_string (agent_response_t code);
+agent_response_to_string (agent_response_t);
 
 gchar *
-agent_id_by_uuid (const gchar *agent_uuid);
+agent_id_by_uuid (const gchar *);
 
 #endif // not _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS
