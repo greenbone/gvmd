@@ -87,56 +87,6 @@ dup_str_ptr_array (const GPtrArray *src)
 }
 
 /**
- * @brief Deep-copy a scan agent configuration structure.
- *
- * @param[in] src  Source configuration to copy. May be NULL.
- *
- * @return A newly allocated #agent_controller_scan_agent_config_t on success;
- *         NULL if @p src is NULL or if any allocation fails. On failure, any
- *         partially allocated memory is released.
- */
-agent_controller_agent_config_t
-copy_agent_controller_scan_agent_config (
-  agent_controller_agent_config_t src)
-{
-  if (!src)
-    return NULL;
-
-  agent_controller_agent_config_t dst =
-    agent_controller_agent_config_new ();
-
-  /* Plain struct copies */
-  dst->agent_control.retry.attempts = src->agent_control.retry.attempts;
-  dst->agent_control.retry.delay_in_seconds =
-    src->agent_control.retry.delay_in_seconds;
-  dst->agent_control.retry.max_jitter_in_seconds =
-    src->agent_control.retry.max_jitter_in_seconds;
-
-  dst->agent_script_executor.bulk_size = src->agent_script_executor.bulk_size;
-  dst->agent_script_executor.bulk_throttle_time_in_ms =
-    src->agent_script_executor.bulk_throttle_time_in_ms;
-  dst->agent_script_executor.indexer_dir_depth =
-    src->agent_script_executor.indexer_dir_depth;
-
-  dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
-  dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;
-
-  /* Deep copy of GPtrArray<char*> */
-  dst->agent_script_executor.scheduler_cron_time =
-    dup_str_ptr_array (src->agent_script_executor.scheduler_cron_time);
-
-  if (src->agent_script_executor.scheduler_cron_time
-      && !dst->agent_script_executor.scheduler_cron_time)
-    {
-      /* allocation failed – clean up partial dst */
-      agent_controller_agent_config_free (dst);
-      return NULL;
-    }
-
-  return dst;
-}
-
-/**
  * @brief Populate GVMD agent data list from agent controller list.
  *
  * Copies agent metadata from the agent controller representation to GVMD's
@@ -326,6 +276,34 @@ prepare_agent_update_list_from_agents_and_update (
 }
 
 /**
+ * @brief Maps the return value of get_scanner_from_agent_uuid() to
+ * agent_response_t.
+ *
+ * @param[in] result Return code from get_scanner_from_agent_uuid().
+ *
+ * @return Corresponding agent_response_t enum value.
+ */
+static agent_response_t
+map_get_scanner_result_to_agent_response (int result)
+{
+  switch (result)
+    {
+    case 0:
+      return AGENT_RESPONSE_SUCCESS;
+    case -1:
+      return AGENT_RESPONSE_INVALID_ARGUMENT;
+    case -2:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    case -3:
+      return AGENT_RESPONSE_AGENT_NOT_FOUND;
+    case -4:
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
+    default:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    }
+}
+
+/**
  * @brief Retrieve agent controller agents from GVMD UUIDs.
  *
  * Filters and converts a list of agent UUIDs to agent controller format.
@@ -386,31 +364,53 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
 }
 
 /**
- * @brief Maps the return value of get_scanner_from_agent_uuid() to
- * agent_response_t.
+ * @brief Deep-copy a scan agent configuration structure.
  *
- * @param[in] result Return code from get_scanner_from_agent_uuid().
+ * @param[in] src  Source configuration to copy. May be NULL.
  *
- * @return Corresponding agent_response_t enum value.
+ * @return A newly allocated #agent_controller_scan_agent_config_t on success;
+ *         NULL if @p src is NULL or if any allocation fails. On failure, any
+ *         partially allocated memory is released.
  */
-static agent_response_t
-map_get_scanner_result_to_agent_response (int result)
+agent_controller_agent_config_t
+copy_agent_controller_scan_agent_config (
+  agent_controller_agent_config_t src)
 {
-  switch (result)
+  if (!src)
+    return NULL;
+
+  agent_controller_agent_config_t dst =
+    agent_controller_agent_config_new ();
+
+  /* Plain struct copies */
+  dst->agent_control.retry.attempts = src->agent_control.retry.attempts;
+  dst->agent_control.retry.delay_in_seconds =
+    src->agent_control.retry.delay_in_seconds;
+  dst->agent_control.retry.max_jitter_in_seconds =
+    src->agent_control.retry.max_jitter_in_seconds;
+
+  dst->agent_script_executor.bulk_size = src->agent_script_executor.bulk_size;
+  dst->agent_script_executor.bulk_throttle_time_in_ms =
+    src->agent_script_executor.bulk_throttle_time_in_ms;
+  dst->agent_script_executor.indexer_dir_depth =
+    src->agent_script_executor.indexer_dir_depth;
+
+  dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
+  dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;
+
+  /* Deep copy of GPtrArray<char*> */
+  dst->agent_script_executor.scheduler_cron_time =
+    dup_str_ptr_array (src->agent_script_executor.scheduler_cron_time);
+
+  if (src->agent_script_executor.scheduler_cron_time
+      && !dst->agent_script_executor.scheduler_cron_time)
     {
-    case 0:
-      return AGENT_RESPONSE_SUCCESS;
-    case -1:
-      return AGENT_RESPONSE_INVALID_ARGUMENT;
-    case -2:
-      return AGENT_RESPONSE_INTERNAL_ERROR;
-    case -3:
-      return AGENT_RESPONSE_AGENT_NOT_FOUND;
-    case -4:
-      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
-    default:
-      return AGENT_RESPONSE_INTERNAL_ERROR;
+      /* allocation failed – clean up partial dst */
+      agent_controller_agent_config_free (dst);
+      return NULL;
     }
+
+  return dst;
 }
 
 /**
