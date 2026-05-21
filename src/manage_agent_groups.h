@@ -59,14 +59,6 @@ void
 agent_group_data_free (agent_group_data_t);
 
 agent_group_resp_t
-create_agent_group (agent_group_data_t, agent_uuid_list_t);
-
-agent_group_resp_t
-modify_agent_group (agent_group_t,
-                    agent_group_data_t,
-                    agent_uuid_list_t);
-
-agent_group_resp_t
 create_and_sync_agent_group (agent_group_data_t, agent_uuid_list_t);
 
 agent_group_resp_t
