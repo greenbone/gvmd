@@ -49,55 +49,6 @@ get_scanner_by_agent_group_id (agent_group_t agent_group_id, scanner_t *scanner)
 }
 
 /**
- * @brief Maps result of get_scanner_from_agent_uuid to agent_group_resp_t.
- *
- * @param[in] result The integer result returned by get_scanner_from_agent_uuid.
- *
- * @return The corresponding agent_group_resp_t value.
- */
-agent_group_resp_t
-map_get_scanner_result_to_agent_group_resp (int result)
-{
-  switch (result)
-  {
-    case 0:
-      return AGENT_GROUP_RESP_SUCCESS;
-
-    case -1:
-    case -4:
-      return AGENT_GROUP_RESP_INVALID_ARGUMENT;
-
-    case -2:
-      return AGENT_GROUP_RESP_INTERNAL_ERROR;
-
-    case -3:
-      return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
-
-    default:
-      return AGENT_GROUP_RESP_INTERNAL_ERROR;
-  }
-}
-
-/**
- * @brief Check if the current user has "get_scanners" permission on a scanner.
- *
- * @param[in] scanner  Scanner row ID to check.
- *
- * @return TRUE if the user has access, FALSE otherwise.
- */
-gboolean
-user_has_get_access_to_scanner (scanner_t scanner)
-{
-  char *s_uuid = scanner_uuid (scanner);
-  if (!s_uuid)
-    return FALSE;
-
-  gboolean allowed = acl_user_has_access_uuid ("scanner", s_uuid, "get_scanners", 0);
-  g_free (s_uuid);
-  return allowed;
-}
-
-/**
  * @brief Check if an agent group is in use by any hidden tasks.
  *
  * @param agent_group The row ID of the agent group to check.
@@ -158,6 +109,55 @@ agent_group_name_exists (const gchar *name, agent_group_t current_agent_group)
               NULL);
 
   return (count > 0) ? 1 : 0;
+}
+
+/**
+ * @brief Check if the current user has "get_scanners" permission on a scanner.
+ *
+ * @param[in] scanner  Scanner row ID to check.
+ *
+ * @return TRUE if the user has access, FALSE otherwise.
+ */
+gboolean
+user_has_get_access_to_scanner (scanner_t scanner)
+{
+  char *s_uuid = scanner_uuid (scanner);
+  if (!s_uuid)
+    return FALSE;
+
+  gboolean allowed = acl_user_has_access_uuid ("scanner", s_uuid, "get_scanners", 0);
+  g_free (s_uuid);
+  return allowed;
+}
+
+/**
+ * @brief Maps result of get_scanner_from_agent_uuid to agent_group_resp_t.
+ *
+ * @param[in] result The integer result returned by get_scanner_from_agent_uuid.
+ *
+ * @return The corresponding agent_group_resp_t value.
+ */
+agent_group_resp_t
+map_get_scanner_result_to_agent_group_resp (int result)
+{
+  switch (result)
+    {
+    case 0:
+      return AGENT_GROUP_RESP_SUCCESS;
+
+    case -1:
+    case -4:
+      return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+
+    case -2:
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+
+    case -3:
+      return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
+
+    default:
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
 }
 
 /**
