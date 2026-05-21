@@ -80,6 +80,7 @@ preference_free (preference_t *preference)
       free (preference->nvt_name);
       free (preference->nvt_oid);
       free (preference->default_value);
+      free (preference->hr_name);
     }
 
   g_free (preference);
