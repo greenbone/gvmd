@@ -1070,8 +1070,8 @@ trash_agent_group_comment (agent_group_t agent_group)
  * @brief Get scheduler cron times for all groups containing an agent.
  *
  * @param[in]  agent_uuid  UUID of the agent.
- * @param[out] schedule_cron_times Newly allocated pointer array of cron strings.
- *                                 The caller must free it.
+ * @param[out] schedule_cron_times On success, newly allocated pointer array of cron strings.
+ *                                 The caller must free it with g_ptr_array_free.
  *
  * @return 0 on success, -1 on invalid argument.
  */
@@ -1084,10 +1084,12 @@ agent_group_schedule_cron_times_for_agent_uuid (const gchar *agent_uuid,
   if (schedule_cron_times == NULL)
     return -1;
 
-  *schedule_cron_times = g_ptr_array_new_with_free_func (g_free);
+  *schedule_cron_times = NULL;
 
   if (agent_uuid == NULL || *agent_uuid == '\0')
     return -1;
+
+  *schedule_cron_times = g_ptr_array_new_with_free_func (g_free);
 
   init_ps_iterator (&it,
                     "SELECT ag.scheduler_cron_time"
