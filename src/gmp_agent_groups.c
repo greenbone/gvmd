@@ -792,6 +792,20 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("agent_group", "Agent Group", NULL, "modified");
         break;
 
+      case AGENT_GROUP_RESP_GROUP_NOT_FOUND:
+        if (send_find_error_to_client ("modify_agent_group",
+                                       "agent_group",
+                                       NULL,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            modify_agent_group_reset ();
+            return;
+          }
+
+        log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+        break;
+
       case AGENT_GROUP_RESP_AGENT_UNAUTHORIZED:
         SEND_TO_CLIENT_OR_FAIL (
           XML_ERROR_SYNTAX ("modify_agent_group", "Unauthorized Agent"));

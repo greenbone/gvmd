@@ -265,6 +265,86 @@ sync_agent_group_agents_from_group_crons (agent_uuid_list_t agent_uuids,
 }
 
 /**
+ * @brief Create a union of two agent UUID lists.
+ *
+ * @param[in] first   First agent UUID list, may be NULL.
+ * @param[in] second  Second agent UUID list, may be NULL.
+ *
+ * @return Newly allocated union list, or NULL if both input lists are empty.
+ *         Caller must free the returned list with agent_uuid_list_free().
+ */
+static agent_uuid_list_t
+agent_uuid_list_union (agent_uuid_list_t first, agent_uuid_list_t second)
+{
+  GHashTable *seen;
+  GPtrArray *uuids;
+  agent_uuid_list_t result;
+  int i;
+
+  seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  uuids = g_ptr_array_new_with_free_func (g_free);
+
+  if (first)
+    {
+      for (i = 0; i < first->count; ++i)
+        {
+          const gchar *uuid = first->agent_uuids[i];
+
+          if (uuid == NULL || *uuid == '\0')
+            continue;
+
+          if (g_hash_table_contains (seen, uuid) == FALSE)
+            {
+              g_hash_table_add (seen, g_strdup (uuid));
+              g_ptr_array_add (uuids, g_strdup (uuid));
+            }
+        }
+    }
+
+  if (second)
+    {
+      for (i = 0; i < second->count; ++i)
+        {
+          const gchar *uuid = second->agent_uuids[i];
+
+          if (uuid == NULL || *uuid == '\0')
+            continue;
+
+          if (g_hash_table_contains (seen, uuid) == FALSE)
+            {
+              g_hash_table_add (seen, g_strdup (uuid));
+              g_ptr_array_add (uuids, g_strdup (uuid));
+            }
+        }
+    }
+
+  if (uuids->len == 0)
+    {
+      g_ptr_array_free (uuids, TRUE);
+      g_hash_table_destroy (seen);
+      return NULL;
+    }
+
+  result = agent_uuid_list_new ((int) uuids->len);
+  if (result == NULL)
+    {
+      g_ptr_array_free (uuids, TRUE);
+      g_hash_table_destroy (seen);
+      return NULL;
+    }
+
+  for (i = 0; i < (int) uuids->len; ++i)
+    result->agent_uuids[i] = g_strdup (g_ptr_array_index (uuids, i));
+
+  result->count = (int) uuids->len;
+
+  g_ptr_array_free (uuids, TRUE);
+  g_hash_table_destroy (seen);
+
+  return result;
+}
+
+/**
  * @brief Allocate and initialize a new agent_group_data_t structure.
  *
  * @return A newly allocated agent_group_data_t pointer, or NULL on failure.
@@ -309,6 +389,7 @@ create_and_sync_agent_group (agent_group_data_t group_data,
 {
   scanner_t scanner = 0;
   agent_group_resp_t response;
+  int delete_response;
 
   assert (current_credentials.uuid);
 
@@ -326,7 +407,24 @@ create_and_sync_agent_group (agent_group_data_t group_data,
   if (response != AGENT_GROUP_RESP_SUCCESS)
     return response;
 
-  return sync_agent_group_agents_from_group_crons (agent_uuids, scanner);
+  response = sync_agent_group_agents_from_group_crons (agent_uuids, scanner);
+
+  if (response != AGENT_GROUP_RESP_SUCCESS)
+    {
+      g_warning ("%s: failed to sync agent controller after group creation: %d",
+                 __func__, response);
+      delete_response = delete_agent_group (group_data->uuid, 1);
+
+      if (delete_response)
+        {
+          g_warning ("%s: failed to delete agent group %s after sync failure, "
+                     "delete_agent_group returned %d",
+                     __func__, group_data->uuid, delete_response);
+        }
+
+      return response;
+    }
+  return AGENT_GROUP_RESP_SUCCESS;
 }
 
 /**
@@ -347,23 +445,79 @@ modify_and_sync_agent_group (agent_group_t agent_group,
 {
   scanner_t scanner = 0;
   agent_group_resp_t response;
+  agent_group_resp_t sync_response;
+  agent_group_resp_t rollback_response;
+  agent_group_data_t old_group_data = NULL;
+  agent_uuid_list_t old_agent_uuids = NULL;
+  agent_uuid_list_t sync_agent_uuids = NULL;
 
   assert (current_credentials.uuid);
 
-  response = get_agent_group_scanner (group_data, agent_uuids, &scanner);
-
+  response = get_agent_group (agent_group, &old_group_data);
   if (response != AGENT_GROUP_RESP_SUCCESS)
     return response;
+
+  scanner = old_group_data->scanner;
+
+  response = get_agent_group_agent_uuids (agent_group, &old_agent_uuids);
+  if (response != AGENT_GROUP_RESP_SUCCESS)
+    {
+      agent_group_data_free (old_group_data);
+      return response;
+    }
 
   /*
-   * Modify the group first so the DB contains the final group cron state.
-   * After this, the cron-list helper can read the complete current cron state.
+   * Sync target must include both old and new agents:
+   * - added agents need the new cron
+   * - removed agents need stale cron removed
+   * - kept agents may need updated cron
    */
+  sync_agent_uuids = agent_uuid_list_union (old_agent_uuids, agent_uuids);
+
   response = modify_agent_group (agent_group, group_data, agent_uuids);
-
   if (response != AGENT_GROUP_RESP_SUCCESS)
-    return response;
+    {
+      agent_uuid_list_free (sync_agent_uuids);
+      agent_uuid_list_free (old_agent_uuids);
+      agent_group_data_free (old_group_data);
+      return response;
+    }
 
-  return sync_agent_group_agents_from_group_crons (agent_uuids, scanner);
+  if (sync_agent_uuids)
+    sync_response =
+      sync_agent_group_agents_from_group_crons (sync_agent_uuids, scanner);
+  else
+    sync_response = AGENT_GROUP_RESP_SUCCESS;
+
+  if (sync_response != AGENT_GROUP_RESP_SUCCESS)
+    {
+      g_warning (
+        "%s: failed to sync agent controller after group modification: %d",
+        __func__, sync_response);
+
+      rollback_response = modify_agent_group (agent_group,
+                                              old_group_data,
+                                              old_agent_uuids);
+
+      if (rollback_response != AGENT_GROUP_RESP_SUCCESS)
+        {
+          g_warning (
+            "%s: failed to rollback agent group %llu after sync failure, "
+            "modify_agent_group returned %d",
+            __func__, agent_group, rollback_response);
+        }
+
+      response = sync_response;
+    }
+  else
+    {
+      response = AGENT_GROUP_RESP_SUCCESS;
+    }
+
+  agent_uuid_list_free (sync_agent_uuids);
+  agent_uuid_list_free (old_agent_uuids);
+  agent_group_data_free (old_group_data);
+
+  return response;
 }
 #endif //ENABLE_AGENTS
