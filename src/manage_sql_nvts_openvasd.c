@@ -73,9 +73,11 @@ static ssize_t
 readcookie (void *stream_cookie, char *buf, size_t size)
 {
   struct FILESTREAM *stream = stream_cookie;
+
+  if (stream->last_read >= stream->last_write)
+    return 0;
+
   size_t to_read = stream->last_write - stream->last_read;
-  if (to_read < 0)
-    to_read = 0;
 
   if (to_read > size)
     to_read = size;
@@ -195,8 +197,11 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
     {
       http_scanner_response_cleanup (resp);
       g_warning ("%s: failed to get VTs", __func__);
+      sql_rollback ();
       return -1;
     }
+
+  http_scanner_response_cleanup (resp);
 
   cookie_io_functions_t cookiehooks = {
     .read = readcookie,
@@ -219,6 +224,16 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
   // First run for initial data in the stream
   running = openvasd_get_vt_stream (connector);
+  if (running < 0)
+    {
+      g_warning ("%s: failed while reading VT stream (initial chunk)", __func__);
+      gvm_json_pull_event_cleanup (&event);
+      gvm_json_pull_parser_cleanup (&parser);
+      fclose (stream);
+      sql_rollback ();
+      return -1;
+    }
+
   fwrite (http_scanner_stream_str (connector), 1,
           http_scanner_stream_len (connector), stream);
 
@@ -231,7 +246,18 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
       // Realloc is expensive therefore we realloc with bigger chuncks
       while (running > 0 && http_scanner_stream_len (connector) <
              GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
-        running = openvasd_get_vt_stream (connector);
+        {
+          running = openvasd_get_vt_stream (connector);
+          if (running < 0)
+            {
+              g_warning ("%s: failed while reading VT stream", __func__);
+              gvm_json_pull_event_cleanup (&event);
+              gvm_json_pull_parser_cleanup (&parser);
+              fclose (stream);
+              sql_rollback ();
+              return -1;
+            }
+        }
 
       if (http_scanner_stream_len (connector) > 0)
         {
@@ -254,7 +280,6 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
               gvm_json_pull_event_cleanup (&event);
               gvm_json_pull_parser_cleanup (&parser);
               fclose (stream);
-              http_scanner_response_cleanup (resp);
               sql_rollback ();
               return -1;
             }
@@ -293,8 +318,6 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
   gvm_json_pull_event_cleanup (&event);
   gvm_json_pull_parser_cleanup (&parser);
   fclose (stream);
-
-  http_scanner_response_cleanup (resp);
 
   batch_end (vt_refs_batch);
   batch_end (vt_sevs_batch);
