@@ -56,6 +56,13 @@ modify_agent_group (agent_group_t,
                     agent_group_data_t,
                     agent_uuid_list_t);
 
+agent_group_resp_t
+get_agent_group (agent_group_t , agent_group_data_t *);
+
+agent_group_resp_t
+get_agent_group_agent_uuids (agent_group_t,
+                             agent_uuid_list_t *);
+
 int
 restore_agent_group (const char *);
 

@@ -418,6 +418,132 @@ modify_agent_group (agent_group_t agent_group,
 }
 
 /**
+ * @brief Get agent group data by row ID.
+ *
+ * @param[in]  agent_group  Agent group row ID.
+ * @param[out] group_data   Newly allocated agent group data.
+ *
+ * @return AGENT_GROUP_RESP_SUCCESS on success,
+ *         AGENT_GROUP_RESP_GROUP_NOT_FOUND if not found,
+ *         AGENT_GROUP_RESP_INTERNAL_ERROR on error.
+ */
+agent_group_resp_t
+get_agent_group (agent_group_t agent_group, agent_group_data_t *group_data)
+{
+  iterator_t it;
+  agent_group_data_t data;
+
+  if (agent_group == 0 || group_data == NULL)
+    return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+
+  *group_data = NULL;
+
+  init_iterator (&it,
+                 "SELECT uuid, name, comment, scanner,"
+                 "       creation_time, modification_time,"
+                 "       scheduler_cron_time"
+                 " FROM agent_groups"
+                 " WHERE id = %llu;",
+                 agent_group);
+
+  if (!next (&it))
+    {
+      cleanup_iterator (&it);
+      return AGENT_GROUP_RESP_GROUP_NOT_FOUND;
+    }
+
+  data = agent_group_data_new ();
+  if (data == NULL)
+    {
+      cleanup_iterator (&it);
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
+
+  data->uuid = g_strdup (iterator_string (&it, 0));
+  data->name = g_strdup (iterator_string (&it, 1));
+  data->comment = g_strdup (iterator_string (&it, 2));
+  data->scanner = iterator_int64 (&it, 3);
+  data->creation_time = iterator_int64 (&it, 4);
+  data->modification_time = iterator_int64 (&it, 5);
+  data->scheduler_cron_time = g_strdup (iterator_string (&it, 6));
+
+  cleanup_iterator (&it);
+
+  *group_data = data;
+  return AGENT_GROUP_RESP_SUCCESS;
+}
+
+/**
+ * @brief Get UUIDs of agents currently assigned to an agent group.
+ *
+ * @param[in]  agent_group  Agent group row ID.
+ * @param[out] agent_uuids  Newly allocated list of agent UUIDs.
+ *
+ * @return AGENT_GROUP_RESP_SUCCESS on success,
+ *         AGENT_GROUP_RESP_INVALID_ARGUMENT on invalid input,
+ *         AGENT_GROUP_RESP_INTERNAL_ERROR on allocation/query error.
+ */
+agent_group_resp_t
+get_agent_group_agent_uuids (agent_group_t agent_group,
+                             agent_uuid_list_t *agent_uuids)
+{
+  iterator_t it;
+  agent_uuid_list_t list;
+  int count;
+  int i = 0;
+
+  if (agent_group == 0 || agent_uuids == NULL)
+    return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+
+  *agent_uuids = NULL;
+
+  count = sql_int ("SELECT COUNT(*)"
+                   " FROM agent_group_agents"
+                   " WHERE group_id = %llu;",
+                   agent_group);
+
+  if (count <= 0)
+    {
+      *agent_uuids = NULL;
+      return AGENT_GROUP_RESP_SUCCESS;
+    }
+
+  list = agent_uuid_list_new (count);
+
+  init_iterator (&it,
+                 "SELECT agents.uuid"
+                 " FROM agents"
+                 " JOIN agent_group_agents"
+                 "   ON agent_group_agents.agent_id = agents.id"
+                 " WHERE agent_group_agents.group_id = %llu;",
+                 agent_group);
+
+  while (next (&it))
+    {
+      const char *uuid = iterator_string (&it, 0);
+
+      if (uuid == NULL || *uuid == '\0')
+        continue;
+
+      if (i >= count)
+        {
+          cleanup_iterator (&it);
+          agent_uuid_list_free (list);
+          return AGENT_GROUP_RESP_INTERNAL_ERROR;
+        }
+
+      list->agent_uuids[i++] = g_strdup (uuid);
+    }
+
+  cleanup_iterator (&it);
+
+  list->count = i;
+  *agent_uuids = list;
+
+  return AGENT_GROUP_RESP_SUCCESS;
+}
+
+/**
  * @brief Delete an agent group, either softly (move to trash) or permanently.
  *
  * @param[in] agent_group_uuid  UUID of the agent group to delete.
