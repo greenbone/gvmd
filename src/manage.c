@@ -1922,8 +1922,8 @@ cve_scan_report_host_json (task_t task,
           if (match && vulnerable)
             {
               GString *locations;
-              gchar *desc;
-              const char *app, *cve;
+              gchar *desc, *cve;
+              const char *app;
 
               if (*prognosis_report_host == 0)
                 *prognosis_report_host = manage_report_host_add (report,
@@ -2003,6 +2003,7 @@ cve_scan_report_host_json (task_t task,
                        __func__, severity, desc);
 
               result = make_cve_result (task, ip, cve, severity, desc);
+              g_free (cve);
               g_free (desc);
 
               g_array_append_val (results, result);
