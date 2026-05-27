@@ -42,6 +42,8 @@
       {"updater_update_available", NULL, KEYWORD_TYPE_INTEGER},             \
       {"latest_agent_version", NULL, KEYWORD_TYPE_STRING},                  \
       {"latest_updater_version", NULL, KEYWORD_TYPE_STRING},                \
+      {"scanner_name", "scanner_name", KEYWORD_TYPE_STRING },               \
+      {"scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },                 \
     {                                                                       \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                      \
     }                                                                       \
@@ -58,6 +60,7 @@
       "agent_version", "operating_system", "architecture", "update_to_latest", \
       "agent_update_available", "updater_update_available",                    \
       "latest_agent_version", "latest_updater_version", "connection_status",   \
+      "scanner_name", "scanner_uuid",                                          \
       NULL                                                                     \
   }
 

@@ -400,6 +400,11 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
 
   static column_t columns[] = AGENT_ITERATOR_COLUMNS;
   static const char *filter_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
+  const char *join_clause = " LEFT JOIN"
+    " (SELECT id as scanner_id, name AS scanner_name, uuid "
+    "  AS scanner_uuid FROM scanners)"
+    "  AS scanner_data"
+    "  ON scanner_data.scanner_id = scanner";
 
   gchar *quoted = NULL;
   gchar *where_clause = NULL;
@@ -413,8 +418,8 @@ init_agent_iterator (iterator_t *iterator, get_data_t *get)
   int ret = init_get_iterator (iterator, "agent", get, columns,
                                NULL, // no trash columns
                                filter_columns,
-                               0,    // no trashcan
-                               NULL, // no joins
+                               0,           // no trashcan
+                               join_clause, // joins for scanners
                                where_clause, 0);
 
   g_free (where_clause);
@@ -655,7 +660,7 @@ agent_iterator_updater_update_available (iterator_t *iterator)
 /**
  * @brief Retrieve latest agent version.
  */
-const gchar*
+const gchar *
 agent_iterator_latest_agent_version (iterator_t *iterator)
 {
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
@@ -664,10 +669,28 @@ agent_iterator_latest_agent_version (iterator_t *iterator)
 /**
  * @brief Retrieve latest updater version.
  */
-const gchar*
+const gchar *
 agent_iterator_latest_updater_version (iterator_t *iterator)
 {
   return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+}
+
+/**
+ * @brief Retrieve latest updater version.
+ */
+const gchar *
+agent_iterator_scanner_name (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
+}
+
+/**
+ * @brief Retrieve latest updater version.
+ */
+const gchar *
+agent_iterator_scanner_uuid (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
 }
 
 /**
@@ -681,8 +704,14 @@ agent_count (const get_data_t *get)
 {
   static const char *extra_columns[] = AGENT_ITERATOR_FILTER_COLUMNS;
   static column_t columns[] = AGENT_ITERATOR_COLUMNS;
+  const char *join_clause = " LEFT JOIN"
+    " (SELECT id as scanner_id, name AS scanner_name, uuid "
+    "  AS scanner_uuid FROM scanners)"
+    "  AS scanner_data"
+    "  ON scanner_data.scanner_id = scanner";
 
-  return count ("agent", get, columns, NULL, extra_columns, 0, 0, 0, TRUE);
+  return count ("agent", get, columns, NULL, extra_columns, 0, join_clause, 0,
+                TRUE);
 }
 
 /**

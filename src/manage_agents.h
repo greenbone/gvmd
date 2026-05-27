@@ -207,6 +207,12 @@ agent_iterator_latest_agent_version (iterator_t*);
 const gchar*
 agent_iterator_latest_updater_version (iterator_t*);
 
+const gchar*
+agent_iterator_scanner_name (iterator_t*);
+
+const gchar*
+agent_iterator_scanner_uuid (iterator_t*);
+
 int
 agent_count (const get_data_t *);
 
