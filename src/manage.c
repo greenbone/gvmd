@@ -1914,7 +1914,6 @@ cve_scan_report_host_json (task_t task,
         {
           result_t root_node;
           gboolean match, vulnerable;
-          const char *app, *cve;
 
           vulnerable = FALSE;
           match = FALSE;
@@ -1924,6 +1923,7 @@ cve_scan_report_host_json (task_t task,
             {
               GString *locations;
               gchar *desc;
+              const char *app, *cve;
 
               if (*prognosis_report_host == 0)
                 *prognosis_report_host = manage_report_host_add (report,
