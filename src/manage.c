@@ -1797,6 +1797,8 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
   iterator_t cpe_match_ranges;
 
   operator = sql_string ("SELECT operator FROM scap.cpe_match_nodes WHERE id = %llu", node);
+  if (operator == NULL)
+    return;
   init_cpe_match_node_childs_iterator (&cpe_match_node_childs, node);
   while (next (&cpe_match_node_childs))
     {
@@ -1804,9 +1806,9 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
       child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
       check_cpe_match_rule (child_node, match, vulnerable, report_host, host_cpe);
       if (strcmp (operator, "AND") == 0 && !(*match))
-        return;
+        goto cleanup;
       if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
-        return;
+        goto cleanup;
     }
 
   init_cpe_match_string_iterator (&cpe_match_ranges, node);
@@ -1864,10 +1866,12 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
       g_free (vei);
       g_free (vee);
       if (strcmp (operator, "AND") == 0 && !(*match))
-        return;
+        goto cleanup;
       if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
-        return;
+        goto cleanup;
     }
+ cleanup:
+  g_free (operator);
 }
 
 /**
