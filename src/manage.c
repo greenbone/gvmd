@@ -1922,7 +1922,7 @@ cve_scan_report_host_json (task_t task,
           if (match && vulnerable)
             {
               GString *locations;
-              gchar *desc, *cve;
+              gchar *desc, *description, *cve;
               const char *app;
 
               if (*prognosis_report_host == 0)
@@ -1979,7 +1979,6 @@ cve_scan_report_host_json (task_t task,
                                              cve, NULL);
                 }
 
-              const char *description;
               description = sql_string ("SELECT description FROM scap.cves, scap.cpe_match_nodes"
                                         " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
                                         " AND scap.cpe_match_nodes.id = %llu;",
@@ -1998,6 +1997,8 @@ cve_scan_report_host_json (task_t task,
                                       locations->len ? locations->str : "",
                                       locations->len ? ".\n" : "",
                                       description);
+
+              g_free (description);
 
               g_debug ("%s: making result with severity %1.1f desc [%s]",
                        __func__, severity, desc);
