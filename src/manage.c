@@ -2255,6 +2255,7 @@ fork_cve_scan_handler (task_t task, target_t target)
         break;
       case -1:
         /* Parent, failed to fork. */
+        g_free (report_id);
         g_warning ("%s: Failed to fork: %s",
                    __func__,
                    strerror (errno));
@@ -2268,6 +2269,7 @@ fork_cve_scan_handler (task_t task, target_t target)
         return -9;
       default:
         /* Parent, successfully forked. */
+        g_free (report_id);
         global_current_report = 0;
         current_scanner_task = 0;
         g_debug ("%s: %i forked %i", __func__, getpid (), pid);

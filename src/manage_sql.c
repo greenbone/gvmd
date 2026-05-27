@@ -8889,7 +8889,7 @@ make_report (task_t task, const char* uuid, task_status_t status)
  * @brief Create the current report for a task.
  *
  * @param[in]   task       The task.
- * @param[out]  report_id  Report ID.
+ * @param[out]  report_id  Freshly allocated report ID on success.
  * @param[in]   status     Run status of scan associated with report.
  *
  * @return 0 success, -1 global_current_report is already set, -2 failed to
