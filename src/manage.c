@@ -2038,16 +2038,22 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host,
                int matching_version)
 {
   report_host_t report_host;
-  gchar *ip, *host;
+  gchar *ip;
 
   assert (task);
   assert (report);
 
-  host = gvm_host_value_str (gvm_host);
+  {
+    gchar *host;
 
-  ip = report_host_ip (host);
-  if (ip == NULL)
-    ip = g_strdup (host);
+    host = gvm_host_value_str (gvm_host);
+
+    ip = report_host_ip (host);
+    if (ip == NULL)
+      ip = g_strdup (host);
+
+    g_free (host);
+  }
 
   g_debug ("%s: ip: %s", __func__, ip);
 
