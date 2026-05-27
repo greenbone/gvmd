@@ -2779,19 +2779,16 @@ stop_osp_task (task_t task)
   ret = osp_stop_scan (connection, scan_id, NULL);
   osp_connection_close (connection);
   if (ret)
-    {
-      g_free (scan_id);
-      goto end_stop_osp;
-    }
+    goto end_stop_osp;
 
   connection = osp_scanner_connect (task_scanner (task));
   if (!connection)
     goto end_stop_osp;
   ret = osp_delete_scan (connection, scan_id);
   osp_connection_close (connection);
-  g_free (scan_id);
 
 end_stop_osp:
+  g_free (scan_id);
   set_task_end_time_epoch (task, time (NULL));
   set_task_run_status (task, TASK_STATUS_STOPPED);
   if (scan_report)
