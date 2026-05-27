@@ -676,7 +676,7 @@ agent_iterator_latest_updater_version (iterator_t *iterator)
 }
 
 /**
- * @brief Retrieve latest updater version.
+ * @brief Retrieve scanner name.
  */
 const gchar *
 agent_iterator_scanner_name (iterator_t *iterator)
@@ -685,7 +685,7 @@ agent_iterator_scanner_name (iterator_t *iterator)
 }
 
 /**
- * @brief Retrieve latest updater version.
+ * @brief Retrieve scanner UUID.
  */
 const gchar *
 agent_iterator_scanner_uuid (iterator_t *iterator)
