@@ -2024,13 +2024,21 @@ create_view_vulns ()
 }
 
 /**
- * @brief Create or replace the result_vt_epss view.
+ * @brief Create or replace the result_vt_epss materialized view.
+ *
+ * The result iterator depends on this materialized view. Therefore we must not
+ * drop the active view before the replacement is ready, otherwise result
+ * queries can fail while the feed update is running.
  */
 void
 create_view_result_vt_epss ()
 {
-  sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
+  gboolean exists;
 
+  /* Remove a leftover temporary materialized view from a previous failed run. */
+  sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss_new;");
+
+  /* Build the replacement materialized view under a temporary name first. */
   if (sql_int ("SELECT ("
                "  EXISTS (SELECT 1 FROM information_schema.tables"
                "          WHERE table_catalog = '%s'"
@@ -2044,45 +2052,90 @@ create_view_result_vt_epss ()
                ")::integer;",
                sql_database (),
                sql_database ()))
-    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
-         "  SELECT cve AS vt_id,"
-         "    epss AS epss_score,"
-         "    percentile AS epss_percentile,"
-         "    cve AS epss_cve,"
-         "    cves.severity AS epss_severity,"
-         "    epss AS max_epss_score,"
-         "    percentile AS max_epss_percentile,"
-         "    cve AS max_epss_cve,"
-         "    cves.severity AS max_epss_severity"
-         "  FROM scap.epss_scores"
-         "  JOIN scap.cves ON cve = cves.uuid"
-         "  UNION ALL"
-         "  SELECT oid AS vt_id,"
-         "    epss_score,"
-         "    epss_percentile,"
-         "    epss_cve,"
-         "    epss_severity,"
-         "    max_epss_score,"
-         "    max_epss_percentile,"
-         "    max_epss_cve,"
-         "    max_epss_severity"
-         "  FROM nvts);");
+    {
+      /* Use SCAP EPSS data when the required SCAP tables are available. */
+      sql ("CREATE MATERIALIZED VIEW result_vt_epss_new AS ("
+           "  SELECT cve AS vt_id,"
+           "    epss AS epss_score,"
+           "    percentile AS epss_percentile,"
+           "    cve AS epss_cve,"
+           "    cves.severity AS epss_severity,"
+           "    epss AS max_epss_score,"
+           "    percentile AS max_epss_percentile,"
+           "    cve AS max_epss_cve,"
+           "    cves.severity AS max_epss_severity"
+           "  FROM scap.epss_scores"
+           "  JOIN scap.cves ON cve = cves.uuid"
+           "  UNION ALL"
+           "  SELECT oid AS vt_id,"
+           "    epss_score,"
+           "    epss_percentile,"
+           "    epss_cve,"
+           "    epss_severity,"
+           "    max_epss_score,"
+           "    max_epss_percentile,"
+           "    max_epss_cve,"
+           "    max_epss_severity"
+           "  FROM nvts);");
+    }
   else
-    sql ("CREATE MATERIALIZED VIEW result_vt_epss AS ("
-         "  SELECT oid AS vt_id,"
-         "    epss_score,"
-         "    epss_percentile,"
-         "    epss_cve,"
-         "    epss_severity,"
-         "    max_epss_score,"
-         "    max_epss_percentile,"
-         "    max_epss_cve,"
-         "    max_epss_severity"
-         "  FROM nvts);");
+    {
+      /* Fall back to the EPSS data stored on the NVT rows. */
+      sql ("CREATE MATERIALIZED VIEW result_vt_epss_new AS ("
+           "  SELECT oid AS vt_id,"
+           "    epss_score,"
+           "    epss_percentile,"
+           "    epss_cve,"
+           "    epss_severity,"
+           "    max_epss_score,"
+           "    max_epss_percentile,"
+           "    max_epss_cve,"
+           "    max_epss_severity"
+           "  FROM nvts);");
+    }
 
-  sql ("SELECT create_index ('result_vt_epss_by_vt_id',"
-       "                     'result_vt_epss', 'vt_id');");
+  /* Create the index before the swap so the replacement is ready immediately. */
+  sql ("SELECT create_index ('result_vt_epss_new_by_vt_id',"
+       "                     'result_vt_epss_new', 'vt_id');");
 
+  /* Check whether this is a replacement or the first creation. */
+  exists = sql_int ("SELECT EXISTS ("
+                    "  SELECT 1 FROM pg_matviews"
+                    "  WHERE schemaname = 'public'"
+                    "  AND matviewname = 'result_vt_epss'"
+                    ")::integer;");
+
+  if (exists)
+    {
+      /*
+       * Swap the old and new materialized views in one short transaction.
+       */
+      sql ("BEGIN;");
+      sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss_old;");
+      sql ("ALTER MATERIALIZED VIEW result_vt_epss RENAME TO result_vt_epss_old;");
+
+      /*
+       * Rename the old index before assigning the final index name to the new
+       * materialized view.
+       */
+      sql ("ALTER INDEX IF EXISTS result_vt_epss_by_vt_id"
+           " RENAME TO result_vt_epss_old_by_vt_id;");
+
+      sql ("ALTER MATERIALIZED VIEW result_vt_epss_new RENAME TO result_vt_epss;");
+      sql ("ALTER INDEX result_vt_epss_new_by_vt_id"
+           " RENAME TO result_vt_epss_by_vt_id;");
+      sql ("COMMIT;");
+
+      /* Drop the old materialized view after the swap is complete. */
+      sql ("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss_old;");
+    }
+  else
+    {
+      /* Rename the prepared view and index. */
+      sql ("ALTER MATERIALIZED VIEW result_vt_epss_new RENAME TO result_vt_epss;");
+      sql ("ALTER INDEX result_vt_epss_new_by_vt_id"
+           " RENAME TO result_vt_epss_by_vt_id;");
+    }
 }
 
 
