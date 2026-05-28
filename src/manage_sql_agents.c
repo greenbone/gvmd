@@ -445,6 +445,11 @@ init_agent_uuid_list_iterator (iterator_t *iterator,
   get.ignore_pagination = 1;
   get.ignore_max_rows_per_page = 1;
   get.filter = "rows=-1";
+  const char *join_clause = " LEFT JOIN"
+    " (SELECT id as scanner_id, name AS scanner_name, uuid "
+    "  AS scanner_uuid FROM scanners)"
+    "  AS scanner_data"
+    "  ON scanner_data.scanner_id = scanner";
 
   GString *where_clause = g_string_new (NULL);
 
@@ -467,7 +472,7 @@ init_agent_uuid_list_iterator (iterator_t *iterator,
                      NULL, // no trash columns
                      filter_columns,
                      0,    // no trashcan
-                     NULL, // no joins
+                     join_clause, // scanners joins
                      where_clause->str, 0);
 
   g_string_free (where_clause, TRUE);
