@@ -45,6 +45,17 @@
 #define G_LOG_DOMAIN "md manage"
 
 #if ENABLE_OPENVASD
+
+/**
+ * @brief Max number of retries when no vts are received from openvasd.
+ */
+#define VTS_STREAM_MAX_RETRIES 60
+
+/**
+ * @brief Number of seconds to sleep between retries when no VTs are received.
+ */
+#define VTS_STREAM_RETRY_DELAY_S 1
+
 /**
  * @brief Max number of rows inserted per statement.
  */
@@ -64,28 +75,11 @@ struct FILESTREAM
   size_t size_of_buffer;
   size_t last_read;
   size_t last_write;
+
+  http_scanner_connector_t connector;
+  gboolean finished;
+  gboolean error;
 };
-
-/**
- * @brief Hook function to read the stream file cookie
- */
-static ssize_t
-readcookie (void *stream_cookie, char *buf, size_t size)
-{
-  struct FILESTREAM *stream = stream_cookie;
-
-  if (stream->last_read >= stream->last_write)
-    return 0;
-
-  size_t to_read = stream->last_write - stream->last_read;
-
-  if (to_read > size)
-    to_read = size;
-  memcpy (buf, &stream->stream_buffer[stream->last_read], to_read);
-
-  stream->last_read += to_read;
-  return to_read;
-}
 
 /**
  * @brief Hook function to close the stream file cookie
@@ -94,19 +88,43 @@ static int
 closecookie (void *filestream)
 {
   struct FILESTREAM *stream = filestream;
+  if (!stream)
+    return 0;
   g_free (stream->stream_buffer);
   stream->size_of_buffer = 0;
   stream->stream_buffer = NULL;
+  g_free (stream);
   return 0;
 }
 
 /**
- * @brief Hook function to write the stream file cookie
+ * @brief  Helper function to write to the stream file cookie.
+ *         This function is only called from append_vts_chunk
+ *         when new data is fetched.
+ *
+ * @param  stream_cookie The file cookie to write to.
+ * @param  buf The buffer to write.
+ * @param  size The size of the buffer.
+ *
+ * @return The number of bytes written, or 0 on error.
  */
-static ssize_t
-writecookie (void *stream_cookie, const char *buf, size_t size)
+static size_t
+write_to_buffer (void *stream_cookie, const char *buf, size_t size)
 {
   struct FILESTREAM *stream = stream_cookie;
+
+  // Compact buffer first to avoid unnecessary reallocations.
+  if (stream->last_read > 0)
+    {
+      size_t unread = stream->last_write - stream->last_read;
+      if (unread > 0)
+        memmove (stream->stream_buffer,
+                 stream->stream_buffer + stream->last_read,
+                 unread);
+      stream->last_write = unread;
+      stream->last_read = 0;
+    }
+
   size_t next_size = stream->last_write + size;
   if (next_size > stream->size_of_buffer)
     {
@@ -127,29 +145,102 @@ writecookie (void *stream_cookie, const char *buf, size_t size)
 }
 
 /**
- * @brief Move non read data to beggining of the buffer
+ * @brief  Helper function to fetch VTs from openvasd and write
+ *         to file stream cookie.
+ * @return 0 on success including if the stream has finished, -1 on error.
  */
 static int
-move_buffer_data (struct FILESTREAM *filestream)
+append_vts_chunk (struct FILESTREAM *stream)
 {
-  char *auxbuf;
-  size_t non_read_chars_count = filestream->last_write - filestream->last_read;
+  int running;
+  size_t len;
+  int retries = 0;
 
-  auxbuf = g_malloc0 (sizeof (char) * filestream->size_of_buffer);
-  if (auxbuf == NULL)
+  if (!stream || !stream->connector)
     return -1;
 
-  memcpy (auxbuf, &filestream->stream_buffer[filestream->last_read],
-          non_read_chars_count);
-  memset (filestream->stream_buffer, '\0', filestream->size_of_buffer);
-  memcpy (filestream->stream_buffer, auxbuf, non_read_chars_count);
+  if (stream->error)
+    return -1;
 
-  filestream->last_read = 0;
-  filestream->last_write = non_read_chars_count;
+  if (stream->finished)
+    return 0;
 
-  g_free (auxbuf);
+  while (1)
+   {
+     running = openvasd_get_vt_stream (stream->connector);
+     if (running < 0)
+       {
+         g_warning ("%s: failed to get VTs", __func__);
+         stream->error = TRUE;
+         return -1;
+       }
 
-  return 0;
+     len = http_scanner_stream_len (stream->connector);
+     if (len > 0)
+      {
+        if (write_to_buffer (stream, http_scanner_stream_str (stream->connector),
+                             len) != (size_t) len)
+          {
+            g_warning ("%s: failed to write to stream buffer", __func__);
+            stream->error = TRUE;
+            return -1;
+          }
+        http_scanner_reset_stream (stream->connector);
+
+        // if last chunk, mark stream as finished now to avoid extra calls.
+        if (running == 0)
+          stream->finished = TRUE;
+
+        return 0;
+      }
+
+     if (running == 0)
+      {
+        stream->finished = TRUE;
+        return 0;
+      }
+
+     if (++retries > VTS_STREAM_MAX_RETRIES)
+       {
+          g_warning ("%s: no data received from openvasd after %d retries (total %ds)",
+                     __func__,
+                     VTS_STREAM_MAX_RETRIES,
+                     VTS_STREAM_MAX_RETRIES * VTS_STREAM_RETRY_DELAY_S);
+          stream->error = TRUE;
+          return -1;
+       }
+
+     gvm_sleep (VTS_STREAM_RETRY_DELAY_S);
+   }
+}
+
+/**
+ * @brief Hook function to read the stream file cookie
+ */
+static ssize_t
+readcookie (void *stream_cookie, char *buf, size_t size)
+{
+  struct FILESTREAM *stream = stream_cookie;
+
+  while (stream->last_read >= stream->last_write)
+    {
+      if (stream->error)
+        return -1;
+      if (stream->finished)
+        return 0;
+
+      if (append_vts_chunk (stream) < 0)
+        return -1;
+    }
+
+  size_t to_read = stream->last_write - stream->last_read;
+
+  if (to_read > size)
+    to_read = size;
+  memcpy (buf, &stream->stream_buffer[stream->last_read], to_read);
+
+  stream->last_read += to_read;
+  return to_read;
 }
 
 /**
@@ -176,15 +267,12 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
   feed_version_epoch = nvts_feed_version_epoch ();
 
-  //osp_vt_hash = element_attribute (vts, "sha256_hash");
-
   sql_begin_immediate ();
   prepare_nvts_insert (rebuild);
 
   vt_refs_batch = batch_start (vt_ref_insert_size);
   vt_sevs_batch = batch_start (vt_sev_insert_size);
 
-  int running = 0;
   http_scanner_resp_t resp;
   gvm_json_pull_event_t event;
   gvm_json_pull_parser_t parser;
@@ -205,7 +293,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
 
   cookie_io_functions_t cookiehooks = {
     .read = readcookie,
-    .write = writecookie,
+    .write = NULL,
     .seek = NULL,
     .close = closecookie,
   };
@@ -214,105 +302,55 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
   filestream->size_of_buffer = GVM_JSON_PULL_PARSE_BUFFER_LIMIT;
   filestream->stream_buffer =
     g_malloc0 (sizeof (char) * filestream->size_of_buffer);
+  filestream->connector = connector;
+  filestream->finished = FALSE;
+  filestream->error = FALSE;
 
-  stream = fopencookie (filestream, "a+", cookiehooks);
+  stream = fopencookie (filestream, "r", cookiehooks);
 
   gvm_json_pull_parser_init_full (&parser, stream,
                                   GVM_JSON_PULL_PARSE_BUFFER_LIMIT,
                                   GVM_JSON_PULL_READ_BUFFER_SIZE * 8);
   gvm_json_pull_event_init (&event);
 
-  // First run for initial data in the stream
-  running = openvasd_get_vt_stream (connector);
-  if (running < 0)
+  while (1)
     {
-      g_warning ("%s: failed while reading VT stream (initial chunk)", __func__);
-      gvm_json_pull_event_cleanup (&event);
-      gvm_json_pull_parser_cleanup (&parser);
-      fclose (stream);
-      sql_rollback ();
-      return -1;
-    }
-
-  fwrite (http_scanner_stream_str (connector), 1,
-          http_scanner_stream_len (connector), stream);
-
-  http_scanner_reset_stream (connector);
-  int break_flag = 0;
-  while (running)
-    {
-      size_t non_read_count = 0;
-      // Ensure a big chunk of data.
-      // Realloc is expensive therefore we realloc with bigger chuncks
-      while (running > 0 && http_scanner_stream_len (connector) <
-             GVM_JSON_PULL_READ_BUFFER_SIZE * 8)
+      int ret = parse_vt_json (&parser, &event, &nvti);
+      if (ret == -1)
         {
-          running = openvasd_get_vt_stream (connector);
-          if (running < 0)
-            {
-              g_warning ("%s: failed while reading VT stream", __func__);
-              gvm_json_pull_event_cleanup (&event);
-              gvm_json_pull_parser_cleanup (&parser);
-              fclose (stream);
-              sql_rollback ();
-              return -1;
-            }
+          g_warning ("%s: Parser error: %s", __func__, event.error_message);
+          gvm_json_pull_event_cleanup (&event);
+          gvm_json_pull_parser_cleanup (&parser);
+          fclose (stream);
+          sql_rollback ();
+          return -1;
         }
-
-      if (http_scanner_stream_len (connector) > 0)
-        {
-          move_buffer_data (filestream);
-          fwrite (http_scanner_stream_str (connector), 1,
-                  http_scanner_stream_len (connector), stream);
-          http_scanner_reset_stream (connector);
-        }
-
-      non_read_count = filestream->last_write - filestream->last_read;
-      // While streaming, parse some VTs and continue for a new chunk.
-      // If the stream is not running anymore, parse the remaining VTs.
-      while ((running && non_read_count > GVM_JSON_PULL_READ_BUFFER_SIZE * 8) ||
-             !running)
-        {
-          int ret = parse_vt_json (&parser, &event, &nvti);
-          if (ret == -1)
-            {
-              g_warning ("%s: Parser error: %s", __func__, event.error_message);
-              gvm_json_pull_event_cleanup (&event);
-              gvm_json_pull_parser_cleanup (&parser);
-              fclose (stream);
-              sql_rollback ();
-              return -1;
-            }
-          if (ret)
-            {
-              break_flag = 1;
-              break;
-            }
-          if (nvti_creation_time (nvti) > feed_version_epoch)
-            count_new_vts += 1;
-          else
-            count_modified_vts += 1;
-
-          insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
-
-          preferences = NULL;
-          if (update_preferences_from_nvti (nvti, &preferences))
-            {
-              sql_rollback ();
-              return -1;
-            }
-          if (rebuild == 0)
-            sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
-                 rebuild ? "_rebuild" : "",
-                 nvti_oid (nvti));
-          insert_nvt_preferences_list (preferences, rebuild);
-          g_list_free_full (preferences, (GDestroyNotify) preference_free);
-
-          g_free (nvti);
-          non_read_count = filestream->last_write - filestream->last_read;
-        }
-      if (break_flag)
+      if (ret)
         break;
+
+      if (nvti_creation_time (nvti) > feed_version_epoch)
+        count_new_vts += 1;
+      else
+        count_modified_vts += 1;
+
+      insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
+
+      preferences = NULL;
+      if (update_preferences_from_nvti (nvti, &preferences))
+        {
+          sql_rollback ();
+          return -1;
+        }
+
+      if (rebuild == 0)
+        sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
+              rebuild ? "_rebuild" : "",
+              nvti_oid (nvti));
+
+      insert_nvt_preferences_list (preferences, rebuild);
+      g_list_free_full (preferences, (GDestroyNotify) preference_free);
+
+      g_free (nvti);
     }
 
   gvm_json_pull_event_cleanup (&event);
@@ -326,7 +364,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
                         rebuild);
   sql_commit ();
 
-  g_warning ("%s: No SHA-256 hash received from scanner, skipping check.",
+  g_debug ("%s: No SHA-256 hash received from scanner, skipping check.",
              __func__);
 
   return 0;
