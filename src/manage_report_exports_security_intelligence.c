@@ -56,6 +56,33 @@ generate_bearer_token (integration_config_data_t config)
 }
 
 /**
+ * @brief  Generates a Bearer access token and uses it to populate
+ *         security intelligence connector configuration
+ *
+ * @param  conn    The security intelligence connector. Bearer token on the
+ *                 connector will be modified
+ * @param  config  Integration config for report export
+ *
+ * @return TRUE on success, FALSE on failure.
+ */
+static gboolean
+refresh_connector_access_token (security_intelligence_connector_t conn,
+                                integration_config_data_t config)
+{
+  gchar *bearer_token = generate_bearer_token (config);
+  if (!bearer_token)
+    {
+      return FALSE;
+    }
+
+  security_intelligence_connector_builder (
+    conn, SECURITY_INTELLIGENCE_BEARER_TOKEN, bearer_token);
+
+  g_free (bearer_token);
+  return TRUE;
+}
+
+/**
  * @brief  Export a single report to security intelligence
  *
  * @param  report    The report to export
@@ -87,8 +114,7 @@ export_report_security_intelligence (report_t report,
                                            config->service_url);
   security_intelligence_connector_builder (conn, SECURITY_INTELLIGENCE_CA_CERT,
                                            config->service_cacert);
-  security_intelligence_connector_builder (
-    conn, SECURITY_INTELLIGENCE_BEARER_TOKEN, bearer_token);
+  refresh_connector_access_token (conn, config);
 
   /**
    * - Connect to OpenVAS Security Intelligence, using libgvm
@@ -109,7 +135,7 @@ export_report_security_intelligence (report_t report,
 
   security_intelligence_connector_free (conn);
 
-  g_free (bearer_token);
+
 
   return EXPORT_REPORT_RESULT_FAILURE;
 }
