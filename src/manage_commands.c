@@ -97,6 +97,7 @@ command_t gmp_commands[]
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGENT_INSTALLERS", "Get all agent installers."},
     {"GET_AGENT_INSTALLER_FILE", "Get an agent installer file."},
+    {"GET_AGENT_INSTALLER_INSTRUCTION", "Get an agent installer instruction from an agent controller."},
 #endif /* ENABLE_AGENTS */
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},

@@ -378,6 +378,7 @@ runtime_append_disabled_commands (GString *buf)
         "delete_agent_group,"
         "get_agent_installers,"
         "get_agent_installer_file,"
+        "get_agent_installer_instruction,"
         "sync_agents");
     }
   /* CONTAINER_SCANNING */

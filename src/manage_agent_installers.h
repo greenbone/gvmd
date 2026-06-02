@@ -18,6 +18,8 @@
 #include "manage_resources_types.h"
 #include "iterator.h"
 #include "gmp_get.h"
+
+#include <agent_controller/agent_controller.h>
 #include <gvm/util/streamvalidator.h>
 #include <stdio.h>
 
@@ -134,6 +136,13 @@ agent_installer_writable (agent_installer_t);
 
 int
 trash_agent_installer_writable(agent_installer_t);
+
+instructions_lang_type_t
+lang_type_from_string (const char *);
+
+agent_controller_installer_instruction_t
+get_agent_installer_instruction (const gchar *,
+                                 instructions_lang_type_t);
 
 #endif /* not _GVMD_MANAGE_AGENT_INSTALLERS_H */
 
