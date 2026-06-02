@@ -9288,6 +9288,80 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_agent_installer_instruction</name>
+    <summary>Get an agent installer instruction</summary>
+    <description>
+      <p>
+        The client uses the get_agent_installer_instruction command to get
+        an agent installer instruction from an agent controller.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>scanner_id</name>
+        <summary>UUID of the scanner to get the installer instruction for</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>language</name>
+        <summary>Language of the installer instruction, either "en" or "de"</summary>
+        <type>text</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>language</e>
+        <e>instruction</e>
+      </pattern>
+      <ele>
+        <name>language</name>
+        <type>text</type>
+        <summary>Language of the installer instruction</summary>
+      </ele>
+      <ele>
+        <name>instruction</name>
+        <type>text</type>
+        <summary>The agent installer instruction as JSON text</summary>
+      </ele>
+    </response>
+    <example>
+      <summary>Get an agent installer instruction</summary>
+      <request>
+        <get_agent_installer_instruction scanner_id="xy" language="en"/>
+      </request>
+      <response>
+        <get_agent_installer_instruction_response status="200" status_text="OK">
+          <language>en</language>
+          <instruction>{
+            "_version": "1.0.0",
+            "lang": "en",
+            "title": "OPENVAS Scan Agent Installation",
+            "sections": [
+              {
+                "id": "quick-install",
+                "type": "heading",
+                "level": 2,
+                "text": "Quick Install"
+              }
+            ]
+          }</instruction>
+        </get_agent_installer_instruction_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agents</name>
     <summary>Get agents</summary>
     <description>
