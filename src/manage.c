@@ -4262,9 +4262,6 @@ manage_sync (sigset_t *sigmask_current,
       && (should_sync_configs ()
           || should_sync_port_lists ()
           || should_sync_report_formats ()
-#if ENABLE_AGENTS
-          || should_sync_agent_installers ()
-#endif /* ENABLE_AGENTS */
           ))
     {
       if (wait_for_mem (check_min_mem_feed_update,
@@ -4273,18 +4270,6 @@ manage_sync (sigset_t *sigmask_current,
                         "data objects feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
-#if ENABLE_AGENTS
-          if (feature_enabled (FEATURE_ID_AGENTS))
-            {
-              manage_sync_agent_installers ();
-            }
-          else
-            {
-              g_debug (
-                "%s: AGENTS runtime flag is disabled; skipping agent installers sync",
-                __func__);
-            }
-#endif /* ENABLE_AGENTS */
           manage_sync_configs ();
           /* After config sync, update discovery nvts */
           manage_discovery_nvts ();

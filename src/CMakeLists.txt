@@ -77,7 +77,8 @@ if(NOT PostgreSQL_FOUND)
   message(SEND_ERROR "The PostgreSQL library is required.")
 endif(NOT PostgreSQL_FOUND)
 string(
-  REGEX MATCH "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
+  REGEX MATCH
+  "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
   TEMP
   "${PostgreSQL_VERSION_STRING}"
 )
@@ -286,12 +287,7 @@ set(
 )
 
 if(ENABLE_AGENTS)
-  list(
-    APPEND ALL_MANAGE_SQL_SRC
-    manage_sql_agent_groups.c
-    manage_sql_agents.c
-    manage_sql_agent_installers.c
-  )
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_agent_groups.c manage_sql_agents.c)
 endif()
 
 if(ENABLE_CREDENTIAL_STORES)
@@ -509,19 +505,6 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
-
-if(ENABLE_AGENTS)
-  set(
-    ALL_OBJECTS
-    $<TARGET_OBJECTS:all-gmp-obj>
-    $<TARGET_OBJECTS:all-manage-sql-obj>
-    $<TARGET_OBJECTS:all-misc-obj>
-    $<TARGET_OBJECTS:all-sql-obj>
-  )
-  set(EXTRA_SRC ${ALL_MANAGE_SRC})
-  list(REMOVE_ITEM EXTRA_SRC manage_sql_agent_installers.c)
-  add_unit_test(manage-agent-installers "${ALL_OBJECTS}" "${EXTRA_SRC}")
-endif()
 
 set(
   ALL_OBJECTS
