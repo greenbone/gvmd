@@ -3964,6 +3964,36 @@ migrate_274_to_275 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 275 to version 276.
+ *
+ * Drop agent installers table.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_275_to_276 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 275. */
+  if (manage_db_version () != 275)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Drop agent installers table. */
+  sql ("DROP TABLE IF EXISTS agent_installers;");
+
+  /* Set the database version to 276. */
+  set_db_version (276);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4045,6 +4075,7 @@ static migrator_t database_migrators[] = {
   {273, migrate_272_to_273},
   {274, migrate_273_to_274},
   {275, migrate_274_to_275},
+  {276, migrate_275_to_276},
   /* End marker. */
   {-1, NULL}};
 

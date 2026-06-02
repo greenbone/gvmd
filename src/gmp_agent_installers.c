@@ -157,8 +157,6 @@ get_agent_installer_instruction_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  g_warning ("instruction: %s", instruction->instruction);
-
   SENDF_TO_CLIENT_OR_FAIL
     ("<get_agent_installer_instruction_response"
      " status=\"200\" status_text=\"OK\">"
