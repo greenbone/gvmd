@@ -562,10 +562,8 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
  *
  * @param[in]  nvti         NVTI structure.
  * @param[out] preferences  List of NVT preferences.
- *
- * @return 0 success, -1 error.
  */
-int
+void
 update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
 {
   assert (preferences);
@@ -637,8 +635,6 @@ update_preferences_from_nvti (nvti_t *nvti, GList **preferences)
       g_free (type);
       g_free (def);
     }
-
-  return 0;
 }
 
 /**

@@ -336,11 +336,7 @@ update_nvts_from_openvasd_vts (http_scanner_connector_t connector,
       insert_nvt (nvti, rebuild, vt_refs_batch, vt_sevs_batch);
 
       preferences = NULL;
-      if (update_preferences_from_nvti (nvti, &preferences))
-        {
-          sql_rollback ();
-          return -1;
-        }
+      update_preferences_from_nvti (nvti, &preferences);
 
       if (rebuild == 0)
         sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",

@@ -1715,14 +1715,8 @@ update_nvts_from_json_file (const gchar *full_path,
           insert_nvt (nvti, 1, vt_refs_batch, vt_sevs_batch);
 
           preferences = NULL;
-          if (update_preferences_from_nvti (nvti, &preferences))
-            {
-              gvm_json_pull_event_cleanup (&event);
-              gvm_json_pull_parser_cleanup (&parser);
-              fclose (nvts_file);
-              sql_rollback ();
-              return -1;
-            }
+          update_preferences_from_nvti (nvti, &preferences);
+
           insert_nvt_preferences_list (preferences, 1);
           g_list_free_full (preferences, (GDestroyNotify) preference_free);
           g_free(nvti);
