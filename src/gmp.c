@@ -4529,6 +4529,7 @@ typedef enum
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
   CLIENT_GET_AGENT_INSTALLER_FILE,
+  CLIENT_GET_AGENT_INSTALLER_INSTRUCTION,
   CLIENT_GET_AGENT_INSTALLERS,
   CLIENT_GET_AGENTS,
 #endif /* ENABLE_AGENTS */
@@ -5390,6 +5391,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_GET_START (agent_groups, AGENT_GROUPS)
 
         ELSE_GET_START (agent_installer_file, AGENT_INSTALLER_FILE)
+
+        ELSE_GET_START (agent_installer_instruction, AGENT_INSTALLER_INSTRUCTION)
 
         ELSE_GET_START (agent_installers, AGENT_INSTALLERS)
 
@@ -22041,6 +22044,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_GET_END (AGENT_INSTALLERS, agent_installers);
 
       CASE_GET_END (AGENT_INSTALLER_FILE, agent_installer_file);
+
+      CASE_GET_END (AGENT_INSTALLER_INSTRUCTION, agent_installer_instruction);
 
       CASE_GET_END (AGENTS, agents);
 #endif /* ENABLE_AGENTS */

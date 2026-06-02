@@ -32,4 +32,12 @@ void
 get_agent_installer_file_start (const gchar **,
                                 const gchar **);
 
+void
+get_agent_installer_instruction_run (gmp_parser_t *,
+                                      GError **);
+
+void
+get_agent_installer_instruction_start (const gchar **,
+                                       const gchar **);
+
 #endif // not _GVMD_GMP_AGENT_INSTALLERS_H
