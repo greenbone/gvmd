@@ -728,6 +728,11 @@ split_filter (const gchar* given_filter)
             cleanup_keyword (keyword);
             if (keyword_applies (parts, keyword))
               array_add (parts, keyword);
+            else
+              {
+                keyword_free (keyword);
+                g_free (keyword);
+              }
             keyword = NULL;
             between = 1;
             break;
@@ -748,6 +753,11 @@ split_filter (const gchar* given_filter)
                 cleanup_keyword (keyword);
                 if (keyword_applies (parts, keyword))
                   array_add (parts, keyword);
+                else
+                  {
+                    keyword_free (keyword);
+                    g_free (keyword);
+                  }
                 keyword = NULL;
                 in_quote = 0;
                 between = 1;
@@ -801,6 +811,11 @@ split_filter (const gchar* given_filter)
           cleanup_keyword (keyword);
           if (keyword_applies (parts, keyword))
             array_add (parts, keyword);
+          else
+            {
+              keyword_free (keyword);
+              g_free (keyword);
+            }
           keyword = NULL;
         }
     }

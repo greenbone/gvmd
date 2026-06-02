@@ -1,4 +1,4 @@
-/* Copyright (C) 2009-2022 Greenbone AG
+/* Copyright (C) 2026 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
@@ -108,7 +108,7 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
 
   while (1)
     {
-      const char *agent_scanner_name, *agent_scanner_uuid;
+      const char *agent_scanner_name, *agent_scanner_uuid, *scheduler_cron_time;
 
       ret = get_next (&agent_groups, &get_agent_groups_data.get, &first, &count,
                       init_agent_group_iterator);
@@ -123,11 +123,16 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
 
       agent_scanner_uuid = agent_group_iterator_scanner_id (&agent_groups);
       agent_scanner_name = agent_group_iterator_scanner_name (&agent_groups);
+      scheduler_cron_time = agent_group_iterator_scheduler_cron_time (
+        &agent_groups);
 
       // Start <agent_group>
       SEND_GET_COMMON (agent_group,
                        &get_agent_groups_data.get,
                        &agent_groups);
+
+      SENDF_TO_CLIENT_OR_FAIL ("<scheduler_cron_time>%s</scheduler_cron_time>",
+                               scheduler_cron_time ? scheduler_cron_time : "");
 
       SENDF_TO_CLIENT_OR_FAIL ("<scanner id=\"%s\">"
                                "<name>%s</name>"
@@ -282,8 +287,8 @@ void
 create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
-  entity_t root, copy, name, comment, agents_elem;
-  const char *name_text;
+  entity_t root, copy, name, comment, scheduler_cron_time, agents_elem;
+  const char *name_text, *scheduler_cron_time_text;
   agent_group_data_t group_data;
   agent_uuid_list_t agent_uuids = NULL;
   agent_group_t new_agent_group;
@@ -355,12 +360,30 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  scheduler_cron_time = entity_child (root, "scheduler_cron_time");
+  if (!scheduler_cron_time || !(scheduler_cron_time_text =
+                                entity_text (scheduler_cron_time)) || strlen (
+        scheduler_cron_time_text) == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("create_agent_group",
+          "Missing or empty <scheduler_cron_time>"));
+      create_agent_group_reset ();
+      return;
+    }
+
   comment = entity_child (root, "comment");
 
   // Allocate and populate group data
   group_data = agent_group_data_new();
   group_data->name = g_strdup (name_text);
-  group_data->comment = comment ? g_strdup (entity_text (comment)) : g_strdup ("");
+  group_data->comment = comment
+                          ? g_strdup (entity_text (comment))
+                          : g_strdup ("");
+  group_data->scheduler_cron_time = scheduler_cron_time
+                                      ? g_strdup (
+                                        entity_text (scheduler_cron_time))
+                                      : g_strdup ("");
   group_data->creation_time = group_data->modification_time = time (NULL);
 
   // Parse <agents> if provided
@@ -396,7 +419,8 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   // Execute creation
-  agent_group_resp_t response = create_agent_group (group_data, agent_uuids);
+  agent_group_resp_t response = create_and_sync_agent_group (
+    group_data, agent_uuids);
 
   switch (response)
   {
@@ -604,8 +628,8 @@ void
 modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
-  entity_t root, name, comment, agents_elem;
-  const char *agent_group_uuid, *name_text;
+  entity_t root, name, comment, scheduler_cron_time, agents_elem;
+  const char *agent_group_uuid, *name_text, *scheduler_cron_time_text;
 
   if (!acl_user_may ("modify_agent_group"))
     {
@@ -645,8 +669,20 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   if (!name || !(name_text = entity_text (name)) || strlen (name_text) == 0)
     {
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group",
-                                                "modify_agent_group requires a name"));
+                                                "Missing or empty <name>"));
       modify_agent_group_reset ();
+      return;
+    }
+
+  scheduler_cron_time = entity_child (root, "scheduler_cron_time");
+  if (!scheduler_cron_time || !(scheduler_cron_time_text =
+                                entity_text (scheduler_cron_time)) || strlen (
+        scheduler_cron_time_text) == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("modify_agent_group",
+          "Missing or empty <scheduler_cron_time>"));
+      create_agent_group_reset ();
       return;
     }
 
@@ -686,12 +722,15 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   // Prepare agent group data
-  agent_group_data_t group_data = agent_group_data_new();
+  agent_group_data_t group_data = agent_group_data_new ();
   group_data->name = g_strdup (name_text);
   group_data->comment = g_strdup (comment ? entity_text (comment) : "");
-  group_data->modification_time = time(NULL);
+  group_data->scheduler_cron_time = g_strdup (
+    scheduler_cron_time ? entity_text (scheduler_cron_time) : "");
+  group_data->modification_time = time (NULL);
 
-  agent_group_resp_t response = modify_agent_group (agent_group, group_data, agent_uuids);
+  agent_group_resp_t response = modify_and_sync_agent_group (
+    agent_group, group_data, agent_uuids);
 
   switch (response)
     {
@@ -742,6 +781,20 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       case AGENT_GROUP_RESP_AGENT_NOT_FOUND:
         if (send_find_error_to_client ("modify_agent_group",
                                        "agent",
+                                       NULL,
+                                       gmp_parser))
+          {
+            error_send_to_client (error);
+            modify_agent_group_reset ();
+            return;
+          }
+
+        log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+        break;
+
+      case AGENT_GROUP_RESP_GROUP_NOT_FOUND:
+        if (send_find_error_to_client ("modify_agent_group",
+                                       "agent_group",
                                        NULL,
                                        gmp_parser))
           {

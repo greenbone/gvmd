@@ -137,7 +137,7 @@ get_report_operating_systems (report_t report,
         }
     }
 
-  os_by_cpe = g_hash_table_new (g_str_hash, g_str_equal);
+  os_by_cpe = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
   init_report_os_iterator (&report_os, report);
 

@@ -3744,6 +3744,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <pattern>
       <e>name</e>
       <o><e>comment</e></o>
+      <o><e>scheduler_cron_time</e></o>
       <o><e>agents</e></o>
       <o><e>copy</e></o>
     </pattern>
@@ -3758,6 +3759,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <summary>Optional user-supplied comment</summary>
       <pattern>text</pattern>
       <required>0</required>
+    </ele>
+    <ele>
+      <name>scheduler_cron_time</name>
+      <summary>Scheduler cron time for the agent group</summary>
+      <pattern><type>text</type></pattern>
+      <required>1</required>
     </ele>
     <ele>
       <name>agents</name>
@@ -3807,6 +3814,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <create_agent_group>
           <name>Test Agent Group</name>
           <comment>Created via gvm-cli for testing</comment>
+          <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
             <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
@@ -8626,6 +8634,7 @@ END:VCALENDAR
           <e>writable</e>
           <e>in_use</e>
           <e>permissions</e>
+          <e>scheduler_cron_time</e>
           <e>scanner</e>
           <e>agents</e>
         </pattern>
@@ -8716,6 +8725,7 @@ END:VCALENDAR
                 <name>Everything</name>
               </permission>
             </permissions>
+            <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
             </scanner>
@@ -34037,6 +34047,7 @@ END:VCALENDAR
       </attrib>
       <o><e>name</e></o>
       <o><e>comment</e></o>
+      <o><e>scheduler_cron_time</e></o>
       <o><e>agents</e></o>
     </pattern>
     <ele>
@@ -34049,6 +34060,12 @@ END:VCALENDAR
       <name>comment</name>
       <summary>Optional comment for the agent group</summary>
       <pattern>text</pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>scheduler_cron_time</name>
+      <summary>Scheduler cron time for the agent group</summary>
+      <pattern><type>text</type></pattern>
       <required>0</required>
     </ele>
     <ele>
@@ -34088,6 +34105,7 @@ END:VCALENDAR
         <modify_agent_group agent_group_id="6fca29e3-8b96-4e6b-9ee1-8845680dbda5">
           <name>Updated Group Name</name>
           <comment>Modified via gvm-cli</comment>
+          <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
           </agents>

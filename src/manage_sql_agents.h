@@ -42,6 +42,8 @@
       {"updater_update_available", NULL, KEYWORD_TYPE_INTEGER},             \
       {"latest_agent_version", NULL, KEYWORD_TYPE_STRING},                  \
       {"latest_updater_version", NULL, KEYWORD_TYPE_STRING},                \
+      {"scanner_name", "scanner_name", KEYWORD_TYPE_STRING },               \
+      {"scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },                 \
     {                                                                       \
       NULL, NULL, KEYWORD_TYPE_UNKNOWN                                      \
     }                                                                       \
@@ -58,24 +60,24 @@
       "agent_version", "operating_system", "architecture", "update_to_latest", \
       "agent_update_available", "updater_update_available",                    \
       "latest_agent_version", "latest_updater_version", "connection_status",   \
+      "scanner_name", "scanner_uuid",                                          \
       NULL                                                                     \
   }
 
 int
-sync_agents_from_data_list (agent_data_list_t agent_list);
+sync_agents_from_data_list (agent_data_list_t);
 
 void
-update_agents_comment (agent_uuid_list_t agent_uuids, const gchar *new_comment);
+update_agents_comment (agent_uuid_list_t, const gchar *);
 
 int
-get_scanner_from_agent_uuid (const gchar *agent_uuid, scanner_t *scanner);
+get_scanner_from_agent_uuid (const gchar *, scanner_t *);
 
 int
-agent_id_by_uuid_and_scanner (const gchar *agent_uuid, scanner_t scanner_id,
-                              agent_t *agent_id);
+agent_id_by_uuid_and_scanner (const gchar *, scanner_t, agent_t *);
 
 gboolean
-agent_authorized (const gchar *agent_uuid, scanner_t scanner_id);
+agent_authorized (const gchar *, scanner_t);
 
 #endif // not _GVMD_MANAGE_SQL_AGENTS_H
 #endif // ENABLE_AGENTS

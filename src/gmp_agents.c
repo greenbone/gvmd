@@ -153,8 +153,6 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
     {
       ret = get_next (&agents, &get_agents_data.get, &first, &count,
                       init_agent_iterator);
-      scanner_t scanner;
-      char *agent_scanner_name, *agent_scanner_uuid;
 
       if (ret == 1)
         break;
@@ -165,9 +163,6 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
           return;
         }
 
-      scanner = agent_iterator_scanner (&agents);
-      agent_scanner_uuid = scanner_uuid (scanner);
-      agent_scanner_name = scanner_name (scanner);
       SEND_GET_COMMON_NO_TRASH (agent, &get_agents_data.get, &agents);
 
       // Remaining fields
@@ -204,8 +199,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         agent_iterator_updater_update_available (&agents),
         agent_iterator_latest_agent_version (&agents),
         agent_iterator_latest_updater_version (&agents),
-        agent_scanner_uuid ? agent_scanner_uuid : "",
-        agent_scanner_name ? agent_scanner_name : "");
+        agent_iterator_scanner_uuid (&agents),
+        agent_iterator_scanner_name (&agents));
 
       // IPs
       agent_ip_data_list_t ip_list =
@@ -306,9 +301,6 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
       // Close agent
       SEND_TO_CLIENT_OR_FAIL ("</agent>");
       count++;
-
-      g_free (agent_scanner_name);
-      g_free (agent_scanner_uuid);
     }
 
   cleanup_iterator (&agents);

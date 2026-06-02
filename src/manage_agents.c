@@ -87,56 +87,6 @@ dup_str_ptr_array (const GPtrArray *src)
 }
 
 /**
- * @brief Deep-copy a scan agent configuration structure.
- *
- * @param[in] src  Source configuration to copy. May be NULL.
- *
- * @return A newly allocated #agent_controller_scan_agent_config_t on success;
- *         NULL if @p src is NULL or if any allocation fails. On failure, any
- *         partially allocated memory is released.
- */
-static agent_controller_agent_config_t
-copy_agent_controller_scan_agent_config (
-  agent_controller_agent_config_t src)
-{
-  if (!src)
-    return NULL;
-
-  agent_controller_agent_config_t dst =
-    agent_controller_agent_config_new ();
-
-  /* Plain struct copies */
-  dst->agent_control.retry.attempts = src->agent_control.retry.attempts;
-  dst->agent_control.retry.delay_in_seconds =
-    src->agent_control.retry.delay_in_seconds;
-  dst->agent_control.retry.max_jitter_in_seconds =
-    src->agent_control.retry.max_jitter_in_seconds;
-
-  dst->agent_script_executor.bulk_size = src->agent_script_executor.bulk_size;
-  dst->agent_script_executor.bulk_throttle_time_in_ms =
-    src->agent_script_executor.bulk_throttle_time_in_ms;
-  dst->agent_script_executor.indexer_dir_depth =
-    src->agent_script_executor.indexer_dir_depth;
-
-  dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
-  dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;
-
-  /* Deep copy of GPtrArray<char*> */
-  dst->agent_script_executor.scheduler_cron_time =
-    dup_str_ptr_array (src->agent_script_executor.scheduler_cron_time);
-
-  if (src->agent_script_executor.scheduler_cron_time
-      && !dst->agent_script_executor.scheduler_cron_time)
-    {
-      /* allocation failed – clean up partial dst */
-      agent_controller_agent_config_free (dst);
-      return NULL;
-    }
-
-  return dst;
-}
-
-/**
  * @brief Populate GVMD agent data list from agent controller list.
  *
  * Copies agent metadata from the agent controller representation to GVMD's
@@ -326,6 +276,34 @@ prepare_agent_update_list_from_agents_and_update (
 }
 
 /**
+ * @brief Maps the return value of get_scanner_from_agent_uuid() to
+ * agent_response_t.
+ *
+ * @param[in] result Return code from get_scanner_from_agent_uuid().
+ *
+ * @return Corresponding agent_response_t enum value.
+ */
+static agent_response_t
+map_get_scanner_result_to_agent_response (int result)
+{
+  switch (result)
+    {
+    case 0:
+      return AGENT_RESPONSE_SUCCESS;
+    case -1:
+      return AGENT_RESPONSE_INVALID_ARGUMENT;
+    case -2:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    case -3:
+      return AGENT_RESPONSE_AGENT_NOT_FOUND;
+    case -4:
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
+    default:
+      return AGENT_RESPONSE_INTERNAL_ERROR;
+    }
+}
+
+/**
  * @brief Retrieve agent controller agents from GVMD UUIDs.
  *
  * Filters and converts a list of agent UUIDs to agent controller format.
@@ -386,31 +364,53 @@ get_agent_controller_agents_from_uuids (scanner_t scanner,
 }
 
 /**
- * @brief Maps the return value of get_scanner_from_agent_uuid() to
- * agent_response_t.
+ * @brief Deep-copy a scan agent configuration structure.
  *
- * @param[in] result Return code from get_scanner_from_agent_uuid().
+ * @param[in] src  Source configuration to copy. May be NULL.
  *
- * @return Corresponding agent_response_t enum value.
+ * @return A newly allocated #agent_controller_scan_agent_config_t on success;
+ *         NULL if @p src is NULL or if any allocation fails. On failure, any
+ *         partially allocated memory is released.
  */
-static agent_response_t
-map_get_scanner_result_to_agent_response (int result)
+agent_controller_agent_config_t
+copy_agent_controller_scan_agent_config (
+  agent_controller_agent_config_t src)
 {
-  switch (result)
+  if (!src)
+    return NULL;
+
+  agent_controller_agent_config_t dst =
+    agent_controller_agent_config_new ();
+
+  /* Plain struct copies */
+  dst->agent_control.retry.attempts = src->agent_control.retry.attempts;
+  dst->agent_control.retry.delay_in_seconds =
+    src->agent_control.retry.delay_in_seconds;
+  dst->agent_control.retry.max_jitter_in_seconds =
+    src->agent_control.retry.max_jitter_in_seconds;
+
+  dst->agent_script_executor.bulk_size = src->agent_script_executor.bulk_size;
+  dst->agent_script_executor.bulk_throttle_time_in_ms =
+    src->agent_script_executor.bulk_throttle_time_in_ms;
+  dst->agent_script_executor.indexer_dir_depth =
+    src->agent_script_executor.indexer_dir_depth;
+
+  dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
+  dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;
+
+  /* Deep copy of GPtrArray<char*> */
+  dst->agent_script_executor.scheduler_cron_time =
+    dup_str_ptr_array (src->agent_script_executor.scheduler_cron_time);
+
+  if (src->agent_script_executor.scheduler_cron_time
+      && !dst->agent_script_executor.scheduler_cron_time)
     {
-    case 0:
-      return AGENT_RESPONSE_SUCCESS;
-    case -1:
-      return AGENT_RESPONSE_INVALID_ARGUMENT;
-    case -2:
-      return AGENT_RESPONSE_INTERNAL_ERROR;
-    case -3:
-      return AGENT_RESPONSE_AGENT_NOT_FOUND;
-    case -4:
-      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
-    default:
-      return AGENT_RESPONSE_INTERNAL_ERROR;
+      /* allocation failed – clean up partial dst */
+      agent_controller_agent_config_free (dst);
+      return NULL;
     }
+
+  return dst;
 }
 
 /**
@@ -698,6 +698,67 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
 }
 
 /**
+ * @brief Modify and resynchronize agents using a prepared update list.
+ *
+ * @param[in]  scanner      Scanner ID used to create the controller connector.
+ * @param[in]  update_list  Prepared agent update list.
+ * @param[out] errors       Optional controller validation errors.
+ *
+ * @return AGENT_RESPONSE_SUCCESS on success,
+ *         or a specific AGENT_RESPONSE_* error code on failure.
+ */
+agent_response_t
+modify_and_resync_agents_with_update_list (
+  scanner_t scanner,
+  agent_controller_agent_update_list_t update_list,
+  GPtrArray **errors)
+{
+  gvmd_agent_connector_t connector = NULL;
+  int update_result;
+  agent_response_t response;
+
+  if (scanner == 0 || update_list == NULL)
+    return AGENT_RESPONSE_INVALID_ARGUMENT;
+
+  connector = gvmd_agent_connector_new_from_scanner (scanner);
+  if (connector == NULL)
+    {
+      g_warning ("%s: Failed to create agent connector for scanner", __func__);
+      manage_option_cleanup ();
+      return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
+    }
+
+  update_result =
+    agent_controller_update_agents (connector->base, update_list, errors);
+
+  if (update_result < 0 && errors && *errors && (*errors)->len > 0)
+    {
+      g_warning ("%s: agent_controller_update_agents rejected", __func__);
+      gvmd_agent_connector_free (connector);
+      return AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED;
+    }
+
+  if (update_result < 0)
+    {
+      g_warning ("%s: agent_controller_update_agents failed", __func__);
+      gvmd_agent_connector_free (connector);
+      return AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED;
+    }
+
+  response = sync_agents_from_agent_controller (connector);
+  if (response != AGENT_RESPONSE_SUCCESS)
+    {
+      g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
+      gvmd_agent_connector_free (connector);
+      return response;
+    }
+
+  gvmd_agent_connector_free (connector);
+
+  return AGENT_RESPONSE_SUCCESS;
+}
+
+/**
  * @brief Modify and resynchronize agents via the agent controller.
  *
  * Sends update instructions for the selected agents and re-synchronizes
@@ -706,6 +767,7 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
  * @param[in]  agent_uuids   List of agent UUIDs to be modified.
  * @param[in]  agent_update  Update parameters to apply (e.g. authorize/revoke).
  * @param[in]  comment       Optional comment string to apply to agents in GVMD.
+ * @param[out] errors        Optional controller validation errors.
  *
  * @return AGENT_RESPONSE_SUCCESS on success,
  *         or a specific AGENT_RESPONSE_* error code on failure.
@@ -718,100 +780,75 @@ modify_and_resync_agents (agent_uuid_list_t agent_uuids,
 {
   scanner_t scanner = 0;
   agent_controller_agent_list_t agent_control_list = NULL;
-  gvmd_agent_connector_t connector = NULL;
+  agent_controller_agent_update_list_t update_list = NULL;
+  int ret;
+  agent_response_t response;
 
   if (!agent_uuids || agent_uuids->count == 0)
-    {
-      return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
-    }
+    return AGENT_RESPONSE_NO_AGENTS_PROVIDED;
 
-  int ret = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0], &scanner);
-  agent_response_t map_response =
-    map_get_scanner_result_to_agent_response (ret);
-  if (map_response != AGENT_RESPONSE_SUCCESS)
-    return map_response;
+  if (agent_update == NULL)
+    return AGENT_RESPONSE_INVALID_ARGUMENT;
+
+  ret = get_scanner_from_agent_uuid (agent_uuids->agent_uuids[0], &scanner);
+  response = map_get_scanner_result_to_agent_response (ret);
+  if (response != AGENT_RESPONSE_SUCCESS)
+    return response;
 
   /* Prevent unauthorized modification if the agent is currently in use. */
   if (agents_in_use (agent_uuids) && agent_update->authorized == 0)
     {
-      g_warning ("%s: Agent is in use by an agent group ", __func__);
+      g_warning ("%s: Agent is in use by an agent group", __func__);
       return AGENT_RESPONSE_IN_USE_ERROR;
     }
 
   agent_control_list = agent_controller_agent_list_new (agent_uuids->count);
-  agent_response_t get_response = get_agent_controller_agents_from_uuids (
-    scanner, agent_uuids, agent_control_list);
-  if (get_response != AGENT_RESPONSE_SUCCESS)
+  if (agent_control_list == NULL)
+    return AGENT_RESPONSE_INTERNAL_ERROR;
+
+  response =
+    get_agent_controller_agents_from_uuids (
+      scanner, agent_uuids, agent_control_list);
+
+  if (response != AGENT_RESPONSE_SUCCESS)
+    goto cleanup;
+
+  update_list =
+    agent_controller_agent_update_list_new (agent_control_list->count);
+
+  if (update_list == NULL)
     {
-      agent_controller_agent_list_free (agent_control_list);
-      return get_response;
+      response = AGENT_RESPONSE_INTERNAL_ERROR;
+      goto cleanup;
     }
 
-  connector = gvmd_agent_connector_new_from_scanner (scanner);
-  if (!connector)
+  response =
+    prepare_agent_update_list_from_agents_and_update (
+      agent_control_list, agent_update, update_list);
+
+  if (response != AGENT_RESPONSE_SUCCESS)
     {
-      g_warning ("%s: Failed to create agent connector for scanner ", __func__);
-      agent_controller_agent_list_free (agent_control_list);
-      manage_option_cleanup ();
-      return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
+      g_warning ("%s: Failed to prepare agent update list", __func__);
+      goto cleanup;
     }
 
-  agent_controller_agent_update_list_t update_list = agent_controller_agent_update_list_new (agent_control_list->count);
-  agent_response_t prepare_response = prepare_agent_update_list_from_agents_and_update (agent_control_list, agent_update, update_list);
-  if (prepare_response != AGENT_RESPONSE_SUCCESS)
-    {
-      g_warning ("%s: Failed to prepare agent update list ", __func__);
-      agent_controller_agent_update_list_free (update_list);
-      agent_controller_agent_list_free (agent_control_list);
-      gvmd_agent_connector_free (connector);
-      manage_option_cleanup ();
-      return prepare_response;
-    }
+  response =
+    modify_and_resync_agents_with_update_list (scanner, update_list, errors);
 
-  int update_result = agent_controller_update_agents (
-    connector->base, update_list, errors);
-
-  if (update_result < 0 && errors && *errors && (*errors)->len > 0)
-    {
-      g_warning ("%s: agent_controller_update_agents rejected", __func__);
-      agent_controller_agent_list_free (agent_control_list);
-      gvmd_agent_connector_free (connector);
-      agent_controller_agent_update_list_free (update_list);
-      manage_option_cleanup ();
-      return AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED;
-    }
-
-  if (update_result < 0)
-    {
-      g_warning ("%s: agent_controller_update_agents failed", __func__);
-      agent_controller_agent_list_free (agent_control_list);
-      agent_controller_agent_update_list_free (update_list);
-      gvmd_agent_connector_free (connector);
-      manage_option_cleanup ();
-      return AGENT_RESPONSE_CONTROLLER_UPDATE_FAILED;
-    }
+  if (response != AGENT_RESPONSE_SUCCESS)
+    goto cleanup;
 
   if (comment)
     update_agents_comment (agent_uuids, comment);
 
-  agent_response_t result = sync_agents_from_agent_controller (connector);
-  if (result != AGENT_RESPONSE_SUCCESS)
-    {
-      g_warning ("%s: sync_agents_from_agent_controller failed", __func__);
-      agent_controller_agent_list_free (agent_control_list);
-      agent_controller_agent_update_list_free (update_list);
-      gvmd_agent_connector_free (connector);
-      manage_option_cleanup ();
-      return result;
-    }
+cleanup:
+  if (update_list)
+    agent_controller_agent_update_list_free (update_list);
 
-  // Cleanup
   agent_controller_agent_list_free (agent_control_list);
-  agent_controller_agent_update_list_free (update_list);
-  gvmd_agent_connector_free (connector);
   manage_option_cleanup ();
 
-  return AGENT_RESPONSE_SUCCESS;
+  return response;
 }
 
 /**

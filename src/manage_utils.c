@@ -83,6 +83,7 @@ manage_count_hosts_max (const char *given_hosts, const char *exclude_hosts,
       if (gvm_hosts_exclude_with_max (hosts, clean_exclude_hosts, max_hosts)
           < 0)
         {
+          gvm_hosts_free (hosts);
           g_free (clean_hosts);
           g_free (clean_exclude_hosts);
           return -1;

@@ -144,6 +144,16 @@ Ensure (manage_filter_utils, filter_term_value_not_found)
   assert_that (value, is_null);
 }
 
+/* split_filter tests */
+
+Ensure (manage_filter_utils, split_filter_redundant_sort_does_not_leak)
+{
+  array_t *parts;
+
+  parts = split_filter ("sort=name sort=host");
+  filter_free (parts);
+}
+
 /* Test suite. */
 
 int
@@ -192,6 +202,9 @@ main (int argc, char **argv)
                          filter_term_value_with_underscore);
   add_test_with_context (suite, manage_filter_utils,
                          filter_term_value_not_found);
+
+  add_test_with_context (suite, manage_filter_utils,
+                         split_filter_redundant_sort_does_not_leak);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

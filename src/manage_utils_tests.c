@@ -259,6 +259,16 @@ Ensure (manage_utils, clean_hosts_string_zeroes)
   g_free (clean_str);
 }
 
+/* manage_count_hosts_max */
+
+Ensure (manage_utils, manage_count_hosts_max_invalid_exclude)
+{
+  int count;
+
+  count = manage_count_hosts_max ("192.168.1.1", "invalid-host-!!!", 100);
+  assert_that (count, is_equal_to (-1));
+}
+
 /* concat_error_messages tests */
 
 Ensure (manage_utils, concat_error_messages_null_array_returns_null)
@@ -390,6 +400,9 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_utils, clean_hosts_empty_string);
   add_test_with_context (suite, manage_utils, clean_hosts_single_host);
   add_test_with_context (suite, manage_utils, clean_hosts_all_duplicates);
+
+  add_test_with_context (suite, manage_utils,
+                         manage_count_hosts_max_invalid_exclude);
 
   add_test_with_context (suite, manage_utils,
                          concat_error_messages_null_array_returns_null);

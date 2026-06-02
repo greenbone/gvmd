@@ -90,6 +90,7 @@ alert_secinfo_count (alert_t alert, char *filter_id)
       current_credentials.uuid = NULL;
     }
 
+  g_free (secinfo_type);
   return db_count;
 }
 
@@ -141,6 +142,7 @@ condition_met (task_t task, report_t report, alert_t alert,
 
               db_count = alert_secinfo_count (alert, filter_id);
 
+              g_free (filter_id);
               if (db_count >= count)
                 return 1;
               break;
@@ -570,14 +572,15 @@ event_applies (event_t event, const void *event_data,
       case EVENT_NEW_SECINFO:
       case EVENT_UPDATED_SECINFO:
         {
+          int ret;
           char *alert_event_data;
 
           alert_event_data = alert_data (alert, "event", "secinfo_type");
           if (alert_event_data == NULL)
             return 0;
-          if (strcasecmp (alert_event_data, event_data) == 0)
-            return 1;
-          return 0;
+          ret = (strcasecmp (alert_event_data, event_data) == 0);
+          free (alert_event_data);
+          return ret;
         }
       case EVENT_TICKET_RECEIVED:
       case EVENT_ASSIGNED_TICKET_CHANGED:
