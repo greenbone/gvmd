@@ -17,22 +17,6 @@
 #include "gmp_base.h"
 
 void
-get_agent_installers_run (gmp_parser_t *,
-                          GError **);
-
-void
-get_agent_installers_start (const gchar **,
-                            const gchar **);
-
-void
-get_agent_installer_file_run (gmp_parser_t *,
-                              GError **);
-
-void
-get_agent_installer_file_start (const gchar **,
-                                const gchar **);
-
-void
 get_agent_installer_instruction_run (gmp_parser_t *,
                                       GError **);
 
