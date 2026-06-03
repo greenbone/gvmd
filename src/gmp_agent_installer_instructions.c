@@ -5,12 +5,12 @@
 
 /**
  * @file
- * @brief GVM GMP layer: Agent installers.
+ * @brief GVM GMP layer: Agent installer instruction.
  *
- * GMP handlers for agent installers.
+ * GMP handlers for agent installer instructions.
  */
 
-#include "gmp_agent_installers.h"
+#include "gmp_agent_installer_instructions.h"
 #include "manage.h"
 #include "manage_acl.h"
 

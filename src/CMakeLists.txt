@@ -227,7 +227,7 @@ if(ENABLE_AGENTS)
     manage_agent_common.c
     manage_agent_groups.c
     manage_agents.c
-    manage_agent_installers.c
+    manage_agent_installer_instructions.c
     manage_agent_control_scan_config.c
   )
 endif()
@@ -326,7 +326,7 @@ if(ENABLE_AGENTS)
     gmp_agent_control_scan_agent_config.c
     gmp_agent_groups.c
     gmp_agents.c
-    gmp_agent_installers.c
+    gmp_agent_installer_instructions.c
   )
 endif()
 

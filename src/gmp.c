@@ -75,7 +75,7 @@
 #include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_agent_groups.h"
 #include "gmp_agents.h"
-#include "gmp_agent_installers.h"
+#include "gmp_agent_installer_instructions.h"
 #endif
 #include "gmp_base.h"
 #if ENABLE_CREDENTIAL_STORES
