@@ -470,16 +470,15 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
         {
           gchar *status_text = concat_error_messages (
             errs, "; ", "Validation failed for config: ");
+
           if (!status_text)
-            status_text = g_markup_escape_text ("Validation failed for config.",
-                                                -1);
+            status_text = g_strdup ("Validation failed for config.");
 
           gchar *xml = g_markup_printf_escaped (
             "<create_agent_group_response status=\""
             STATUS_ERROR_SYNTAX
             "\" status_text=\"%s\"/>",
-            status_text ? status_text : "Validation failed for <config>."
-            );
+            status_text);
 
           if (send_to_client (xml, gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
@@ -809,16 +808,15 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
           {
             gchar *status_text = concat_error_messages (
               errs, "; ", "Validation failed for config: ");
+
             if (!status_text)
-              status_text = g_markup_escape_text ("Validation failed for config.",
-                                                  -1);
+              status_text = g_strdup ("Validation failed for config.");
 
             gchar *xml = g_markup_printf_escaped (
               "<modify_agent_group_response status=\""
               STATUS_ERROR_SYNTAX
               "\" status_text=\"%s\"/>",
-              status_text ? status_text : "Validation failed for <config>."
-              );
+              status_text);
 
             if (send_to_client (xml, gmp_parser->client_writer,
                                 gmp_parser->client_writer_data))
