@@ -2955,21 +2955,6 @@ create_tables ()
     "  agent_id TEXT REFERENCES agents (agent_id) ON DELETE RESTRICT,"
     "  ip_address TEXT NOT NULL);");
 
-  sql ("CREATE TABLE IF NOT EXISTS agent_installers"
-    " (id SERIAL PRIMARY KEY,"
-    "  uuid text UNIQUE NOT NULL,"
-    "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
-    "  name text NOT NULL,"
-    "  comment text,"
-    "  creation_time integer,"
-    "  modification_time integer,"
-    "  description text,"
-    "  content_type text,"
-    "  file_extension text,"
-    "  installer_path text,"
-    "  version text,"
-    "  checksum text);");
-
   sql ("CREATE TABLE IF NOT EXISTS agent_groups"
     " (id SERIAL PRIMARY KEY,"
     "  uuid TEXT NOT NULL UNIQUE,"

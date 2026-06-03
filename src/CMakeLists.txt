@@ -32,7 +32,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.1
+    libgvm_agent_controller>=23.2
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -227,7 +227,7 @@ if(ENABLE_AGENTS)
     manage_agent_common.c
     manage_agent_groups.c
     manage_agents.c
-    manage_agent_installers.c
+    manage_agent_installer_instructions.c
     manage_agent_control_scan_config.c
   )
 endif()
@@ -286,12 +286,7 @@ set(
 )
 
 if(ENABLE_AGENTS)
-  list(
-    APPEND ALL_MANAGE_SQL_SRC
-    manage_sql_agent_groups.c
-    manage_sql_agents.c
-    manage_sql_agent_installers.c
-  )
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_agent_groups.c manage_sql_agents.c)
 endif()
 
 if(ENABLE_CREDENTIAL_STORES)
@@ -331,7 +326,7 @@ if(ENABLE_AGENTS)
     gmp_agent_control_scan_agent_config.c
     gmp_agent_groups.c
     gmp_agents.c
-    gmp_agent_installers.c
+    gmp_agent_installer_instructions.c
   )
 endif()
 
@@ -509,19 +504,6 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
-
-if(ENABLE_AGENTS)
-  set(
-    ALL_OBJECTS
-    $<TARGET_OBJECTS:all-gmp-obj>
-    $<TARGET_OBJECTS:all-manage-sql-obj>
-    $<TARGET_OBJECTS:all-misc-obj>
-    $<TARGET_OBJECTS:all-sql-obj>
-  )
-  set(EXTRA_SRC ${ALL_MANAGE_SRC})
-  list(REMOVE_ITEM EXTRA_SRC manage_sql_agent_installers.c)
-  add_unit_test(manage-agent-installers "${ALL_OBJECTS}" "${EXTRA_SRC}")
-endif()
 
 set(
   ALL_OBJECTS

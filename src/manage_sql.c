@@ -119,7 +119,6 @@
 #include "manage_report_configs.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
-#include "manage_sql_agent_installers.h"
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
@@ -26567,7 +26566,6 @@ type_select_columns (const char *type)
 #if ENABLE_AGENTS
   static column_t agent_columns[] = AGENT_ITERATOR_COLUMNS;
   static column_t agent_group_columns[] = AGENT_GROUP_ITERATOR_COLUMNS;
-  static column_t agent_installer_columns[] = AGENT_INSTALLER_ITERATOR_COLUMNS;
 #endif
   static column_t alert_columns[] = ALERT_ITERATOR_COLUMNS;
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
@@ -26603,8 +26601,6 @@ type_select_columns (const char *type)
     return agent_columns;
   if (strcasecmp (type, "AGENT_GROUP") == 0)
     return agent_group_columns;
-  if (strcasecmp (type, "AGENT_INSTALLER") == 0)
-    return agent_installer_columns;
 #endif
   if (strcasecmp (type, "ALERT") == 0)
     return alert_columns;
@@ -26722,11 +26718,6 @@ type_filter_columns (const char *type)
   if (strcasecmp (type, "AGENT_GROUP") == 0)
     {
       static const char *ret[] = AGENT_GROUP_ITERATOR_FILTER_COLUMNS;
-      return ret;
-    }
-  if (strcasecmp (type, "AGENT_INSTALLER") == 0)
-    {
-      static const char *ret[] = AGENT_INSTALLER_ITERATOR_FILTER_COLUMNS;
       return ret;
     }
 #endif
