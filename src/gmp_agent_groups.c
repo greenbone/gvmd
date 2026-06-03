@@ -292,6 +292,7 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   agent_group_data_t group_data;
   agent_uuid_list_t agent_uuids = NULL;
   agent_group_t new_agent_group;
+  GPtrArray *errs = NULL;
 
   if (!acl_user_may ("create_agent_group"))
     {
@@ -420,7 +421,7 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 
   // Execute creation
   agent_group_resp_t response = create_and_sync_agent_group (
-    group_data, agent_uuids);
+    group_data, agent_uuids, &errs);
 
   switch (response)
   {
@@ -465,8 +466,35 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       break;
 
     case AGENT_GROUP_RESP_INVALID_ARGUMENT:
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_agent_group", "Invalid input"));
-      log_event_fail ("agent_group", "Agent Group", NULL, "created");
+      if (errs)
+        {
+          gchar *status_text = concat_error_messages (
+            errs, "; ", "Validation failed for config: ");
+          if (!status_text)
+            status_text = g_markup_escape_text ("Validation failed for config.",
+                                                -1);
+
+          gchar *xml = g_markup_printf_escaped (
+            "<create_agent_group_response status=\""
+            STATUS_ERROR_SYNTAX
+            "\" status_text=\"%s\"/>",
+            status_text ? status_text : "Validation failed for <config>."
+            );
+
+          if (send_to_client (xml, gmp_parser->client_writer,
+                              gmp_parser->client_writer_data))
+            error_send_to_client (error);
+
+          g_free (xml);
+          g_free (status_text);
+          log_event_fail ("agent_group", "Agent Groups", NULL, "created");
+        }
+      else
+        {
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("create_agent_group", "Invalid input"));
+          log_event_fail ("agent_group", "Agent Group", NULL, "created");
+        }
     break;
 
     case AGENT_GROUP_RESP_AGENT_NOT_FOUND:
@@ -505,6 +533,8 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   // Cleanup
   agent_uuid_list_free (agent_uuids);
   agent_group_data_free(group_data);
+  if (errs)
+    g_ptr_array_free(errs, TRUE);
 
 #else
   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("create_agent_group",
@@ -630,6 +660,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
   entity_t root, name, comment, scheduler_cron_time, agents_elem;
   const char *agent_group_uuid, *name_text, *scheduler_cron_time_text;
+  GPtrArray *errs = NULL;
 
   if (!acl_user_may ("modify_agent_group"))
     {
@@ -730,7 +761,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   group_data->modification_time = time (NULL);
 
   agent_group_resp_t response = modify_and_sync_agent_group (
-    agent_group, group_data, agent_uuids);
+    agent_group, group_data, agent_uuids, &errs);
 
   switch (response)
     {
@@ -774,8 +805,34 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
         break;
 
       case AGENT_GROUP_RESP_INVALID_ARGUMENT:
-        SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group", "Invalid input"));
-        log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+        if (errs)
+          {
+            gchar *status_text = concat_error_messages (
+              errs, "; ", "Validation failed for config: ");
+            if (!status_text)
+              status_text = g_markup_escape_text ("Validation failed for config.",
+                                                  -1);
+
+            gchar *xml = g_markup_printf_escaped (
+              "<modify_agent_group_response status=\""
+              STATUS_ERROR_SYNTAX
+              "\" status_text=\"%s\"/>",
+              status_text ? status_text : "Validation failed for <config>."
+              );
+
+            if (send_to_client (xml, gmp_parser->client_writer,
+                                gmp_parser->client_writer_data))
+              error_send_to_client (error);
+
+            g_free (xml);
+            g_free (status_text);
+            log_event_fail ("agent_group", "Agent Groups", NULL, "modified");
+          }
+        else
+          {
+            SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group", "Invalid input"));
+            log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+          }
         break;
 
       case AGENT_GROUP_RESP_AGENT_NOT_FOUND:
@@ -828,6 +885,8 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   // Cleanup
   agent_group_data_free (group_data);
   agent_uuid_list_free (agent_uuids);
+  if (errs)
+    g_ptr_array_free (errs, TRUE);
 
 #else
   SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE ("modify_agent_group",
