@@ -5,13 +5,13 @@
 
 /**
  * @file
- * @brief GVM manage layer: Agent installers.
+ * @brief GVM manage layer: Agent installer instructions.
  *
- * General management of agent installers.
+ * General management of agent installer instructions.
  */
 
 #include "gmp_base.h"
-#include "manage_agent_installers.h"
+#include "manage_agent_installer_instructions.h"
 
 #include "manage_agent_common.h"
 #include "manage_sql_resources.h"

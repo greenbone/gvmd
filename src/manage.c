@@ -37,7 +37,7 @@
 #include "gmp_base.h"
 #include "ipc.h"
 #include "manage_acl.h"
-#include "manage_agent_installers.h"
+#include "manage_agent_installer_instructions.h"
 #include "manage_assets.h"
 #include "manage_configs.h"
 #include "manage_nvts.h"

@@ -5,14 +5,14 @@
 
 /**
  * @file
- * @brief GVM GMP layer: Agent installer headers.
+ * @brief GVM GMP layer: Agent installer instruction headers.
  *
- * Headers for GMP handlers for agent installers.
+ * Headers for GMP handlers for agent installer instructions.
  */
 
 
-#ifndef _GVMD_GMP_AGENT_INSTALLERS_H
-#define _GVMD_GMP_AGENT_INSTALLERS_H
+#ifndef _GVMD_GMP_AGENT_INSTALLER_INSTRUCTIONS_H
+#define _GVMD_GMP_AGENT_INSTALLER_INSTRUCTIONS_H
 
 #include "gmp_base.h"
 
@@ -24,4 +24,4 @@ void
 get_agent_installer_instruction_start (const gchar **,
                                        const gchar **);
 
-#endif // not _GVMD_GMP_AGENT_INSTALLERS_H
+#endif // not _GVMD_GMP_AGENT_INSTALLER_INSTRUCTIONS_H
