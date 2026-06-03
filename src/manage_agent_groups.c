@@ -45,6 +45,7 @@ agent_response_to_agent_group_resp (agent_response_t response)
       return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
 
     case AGENT_RESPONSE_INVALID_ARGUMENT:
+    case AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED:
       return AGENT_GROUP_RESP_INVALID_ARGUMENT;
 
     case AGENT_RESPONSE_AGENT_NOT_FOUND:
@@ -57,7 +58,6 @@ agent_response_to_agent_group_resp (agent_response_t response)
     case AGENT_RESPONSE_CONTROLLER_DELETE_FAILED:
     case AGENT_RESPONSE_SYNC_FAILED:
     case AGENT_RESPONSE_IN_USE_ERROR:
-    case AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED:
     default:
       return AGENT_GROUP_RESP_INTERNAL_ERROR;
     }
@@ -218,12 +218,11 @@ get_agent_group_scanner (agent_group_data_t group_data,
  */
 static agent_group_resp_t
 sync_agent_group_agents_from_group_crons (agent_uuid_list_t agent_uuids,
-                                          scanner_t scanner)
+                                          scanner_t scanner, GPtrArray **errs)
 {
   agent_controller_agent_update_list_t update_list = NULL;
   agent_group_resp_t group_response;
   agent_response_t agent_response;
-  GPtrArray *errs = NULL;
 
   if (agent_uuids == NULL || agent_uuids->count == 0)
     return AGENT_GROUP_RESP_NO_AGENTS_PROVIDED;
@@ -246,20 +245,14 @@ sync_agent_group_agents_from_group_crons (agent_uuid_list_t agent_uuids,
 
   agent_response =
     modify_and_resync_agents_with_update_list (
-      scanner, update_list, &errs);
+      scanner, update_list, errs);
 
   agent_controller_agent_update_list_free (update_list);
 
   if (agent_response != AGENT_RESPONSE_SUCCESS)
     {
-      if (errs)
-        g_ptr_array_free (errs, TRUE);
-
       return agent_response_to_agent_group_resp (agent_response);
     }
-
-  if (errs)
-    g_ptr_array_free (errs, TRUE);
 
   return AGENT_GROUP_RESP_SUCCESS;
 }
@@ -379,13 +372,16 @@ agent_group_data_free (agent_group_data_t data)
  *
  * @param group_data Agent group metadata and configuration.
  * @param agent_uuids List of agent UUIDs to associate with the group.
+ * @param errs Optional output parameter for collecting agent controller sync errors.
+ *             Caller must free with g_ptr_array_unref() if not NULL.
  *
  * @return AGENT_GROUP_RESP_SUCCESS on success,
  *         or a specific AGENT_GROUP_RESP_* error code on failure.
  */
 agent_group_resp_t
 create_and_sync_agent_group (agent_group_data_t group_data,
-                             agent_uuid_list_t agent_uuids)
+                             agent_uuid_list_t agent_uuids,
+                             GPtrArray **errs)
 {
   scanner_t scanner = 0;
   agent_group_resp_t response;
@@ -407,7 +403,8 @@ create_and_sync_agent_group (agent_group_data_t group_data,
   if (response != AGENT_GROUP_RESP_SUCCESS)
     return response;
 
-  response = sync_agent_group_agents_from_group_crons (agent_uuids, scanner);
+  response = sync_agent_group_agents_from_group_crons (
+    agent_uuids, scanner, errs);
 
   if (response != AGENT_GROUP_RESP_SUCCESS)
     {
@@ -434,6 +431,8 @@ create_and_sync_agent_group (agent_group_data_t group_data,
  * @param agent_group Agent group ID to modify
  * @param group_data Agent group metadata and configuration to update
  * @param agent_uuids Agent UUIDs to associate with the group
+ * @param errs Optional output parameter for collecting agent controller sync errors.
+ *             Caller must free with g_ptr_array_unref() if not NULL.
  *
  * @return AGENT_GROUP_RESP_SUCCESS on success,
  *         or a specific AGENT_GROUP_RESP_* error code on failure.
@@ -441,7 +440,8 @@ create_and_sync_agent_group (agent_group_data_t group_data,
 agent_group_resp_t
 modify_and_sync_agent_group (agent_group_t agent_group,
                              agent_group_data_t group_data,
-                             agent_uuid_list_t agent_uuids)
+                             agent_uuid_list_t agent_uuids,
+                             GPtrArray **errs)
 {
   scanner_t scanner = 0;
   agent_group_resp_t response;
@@ -485,7 +485,8 @@ modify_and_sync_agent_group (agent_group_t agent_group,
 
   if (sync_agent_uuids)
     sync_response =
-      sync_agent_group_agents_from_group_crons (sync_agent_uuids, scanner);
+      sync_agent_group_agents_from_group_crons (sync_agent_uuids, scanner,
+                                                errs);
   else
     sync_response = AGENT_GROUP_RESP_SUCCESS;
 
