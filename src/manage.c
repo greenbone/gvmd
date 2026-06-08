@@ -7051,6 +7051,7 @@ stop_openvasd_task (task_t task)
   if (!connector)
     {
       ret = -1;
+      g_free (scan_id);
       goto end_stop_openvasd;
     }
 
