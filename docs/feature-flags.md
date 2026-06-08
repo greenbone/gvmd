@@ -25,6 +25,7 @@ enable_openvasd = false
 enable_vt_metadata = false
 enable_security_intelligence_export = false
 enable_jwt_auth = false
+enable_web_application_scanning = false
 ```
 
 Each line is optional.
@@ -43,6 +44,7 @@ If a line is missing, gvmd does not apply a value from the config file.
 | VT Metadata Feed                    | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`                   | `enable_vt_metadata`                      |
 | Security Intelligence Report Export | Always exists in binary                                   | `GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT`  | `enable_security_intelligence_export`     |
 | JSON web token authentication       | `ENABLE_JWT_AUTH`                                         | `GVMD_ENABLE_JWT_AUTH`                      | `enable_jwt_auth`                         |
+| Web Application Scanning            | `ENABLE_WEB_APPLICATION_SCANNING`                         | `GVMD_ENABLE_WEB_APPLICATION_SCANNING`      | `enable_web_application_scanning`         |
 ---
 
 ## Accepted Runtime Values
@@ -146,6 +148,9 @@ Exact example response:
   </feature>
   <feature compiled_in="1" enabled="0">
   <name>ENABLE_JWT_AUTH</name>
+  </feature>
+  <feature compiled_in="1" enabled="1">
+  <name>ENABLE_WEB_APPLICATION_SCANNING</name>
   </feature>
 </get_features_response>
 ```

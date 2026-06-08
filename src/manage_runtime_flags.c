@@ -50,6 +50,13 @@
 #define ENABLE_CREDENTIAL_STORES 0
 #endif
 
+#ifndef ENABLE_WEB_APPLICATION_SCANNING
+/**
+ * @brief Whether to enable web application scanning.
+ */
+#define ENABLE_WEB_APPLICATION_SCANNING 0
+#endif
+
 /**
  * @brief State of a single feature.
  */
@@ -93,6 +100,12 @@ static feature_state_t feature_jwt_auth =
   {ENABLE_JWT_AUTH, 0};
 
 /**
+ * @brief State of a single feature.
+ */
+static feature_state_t feature_web_application_scanning =
+  {ENABLE_WEB_APPLICATION_SCANNING, 0};
+
+/**
  * @brief Feature flags as read from the configuration file.
  */
 struct conf_feature_flags
@@ -117,6 +130,9 @@ struct conf_feature_flags
 
   int has_jwt_auth;           ///< Whether flag is present.
   int jwt_auth;               ///< Value of flag.
+
+  int has_web_application_scanning; ///< Whether flag is present.
+  int web_application_scanning;     ///< Value of flag.
 };
 
 /**
@@ -180,6 +196,10 @@ load_conf_file_feature_flags (struct conf_feature_flags *out)
   gvmd_config_get_boolean (kf, "features", "enable_jwt_auth",
                            &out->has_jwt_auth,
                            &out->jwt_auth);
+
+  gvmd_config_get_boolean (kf, "features", "enable_web_application_scanning",
+                           &out->has_web_application_scanning,
+                           &out->web_application_scanning);
 
   return 0;
 }
@@ -286,6 +306,11 @@ runtime_flags_init ()
                    conf_flags.has_jwt_auth,
                    conf_flags.jwt_auth);
 
+  resolve_feature (&feature_web_application_scanning,
+                   "GVMD_ENABLE_WEB_APPLICATION_SCANNING",
+                   conf_flags.has_web_application_scanning,
+                   conf_flags.web_application_scanning);
+
   return 0;
 }
 
@@ -319,6 +344,8 @@ feature_enabled (feature_id_t t)
       return feature_security_intelligence_export.enabled;
     case FEATURE_ID_JWT_AUTH:
       return feature_jwt_auth.enabled;
+    case FEATURE_ID_WEB_APPLICATION_SCANNING:
+      return feature_web_application_scanning.enabled;
     default:
       return 0;
     }
@@ -349,7 +376,9 @@ feature_compiled_in (feature_id_t t)
     case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
       return feature_security_intelligence_export.compiled_in;
     case FEATURE_ID_JWT_AUTH:
-      return feature_jwt_auth.enabled;
+      return feature_jwt_auth.compiled_in;
+    case FEATURE_ID_WEB_APPLICATION_SCANNING:
+      return feature_web_application_scanning.compiled_in;
     default:
       return 0;
     }
@@ -407,5 +436,11 @@ runtime_append_disabled_commands (GString *buf)
         buf,
         "get_integration_configs,"
         "modify_integration_config");
+    }
+
+  /* WEB_APPLICATION_SCANNER */
+  if (!feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+    {
+      // Add commands related to web application scanning when they exist.
     }
 }

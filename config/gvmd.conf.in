@@ -14,6 +14,7 @@ enable_openvasd = false
 enable_vt_metadata = false
 enable_security_intelligence_export = false
 enable_jwt_auth = false
+enable_web_application_scanning = false
 
 [security_intelligence_export]
 max_retries = 10
