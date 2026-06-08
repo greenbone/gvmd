@@ -7331,7 +7331,7 @@ launch_agent_control_task (task_t task,
   scanner_t scanner = 0;
   int ret = -1;
 
-  if (report_id) *report_id = NULL;
+  *report_id = NULL;
 
   // Get scanner
   scanner = task_scanner (task);
@@ -7396,7 +7396,7 @@ launch_agent_control_task (task_t task,
         goto make_report;
       }
 
-    if (report_id) *report_id = g_strdup (scan_id);
+    *report_id = g_strdup (scan_id);
     g_free (scan_id);
   }
 
