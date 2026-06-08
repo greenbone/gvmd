@@ -830,6 +830,13 @@ check_scanner_feature (scanner_type_t scanner_type)
       return SCANNER_FEATURE_OK;
     }
 
+  if (scanner_type == SCANNER_TYPE_WEB_APPLICATION)
+    {
+      if (!feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+        return SCANNER_FEATURE_WEB_APPLICATION_DISABLED;
+      return SCANNER_FEATURE_OK;
+    }
+
   return SCANNER_FEATURE_OK;
 }
 

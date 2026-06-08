@@ -3444,6 +3444,20 @@ check_db_scanners ()
     }
 #endif
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+                SCANNER_UUID_WEB_APPLICATION_DEFAULT) == 0)
+    {
+      sql ("INSERT INTO scanners"
+        " (uuid, owner, name, host, port, type, ca_pub, credential,"
+        "  creation_time, modification_time)"
+        " VALUES ('" SCANNER_UUID_WEB_APPLICATION_DEFAULT "', NULL, "
+        " 'Web Application Default', 'localhost', 8030, %d, NULL, NULL,"
+        " m_now (), m_now ());",
+        SCANNER_TYPE_WEB_APPLICATION);
+    }
+#endif
+
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_CVE) == 0)
     sql ("INSERT INTO scanners"
@@ -22855,6 +22869,12 @@ create_scanner (const char* name, const char *comment, const char *host,
       sql_rollback ();
       return CREATE_SCANNER_CONTAINER_SCANNING_DISABLED;
     }
+    else if (feature_res == SCANNER_FEATURE_WEB_APPLICATION_DISABLED)
+    {
+      /* Web application scanning feature disabled */
+      sql_rollback ();
+      return CREATE_SCANNER_WEB_SCANNING_DISABLED;
+    }
   if (unix_socket)
     {
       ca_pub = NULL;
@@ -23093,6 +23113,12 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       /* Container scanning feature disabled */
       sql_rollback ();
       return MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED;
+    }
+  else if (feature_res == SCANNER_FEATURE_WEB_APPLICATION_DISABLED)
+    {
+      /* Web application scanning feature disabled */
+      sql_rollback ();
+      return MODIFY_SCANNER_WEB_SCANNING_DISABLED;
     }
 
   if (port)
@@ -24306,6 +24332,17 @@ verify_scanner (const char *scanner_id, char **version)
       return 0;
     }
 #endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+  else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_WEB_APPLICATION)
+    {
+      // TODO: replace with actual version from the scanner
+      if (version)
+        *version = g_strdup ("TestVersion");
+
+      cleanup_iterator (&scanner);
+      return 0;
+    }
+#endif
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CVE)
     {
       if (version)
@@ -24378,6 +24415,9 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
             break;
           case SCANNER_TYPE_CONTAINER_IMAGE:
             scanner_type_str = "container-image";
+            break;
+          case SCANNER_TYPE_WEB_APPLICATION:
+            scanner_type_str = "web-application-scanner";
             break;
           default:
             scanner_type_str = NULL;
