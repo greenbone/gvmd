@@ -17845,6 +17845,19 @@ send_scanner_info (iterator_t *scanners, gmp_parser_t *gmp_parser,
         }
         break;
 #endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case SCANNER_TYPE_WEB_APPLICATION:
+        {
+          // TODO: Get real info from the scanner.
+          SENDF_TO_CLIENT_OR_FAIL
+           ("<info><scanner><name>web-application</name><version>0.1</version>"
+            "</scanner><daemon><name>WebAppScanner</name><version>1.0</version>"
+            "</daemon><protocol><name>SCANNER API</name><version>0.1"
+            "</version></protocol><description>Web Application Scanner</description>"
+            "<params></params></info>");
+        }
+        break;
+#endif
       default:
         {
           SENDF_TO_CLIENT_OR_FAIL
@@ -21001,6 +21014,14 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
         ));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
+      case CREATE_SCANNER_WEB_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "Web application scanner type is not supported "
+          "because the Web scanning feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
       case CREATE_SCANNER_PERMISSION_DENIED:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner", "Permission denied"));
@@ -21173,6 +21194,15 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
         (XML_ERROR_SYNTAX ("modify_scanner",
           "Container image scanner type is not supported "
           "because the Container scanning feature flag is disabled."
+        ));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_WEB_SCANNING_DISABLED:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "Web application scanner type is not supported "
+          "because the Web scanning feature flag is disabled."
         ));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");

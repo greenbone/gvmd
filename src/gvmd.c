@@ -3021,6 +3021,9 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_JWT_AUTH == 1
       printf ("JWT authentication is enabled\n");
 #endif
+#if ENABLE_WEB_APPLICATION_SCANNING == 1
+      printf ("Web application scanning is enabled\n");
+#endif
       printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -3648,6 +3651,10 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_CONTAINER_SCANNING
           else if (!strcasecmp (scanner_type, "container-image"))
             type = SCANNER_TYPE_CONTAINER_IMAGE;
+#endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+          else if (!strcasecmp (scanner_type, "web-application-scanner"))
+            type = SCANNER_TYPE_WEB_APPLICATION;
 #endif
           else
             {

@@ -364,7 +364,8 @@ typedef enum scanner_type
   SCANNER_TYPE_OPENVASD_SENSOR = 8,
   SCANNER_TYPE_AGENT_CONTROLLER_SENSOR = 9,
   SCANNER_TYPE_CONTAINER_IMAGE = 10,
-  SCANNER_TYPE_MAX = 11,
+  SCANNER_TYPE_WEB_APPLICATION = 11,
+  SCANNER_TYPE_MAX = 12,
 } scanner_type_t;
 
 /**
@@ -378,7 +379,8 @@ typedef enum
  SCANNER_FEATURE_OK = 0,
  SCANNER_FEATURE_OPENVASD_DISABLED = 1,
  SCANNER_FEATURE_AGENTS_DISABLED = 2,
- SCANNER_FEATURE_CONTAINER_DISABLED = 3
+ SCANNER_FEATURE_CONTAINER_DISABLED = 3,
+ SCANNER_FEATURE_WEB_APPLICATION_DISABLED = 4
 } scanner_feature_status_t;
 
 int
@@ -2143,6 +2145,7 @@ typedef enum {
   CREATE_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
   CREATE_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
   CREATE_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  CREATE_SCANNER_WEB_SCANNING_DISABLED,       ///< Web application scanning feature is disabled
   CREATE_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } create_scanner_return_t;
 
@@ -2171,6 +2174,7 @@ typedef enum {
   MODIFY_SCANNER_OPENVASD_DISABLED,           ///< openvasd feature is disabled
   MODIFY_SCANNER_AGENT_DISABLED,              ///< Agent feature is disabled
   MODIFY_SCANNER_CONTAINER_SCANNING_DISABLED, ///< Container scanning feature is disabled
+  MODIFY_SCANNER_WEB_SCANNING_DISABLED,       ///< Web application scanning feature is disabled
   MODIFY_SCANNER_PERMISSION_DENIED = 99       ///< Permission denied
 } modify_scanner_return_t;
 
