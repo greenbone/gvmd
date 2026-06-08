@@ -4337,6 +4337,7 @@ manage_process_report_imports ()
           g_debug ("%s: Report %llu is already being processed",
                    __func__,
                    report);
+          g_free (lockfile_path);
           continue;
         }
       if (ret < 0)
@@ -4345,6 +4346,7 @@ manage_process_report_imports ()
                       __func__,
                       report);
           cleanup_iterator (&reports);
+          g_free (lockfile_path);
           return;
         }
 
@@ -4432,6 +4434,7 @@ manage_process_report_imports ()
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            g_free (lockfile_path);
             continue;
           }
     }
