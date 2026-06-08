@@ -3984,6 +3984,7 @@ migrate_275_to_276 ()
     }
 
   /* Drop agent installers table. */
+  sql ("DROP TABLE IF EXISTS agent_installer_cpes;");
   sql ("DROP TABLE IF EXISTS agent_installers;");
 
   /* Set the database version to 276. */
