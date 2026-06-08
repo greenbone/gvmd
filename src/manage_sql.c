@@ -13087,11 +13087,11 @@ scan_start_time_epoch (report_t report)
 char*
 scan_start_time_uuid (const char *uuid)
 {
-  char *time, *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-  time = sql_string ("SELECT iso_time (start_time)"
-                     " FROM reports WHERE uuid = '%s';",
-                     quoted_uuid);
+  char *time;
+  time = sql_string_ps ("SELECT iso_time (start_time)"
+                        " FROM reports WHERE uuid = $1;",
+                        SQL_STR_PARAM (uuid),
+                        NULL);
   return time ? time : g_strdup ("");
 }
 
@@ -13148,11 +13148,11 @@ scan_end_time (report_t report)
 char*
 scan_end_time_uuid (const char *uuid)
 {
-  char *time, *quoted_uuid;
-  quoted_uuid = sql_quote (uuid);
-  time = sql_string ("SELECT iso_time (end_time)"
-                     " FROM reports WHERE uuid = '%s';",
-                     quoted_uuid);
+  char *time;
+  time = sql_string_ps ("SELECT iso_time (end_time)"
+                        " FROM reports WHERE uuid = $1;",
+                        SQL_STR_PARAM (uuid),
+                        NULL);
   return time ? time : g_strdup ("");
 }
 
