@@ -4567,6 +4567,7 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       if (error_msg)
         *error_msg = g_strdup ("Error setting up log config or"
                                " database connection.");
+      feed_lockfile_unlock (&lockfile);
       return -1;
     }
 
