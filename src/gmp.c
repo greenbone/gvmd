@@ -20150,11 +20150,11 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
           scanner_available = 1;
           scanner = task_iterator_scanner (&tasks);
-          if (scanner && scanner_uuid (scanner))
+          task_scanner_uuid = scanner_uuid (scanner);
+          if (scanner && task_scanner_uuid)
             {
               scanner_in_trash = task_scanner_in_trash (index);
 
-              task_scanner_uuid = scanner_uuid (scanner);
               task_scanner_name = scanner_name (scanner);
               task_scanner_type = scanner_type (scanner);
               if (scanner_in_trash)
