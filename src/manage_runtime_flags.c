@@ -376,7 +376,7 @@ feature_compiled_in (feature_id_t t)
     case FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT:
       return feature_security_intelligence_export.compiled_in;
     case FEATURE_ID_JWT_AUTH:
-      return feature_jwt_auth.enabled;
+      return feature_jwt_auth.compiled_in;
     case FEATURE_ID_WEB_APPLICATION_SCANNING:
       return feature_web_application_scanning.compiled_in;
     default:
