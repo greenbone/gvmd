@@ -18,7 +18,6 @@
 #if ENABLE_AGENTS
 typedef resource_t agent_t;
 typedef resource_t agent_group_t;
-typedef resource_t agent_installer_t;
 #endif
 typedef resource_t alert_t;
 typedef resource_t asset_snapshot_t;
@@ -53,5 +52,6 @@ typedef resource_t task_t;
 typedef resource_t ticket_t;
 typedef resource_t tls_certificate_t;
 typedef resource_t user_t;
+typedef resource_t web_application_target_t;
 
 #endif /* not _GVMD_MANAGE_RESOURCES_TYPES_H */
