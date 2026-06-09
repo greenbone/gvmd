@@ -669,7 +669,7 @@ static void
 column_array_free (column_t *columns)
 {
   column_t *point = columns;
-  while (point->filter)
+  while (point->select)
     {
       g_free (point->select);
       g_free (point->filter);
