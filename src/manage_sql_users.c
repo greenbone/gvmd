@@ -21,6 +21,7 @@
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
+#include "manage_web_application_targets.h"
 #include "sql.h"
 
 #include <gvm/base/pwpolicy.h>
@@ -1505,6 +1506,21 @@ delete_user (const char *user_id_arg, const char *name_arg,
   sql ("DELETE FROM oci_image_targets WHERE owner = %llu;", user);
   sql ("DELETE FROM oci_image_targets_trash WHERE owner = %llu;", user);
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+  /* Web Application Targets. */
+  if (user_resources_in_use (user,
+                             "web_application_targets",
+                             web_application_target_in_use,
+                             "web_application_targets_trash",
+                             trash_web_application_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM web_application_targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM web_application_targets_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
   /* Delete resources used indirectly by tasks */
 
