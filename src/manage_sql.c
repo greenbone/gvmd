@@ -21934,6 +21934,86 @@ credential_oci_target_iterator_readable (iterator_t* iterator)
 }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+/**
+ * @brief Initialise a Credential web application target iterator.
+ *
+ * Iterates over all web application targets that use the credential.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  credential      Credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ */
+void
+init_credential_web_application_target_iterator (iterator_t* iterator,
+                                                 credential_t credential,
+                                                 int ascending)
+{
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_web_application_targets"));
+
+  available = acl_where_owned ("web_application_target", &get, 1, "any",
+                               0, permissions, 0, &with_clause);
+
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT uuid, name, %s FROM web_application_targets"
+                 " WHERE credential = %llu"
+                 " ORDER BY name %s;",
+                 with_clause ? with_clause : "",
+                 available,
+                 credential,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the uuid from a Credential web application target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_web_application_target_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from a Credential web application target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_web_application_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a Credential web application
+ *        target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+credential_web_application_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, 2);
+}
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
 /**
  * @brief Initialise a Credential scanner iterator.
  *
