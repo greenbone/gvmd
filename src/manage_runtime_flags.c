@@ -441,6 +441,11 @@ runtime_append_disabled_commands (GString *buf)
   /* WEB_APPLICATION_SCANNER */
   if (!feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
     {
-      // Add commands related to web application scanning when they exist.
+      append_commands (
+        buf,
+        "create_web_application_target,"
+        "delete_web_application_target,"
+        "get_web_application_targets,"
+        "modify_web_application_target");
     }
 }

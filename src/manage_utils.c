@@ -178,8 +178,7 @@ valid_db_resource_type (const char *type)
 #endif
 
 #ifdef ENABLE_AGENTS
-  if ((strcasecmp (type, "agent") == 0)
-      || (strcasecmp (type, "agent_installer") == 0))
+  if ((strcasecmp (type, "agent") == 0))
     return 1;
 #endif /* ENABLE_AGENTS */
 
@@ -216,6 +215,9 @@ valid_db_resource_type (const char *type)
          || (strcasecmp (type, "task") == 0)
          || (strcasecmp (type, "ticket") == 0)
          || (strcasecmp (type, "tls_certificate") == 0)
+#if ENABLE_WEB_APPLICATION_SCANNING
+         || (strcasecmp (type, "web_application_target") == 0)
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
          || (strcasecmp (type, "user") == 0);
 }
 

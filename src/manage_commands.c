@@ -90,6 +90,9 @@ command_t gmp_commands[]
     {"DELETE_TICKET", "Delete a ticket."},
     {"DELETE_TLS_CERTIFICATE", "Delete a TLS certificate."},
     {"DELETE_USER", "Delete an existing user."},
+#if ENABLE_WEB_APPLICATION_SCANNING
+    {"DELETE_WEB_APPLICATION_TARGET", "Delete a web application target."},
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
 #if ENABLE_AGENTS
@@ -147,6 +150,9 @@ command_t gmp_commands[]
     {"GET_USERS", "Get all users."},
     {"GET_VERSION", "Get the Greenbone Management Protocol version."},
     {"GET_VULNS", "Get all vulnerabilities."},
+#if ENABLE_WEB_APPLICATION_SCANNING
+    {"GET_WEB_APPLICATION_TARGETS", "Get all web application targets."},
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
     {"HELP", "Get this help text."},
 #if ENABLE_AGENTS
     {"MODIFY_AGENT_CONTROL_SCAN_CONFIG", "Modify an agent control scan agent configuration."},
@@ -184,6 +190,9 @@ command_t gmp_commands[]
     {"MODIFY_TICKET", "Modify an existing ticket."},
     {"MODIFY_TLS_CERTIFICATE", "Modify an existing TLS certificate."},
     {"MODIFY_USER", "Modify a user."},
+#if ENABLE_WEB_APPLICATION_SCANNING
+{"MODIFY_WEB_APPLICATION_TARGET", "Modify an existing Web application target."},
+#endif /* ENABLE_CONTAINER_SCANNING */
     {"MOVE_TASK", "Assign task to another slave scanner, even while running."},
     {"RESTORE", "Restore a resource."},
     {"RESUME_TASK", "Resume a stopped task."},

@@ -115,6 +115,15 @@ get_integration_configs
 modify_integration_config
 ```
 
+### Web Application Scanning disabled - these commands are hidden
+
+```
+create_web_application_target
+delete_web_application_target
+get_web_application_targets
+modify_web_application_target
+```
+
 ## Extended get_features Response
 
 To help clients understand which features are compiled-in and enabled at runtime, the `get_features` command now returns

@@ -1506,6 +1506,36 @@ delete_user (const char *user_id_arg, const char *name_arg,
   sql ("DELETE FROM oci_image_targets_trash WHERE owner = %llu;", user);
 #endif /* ENABLE_CONTAINER_SCANNING */
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+  /* Web Application Targets. */
+  if (user_resources_in_use (user,
+                             "web_application_targets",
+                             web_application_target_in_use,
+                             "web_application_targets_trash",
+                             trash_web_application_target_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM web_application_targets WHERE owner = %llu;", user);
+  sql ("DELETE FROM web_application_targets_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
+#if ENABLE_AGENTS
+  /* Agent Groups. */
+  if (user_resources_in_use (user,
+                             "agent_groups",
+                             agent_group_in_use,
+                             "agent_groups_trash",
+                             trash_agent_group_in_use))
+    {
+      sql_rollback ();
+      return 9;
+    }
+  sql ("DELETE FROM agent_groups WHERE owner = %llu;", user);
+  sql ("DELETE FROM agent_groups_trash WHERE owner = %llu;", user);
+#endif /* ENABLE_AGENTS */
+
   /* Delete resources used indirectly by tasks */
 
   /* Filters (used by alerts and settings). */

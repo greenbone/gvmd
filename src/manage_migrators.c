@@ -4014,6 +4014,40 @@ migrate_275_to_276 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 276 to version 277.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_276_to_277 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 276. */
+
+  if (manage_db_version () != 276)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Update the database. */
+
+  // Add web_application_target and web_application_target_location fields to tasks
+
+  sql ("ALTER TABLE tasks ADD COLUMN web_application_target integer;");
+  sql ("ALTER TABLE tasks ADD COLUMN web_application_target_location integer;");
+
+  /* Set the database version to 277. */
+
+  set_db_version (277);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4096,6 +4130,7 @@ static migrator_t database_migrators[] = {
   {274, migrate_273_to_274},
   {275, migrate_274_to_275},
   {276, migrate_275_to_276},
+  {277, migrate_276_to_277},
   /* End marker. */
   {-1, NULL}};
 

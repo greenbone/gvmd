@@ -66,6 +66,9 @@
 #include "manage_container_image_scanner.h"
 #endif
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+#include "manage_web_application_targets.h"
+#endif
 /**
  * @brief OID of ping_host.nasl
  */
@@ -2032,6 +2035,22 @@ credential_oci_target_iterator_name (iterator_t*);
 int
 credential_oci_target_iterator_readable (iterator_t*);
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+void
+init_credential_web_application_target_iterator (iterator_t*,
+                                                 credential_t,
+                                                 int);
+
+const char*
+credential_web_application_target_iterator_uuid (iterator_t*);
+
+const char*
+credential_web_application_target_iterator_name (iterator_t*);
+
+int
+credential_web_application_target_iterator_readable (iterator_t*);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
 void
 init_credential_scanner_iterator (iterator_t*, credential_t, int);

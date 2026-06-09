@@ -240,6 +240,10 @@ if(ENABLE_CREDENTIAL_STORES)
   )
 endif()
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_MANAGE_SRC manage_web_application_targets.c)
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -293,6 +297,10 @@ if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
 endif()
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_web_application_targets.c)
+endif()
+
 set(
   ALL_GMP_SRC
   gmp.c
@@ -328,6 +336,10 @@ if(ENABLE_AGENTS)
     gmp_agents.c
     gmp_agent_installer_instructions.c
   )
+endif()
+
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_GMP_SRC gmp_web_application_targets.c)
 endif()
 
 if(ENABLE_CREDENTIAL_STORES)
@@ -523,6 +535,21 @@ if(ENABLE_CONTAINER_SCANNING)
     $<TARGET_OBJECTS:all-sql-obj>
   )
   add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+endif()
+
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(
+    manage-web-application-targets
+    "${ALL_OBJECTS}"
+    "${ALL_MANAGE_SRC}"
+  )
 endif()
 
 set(

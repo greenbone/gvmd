@@ -122,6 +122,9 @@
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
+#if ENABLE_WEB_APPLICATION_SCANNING
+#include "manage_web_application_targets.h"
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
 #undef G_LOG_DOMAIN
 /**
@@ -2538,15 +2541,35 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Query for TASK_SEV_CASE_GUARD.
  */
-#if ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
-  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL AND oci_image_target IS NULL)"
-#elif ENABLE_AGENTS && !ENABLE_CONTAINER_SCANNING
-  #define TASK_NO_TARGET_CTX "(target IS NULL AND agent_group IS NULL)"
-#elif !ENABLE_AGENTS && ENABLE_CONTAINER_SCANNING
-  #define TASK_NO_TARGET_CTX "(target IS NULL AND oci_image_target IS NULL)"
+/**
+ * @brief Query for TASK_SEV_CASE_GUARD.
+ */
+#define TASK_NO_TARGET_BASE "target IS NULL"
+
+#if ENABLE_AGENTS
+#define TASK_NO_AGENT_GROUP " AND agent_group IS NULL"
 #else
-  #define TASK_NO_TARGET_CTX "(target IS NULL)"
+#define TASK_NO_AGENT_GROUP ""
 #endif
+
+#if ENABLE_CONTAINER_SCANNING
+#define TASK_NO_OCI_IMAGE_TARGET " AND oci_image_target IS NULL"
+#else
+#define TASK_NO_OCI_IMAGE_TARGET ""
+#endif
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+#define TASK_NO_WEB_APPLICATION_TARGET " AND web_application_target IS NULL"
+#else
+#define TASK_NO_WEB_APPLICATION_TARGET ""
+#endif
+
+#define TASK_NO_TARGET_CTX                                \
+"(" TASK_NO_TARGET_BASE                                   \
+TASK_NO_AGENT_GROUP                                       \
+TASK_NO_OCI_IMAGE_TARGET                                  \
+TASK_NO_WEB_APPLICATION_TARGET                            \
+")"
 
 /**
  * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
@@ -20442,6 +20465,15 @@ delete_credential (const char *credential_id, int ultimate)
            trash_credential,
            credential);
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+      sql ("UPDATE web_application_targets_trash"
+           " SET credential_location = " G_STRINGIFY (LOCATION_TRASH) ","
+           "     credential = %llu"
+           " WHERE credential = %llu"
+           "   AND credential_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           trash_credential,
+           credential);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
       permissions_set_locations ("credential", credential,
                                  trash_credential,
@@ -20706,6 +20738,11 @@ credential_in_use (credential_t credential)
                        " WHERE credential = %llu;",
                        credential)
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+           || sql_int ("SELECT count (*) FROM web_application_targets"
+                       " WHERE credential = %llu;",
+                       credential)
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
            || sql_int ("SELECT count (*) FROM scanners"
                        " WHERE credential = %llu;",
                        credential)
@@ -21896,6 +21933,86 @@ credential_oci_target_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 2);
 }
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+/**
+ * @brief Initialise a Credential web application target iterator.
+ *
+ * Iterates over all web application targets that use the credential.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  credential      Credential.
+ * @param[in]  ascending       Whether to sort ascending or descending.
+ */
+void
+init_credential_web_application_target_iterator (iterator_t* iterator,
+                                                 credential_t credential,
+                                                 int ascending)
+{
+  gchar *available, *with_clause;
+  get_data_t get;
+  array_t *permissions;
+
+  assert (credential);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_web_application_targets"));
+
+  available = acl_where_owned ("web_application_target", &get, 1, "any",
+                               0, permissions, 0, &with_clause);
+
+  array_free (permissions);
+
+  init_iterator (iterator,
+                 "%s"
+                 " SELECT uuid, name, %s FROM web_application_targets"
+                 " WHERE credential = %llu"
+                 " ORDER BY name %s;",
+                 with_clause ? with_clause : "",
+                 available,
+                 credential,
+                 ascending ? "ASC" : "DESC");
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the uuid from a Credential web application target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return UUID, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_web_application_target_iterator_uuid, 0);
+
+/**
+ * @brief Get the name from a Credential web application target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Name, or NULL if iteration is complete. Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_web_application_target_iterator_name, 1);
+
+/**
+ * @brief Get the read permission status from a Credential web application
+ *        target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return 1 if may read, else 0.
+ */
+int
+credential_web_application_target_iterator_readable (iterator_t* iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, 2);
+}
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
 /**
  * @brief Initialise a Credential scanner iterator.
@@ -24719,6 +24836,13 @@ manage_restore (const char *id)
     return ret;
 #endif /* ENABLE_CONTAINER_SCANNING */
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+  /* Web Application Targets. */
+  ret = restore_web_application_target (id);
+  if (ret != 2)
+    return ret;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
   /* Config. */
 
   if (find_trash ("config", id, &resource))
@@ -25727,6 +25851,9 @@ manage_empty_trashcan ()
 #if ENABLE_CONTAINER_SCANNING
   sql ("DELETE FROM oci_image_targets_trash" WHERE_OWNER);
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+  sql ("DELETE FROM web_application_targets_trash" WHERE_OWNER);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
   sql ("DELETE FROM overrides_trash" WHERE_OWNER);
   sql ("DELETE FROM permissions_trash" WHERE_OWNER);
   empty_trashcan_port_lists ();
