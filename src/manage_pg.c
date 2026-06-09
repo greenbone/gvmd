@@ -2686,6 +2686,31 @@ create_tables ()
        "  credential INTEGER,"
        "  credential_location integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS web_application_targets"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid text UNIQUE NOT NULL,"
+     "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+     "  name text NOT NULL,"
+     "  urls text,"
+     "  exclude_urls text,"
+     "  comment text,"
+     "  creation_time integer,"
+     "  modification_time integer,"
+     "  credential INTEGER REFERENCES credentials (id) ON DELETE RESTRICT);");
+
+  sql ("CREATE TABLE IF NOT EXISTS web_application_targets_trash"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+       "  name text NOT NULL,"
+       "  urls text,"
+       "  exclude_urls text,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  credential INTEGER,"
+       "  credential_location integer);");
+
   sql ("CREATE TABLE IF NOT EXISTS tickets"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
@@ -3011,6 +3036,8 @@ create_tables ()
        "  oci_image_target integer,"
        "  oci_image_target_location integer,"
        "  agent_group_location integer,"
+       "  web_application_target integer,"
+       "  web_application_target_location integer,"
        "  upload_result_count integer,"
        "  alterable integer,"
        "  creation_time integer,"
