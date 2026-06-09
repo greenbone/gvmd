@@ -533,6 +533,17 @@ if(ENABLE_CONTAINER_SCANNING)
   add_unit_test(manage-oci-image-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 endif()
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(manage-web-application-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+endif()
+
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
