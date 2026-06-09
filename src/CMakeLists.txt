@@ -240,6 +240,10 @@ if(ENABLE_CREDENTIAL_STORES)
   )
 endif()
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_MANAGE_SRC manage_web_application_targets.c)
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -291,6 +295,10 @@ endif()
 
 if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_MANAGE_SQL_SRC manage_sql_credential_stores.c)
+endif()
+
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_MANAGE_SQL_SRC manage_sql_web_application_targets.c)
 endif()
 
 set(

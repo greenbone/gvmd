@@ -63,6 +63,7 @@
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_tags.h"
+#include "manage_web_application_targets.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -6926,6 +6927,10 @@ delete_resource (const char *type, const char *resource_id, int ultimate)
 #endif
   if (strcasecmp (type, "tls_certificate") == 0)
     return delete_tls_certificate (resource_id, ultimate);
+#if ENABLE_WEB_APPLICATION_SCANNING
+  if (strcasecmp (type, "web_application_target") == 0)
+    return delete_web_application_target (resource_id, ultimate);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
   assert (0);
   return -1;
 }

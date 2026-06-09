@@ -729,8 +729,6 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("Agent Groups Filter");
       else if (strcmp (uuid, "c544a310-dc13-49c6-858e-f3160d75e221") == 0)
         setting_name = g_strdup ("Agents Filter");
-      else if (strcmp (uuid, "a39a719a-e6bc-4d9f-a1e6-a53e5b014b05") == 0)
-        setting_name = g_strdup ("Agent Installers Filter");
 #endif
       else if (strcmp (uuid, "0f040d06-abf9-43a2-8f94-9de178b0e978") == 0)
         setting_name = g_strdup ("Assets Filter");
@@ -753,6 +751,10 @@ modify_setting (const gchar *uuid, const gchar *name,
 #if ENABLE_CONTAINER_SCANNING
       else if (strcmp (uuid, "db61a364-de40-4552-b1bc-a518744f847a") == 0)
         setting_name = g_strdup ("OCI Image Targets Filter");
+#endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+      else if (strcmp (uuid, "4d0ac899-cac9-4161-bfac-be173e88a8a6") == 0)
+        setting_name = g_strdup ("Web Application Targets Filter");
 #endif
       else if (strcmp (uuid, "f608c3ec-ce73-4ff6-8e04-7532749783af") == 0)
         setting_name = g_strdup ("Operating Systems Filter");
