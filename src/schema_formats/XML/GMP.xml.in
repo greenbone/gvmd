@@ -7121,6 +7121,134 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_WEB_APPLICATION_SCANNING@
+  <command>
+    <name>create_web_application_target</name>
+    <summary>Create a web application target</summary>
+    <description>
+      <p>
+        The client uses the create_web_application_target command to create a
+        new web application target.
+      </p>
+      <p>
+        Web application targets are URL-based targets for web application
+        scanning.
+      </p>
+      <p>
+        The URLs use the following format:
+        http://host[:port]/[path] or https://host[:port]/[path]
+      </p>
+      <p>
+        Multiple URLs can be provided as a comma-separated list.
+      </p>
+    </description>
+    <pattern>
+      <e>name</e>
+      <o><e>comment</e></o>
+      <o><e>copy</e></o>
+      <e>urls</e>
+      <o><e>exclude_urls</e></o>
+      <o><e>credential</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>A name for the web application target</summary>
+      <pattern>
+        <t>name</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>A comment on the web application target</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>copy</name>
+      <summary>The UUID of an existing web application target</summary>
+      <pattern>
+        <t>uuid</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>urls</name>
+      <summary>A comma-separated list of web application URLs</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>exclude_urls</name>
+      <summary>A comma-separated list of URLs to exclude</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>credential</name>
+      <summary>Credentials for the web application target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create a web application target with one URL</summary>
+      <request>
+        <create_web_application_target>
+          <name>Example Web Application</name>
+          <urls>https://example.com</urls>
+        </create_web_application_target>
+      </request>
+      <response>
+        <create_web_application_target_response status="201"
+                                                status_text="OK, resource created"
+                                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_web_application_target_response>
+      </response>
+    </example>
+    <example>
+      <summary>Create a web application target with multiple URLs and exclusions</summary>
+      <request>
+        <create_web_application_target>
+          <name>Example Web Application</name>
+          <comment>Created for web application scanning</comment>
+          <urls>https://example.com,https://example.com/app</urls>
+          <exclude_urls>https://example.com/logout,https://example.com/admin</exclude_urls>
+        </create_web_application_target>
+      </request>
+      <response>
+        <create_web_application_target_response status="201"
+                                                status_text="OK, resource created"
+                                                id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_web_application_target_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
   @IF_ENABLE_AGENTS@
   <command>
     <name>delete_agent_group</name>
@@ -8446,6 +8574,71 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_WEB_APPLICATION_SCANNING@
+  <command>
+    <name>delete_web_application_target</name>
+    <summary>Delete a web application target</summary>
+    <description>
+      <p>
+        The client uses the delete_web_application_target command to delete an
+        existing web application target.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>web_application_target_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>ultimate</name>
+        <summary>Whether to remove entirely, or move to the trashcan</summary>
+        <type>boolean</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a web application target</summary>
+      <request>
+        <delete_web_application_target web_application_target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_web_application_target>
+      </request>
+      <response>
+        <delete_web_application_target_response status="200" status_text="OK"/>
+      </response>
+    </example>
+    <example>
+      <summary>Permanently delete a web application target</summary>
+      <request>
+        <delete_web_application_target web_application_target_id="267a3405-e84a-47da-97b2-5fa0d2e8995e"
+                                       ultimate="1">
+        </delete_web_application_target>
+      </request>
+      <response>
+        <delete_web_application_target_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
   <command>
     <name>describe_auth</name>
     <summary>Describe authentication methods</summary>
@@ -33214,6 +33407,529 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_WEB_APPLICATION_SCANNING@
+  <command>
+    <name>get_web_application_targets</name>
+    <summary>Get one or many web application targets</summary>
+    <description>
+      The client uses the get_web_application_targets command to get web
+      application target information.
+    </description>
+    <pattern>
+      <attrib>
+        <name>web_application_target_id</name>
+        <summary>ID of single web application target to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use to filter query</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Number of items to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>tag</name>
+            <type>text</type>
+            <summary>
+              Name and optional "=" separated value of an attached tag
+              (e.g. "mytag" or "mytag=myvalue")
+            </summary>
+          </column>
+          <column>
+            <name>tag_id</name>
+            <type>UUID</type>
+            <summary>
+              UUID of an attached tag
+            </summary>
+          </column>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>name</type>
+            <summary>Name</summary>
+          </column>
+          <column>
+            <name>comment</name>
+            <type>text</type>
+            <summary>Comment text</summary>
+          </column>
+          <column>
+            <name>created</name>
+            <type>iso_time</type>
+            <summary>Creation time</summary>
+          </column>
+          <column>
+            <name>modified</name>
+            <type>iso_time</type>
+            <summary>Modification time</summary>
+          </column>
+          <column>
+            <name>owner</name>
+            <type>name</type>
+            <summary>Name of the owner</summary>
+          </column>
+          <column>
+            <name>urls</name>
+            <type>text</type>
+            <summary>Comma-separated list of web application URLs</summary>
+          </column>
+          <column>
+            <name>exclude_urls</name>
+            <type>text</type>
+            <summary>Comma-separated list of excluded URLs</summary>
+          </column>
+          <column>
+            <name>credential_name</name>
+            <type>name</type>
+            <summary>Name of the credential</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter query</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>trash</name>
+        <summary>Whether to get the trashcan web application targets instead</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Whether to include list of tasks that use the web application target</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>web_application_target</e></any>
+        <e>filters</e>
+        <e>sort</e>
+        <e>web_application_targets</e>
+        <e>web_application_target_count</e>
+      </pattern>
+      <ele>
+        <name>web_application_target</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <o><e>user_tags</e></o>
+          <e>urls</e>
+          <e>exclude_urls</e>
+          <e>credential</e>
+          <o><e>tasks</e></o>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the web application target</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the owner</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The name of the web application target</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>The comment on the web application target</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Date and time the target was created</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Date and time the target was last modified</summary>
+          <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>urls</name>
+          <summary>A comma-separated list of web application URLs</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>exclude_urls</name>
+          <summary>A comma-separated list of URLs to exclude</summary>
+          <pattern>
+            text
+          </pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the target is writable</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether any tasks are using the web application target</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>permissions</name>
+          <summary>
+            Permissions that the current user has on the web application target
+          </summary>
+          <pattern>
+            <any><e>permission</e></any>
+          </pattern>
+          <ele>
+            <name>permission</name>
+            <pattern>
+              <e>name</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the permission</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>user_tags</name>
+          <summary>Info on tags attached to the web application target</summary>
+          <pattern>
+            <e>count</e>
+            <any><e>tag</e></any>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of attached tags</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>tag</name>
+            <summary>
+              Short info on an individual tag
+              (only if details were requested)
+            </summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <summary>UUID of the tag</summary>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <e>value</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>Name of the tag (usually namespace:predicate)</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Value of the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment for the tag</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>credential</name>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <comment>
+                A UUID if there is a credential, otherwise the empty string
+              </comment>
+              <type>uuid_or_empty</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the credential</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the credential</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the credential is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>tasks</name>
+          <summary>All tasks using the web application target</summary>
+          <pattern>
+            <any><e>task</e></any>
+          </pattern>
+          <ele>
+            <name>task</name>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <type>uuid</type>
+                <required>1</required>
+              </attrib>
+              <e>name</e>
+              <o><e>permissions</e></o>
+            </pattern>
+            <ele>
+              <name>name</name>
+              <summary>The name of the task</summary>
+              <pattern><t>name</t></pattern>
+            </ele>
+            <ele>
+              <name>permissions</name>
+              <summary>Permissions the user has on the task</summary>
+              <pattern></pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else 0</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>term</e>
+          <o><e>name</e></o>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Filter name, if applicable</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>web_application_targets</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First target</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of web application targets</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>web_application_target_count</name>
+        <pattern>
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of web application targets after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of web application targets on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get one or many web application targets</summary>
+      <request>
+        <get_web_application_targets></get_web_application_targets>
+      </request>
+      <response>
+        <get_web_application_targets_response status="200" status_text="OK">
+          <web_application_target id="b493b7a8-7489-11df-a3ec-002264764cea">
+            <name>Web application target</name>
+            <comment></comment>
+            <creation_time>2018-08-29T20:21:33Z</creation_time>
+            <modification_time>2018-08-29T20:21:33Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <urls>https://example.com,https://example.com/app</urls>
+            <exclude_urls>https://example.com/logout</exclude_urls>
+            <credential id="">
+              <name></name>
+              <trash>0</trash>
+            </credential>
+          </web_application_target>
+          <truncated>...</truncated>
+        </get_web_application_targets_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single web application target, including tasks using the target</summary>
+      <request>
+        <get_web_application_targets web_application_target_id="1f28d970-17ef-4c69-ba8a-13827059f2b9" tasks="1">
+        </get_web_application_targets>
+      </request>
+      <response>
+        <get_web_application_targets_response status="200" status_text="OK">
+          <web_application_target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+            <name>Example Web Application</name>
+            <comment>Created for web application scanning</comment>
+            <creation_time>2018-08-29T20:21:33Z</creation_time>
+            <modification_time>2018-08-29T20:21:33Z</modification_time>
+            <writable>0</writable>
+            <in_use>1</in_use>
+            <urls>https://example.com,https://example.com/app</urls>
+            <exclude_urls>https://example.com/logout</exclude_urls>
+            <credential id="">
+              <name></name>
+              <trash>0</trash>
+            </credential>
+            <tasks>
+              <task id="13bb418a-4220-4575-b35b-ec398bff7417">
+                <name>Web application scan task</name>
+              </task>
+              <truncated>...</truncated>
+            </tasks>
+          </web_application_target>
+        </get_web_application_targets_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
   <command>
     <name>help</name>
     <summary>Get the help text</summary>
@@ -36713,6 +37429,113 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_WEB_APPLICATION_SCANNING@
+  <command>
+    <name>modify_web_application_target</name>
+    <summary>Modify an existing web application target</summary>
+    <description>
+      <p>
+        The client uses the modify_web_application_target command to change an
+        existing web application target.
+      </p>
+      <p>
+        Web application targets are URL-based targets for web application
+        scanning.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>web_application_target_id</name>
+        <summary>ID of web application target to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>comment</e></o>
+      <o><e>name</e></o>
+      <o><e>urls</e></o>
+      <o><e>exclude_urls</e></o>
+      <o><e>credential</e></o>
+    </pattern>
+    <ele>
+      <name>name</name>
+      <summary>Name of the web application target</summary>
+      <pattern>
+        <t>name</t>
+      </pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on the web application target</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>urls</name>
+      <summary>Comma-separated list of web application URLs</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>exclude_urls</name>
+      <summary>Comma-separated list of URLs to exclude</summary>
+      <pattern>
+        text
+      </pattern>
+    </ele>
+    <ele>
+      <name>credential</name>
+      <summary>Credential to use for the web application target</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify the name of a web application target</summary>
+      <request>
+        <modify_web_application_target web_application_target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <name>Web Application Target New</name>
+        </modify_web_application_target>
+      </request>
+      <response>
+        <modify_web_application_target_response status="200" status_text="OK">
+        </modify_web_application_target_response>
+      </response>
+    </example>
+    <example>
+      <summary>Modify URLs and excluded URLs of a web application target</summary>
+      <request>
+        <modify_web_application_target web_application_target_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+          <urls>https://example.com,https://example.com/app</urls>
+          <exclude_urls>https://example.com/logout,https://example.com/admin</exclude_urls>
+        </modify_web_application_target>
+      </request>
+      <response>
+        <modify_web_application_target_response status="200" status_text="OK">
+        </modify_web_application_target_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
   <command>
     <name>move_task</name>
     <summary>
