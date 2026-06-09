@@ -545,7 +545,11 @@ if(ENABLE_WEB_APPLICATION_SCANNING)
     $<TARGET_OBJECTS:all-misc-obj>
     $<TARGET_OBJECTS:all-sql-obj>
   )
-  add_unit_test(manage-web-application-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+  add_unit_test(
+    manage-web-application-targets
+    "${ALL_OBJECTS}"
+    "${ALL_MANAGE_SRC}"
+  )
 endif()
 
 set(
