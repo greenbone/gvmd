@@ -215,6 +215,7 @@ create_the_key (lsc_crypt_ctx_t ctx)
 
   log_gpgme (G_LOG_LEVEL_INFO, 0, "starting key generation ...");
   err = gpgme_op_genkey (ctx->encctx, parms, NULL, NULL);
+  g_free (parms);
   if (err)
     {
       log_gpgme(G_LOG_LEVEL_WARNING, err, "error creating OpenPGP key '%s'",
