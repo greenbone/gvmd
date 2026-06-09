@@ -338,6 +338,10 @@ if(ENABLE_AGENTS)
   )
 endif()
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  list(APPEND ALL_GMP_SRC gmp_web_application_targets.c)
+endif()
+
 if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
 endif()

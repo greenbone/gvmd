@@ -102,6 +102,7 @@
 #include "gmp_report_vulns.h"
 #include "gmp_tickets.h"
 #include "gmp_tls_certificates.h"
+#include "gmp_web_application_targets.h"
 #include "manage.h"
 #include "manage_acl.h"
 #include "manage_alerts.h"
@@ -1829,6 +1830,7 @@ typedef struct
   int scanners;      ///< Boolean.  Whether to return scanners using credential.
   int targets;       ///< Boolean.  Whether to return targets using credential.
   int oci_image_targets; ///< Boolean.  Whether to return OCI image targets.
+  int web_application_targets; ///< Boolean.  Whether to return Web App targets.
 } get_credentials_data_t;
 
 /**
@@ -4496,6 +4498,9 @@ typedef enum
   CLIENT_CREATE_USER_ROLE,
   CLIENT_CREATE_USER_SOURCES,
   CLIENT_CREATE_USER_SOURCES_SOURCE,
+#if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_CREATE_WEB_APPLICATION_TARGET,
+#endif
 #if ENABLE_AGENTS
   CLIENT_DELETE_AGENT_GROUP,
   CLIENT_DELETE_AGENT,
@@ -4524,6 +4529,9 @@ typedef enum
   CLIENT_DELETE_TICKET,
   CLIENT_DELETE_TLS_CERTIFICATE,
   CLIENT_DELETE_USER,
+#if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_DELETE_WEB_APPLICATION_TARGET,
+#endif
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
 #if ENABLE_AGENTS
@@ -4586,6 +4594,9 @@ typedef enum
   CLIENT_GET_VERSION,
   CLIENT_GET_VERSION_AUTHENTIC,
   CLIENT_GET_VULNS,
+#if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_GET_WEB_APPLICATION_TARGETS,
+#endif
   CLIENT_HELP,
   CLIENT_LOGOUT,
 #if ENABLE_AGENTS
@@ -4782,6 +4793,9 @@ typedef enum
   CLIENT_MODIFY_USER_ROLE,
   CLIENT_MODIFY_USER_SOURCES,
   CLIENT_MODIFY_USER_SOURCES_SOURCE,
+#if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_MODIFY_WEB_APPLICATION_TARGET,
+#endif
   CLIENT_MOVE_TASK,
   CLIENT_RESTORE,
   CLIENT_RESUME_TASK,
@@ -5110,6 +5124,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             create_user_data->roles = make_array ();
             create_user_data->hosts_allow = 0;
           }
+#if ENABLE_WEB_APPLICATION_SCANNING
+        else if (strcasecmp ("CREATE_WEB_APPLICATION_TARGET", element_name) ==
+                 0)
+          {
+            create_web_application_target_start (gmp_parser, attribute_names,
+                                                 attribute_values);
+            set_client_state (CLIENT_CREATE_WEB_APPLICATION_TARGET);
+          }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
 #if ENABLE_AGENTS
         else if (strcasecmp ("DELETE_AGENT_GROUP", element_name) == 0)
           {
@@ -5380,6 +5404,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &delete_user_data->inheritor_name);
             set_client_state (CLIENT_DELETE_USER);
           }
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+        else if (strcasecmp ("DELETE_WEB_APPLICATION_TARGET", element_name) == 0)
+          {
+            delete_start ("web_application_target", "Web Application Target",
+                          attribute_names, attribute_values);
+            set_client_state (CLIENT_DELETE_WEB_APPLICATION_TARGET);
+          }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
@@ -5572,6 +5605,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               get_credentials_data->oci_image_targets = 0;
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+            if (find_attribute (attribute_names, attribute_values,
+                                "web_application_targets", &attribute))
+              get_credentials_data->web_application_targets = strcmp (attribute, "0");
+            else
+              get_credentials_data->web_application_targets = 0;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
             append_attribute (attribute_names, attribute_values, "format",
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
@@ -6122,6 +6162,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_values);
             set_client_state (CLIENT_GET_VULNS);
           }
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      ELSE_GET_START (web_application_targets, WEB_APPLICATION_TARGETS)
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("HELP", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "format",
@@ -6345,6 +6389,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &modify_user_data->user_id);
             set_client_state (CLIENT_MODIFY_USER);
           }
+#if ENABLE_WEB_APPLICATION_SCANNING
+        else if (strcasecmp ("MODIFY_WEB_APPLICATION_TARGET", element_name) ==
+                 0)
+          {
+            modify_web_application_target_start (gmp_parser,
+                                                 attribute_names,
+                                                 attribute_values);
+            set_client_state (CLIENT_MODIFY_WEB_APPLICATION_TARGET);
+          }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("MOVE_TASK", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "task_id",
@@ -8417,6 +8471,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_CREATE_WEB_APPLICATION_TARGET:
+        create_web_application_target_element_start (
+          gmp_parser,
+          element_name,
+          attribute_names,
+          attribute_values);
+        break;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
 #if ENABLE_AGENTS
       case CLIENT_DELETE_AGENT:
         delete_agent_element_start (gmp_parser, element_name,
@@ -8536,6 +8600,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_OVERRIDE_NVT);
           }
         ELSE_READ_OVER;
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_MODIFY_WEB_APPLICATION_TARGET:
+        modify_web_application_target_element_start (
+          gmp_parser,
+          element_name,
+          attribute_names,
+          attribute_values);
+        break;
+#endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_RUN_WIZARD:
         if (strcasecmp ("MODE", element_name) == 0)
@@ -13283,6 +13357,36 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           cleanup_iterator (&oci_image_targets);
 
           SEND_TO_CLIENT_OR_FAIL ("</oci_image_targets>");
+        }
+#endif
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      if (get_credentials_data->web_application_targets)
+        {
+          iterator_t web_app_targets;
+
+          SENDF_TO_CLIENT_OR_FAIL ("<web_application_targets>");
+          init_credential_web_application_target_iterator
+            (&web_app_targets, get_iterator_resource (&credentials), 0);
+          while (next (&web_app_targets))
+            {
+              SENDF_TO_CLIENT_OR_FAIL
+              ("<web_application_target id=\"%s\">"
+               "<name>%s</name>",
+               credential_web_application_target_iterator_uuid (&web_app_targets
+               ),
+               credential_web_application_target_iterator_name (&web_app_targets
+               ));
+              if (credential_web_application_target_iterator_readable (
+                &web_app_targets))
+                SEND_TO_CLIENT_OR_FAIL ("</web_application_target>");
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<permissions/>"
+                "</web_application_target>");
+            }
+          cleanup_iterator (&web_app_targets);
+
+          SEND_TO_CLIENT_OR_FAIL ("</web_application_targets>");
         }
 #endif
       SEND_TO_CLIENT_OR_FAIL ("</credential>");
@@ -21884,6 +21988,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         delete_user_data_reset (delete_user_data);
         set_client_state (CLIENT_AUTHENTIC);
         break;
+#if ENABLE_WEB_APPLICATION_SCANNING
+    case CLIENT_DELETE_WEB_APPLICATION_TARGET:
+      delete_run (gmp_parser, error);
+      set_client_state (CLIENT_AUTHENTIC);
+      break;
+#endif
 
       case CLIENT_DESCRIBE_AUTH:
         {
@@ -22231,6 +22341,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_VULNS:
         handle_get_vulns (gmp_parser, error);
         break;
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      CASE_GET_END (WEB_APPLICATION_TARGETS, web_application_targets);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
       case CLIENT_HELP:
         if (acl_user_may ("help") == 0)
@@ -25834,6 +25948,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_CREATE_USER_SOURCES);
         break;
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_CREATE_WEB_APPLICATION_TARGET:
+        if (create_web_application_target_element_end (
+          gmp_parser,
+          error,
+          element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+#endif //ENABLE_WEB_APPLICATION_SCANNING
+
 #if ENABLE_AGENTS
       case CLIENT_DELETE_AGENT:
         if (delete_agent_element_end (gmp_parser, error, element_name))
@@ -28667,6 +28791,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_MODIFY_USER_SOURCES);
         break;
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_MODIFY_WEB_APPLICATION_TARGET:
+        modify_web_application_target_element_end (gmp_parser,
+                                                   error,
+                                                   element_name);
+        break;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
       case CLIENT_MOVE_TASK:
         if (move_task_data->task_id == NULL
             || strcmp (move_task_data->task_id, "") == 0)
@@ -30219,6 +30351,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_USER_SOURCES_SOURCE,
               &create_user_data->current_source);
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_CREATE_WEB_APPLICATION_TARGET:
+        create_web_application_target_element_text (text, text_len);
+        break;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
       case CLIENT_GET_AGGREGATES_DATA_COLUMN:
         {
           GList *last = g_list_last (get_aggregates_data->data_columns);
@@ -30513,6 +30651,12 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       case CLIENT_MODIFY_TLS_CERTIFICATE:
         modify_tls_certificate_element_text (text, text_len);
         break;
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      case CLIENT_MODIFY_WEB_APPLICATION_TARGET:
+        modify_web_application_target_element_text (text, text_len);
+        break;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
       APPEND (CLIENT_RUN_WIZARD_MODE,
               &run_wizard_data->mode);
