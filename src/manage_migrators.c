@@ -3826,6 +3826,25 @@ migrate_273_to_274 ()
       sql_rollback ();
       return -1;
     }
+
+  /* Create old asset_snapshots if not exists */
+  sql ("CREATE TABLE IF NOT EXISTS asset_snapshots"
+      " (id SERIAL PRIMARY KEY,"
+      "  uuid text UNIQUE NOT NULL,"
+      "  task_id integer,"
+      "  report_id integer,"
+      "  asset_type integer NOT NULL,"
+      "  asset_key text,"
+      "  ip_address text,"
+      "  hostname text,"
+      "  mac_address text,"
+      "  agent_id text,"
+      "  container_digest text,"
+      "  creation_time integer NOT NULL,"
+      "  modification_time integer NOT NULL,"
+      "  scanner integer"
+      ");");
+
   /* Create the new identifier table if npt exists. */
 
   sql ("CREATE TABLE IF NOT EXISTS asset_snapshot_identifiers"
