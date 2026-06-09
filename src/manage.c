@@ -831,6 +831,13 @@ check_scanner_feature (scanner_type_t scanner_type)
       return SCANNER_FEATURE_OK;
     }
 
+  if (scanner_type == SCANNER_TYPE_WEB_APPLICATION)
+    {
+      if (!feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+        return SCANNER_FEATURE_WEB_APPLICATION_DISABLED;
+      return SCANNER_FEATURE_OK;
+    }
+
   return SCANNER_FEATURE_OK;
 }
 
@@ -4338,6 +4345,7 @@ manage_process_report_imports ()
           g_debug ("%s: Report %llu is already being processed",
                    __func__,
                    report);
+          g_free (lockfile_path);
           continue;
         }
       if (ret < 0)
@@ -4346,6 +4354,7 @@ manage_process_report_imports ()
                       __func__,
                       report);
           cleanup_iterator (&reports);
+          g_free (lockfile_path);
           return;
         }
 
@@ -4433,6 +4442,7 @@ manage_process_report_imports ()
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            g_free (lockfile_path);
             continue;
           }
     }
@@ -4565,6 +4575,7 @@ manage_rebuild_gvmd_data_from_feed (const char *types,
       if (error_msg)
         *error_msg = g_strdup ("Error setting up log config or"
                                " database connection.");
+      feed_lockfile_unlock (&lockfile);
       return -1;
     }
 
@@ -7052,6 +7063,7 @@ stop_openvasd_task (task_t task)
   if (!connector)
     {
       ret = -1;
+      g_free (scan_id);
       goto end_stop_openvasd;
     }
 
@@ -7331,7 +7343,7 @@ launch_agent_control_task (task_t task,
   scanner_t scanner = 0;
   int ret = -1;
 
-  if (report_id) *report_id = NULL;
+  *report_id = NULL;
 
   // Get scanner
   scanner = task_scanner (task);
@@ -7396,7 +7408,7 @@ launch_agent_control_task (task_t task,
         goto make_report;
       }
 
-    if (report_id) *report_id = g_strdup (scan_id);
+    *report_id = g_strdup (scan_id);
     g_free (scan_id);
   }
 

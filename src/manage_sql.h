@@ -80,7 +80,15 @@
  */
 #define SCANNER_UUID_OPENVASD_DEFAULT "8154d8e3-30ee-4959-9151-1863c89a8e62"
 
+/**
+ * @brief UUID of 'Container Image Default' scanner.
+ */
 #define SCANNER_UUID_CONTAINER_IMAGE_DEFAULT "1facb485-10e8-4520-9110-66f929d9ac2e"
+
+/**
+ * @brief UUID of 'Web Application Default' scanner.
+ */
+#define SCANNER_UUID_WEB_APPLICATION_DEFAULT "c0e29580-6183-43e5-a081-c781ac2b4623"
 
 /**
  * @brief UUID of 'CVE' scanner.
