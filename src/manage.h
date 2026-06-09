@@ -66,6 +66,9 @@
 #include "manage_container_image_scanner.h"
 #endif
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+#include "manage_web_application_targets.h"
+#endif
 /**
  * @brief OID of ping_host.nasl
  */
