@@ -39,10 +39,9 @@
  * @return A member of create_web_application_target_return_t.
  */
 create_web_application_target_resp_t
-create_web_application_target
-  ( web_application_target_data_t data,
-   web_application_target_t *web_application_target,
-   gchar **error_message)
+create_web_application_target (web_application_target_data_t data,
+                               web_application_target_t *web_application_target,
+                               gchar **error_message)
 {
   web_application_target_t new_web_application_target;
   credential_t credential = 0;
@@ -183,11 +182,11 @@ create_web_application_target
  *         target, 99 permission denied, -1 error.
  */
 int
-copy_web_application_target
-  (const char *name,
-   const char *comment,
-   const char *web_application_target_id,
-   web_application_target_t *new_web_application_target)
+copy_web_application_target (const char *name,
+                             const char *comment,
+                             const char *web_application_target_id,
+                             web_application_target_t *
+                             new_web_application_target)
 {
   int ret;
   web_application_target_t old_web_application_target;
@@ -218,9 +217,8 @@ copy_web_application_target
  * @return A member of modify_web_application_target_return_t.
  */
 modify_web_application_target_resp_t
-modify_web_application_target
-  (web_application_target_data_t data,
-   gchar **error_message)
+modify_web_application_target (web_application_target_data_t data,
+                               gchar **error_message)
 {
   web_application_target_t web_application_target;
   credential_t credential;
@@ -237,10 +235,9 @@ modify_web_application_target
     }
 
   web_application_target = 0;
-  if (find_web_application_target_with_permission
-        (data->uuid,
-         &web_application_target,
-         "modify_web_application_target"))
+  if (find_web_application_target_with_permission (data->uuid,
+                                                   &web_application_target,
+                                                   "modify_web_application_target"))
     {
       sql_rollback ();
       return MODIFY_WEB_APPLICATION_TARGET_INTERNAL_ERROR;
@@ -422,8 +419,8 @@ modify_web_application_target
  *         to find target, 99 permission denied, -1 error.
  */
 int
-delete_web_application_target
-  (const char *web_application_target_id, int ultimate)
+delete_web_application_target (
+  const char *web_application_target_id, int ultimate)
 {
   web_application_target_t web_application_target = 0;
 
@@ -435,10 +432,9 @@ delete_web_application_target
       return 99;
     }
 
-  if (find_web_application_target_with_permission
-        (web_application_target_id,
-         &web_application_target,
-         "delete_web_application_target"))
+  if (find_web_application_target_with_permission (web_application_target_id,
+                                                   &web_application_target,
+                                                   "delete_web_application_target"))
     {
       sql_rollback ();
       return -1;
@@ -466,11 +462,12 @@ delete_web_application_target
           return 0;
         }
 
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE web_application_target = %llu"
-                   " AND web_application_target_location = "
-                   G_STRINGIFY (LOCATION_TRASH) ";",
-                   web_application_target))
+      if (sql_int_ps ("SELECT count(*) FROM tasks"
+                      " WHERE web_application_target = $1"
+                      " AND web_application_target_location = "
+                      G_STRINGIFY (LOCATION_TRASH) ";",
+                      SQL_RESOURCE_PARAM (web_application_target),
+                      NULL))
         {
           sql_rollback ();
           return 1;
@@ -484,8 +481,10 @@ delete_web_application_target
                             web_application_target,
                             LOCATION_TRASH);
 
-      sql ("DELETE FROM web_application_targets_trash WHERE id = %llu;",
-           web_application_target);
+      sql_ps ("DELETE FROM web_application_targets_trash"
+              " WHERE id = $1;",
+              SQL_RESOURCE_PARAM (web_application_target),
+              NULL);
 
       sql_commit ();
       return 0;
@@ -493,52 +492,60 @@ delete_web_application_target
 
   if (ultimate == 0)
     {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE web_application_target = %llu"
-                   " AND web_application_target_location = "
-                   G_STRINGIFY (LOCATION_TABLE)
-                   " AND hidden = 0;",
-                   web_application_target))
+      web_application_target_t trash_web_application_target;
+
+      if (sql_int_ps ("SELECT count(*) FROM tasks"
+                      " WHERE web_application_target = $1"
+                      " AND web_application_target_location = "
+                      G_STRINGIFY (LOCATION_TABLE)
+                      " AND hidden = 0;",
+                      SQL_RESOURCE_PARAM (web_application_target),
+                      NULL))
         {
           sql_rollback ();
           return 1;
         }
 
-      sql ("INSERT INTO web_application_targets_trash"
-           " (uuid, owner, name, urls, exclude_urls,"
-           "  comment, credential, credential_location,"
-           "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, urls, exclude_urls,"
-           " comment, credential, " G_STRINGIFY (LOCATION_TABLE) ","
-           " creation_time, modification_time"
-           " FROM web_application_targets WHERE id = %llu;",
-           web_application_target);
+      sql_ps ("INSERT INTO web_application_targets_trash"
+              " (uuid, owner, name, urls, exclude_urls,"
+              "  comment, credential, credential_location,"
+              "  creation_time, modification_time)"
+              " SELECT uuid, owner, name, urls, exclude_urls,"
+              " comment, credential, " G_STRINGIFY (LOCATION_TABLE) ","
+              " creation_time, modification_time"
+              " FROM web_application_targets WHERE id = $1;",
+              SQL_RESOURCE_PARAM (web_application_target),
+              NULL);
 
-      sql ("UPDATE tasks"
-           " SET web_application_target = %llu,"
-           "     web_application_target_location = "
-           G_STRINGIFY (LOCATION_TRASH)
-           " WHERE web_application_target = %llu"
-           " AND web_application_target_location = "
-           G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           web_application_target);
+      trash_web_application_target = sql_last_insert_id ();
+
+      sql_ps ("UPDATE tasks"
+              " SET web_application_target = $1,"
+              "     web_application_target_location = "
+              G_STRINGIFY (LOCATION_TRASH)
+              " WHERE web_application_target = $2"
+              " AND web_application_target_location = "
+              G_STRINGIFY (LOCATION_TABLE) ";",
+              SQL_RESOURCE_PARAM (trash_web_application_target),
+              SQL_RESOURCE_PARAM (web_application_target),
+              NULL);
 
       permissions_set_locations ("web_application_target",
                                  web_application_target,
-                                 sql_last_insert_id (),
+                                 trash_web_application_target,
                                  LOCATION_TRASH);
 
       tags_set_locations ("web_application_target",
                           web_application_target,
-                          sql_last_insert_id (),
+                          trash_web_application_target,
                           LOCATION_TRASH);
     }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE web_application_target = %llu"
-                    " AND web_application_target_location = "
-                    G_STRINGIFY (LOCATION_TABLE),
-                    web_application_target))
+  else if (sql_int_ps ("SELECT count(*) FROM tasks"
+                       " WHERE web_application_target = $1"
+                       " AND web_application_target_location = "
+                       G_STRINGIFY (LOCATION_TABLE) ";",
+                       SQL_RESOURCE_PARAM (web_application_target),
+                       NULL))
     {
       sql_rollback ();
       return 1;
@@ -554,8 +561,9 @@ delete_web_application_target
                             LOCATION_TABLE);
     }
 
-  sql ("DELETE FROM web_application_targets WHERE id = %llu;",
-       web_application_target);
+  sql_ps ("DELETE FROM web_application_targets WHERE id = $1;",
+          SQL_RESOURCE_PARAM (web_application_target),
+          NULL);
 
   sql_commit ();
   return 0;
@@ -588,58 +596,65 @@ restore_web_application_target (const char *web_application_target_id)
   if (resource == 0)
     return 2;
 
-  if (sql_int ("SELECT credential_location = "
-               G_STRINGIFY (LOCATION_TRASH)
-               " FROM web_application_targets_trash WHERE id = %llu;",
-               resource))
+  if (sql_int_ps ("SELECT credential_location = "
+                  G_STRINGIFY (LOCATION_TRASH)
+                  " FROM web_application_targets_trash WHERE id = $1;",
+                  SQL_RESOURCE_PARAM (resource),
+                  NULL))
     {
       sql_rollback ();
       return 1;
     }
 
-  if (sql_int ("SELECT count(*) FROM web_application_targets"
-               " WHERE name ="
-               " (SELECT name FROM web_application_targets_trash"
-               "  WHERE id = %llu)"
-               " AND " ACL_USER_OWNS () ";",
-               resource,
-               current_credentials.uuid))
+  if (sql_int_ps ("SELECT count(*) FROM web_application_targets"
+                  " WHERE name ="
+                  " (SELECT name FROM web_application_targets_trash"
+                  "  WHERE id = $1)"
+                  " AND owner ="
+                  " (SELECT users.id FROM users"
+                  "  WHERE users.uuid = $2);",
+                  SQL_RESOURCE_PARAM (resource),
+                  SQL_STR_PARAM (current_credentials.uuid),
+                  NULL))
     {
       sql_rollback ();
       return 3;
     }
 
-  if (sql_int ("SELECT count(*) FROM web_application_targets"
-               " WHERE uuid ="
-               " (SELECT uuid FROM web_application_targets_trash"
-               "  WHERE id = %llu);",
-               resource))
+  if (sql_int_ps ("SELECT count(*) FROM web_application_targets"
+                  " WHERE uuid ="
+                  " (SELECT uuid FROM web_application_targets_trash"
+                  "  WHERE id = $1);",
+                  SQL_RESOURCE_PARAM (resource),
+                  NULL))
     {
       sql_rollback ();
       return 4;
     }
 
-  sql ("INSERT INTO web_application_targets"
-       " (uuid, owner, name, comment, creation_time, modification_time,"
-       "  urls, exclude_urls, credential)"
-       " SELECT"
-       "  uuid, owner, name, comment, creation_time, modification_time,"
-       "  urls, exclude_urls, credential"
-       " FROM web_application_targets_trash"
-       " WHERE id = %llu;",
-       resource);
+  sql_ps ("INSERT INTO web_application_targets"
+          " (uuid, owner, name, comment, creation_time, modification_time,"
+          "  urls, exclude_urls, credential)"
+          " SELECT"
+          "  uuid, owner, name, comment, creation_time, modification_time,"
+          "  urls, exclude_urls, credential"
+          " FROM web_application_targets_trash"
+          " WHERE id = $1;",
+          SQL_RESOURCE_PARAM (resource),
+          NULL);
 
   web_application_target = sql_last_insert_id ();
 
-  sql ("UPDATE tasks"
-       " SET web_application_target = %llu,"
-       " web_application_target_location = "
-       G_STRINGIFY (LOCATION_TABLE)
-       " WHERE web_application_target = %llu"
-       " AND web_application_target_location = "
-       G_STRINGIFY (LOCATION_TRASH),
-       web_application_target,
-       resource);
+  sql_ps ("UPDATE tasks"
+          " SET web_application_target = $1,"
+          " web_application_target_location = "
+          G_STRINGIFY (LOCATION_TABLE)
+          " WHERE web_application_target = $2"
+          " AND web_application_target_location = "
+          G_STRINGIFY (LOCATION_TRASH) ";",
+          SQL_RESOURCE_PARAM (web_application_target),
+          SQL_RESOURCE_PARAM (resource),
+          NULL);
 
   permissions_set_locations ("web_application_target",
                              resource,
@@ -651,8 +666,9 @@ restore_web_application_target (const char *web_application_target_id)
                       web_application_target,
                       LOCATION_TABLE);
 
-  sql ("DELETE FROM web_application_targets_trash WHERE id = %llu;",
-       resource);
+  sql_ps ("DELETE FROM web_application_targets_trash WHERE id = $1;",
+          SQL_RESOURCE_PARAM (resource),
+          NULL);
 
   sql_commit ();
   return 0;
@@ -787,12 +803,12 @@ web_application_target_iterator_credential_trash (iterator_t *iterator)
  * @return Newly allocated UUID if available, else NULL.
  */
 char *
-web_application_target_uuid
-  (web_application_target_t web_application_target)
+web_application_target_uuid (web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT uuid FROM web_application_targets"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT uuid FROM web_application_targets"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -803,12 +819,13 @@ web_application_target_uuid
  * @return Newly allocated UUID if available, else NULL.
  */
 char *
-trash_web_application_target_uuid
-  (web_application_target_t web_application_target)
+trash_web_application_target_uuid (
+  web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT uuid FROM web_application_targets_trash"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT uuid FROM web_application_targets_trash"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -819,12 +836,12 @@ trash_web_application_target_uuid
  * @return Newly allocated name if available, else NULL.
  */
 char *
-web_application_target_name
-  (web_application_target_t web_application_target)
+web_application_target_name (web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT name FROM web_application_targets"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT name FROM web_application_targets"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -835,12 +852,13 @@ web_application_target_name
  * @return Newly allocated name if available, else NULL.
  */
 char *
-trash_web_application_target_name
-  (web_application_target_t web_application_target)
+trash_web_application_target_name (
+  web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT name FROM web_application_targets_trash"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT name FROM web_application_targets_trash"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -851,12 +869,12 @@ trash_web_application_target_name
  * @return Newly allocated comment if available, else NULL.
  */
 char *
-web_application_target_comment
-  (web_application_target_t web_application_target)
+web_application_target_comment (web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT comment FROM web_application_targets"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT comment FROM web_application_targets"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -867,12 +885,13 @@ web_application_target_comment
  * @return Newly allocated comment if available, else NULL.
  */
 char *
-trash_web_application_target_comment
-  (web_application_target_t web_application_target)
+trash_web_application_target_comment (
+  web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT comment FROM web_application_targets_trash"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT comment FROM web_application_targets_trash"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -884,12 +903,12 @@ trash_web_application_target_comment
  *         else NULL.
  */
 char *
-web_application_target_urls
-  (web_application_target_t web_application_target)
+web_application_target_urls (web_application_target_t web_application_target)
 {
-  return sql_string ("SELECT urls FROM web_application_targets"
-                     " WHERE id = %llu;",
-                     web_application_target);
+  return sql_string_ps ("SELECT urls FROM web_application_targets"
+                        " WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (web_application_target),
+                        NULL);
 }
 
 /**
@@ -901,8 +920,8 @@ web_application_target_urls
  *         else NULL.
  */
 char *
-web_application_target_exclude_urls
-  (web_application_target_t web_application_target)
+web_application_target_exclude_urls (
+  web_application_target_t web_application_target)
 {
   return sql_string_ps ("SELECT exclude_urls FROM web_application_targets"
                         " WHERE id = $1;",
@@ -918,8 +937,8 @@ web_application_target_exclude_urls
  * @return 1 if readable, else 0.
  */
 int
-trash_web_application_target_readable
-  (web_application_target_t web_application_target)
+trash_web_application_target_readable (
+  web_application_target_t web_application_target)
 {
   char *uuid;
   web_application_target_t found = 0;
@@ -947,15 +966,15 @@ trash_web_application_target_readable
  * @return 1 if in use, else 0.
  */
 int
-web_application_target_in_use
-  (web_application_target_t web_application_target)
+web_application_target_in_use (web_application_target_t web_application_target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE web_application_target = %llu"
-                    " AND web_application_target_location = "
-                    G_STRINGIFY (LOCATION_TABLE)
-                    " AND hidden = 0;",
-                    web_application_target);
+  return !!sql_int_ps ("SELECT count(*) FROM tasks"
+                       " WHERE web_application_target = $1"
+                       " AND web_application_target_location = "
+                       G_STRINGIFY (LOCATION_TABLE)
+                       " AND hidden = 0;",
+                       SQL_RESOURCE_PARAM (web_application_target),
+                       NULL);
 }
 
 /**
@@ -967,14 +986,15 @@ web_application_target_in_use
  * @return 1 if in use, else 0.
  */
 int
-trash_web_application_target_in_use
-  (web_application_target_t web_application_target)
+trash_web_application_target_in_use (
+  web_application_target_t web_application_target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE web_application_target = %llu"
-                    " AND web_application_target_location = "
-                    G_STRINGIFY (LOCATION_TRASH),
-                    web_application_target);
+  return !!sql_int_ps ("SELECT count(*) FROM tasks"
+                       " WHERE web_application_target = $1"
+                       " AND web_application_target_location = "
+                       G_STRINGIFY (LOCATION_TRASH) ";",
+                       SQL_RESOURCE_PARAM (web_application_target),
+                       NULL);
 }
 
 /**
@@ -985,19 +1005,16 @@ trash_web_application_target_in_use
  * @return The credential, or 0 if none or error.
  */
 credential_t
-web_application_target_credential
-  (web_application_target_t web_application_target)
+web_application_target_credential (
+  web_application_target_t web_application_target)
 {
-  credential_t credential;
-
   if (web_application_target == 0)
     return 0;
 
-  credential = sql_int64_0 ("SELECT credential FROM web_application_targets"
-                            " WHERE id = %llu;",
-                            web_application_target);
-
-  return credential;
+  return sql_int64_0_ps ("SELECT credential FROM web_application_targets"
+                         " WHERE id = $1;",
+                         SQL_RESOURCE_PARAM (web_application_target),
+                         NULL);
 }
 
 /**
@@ -1009,9 +1026,9 @@ web_application_target_credential
  * @param[in]  web_application_target  Web application target.
  */
 void
-init_web_application_target_task_iterator
-  (iterator_t *iterator,
-   web_application_target_t web_application_target)
+init_web_application_target_task_iterator (
+  iterator_t *iterator,
+  web_application_target_t web_application_target)
 {
   gchar *available, *with_clause;
   get_data_t get;
