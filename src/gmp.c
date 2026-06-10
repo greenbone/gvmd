@@ -19125,6 +19125,16 @@ send_alive_tests_subelems (int alive_tests,
                                           "</alive_test>");
       return 0;
     }
+#if ENABLE_OPENVASD
+  else if (alive_tests & ALIVE_TEST_HOST_DISCOVERY_IPV6)
+    {
+      SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
+                                          "<alive_test>"
+                                          "Host Discovery IPv6"
+                                          "</alive_test>");
+      return 0;
+    }
+#endif
   else {
     if (alive_tests & ALIVE_TEST_ARP)
       SEND_TO_CLIENT_OR_FAIL_WITH_RETURN (-1,
