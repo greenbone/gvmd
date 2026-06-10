@@ -1814,9 +1814,9 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
       child_node = cpe_match_node_childs_iterator_id (&cpe_match_node_childs);
       check_cpe_match_rule (child_node, match, vulnerable, report_host, host_cpe);
       if (strcmp (operator, "AND") == 0 && !(*match))
-        goto cleanup;
+        goto cleanup_node_childs;
       if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
-        goto cleanup;
+        goto cleanup_node_childs;
     }
 
   init_cpe_match_string_iterator (&cpe_match_ranges, node);
@@ -1855,6 +1855,7 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
           cpe_struct_free (&source);
           cpe_struct_free (&target);
         }
+      cleanup_iterator (&cpe_host_details_products);
       if (*match && cpe_match_string_iterator_vulnerable (&cpe_match_ranges) == 1)
         {
           cpe_struct_t source, target;
@@ -1874,11 +1875,14 @@ check_cpe_match_rule (long long int node, gboolean *match, gboolean *vulnerable,
       g_free (vei);
       g_free (vee);
       if (strcmp (operator, "AND") == 0 && !(*match))
-        goto cleanup;
+        goto cleanup_ranges;
       if (strcmp (operator, "OR") == 0 && (*match) && (*vulnerable))
-        goto cleanup;
+        goto cleanup_ranges;
     }
- cleanup:
+ cleanup_ranges:
+  cleanup_iterator (&cpe_match_ranges);
+ cleanup_node_childs:
+  cleanup_iterator (&cpe_match_node_childs);
   g_free (operator);
 }
 
