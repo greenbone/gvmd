@@ -18630,23 +18630,9 @@ manage_task_remove_file (const gchar *task_id, const char *name)
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
- * @return 0 success, 1 failed to find task, 2 status must be new to edit
- *         scanner, 3 failed to find scanner, 4 failed to find config, 5 status
- *         must be new to edit config, 6 user name validation failed, 7 failed
- *         to find user, 8 failed to find alert, 9 task must be new to modify
- *         alterable state, 10 failed to find group, 11 failed to find schedule,
- *         12 failed to find target, 13 invalid auto_delete value, 14 auto
- *         delete count out of range, 15 config and scanner types mismatch,
- *         16 status must be new to edit target, 17 for import tasks only
- *         certain fields may be edited, 18 failed to find agent group,
- *         19 failed to find OCI image target,
- *         20 cannot set asset preferences for container image task,
- *         21 failed to find web application target,
- *         22 cannot set asset preferences for web application task,
- *         23 target and scanner types mismatch,
- *         -1 error.
+ * @return A member of modify_task_return_t.
  */
-int
+modify_task_return_t
 modify_task (const gchar *task_id, const gchar *name,
              const gchar *comment, const gchar *scanner_id,
              const gchar *target_id, const gchar *config_id,
@@ -18669,9 +18655,9 @@ modify_task (const gchar *task_id, const gchar *name,
 
   task = 0;
   if (find_task_with_permission (task_id, &task, "modify_task"))
-    return -1;
+    return MODIFY_TASK_ERROR;
   if (task == 0)
-    return 1;
+    return MODIFY_TASK_NOT_FOUND;
 
 
   if ((task_target (task) == 0
@@ -18679,23 +18665,23 @@ modify_task (const gchar *task_id, const gchar *name,
        && (oci_image_target_id == NULL)
        && (web_application_target_id == NULL))
       && (alerts->len || schedule_id))
-    return 17;
+    return MODIFY_TASK_IMPORT_TASK_FIELD_RESTRICTION;
 
   switch (modify_task_check_config_scanner (task, config_id, scanner_id))
     {
       case 0:
         break;
       case 1:
-        return 15;
+        return MODIFY_TASK_CONFIG_SCANNER_TYPE_MISMATCH;
       case 2:
-        return 4;
+        return MODIFY_TASK_CONFIG_NOT_FOUND;
       case 3:
-        return 3;
+        return MODIFY_TASK_SCANNER_NOT_FOUND;
       default:
         assert (0);
         /* fallthrough */
       case -1:
-        return -1;
+        return MODIFY_TASK_ERROR;
     }
 
   if (name)
@@ -18713,13 +18699,13 @@ modify_task (const gchar *task_id, const gchar *name,
         }
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
-        return 2;
+        return MODIFY_TASK_SCANNER_STATUS_MUST_BE_NEW;
       else if (find_scanner_with_permission (scanner_id,
                                              &scanner,
                                              "get_scanners"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (scanner == 0)
-        return 3;
+        return MODIFY_TASK_SCANNER_NOT_FOUND;
       else
         set_task_scanner (task, scanner);
     }
@@ -18743,11 +18729,11 @@ modify_task (const gchar *task_id, const gchar *name,
         }
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
-        return 5;
+        return MODIFY_TASK_CONFIG_STATUS_MUST_BE_NEW;
       else if (find_config_with_permission (config_id, &config, "get_configs"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (config == 0)
-        return 4;
+        return MODIFY_TASK_CONFIG_NOT_FOUND;
       else
        set_task_config (task, config);
     }
@@ -18759,13 +18745,13 @@ modify_task (const gchar *task_id, const gchar *name,
           case 0:
             break;
           case 1:
-            return 6;
+            return MODIFY_TASK_USER_NAME_VALIDATION_FAILED;
           case 2:
-            return 7;
+            return MODIFY_TASK_USER_NOT_FOUND;
             break;
           case -1:
           default:
-            return -1;
+            return MODIFY_TASK_ERROR;
         }
     }
 
@@ -18776,17 +18762,17 @@ modify_task (const gchar *task_id, const gchar *name,
           case 0:
             break;
           case 1:
-            return 8;
+            return MODIFY_TASK_ALERT_NOT_FOUND;
           case -1:
           default:
-            return -1;
+            return MODIFY_TASK_ERROR;
         }
     }
 
   if (alterable && (task_alterable (task) != atoi (alterable)))
     {
       if (task_run_status (task) != TASK_STATUS_NEW)
-        return 9;
+        return MODIFY_TASK_ALTERABLE_STATUS_MUST_BE_NEW;
       set_task_alterable (task, strcmp (alterable, "0"));
     }
 
@@ -18797,10 +18783,10 @@ modify_task (const gchar *task_id, const gchar *name,
           case 0:
             break;
           case 1:
-            return 10;
+            return MODIFY_TASK_GROUP_NOT_FOUND;
           case -1:
           default:
-            return -1;
+            return MODIFY_TASK_ERROR;
         }
     }
 
@@ -18816,11 +18802,11 @@ modify_task (const gchar *task_id, const gchar *name,
       else if (find_schedule_with_permission (schedule_id,
                                               &schedule,
                                               "get_schedules"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (schedule == 0)
-        return 11;
+        return MODIFY_TASK_SCHEDULE_NOT_FOUND;
       else if (set_task_schedule (task, schedule, periods))
-        return -1;
+        return MODIFY_TASK_ERROR;
     }
   else if (schedule_periods && strlen (schedule_periods))
     set_task_schedule_periods (task_id,
@@ -18837,15 +18823,16 @@ modify_task (const gchar *task_id, const gchar *name,
         }
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
-        return 16;
-      else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE)
-        return 23;
+        return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
+      else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE
+               || type_of_scanner == SCANNER_TYPE_WEB_APPLICATION)
+        return MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH;
       else if (find_target_with_permission (target_id,
                                             &target,
                                             "get_targets"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (target == 0)
-        return 12;
+        return MODIFY_TASK_TARGET_NOT_FOUND;
       else
         set_task_target (task, target);
     }
@@ -18856,13 +18843,13 @@ modify_task (const gchar *task_id, const gchar *name,
     agent_group = 0;
     if ((task_run_status(task) != TASK_STATUS_NEW)
         && (task_alterable(task) == 0))
-      return 16;
+      return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
     else if (find_agent_group_with_permission(agent_group_id,
                                               &agent_group,
                                               "get_agent_groups"))
-      return -1;
+      return MODIFY_TASK_ERROR;
     else if (agent_group == 0)
-      return 18;
+      return MODIFY_TASK_AGENT_GROUP_NOT_FOUND;
     else
       {
         set_task_agent_group_and_location (task, agent_group);
@@ -18877,13 +18864,13 @@ modify_task (const gchar *task_id, const gchar *name,
 
       if ((task_run_status (task) != TASK_STATUS_NEW)
           && (task_alterable (task) == 0))
-        return 16;
+        return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_oci_image_target_with_permission (oci_image_target_id,
                                                       &oci_image_target,
                                                       "get_oci_image_targets"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (oci_image_target == 0)
-        return 19;
+        return MODIFY_TASK_OCI_IMAGE_TARGET_NOT_FOUND;
       else
         set_task_oci_image_target (task, oci_image_target);
     }
@@ -18896,13 +18883,13 @@ modify_task (const gchar *task_id, const gchar *name,
 
       if ((task_run_status (task) != TASK_STATUS_NEW)
           && (task_alterable (task) == 0))
-        return 16;
+        return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_web_application_target_with_permission (web_application_target_id,
                                                             &web_application_target,
                                                             "get_web_application_targets"))
-        return -1;
+        return MODIFY_TASK_ERROR;
       else if (web_application_target == 0)
-        return 21;
+        return MODIFY_TASK_WEB_APPLICATION_TARGET_NOT_FOUND;
       else
         set_task_web_application_target (task, web_application_target);
     }
@@ -18914,18 +18901,18 @@ modify_task (const gchar *task_id, const gchar *name,
         case 0:
           break;
         case 1:
-          return 13;
+          return MODIFY_TASK_INVALID_AUTO_DELETE_VALUE;
         case 2:
-          return 14;
+          return MODIFY_TASK_AUTO_DELETE_COUNT_OUT_OF_RANGE;
         case 3:
-          return 20;
+          return MODIFY_TASK_CANNOT_SET_ASSET_PREFS_CONTAINER;
         case 4:
-          return 22;
+          return MODIFY_TASK_CANNOT_SET_ASSET_PREFS_WEB_APP;
         default:
-          return -1;
+          return MODIFY_TASK_ERROR;
       }
 
-  return 0;
+  return MODIFY_TASK_OK;
 }
 
 

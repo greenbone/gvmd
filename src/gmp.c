@@ -28578,12 +28578,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
-                case 0:
+                case MODIFY_TASK_OK:
                   log_event ("task", "Task", modify_task_data->task_id,
                              "modified");
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("modify_task"));
                   break;
-                case 1:
+                case MODIFY_TASK_NOT_FOUND:
                   if (send_find_error_to_client ("modify_task", "Task",
                                                  modify_task_data->task_id,
                                                  gmp_parser))
@@ -28592,13 +28592,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
-                case 2:
+                case MODIFY_TASK_SCANNER_STATUS_MUST_BE_NEW:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX
                      ("modify_task",
                       "Status must be New to edit scanner"));
                   break;
-                case 3:
+                case MODIFY_TASK_SCANNER_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "scanner",
                         modify_task_data->scanner_id, gmp_parser))
@@ -28607,7 +28607,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
-                case 4:
+                case MODIFY_TASK_CONFIG_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "config",
                         modify_task_data->config_id, gmp_parser))
@@ -28616,14 +28616,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
-                case 5:
+                case MODIFY_TASK_CONFIG_STATUS_MUST_BE_NEW:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX
                      ("modify_task",
                       "Status must be New to edit config"));
                   break;
-                case 6:
-                case 7:
+                case MODIFY_TASK_USER_NAME_VALIDATION_FAILED:
+                case MODIFY_TASK_USER_NOT_FOUND:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "User name error"));
@@ -28631,7 +28631,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 8:
+                case MODIFY_TASK_ALERT_NOT_FOUND:
                   if (send_find_error_to_client ("modify_task", "alert",
                                                  fail_alert_id, gmp_parser))
                     {
@@ -28642,7 +28642,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 9:
+                case MODIFY_TASK_ALTERABLE_STATUS_MUST_BE_NEW:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Task must be New to modify"
@@ -28651,7 +28651,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 10:
+                case MODIFY_TASK_GROUP_NOT_FOUND:
                   if (send_find_error_to_client ("modify_task", "group",
                                                  fail_group_id, gmp_parser))
                     {
@@ -28662,7 +28662,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 11:
+                case MODIFY_TASK_SCHEDULE_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "schedule",
                         modify_task_data->schedule_id, gmp_parser))
@@ -28674,7 +28674,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 12:
+                case MODIFY_TASK_TARGET_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "target",
                         modify_task_data->target_id, gmp_parser))
@@ -28686,7 +28686,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 13:
+                case MODIFY_TASK_INVALID_AUTO_DELETE_VALUE:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Invalid auto_delete value"));
@@ -28694,7 +28694,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 14:
+                case MODIFY_TASK_AUTO_DELETE_COUNT_OUT_OF_RANGE:
                   SENDF_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Auto Delete count out of range"
@@ -28704,7 +28704,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 15:
+                case MODIFY_TASK_CONFIG_SCANNER_TYPE_MISMATCH:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Config and Scanner types mismatch"));
@@ -28712,7 +28712,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 16:
+                case MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Status must be New to edit Target"));
@@ -28720,7 +28720,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 17:
+                case MODIFY_TASK_IMPORT_TASK_FIELD_RESTRICTION:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "For import tasks only name, comment"
@@ -28730,7 +28730,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "modified");
                   break;
 #if ENABLE_AGENTS
-              case 18 :
+              case MODIFY_TASK_AGENT_GROUP_NOT_FOUND:
                 if (send_find_error_to_client ("modify_task", "agent_group",
                                                modify_task_data->agent_group_id,
                                                gmp_parser))
@@ -28743,7 +28743,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 break;
 #endif /*ENABLE_AGENTS*/
 #if ENABLE_CONTAINER_SCANNING
-                case 19:
+                case MODIFY_TASK_OCI_IMAGE_TARGET_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "oci_image_target",
                         modify_task_data->oci_image_target_id, gmp_parser))
@@ -28755,7 +28755,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 20:
+                case MODIFY_TASK_CANNOT_SET_ASSET_PREFS_CONTAINER:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Asset preferences cannot be set for"
@@ -28766,7 +28766,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
 #endif /* ENABLE_CONTAINER_SCANNING */
 #if ENABLE_WEB_APPLICATION_SCANNING
-                case 21:
+                case MODIFY_TASK_WEB_APPLICATION_TARGET_NOT_FOUND:
                   if (send_find_error_to_client
                        ("modify_task", "web_application_target",
                         modify_task_data->web_application_target_id, gmp_parser))
@@ -28778,7 +28778,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
-                case 22:
+                case MODIFY_TASK_CANNOT_SET_ASSET_PREFS_WEB_APP:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Asset preferences cannot be set for"
@@ -28788,7 +28788,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "modified");
                   break;
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
-                case 23:
+                case MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Target and scanner types mismatch"));
@@ -28797,7 +28797,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "modified");
                   break;
                 default:
-                case -1:
+                case MODIFY_TASK_ERROR:
                   SEND_TO_CLIENT_OR_FAIL
                     (XML_INTERNAL_ERROR ("modify_task"));
                   log_event_fail ("task", "Task",
