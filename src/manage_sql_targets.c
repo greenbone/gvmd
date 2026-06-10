@@ -606,17 +606,25 @@ alive_test_from_array (GPtrArray *alive_tests)
           alive_test_bitfield = ALIVE_TEST_CONSIDER_ALIVE;
           break;
         }
+#if ENABLE_OPENVASD
+      else if (strcasecmp (item, "host_discovery_ipv6") == 0
+               || strcasecmp (item, "Host Discovery IPv6") == 0)
+        {
+          alive_test_bitfield = ALIVE_TEST_HOST_DISCOVERY_IPV6;
+          break;
+        }
+#endif
       else if (strcasecmp (item, "ARP") == 0
           || strcasecmp (item, "ARP Ping") == 0)
         alive_test_bitfield |= ALIVE_TEST_ARP;
-      else if (strcmp (item, "ICMP") == 0
-                || strcmp (item, "ICMP Ping") == 0)
+      else if (strcasecmp (item, "ICMP") == 0
+                || strcasecmp (item, "ICMP Ping") == 0)
         alive_test_bitfield |= ALIVE_TEST_ICMP;
-      else if (strcmp (item, "TCP-ACK Service") == 0
-                || strcmp (item, "TCP-ACK Service Ping") == 0)
+      else if (strcasecmp (item, "TCP-ACK Service") == 0
+                || strcasecmp (item, "TCP-ACK Service Ping") == 0)
         alive_test_bitfield |= ALIVE_TEST_TCP_ACK_SERVICE;
-      else if (strcmp (item, "TCP-SYN Service") == 0
-                || strcmp (item, "TCP-SYN Service Ping") == 0)
+      else if (strcasecmp (item, "TCP-SYN Service") == 0
+                || strcasecmp (item, "TCP-SYN Service Ping") == 0)
         alive_test_bitfield |= ALIVE_TEST_TCP_SYN_SERVICE;
       else
         {
@@ -661,6 +669,11 @@ alive_test_from_string (const char* alive_tests)
     alive_test = ALIVE_TEST_ICMP;
   else if (strcmp (alive_tests, "Consider Alive") == 0)
     alive_test = ALIVE_TEST_CONSIDER_ALIVE;
+#if ENABLE_OPENVASD
+  else if (strcasecmp (alive_tests, "host_discovery_ipv6") == 0
+           || strcasecmp (alive_tests, "Host Discovery IPv6") == 0)
+    alive_test = ALIVE_TEST_HOST_DISCOVERY_IPV6;
+#endif
   else
     return -1;
   return alive_test;
