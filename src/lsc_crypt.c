@@ -611,7 +611,12 @@ gboolean
 lsc_crypt_enckey_exists (lsc_crypt_ctx_t ctx)
 {
   gpgme_key_t key = find_the_key (ctx, TRUE);
-  return key != NULL;
+  if (key)
+    {
+      gpgme_key_unref (key);
+      return TRUE;
+    }
+  return FALSE;
 }
 
 /**
