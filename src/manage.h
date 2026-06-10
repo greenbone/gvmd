@@ -666,10 +666,23 @@ task_oci_image_target_in_trash (task_t);
 void
 set_task_oci_image_target (task_t, oci_image_target_t);
 
+#endif /* ENABLE_CONTAINER_SCANNING */
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+
+web_application_target_t
+task_web_application_target (task_t);
+
+int
+task_web_application_target_in_trash (task_t);
+
+void
+set_task_web_application_target (task_t, web_application_target_t);
+
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
 void
 clear_task_asset_preferences (task_t);
-
-#endif /* ENABLE_CONTAINER_SCANNING */
 
 void
 set_task_scanner (task_t, scanner_t);
@@ -834,7 +847,7 @@ int
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *, array_t *,
-             const gchar *, const gchar *, gchar **, gchar **);
+             const gchar *, const gchar *, const gchar *, gchar **, gchar **);
 
 void
 init_config_file_iterator (iterator_t*, const char*, const char*);

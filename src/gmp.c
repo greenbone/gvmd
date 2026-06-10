@@ -1156,6 +1156,7 @@ typedef struct
   char *target_id;      ///< ID of task target.
   char *agent_group_id; ///< ID of task agent group.
   char *oci_image_target_id;  ///< ID of OCI image target.
+  char *web_application_target_id; ///< ID of web application target.
   task_t task;          ///< ID of new task.
   char *usage_type;     ///< Usage type ("scan" or "audit")
 } create_task_data_t;
@@ -1197,7 +1198,7 @@ create_task_data_reset (create_task_data_t *data)
   free (data->oci_image_target_id);
   free (data->usage_type);
   free (data->agent_group_id);
-
+  free (data->web_application_target_id);
   memset (data, 0, sizeof (create_task_data_t));
 }
 
@@ -3080,6 +3081,7 @@ typedef struct
   char *target_id;     ///< ID of new target for task.
   char *agent_group_id; ///< ID of new agent group for task.
   char *oci_image_target_id; ///< ID of new OCI target for task.
+  char *web_application_target_id; ///< ID of web application target.
   char *task_id;       ///< ID of task to modify.
 } modify_task_data_t;
 
@@ -3121,6 +3123,7 @@ modify_task_data_reset (modify_task_data_t *data)
   free (data->schedule_periods);
   free (data->target_id);
   free (data->oci_image_target_id);
+  free (data->web_application_target_id);
   free (data->task_id);
   free (data->agent_group_id);
 
@@ -4476,6 +4479,9 @@ typedef enum
   #if ENABLE_CONTAINER_SCANNING
   CLIENT_CREATE_TASK_OCI_IMAGE_TARGET,
   #endif /* ENABLE_CONTAINER_SCANNING */
+  #if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_CREATE_TASK_WEB_APPLICATION_TARGET,
+  #endif /* ENABLE_WEB_APPLICATION_SCANNING */
   CLIENT_CREATE_TASK_PREFERENCES,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE,
   CLIENT_CREATE_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -4772,6 +4778,9 @@ typedef enum
   #if ENABLE_CONTAINER_SCANNING
   CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET,
   #endif /* ENABLE_CONTAINER_SCANNING */
+  #if ENABLE_WEB_APPLICATION_SCANNING
+  CLIENT_MODIFY_TASK_WEB_APPLICATION_TARGET,
+  #endif /* ENABLE_WEB_APPLICATION_SCANNING */
   CLIENT_MODIFY_TASK_PREFERENCES,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE,
   CLIENT_MODIFY_TASK_PREFERENCES_PREFERENCE_NAME,
@@ -7270,6 +7279,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_MODIFY_TASK_OCI_IMAGE_TARGET);
           }
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+        else if (strcasecmp ("WEB_APPLICATION_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &modify_task_data->web_application_target_id);
+            set_client_state (CLIENT_MODIFY_TASK_WEB_APPLICATION_TARGET);
+          }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("PREFERENCES", element_name) == 0)
           {
             modify_task_data->preferences = make_array ();
@@ -8356,6 +8373,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_CREATE_TASK_OCI_IMAGE_TARGET);
           }
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+        else if (strcasecmp ("WEB_APPLICATION_TARGET", element_name) == 0)
+          {
+            append_attribute (attribute_names, attribute_values, "id",
+                              &create_task_data->web_application_target_id);
+            set_client_state (CLIENT_CREATE_TASK_WEB_APPLICATION_TARGET);
+          }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("SCHEDULE", element_name) == 0)
           {
             append_attribute (attribute_names, attribute_values, "id",
@@ -19857,6 +19882,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *cs_allow_failed_retrieval;
       gchar *oci_image_target_xml = NULL;
       gchar *agent_group_xml = NULL;
+      gchar *web_application_target_xml = NULL;
 
       ret = get_next (&tasks, &get_tasks_data->get, &first, &count,
                       init_task_iterator);
@@ -20260,6 +20286,69 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               free (task_agent_group_name);
             }
 #endif /* ENABLE_AGENT_GROUPS */
+#if ENABLE_WEB_APPLICATION_SCANNING
+          web_application_target_t web_application_target;
+          int web_application_target_in_trash, web_application_target_available;
+          char *task_web_application_target_uuid, *task_web_application_target_name;
+          gchar *task_web_application_target_name_escaped;
+
+          web_application_target = task_web_application_target (index);
+          web_application_target_in_trash = task_web_application_target_in_trash (index);
+
+          if (web_application_target || web_application_target_in_trash)
+            {
+              web_application_target_available = 1;
+              if (web_application_target_in_trash)
+                {
+                  task_web_application_target_uuid
+                    = trash_web_application_target_uuid (web_application_target);
+                  task_web_application_target_name
+                    = trash_web_application_target_name (web_application_target);
+                  web_application_target_available
+                    = trash_web_application_target_readable (web_application_target);
+                }
+              else if (web_application_target)
+                {
+                  web_application_target_t found;
+                  task_web_application_target_uuid
+                    = web_application_target_uuid (web_application_target);
+                  task_web_application_target_name
+                    = web_application_target_name (web_application_target);
+                  if (find_web_application_target_with_permission (
+                                                    task_web_application_target_uuid,
+                                                    &found,
+                                                    "get_web_application_targets"))
+                    g_error ("%s: GET_TASKS: error finding"
+                            " task web application target, aborting",
+                            __func__);
+                  web_application_target_available = (found > 0);
+                }
+              else
+                {
+                  task_web_application_target_uuid = NULL;
+                  task_web_application_target_name = NULL;
+                }
+              task_web_application_target_name_escaped
+                = task_web_application_target_name
+                    ? g_markup_escape_text (task_web_application_target_name, -1)
+                    : NULL;
+
+              web_application_target_xml = g_strdup_printf
+                ("<web_application_target id=\"%s\">"
+                "<name>%s</name>"
+                "<trash>%i</trash>"
+                "%s"
+                "</web_application_target>",
+                task_web_application_target_uuid ?: "",
+                task_web_application_target_name_escaped ?: "",
+                web_application_target_in_trash,
+                web_application_target_available ? "" : "<permissions/>");
+
+              free (task_web_application_target_name);
+              free (task_web_application_target_uuid);
+              g_free (task_web_application_target_name_escaped);
+            }
+#endif
 
           config_available = 1;
           if (task_config_in_trash (index))
@@ -20339,6 +20428,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_AGENTS
                        "%s"
 #endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+                       "%s"
+#endif
                        "<scanner id='%s'>"
                        "<name>%s</name>"
                        "<type>%d</type>"
@@ -20370,6 +20462,9 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #endif
 #if ENABLE_AGENTS
                        agent_group_xml ?: "",
+#endif
+#if ENABLE_WEB_APPLICATION_SCANNING
+                       web_application_target_xml ?: "",
 #endif
                        task_scanner_uuid,
                        task_scanner_name_escaped,
@@ -20408,6 +20503,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               g_free (response);
               g_free (oci_image_target_xml);
               g_free (agent_group_xml);
+              g_free (web_application_target_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
               cleanup_iterator (&tasks);
@@ -20416,6 +20512,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (response);
           g_free (oci_image_target_xml);
           g_free (agent_group_xml);
+          g_free (web_application_target_xml);
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<observers>%s",
@@ -25298,6 +25395,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           char *tsk_uuid = NULL;
           gboolean is_agent_task = FALSE;
           gboolean is_container_scanning_task = FALSE;
+          gboolean is_web_application_scanning_task = FALSE;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -25390,6 +25488,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 is_agent_task = TRUE;
               else if (create_task_data->oci_image_target_id)
                 is_container_scanning_task = TRUE;
+              else if (create_task_data->web_application_target_id)
+                is_web_application_scanning_task = TRUE;
               else
                 create_task_data->scanner_id =
                   g_strdup (scanner_uuid_default ());
@@ -25418,6 +25518,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 is_agent_task = TRUE;
               else if (type == SCANNER_TYPE_CONTAINER_IMAGE)
                 is_container_scanning_task = TRUE;
+              else if (type == SCANNER_TYPE_WEB_APPLICATION)
+                is_web_application_scanning_task = TRUE;
             }
 
           /* Check permissions. */
@@ -25452,12 +25554,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
           if (create_task_data->target_id == NULL
               && create_task_data->agent_group_id == NULL
-              && create_task_data->oci_image_target_id == NULL)
+              && create_task_data->oci_image_target_id == NULL
+              && create_task_data->web_application_target_id == NULL)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
                                   "A target or agent group"
-                                  " or OCI image target is required"));
+                                  " or OCI image target"
+                                  " or web application target is required"));
               goto create_task_fail;
             }
 
@@ -25469,6 +25573,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               goto create_task_fail;
             }
           if (create_task_data->target_id && is_container_scanning_task)
+            {
+              SEND_TO_CLIENT_OR_FAIL
+               (XML_ERROR_SYNTAX ("create_task",
+                                  "Target and scanner types mismatch."));
+              goto create_task_fail;
+            }
+          if (create_task_data->target_id && is_web_application_scanning_task)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
@@ -25546,10 +25657,40 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+          if (is_web_application_scanning_task)
+            {
+              web_application_target_t web_application_target = 0;
+
+              if (find_web_application_target_with_permission (
+                    create_task_data->web_application_target_id,
+                    &web_application_target,
+                    "get_web_application_targets"))
+                {
+                  SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("create_task"));
+                  goto create_task_fail;
+                }
+              if (web_application_target == 0)
+                {
+                  if (send_find_error_to_client (
+                        "create_task", "web_application_target",
+                        create_task_data->web_application_target_id,
+                        gmp_parser))
+                    error_send_to_client (error);
+                  goto create_task_fail;
+                }
+              set_task_web_application_target (create_task_data->task,
+                                               web_application_target);
+
+              clear_task_asset_preferences (create_task_data->task);
+            }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
           if (create_task_data->target_id != NULL
               && strcmp (create_task_data->target_id, "0") == 0
               && !is_agent_task
-              && !is_container_scanning_task)
+              && !is_container_scanning_task
+              && !is_web_application_scanning_task)
             {
               /* Import task. */
 
@@ -25708,7 +25849,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               set_task_config (create_task_data->task, config);
             }
 
-          if (!is_agent_task && !is_container_scanning_task)
+          if (!is_agent_task
+              && !is_container_scanning_task
+              && !is_web_application_scanning_task)
             {
               if (find_target_with_permission (create_task_data->target_id,
                                                &target, "get_targets"))
@@ -25797,6 +25940,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 #if ENABLE_AGENTS
       CLOSE (CLIENT_CREATE_TASK, AGENT_GROUP);
 #endif /* ENABLE_AGENTS */
+#if ENABLE_WEB_APPLICATION_SCANNING
+      CLOSE (CLIENT_CREATE_TASK, WEB_APPLICATION_TARGET);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
       CLOSE (CLIENT_CREATE_TASK_OBSERVERS, GROUP);
 
@@ -28428,6 +28574,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       modify_task_data->preferences,
                                       modify_task_data->agent_group_id,
                                       modify_task_data->oci_image_target_id,
+                                      modify_task_data->web_application_target_id,
                                       &fail_alert_id,
                                       &fail_group_id))
               {
@@ -28618,7 +28765,30 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   "modified");
                   break;
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
                 case 21:
+                  if (send_find_error_to_client
+                       ("modify_task", "web_application_target",
+                        modify_task_data->web_application_target_id, gmp_parser))
+                    {
+                      error_send_to_client (error);
+                      return;
+                    }
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+                case 22:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Asset preferences cannot be set for"
+                                      " Web Application tasks"));
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+                case 23:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Target and scanner types mismatch"));
@@ -28660,6 +28830,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 #if ENABLE_CONTAINER_SCANNING
       CLOSE (CLIENT_MODIFY_TASK, OCI_IMAGE_TARGET);
 #endif /* ENABLE_CONTAINER_SCANNING */
+#if ENABLE_WEB_APPLICATION_SCANNING
+      CLOSE (CLIENT_MODIFY_TASK, WEB_APPLICATION_TARGET);
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
       CLOSE (CLIENT_MODIFY_TASK, FILE);
 
       CLOSE (CLIENT_MODIFY_TASK_OBSERVERS, GROUP);

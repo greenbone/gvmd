@@ -2004,6 +2004,7 @@ task_preference_value (task_t task, const char *name)
  *
  * @return 0 success, 1 invalid auto_delete value, 2 auto_delete_data out of
  *         range, 3 in_assets cannot be set for Container Image scanners.
+ *         4 in_assets cannot be set for Web Application scanners.
  */
 int
 set_task_preferences (task_t task, array_t *preferences)
@@ -2042,6 +2043,9 @@ set_task_preferences (task_t task, array_t *preferences)
                   if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CONTAINER_IMAGE)
                       return 3;
+                  else if ((strcmp (pair->name, "in_assets") == 0)
+                           && type == SCANNER_TYPE_WEB_APPLICATION)
+                      return 4;
                   else if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");
@@ -2765,6 +2769,8 @@ create_task_check_scanner_type (scanner_t scanner)
     return 1;
   if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
     return 1;
+  if (stype == SCANNER_TYPE_WEB_APPLICATION)
+    return 1;
 
   return 0;
 }
@@ -2844,6 +2850,9 @@ modify_task_check_config_scanner (task_t task, const char *config_id,
     return 0;
 
   if (stype == SCANNER_TYPE_CONTAINER_IMAGE)
+    return 0;
+
+  if (stype == SCANNER_TYPE_WEB_APPLICATION)
     return 0;
 
   /* Default Scanner with OpenVAS Config. */
