@@ -6519,6 +6519,9 @@ END:VCALENDAR
       @IF_ENABLE_CONTAINER_SCANNNING@
       <e>oci_image_target</e>
       @ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_WEB_APPLICATION_SCANNING@
+      <e>web_application_target</e>
+      @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
       <e>target</e>
       <e>scanner</e>
       <any><e>alert</e></any>
@@ -6609,6 +6612,19 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_WEB_APPLICATION_SCANNING@
+    <ele>
+      <name>web_application_target</name>
+      <summary>The web application urls scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>scanner</name>
       <summary>The scanner to use for scanning the target</summary>
@@ -6786,6 +6802,26 @@ END:VCALENDAR
       </response>
     </example>
     @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_WEB_APPLICATION_SCANNING@
+    <example>
+      <summary>Create a web application task</summary>
+      <request>
+        <create_task>
+          <name>Web Application Task</name>
+          <comment>Task with web application target assigned</comment>
+          <usage_type>scan</usage_type>
+          <web_application_target id="fd9bd047-fac8-49e7-bd45-64652f713a41"/>
+          <scanner id="8154d8e3-30ee-4959-9151-1863c89a8e62"/>
+        </create_task>
+      </request>
+      <response>
+        <create_task_response status="201"
+                              status_text="OK, resource created"
+                              id="b7f0afbe-bdb3-11e9-9847-28d24461215b">
+        </create_task_response>
+      </response>
+    </example>
+    @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
   </command>
   <command>
     <name>create_ticket</name>
@@ -29996,6 +30032,9 @@ END:VCALENDAR
               @IF_ENABLE_AGENTS@
               <o><e>agent_group</e></o>
               @ENDIF_ENABLE_AGENTS@
+              @IF_ENABLE_WEB_APPLICATION_SCANNING@
+              <o><e>web_application_target</e></o>
+              @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
               <e>scanner</e>
               <e>alert</e>
               <e>observers</e>
@@ -30274,6 +30313,38 @@ END:VCALENDAR
           </ele>
         </ele>
         @ENDIF_ENABLE_AGENTS@
+        @IF_ENABLE_WEB_APPLICATION_SCANNING@
+        <ele>
+          <name>web_application_target</name>
+          <summary>The web application urls scanned by the task</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <type>uuid</type>
+              <required>1</required>
+              <summary>ID of web application target</summary>
+            </attrib>
+            <e>name</e>
+            <o><e>permissions</e></o>
+            <e>trash</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the web application target</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+          <ele>
+            <name>permissions</name>
+            <summary>Permissions the user has on the target</summary>
+            <pattern></pattern>
+          </ele>
+          <ele>
+            <name>trash</name>
+            <summary>Whether the target is in the trashcan</summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+        </ele>
+        @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
         <ele>
           <name>scanner</name>
           <summary>The scanner used to scan the target</summary>
@@ -36944,6 +37015,9 @@ END:VCALENDAR
         @IF_ENABLE_CONTAINER_SCANNNING@
         <e>oci_image_target</e>
         @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_WEB_APPLICATION_SCANNING@
+        <e>web_application_target</e>
+        @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
         <e>file</e>
       </or>
     </pattern>
@@ -37076,6 +37150,19 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_WEB_APPLICATION_SCANNING@
+    <ele>
+      <name>web_application_target</name>
+      <summary>The web application urls scanned by the task</summary>
+      <pattern>
+        <attrib>
+          <name>id</name>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </ele>
+    @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>file</name>
       <summary>File to attach to task</summary>

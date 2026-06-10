@@ -6008,6 +6008,65 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
        task);
 }
 
+#endif
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+/**
+ * @brief Return the web application target of a task.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return Web application target of task.
+ */
+web_application_target_t
+task_web_application_target (task_t task)
+{
+  web_application_target_t web_application_target = 0;
+  sql_int64_ps (&web_application_target,
+                "SELECT web_application_target FROM tasks"
+                " WHERE id = $1;",
+                SQL_RESOURCE_PARAM(task),
+                NULL);
+  return web_application_target;
+}
+
+/**
+ * @brief Return whether the web application target of a task is in the trashcan.
+ *
+ * @param[in]  task  Task.
+ *
+ * @return 1 if in trash, else 0.
+ */
+int
+task_web_application_target_in_trash (task_t task)
+{
+  return sql_int_ps ("SELECT web_application_target_location = "
+                     G_STRINGIFY (LOCATION_TRASH)
+                     " FROM tasks WHERE id = $1;",
+                     SQL_RESOURCE_PARAM(task),
+                     NULL);
+}
+
+/**
+ * @brief Set the web application target of a task.
+ *
+ * @param[in]  task    Task.
+ * @param[in]  target  Target.
+ */
+void
+set_task_web_application_target (task_t task, web_application_target_t web_application_target)
+{
+  sql_ps ("UPDATE tasks SET web_application_target = $1,"
+          " web_application_target_location = 0,"
+          " modification_time = m_now ()"
+          " WHERE id = $2;",
+          SQL_RESOURCE_PARAM(web_application_target),
+          SQL_RESOURCE_PARAM(task),
+          NULL);
+}
+
+#endif
+
 /**
  * @brief Clear default asset preferences if set.
  *
@@ -6032,8 +6091,6 @@ clear_task_asset_preferences (task_t task)
           " WHERE task = %llu AND name = 'assets_apply_overrides';",
           task);
 }
-
-#endif
 
 /**
  * @brief Return whether the target of a task is in the trashcan.
@@ -17834,11 +17891,14 @@ copy_task (const char* name, const char* comment, const char *task_id,
 
   ret = copy_resource_lock ("task", name, comment, task_id,
                             "config, target, oci_image_target,"
+                            " web_application_target,"
                             " schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " oci_image_target_location, usage_type,"
+                            " oci_image_target_location,"
+                            " web_application_target_location,"
+                            " usage_type,"
                             " agent_group, agent_group_location,"
                             " alterable",
                             1, &new, &old);
@@ -18566,6 +18626,7 @@ manage_task_remove_file (const gchar *task_id, const char *name)
  * @param[in]  preferences       Preferences.
  * @param[in]  agent_group_id    Agent group.
  * @param[in]  oci_image_target_id  OCI image target.
+ * @param[in]  web_application_target_id  Web application target.
  * @param[out] fail_alert_id     Alert when failed to find alert.
  * @param[out] fail_group_id     Group when failed to find group.
  *
@@ -18580,7 +18641,9 @@ manage_task_remove_file (const gchar *task_id, const char *name)
  *         certain fields may be edited, 18 failed to find agent group,
  *         19 failed to find OCI image target,
  *         20 cannot set asset preferences for container image task,
- *         21 target and scanner types mismatch,
+ *         21 failed to find web application target,
+ *         22 cannot set asset preferences for web application task,
+ *         23 target and scanner types mismatch,
  *         -1 error.
  */
 int
@@ -18594,6 +18657,7 @@ modify_task (const gchar *task_id, const gchar *name,
              array_t *preferences,
              const gchar *agent_group_id,
              const gchar* oci_image_target_id,
+             const gchar* web_application_target_id,
              gchar **fail_alert_id,
              gchar **fail_group_id)
 {
@@ -18612,7 +18676,8 @@ modify_task (const gchar *task_id, const gchar *name,
 
   if ((task_target (task) == 0
        && (agent_group_id == NULL)
-       && (oci_image_target_id == NULL))
+       && (oci_image_target_id == NULL)
+       && (web_application_target_id == NULL))
       && (alerts->len || schedule_id))
     return 17;
 
@@ -18666,7 +18731,8 @@ modify_task (const gchar *task_id, const gchar *name,
 
   if (config_id
       && (type_of_scanner != SCANNER_TYPE_CVE)
-      && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE))
+      && (type_of_scanner != SCANNER_TYPE_CONTAINER_IMAGE)
+      && (type_of_scanner != SCANNER_TYPE_WEB_APPLICATION))
     {
       config_t config;
 
@@ -18773,7 +18839,7 @@ modify_task (const gchar *task_id, const gchar *name,
                && (task_alterable (task) == 0))
         return 16;
       else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE)
-        return 21;
+        return 23;
       else if (find_target_with_permission (target_id,
                                             &target,
                                             "get_targets"))
@@ -18823,6 +18889,25 @@ modify_task (const gchar *task_id, const gchar *name,
     }
 #endif /* ENABLE_CONTAINER_SCANNING */
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+  if (web_application_target_id)
+    {
+      web_application_target_t web_application_target = 0;
+
+      if ((task_run_status (task) != TASK_STATUS_NEW)
+          && (task_alterable (task) == 0))
+        return 16;
+      else if (find_web_application_target_with_permission (web_application_target_id,
+                                                            &web_application_target,
+                                                            "get_web_application_targets"))
+        return -1;
+      else if (web_application_target == 0)
+        return 21;
+      else
+        set_task_web_application_target (task, web_application_target);
+    }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
   if (preferences)
     switch (set_task_preferences (task, preferences))
       {
@@ -18834,6 +18919,8 @@ modify_task (const gchar *task_id, const gchar *name,
           return 14;
         case 3:
           return 20;
+        case 4:
+          return 22;
         default:
           return -1;
       }
