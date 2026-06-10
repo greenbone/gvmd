@@ -125,6 +125,35 @@
                             __VA_ARGS__)
 #endif /* g_info not defined */
 
+typedef enum {
+  MODIFY_TASK_OK = 0,
+  MODIFY_TASK_NOT_FOUND = 1,
+  MODIFY_TASK_SCANNER_STATUS_MUST_BE_NEW = 2,
+  MODIFY_TASK_SCANNER_NOT_FOUND = 3,
+  MODIFY_TASK_CONFIG_NOT_FOUND = 4,
+  MODIFY_TASK_CONFIG_STATUS_MUST_BE_NEW = 5,
+  MODIFY_TASK_USER_NAME_VALIDATION_FAILED = 6,
+  MODIFY_TASK_USER_NOT_FOUND = 7,
+  MODIFY_TASK_ALERT_NOT_FOUND = 8,
+  MODIFY_TASK_ALTERABLE_STATUS_MUST_BE_NEW = 9,
+  MODIFY_TASK_GROUP_NOT_FOUND = 10,
+  MODIFY_TASK_SCHEDULE_NOT_FOUND = 11,
+  MODIFY_TASK_TARGET_NOT_FOUND = 12,
+  MODIFY_TASK_INVALID_AUTO_DELETE_VALUE = 13,
+  MODIFY_TASK_AUTO_DELETE_COUNT_OUT_OF_RANGE = 14,
+  MODIFY_TASK_CONFIG_SCANNER_TYPE_MISMATCH = 15,
+  MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW = 16,
+  MODIFY_TASK_IMPORT_TASK_FIELD_RESTRICTION = 17,
+  MODIFY_TASK_AGENT_GROUP_NOT_FOUND = 18,
+  MODIFY_TASK_OCI_IMAGE_TARGET_NOT_FOUND = 19,
+  MODIFY_TASK_CANNOT_SET_ASSET_PREFS_CONTAINER = 20,
+  MODIFY_TASK_WEB_APPLICATION_TARGET_NOT_FOUND = 21,
+  MODIFY_TASK_CANNOT_SET_ASSET_PREFS_WEB_APP = 22,
+  MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH = 23,
+  MODIFY_TASK_ERROR = -1
+} modify_task_return_t;
+
+
 /**
  * @brief Name value pair.
  */
@@ -843,7 +872,7 @@ manage_task_update_file (const gchar *, const char *, const void *);
 int
 manage_task_remove_file (const gchar *, const char *);
 
-int
+modify_task_return_t
 modify_task (const gchar *, const gchar *, const gchar *, const gchar *,
              const gchar *, const gchar *, const gchar *, array_t *,
              const gchar *, array_t *, const gchar *, const gchar *, array_t *,
