@@ -170,7 +170,6 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
-  int arp = 0, icmp = 0, tcp_ack = 0, tcp_syn = 0, consider_alive = 0;
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
@@ -241,19 +240,23 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   if (finished_hosts_str)
     openvasd_target_set_finished_hosts (openvasd_target, finished_hosts_str);
 
-  if (alive_test & ALIVE_TEST_ARP)
-    arp = 1;
-  if (alive_test & ALIVE_TEST_ICMP)
-    icmp = 1;
-  if (alive_test & ALIVE_TEST_TCP_ACK_SERVICE)
-    tcp_ack = 1;
-  if (alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
-    tcp_syn = 1;
-  if (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
-    consider_alive = 1;
+  openvasd_alive_test_methods_t alive_test_methods = { 0 };
 
-  openvasd_target_add_alive_test_methods (openvasd_target, icmp, tcp_syn,
-                                          tcp_ack, arp, consider_alive);
+  if (alive_test & ALIVE_TEST_HOST_DISCOVERY_IPV6)
+    alive_test_methods.host_discovery_ipv6 = TRUE;
+  if (alive_test & ALIVE_TEST_ARP)
+    alive_test_methods.arp = TRUE;
+  if (alive_test & ALIVE_TEST_ICMP)
+    alive_test_methods.icmp = TRUE;
+  if (alive_test & ALIVE_TEST_TCP_ACK_SERVICE)
+    alive_test_methods.tcp_ack = TRUE;
+  if (alive_test & ALIVE_TEST_TCP_SYN_SERVICE)
+    alive_test_methods.tcp_syn = TRUE;
+  if (alive_test & ALIVE_TEST_CONSIDER_ALIVE)
+    alive_test_methods.consider_alive = TRUE;
+
+  openvasd_target_set_alive_test_methods (openvasd_target,
+                                          &alive_test_methods);
 
   free (hosts_str);
   free (ports_str);
