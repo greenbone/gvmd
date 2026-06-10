@@ -567,6 +567,8 @@ lsc_crypt_release (lsc_crypt_ctx_t ctx)
   if (!ctx)
     return;
   lsc_crypt_flush (ctx);
+  if (ctx->enckey)
+    gpgme_key_unref (ctx->enckey);
   if (ctx->encctx) /* Check required for gpgme < 1.3.1 */
     gpgme_release (ctx->encctx);
   g_free (ctx->enckey_uid);
