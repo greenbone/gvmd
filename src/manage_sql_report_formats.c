@@ -4988,6 +4988,7 @@ check_db_report_formats_trash ()
           g_free (dir);
           return -1;
         }
+      g_error_free (error);
     }
   else
     {
