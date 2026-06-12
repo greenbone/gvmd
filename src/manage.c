@@ -64,6 +64,7 @@
 #include "manage_sql_tls_certificates.h"
 #include "manage_tags.h"
 #include "manage_web_application_targets.h"
+#include "manage_web_application_scanner.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -2722,6 +2723,16 @@ run_task (const char *task_id, char **report_id, int from)
     return run_container_image_task (task, from, report_id);
 #endif
 
+#if ENABLE_WEB_APPLICATION_SCANNING
+  if (scanner_type (scanner) == SCANNER_TYPE_WEB_APPLICATION)
+    {
+      if (from == 1)
+        // Resume task is not supported in initial version.
+        return 4;
+      return run_web_application_task (task, 0, report_id);
+    }
+#endif
+
   return -1; // Unknown scanner type
 }
 
@@ -2888,6 +2899,11 @@ stop_task (const char *task_id)
 #if ENABLE_CONTAINER_SCANNING
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_CONTAINER_IMAGE)
     return stop_container_image_task (task);
+#endif
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+  if (scanner_type (task_scanner (task)) == SCANNER_TYPE_WEB_APPLICATION)
+    return stop_web_application_task (task);
 #endif
 
   return stop_task_internal (task);
