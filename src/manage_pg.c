@@ -1436,9 +1436,34 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
+     /* column web_application_target in table task was added in version 277 */
+     if (current_db_version >= 277)
+       {
+          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
+               "                                          integer," // overrides
+               "                                          integer)" // min_qod
+               " RETURNS double precision AS $$"
+               /* Calculate the severity of a task. */
+               "  SELECT CASE"
+               "         WHEN (SELECT target = 0 "
+               "               AND agent_group = 0 "
+               "               AND oci_image_target = 0 "
+               "               AND web_application_target = 0 "
+               "               FROM tasks WHERE id = $1)"
+               "         THEN CAST (NULL AS double precision)"
+               "         ELSE"
+               "         (SELECT report_severity ((SELECT id FROM reports"
+               "                                   WHERE task = $1"
+               "                                   AND scan_run_status = %u"
+               "                                   ORDER BY creation_time DESC"
+               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               "         END;"
+               "$$ LANGUAGE SQL;",
+               TASK_STATUS_DONE);
+       }
       /* column oci_image_target in table task was added in version 261 */
       /* column agent_group in table task was added in version 262 */
-      if (current_db_version >= 262)
+      else if (current_db_version >= 262)
         {
           sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
                "                                          integer," // overrides

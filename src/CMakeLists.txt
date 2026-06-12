@@ -58,6 +58,16 @@ else(ENABLE_JWT_AUTH)
   message(STATUS "ENABLE_JWT_AUTH flag is not enabled")
 endif(ENABLE_JWT_AUTH)
 
+if(ENABLE_WEB_APPLICATION_SCANNING)
+  pkg_check_modules(
+    LIBGVM_WEB_APPLICATION_SCANNER
+    REQUIRED
+    libgvm_web_application_scanner>=23.4
+  )
+else(ENABLE_WEB_APPLICATION_SCANNING)
+  message(STATUS "ENABLE_WEB_APPLICATION_SCANNING flag is not enabled")
+endif(ENABLE_WEB_APPLICATION_SCANNING)
+
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
@@ -219,6 +229,7 @@ set(
   manage_targets.c
   manage_users.c
   manage_report_export_scheduler.c
+  manage_web_application_scanner.c
 )
 
 if(ENABLE_AGENTS)
@@ -450,6 +461,7 @@ target_link_libraries(
   ${LIBGVM_HTTP_SCANNER_LDFLAGS}
   ${LIBGVM_CYBERARK_LDFLAGS}
   ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
+  ${LIBGVM_WEB_APPLICATION_SCANNER_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
