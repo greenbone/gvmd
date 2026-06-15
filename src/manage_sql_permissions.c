@@ -2,6 +2,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+#define _GNU_SOURCE
 
 #include "manage_sql_permissions.h"
 #include "manage_sql_permissions_cache.h"
