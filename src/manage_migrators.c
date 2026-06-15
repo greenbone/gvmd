@@ -4048,6 +4048,75 @@ migrate_276_to_277 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 277 to version 278.
+ *
+ * Ensure that the default Agent Controller scanner exists and uses the
+ * expected UUID.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_277_to_278 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 277. */
+
+  if (manage_db_version () != 277)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+#if ENABLE_AGENTS
+  /*
+   * Only migrate or create the scanner when the default UUID is not
+   * already in use.
+   */
+  if (sql_int ("SELECT count(*)"
+               " FROM scanners"
+               " WHERE uuid = '%s';",
+               SCANNER_UUID_AGENT_CONTROLLER_DEFAULT)
+      == 0)
+    {
+      /*
+       * Reuse one existing Agent Controller scanner configured for
+       * localhost:8080. Selecting by ID prevents updating multiple rows.
+       */
+      if (sql_int ("SELECT count(*)"
+                   " FROM scanners"
+                   " WHERE type = %d"
+                   " AND host = 'localhost'"
+                   " AND port = 8080;",
+                   SCANNER_TYPE_AGENT_CONTROLLER)
+          > 0)
+        {
+          sql ("UPDATE scanners"
+               " SET uuid = '" SCANNER_UUID_AGENT_CONTROLLER_DEFAULT "',"
+               "     modification_time = m_now ()"
+               " WHERE id ="
+               "   (SELECT id"
+               "    FROM scanners"
+               "    WHERE type = %d"
+               "      AND host = 'localhost'"
+               "      AND port = 8080"
+               "    ORDER BY id"
+               "    LIMIT 1);",
+               SCANNER_TYPE_AGENT_CONTROLLER);
+        }
+    }
+#endif
+
+  /* Set the database version to 278. */
+
+  set_db_version (278);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4131,6 +4200,7 @@ static migrator_t database_migrators[] = {
   {275, migrate_274_to_275},
   {276, migrate_275_to_276},
   {277, migrate_276_to_277},
+  {278, migrate_277_to_278},
   /* End marker. */
   {-1, NULL}};
 
