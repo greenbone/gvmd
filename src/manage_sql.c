@@ -16167,6 +16167,46 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           progress_xml = g_strdup_printf ("%i", report_progress (report));
         }
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+      web_application_target_t web_application_target = task_web_application_target (task);
+      if (web_application_target)
+        {
+          char *target_uuid, *target_name, *target_comment;
+          int in_trash;
+
+            in_trash = task_web_application_target_in_trash (task);
+
+          target_uuid = in_trash
+                       ? trash_web_application_target_uuid (web_application_target)
+                       : web_application_target_uuid (web_application_target);
+          target_name = in_trash
+                       ? trash_web_application_target_name (web_application_target)
+                       : web_application_target_name (web_application_target);
+          target_comment = in_trash
+                       ? trash_web_application_target_comment (web_application_target)
+                       : web_application_target_comment (web_application_target);
+
+          PRINT (out,
+                 "<web_application_target id=\"%s\">"
+                 "<trash>%i</trash>"
+                 "<name>%s</name>"
+                 "<comment>%s</comment>"
+                 "</web_application_target>",
+                 target_uuid ? target_uuid : "",
+                 in_trash,
+                 target_name ? target_name : "",
+                 target_comment ? target_comment : "");
+
+          g_free (target_uuid);
+          g_free (target_name);
+          g_free (target_comment);
+
+          g_free (progress_xml);
+          progress_xml = g_strdup_printf ("%i", report_progress (report));
+        }
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
+
       PRINT (out, "<progress>%s</progress>", progress_xml);
 
       g_free (progress_xml);
