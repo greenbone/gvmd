@@ -3481,6 +3481,20 @@ check_db_scanners ()
     }
 #endif
 
+#if ENABLE_AGENTS
+  if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
+                SCANNER_UUID_AGENT_CONTROLLER_DEFAULT) == 0)
+    {
+      sql ("INSERT INTO scanners"
+        " (uuid, owner, name, host, port, type, ca_pub, credential,"
+        "  creation_time, modification_time)"
+        " VALUES ('" SCANNER_UUID_AGENT_CONTROLLER_DEFAULT "', NULL, "
+        " 'Agent Controller Default', 'localhost', 8080, %d, NULL, NULL,"
+        " m_now (), m_now ());",
+        SCANNER_TYPE_AGENT_CONTROLLER);
+    }
+#endif
+
   if (sql_int ("SELECT count(*) FROM scanners WHERE uuid = '%s';",
                SCANNER_UUID_CVE) == 0)
     sql ("INSERT INTO scanners"

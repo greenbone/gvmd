@@ -91,6 +91,11 @@
 #define SCANNER_UUID_WEB_APPLICATION_DEFAULT "c0e29580-6183-43e5-a081-c781ac2b4623"
 
 /**
+ * @brief UUID of 'Agent Controller Default' scanner.
+ */
+#define SCANNER_UUID_AGENT_CONTROLLER_DEFAULT "3b4be213-281f-49ee-b457-5a5f34f71510"
+
+/**
  * @brief UUID of 'CVE' scanner.
  */
 #define SCANNER_UUID_CVE "6acd0832-df90-11e4-b9d5-28d24461215b"
