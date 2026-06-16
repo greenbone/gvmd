@@ -10014,28 +10014,77 @@ report_add_result (report_t report, result_t result)
 /**
  * @brief Add results from an array to a report.
  *
+ * Invalid result IDs are skipped instead of terminating gvmd.
+ *
  * @param[in]  report   The report to add the results to.
- * @param[in]  results  GArray containing the row ids of the results to add.
+ * @param[in]  results  GArray containing the row IDs of the results to add.
  */
 void
 report_add_results_array (report_t report, GArray *results)
 {
   GString *array_sql;
   int index;
+  guint valid_results = 0;
+  guint invalid_results = 0;
+  guint nonexistent_results = 0;
 
   if (report == 0 || results == NULL || results->len == 0)
     return;
 
   array_sql = g_string_new ("(");
+
   for (index = 0; index < results->len; index++)
     {
       result_t result;
+
       result = g_array_index (results, result_t, index);
 
-      if (index)
+      if (result == 0)
+        {
+          invalid_results++;
+          continue;
+        }
+
+      if (sql_int ("SELECT NOT EXISTS"
+                   " (SELECT 1 FROM results WHERE id = %llu);",
+                   result))
+        {
+          nonexistent_results++;
+          continue;
+        }
+
+      if (valid_results > 0)
         g_string_append (array_sql, ", ");
+
       g_string_append_printf (array_sql, "%llu", result);
+      valid_results++;
     }
+
+  if (invalid_results > 0 || nonexistent_results > 0)
+    g_warning ("%s: Skipped %u invalid result ID%s and %u nonexistent"
+               " result%s for report %llu",
+               __func__,
+               invalid_results,
+               invalid_results == 1 ? "" : "s",
+               nonexistent_results,
+               nonexistent_results == 1 ? "" : "s",
+               report);
+  if (valid_results == 0)
+    {
+      g_warning ("%s: Skipped all %u results for report %llu:"
+                 " %u invalid result ID%s and %u nonexistent result%s",
+                 __func__,
+                 results->len,
+                 report,
+                 invalid_results,
+                 invalid_results == 1 ? "" : "s",
+                 nonexistent_results,
+                 nonexistent_results == 1 ? "" : "s");
+
+      g_string_free (array_sql, TRUE);
+      return;
+    }
+
   g_string_append_c (array_sql, ')');
 
   sql ("UPDATE results SET report = %llu,"
@@ -10047,9 +10096,26 @@ report_add_results_array (report_t report, GArray *results)
   for (index = 0; index < results->len; index++)
     {
       result_t result;
+
       result = g_array_index (results, result_t, index);
 
-      report_add_result_for_buffer (report, result);
+      if (result == 0)
+        continue;
+
+      /*
+       * Only update the report-count buffer when the result exists and was
+       * successfully assigned to this report.
+       */
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT 1"
+                   "  FROM results"
+                   "  WHERE id = %llu"
+                   "    AND report = %llu);",
+                   result, report))
+        report_add_result_for_buffer (report, result);
+      else
+        g_warning ("%s: Result %llu was not assigned to report %llu",
+                   __func__, result, report);
     }
 
   sql ("UPDATE report_counts"
