@@ -9662,74 +9662,158 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   index = 0;
   count = 0;
-  while ((detail = (host_detail_t*) g_ptr_array_index (details, index++)))
-    if (detail->ip && detail->name)
-      {
-        char *quoted_host, *quoted_source_name, *quoted_source_type;
-        char *quoted_source_desc, *quoted_name, *quoted_value;
 
-        quoted_host = sql_copy_escape (detail->ip);
-        quoted_source_type = sql_copy_escape (detail->source_type ?: "");
-        quoted_source_name = sql_copy_escape (detail->source_name ?: "");
-        quoted_source_desc = sql_copy_escape (detail->source_desc ?: "");
-        quoted_name = sql_copy_escape (detail->name);
-        quoted_value = sql_copy_escape (detail->value ?: "");
+  while ((detail = (host_detail_t *) g_ptr_array_index (details, index++)))
+    {
+      resource_t report_host = 0;
+      char *quoted_source_name;
+      char *quoted_source_type;
+      char *quoted_source_desc;
+      char *quoted_name;
+      char *quoted_value;
+      int ret;
 
-        if (sql_int64 (&report_host_details_rowid,
-          "SELECT nextval('report_host_details_id_seq');"))
-          {
-            g_warning ("%s: failed to get report_host_details row ID", __func__);
-            return -1;
-          }
+      if (detail->ip == NULL
+          || detail->ip[0] == '\0'
+          || detail->name == NULL
+          || detail->name[0] == '\0')
+        continue;
 
-        resource_t report_host;
-
-        sql_int64 (&report_host,
-                    "SELECT id FROM report_hosts"
-                    "   WHERE report = %llu AND host = '%s';",
-                    report,
-                    quoted_host);
-
-        int ret = db_copy_buffer_append_printf
-                    (&copy_buffer,
-                    "%llu\t%llu\t%s\t%s\t%s\t%s\t%s\n",
-                    report_host_details_rowid,
-                    report_host,
-                    quoted_source_type,
-                    quoted_source_name,
-                    quoted_source_desc,
-                    quoted_name,
-                    quoted_value);
-
-        if (ret)
+      /*
+       * COALESCE ensures that the query always returns one row.
+       * A value of 0 means that the report host does not exist yet.
+       */
+      if (sql_int64_ps (
+        &report_host,
+        "SELECT coalesce ("
+        "  (SELECT id"
+        "   FROM report_hosts"
+        "   WHERE report = $1"
+        "     AND host = $2"
+        "   LIMIT 1),"
+        "  0);",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (detail->ip),
+        NULL))
         {
-          g_warning ("%s: failed to write to database copy buffer",
-                      __func__);
+          g_warning ("%s: Failed to look up report host '%s'"
+                     " in report %llu",
+                     __func__,
+                     detail->ip,
+                     report);
           db_copy_buffer_cleanup (&copy_buffer);
           return -1;
         }
 
-        g_free (quoted_host);
-        g_free (quoted_source_type);
-        g_free (quoted_source_name);
-        g_free (quoted_source_desc);
-        g_free (quoted_name);
-        g_free (quoted_value);
+      if (report_host == 0)
+        {
+          g_debug ("%s: Creating missing report host '%s'"
+                   " in report %llu",
+                   __func__,
+                   detail->ip,
+                   report);
 
-        count++;
-        if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
-          {
-            if (db_copy_buffer_commit (&copy_buffer, FALSE))
+          manage_report_host_add (report, detail->ip, 0, 0);
+
+          /*
+           * Look up the ID of the newly created report host.
+           */
+          if (sql_int64_ps (
+            &report_host,
+            "SELECT coalesce ("
+            "  (SELECT id"
+            "   FROM report_hosts"
+            "   WHERE report = $1"
+            "     AND host = $2"
+            "   LIMIT 1),"
+            "  0);",
+            SQL_RESOURCE_PARAM (report),
+            SQL_STR_PARAM (detail->ip),
+            NULL))
+            {
+              g_warning ("%s: Failed to look up newly created report host '%s'"
+                         " in report %llu",
+                         __func__,
+                         detail->ip,
+                         report);
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }
+
+          if (report_host == 0)
+            {
+              g_warning ("%s: Failed to create report host '%s'"
+                         " in report %llu",
+                         __func__,
+                         detail->ip,
+                         report);
+              db_copy_buffer_cleanup (&copy_buffer);
+              return -1;
+            }
+        }
+
+      if (sql_int64 (&report_host_details_rowid,
+                     "SELECT nextval('report_host_details_id_seq');"))
+        {
+          g_warning ("%s: Failed to get report_host_details row ID",
+                     __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      quoted_source_type =
+        sql_copy_escape (detail->source_type ? detail->source_type : "");
+      quoted_source_name =
+        sql_copy_escape (detail->source_name ? detail->source_name : "");
+      quoted_source_desc =
+        sql_copy_escape (detail->source_desc ? detail->source_desc : "");
+      quoted_name =
+        sql_copy_escape (detail->name);
+      quoted_value =
+        sql_copy_escape (detail->value ? detail->value : "");
+
+      ret = db_copy_buffer_append_printf (
+        &copy_buffer,
+        "%llu\t%llu\t%s\t%s\t%s\t%s\t%s\n",
+        report_host_details_rowid,
+        report_host,
+        quoted_source_type,
+        quoted_source_name,
+        quoted_source_desc,
+        quoted_name,
+        quoted_value);
+
+      g_free (quoted_source_type);
+      g_free (quoted_source_name);
+      g_free (quoted_source_desc);
+      g_free (quoted_name);
+      g_free (quoted_value);
+
+      if (ret)
+        {
+          g_warning ("%s: Failed to write host detail"
+                     " to database copy buffer",
+                     __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      count++;
+
+      if (count == CREATE_REPORT_COPY_CHUNK_SIZE)
+        {
+          if (db_copy_buffer_commit (&copy_buffer, FALSE))
             {
               db_copy_buffer_cleanup (&copy_buffer);
               return -1;
             }
-            sql_commit ();
-            gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
-            sql_begin_immediate ();
-            count = 0;
-          }
-      }
+
+          sql_commit ();
+          gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
+          sql_begin_immediate ();
+          count = 0;
+        }
+    }
   if (db_copy_buffer_commit (&copy_buffer, TRUE))
     {
       db_copy_buffer_cleanup (&copy_buffer);
