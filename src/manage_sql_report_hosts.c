@@ -458,7 +458,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
             }
         }
       else
-        strcpy (start, "(not started)");
+        g_strlcpy (start, "(not started)", sizeof (start));
 
       if (end_iso)
         {
@@ -482,7 +482,7 @@ host_summary_append (GString *host_summary_buffer, const char *host,
             }
         }
       else
-        strcpy (end, "(not finished)");
+        g_strlcpy (end, "(not finished)", sizeof (end));
 
       g_string_append_printf (host_summary_buffer,
                               "   %-15s   %-16s   %s\n",
