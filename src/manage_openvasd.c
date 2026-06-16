@@ -404,6 +404,16 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   max_hosts = task_preference_value (task, "max_hosts");
   g_hash_table_insert (scanner_options, g_strdup ("max_hosts"),
                        max_hosts ? max_hosts : g_strdup (MAX_HOSTS_DEFAULT));
+  /*
+   * vt-metadata.json does not include Notus advisory metadata. Disable
+   * table-driven LSC to prevent the scanner from returning Notus results
+   * that gvmd cannot resolve.
+   */
+  if (feature_enabled (FEATURE_ID_VT_METADATA))
+    {
+      g_hash_table_insert (scanner_options, g_strdup ("table_driven_lsc"),
+                           g_strdup ("0"));
+    }
 
   /* Setup VT preferences */
   init_preference_iterator (&prefs, config, "PLUGINS_PREFS");
