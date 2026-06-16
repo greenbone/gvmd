@@ -1056,6 +1056,27 @@ identifier_free (identifier_t *identifier)
 }
 
 /**
+ * @brief Free snapshot identifier arrays and reset them to NULL.
+ */
+static void
+clear_snapshot_identifiers ()
+{
+  if (snapshot_identifiers)
+    {
+      guint index = 0;
+      while (index < snapshot_identifiers->len)
+        identifier_free (g_ptr_array_index (snapshot_identifiers, index++));
+      array_free (snapshot_identifiers);
+      snapshot_identifiers = NULL;
+    }
+  if (snapshot_identifier_hosts)
+    {
+      array_free (snapshot_identifier_hosts);
+      snapshot_identifier_hosts = NULL;
+    }
+}
+
+/**
  * @brief Check whether an interface name should be ignored for asset matching.
  *
  * @param[in] iface  Interface name, for example "docker0" or "eth0".
@@ -1861,21 +1882,8 @@ asset_snapshots_insert_target (report_t report, task_t task, scanner_t scanner)
   g_hash_table_destroy (seen);
 
 cleanup:
-  /* Consume snapshot arrays: free then NULL. */
-  if (snapshot_identifiers)
-    {
-      guint index = 0;
-      while (index < snapshot_identifiers->len)
-        identifier_free (g_ptr_array_index (snapshot_identifiers, index++));
-      array_free (snapshot_identifiers);
-      snapshot_identifiers = NULL;
-    }
-
-  if (snapshot_identifier_hosts)
-    {
-      array_free (snapshot_identifier_hosts);
-      snapshot_identifier_hosts = NULL;
-    }
+  /* Consume snapshot arrays. */
+  clear_snapshot_identifiers ();
 }
 
 /**
@@ -1893,19 +1901,7 @@ asset_snapshots_target (report_t report, task_t task, gboolean discovery)
       g_debug ("%s: Discovery scan assets will not stored for counting",
                __func__);
       /* Free snapshot arrays. */
-      if (snapshot_identifiers)
-        {
-          guint index = 0;
-          while (index < snapshot_identifiers->len)
-            identifier_free (g_ptr_array_index (snapshot_identifiers, index++));
-          array_free (snapshot_identifiers);
-          snapshot_identifiers = NULL;
-        }
-      if (snapshot_identifier_hosts)
-        {
-          array_free (snapshot_identifier_hosts);
-          snapshot_identifier_hosts = NULL;
-        }
+      clear_snapshot_identifiers ();
       return;
     }
 
