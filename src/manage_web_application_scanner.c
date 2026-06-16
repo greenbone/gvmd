@@ -179,24 +179,24 @@ check_web_application_scanner_result_exists (report_t report,
       g_hash_table_insert (hashed_results,
                            g_strdup(*entity_hash_value),
                            GINT_TO_POINTER(1));
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT * FROM results"
-                   "  WHERE report = %llu and hash_value = '%s');",
-                   report, *entity_hash_value))
+      if (sql_int_ps ("SELECT EXISTS"
+                      " (SELECT * FROM results"
+                      "  WHERE report = $1 and hash_value = $2);",
+                      SQL_RESOURCE_PARAM (report),
+                      SQL_STR_PARAM (*entity_hash_value),
+                      NULL))
         {
           const char *desc, *type, *severity = NULL, *host = NULL;
           const char *hostname, *port = NULL;
-          gchar *quoted_desc, *quoted_type, *quoted_host;
-          gchar *quoted_hostname, *quoted_port;
           double severity_double = 0.0;
           int qod_int = QOD_DEFAULT;
 
-          host = res->ip_address;
-          hostname = res->hostname;
-          type = convert_http_scanner_type_to_osp_type(res->type);
-          desc = res->message;
+          host = res->ip_address ?: "";
+          hostname = res->hostname ?: "";
+          type = convert_http_scanner_type_to_osp_type(res->type ?: "");
+          desc = res->message ?: "";
           severity = web_application_nvt_severity (type);
-          port = res->port;
+          port = res->port ?: "";
 
           if (!severity)
             {
@@ -209,25 +209,24 @@ check_web_application_scanner_result_exists (report_t report,
               severity_double = strtod (severity, NULL);
             }
 
-          quoted_host = sql_quote (host ?: "");
-          quoted_hostname = sql_quote (hostname ?: "");
-          quoted_type = sql_quote (type ?: "");
-          quoted_desc = sql_quote (desc ?: "");
-          quoted_port = sql_quote (port ?: "");
-
-          if (sql_int ("SELECT EXISTS"
-                       " (SELECT * FROM results"
-                       "   WHERE report = %llu and hash_value = '%s'"
-                       "    and host = '%s' and hostname = '%s'"
-                       "    and type = '%s' and description = '%s'"
-                       "    and port = '%s' and severity = %1.1f::real"
-                       "    and qod = %d"
-                       " );",
-                       report, *entity_hash_value,
-                       quoted_host, quoted_hostname,
-                       quoted_type, quoted_desc,
-                       quoted_port, severity_double,
-                       qod_int))
+          if (sql_int_ps ("SELECT EXISTS"
+                          " (SELECT * FROM results"
+                          "   WHERE report = $1 and hash_value = $2"
+                          "    and host = $3 and hostname = $4"
+                          "    and type = $5 and description = $6"
+                          "    and port = $7 and severity = $8::real"
+                          "    and qod = $9"
+                          " );",
+                          SQL_RESOURCE_PARAM (report),
+                          SQL_STR_PARAM (*entity_hash_value),
+                          SQL_STR_PARAM (host),
+                          SQL_STR_PARAM (hostname),
+                          SQL_STR_PARAM (type),
+                          SQL_STR_PARAM (desc),
+                          SQL_STR_PARAM (port),
+                          SQL_DOUBLE_PARAM (severity_double),
+                          SQL_INT_PARAM (qod_int),
+                          NULL))
             {
               g_info ("Captured duplicate result, report: %llu hash_value: %s",
                       report, *entity_hash_value);
@@ -235,11 +234,6 @@ check_web_application_scanner_result_exists (report_t report,
               return_value = 1;
             }
 
-          g_free (quoted_host);
-          g_free (quoted_hostname);
-          g_free (quoted_type);
-          g_free (quoted_desc);
-          g_free (quoted_port);
         }
     }
   if (return_value)
