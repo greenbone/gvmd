@@ -141,6 +141,112 @@ web_application_scanner_target_credential (web_application_target_t target)
 }
 
 /**
+ * @brief Generate the hash value for the fields of the result and
+ * check if web application scanner result for report already exists
+ *
+ * @param[in]  report      Report.
+ * @param[in]  task        Task.
+ * @param[in]  r_entity    entity of the result.
+ * @param[out] entity_hash_value  The generated hash value of r_entity.
+ *
+ * @return     "1" if web application scanner result already exists, else "0"
+ */
+static int
+check_web_application_scanner_result_exists (report_t report,
+                                             task_t task,
+                                             http_scanner_result_t res,
+                                             char **entity_hash_value,
+                                             GHashTable *hashed_results)
+{
+  GString *result_string;
+  int return_value = 0;
+  result_string = g_string_new ("");
+  g_string_append_printf (result_string, "host:%s\n"
+                          "hostname:%s\n"
+                          "type:%s\n"
+                          "description:%s\n"
+                          "port:%s\n"
+                          "oid:%s",res->ip_address, res->hostname,
+                          res->type, res->message, res->port, res->oid);
+
+ *entity_hash_value = get_md5_hash_from_string (result_string->str);
+  if (g_hash_table_contains (hashed_results, *entity_hash_value))
+    {
+      return_value = 1;
+    }
+  else
+    {
+      g_hash_table_insert (hashed_results,
+                           g_strdup(*entity_hash_value),
+                           GINT_TO_POINTER(1));
+      if (sql_int_ps ("SELECT EXISTS"
+                      " (SELECT * FROM results"
+                      "  WHERE report = $1 and hash_value = $2);",
+                      SQL_RESOURCE_PARAM (report),
+                      SQL_STR_PARAM (*entity_hash_value),
+                      NULL))
+        {
+          const char *desc, *type, *severity = NULL, *host = NULL;
+          const char *hostname, *port = NULL;
+          double severity_double = 0.0;
+          int qod_int = QOD_DEFAULT;
+
+          host = res->ip_address ?: "";
+          hostname = res->hostname ?: "";
+          type = convert_http_scanner_type_to_osp_type(res->type ?: "");
+          desc = res->message ?: "";
+          severity = web_application_nvt_severity (type);
+          port = res->port ?: "";
+
+          if (!severity)
+            {
+              g_debug ("%s: Result without severity", __func__);
+              g_string_free (result_string, TRUE);
+              return 0;
+            }
+          else
+            {
+              severity_double = strtod (severity, NULL);
+            }
+
+          if (sql_int_ps ("SELECT EXISTS"
+                          " (SELECT * FROM results"
+                          "   WHERE report = $1 and hash_value = $2"
+                          "    and host = $3 and hostname = $4"
+                          "    and type = $5 and description = $6"
+                          "    and port = $7 and severity = $8::real"
+                          "    and qod = $9"
+                          " );",
+                          SQL_RESOURCE_PARAM (report),
+                          SQL_STR_PARAM (*entity_hash_value),
+                          SQL_STR_PARAM (host),
+                          SQL_STR_PARAM (hostname),
+                          SQL_STR_PARAM (type),
+                          SQL_STR_PARAM (desc),
+                          SQL_STR_PARAM (port),
+                          SQL_DOUBLE_PARAM (severity_double),
+                          SQL_INT_PARAM (qod_int),
+                          NULL))
+            {
+              g_info ("Captured duplicate result, report: %llu hash_value: %s",
+                      report, *entity_hash_value);
+              g_debug ("Entity string: %s", result_string->str);
+              return_value = 1;
+            }
+
+        }
+    }
+  if (return_value)
+    {
+      g_debug ("Captured duplicate result, report: %llu hash_value: %s",
+                report, *entity_hash_value);
+      g_debug ("Entity string: %s", result_string->str);
+    }
+  g_string_free (result_string, TRUE);
+  return return_value;
+}
+
+/**
  * @brief Add a container image scan result to a report.
  *
  * @param[in]      res           The container image scan result.
@@ -208,9 +314,10 @@ add_web_application_scan_result (http_scanner_result_t res,
       severity_str = web_application_nvt_severity (result_type);
       qod_int = QOD_DEFAULT;
 
-      if (!check_http_scanner_result_exists (rep_aux->report, rep_aux->task,
-                                             res, &hash_value,
-                                             rep_aux->hash_results))
+      if (!check_web_application_scanner_result_exists (rep_aux->report,
+                                                        rep_aux->task,
+                                                        res, &hash_value,
+                                                        rep_aux->hash_results))
         {
           result = make_osp_result (rep_aux->task,
                                     host ?: "",
