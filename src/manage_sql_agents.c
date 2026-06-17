@@ -94,7 +94,8 @@ update_existing_agent (agent_data_t agent)
   gchar *insert_operating_system = sql_insert (agent->operating_system);
   gchar *insert_architecture = sql_insert (agent->architecture);
   gchar *insert_latest_agent_version = sql_insert (agent->latest_agent_version);
-  gchar *insert_latest_updater_version = sql_insert (agent->latest_updater_version);
+  gchar *insert_latest_updater_version = sql_insert (
+    agent->latest_updater_version);
 
   sql ("UPDATE agents SET "
        " hostname = %s,"
@@ -471,7 +472,7 @@ init_agent_uuid_list_iterator (iterator_t *iterator,
   init_get_iterator (iterator, "agent", &get, columns,
                      NULL, // no trash columns
                      filter_columns,
-                     0,    // no trashcan
+                     0,           // no trashcan
                      join_clause, // scanners joins
                      where_clause->str, 0);
 
@@ -888,6 +889,25 @@ agent_id_by_uuid (const gchar *agent_uuid)
 
   return sql_string ("SELECT agent_id FROM agents WHERE uuid = '%s';",
                      agent_uuid);
+}
+
+/**
+ * @brief Get scanner ID by agent UUID.
+ *
+ * @param[in]  agent_uuid  Agent UUID to look up.
+ *
+ * @return Scanner row ID of the agent, or 0 if not found or on error.
+ */
+scanner_t
+agent_scanner_id_by_uuid (const gchar *agent_uuid)
+{
+  g_return_val_if_fail (agent_uuid != NULL, (scanner_t)0);
+  scanner_t scanner = 0;
+
+  sql_int64_ps (&scanner, "SELECT scanner FROM agents WHERE uuid = $1;",
+                SQL_STR_PARAM (agent_uuid),
+                NULL);
+  return scanner;
 }
 
 /**

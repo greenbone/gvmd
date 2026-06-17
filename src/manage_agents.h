@@ -101,7 +101,8 @@ typedef enum
   AGENT_RESPONSE_AGENT_NOT_FOUND = -10,          ///< Failed getting owner UUID
   AGENT_RESPONSE_INTERNAL_ERROR = -11,           ///< Internal error
   AGENT_RESPONSE_IN_USE_ERROR = -12, ///< Agent is used by an Agent Group
-  AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED = -13 ///< Agent update validation error
+  AGENT_RESPONSE_CONTROLLER_UPDATE_REJECTED = -13, ///< Agent update validation error
+  AGENT_RESPONSE_DOWNLOAD_FAILED = -14 ///< Agent support bundle download failed
 } agent_response_t;
 
 void
@@ -145,6 +146,10 @@ delete_and_resync_agents (agent_uuid_list_t);
 
 int
 manage_agents_sync_from_agent_controllers (gboolean *);
+
+agent_response_t
+get_agent_support_bundle (const gchar *, int,
+                          agent_controller_support_bundle_t *);
 
 int
 init_agent_iterator (iterator_t *iterator, get_data_t *);
@@ -239,6 +244,9 @@ agent_response_to_string (agent_response_t);
 
 gchar *
 agent_id_by_uuid (const gchar *);
+
+scanner_t
+agent_scanner_id_by_uuid (const gchar *);
 
 #endif // not _GVMD_MANAGE_AGENTS_H
 #endif // ENABLE_AGENTS
