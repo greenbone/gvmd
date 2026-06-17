@@ -18,6 +18,13 @@
 #ifndef _GVMD_MANAGE_AGENTS_H
 #define _GVMD_MANAGE_AGENTS_H
 
+/**
+ * @brief Agent support bundle buffer sizes.
+ */
+#define AGENT_SUPPORT_BUNDLE_READ_BUFFER_SIZE 4096
+#define AGENT_SUPPORT_BUNDLE_BASE64_BUFFER_SIZE \
+(((AGENT_SUPPORT_BUNDLE_READ_BUFFER_SIZE + 2) / 3) * 4 + 16)
+
 #include "iterator.h"
 #include "manage_agent_common.h"
 
