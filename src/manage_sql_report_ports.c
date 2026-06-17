@@ -314,6 +314,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                   last_item->severity_double = item->severity_double;
                 }
               g_array_remove_index (ports, index);
+              result_buffer_free (item);
               length = ports->len;
               index--;
             }
