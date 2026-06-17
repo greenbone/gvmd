@@ -83,6 +83,46 @@ refresh_connector_access_token (security_intelligence_connector_t conn,
 }
 
 /**
+ * @brief  Register managed appliance with security intelligence
+ *
+ * @param  conn  The security intelligence connector
+ * @param  appliance_id  The appliance ID to register with.
+ *                       Defined to be the OIDC client ID
+ * @return TRUE on success
+ */
+static gboolean
+register_managed_appliance (security_intelligence_connector_t conn,
+                            const gchar* appliance_id)
+{
+  security_intelligence_managed_appliance_t managed_appliance =
+    security_intelligence_managed_appliance_new ();
+  security_intelligence_managed_appliance_t created_appliance = NULL;
+
+  managed_appliance->appliance_id = g_strdup (appliance_id);
+  int result = security_intelligence_create_managed_appliance (conn, managed_appliance,
+                                                  &created_appliance, NULL);
+
+  if (result != SECURITY_INTELLIGENCE_RESP_OK)
+    {
+      g_warning ("%s: failed to register appliance with security intelligence",
+                 __func__);
+      return FALSE;
+    }
+
+  if (created_appliance)
+    {
+      // DEBUG
+      g_warning ("appliance: %s %s %s\n", created_appliance->appliance_id,
+                 created_appliance->ip,
+                 created_appliance->https_certificate_fingerprint);
+      security_intelligence_managed_appliance_free (created_appliance);
+    }
+  security_intelligence_managed_appliance_free (managed_appliance);
+
+  return TRUE;
+}
+
+/**
  * @brief  Export a single report to security intelligence
  *
  * @param  report    The report to export
@@ -102,12 +142,7 @@ export_report_security_intelligence (report_t report,
   (void) report;
   g_debug ("%s: exporting report %lld", __func__, report);
 
-  gchar *bearer_token = generate_bearer_token (config);
-  if (!bearer_token)
-    {
-      return EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED;
-    }
-
+  // Create connector
   security_intelligence_connector_t conn =
     security_intelligence_connector_new ();
   security_intelligence_connector_builder (conn, SECURITY_INTELLIGENCE_URL,
@@ -115,6 +150,9 @@ export_report_security_intelligence (report_t report,
   security_intelligence_connector_builder (conn, SECURITY_INTELLIGENCE_CA_CERT,
                                            config->service_cacert);
   refresh_connector_access_token (conn, config);
+
+  // Register appliance
+  register_managed_appliance (conn, config->oidc_client_id);
 
   /**
    * - Connect to OpenVAS Security Intelligence, using libgvm
@@ -134,8 +172,6 @@ export_report_security_intelligence (report_t report,
    */
 
   security_intelligence_connector_free (conn);
-
-
 
   return EXPORT_REPORT_RESULT_FAILURE;
 }
