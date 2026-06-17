@@ -406,6 +406,7 @@ runtime_append_disabled_commands (GString *buf)
         "modify_agent_group,"
         "delete_agent_group,"
         "get_agent_installer_instruction,"
+        "get_agent_support_bundle,"
         "sync_agents");
     }
   /* CONTAINER_SCANNING */
