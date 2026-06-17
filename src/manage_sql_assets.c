@@ -3986,5 +3986,6 @@ add_assets_from_host_in_report (report_t report, const char *host_ip)
       return ret;
     }
 
+  free (report_id);
   return 0;
 }
