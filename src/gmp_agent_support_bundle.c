@@ -108,10 +108,6 @@ get_agent_support_bundle_parse_days (int *days)
   return TRUE;
 }
 
-#define AGENT_SUPPORT_BUNDLE_READ_BUFFER_SIZE 4096
-#define AGENT_SUPPORT_BUNDLE_BASE64_BUFFER_SIZE \
-  (((AGENT_SUPPORT_BUNDLE_READ_BUFFER_SIZE + 2) / 3) * 4 + 16)
-
 /**
  * @brief Send binary data to the GMP client as Base64.
  *
