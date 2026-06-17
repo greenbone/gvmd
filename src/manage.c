@@ -5472,8 +5472,10 @@ manage_scap_update_time ()
       #else
         strftime (time_string, 99, "%FT%T.000%z", &update_time);
       #endif
+      g_free (content);
       return time_string;
     }
+  g_free (content);
   return "";
 }
 
