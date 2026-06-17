@@ -4117,6 +4117,46 @@ migrate_277_to_278 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 278 to version 279.
+ *
+ * Remove integration configurations whose owner no longer exists.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_278_to_279 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 278. */
+
+  if (manage_db_version () != 278)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /*
+   * Remove orphaned integration configurations left behind by previously
+   * deleted users.
+   */
+  sql ("DELETE FROM integration_configs"
+       " WHERE owner IS NOT NULL"
+       " AND NOT EXISTS"
+       "   (SELECT 1"
+       "    FROM users"
+       "    WHERE users.id = integration_configs.owner);");
+
+  /* Set the database version to 279. */
+
+  set_db_version (279);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4201,6 +4241,7 @@ static migrator_t database_migrators[] = {
   {276, migrate_275_to_276},
   {277, migrate_276_to_277},
   {278, migrate_277_to_278},
+  {279, migrate_278_to_279},
   /* End marker. */
   {-1, NULL}};
 

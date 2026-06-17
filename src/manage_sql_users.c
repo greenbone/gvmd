@@ -1454,6 +1454,9 @@ delete_user (const char *user_id_arg, const char *name_arg,
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
 
+  /* Integration Configs */
+  sql ("DELETE FROM integration_configs WHERE owner = %llu;", user);
+
   /* Scanners. */
   if (user_resources_in_use (user,
                              "scanners", scanner_in_use,
