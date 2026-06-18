@@ -29,6 +29,7 @@ typedef struct
 {
   gchar *scanner_id;  ///< UUID of the scanner.
   gchar *language;    ///< Requested instruction language, e.g. "en" or "de".
+  gchar *origin_url;  ///< Origin URL used in the generated command.
 } get_agent_installer_instruction_t;
 
 /**
@@ -46,6 +47,7 @@ get_agent_installer_instruction_reset ()
 {
   g_free (get_agent_installer_instruction_data.scanner_id);
   g_free (get_agent_installer_instruction_data.language);
+  g_free (get_agent_installer_instruction_data.origin_url);
 
   memset (&get_agent_installer_instruction_data,
           0,
@@ -55,7 +57,7 @@ get_agent_installer_instruction_reset ()
 /**
  * @brief Check whether an instruction language is supported.
  *
- * @param[in] language  Language string.
+ * @param[in] language Language string.
  *
  * @return TRUE if supported, FALSE otherwise.
  */
@@ -69,8 +71,8 @@ instruction_language_is_supported (const gchar *language)
 /**
  * @brief Handle command start element.
  *
- * @param[in] attribute_names   All attribute names.
- * @param[in] attribute_values  All attribute values.
+ * @param[in] attribute_names  All attribute names.
+ * @param[in] attribute_values All attribute values.
  */
 void
 get_agent_installer_instruction_start (const gchar **attribute_names,
@@ -89,13 +91,19 @@ get_agent_installer_instruction_start (const gchar **attribute_names,
     get_agent_installer_instruction_data.language = g_strdup (attribute);
   else
     get_agent_installer_instruction_data.language = NULL;
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "origin_url", &attribute))
+    get_agent_installer_instruction_data.origin_url = g_strdup (attribute);
+  else
+    get_agent_installer_instruction_data.origin_url = NULL;
 }
 
 /**
  * @brief Handle end element.
  *
- * @param[in] gmp_parser  GMP parser.
- * @param[in] error       Error parameter.
+ * @param[in] gmp_parser GMP parser.
+ * @param[in] error      Error parameter.
  */
 void
 get_agent_installer_instruction_run (gmp_parser_t *gmp_parser, GError **error)
@@ -130,6 +138,16 @@ get_agent_installer_instruction_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (get_agent_installer_instruction_data.origin_url == NULL
+      || *get_agent_installer_instruction_data.origin_url == '\0')
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_agent_installer_instruction",
+                           "Required origin_url is missing"));
+      get_agent_installer_instruction_reset ();
+      return;
+    }
+
   if (!instruction_language_is_supported
         (get_agent_installer_instruction_data.language))
     {
@@ -141,12 +159,18 @@ get_agent_installer_instruction_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  lang_type = lang_type_from_string
-                (get_agent_installer_instruction_data.language);
+  lang_type =
+    lang_type_from_string (get_agent_installer_instruction_data.language);
 
-  instruction = get_agent_installer_instruction
-                  (get_agent_installer_instruction_data.scanner_id,
-                   lang_type);
+  /*
+   * The origin URL is used by the Agent Controller to generate an executable
+   * installation command that connects the agent to the correct gvmd endpoint.
+   */
+  instruction =
+    get_agent_installer_instruction (
+      get_agent_installer_instruction_data.scanner_id,
+      lang_type,
+      get_agent_installer_instruction_data.origin_url);
 
   if (instruction == NULL)
     {
@@ -166,8 +190,7 @@ get_agent_installer_instruction_run (gmp_parser_t *gmp_parser, GError **error)
      get_agent_installer_instruction_data.language,
      instruction->instruction ? instruction->instruction : "");
 
-  g_free (instruction->instruction);
-  g_free (instruction);
+  agent_controller_installer_instruction_free (instruction);
 
   get_agent_installer_instruction_reset ();
 }
