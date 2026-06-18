@@ -8993,6 +8993,14 @@ END:VCALENDAR
         <type>text</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>origin_url</name>
+        <summary>
+          Origin URL used to generate the executable agent installation command
+        </summary>
+        <type>text</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -9023,7 +9031,10 @@ END:VCALENDAR
     <example>
       <summary>Get an agent installer instruction</summary>
       <request>
-        <get_agent_installer_instruction scanner_id="xy" language="en"/>
+        <get_agent_installer_instruction
+          scanner_id="xy"
+          language="en"
+          origin_url="https://example.com"/>
       </request>
       <response>
         <get_agent_installer_instruction_response status="200" status_text="OK">
