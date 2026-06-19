@@ -3716,6 +3716,17 @@ check_db_settings ()
           "  'CVE-CPE Matching Version',"
           "  'Version of the CVE-CPE matching used in CVE scans.',"
           "  '0' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_MAINTENANCE_WINDOW "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_MAINTENANCE_WINDOW "', NULL,"
+          "  'Maintenance Window',"
+          "  'Time window in which no scans are allowed.',"
+          "  NULL );");
 }
 
 /**
