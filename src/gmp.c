@@ -76,6 +76,7 @@
 #include "gmp_agent_groups.h"
 #include "gmp_agents.h"
 #include "gmp_agent_installer_instructions.h"
+#include "gmp_agent_support_bundle.h"
 #endif
 #include "gmp_base.h"
 #if ENABLE_CREDENTIAL_STORES
@@ -4543,6 +4544,7 @@ typedef enum
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
   CLIENT_GET_AGENT_INSTALLER_INSTRUCTION,
+  CLIENT_GET_AGENT_SUPPORT_BUNDLE,
   CLIENT_GET_AGENTS,
 #endif /* ENABLE_AGENTS */
   CLIENT_GET_AGGREGATES,
@@ -5431,6 +5433,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_GET_START (agent_groups, AGENT_GROUPS)
 
         ELSE_GET_START (agent_installer_instruction, AGENT_INSTALLER_INSTRUCTION)
+
+        ELSE_GET_START (agent_support_bundle, AGENT_SUPPORT_BUNDLE)
 
         ELSE_GET_START (agents, AGENTS)
 #endif /* ENABLE_AGENTS */
@@ -22293,6 +22297,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_GET_END (AGENT_GROUPS, agent_groups);
 
       CASE_GET_END (AGENT_INSTALLER_INSTRUCTION, agent_installer_instruction);
+
+      CASE_GET_END (AGENT_SUPPORT_BUNDLE, agent_support_bundle);
 
       CASE_GET_END (AGENTS, agents);
 #endif /* ENABLE_AGENTS */

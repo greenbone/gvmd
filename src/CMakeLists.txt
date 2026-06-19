@@ -34,7 +34,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.2
+    libgvm_agent_controller>=23.6
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
@@ -347,6 +347,7 @@ if(ENABLE_AGENTS)
     gmp_agent_groups.c
     gmp_agents.c
     gmp_agent_installer_instructions.c
+    gmp_agent_support_bundle.c
   )
 endif()
 

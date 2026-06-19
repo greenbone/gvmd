@@ -8993,6 +8993,14 @@ END:VCALENDAR
         <type>text</type>
         <required>1</required>
       </attrib>
+      <attrib>
+        <name>origin_url</name>
+        <summary>
+          Origin URL used to generate the executable agent installation command
+        </summary>
+        <type>text</type>
+        <required>1</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -9023,7 +9031,10 @@ END:VCALENDAR
     <example>
       <summary>Get an agent installer instruction</summary>
       <request>
-        <get_agent_installer_instruction scanner_id="xy" language="en"/>
+        <get_agent_installer_instruction
+          scanner_id="xy"
+          language="en"
+          origin_url="https://example.com"/>
       </request>
       <response>
         <get_agent_installer_instruction_response status="200" status_text="OK">
@@ -9042,6 +9053,106 @@ END:VCALENDAR
             ]
           }</instruction>
         </get_agent_installer_instruction_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_agent_support_bundle</name>
+    <summary>Get a support bundle for an agent</summary>
+    <description>
+      <p>
+        The client uses the get_agent_support_bundle command to download a
+        support bundle for a specific agent from an agent controller.
+      </p>
+      <p>
+        The support bundle is returned as Base64-encoded binary content.
+        The optional days attribute controls the number of days of diagnostic
+        data included in the bundle. If days is omitted, the agent controller
+        default is used.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>agent_uuid</name>
+        <summary>UUID of the agent to get the support bundle for</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>days</name>
+        <summary>Number of days of diagnostic data to include</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>file</e>
+      </pattern>
+      <ele>
+        <name>file</name>
+        <summary>The downloaded agent support bundle</summary>
+        <pattern>
+          <e>name</e>
+          <e>content_type</e>
+          <e>size</e>
+          <e>content</e>
+        </pattern>
+      </ele>
+      <ele>
+        <name>name</name>
+        <type>text</type>
+        <summary>Filename of the support bundle</summary>
+      </ele>
+      <ele>
+        <name>content_type</name>
+        <type>text</type>
+        <summary>MIME type of the support bundle</summary>
+      </ele>
+      <ele>
+        <name>size</name>
+        <type>integer</type>
+        <summary>Size of the decoded support bundle in bytes</summary>
+      </ele>
+      <ele>
+        <name>content</name>
+        <summary>Base64-encoded support bundle content</summary>
+        <pattern>
+          <attrib>
+            <name>encoding</name>
+            <type>text</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+        <type>base64</type>
+      </ele>
+    </response>
+    <example>
+      <summary>Get an agent support bundle</summary>
+      <request>
+        <get_agent_support_bundle
+          agent_uuid="31acafd6-5f48-43c5-bac0-dbeeccc526dd"
+          days="7"/>
+      </request>
+      <response>
+        <get_agent_support_bundle_response status="200" status_text="OK">
+          <file>
+            <name>support-bundle-GAT-29::2d61a736-20260617T122816Z.tar.gz.enc</name>
+            <content_type>application/octet-stream</content_type>
+            <size>94976</size>
+            <content encoding="base64">U2FsdGVkX1...</content>
+          </file>
+        </get_agent_support_bundle_response>
       </response>
     </example>
   </command>

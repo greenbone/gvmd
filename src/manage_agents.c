@@ -1067,4 +1067,69 @@ out_unlock:
   return ret;
 }
 
+/**
+ * @brief Download a support bundle for a specific agent.
+ *
+ * @param[in]  agent_uuid UUID of the agent.
+ * @param[in]  days Number of days of data to include. A value of 0 uses the
+ *                  Agent Controller default.
+ * @param[out] out_bundle Receives the newly allocated support bundle.
+ *
+ * @return AGENT_RESPONSE_SUCCESS on success, or a specific AGENT_RESPONSE_*
+ *         error code on failure.
+ */
+agent_response_t
+get_agent_support_bundle (
+  const gchar *agent_uuid,
+  int days,
+  agent_controller_support_bundle_t *out_bundle)
+{
+  gvmd_agent_connector_t connector = NULL;
+  scanner_t scanner;
+  gchar *agent_id;
+
+  if (!agent_uuid || !out_bundle || days < 0)
+    return AGENT_RESPONSE_INVALID_ARGUMENT;
+
+  *out_bundle = NULL;
+
+  agent_id = agent_id_by_uuid (agent_uuid);
+  if (!agent_id)
+    return AGENT_RESPONSE_AGENT_NOT_FOUND;
+
+  scanner = agent_scanner_id_by_uuid (agent_uuid);
+  if (!scanner)
+    {
+      g_warning ("%s: Failed to find scanner for agent UUID %s",
+                 __func__, agent_uuid);
+      g_free (agent_id);
+      return AGENT_RESPONSE_SCANNER_LOOKUP_FAILED;
+    }
+
+  connector = gvmd_agent_connector_new_from_scanner (scanner);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to create agent connector for scanner",
+                 __func__);
+      g_free (agent_id);
+      return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
+    }
+
+  *out_bundle =
+    agent_controller_download_support_bundle (
+      connector->base, agent_id, days);
+
+  gvmd_agent_connector_free (connector);
+  g_free (agent_id);
+
+  if (!*out_bundle)
+    {
+      g_warning ("%s: Failed to download support bundle for agent UUID %s",
+                 __func__, agent_uuid);
+      return AGENT_RESPONSE_DOWNLOAD_FAILED;
+    }
+
+  return AGENT_RESPONSE_SUCCESS;
+}
+
 #endif // ENABLE_AGENTS

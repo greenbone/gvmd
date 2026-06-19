@@ -1264,6 +1264,10 @@ delete_user (const char *user_id_arg, const char *name_arg,
       sql ("UPDATE report_configs_trash SET owner = %llu WHERE owner = %llu;",
            inheritor, user);
 
+      /* Integration config*/
+      sql ("UPDATE integration_configs SET owner = %llu WHERE owner = %llu;",
+           inheritor, user);
+
       /* Report Formats. */
 
       has_rows = inherit_report_formats (user, inheritor, &rows);
@@ -1453,6 +1457,9 @@ delete_user (const char *user_id_arg, const char *name_arg,
        user);
   sql ("DELETE FROM configs WHERE owner = %llu;", user);
   sql ("DELETE FROM configs_trash WHERE owner = %llu;", user);
+
+  /* Integration Configs */
+  sql ("DELETE FROM integration_configs WHERE owner = %llu;", user);
 
   /* Scanners. */
   if (user_resources_in_use (user,

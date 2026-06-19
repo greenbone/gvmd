@@ -54,13 +54,15 @@ lang_type_from_string (const char *lang_str)
  *
  * @param[in] scanner_uuid  UUID of the scanner to get instructions for.
  * @param[in] lang         Language for the instructions.
+ * @param[in] origin_url   Origin URL to include in the instructions.
  *
  * @return Allocated agent_controller_installer_instruction_t on success,
  *         NULL on failure (e.g., invalid scanner UUID, connection issues).
  */
 agent_controller_installer_instruction_t
 get_agent_installer_instruction (const gchar *scanner_uuid,
-                                 instructions_lang_type_t lang)
+                                 instructions_lang_type_t lang,
+                                 const gchar *origin_url)
 {
   scanner_t scanner;
   if (!scanner_uuid)
@@ -90,7 +92,7 @@ get_agent_installer_instruction (const gchar *scanner_uuid,
     }
 
   agent_controller_installer_instruction_t instr =
-    agent_controller_get_installer_instruction (conn->base, lang);
+    agent_controller_get_installer_instruction (conn->base, lang, origin_url);
 
   gvmd_agent_connector_free (conn);
 

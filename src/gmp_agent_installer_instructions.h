@@ -24,4 +24,4 @@ void
 get_agent_installer_instruction_start (const gchar **,
                                        const gchar **);
 
-#endif // not _GVMD_GMP_AGENT_INSTALLER_INSTRUCTIONS_H
+#endif // _GVMD_GMP_AGENT_INSTALLER_INSTRUCTIONS_H
