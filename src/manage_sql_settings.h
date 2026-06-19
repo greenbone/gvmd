@@ -30,6 +30,12 @@
 char *
 setting_timezone ();
 
+char *
+setting_timezone_for_user (const char *);
+
+char *
+setting_maintenance_window_for_user (const char *);
+
 int
 setting_dynamic_severity_int ();
 

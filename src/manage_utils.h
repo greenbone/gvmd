@@ -76,6 +76,9 @@ icalendar_duration_from_vcalendar (icalcomponent *);
 time_t
 icalendar_first_time_from_vcalendar (icalcomponent *, icaltimezone *);
 
+gboolean
+icalendar_is_window_active (const char *, time_t, const char *);
+
 gchar *
 clean_hosts_string (const char *);
 

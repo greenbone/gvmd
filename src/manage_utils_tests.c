@@ -151,6 +151,46 @@ Ensure (manage_utils, icalendar_next_time_from_string_tz)
                is_equal_to (1));
 }
 
+Ensure (manage_utils, icalendar_is_window_active_returns_true_when_active)
+{
+  time_t now = 1577838600; /* 2020-01-01T00:30:00Z */
+
+  const char *ical_string =
+      "BEGIN:VCALENDAR\n"
+      "PRODID:-//Greenbone.net//NONSGML Greenbone Security Assistant\n"
+      "VERSION:2.0\n"
+      "BEGIN:VEVENT\n"
+      "UID:4fc7a885-423f-4d10-9bfc-118581a9dee5\n"
+      "DTSTART:20200101T000000\n"
+      "DURATION:PT1H\n"
+      "RRULE:FREQ=DAILY\n"
+      "SUMMARY:Maintenance Window\n"
+      "END:VEVENT\n"
+      "END:VCALENDAR\n";
+
+   assert_that (icalendar_is_window_active (ical_string, now, "UTC"), is_true);
+}
+
+Ensure (manage_utils, icalendar_is_window_active_returns_false_when_inactive)
+{
+  time_t now = 1577838600; /* 2020-01-01T00:30:00Z */
+
+  const char *ical_string =
+      "BEGIN:VCALENDAR\n"
+      "PRODID:-//Greenbone.net//NONSGML Greenbone Security Assistant\n"
+      "VERSION:2.0\n"
+      "BEGIN:VEVENT\n"
+      "UID:4fc7a885-423f-4d10-9bfc-118581a9dee5\n"
+      "DTSTART:20200101T020000\n"
+      "DURATION:PT1H\n"
+      "RRULE:FREQ=DAILY\n"
+      "SUMMARY:Maintenance Window\n"
+      "END:VEVENT\n"
+      "END:VCALENDAR\n";
+
+   assert_that (icalendar_is_window_active (ical_string, now, "UTC"), is_false);
+}
+
 /* clean_hosts tests */
 
 Ensure (manage_utils, clean_hosts_simple_host)
@@ -390,6 +430,10 @@ main (int argc, char **argv)
                          icalendar_next_time_from_string_utc);
   add_test_with_context (suite, manage_utils,
                          icalendar_next_time_from_string_tz);
+  add_test_with_context (suite, manage_utils,
+                         icalendar_is_window_active_returns_true_when_active);
+  add_test_with_context (suite, manage_utils,
+                         icalendar_is_window_active_returns_false_when_inactive);
 
   add_test_with_context (suite, manage_utils, clean_hosts_string_zeroes);
 

@@ -57,6 +57,38 @@ setting_timezone ()
 }
 
 /**
+ * @brief Return the timezone for a given user.
+ *
+ * @param[in]  user_uuid  UUID of the user.
+ *
+ * @return User's timezone in settings if it exists, else NULL.
+ */
+char *
+setting_timezone_for_user (const char *user_uuid)
+{
+  return sql_string_ps ("SELECT timezone FROM users WHERE uuid = $1",
+                        SQL_STR_PARAM (user_uuid), NULL);
+}
+
+/**
+ * @brief Return the maintenance window for a given user.
+ *
+ * @param[in]  user_uuid  UUID of the user.
+ *
+ * @return User's maintenance window in settings if it exists, else NULL.
+ */
+char *
+setting_maintenance_window_for_user (const char *user_uuid)
+{
+  return sql_string_ps ("SELECT value FROM settings"
+                        " WHERE uuid = '" SETTING_UUID_MAINTENANCE_WINDOW "'"
+                        " AND (owner = (SELECT users.id FROM users"
+                        "      WHERE users.uuid = $1))"
+                        " ORDER BY coalesce (owner, 0) DESC LIMIT 1;",
+                        SQL_STR_PARAM (user_uuid), NULL);
+}
+
+/**
  * @brief Return the Dynamic Severity user setting as an int.
  *
  * @return 1 if user's Dynamic Severity is "Yes", 0 if it is "No",
@@ -439,7 +471,8 @@ modify_setting (const gchar *uuid, const gchar *name,
                || strcmp (uuid, SETTING_UUID_PREFERRED_LANG) == 0
                || strcmp (uuid, SETTING_UUID_ROWS_PER_PAGE) == 0
                || strcmp (uuid, SETTING_UUID_USER_INTERFACE_DATE_FORMAT) == 0
-               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0))
+               || strcmp (uuid, SETTING_UUID_USER_INTERFACE_TIME_FORMAT) == 0
+               || strcmp (uuid, SETTING_UUID_MAINTENANCE_WINDOW) == 0))
     {
       gsize value_size;
       gchar *value;
@@ -611,6 +644,30 @@ modify_setting (const gchar *uuid, const gchar *name,
             {
               g_free (value);
               return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
+            }
+        }
+
+      if (strcmp (uuid, SETTING_UUID_MAINTENANCE_WINDOW) == 0)
+        {
+          /* Maintenance Window */
+          if (value
+              && strcmp (value, ""))
+            {
+              gchar *error_out = NULL;
+              icalcomponent *ical =
+                icalendar_from_string (value,
+                                       icaltimezone_get_utc_timezone (),
+                                       &error_out);
+              if (!ical)
+                {
+                  g_warning ("%s: Failed to parse Maintenance Window value: %s",
+                            __func__, error_out);
+                  g_free (error_out);
+                  g_free (value);
+                  return MODIFY_SETTING_RESULT_SYNTAX_ERROR;
+                }
+              icalcomponent_free (ical);
+              g_free (error_out);
             }
         }
 
