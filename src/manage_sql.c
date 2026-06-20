@@ -17298,6 +17298,9 @@ manage_send_report (report_t report, report_t delta_report,
       output_file = g_strdup(xml_file);
     }
 
+  g_free (xml_start);
+  g_free (xml_file);
+
   if (output_file == NULL)
     {
       g_warning ("%s: No file returned for report format", __func__);
