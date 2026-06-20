@@ -226,6 +226,7 @@ mktime_with_tz (struct tm *tm, const char *new_tz)
   else
     unsetenv ("TZ");
 
+  g_free (tz);
   return epoch_time;
 }
 
