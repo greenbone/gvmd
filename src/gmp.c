@@ -19760,6 +19760,9 @@ get_task_schedule_xml (task_t task)
                      "</schedule_periods>",
                      task_schedule_periods (task));
 
+  g_free (task_schedule_uuid);
+  g_free (task_schedule_name);
+
   return g_string_free (xml, FALSE);
 }
 
