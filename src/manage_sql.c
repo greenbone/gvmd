@@ -9494,6 +9494,22 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_qod, *quoted_qod_type;
       g_debug ("%s: add results: index: %i", __func__, index);
 
+      if (sql_int64 (&result_rowid,
+        "SELECT nextval('results_id_seq');"))
+        {
+          g_warning ("%s: failed to get result row ID", __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      char* uuid = gvm_uuid_make ();
+      if (uuid == NULL)
+        {
+          g_warning ("%s: failed to generate result UUID", __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -2;
+        }
+
       quoted_host = sql_copy_escape (result->host ? result->host : "");
       quoted_hostname = sql_copy_escape (result->hostname ? result->hostname : "");
       quoted_port = sql_copy_escape (result->port ? result->port : "");
@@ -9512,19 +9528,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       quoted_qod_type = sql_copy_escape (result->qod_type ? result->qod_type : "");
       result_nvt_notice (quoted_nvt_oid);
 
-      if (sql_int64 (&result_rowid,
-        "SELECT nextval('results_id_seq');"))
-        {
-          g_warning ("%s: failed to get result row ID", __func__);
-          return -1;
-        }
-
-      char* uuid = gvm_uuid_make ();
-      if (uuid == NULL)
-        {
-          g_warning ("%s: failed to generate result UUID", __func__);
-          return -2;
-        }
       time_t date = time (NULL);
 
       resource_t result_nvt;
