@@ -9456,6 +9456,14 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   /* Add the results. */
 
+  if (sql_int64 (&owner,
+                 "SELECT owner FROM tasks WHERE tasks.id = %llu",
+                 task))
+    {
+      g_warning ("%s: failed to get owner of task", __func__);
+      return -1;
+    }
+
   db_copy_buffer_init (&copy_buffer,
                        BUFFER_SIZE,
                        "COPY results"
@@ -9464,14 +9472,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                        "  nvt_version, severity, qod, qod_type,"
                        "  result_nvt, report)"
                        " FROM STDIN;");
-
-  if (sql_int64 (&owner,
-                 "SELECT owner FROM tasks WHERE tasks.id = %llu",
-                 task))
-    {
-      g_warning ("%s: failed to get owner of task", __func__);
-      return -1;
-    }
 
   sql_begin_immediate ();
   g_debug ("%s: add hosts", __func__);
