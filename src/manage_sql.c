@@ -9510,10 +9510,24 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
           return -2;
         }
 
+      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
+      result_nvt_notice (quoted_nvt_oid);
+
+      resource_t result_nvt;
+      if (sql_int64 (&result_nvt,
+                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
+                     quoted_nvt_oid))
+        {
+          g_warning ("%s: failed to get result_nvt ID", __func__);
+          g_free (quoted_nvt_oid);
+          g_free (uuid);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
       quoted_host = sql_copy_escape (result->host ? result->host : "");
       quoted_hostname = sql_copy_escape (result->hostname ? result->hostname : "");
       quoted_port = sql_copy_escape (result->port ? result->port : "");
-      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
       quoted_description = sql_copy_escape (result->description
                                        ? result->description
                                        : "");
@@ -9526,19 +9540,8 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       quoted_qod_type = sql_copy_escape (result->qod_type ? result->qod_type : "");
-      result_nvt_notice (quoted_nvt_oid);
 
       time_t date = time (NULL);
-
-      resource_t result_nvt;
-
-      if (sql_int64 (&result_nvt,
-                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
-                     quoted_nvt_oid))
-        {
-          g_warning ("%s: failed to get result_nvt ID", __func__);
-          return -1;
-        }
 
       int ret = db_copy_buffer_append_printf
                   (&copy_buffer,
