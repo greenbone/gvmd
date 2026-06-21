@@ -4353,12 +4353,13 @@ manage_process_report_imports ()
 
   while (next (&reports))
     {
+      gchar *lockfile_name, *lockfile_path;
+
       report = iterator_int64 (&reports, 0);
 
-      gchar *lockfile_path =
-        g_build_filename (GVMD_STATE_DIR,
-                          g_strdup_printf ("gvm-process-report-%llu", report),
-                          NULL);
+      lockfile_name = g_strdup_printf ("gvm-process-report-%llu", report);
+      lockfile_path = g_build_filename (GVMD_STATE_DIR, lockfile_name, NULL);
+      g_free (lockfile_name);
       ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
       if (ret > 0)
         {
