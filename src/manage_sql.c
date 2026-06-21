@@ -9495,7 +9495,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       g_debug ("%s: add results: index: %i", __func__, index);
 
       if (sql_int64 (&result_rowid,
-        "SELECT nextval('results_id_seq');"))
+                     "SELECT nextval('results_id_seq');"))
         {
           g_warning ("%s: failed to get result row ID", __func__);
           db_copy_buffer_cleanup (&copy_buffer);
@@ -9605,10 +9605,10 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
   if (count > 0)
     {
       if (db_copy_buffer_commit (&copy_buffer, TRUE))
-      {
-        db_copy_buffer_cleanup (&copy_buffer);
-        return -1;
-      }
+        {
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
       report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
@@ -9691,18 +9691,17 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
        * COALESCE ensures that the query always returns one row.
        * A value of 0 means that the report host does not exist yet.
        */
-      if (sql_int64_ps (
-        &report_host,
-        "SELECT coalesce ("
-        "  (SELECT id"
-        "   FROM report_hosts"
-        "   WHERE report = $1"
-        "     AND host = $2"
-        "   LIMIT 1),"
-        "  0);",
-        SQL_RESOURCE_PARAM (report),
-        SQL_STR_PARAM (detail->ip),
-        NULL))
+      if (sql_int64_ps (&report_host,
+                        "SELECT coalesce ("
+                        "  (SELECT id"
+                        "   FROM report_hosts"
+                        "   WHERE report = $1"
+                        "     AND host = $2"
+                        "   LIMIT 1),"
+                        "  0);",
+                        SQL_RESOURCE_PARAM (report),
+                        SQL_STR_PARAM (detail->ip),
+                        NULL))
         {
           g_warning ("%s: Failed to look up report host '%s'"
                      " in report %llu",
@@ -9726,18 +9725,17 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
           /*
            * Look up the ID of the newly created report host.
            */
-          if (sql_int64_ps (
-            &report_host,
-            "SELECT coalesce ("
-            "  (SELECT id"
-            "   FROM report_hosts"
-            "   WHERE report = $1"
-            "     AND host = $2"
-            "   LIMIT 1),"
-            "  0);",
-            SQL_RESOURCE_PARAM (report),
-            SQL_STR_PARAM (detail->ip),
-            NULL))
+          if (sql_int64_ps (&report_host,
+                            "SELECT coalesce ("
+                            "  (SELECT id"
+                            "   FROM report_hosts"
+                            "   WHERE report = $1"
+                            "     AND host = $2"
+                            "   LIMIT 1),"
+                            "  0);",
+                            SQL_RESOURCE_PARAM (report),
+                            SQL_STR_PARAM (detail->ip),
+                            NULL))
             {
               g_warning ("%s: Failed to look up newly created report host '%s'"
                          " in report %llu",
