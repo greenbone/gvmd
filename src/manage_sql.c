@@ -9614,6 +9614,8 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
       sql_begin_immediate ();
     }
+  else
+    db_copy_buffer_cleanup (&copy_buffer);
 
   sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
        " SELECT distinct result_nvt, %llu FROM results"
