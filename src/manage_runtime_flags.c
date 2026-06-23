@@ -57,6 +57,13 @@
 #define ENABLE_WEB_APPLICATION_SCANNING 0
 #endif
 
+#ifndef ENABLE_SECURITY_INTELLIGENCE_EXPORT
+/**
+ * @brief Whether to enable web application scanning.
+ */
+#define ENABLE_SECURITY_INTELLIGENCE_EXPORT 0
+#endif
+
 /**
  * @brief State of a single feature.
  */
@@ -91,7 +98,7 @@ static feature_state_t feature_vt_metadata =
  * @brief State of a single feature.
  */
 static feature_state_t feature_security_intelligence_export =
-  {1, 0};
+  {ENABLE_SECURITY_INTELLIGENCE_EXPORT, 0};
 
 /**
  * @brief State of a single feature.
@@ -149,7 +156,6 @@ conf_file_feature_flags_init_empty (struct conf_feature_flags *t)
 /**
  * @brief Load all feature flags from a gvmd configuration file.
  *
- * @param[in]  config_path  Path to the configuration file.
  * @param[out] out          Output structure for parsed flags.
  *
  * @return  0 on success (file loaded or not present),

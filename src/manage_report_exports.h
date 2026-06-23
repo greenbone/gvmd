@@ -17,7 +17,6 @@
 #include "manage_resources_types.h"
 #include "manage_integration_configs.h"
 
-
 #define REPORT_EXPORT_STATUS_REQUESTED "report_export_requested"
 #define REPORT_EXPORT_STATUS_STARTED "report_export_started"
 #define REPORT_EXPORT_STATUS_FINISHED "report_export_finished"
@@ -39,9 +38,11 @@ typedef enum export_report_result
   EXPORT_REPORT_RESULT_FAILURE = -1,
 } export_report_result_t;
 
+#if ENABLE_SECURITY_INTELLIGENCE_EXPORT
 export_report_result_t
 export_report_security_intelligence (report_t report,
                                      integration_config_data_t config);
+#endif
 
 gboolean
 export_enabled_for_report_owner (report_t report);

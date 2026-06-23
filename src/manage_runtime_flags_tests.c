@@ -103,10 +103,20 @@ Ensure (manage_runtime_flags, default_flags_no_config_no_env)
                is_equal_to (0));
 #endif
 
+#if ENABLE_SECURITY_INTELLIGENCE_EXPORT
+  assert_that (feature_compiled_in (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
+               is_equal_to (0));
+#else
+  assert_that (feature_compiled_in (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
+               is_equal_to (0));
+#endif
+
   assert_that (feature_compiled_in (FEATURE_ID_VT_METADATA), is_equal_to (1));
   assert_that (feature_enabled (FEATURE_ID_VT_METADATA), is_equal_to (0));
-  assert_that (feature_compiled_in (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT), is_equal_to (1));
-  assert_that (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT), is_equal_to (0));
 }
 
 Ensure (manage_runtime_flags, config_enables_agents_when_compiled_in)
@@ -291,7 +301,8 @@ Ensure (manage_runtime_flags,
 #endif
 }
 
-Ensure (manage_runtime_flags, config_enables_web_application_scanning_when_compiled_in)
+Ensure (manage_runtime_flags,
+        config_enables_web_application_scanning_when_compiled_in)
 {
   const char *conf =
     "[features]\n"
@@ -303,8 +314,10 @@ Ensure (manage_runtime_flags, config_enables_web_application_scanning_when_compi
   runtime_flags_init ();
 
 #if ENABLE_WEB_APPLICATION_SCANNING
-  assert_that (feature_compiled_in (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (1));
-  assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_WEB_APPLICATION_SCANNING),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING),
+               is_equal_to (1));
 #else
   assert_that (feature_compiled_in (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (0));
   assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (0));
