@@ -1527,6 +1527,11 @@ manage_send_report (report_t, report_t, report_format_t, report_config_t,
                     int (*) (const char *, void*), void *, const char *,
                     const gchar *);
 
+int
+manage_report_xml_page (report_t, const get_data_t *, const gchar *);
+
+int
+manage_report_result_count (report_t, const get_data_t *, int *);
 
 
 /* Reports. */

@@ -19,7 +19,7 @@ pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.39)
 pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=23.00)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
-pkg_check_modules(LIBGVM_SECURITY_INTELLIGENCE REQUIRED libgvm_security_intelligence>=22.30)
+pkg_check_modules(LIBGVM_SECURITY_INTELLIGENCE REQUIRED libgvm_security_intelligence>=23.7)
 
 if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
@@ -230,7 +230,7 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
-  manage_report_exports_security_intelligence.c
+  manage_report_exports.c
 )
 
 if(ENABLE_AGENTS)

@@ -17418,6 +17418,122 @@ manage_send_report (report_t report, report_t delta_report,
 }
 
 /**
+ * @brief Generate lean report XML using the given GET data.
+ *
+ * @param[in] report    Report.
+ * @param[in] get       GET command data controlling filtering and pagination.
+ * @param[in] xml_file  Output XML file path.
+ *
+ * @return 0 on success, -1 on error, or 2 if a filter could not be found.
+ */
+int
+manage_report_xml_page (report_t report, const get_data_t *get,
+                        const gchar *xml_file)
+{
+  task_t task;
+
+  if (report == 0 || get == NULL || xml_file == NULL || *xml_file == '\0')
+    return -1;
+
+  report_task (report, &task);
+
+  return print_report_xml_start (
+    report,
+    0, /* No delta report. */
+    task,
+    (gchar *) xml_file,
+    get,
+    1,     /* Include note details. */
+    1,     /* Include override details. */
+    1,     /* Include result tags. */
+    0,     /* Respect GET pagination. */
+    1,     /* Generate lean XML. */
+    NULL,  /* Filter term not required. */
+    NULL,  /* Timezone not required. */
+    NULL); /* Host summary not required. */
+}
+
+/**
+ * @brief Get the number of report results matching the given GET data.
+ *
+ * @param[in]  report  Report.
+ * @param[in]  get     GET command data controlling result filtering.
+ * @param[out] count   Number of matching results.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+manage_report_result_count (report_t report, const get_data_t *get,
+                            int *count)
+{
+  task_t task;
+  gchar *usage_type = NULL;
+
+  if (report == 0 || get == NULL || count == NULL)
+    return -1;
+
+  *count = 0;
+
+  report_task (report, &task);
+
+  if (task && task_usage_type (task, &usage_type))
+    return -1;
+
+  if (usage_type && strcmp (usage_type, "audit") == 0)
+    {
+      int yes = 0;
+      int no = 0;
+      int incomplete = 0;
+      int undefined = 0;
+
+      report_compliance_counts (report, get, &yes, &no, &incomplete,
+                                &undefined);
+
+      *count = yes + no + incomplete + undefined;
+    }
+  else
+    {
+      int criticals = 0;
+      int holes = 0;
+      int infos = 0;
+      int logs = 0;
+      int warnings = 0;
+      int false_positives = 0;
+      double severity = 0.0;
+
+      report_counts_id_full (
+        report,
+        &criticals,
+        &holes,
+        &infos,
+        &logs,
+        &warnings,
+        &false_positives,
+        &severity,
+        get,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL);
+
+      *count = criticals
+               + holes
+               + infos
+               + logs
+               + warnings
+               + false_positives;
+    }
+
+  g_free (usage_type);
+
+  return 0;
+}
+
+/**
  * @brief Generate the hash value for the entity of the result and
  * check if osp result for report already exists
  *

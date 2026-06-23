@@ -23,6 +23,10 @@
 #define REPORT_EXPORT_STATUS_FINISHED "report_export_finished"
 #define REPORT_EXPORT_STATUS_FAILED "report_export_failed"
 
+/**
+ * @brief Maximum number of report results included in one export page.
+ */
+#define SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE 25000
 
 /**
  * @brief  Type for return result of export_report()
