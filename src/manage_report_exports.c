@@ -10,6 +10,8 @@
  * Implements report export from the GVM management layer to OSI.
  */
 
+# if ENABLE_SECURITY_INTELLIGENCE_EXPORT
+
 #include "manage_report_exports.h"
 
 #include "gmp_base.h"
@@ -1127,3 +1129,5 @@ cleanup:
 
   return result;
 }
+
+#endif /* ENABLE_SECURITY_INTELLIGENCE_EXPORT */

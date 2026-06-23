@@ -211,9 +211,12 @@ process_report_export (report_t report, int retry_count,
   set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_STARTED,
                                        NULL);
 
+  export_report_result_t result = EXPORT_REPORT_RESULT_SUCCESS;
+# if ENABLE_SECURITY_INTELLIGENCE_EXPORT
   /* Run the export */
-  export_report_result_t result =
+  result =
     export_report_security_intelligence (report, config);
+#endif
   gchar *reason = NULL;
 
   sql_begin_immediate ();

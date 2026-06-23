@@ -14,12 +14,10 @@ find_package(Threads)
 ## might occur.
 
 pkg_check_modules(CJSON REQUIRED libcjson>=1.7.14)
-pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.1.3)
 pkg_check_modules(LIBGVM_BASE REQUIRED libgvm_base>=22.39)
 pkg_check_modules(LIBGVM_UTIL REQUIRED libgvm_util>=23.00)
 pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
-pkg_check_modules(LIBGVM_SECURITY_INTELLIGENCE REQUIRED libgvm_security_intelligence>=23.7)
 
 if(ENABLE_HTTP_SCANNER)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
@@ -54,9 +52,23 @@ else(ENABLE_CONTAINER_SCANNING)
   message(STATUS "ENABLE_CONTAINER_SCANNING flag is not enabled")
 endif(ENABLE_CONTAINER_SCANNING)
 
-if(NOT ENABLE_JWT_AUTH)
+if(ENABLE_JWT_AUTH)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.1.3)
+else(ENABLE_JWT_AUTH)
   message(STATUS "ENABLE_JWT_AUTH flag is not enabled")
-endif(NOT ENABLE_JWT_AUTH)
+endif(ENABLE_JWT_AUTH)
+
+if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.1.3)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(
+    LIBGVM_SECURITY_INTELLIGENCE
+    REQUIRED
+    libgvm_security_intelligence>=23.7
+  )
+else(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
+  message(STATUS "ENABLE_SECURITY_INTELLIGENCE_EXPORT flag is not enabled")
+endif(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
 
 if(ENABLE_WEB_APPLICATION_SCANNING)
   pkg_check_modules(
@@ -87,7 +99,8 @@ if(NOT PostgreSQL_FOUND)
   message(SEND_ERROR "The PostgreSQL library is required.")
 endif(NOT PostgreSQL_FOUND)
 string(
-  REGEX MATCH "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
+  REGEX MATCH
+  "^[ \t]*\([0-9]+\)\\.\([0-9]+\)\(.*\)"
   TEMP
   "${PostgreSQL_VERSION_STRING}"
 )
@@ -230,7 +243,6 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
-  manage_report_exports.c
 )
 
 if(ENABLE_AGENTS)
@@ -254,6 +266,10 @@ endif()
 
 if(ENABLE_WEB_APPLICATION_SCANNING)
   list(APPEND ALL_MANAGE_SRC manage_web_application_targets.c)
+endif()
+
+if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
+  list(APPEND ALL_MANAGE_SRC manage_report_exports.c)
 endif()
 
 set(
