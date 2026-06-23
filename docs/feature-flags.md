@@ -35,16 +35,17 @@ If a line is missing, gvmd does not apply a value from the config file.
 
 ## Complete Feature Flag Table
 
-| Feature                             | **Build-Time Flag** (decides if feature exists in binary) | **Runtime Environment Variable**            | **Config File Key** (inside `[features]`) |
-|-------------------------------------|-----------------------------------------------------------|---------------------------------------------|-------------------------------------------|
-| Agents                              | `ENABLE_AGENTS`                                           | `GVMD_ENABLE_AGENTS`                        | `enable_agents`                           |
-| Container Scanning                  | `ENABLE_CONTAINER_SCANNING`                               | `GVMD_ENABLE_CONTAINER_SCANNING`            | `enable_container_scanning`               |
-| OpenVASd Integration                | `ENABLE_OPENVASD`                                         | `GVMD_ENABLE_OPENVASD`                      | `enable_openvasd`                         |
-| Credential Stores                   | `ENABLE_CREDENTIAL_STORES`                                | `GVMD_ENABLE_CREDENTIAL_STORES`             | `enable_credential_store`                 |
-| VT Metadata Feed                    | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`                   | `enable_vt_metadata`                      |
-| Security Intelligence Report Export | Always exists in binary                                   | `GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT`  | `enable_security_intelligence_export`     |
-| JSON web token authentication       | `ENABLE_JWT_AUTH`                                         | `GVMD_ENABLE_JWT_AUTH`                      | `enable_jwt_auth`                         |
-| Web Application Scanning            | `ENABLE_WEB_APPLICATION_SCANNING`                         | `GVMD_ENABLE_WEB_APPLICATION_SCANNING`      | `enable_web_application_scanning`         |
+| Feature                             | **Build-Time Flag** (decides if feature exists in binary) | **Runtime Environment Variable**           | **Config File Key** (inside `[features]`) |
+|-------------------------------------|-----------------------------------------------------------|--------------------------------------------|-------------------------------------------|
+| Agents                              | `ENABLE_AGENTS`                                           | `GVMD_ENABLE_AGENTS`                       | `enable_agents`                           |
+| Container Scanning                  | `ENABLE_CONTAINER_SCANNING`                               | `GVMD_ENABLE_CONTAINER_SCANNING`           | `enable_container_scanning`               |
+| OpenVASd Integration                | `ENABLE_OPENVASD`                                         | `GVMD_ENABLE_OPENVASD`                     | `enable_openvasd`                         |
+| Credential Stores                   | `ENABLE_CREDENTIAL_STORES`                                | `GVMD_ENABLE_CREDENTIAL_STORES`            | `enable_credential_store`                 |
+| VT Metadata Feed                    | Always exists in binary                                   | `GVMD_ENABLE_VT_METADATA`                  | `enable_vt_metadata`                      |
+| Security Intelligence Report Export | `ENABLE_SECURITY_INTELLIGENCE_EXPORT`                     | `GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT` | `enable_security_intelligence_export`     |
+| JSON web token authentication       | `ENABLE_JWT_AUTH`                                         | `GVMD_ENABLE_JWT_AUTH`                     | `enable_jwt_auth`                         |
+| Web Application Scanning            | `ENABLE_WEB_APPLICATION_SCANNING`                         | `GVMD_ENABLE_WEB_APPLICATION_SCANNING`     | `enable_web_application_scanning`         |
+
 ---
 
 ## Accepted Runtime Values
