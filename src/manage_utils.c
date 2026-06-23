@@ -1178,6 +1178,7 @@ icalendar_is_window_active (const char *ical_string,
   duration = icalendar_duration_from_vcalendar (vcalendar);
 
   icalcomponent_free (vcalendar);
+  g_free (error);
 
   if (start <= 0 || duration <= 0)
     return FALSE;
