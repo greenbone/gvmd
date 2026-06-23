@@ -4120,8 +4120,6 @@ migrate_277_to_278 ()
 /**
  * @brief Migrate the database from version 278 to version 279.
  *
- * Remove integration configurations whose owner no longer exists.
- *
  * @return 0 success, -1 error.
  */
 int
@@ -4137,16 +4135,23 @@ migrate_278_to_279 ()
       return -1;
     }
 
-  /*
-   * Remove orphaned integration configurations left behind by previously
-   * deleted users.
-   */
-  sql ("DELETE FROM integration_configs"
-       " WHERE owner IS NOT NULL"
-       " AND NOT EXISTS"
-       "   (SELECT 1"
-       "    FROM users"
-       "    WHERE users.id = integration_configs.owner);");
+  const char *schema = sql_schema ();
+  int integration_configs_exists =
+    (sql_table_exists (schema, "integration_configs") == 1);
+
+  if (integration_configs_exists)
+    {
+      /*
+       * Remove orphaned integration configurations left behind by previously
+       * deleted users.
+       */
+      sql ("DELETE FROM integration_configs"
+           " WHERE owner IS NOT NULL"
+           " AND NOT EXISTS"
+           "   (SELECT 1"
+           "    FROM users"
+           "    WHERE users.id = integration_configs.owner);");
+    }
 
   /* Set the database version to 279. */
 

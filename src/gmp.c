@@ -19760,6 +19760,9 @@ get_task_schedule_xml (task_t task)
                      "</schedule_periods>",
                      task_schedule_periods (task));
 
+  g_free (task_schedule_uuid);
+  g_free (task_schedule_name);
+
   return g_string_free (xml, FALSE);
 }
 
@@ -29362,6 +29365,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   resume_task_data->task_id,
                                   "resumed");
                   break;
+                case -8:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                     "Task cannot be started or resumed in maintenance window"));
+                  log_event_fail ("task", "Task",
+                                  resume_task_data->task_id,
+                                  "resumed");
+                  break;
                 default: /* Programming error. */
                   assert (0);
                   SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("resume_task"));
@@ -29620,6 +29631,14 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 case -7:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("start_task", "No CA certificate"));
+                  log_event_fail ("task", "Task",
+                                  start_task_data->task_id,
+                                  "started");
+                  break;
+                case -8:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                    "Task cannot be started or resumed in maintenance window"));
                   log_event_fail ("task", "Task",
                                   start_task_data->task_id,
                                   "started");

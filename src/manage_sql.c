@@ -3716,6 +3716,17 @@ check_db_settings ()
           "  'CVE-CPE Matching Version',"
           "  'Version of the CVE-CPE matching used in CVE scans.',"
           "  '0' );");
+
+  if (sql_int ("SELECT count(*) FROM settings"
+              " WHERE uuid = '" SETTING_UUID_MAINTENANCE_WINDOW "'"
+              " AND " ACL_IS_GLOBAL () ";")
+      == 0)
+    sql ("INSERT into settings (uuid, owner, name, comment, value)"
+          " VALUES"
+          " ('" SETTING_UUID_MAINTENANCE_WINDOW "', NULL,"
+          "  'Maintenance Window',"
+          "  'Time window in which no scans are allowed.',"
+          "  NULL );");
 }
 
 /**
@@ -9456,6 +9467,14 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
 
   /* Add the results. */
 
+  if (sql_int64 (&owner,
+                 "SELECT owner FROM tasks WHERE tasks.id = %llu",
+                 task))
+    {
+      g_warning ("%s: failed to get owner of task", __func__);
+      return -1;
+    }
+
   db_copy_buffer_init (&copy_buffer,
                        BUFFER_SIZE,
                        "COPY results"
@@ -9464,14 +9483,6 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
                        "  nvt_version, severity, qod, qod_type,"
                        "  result_nvt, report)"
                        " FROM STDIN;");
-
-  if (sql_int64 (&owner,
-                 "SELECT owner FROM tasks WHERE tasks.id = %llu",
-                 task))
-    {
-      g_warning ("%s: failed to get owner of task", __func__);
-      return -1;
-    }
 
   sql_begin_immediate ();
   g_debug ("%s: add hosts", __func__);
@@ -9494,10 +9505,40 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       gchar *quoted_qod, *quoted_qod_type;
       g_debug ("%s: add results: index: %i", __func__, index);
 
+      if (sql_int64 (&result_rowid,
+                     "SELECT nextval('results_id_seq');"))
+        {
+          g_warning ("%s: failed to get result row ID", __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
+      char* uuid = gvm_uuid_make ();
+      if (uuid == NULL)
+        {
+          g_warning ("%s: failed to generate result UUID", __func__);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -2;
+        }
+
+      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
+      result_nvt_notice (quoted_nvt_oid);
+
+      resource_t result_nvt;
+      if (sql_int64 (&result_nvt,
+                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
+                     quoted_nvt_oid))
+        {
+          g_warning ("%s: failed to get result_nvt ID", __func__);
+          g_free (quoted_nvt_oid);
+          g_free (uuid);
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
+
       quoted_host = sql_copy_escape (result->host ? result->host : "");
       quoted_hostname = sql_copy_escape (result->hostname ? result->hostname : "");
       quoted_port = sql_copy_escape (result->port ? result->port : "");
-      quoted_nvt_oid = sql_copy_escape (result->nvt_oid ? result->nvt_oid : "");
       quoted_description = sql_copy_escape (result->description
                                        ? result->description
                                        : "");
@@ -9510,32 +9551,8 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
       else
         quoted_qod = g_strdup (G_STRINGIFY (QOD_DEFAULT));
       quoted_qod_type = sql_copy_escape (result->qod_type ? result->qod_type : "");
-      result_nvt_notice (quoted_nvt_oid);
 
-      if (sql_int64 (&result_rowid,
-        "SELECT nextval('results_id_seq');"))
-        {
-          g_warning ("%s: failed to get result row ID", __func__);
-          return -1;
-        }
-
-      char* uuid = gvm_uuid_make ();
-      if (uuid == NULL)
-        {
-          g_warning ("%s: failed to generate result UUID", __func__);
-          return -2;
-        }
       time_t date = time (NULL);
-
-      resource_t result_nvt;
-
-      if (sql_int64 (&result_nvt,
-                     "SELECT id FROM result_nvts WHERE nvt = '%s';",
-                     quoted_nvt_oid))
-        {
-          g_warning ("%s: failed to get result_nvt ID", __func__);
-          return -1;
-        }
 
       int ret = db_copy_buffer_append_printf
                   (&copy_buffer,
@@ -9599,15 +9616,17 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
   if (count > 0)
     {
       if (db_copy_buffer_commit (&copy_buffer, TRUE))
-      {
-        db_copy_buffer_cleanup (&copy_buffer);
-        return -1;
-      }
+        {
+          db_copy_buffer_cleanup (&copy_buffer);
+          return -1;
+        }
       report_cache_counts (report, 1, 1, NULL);
       sql_commit ();
       gvm_usleep (CREATE_REPORT_CHUNK_SLEEP);
       sql_begin_immediate ();
     }
+  else
+    db_copy_buffer_cleanup (&copy_buffer);
 
   sql ("INSERT INTO result_nvt_reports (result_nvt, report)"
        " SELECT distinct result_nvt, %llu FROM results"
@@ -9683,18 +9702,17 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
        * COALESCE ensures that the query always returns one row.
        * A value of 0 means that the report host does not exist yet.
        */
-      if (sql_int64_ps (
-        &report_host,
-        "SELECT coalesce ("
-        "  (SELECT id"
-        "   FROM report_hosts"
-        "   WHERE report = $1"
-        "     AND host = $2"
-        "   LIMIT 1),"
-        "  0);",
-        SQL_RESOURCE_PARAM (report),
-        SQL_STR_PARAM (detail->ip),
-        NULL))
+      if (sql_int64_ps (&report_host,
+                        "SELECT coalesce ("
+                        "  (SELECT id"
+                        "   FROM report_hosts"
+                        "   WHERE report = $1"
+                        "     AND host = $2"
+                        "   LIMIT 1),"
+                        "  0);",
+                        SQL_RESOURCE_PARAM (report),
+                        SQL_STR_PARAM (detail->ip),
+                        NULL))
         {
           g_warning ("%s: Failed to look up report host '%s'"
                      " in report %llu",
@@ -9718,18 +9736,17 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
           /*
            * Look up the ID of the newly created report host.
            */
-          if (sql_int64_ps (
-            &report_host,
-            "SELECT coalesce ("
-            "  (SELECT id"
-            "   FROM report_hosts"
-            "   WHERE report = $1"
-            "     AND host = $2"
-            "   LIMIT 1),"
-            "  0);",
-            SQL_RESOURCE_PARAM (report),
-            SQL_STR_PARAM (detail->ip),
-            NULL))
+          if (sql_int64_ps (&report_host,
+                            "SELECT coalesce ("
+                            "  (SELECT id"
+                            "   FROM report_hosts"
+                            "   WHERE report = $1"
+                            "     AND host = $2"
+                            "   LIMIT 1),"
+                            "  0);",
+                            SQL_RESOURCE_PARAM (report),
+                            SQL_STR_PARAM (detail->ip),
+                            NULL))
             {
               g_warning ("%s: Failed to look up newly created report host '%s'"
                          " in report %llu",
@@ -17291,6 +17308,9 @@ manage_send_report (report_t report, report_t delta_report,
       print_report_xml_end (xml_start, xml_file, -1, 0);
       output_file = g_strdup(xml_file);
     }
+
+  g_free (xml_start);
+  g_free (xml_file);
 
   if (output_file == NULL)
     {

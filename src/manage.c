@@ -61,6 +61,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_targets.h"
 #include "manage_sql_tickets.h"
+#include "manage_sql_settings.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_tags.h"
 #include "manage_web_application_targets.h"
@@ -2639,6 +2640,42 @@ static int
 run_agent_control_task (task_t task, char **report_id);
 #endif
 
+/*
+  * @brief Check if scans are currently blocked by the
+  *        user's maintenance window.
+  *
+  * @return 1 if scans are blocked, 0 if not.
+*/
+static int
+scans_blocked_by_maintenance_window (const char *user_uuid)
+{
+  gchar *timezone, *maintenance_ical;
+  time_t now;
+
+  if (user_uuid == NULL)
+    {
+      g_warning ("%s: user_uuid is NULL, skipping maintenance window check",
+                 __func__);
+      return 0;
+    }
+
+  timezone = setting_timezone_for_user (user_uuid);
+  maintenance_ical = setting_maintenance_window_for_user (user_uuid);
+  now = time (NULL);
+
+  int window_active = 0;
+  if (timezone && maintenance_ical && maintenance_ical[0] != '\0')
+    window_active = icalendar_is_window_active (maintenance_ical, now, timezone);
+  else
+    g_debug ("%s: timezone or maintenance window setting not set,"
+             " skipping maintenance window check", __func__);
+
+  g_free (timezone);
+  g_free (maintenance_ical);
+
+  return window_active;
+}
+
 /**
  * @brief Start or resume a task.
  *
@@ -2659,6 +2696,7 @@ run_agent_control_task (task_t task, char **report_id);
  *         -3 creating the report failed,
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
+ *         -8 task cannot be started or resumed in maintenance window,
  *         -9 fork failed.
  */
 static int
@@ -2668,6 +2706,13 @@ run_task (const char *task_id, char **report_id, int from)
   scanner_t scanner;
   int ret;
   const char *permission;
+
+  if (scans_blocked_by_maintenance_window (current_credentials.uuid))
+    {
+      g_warning ("%s: task %s cannot be started or resumed"
+                 " in maintenance window", __func__, task_id);
+      return -8;
+    }
 
   if (current_scanner_task)
     return -6;
@@ -2754,6 +2799,7 @@ run_task (const char *task_id, char **report_id, int from)
  *         -3 creating the report failed,
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
+ *         -8 task cannot be started or resumed in maintenance window,
  *         -9 fork failed.
  */
 int
@@ -2928,6 +2974,7 @@ stop_task (const char *task_id)
  *         -3 creating the report failed,
  *         -4 target missing hosts,
  *         -6 already a task running in this process,
+ *         -8 task cannot be started or resumed in maintenance window,
  *         -9 fork failed.
  */
 int
@@ -4353,12 +4400,13 @@ manage_process_report_imports ()
 
   while (next (&reports))
     {
+      gchar *lockfile_name, *lockfile_path;
+
       report = iterator_int64 (&reports, 0);
 
-      gchar *lockfile_path =
-        g_build_filename (GVMD_STATE_DIR,
-                          g_strdup_printf ("gvm-process-report-%llu", report),
-                          NULL);
+      lockfile_name = g_strdup_printf ("gvm-process-report-%llu", report);
+      lockfile_path = g_build_filename (GVMD_STATE_DIR, lockfile_name, NULL);
+      g_free (lockfile_name);
       ret = lockfile_lock_path_nb (&lockfile, lockfile_path);
       if (ret > 0)
         {
@@ -4718,6 +4766,16 @@ manage_schedule (manage_connection_forker_t fork_connection,
 
         if (previous_start_task == task_schedule_iterator_task (&schedules))
           continue;
+
+        if (scans_blocked_by_maintenance_window (
+              task_schedule_iterator_owner_uuid (&schedules))
+            )
+          {
+            g_warning ("%s: task %s cannot be started or resumed"
+                       " in maintenance window", __func__,
+                       task_schedule_iterator_task_uuid (&schedules));
+            continue;
+          }
 
         if (timed_out)
           {

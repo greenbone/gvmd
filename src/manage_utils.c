@@ -1128,6 +1128,64 @@ icalendar_first_time_from_vcalendar (icalcomponent *vcalendar,
   return icaltime_as_timet_with_zone (dtstart, tz);
 }
 
+/* @brief  Check if the current time is within the window of the
+           given VCALENDAR string.
+ *
+ * @param[in]  ical_string     The VCALENDAR string to check.
+ * @param[in]  current_time    The current time to check against the VCALENDAR.
+ * @param[in]  tzid            Timezone id to use for checking the time.
+ *
+ * @return Whether the current time is within the window of the VCALENDAR.
+
+*/
+gboolean
+icalendar_is_window_active (const char *ical_string,
+                            time_t current_time,
+                            const char *tzid)
+{
+  icalcomponent *vcalendar;
+  time_t start;
+  icaltimezone *tz;
+  int duration;
+
+  if (ical_string == NULL || tzid == NULL|| *ical_string == '\0'
+      || *tzid == '\0')
+    return FALSE;
+
+  tz = icalendar_timezone_from_string (tzid);
+  if (tz == NULL)
+   {
+     g_warning ("%s: A timezone is required to check the maintenance window,"
+                " but timezone '%s' could not be found.", __func__, tzid);
+     return FALSE;
+   }
+
+  char *error = NULL;
+  vcalendar = icalendar_from_string (ical_string, tz, &error);
+  if (vcalendar == NULL)
+   {
+     g_warning ("%s: Could not parse VCALENDAR string: %s",
+                __func__, error);
+     g_free (error);
+     return FALSE;
+   }
+
+  start = icalendar_next_time_from_vcalendar (vcalendar,
+                                              current_time,
+                                              tzid,
+                                              -1);
+
+  duration = icalendar_duration_from_vcalendar (vcalendar);
+
+  icalcomponent_free (vcalendar);
+  g_free (error);
+
+  if (start <= 0 || duration <= 0)
+    return FALSE;
+
+  return (current_time >= start && current_time < (start + duration));
+}
+
 /**
  * @brief Cleans up a hosts string, removing extra zeroes from IPv4 addresses.
  *

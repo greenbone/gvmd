@@ -129,6 +129,11 @@
 #define SETTING_UUID_USER_INTERFACE_TIME_FORMAT "11deb7ff-550b-4950-aacf-06faeb7c61b9"
 
 /**
+ * @brief UUID of 'Maintenance Window' setting.
+ */
+#define SETTING_UUID_MAINTENANCE_WINDOW "65317eaa-b4da-447b-aa8f-f9876a6f7ba1"
+
+/**
  * @brief UUID of Discovery scan config.
  */
 #define CONFIG_UUID_DISCOVERY "8715c877-47a0-438d-98a3-27c7a6ab2196"
