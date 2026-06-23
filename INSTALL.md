@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * gpgme
-* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 23.0 (or 23.6 if ENABLE_AGENTS and 23.3 if ENABLE_OPENVASD and 23.4 if ENABLE_WEB_APPLICATION_SCANNING)
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 23.0 (or 23.6 if ENABLE_AGENTS and 23.3 if ENABLE_OPENVASD and 23.4 if ENABLE_WEB_APPLICATION_SCANNING and 23.7 if ENABLE_SECURITY_INTELLIGENCE_EXPORT)
 * libical >= 1.0.0
 * libbsd
 * pkg-config
