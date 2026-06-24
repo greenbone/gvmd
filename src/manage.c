@@ -1992,6 +1992,7 @@ cve_scan_report_host_json (task_t task,
                                              /* Detected by itself. */
                                              cve, NULL);
                 }
+              cleanup_iterator (&locations_iter);
 
               description = sql_string ("SELECT description FROM scap.cves, scap.cpe_match_nodes"
                                         " WHERE scap.cves.id = scap.cpe_match_nodes.cve_id"
@@ -2027,6 +2028,7 @@ cve_scan_report_host_json (task_t task,
 
             }
         }
+      cleanup_iterator (&cpe_match_root_node);
       g_free (cpe_product);
     }
   cleanup_iterator (&host_details_cpe);
@@ -2169,6 +2171,7 @@ cve_scan_host (task_t task, report_t report, gvm_host_t *gvm_host,
                                                  /* Detected by itself. */
                                                  cve, NULL);
                     }
+                  cleanup_iterator (&locations_iter);
 
                   desc = g_strdup_printf ("The host carries the product: %s\n"
                                           "It is vulnerable according to: %s.\n"
