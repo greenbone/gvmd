@@ -10390,6 +10390,7 @@ buffer_results_xml (GString *buffer, iterator_t *results, task_t task,
                                 "</result>"
                                 "</detection>");
     }
+  g_free (detect_oid);
   g_free (detect_ref);
   g_free (detect_cpe);
   g_free (detect_loc);
