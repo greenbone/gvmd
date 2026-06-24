@@ -21,7 +21,7 @@
 
 #include <auth/gvm_auth.h>
 #include <glib/gstdio.h>
-#include <security_intelligence/security_intelligence.h>
+#include <gvm/security_intelligence/security_intelligence.h>
 #include <unistd.h>
 
 #undef G_LOG_DOMAIN
