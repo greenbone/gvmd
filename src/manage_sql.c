@@ -10582,6 +10582,7 @@ report_count (const get_data_t *get)
                 TRUE);
 
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 
@@ -10645,6 +10646,7 @@ init_report_iterator (iterator_t* iterator, const get_data_t *get)
                             FALSE,
                             NULL);
   g_free (extra_tables);
+  g_free (extra_where);
   return ret;
 }
 
