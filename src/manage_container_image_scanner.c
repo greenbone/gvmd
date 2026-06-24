@@ -640,38 +640,6 @@ get_bool_string (const char *preference_value)
 }
 
 /*
-* @brief Get the value of a named scanner preference from a list of preferences.
-*
-* @param[in]  name        The name of the scanner preferences.
-* @param[in]  scan_prefs  The list of preferences.
-*
-* @return     The value of the preference.
-*/
-static gchar *
-get_preference_from_list (char *name, GSList *scan_prefs)
-{
-  gchar *value = NULL;
-  GSList *point = scan_prefs;
-
-  while (point)
-    {
-      http_scanner_param_t *param;
-      char *p_name;
-
-      param = point->data;
-      p_name = http_scanner_param_id (param);
-
-      if (p_name && strcmp (p_name, name) == 0)
-        {
-          value = g_strdup (http_scanner_param_default (param));
-          break;
-        }
-      point = g_slist_next (point);
-    }
-  return value;
-}
-
-/*
 * @brief Add container image scan preferences to the scanner options.
 *        Task preferences override default scanner preferences.
 *
