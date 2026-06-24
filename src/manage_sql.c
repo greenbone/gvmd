@@ -10572,7 +10572,7 @@ report_count (const get_data_t *get)
   extra_tables = report_iterator_opts_table (0, MIN_QOD_DEFAULT);
 
   const gchar *usage_type = get_data_get_extra (get, "usage_type");
-  extra_where = reports_extra_where(get->trash, get->filter, usage_type);
+  extra_where = reports_extra_where (get->trash, get->filter, usage_type);
 
   ret = count2 ("report", get, columns, NULL, where_columns, NULL,
                 filter_columns, 0,
