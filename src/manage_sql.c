@@ -9215,6 +9215,7 @@ process_report_import (report_t report)
   iterator_t hosts;
   task_t task;
   int uuid_was_null;
+  char *report_id;
 
   init_report_host_iterator (&hosts, report, NULL, 0);
 
@@ -9248,12 +9249,15 @@ process_report_import (report_t report)
   global_current_report = report;
   set_task_run_status (task, TASK_STATUS_PROCESSING);
 
+  report_id = report_uuid (report);
+
   if (sql_int ("SELECT coalesce (in_assets, 0) = 1 FROM reports"
                " WHERE id = %llu;",
                report))
     {
-      if (create_asset_report (report_uuid (report), ""))
+      if (create_asset_report (report_id, ""))
         {
+          g_free (report_id);
           g_warning ("%s: failed to create assets from report %llu",
                      __func__,
                      report);
@@ -9267,7 +9271,8 @@ process_report_import (report_t report)
        report);
 
   /* Store reports host identifies to the asset snapshot. */
-  int resp = asset_snapshot_collect_report_identifiers (report_uuid (report));
+  int resp = asset_snapshot_collect_report_identifiers (report_id);
+  g_free (report_id);
   if (resp != 0)
     {
       g_warning ("%s: unable to collect host identifiers with (resp=%d)",
