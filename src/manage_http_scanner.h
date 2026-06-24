@@ -36,5 +36,8 @@ update_http_scanner_scan (http_scanner_connector_t, task_t,
 int
 delete_http_scanner_scan_with_retry (http_scanner_connector_t, const char *);
 
+gchar *
+get_preference_from_list (const char *, GSList *);
+
 #endif // MANAGE_HTTP_SCANNER_H
 #endif // not _GVMD_MANAGE_HTTP_SCANNER_H
