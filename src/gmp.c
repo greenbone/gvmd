@@ -19888,6 +19888,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       gchar *auto_delete, *auto_delete_data, *assets_apply_overrides;
       gchar *assets_min_qod, *accept_invalid_certs, *registry_allow_insecure;
       gchar *cs_allow_failed_retrieval;
+      gchar *scan_mode, *ajax_spider_timeout;
       gchar *oci_image_target_xml = NULL;
       gchar *agent_group_xml = NULL;
       gchar *web_application_target_xml = NULL;
@@ -20609,6 +20610,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           accept_invalid_certs = task_preference_value (index, "accept_invalid_certs");
           registry_allow_insecure = task_preference_value (index, "registry_allow_insecure");
           cs_allow_failed_retrieval = task_preference_value (index, "cs_allow_failed_retrieval");
+          ajax_spider_timeout = task_preference_value (index, "ajax_spider_timeout");
+          scan_mode = task_preference_value (index, "scan_mode");
 
           SENDF_TO_CLIENT_OR_FAIL
            ("<preferences>"
@@ -20679,6 +20682,22 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             "<value>%s</value>"
             "</preference>"
 #endif /* ENABLE_CREDENTIAL_STORES */
+#if ENABLE_WEB_APPLICATION_SCANNING
+            "<preference>"
+            "<name>"
+            "Enable or disable active scans"
+            "</name>"
+            "<scanner_name>scan_mode</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+            "<preference>"
+            "<name>"
+            "AJAX Spider Timeout"
+            "</name>"
+            "<scanner_name>ajax_spider_timeout</scanner_name>"
+            "<value>%s</value>"
+            "</preference>"
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
             "<preference>"
             "<name>"
             "Auto Delete Reports Data"
@@ -20703,6 +20722,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 #if ENABLE_CREDENTIAL_STORES
             cs_allow_failed_retrieval ? cs_allow_failed_retrieval : "0",
 #endif /* ENABLE_CREDENTIAL_STORES */
+#if ENABLE_WEB_APPLICATION_SCANNING
+            scan_mode ? scan_mode : "",
+            ajax_spider_timeout ? ajax_spider_timeout : "",
+#endif /* ENABLE_WEB_APPLICATION_SCANNING */
             auto_delete_data ? auto_delete_data : "0");
 
           g_free (assets_apply_overrides);
@@ -20714,6 +20737,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           g_free (auto_delete_data);
           g_free (accept_invalid_certs);
           g_free (registry_allow_insecure);
+          g_free (ajax_spider_timeout);
+          g_free (scan_mode);
           g_free (cs_allow_failed_retrieval);
         }
 
