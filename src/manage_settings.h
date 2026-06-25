@@ -29,11 +29,6 @@
 #define SETTING_UUID_AUTO_REFRESH "578a1c14-e2dc-45ef-a591-89d31391d007"
 
 /**
- * @brief UUID of 'CVE-CPE Matching Version' setting.
- */
-#define SETTING_UUID_CVE_CPE_MATCHING_VERSION "2e8a8ccc-219f-4a82-824a-3ad88b6d4029"
-
-/**
  * @brief UUID of setting.
  */
 #define SETTING_UUID_DEFAULT_SEVERITY "7eda49c5-096c-4bef-b1ab-d080d87300df"
