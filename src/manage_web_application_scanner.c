@@ -186,8 +186,9 @@ check_web_application_scanner_result_exists (report_t report,
                       SQL_STR_PARAM (*entity_hash_value),
                       NULL))
         {
-          const char *desc, *type, *severity = NULL, *host = NULL;
+          const char *desc, *host = NULL;
           const char *hostname, *port = NULL;
+          char *type = NULL, *severity = NULL;
           double severity_double = 0.0;
           int qod_int = QOD_DEFAULT;
 
@@ -202,6 +203,8 @@ check_web_application_scanner_result_exists (report_t report,
             {
               g_debug ("%s: Result without severity", __func__);
               g_string_free (result_string, TRUE);
+              g_free (type);
+              g_free (severity);
               return 0;
             }
           else
@@ -233,7 +236,8 @@ check_web_application_scanner_result_exists (report_t report,
               g_debug ("Entity string: %s", result_string->str);
               return_value = 1;
             }
-
+          g_free (type);
+          g_free (severity);
         }
     }
   if (return_value)
@@ -407,7 +411,7 @@ parse_web_application_scan_report (task_t task,
     }
 
   sql_commit ();
-  if (results_array && results_array->len > 0)
+  if (results_array)
     g_array_free (results_array, TRUE);
 
   g_hash_table_destroy (hashed_scanner_results);
@@ -455,6 +459,88 @@ prepare_web_application_scan_for_resume (task_t task, const char *scan_id,
   http_scanner_connector_free (connection);
 
   return ret;
+}
+
+/*
+* @brief Add web application scan preferences to the scanner options.
+*        Task preferences override default scanner preferences.
+*
+* @param[in]  connector        The scanner connection.
+* @param[in]  scanner_options  The scanner preferences table to add to.
+* @param[in]  task             The task.
+*
+* @return     0 on success, -1 if error.
+*/
+static int
+add_web_application_scan_preferences (http_scanner_connector_t connector,
+                                      GHashTable *scanner_options,
+                                      task_t task)
+{
+  static const char *const preferences[] = {
+    "scan_mode",
+    "ajax_spider_timeout",
+  };
+
+  size_t pref_count = sizeof (preferences) / sizeof (preferences[0]);
+  gchar **values = g_malloc0(pref_count * sizeof(gchar *));
+
+  GSList *scan_prefs = NULL;
+  gboolean fetch_scanner_prefs = FALSE;
+  int err = 0;
+  size_t i;
+
+  for (i = 0; i < pref_count; i++)
+    {
+      values[i] = task_preference_value (task, preferences[i]);
+
+      if (values[i])
+        {
+          g_hash_table_insert (scanner_options,
+                               g_strdup (preferences[i]),
+                               g_strdup (values[i]));
+        }
+      else
+        {
+          fetch_scanner_prefs = TRUE;
+        }
+    }
+
+  if (fetch_scanner_prefs)
+    {
+      err = http_scanner_parsed_scans_preferences (connector, &scan_prefs);
+      if (err < 0)
+        {
+          g_warning ("%s: Could not get scanner preferences from scanner",
+                    __func__);
+          goto cleanup;
+        }
+    }
+
+  if (scan_prefs)
+    {
+      for (i = 0; i < pref_count; i++)
+        {
+          if (!values[i])
+            {
+              gchar *scanner_val = get_preference_from_list (preferences[i], scan_prefs);
+              if (scanner_val)
+               {
+                 g_hash_table_insert (scanner_options,
+                                      g_strdup (preferences[i]),
+                                      g_strdup (scanner_val));
+                 g_free (scanner_val);
+               }
+            }
+        }
+    }
+
+cleanup:
+  g_slist_free_full (scan_prefs, (GDestroyNotify) http_scanner_param_free);
+  for (i = 0; i < pref_count; i++)
+    g_free (values[i]);
+  g_free (values);
+
+  return err;
 }
 
 /**
@@ -523,6 +609,13 @@ launch_web_application_task (task_t task,
   free (finished_urls_str);
   free (urls_str);
 
+  if (!web_scanner_target)
+    {
+      if (error)
+        *error = g_strdup ("Could not create web scanner target");
+      return -1;
+    }
+
   target_credential = web_application_scanner_target_credential (web_application_target);
 
   if (target_credential)
@@ -530,18 +623,27 @@ launch_web_application_task (task_t task,
   else
     g_warning ("%s: No credential assigned to target.", __func__);
 
-  /* Setup scanner preferences. */
-  scanner_options
-    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-
-  /* No scanner preferences for now. An empty list is sent */
-
   connection = web_application_scanner_connect (task_scanner (task), scan_id);
   if (!connection)
     {
       if (error)
         *error = g_strdup ("Could not connect to Scanner");
       web_scanner_target_free (web_scanner_target);
+      return -1;
+    }
+
+  /* Setup scanner preferences. */
+  scanner_options
+    = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+  if (add_web_application_scan_preferences (connection,
+                                            scanner_options,
+                                            task) < 0)
+    {
+      if (error)
+        *error = g_strdup ("Could not get scan preferences from scanner");
+      web_scanner_target_free (web_scanner_target);
+      http_scanner_connector_free (connection);
       g_hash_table_destroy (scanner_options);
       return -1;
     }
@@ -552,31 +654,47 @@ launch_web_application_task (task_t task,
                                         scanner_options,
                                         NULL);  /* vts are sent as an empty list for now */
 
+  if (!scan_config)
+    {
+      if (error)
+        *error = g_strdup ("Could not build scan config");
+      web_scanner_target_free (web_scanner_target);
+      http_scanner_connector_free (connection);
+      g_hash_table_destroy (scanner_options);
+      return -1;
+    }
+
   response = http_scanner_create_scan (connection, scan_config);
 
-  if (response->code != 201)
+  web_scanner_target_free (web_scanner_target);
+  g_hash_table_destroy (scanner_options);
+  g_free (scan_config);
+
+  if (!response || response->code != 201)
     {
-      g_warning ("%s: Failed to create scan: %ld", __func__, response->code);
-      web_scanner_target_free (web_scanner_target);
-      g_hash_table_destroy (scanner_options);
+      if (error)
+        *error = g_strdup_printf ("Failed to create scan: %ld", response
+                                  ? response->code
+                                  : 0);
       http_scanner_response_cleanup (response);
+      http_scanner_connector_free (connection);
       return -1;
     }
 
   http_scanner_response_cleanup (response);
   response = http_scanner_start_scan (connection);
 
-  if (response->code != 204)
+  if (!response || response->code != 204)
     {
-      g_warning ("%s: Failed to start scan: %ld", __func__, response->code);
-      web_scanner_target_free (web_scanner_target);
-      g_hash_table_destroy (scanner_options);
+      if (error)
+        *error = g_strdup_printf ("Failed to start scan: %ld", response
+                                  ? response->code
+                                  : 0);
       http_scanner_response_cleanup (response);
+      http_scanner_connector_free (connection);
       return -1;
     }
 
-  web_scanner_target_free (web_scanner_target);
-  g_hash_table_destroy (scanner_options);
   http_scanner_response_cleanup (response);
   http_scanner_connector_free (connection);
 
