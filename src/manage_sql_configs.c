@@ -2054,7 +2054,9 @@ set_task_preferences (task_t task, array_t *preferences)
                       gchar *endptr = NULL;
                       errno = 0;
                       long timeout = strtol(pair->value, &endptr, 10);
-                      if (errno == ERANGE || *endptr != '\0' || timeout < 0)
+
+                      if (errno == ERANGE || endptr == pair->value
+                          || *endptr != '\0' || timeout < 0)
                         {
                           return 6;
                         }
