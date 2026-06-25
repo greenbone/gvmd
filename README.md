@@ -113,6 +113,15 @@ of the config file. These are:
 | retry_max_delay  | GVMD_REPORT_EXPORT_RETRY_MAX_DELAY  | integer | 600           | The max delay  used to compute timestamp for next export retry attempt (see above)                                                   |
 | stale_threshold  | GVMD_REPORT_EXPORT_STALE_THRESHOLD  | integer | 720           | The time, in minutes, after which a started export is considered stale and set to failed (Will then be picked up by scheduler again) |
 
+#### CVE scan
+
+Options for CVE scan matching can be found in the `[cve_scan]` section of the
+configuration file.
+
+| Config file key           | Environment variable           | Type    | Default value | Description                                                                                                                                                                                                                                                                     |
+| ------------------------- | ------------------------------ | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| cve_scan_matching_version | GVMD_CVE_SCAN_MATCHING_VERSION | integer | 0             | Selects the CPE-to-CVE matching implementation. Version `0` matches detected CPEs against CVE affected-product lists. Version `1` evaluates CVE match criteria from the SCAP data. If version `1` is configured but the required SCAP data is unavailable, version `0` is used. |
+
 ## Support
 
 For any question on the usage of `gvmd` please use the [Greenbone Community
