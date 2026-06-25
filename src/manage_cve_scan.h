@@ -18,6 +18,6 @@
 #include <gvm/base/hosts.h>
 
 int
-cve_scan_host (task_t, report_t, gvm_host_t *, int);
+cve_scan_host (task_t, report_t, gvm_host_t *);
 
 #endif //_GVM_MANAGE_CVE_SCAN_H
