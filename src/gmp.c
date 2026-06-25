@@ -844,6 +844,37 @@ typedef struct
 } create_report_data_t;
 
 /**
+ * @brief Free the result_detection array and its detection_detail_t elements.
+ *
+ * @param[in]  data  Command data.
+ */
+static void
+detection_details_free (create_report_data_t *data)
+{
+  array_t *detection;
+
+  detection = data->result_detection;
+  if (detection)
+    {
+      guint index;
+
+      index = detection->len;
+      while (index--)
+        {
+          detection_detail_t *detail;
+
+          detail = g_ptr_array_index (detection, index);
+          free (detail->location);
+          free (detail->product);
+          free (detail->source_name);
+          free (detail->source_oid);
+        }
+      array_free (detection);
+      data->result_detection = NULL;
+    }
+}
+
+/**
  * @brief Reset command data.
  *
  * @param[in]  data  Command data.
@@ -930,6 +961,7 @@ create_report_data_reset (create_report_data_t *data)
         }
       array_free (data->results);
     }
+  detection_details_free (data);
   free (data->scan_end);
   free (data->scan_start);
   free (data->task_id);
@@ -21595,11 +21627,6 @@ gmp_xml_handle_result ()
           detail->source_type = g_strdup ("create_report_import");
           detail->value = g_strdup (detection->source_oid);
           array_add (create_report_data->details, detail);
-          g_free (detection->location);
-          g_free (detection->product);
-          g_free (detection->source_name);
-          g_free (detection->source_oid);
-          g_free (detection);
         }
     }
   array_add (create_report_data->results, result);
@@ -21614,7 +21641,7 @@ gmp_xml_handle_result ()
   create_report_data->result_scan_nvt_version = NULL;
   create_report_data->result_severity = NULL;
   create_report_data->result_threat = NULL;
-  create_report_data->result_detection = NULL;
+  detection_details_free (create_report_data);
   create_report_data->result_detection = make_array ();
 }
 
