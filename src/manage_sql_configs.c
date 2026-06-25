@@ -2005,6 +2005,7 @@ task_preference_value (task_t task, const char *name)
  * @return 0 success, 1 invalid auto_delete value, 2 auto_delete_data out of
  *         range, 3 in_assets cannot be set for Container Image scanners.
  *         4 in_assets cannot be set for Web Application scanners.
+ *         5 invalid scan_mode value. 6 invalid ajax_spider_timeout value.
  */
 int
 set_task_preferences (task_t task, array_t *preferences)
@@ -2040,6 +2041,26 @@ set_task_preferences (task_t task, array_t *preferences)
                         return 2;
                     }
                   int type = scanner_type (task_scanner (task));
+                  if ((strcmp (pair->name, "scan_mode") == 0)
+                      && (strcmp (pair->value, "active"))
+                      && (strcmp (pair->value, "safe"))
+                      && type == SCANNER_TYPE_WEB_APPLICATION)
+                    {
+                      return 5;
+                    }
+                  if ((strcmp (pair->name, "ajax_spider_timeout") == 0)
+                      && type == SCANNER_TYPE_WEB_APPLICATION)
+                    {
+                      gchar *endptr = NULL;
+                      errno = 0;
+                      long timeout = strtol(pair->value, &endptr, 10);
+
+                      if (errno == ERANGE || endptr == pair->value
+                          || *endptr != '\0' || timeout < 0)
+                        {
+                          return 6;
+                        }
+                    }
                   if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CONTAINER_IMAGE)
                       return 3;

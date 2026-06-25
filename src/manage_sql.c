@@ -19255,6 +19255,10 @@ modify_task (const gchar *task_id, const gchar *name,
           return MODIFY_TASK_CANNOT_SET_ASSET_PREFS_CONTAINER;
         case 4:
           return MODIFY_TASK_CANNOT_SET_ASSET_PREFS_WEB_APP;
+        case 5:
+          return MODIFY_TASK_CANNOT_SET_SCAN_MODE_VALUE;
+        case 6:
+          return MODIFY_TASK_CANNOT_SET_AJAX_SPIDER_TIMEOUT_VALUE;
         default:
           return MODIFY_TASK_ERROR;
       }
