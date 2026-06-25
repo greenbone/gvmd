@@ -1834,11 +1834,8 @@ fork_cve_scan_handler (task_t task, target_t target)
     }
   free (exclude_hosts);
 
-  int matching_version;
-  setting_value_int(SETTING_UUID_CVE_CPE_MATCHING_VERSION, &matching_version);
-
   while ((gvm_host = gvm_hosts_next (gvm_hosts)))
-    if (cve_scan_host (task, global_current_report, gvm_host, matching_version))
+    if (cve_scan_host (task, global_current_report, gvm_host))
       {
         set_task_interrupted (task,
                               "Failed to get nthlast report."
