@@ -1216,12 +1216,6 @@ setting_verify (const gchar *uuid, const gchar *value, const gchar *user)
         return 1;
     }
 
-  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
-    {
-      if (strcmp (value, "0") && strcmp (value, "1"))
-        return 1;
-    }
-
   return 0;
 }
 
@@ -1250,8 +1244,6 @@ setting_description (const gchar *uuid)
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "Buffer size threshold in MiB for running buffered SQL statements"
            " in SecInfo updates before the end of the file being processed.";
-  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
-    return "Version of the CVE-CPE matching used in CVE scans.";
   if (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0)
     return "User who is given ownership of integration configs.";
 
@@ -1282,8 +1274,6 @@ setting_name (const gchar *uuid)
     return "Feed Import Roles";
   if (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
     return "SecInfo SQL Buffer Threshold";
-  if (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
-    return "CVE-CPE Matching Version";
   if (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0)
     return "Integration Configs Owner";
 
@@ -1319,7 +1309,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER)
       && strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES)
       && strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD)
-      && strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION)
       && strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER))
     {
       fprintf (stderr, "Error in setting UUID.\n");
@@ -1350,7 +1339,6 @@ manage_modify_setting (GSList *log_config, const db_conn_info_t *database,
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_OWNER) == 0)
           || (strcmp (uuid, SETTING_UUID_FEED_IMPORT_ROLES) == 0)
           || (strcmp (uuid, SETTING_UUID_SECINFO_SQL_BUFFER_THRESHOLD) == 0)
-          || (strcmp (uuid, SETTING_UUID_CVE_CPE_MATCHING_VERSION) == 0)
           || (strcmp (uuid, SETTING_UUID_INTEGRATION_CONFIG_OWNER) == 0))
         {
           sql_rollback ();
