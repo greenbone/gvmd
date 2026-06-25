@@ -25932,6 +25932,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                       "Asset preferences cannot be set for"
                                       " Container Scanning tasks"));
                   goto create_task_fail;
+                case 4:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Asset preferences cannot be set for"
+                                      " Web Application Scanning tasks"));
+                  goto create_task_fail;
+                case 5:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Invalid scan_mode value"));
+                  goto create_task_fail;
+                case 6:
+                  SENDF_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("create_task",
+                                      "Invalid ajax_spider_timeout value"));
+                  goto create_task_fail;
                 default:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_INTERNAL_ERROR ("create_task"));
@@ -28818,6 +28834,22 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    (XML_ERROR_SYNTAX ("modify_task",
                                       "Asset preferences cannot be set for"
                                       " Web Application tasks"));
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+               case MODIFY_TASK_CANNOT_SET_SCAN_MODE_VALUE:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Invalid scan_mode value"));
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
+                case MODIFY_TASK_CANNOT_SET_AJAX_SPIDER_TIMEOUT_VALUE:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Invalid ajax_spider_timeout value"));
                   log_event_fail ("task", "Task",
                                   modify_task_data->task_id,
                                   "modified");
