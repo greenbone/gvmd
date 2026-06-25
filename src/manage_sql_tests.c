@@ -141,6 +141,24 @@ Ensure (manage_sql, print_report_clean_filter_handles_null_term)
   g_free (term);
 }
 
+/* sql_quote */
+
+Ensure (manage_sql, sql_quote_escapes_oid_apostrophe)
+{
+  gchar *quoted;
+
+  /* A normal OID is left unchanged. */
+  quoted = sql_quote ("1.3.6.1.4.1.25623.1.0.100");
+  assert_that (quoted, is_equal_to_string ("1.3.6.1.4.1.25623.1.0.100"));
+  g_free (quoted);
+
+  /* An OID with an apostrophe is escaped by doubling it, so it cannot break
+   * out of the quoted SQL literal. */
+  quoted = sql_quote ("1.2.3'; DROP TABLE nvts; --");
+  assert_that (quoted, is_equal_to_string ("1.2.3''; DROP TABLE nvts; --"));
+  g_free (quoted);
+}
+
 /* Test suite. */
 
 int
@@ -156,6 +174,7 @@ main (int argc, char **argv)
                          ensure_term_has_qod_and_overrides_adds_defaults);
   add_test_with_context (suite, manage_sql,
                          print_report_clean_filter_handles_null_term);
+  add_test_with_context (suite, manage_sql, sql_quote_escapes_oid_apostrophe);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
