@@ -197,6 +197,7 @@ set(
   manage_events.c
   manage_filter_utils.c
   manage_commands.c
+  manage_cve_scan.c
   manage_get.c
   manage_groups.c
   manage_http_scanner.c

@@ -22,3 +22,6 @@ retry_base_delay = 10
 retry_multiplier = 2
 retry_max_delay = 600
 stale_threshold = 720
+
+[cve_scan]
+cve_scan_matching_version = 0

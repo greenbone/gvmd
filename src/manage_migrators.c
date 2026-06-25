@@ -4162,6 +4162,39 @@ migrate_278_to_279 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 279 to version 280.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_279_to_280 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 279. */
+
+  if (manage_db_version () != 279)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /*
+   * Remove the obsolete CVE-CPE matching version setting.
+   */
+  sql ("DELETE FROM settings"
+       " WHERE uuid = '2e8a8ccc-219f-4a82-824a-3ad88b6d4029';");
+
+  /* Set the database version to 280. */
+
+  set_db_version (280);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4247,6 +4280,7 @@ static migrator_t database_migrators[] = {
   {277, migrate_276_to_277},
   {278, migrate_277_to_278},
   {279, migrate_278_to_279},
+  {280, migrate_279_to_280},
   /* End marker. */
   {-1, NULL}};
 
