@@ -149,11 +149,14 @@ insert_vt_severities (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
   double highest;
+  gchar *quoted_oid;
+
+  quoted_oid = sql_quote (nvti_oid (nvti));
 
   if (rebuild == 0)
     sql ("DELETE FROM vt_severities%s where vt_oid = '%s';",
          rebuild ? "_rebuild" : "",
-         nvti_oid (nvti));
+         quoted_oid);
 
   highest = 0;
 
@@ -183,7 +186,7 @@ insert_vt_severities (const nvti_t *nvti, int rebuild, batch_t *batch)
                               // Newline in case it gets logged.
                               "%s\n ('%s', '%s', '%s', %i, %0.1f, '%s')",
                               comma ? "," : "",
-                              nvti_oid (nvti), vtseverity_type (severity),
+                              quoted_oid, vtseverity_type (severity),
                               quoted_origin, vtseverity_date (severity),
                               vtseverity_score (severity), quoted_value);
 
@@ -193,6 +196,8 @@ insert_vt_severities (const nvti_t *nvti, int rebuild, batch_t *batch)
       g_free (quoted_origin);
       g_free (quoted_value);
     }
+
+  g_free (quoted_oid);
 
   return highest;
 }
@@ -208,11 +213,14 @@ static void
 insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
 {
   int i;
+  gchar *quoted_oid;
+
+  quoted_oid = sql_quote (nvti_oid (nvti));
 
   if (rebuild == 0)
     sql ("DELETE FROM vt_refs%s where vt_oid = '%s';",
          rebuild ? "_rebuild" : "",
-         nvti_oid (nvti));
+         quoted_oid);
 
   for (i = 0; i < nvti_vtref_len (nvti); i++)
     {
@@ -238,12 +246,14 @@ insert_vt_refs (const nvti_t *nvti, int rebuild, batch_t *batch)
                               // Newline in case it gets logged.
                               "%s\n ('%s', '%s', '%s', '%s')",
                               comma ? "," : "",
-                              nvti_oid (nvti), quoted_type, quoted_id, quoted_text);
+                              quoted_oid, quoted_type, quoted_id, quoted_text);
 
       g_free (quoted_type);
       g_free (quoted_id);
       g_free (quoted_text);
     }
+
+  g_free (quoted_oid);
 }
 
 /**
@@ -263,7 +273,7 @@ insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
   gchar *qod_str, *qod_type, *cve;
   gchar *quoted_name, *quoted_summary, *quoted_insight, *quoted_affected;
   gchar *quoted_impact, *quoted_detection, *quoted_cve, *quoted_tag;
-  gchar *quoted_qod_type, *quoted_family;
+  gchar *quoted_qod_type, *quoted_family, *quoted_oid;
   gchar *quoted_solution, *quoted_solution_type, *quoted_solution_method;
   int qod;
   double highest;
@@ -301,12 +311,14 @@ insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
 
   quoted_family = sql_quote (nvti_family (nvti) ? nvti_family (nvti) : "");
 
+  quoted_oid = sql_quote (nvti_oid (nvti));
+
   if ((rebuild == 0)
       && sql_int ("SELECT EXISTS (SELECT * FROM nvts WHERE oid = '%s');",
-                  nvti_oid (nvti)))
+                  quoted_oid))
     sql ("DELETE FROM nvts%s WHERE oid = '%s';",
          rebuild ? "_rebuild" : "",
-         nvti_oid (nvti));
+         quoted_oid);
 
   insert_vt_refs (nvti, rebuild, vt_refs_batch);
 
@@ -319,11 +331,11 @@ insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
        " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s',"
        " '%s', %i, '%s', %0.1f, %i, %i, '%s', '%s', '%s', '%s', '%s', %d, '%s');",
        rebuild ? "_rebuild" : "",
-       nvti_oid (nvti), quoted_name, quoted_summary, quoted_insight,
+       quoted_oid, quoted_name, quoted_summary, quoted_insight,
        quoted_affected, quoted_impact, quoted_cve, quoted_tag,
        nvti_category (nvti), quoted_family, highest,
        nvti_creation_time (nvti), nvti_modification_time (nvti),
-       nvti_oid (nvti), quoted_solution_type, quoted_solution_method,
+       quoted_oid, quoted_solution_type, quoted_solution_method,
        quoted_solution, quoted_detection, qod, quoted_qod_type);
 
   g_free (quoted_name);
@@ -339,6 +351,7 @@ insert_nvt (const nvti_t *nvti, int rebuild, batch_t *vt_refs_batch,
   g_free (quoted_solution_method);
   g_free (quoted_detection);
   g_free (quoted_qod_type);
+  g_free (quoted_oid);
 }
 
 /**
