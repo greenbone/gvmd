@@ -574,6 +574,9 @@ typedef struct
 static void
 create_credential_data_reset (create_credential_data_t *data)
 {
+  memset (data->password, 0, strlen (data->password));
+  memset (data->privacy_password, 0, strlen (data->privacy_password));
+
   free (data->allow_insecure);
   free (data->certificate);
   free (data->comment);
@@ -1262,6 +1265,8 @@ typedef struct
 static void
 create_user_data_reset (create_user_data_t * data)
 {
+  memset (data->password, 0, strlen (data->password));
+
   g_free (data->copy);
   array_free (data->groups);
   g_free (data->name);
@@ -2696,6 +2701,9 @@ typedef struct
 static void
 modify_credential_data_reset (modify_credential_data_t *data)
 {
+  memset (data->password, 0, strlen (data->password));
+  memset (data->privacy_password, 0, strlen (data->password));
+
   free (data->allow_insecure);
   free (data->auth_algorithm);
   free (data->certificate);
@@ -3272,6 +3280,8 @@ typedef struct
 static void
 modify_user_data_reset (modify_user_data_t * data)
 {
+  memset (data->password, 0, strlen (data->password));
+
   array_free (data->groups);
   g_free (data->name);
   g_free (data->new_name);
@@ -13096,7 +13106,8 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
   SEND_GET_START("credential");
   while (1)
     {
-      const char *login, *type, *cert, *private_key, *password, *public_key;
+      char *cert, *private_key, *password;
+      const char *login, *type, *public_key;
       gchar *formats_xml;
 
       ret = get_next (&credentials, &get_credentials_data->get,
@@ -13453,6 +13464,10 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
 #endif
       SEND_TO_CLIENT_OR_FAIL ("</credential>");
       count++;
+
+      memset (cert, 0, strlen (cert));
+      memset (private_key, 0, strlen (private_key));
+      memset (password, 0, strlen (password));
     }
 
   cleanup_iterator (&credentials);

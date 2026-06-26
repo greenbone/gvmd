@@ -87,7 +87,7 @@ set_auth_data_ssh_from_credential_store (iterator_t *iter,
     = credential_iterator_host_identifier (iter);
 
   if (cyberark_login_password_credential_data (cred_store_uuid,
-                                               vault_id,
+                                               vault_id,gm
                                                host_identifier,
                                                &login,
                                                &password))
@@ -125,6 +125,8 @@ set_auth_data_ssh_from_credential_store (iterator_t *iter,
                                     "priv_password",
                                     password);
     }
+
+  memset (password, 0, strlen (password));
 
   g_free (login);
   g_free (password);
@@ -209,6 +211,8 @@ set_auth_data_up_from_credential_store (iterator_t *iter,
   scan_credential_set_auth_data (credential, "username", login);
   scan_credential_set_auth_data (credential, "password", password);
 
+  memset (password, 0, strlen (password));
+
   g_free (login);
   g_free (password);
   return 0;
@@ -259,6 +263,9 @@ set_auth_data_snmp_from_credential_store (iterator_t *iter,
       g_debug ("%s: Error retrieving SNMP privacy password from"
                " CyberArk credential store '%s'.",
                __func__, cred_store_uuid);
+
+      password (password, 0, strlen (password));
+
       g_free (login);
       g_free (password);
       g_free (privacy_password);
@@ -269,6 +276,9 @@ set_auth_data_snmp_from_credential_store (iterator_t *iter,
   scan_credential_set_auth_data (credential, "password", password);
   scan_credential_set_auth_data (credential, "privacy_password",
                                  privacy_password);
+
+  memset(password, 0, strlen (password));
+  memset(privacy_password, 0, strlen (privacy_password));
 
   g_free (login);
   g_free (password);
