@@ -475,9 +475,13 @@ update_nvts_from_osp_vts (element_t *get_vts_response,
           return -1;
         }
       if (rebuild == 0)
-        sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
-             rebuild ? "_rebuild" : "",
-             nvti_oid (nvti));
+        {
+          gchar *quoted_oid = sql_quote (nvti_oid (nvti));
+          sql ("DELETE FROM nvt_preferences%s WHERE name LIKE '%s:%%';",
+               rebuild ? "_rebuild" : "",
+               quoted_oid);
+          g_free (quoted_oid);
+        }
       insert_nvt_preferences_list (preferences, rebuild);
       g_list_free_full (preferences, (GDestroyNotify) preference_free);
 
