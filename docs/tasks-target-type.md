@@ -96,8 +96,8 @@ These are the proposed target types, part of the initial migration
 
 ## Data migration
 
-While migrating the data seems rather trivial, we should opt for creating a database backup
-prior to migrating the columns and data.
+> :warning: While migrating the data seems rather trivial, we should opt for **creating a database backup
+            prior to migrating** the columns and data.
 
 The migration consists of multiple steps:
 
