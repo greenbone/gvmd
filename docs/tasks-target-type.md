@@ -155,6 +155,35 @@ WHERE target = $1
 AND target_type = {{TARGET_TYPE_WEB_APPLICATION}}
 ```
 
+A group of `delete_... ()` and `restore_... ()` functions updates the respective `target` and `target_location`
+in the tasks table. Since we are removing the designated columns for each target type,
+we can generalize these functions.
+```c++
+void
+task_update_delete_target (int resource_id, int trash_id) {
+    sql_ps ("UPDATE tasks"
+           " SET target = $1,"
+           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
+           " WHERE target = $2"
+           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+           SQL_RESOURCE_PARAM (trash_id),
+           SQL_RESOURCE_PARAM (resource_id),;
+           NULL);
+}
+
+void;
+task_update_restore_target (int trash_id, int restored_id) {
+    sql_ps ("UPDATE tasks"
+           " SET target = $1,"
+           "     target_location = " G_STRINGIFY (LOCATION_TABLE)
+           " WHERE target = $2"
+           " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+           SQL_RESOURCE_PARAM (restored_id),
+           SQL_RESOURCE_PARAM (trash_id),
+           NULL);
+}
+```
+
 <details>
     <summary>General functions</summary>
 
@@ -485,8 +514,15 @@ Migration =>
 
 ---
 
-[manage_sql_agent_groups.c#L1029](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_agent_groups.c#L1029)
+[manage_sql_agent_groups.c#L556](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_agent_groups.c#L556)
+```c++
+int
+delete_agent_group (const char *agent_group_uuid, int ultimate)
+```
 
+Migration => `update_trashcan_task_target ()`
+
+[manage_sql_agent_groups.c#L1029](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_agent_groups.c#L1029)
 ```c++
 int
 agent_group_in_use (agent_group_t agent_group)
@@ -498,7 +534,14 @@ agent_group_in_use (agent_group_t agent_group)
                     " AND hidden = 0;",
                     agent_group);
 }
+```
 
+Migration =>
+
+---
+
+[manage_sql_agent_groups.c#L1046](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_agent_groups.c#L1046)
+```c++
 int
 trash_agent_group_in_use (agent_group_t agent_group)
 {
@@ -520,7 +563,6 @@ Migration =>
     <summary>OCI Image targets</summary>
 
 [manage_sql.c#L5976](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql.c#L5976)
-
 ```c++
 switch (sql_int64 (&oci_image_target,
                  "SELECT oci_image_target FROM tasks WHERE id = %llu;",
@@ -532,7 +574,6 @@ Migration =>
 ---
 
 [manage_sql.c#L5999](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql.c#L5999)
-
 ```c++
 int
 task_oci_image_target_in_trash (task_t task)
@@ -549,7 +590,6 @@ Migration =>
 ---
 
 [manage_sql.c#L6014](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql.c#L6014)
-
 ```c++
 void
 set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
@@ -563,12 +603,11 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 }
 ```
 
-Migration =>
+Migration => set `target_type`, `target` and `target_location`
 
 ---
 
 [manage_sql_oci_image_targets.c#L427](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L427)
-
 ```c++
 if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE oci_image_target = %llu"
@@ -586,7 +625,6 @@ Migration => use `target_type` and regular fields instead
 ---
 
 [manage_sql_oci_image_targets.c#L451](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L451)
-
 ```c++
 if (sql_int ("SELECT count(*) FROM tasks"
                    " WHERE oci_image_target = %llu"
@@ -604,8 +642,24 @@ Migration => use `target_type` and regular fields instead
 
 ---
 
-[manage_sql_oci_image_targets.c#L490](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L490)
+[manage_sql_oci_image_targets.c#L473](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L473)
+```c++
+sql ("UPDATE tasks"
+           " SET oci_image_target = %llu,"
+           "     oci_image_target_location = "
+           G_STRINGIFY (LOCATION_TRASH)
+           " WHERE oci_image_target = %llu"
+           " AND oci_image_target_location = "
+           G_STRINGIFY (LOCATION_TABLE) ";",
+           sql_last_insert_id (),
+           oci_image_target);
+```
 
+Migration => `task_update_delete_target ()`
+
+---
+
+[manage_sql_oci_image_targets.c#L490](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L490)
 ```c++
   else if (sql_int ("SELECT count(*) FROM tasks"
                     " WHERE oci_image_target = %llu"
@@ -618,15 +672,27 @@ Migration => use `target_type` and regular fields instead
     }
 ```
 
-Migration => What about the trash can in general? Do we want to use `targets_trash` for every target_type? Probably yes.
-So we need to get rid of all the `*_target_trash` tables and replace the queries for "copying" to the trash table
-accordingly.
-This also requires changes to => delete_target () `m̀anage_sql_targets.c#L416`
+Migration => 
+
+---
+
+[manage_sql_oci_image_targets.c#L581](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L581)
+```c++
+sql ("UPDATE tasks"
+    " SET oci_image_target = %llu,"
+    " oci_image_target_location = " G_STRINGIFY (LOCATION_TABLE)
+    " WHERE oci_image_target = %llu"
+    " AND oci_image_target_location = " G_STRINGIFY (LOCATION_TRASH),
+    oci_image_target,
+    resource);
+```
+
+=> `task_update_restored_target ()`
+
 
 ---
 
 [manage_sql_oci_image_targets.c#L906](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L906)
-
 ```c++
 int
 oci_image_target_in_use (oci_image_target_t oci_image_target)
@@ -638,7 +704,14 @@ oci_image_target_in_use (oci_image_target_t oci_image_target)
                     " AND hidden = 0;",
                     oci_image_target);
 }
+```
 
+Migration =>
+
+---
+
+[manage_sql_oci_image_targets.c#L924](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L924)
+```c++
 int
 trash_oci_image_target_in_use (oci_image_target_t oci_image_target)
 {
@@ -669,64 +742,6 @@ Migration =>
 ```
 
 Migration =>
-
----
-
-[manage_sql.c#L6014](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql.c#L6014)
-
-```c++
-void
-set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
-{
-  sql ("UPDATE tasks SET oci_image_target = %llu,"
-       " oci_image_target_location = 0,"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       oci_image_target,
-       task);
-}
-```
-
-Migration => set `target_type`, `target` and `target_location`
-
----
-
-[manage_sql_oci_image_targets.c#L385](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L385)
-
-```c++
-int
-delete_oci_image_target (const char *oci_image_target_id, int ultimate)
-```
-
-Migration => `UPDATE tasks SET target = ..., target_type = ...`
-
----
-
-[manage_sql_oci_image_targets.c#L524](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L524)
-
-```c++
-int
-restore_oci_image_target (const char *oci_image_target_id)
-```
-
-Migration => `UPDATE tasks SET target = ..., target_type = ...`
-
----
-
-[manage_sql_oci_image_targets.c#L580](https://github.com/greenbone/gvmd/blob/0e66fbe21cdfb489c3361c1ec6288d29de7cfc4f/src/manage_sql_oci_image_targets.c#L580)
-```c++
-/* Update the (oci image|web application) target in any tasks. */
-sql ("UPDATE tasks"
-    " SET oci_image_target = %llu,"
-    " oci_image_target_location = " G_STRINGIFY (LOCATION_TABLE)
-    " WHERE oci_image_target = %llu"
-    " AND oci_image_target_location = " G_STRINGIFY (LOCATION_TRASH),
-    oci_image_target,
-    resource);
-```
-
-=> This SQL query is run quite often in a similar fashion for all kinds of targets on restoring.
-Probably makes sense to create a function for this
 
 ---
 
