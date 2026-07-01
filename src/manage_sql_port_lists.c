@@ -1123,6 +1123,7 @@ create_port_list_unique (const char *name, const char *comment,
   ret = create_port_list_lock (NULL, quoted_name, comment, ranges, 0,
                                port_list);
 
+  g_free (quoted_name);
   array_free (ranges);
 
   return ret;
