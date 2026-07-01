@@ -927,6 +927,8 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
   /* Try update VTs. */
 
+  db_feed_version = NULL;
+  scanner_feed_version = NULL;
   ret = nvts_feed_version_status_internal_osp (update_socket,
                                                &db_feed_version,
                                                &scanner_feed_version);
@@ -939,10 +941,9 @@ manage_update_nvt_cache_osp (const gchar *update_socket)
 
       ret = update_nvt_cache_osp (update_socket, db_feed_version,
                                   scanner_feed_version, 0);
-      g_free (db_feed_version);
-      g_free (scanner_feed_version);
-      return ret;
     }
 
+  g_free (db_feed_version);
+  g_free (scanner_feed_version);
   return ret;
 }
