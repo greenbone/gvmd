@@ -172,11 +172,11 @@ task_update_delete_target (int resource_id, int trash_id) {
            " WHERE target = $2"
            " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
            SQL_RESOURCE_PARAM (trash_id),
-           SQL_RESOURCE_PARAM (resource_id),;
+           SQL_RESOURCE_PARAM (resource_id),
            NULL);
 }
 
-void;
+void
 task_update_restore_target (int trash_id, int restored_id) {
     sql_ps ("UPDATE tasks"
            " SET target = $1,"
