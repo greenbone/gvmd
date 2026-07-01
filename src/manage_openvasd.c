@@ -170,6 +170,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
+  gchar *reverse_lookup_only_str, *reverse_lookup_unify_str;
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
@@ -216,11 +217,19 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   if (target_alive_tests (target) > 0)
     alive_test = target_alive_tests (target);
 
-  if (target_reverse_lookup_only (target) != NULL)
-    reverse_lookup_only = atoi (target_reverse_lookup_only (target));
+  reverse_lookup_only_str = target_reverse_lookup_only (target);
+  if (reverse_lookup_only_str)
+    {
+      reverse_lookup_only = atoi (reverse_lookup_only_str);
+      g_free (reverse_lookup_only_str);
+    }
 
-  if (target_reverse_lookup_unify (target) != NULL)
-    reverse_lookup_unify = atoi (target_reverse_lookup_unify (target));
+  reverse_lookup_unify_str = target_reverse_lookup_unify (target);
+  if (reverse_lookup_unify_str)
+    {
+      reverse_lookup_unify = atoi (reverse_lookup_unify_str);
+      g_free (reverse_lookup_unify_str);
+    }
 
   if (finished_hosts_str)
     {
