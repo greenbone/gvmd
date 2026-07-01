@@ -5135,12 +5135,15 @@ auth_cache_find (const char *username, const char *password, int method)
 static void
 auth_cache_insert (const char *username, const char *password, int method)
 {
-  char *hash, *quoted_username;
+  char *hash;
 
-  quoted_username = sql_quote (username);
   hash = manage_authentication_hash (password);
-  sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
-       " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
+  sql_ps ("INSERT INTO auth_cache (username, hash, method, creation_time)"
+          " VALUES ($1, $2, $3, m_now ());",
+          SQL_STR_PARAM (username),
+          SQL_STR_PARAM (hash),
+          SQL_INT_PARAM (method),
+          NULL);
   /* Cleanup cache */
   sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - %d",
        get_auth_timeout()*60);
