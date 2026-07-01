@@ -3990,6 +3990,7 @@ manage_process_report_imports ()
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            lockfile_unlock (&lockfile);
             g_free (lockfile_path);
             continue;
           }
