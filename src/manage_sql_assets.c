@@ -943,7 +943,7 @@ create_asset_report (const char *report_id, const char *term)
                = g_strdup (report_host_details_iterator_source_name (&details));
 
               array_add (identifiers, identifier);
-              array_add_new_string (identifier_hosts, g_strdup (host));
+              array_add_new_string (identifier_hosts, host);
             }
         }
       cleanup_iterator (&details);
