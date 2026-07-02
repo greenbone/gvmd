@@ -528,7 +528,7 @@ add_host_identifier_to_arrays (array_t **ids, array_t **hosts,
   identifier->source_data = g_strdup (source_data);
 
   array_add (*ids, identifier);
-  array_add_new_string (*hosts, g_strdup (ip));
+  array_add_new_string (*hosts, ip);
 }
 
 /**
