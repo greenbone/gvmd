@@ -90,6 +90,7 @@ get_report_operating_systems (report_t report,
   iterator_t results;
   int result_hosts_only = 0;
   gchar *term = NULL;
+  gchar *host_filter = NULL;
   int ret;
   GHashTable *report_host_ids = NULL;
   GHashTable *os_by_cpe = NULL;
@@ -106,7 +107,7 @@ get_report_operating_systems (report_t report,
                                                     NULL,
                                                     NULL,
                                                     &result_hosts_only,
-                                                    NULL,
+                                                    &host_filter,
                                                     NULL,
                                                     NULL,
                                                     NULL,
@@ -140,7 +141,7 @@ get_report_operating_systems (report_t report,
 
   os_by_cpe = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
 
-  init_report_os_iterator (&report_os, report);
+  init_report_os_iterator (&report_os, report, host_filter);
 
   while (next (&report_os))
     {
@@ -190,6 +191,7 @@ get_report_operating_systems (report_t report,
 
   g_hash_table_destroy (os_by_cpe);
   g_free (term);
+  g_free (host_filter);
 
   return 0;
 }
