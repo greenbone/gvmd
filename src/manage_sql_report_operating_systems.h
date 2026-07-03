@@ -25,6 +25,6 @@ report_host_t
 report_os_iterator_report_host_id (iterator_t *);
 
 void
-init_report_os_iterator (iterator_t *, report_t);
+init_report_os_iterator (iterator_t *, report_t, const gchar *);
 
 #endif //_GVM_MANAGE_SQL_REPORT_OPERATING_SYSTEMS_H
