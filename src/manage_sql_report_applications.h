@@ -25,12 +25,13 @@ int
 report_app_iterator_occurrences (iterator_t *);
 
 void
-init_report_app_iterator (iterator_t *, report_t);
+init_report_app_iterator (iterator_t *, report_t, const gchar *);
 
 int
 fill_report_applications_severities (const get_data_t *,
                                      report_t,
                                      iterator_t *,
-                                     GHashTable **);
+                                     GHashTable **,
+                                     const gchar *);
 
 #endif //_GVM_MANAGE_SQL_REPORT_APPLICATIONS_H

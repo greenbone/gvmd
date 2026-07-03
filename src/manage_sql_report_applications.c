@@ -63,21 +63,42 @@ report_app_iterator_occurrences (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  report    Report whose hosts the iterator loops over.
+ * @param [in]  host_filter  Optional host filter; NULL for no filter.
  */
 void
-init_report_app_iterator (iterator_t *iterator, report_t report)
+init_report_app_iterator (iterator_t *iterator, report_t report,
+                          const gchar *host_filter)
 {
-  init_ps_iterator (iterator,
-                    "SELECT value AS app, count(*) AS hosts,"
-                    " (SELECT  count(*) FROM report_host_details r"
-                    " WHERE r.name = app_details.value AND r.report_host IN"
-                    " (SELECT id FROM report_hosts WHERE report = $1)) AS occurrences"
-                    " FROM report_host_details app_details"
-                    " WHERE report_host IN"
-                    " (SELECT id FROM report_hosts WHERE report = $1)"
-                    " AND name = 'App'  GROUP BY value;",
-                    SQL_RESOURCE_PARAM (report),
-                    NULL);
+  if (host_filter && *host_filter)
+    {
+      init_ps_iterator (iterator,
+                        "SELECT value AS app, count(*) AS hosts,"
+                        " (SELECT  count(*) FROM report_host_details r"
+                        " WHERE r.name = app_details.value AND r.report_host IN"
+                        " (SELECT id FROM report_hosts WHERE report = $1)) AS occurrences"
+                        " FROM report_host_details app_details"
+                        " WHERE report_host IN"
+                        " (SELECT id FROM report_hosts WHERE report = $1 AND host = $2)"
+                        " AND name = 'App' GROUP BY value;",
+                        SQL_RESOURCE_PARAM (report),
+                        SQL_STR_PARAM (host_filter),
+                        NULL);
+
+    }
+  else
+    {
+      init_ps_iterator (iterator,
+                        "SELECT value AS app, count(*) AS hosts,"
+                        " (SELECT  count(*) FROM report_host_details r"
+                        " WHERE r.name = app_details.value AND r.report_host IN"
+                        " (SELECT id FROM report_hosts WHERE report = $1)) AS occurrences"
+                        " FROM report_host_details app_details"
+                        " WHERE report_host IN"
+                        " (SELECT id FROM report_hosts WHERE report = $1)"
+                        " AND name = 'App'  GROUP BY value;",
+                        SQL_RESOURCE_PARAM (report),
+                        NULL);
+    }
 }
 
 /**
@@ -90,6 +111,7 @@ init_report_app_iterator (iterator_t *iterator, report_t report)
  * @param[in]  report           Report to inspect.
  * @param[out] results          Result iterator.
  * @param[out] apps_severities  Hash table of CPE string to double* severity.
+ * @param [in]  host_filter       Optional host filter; NULL for no filter.
  *
 * @return 0 on success, 1 failed to find result, 2 failed to find filter (filt_id),
  *         -1 error.
@@ -98,7 +120,8 @@ int
 fill_report_applications_severities (const get_data_t *get,
                                      report_t report,
                                      iterator_t *results,
-                                     GHashTable **apps_severities)
+                                     GHashTable **apps_severities,
+                                     const gchar * host_filter)
 {
   int ret;
   const char *port;
@@ -111,7 +134,7 @@ fill_report_applications_severities (const get_data_t *get,
   *apps_severities = g_hash_table_new_full (g_str_hash, g_str_equal, g_free,
                                             g_free);
 
-  ret = init_result_get_iterator (results, get, report, NULL, NULL);
+  ret = init_result_get_iterator (results, get, report, host_filter, NULL);
   if (ret)
     return ret;
 
