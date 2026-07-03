@@ -115,6 +115,7 @@ manage_send_report_hosts (report_t report,
                                                 NULL,
                                                 NULL,
                                                 NULL,
+                                                NULL,
                                                 NULL);
   if (ret)
     goto cleanup;

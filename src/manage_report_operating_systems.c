@@ -115,6 +115,7 @@ get_report_operating_systems (report_t report,
                                                     NULL,
                                                     NULL,
                                                     NULL,
+                                                    NULL,
                                                     NULL);
       if (ret)
         return ret;
