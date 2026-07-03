@@ -4238,7 +4238,7 @@ migrate_280_to_281 ()
 
       int64_t new_target = 0;
       int64_t new_location = 0;
-      int new_target_type = TASKS_TARGET_TYPE_UNDEFINED;
+      tasks_target_type_t new_target_type = TASKS_TARGET_TYPE_UNDEFINED;
 
       if (agent_group != 0)
         {
