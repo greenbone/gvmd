@@ -16,7 +16,7 @@
 #include "manage_report_closed_cves.h"
 
 void
-init_report_closed_cve_iterator (iterator_t *, report_t);
+init_report_closed_cve_iterator (iterator_t *, report_t, const gchar *);
 
 const gchar *
 report_closed_cve_iterator_host (iterator_t *);

@@ -11,6 +11,7 @@
  */
 
 #include "manage_report_closed_cves.h"
+#include "manage_filters.h"
 #include "manage_sql_report_closed_cves.h"
 
 #undef G_LOG_DOMAIN
@@ -84,16 +85,51 @@ report_closed_cve_list_free (GPtrArray *closed_cves)
  */
 int
 get_report_closed_cves (report_t report,
+                        const get_data_t *get,
                         GPtrArray **closed_cve_list)
 {
   iterator_t closed_cves;
+  gchar *term;
+  gchar *host_filter;
+  int ret;
+
+  term = NULL;
+  host_filter = NULL;
 
   if (closed_cve_list == NULL)
     return -1;
+  /* Derive filter controls, including whether only hosts with results
+     * should be included.
+     */
+  ret = manage_report_filter_controls_from_get (get,
+                                                &term,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                &host_filter,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+
+  if (ret)
+    {
+      g_free (term);
+      g_free (host_filter);
+      return -1;
+    }
 
   *closed_cve_list = report_closed_cve_list_new ();
 
-  init_report_closed_cve_iterator (&closed_cves, report);
+  init_report_closed_cve_iterator (&closed_cves, report, host_filter);
 
   while (next (&closed_cves))
     {
@@ -116,5 +152,7 @@ get_report_closed_cves (report_t report,
     }
 
   cleanup_iterator (&closed_cves);
+  g_free (term);
+  g_free (host_filter);
   return 0;
 }
