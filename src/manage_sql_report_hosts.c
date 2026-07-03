@@ -854,11 +854,13 @@ print_container_scan_report_hosts_xml (print_report_context_t *ctx,
  * @param[in]  lean                 Whether to return lean report.
  * @param[in]  is_container_scan    Whether this is a container scan report.
  * @param[in]  result_hosts_only    Whether to print only hosts with results.
- * @param[in]  result_hosts         Result hosts array, used when result_hosts_only is set.
+ * @param[in]  host_filter          Exact host filter, or NULL.
+ * @param[in]  result_hosts         Result hosts array, used when
+ *                                  result_hosts_only is set.
  * @param[in]  host_summary_buffer  Host summary buffer.
  * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
- * @return 0 on success, -1 error.
+ * @return 0 on success, -1 on error.
  */
 int
 print_report_hosts_xml (print_report_context_t *ctx,
@@ -869,6 +871,7 @@ print_report_hosts_xml (print_report_context_t *ctx,
                         int lean,
                         gboolean is_container_scan,
                         gboolean result_hosts_only,
+                        const gchar *host_filter,
                         array_t *result_hosts,
                         GString *host_summary_buffer,
                         gboolean is_get_report_hosts)
@@ -1011,7 +1014,10 @@ print_report_hosts_xml (print_report_context_t *ctx,
     {
       iterator_t hosts;
 
-      init_report_host_iterator (&hosts, report, NULL, 0);
+      init_report_host_iterator (&hosts,
+                                 report,
+                                 host_filter,
+                                 0);
 
       while (next (&hosts))
         {

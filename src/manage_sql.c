@@ -16941,6 +16941,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   lean,
                                   is_container_scanning_report,
                                   result_hosts_only,
+                                  NULL, /* host_filter */
                                   result_hosts,
                                   host_summary_buffer,
                                   FALSE))
