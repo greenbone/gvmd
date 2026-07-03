@@ -99,7 +99,6 @@ get_report_applications (report_t report,
   gchar *host_filter;
   gchar *term;
   int ret;
-  int result_hosts_only = 0;
 
   if (report_applications == NULL)
     return -1;
@@ -113,7 +112,7 @@ get_report_applications (report_t report,
                                                 NULL,
                                                 NULL,
                                                 NULL,
-                                                &result_hosts_only,
+                                                NULL,
                                                 &host_filter,
                                                 NULL,
                                                 NULL,

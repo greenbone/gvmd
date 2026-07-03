@@ -12,6 +12,7 @@
 
 #include "manage_report_cves.h"
 
+#include "manage_filters.h"
 #include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
@@ -288,13 +289,48 @@ get_report_cves (report_t report,
                  GPtrArray **report_cves)
 {
   iterator_t results;
+  int ret;
+  gchar *term;
+  gchar *host_filter;
+
+  term = NULL;
+  host_filter = NULL;
 
   if (report_cves == NULL)
     return -1;
 
+  /* Derive filter controls, including whether only hosts with results
+   * should be included.
+   */
+  ret = manage_report_filter_controls_from_get (get,
+                                                &term,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                &host_filter,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+
+  if (ret)
+    {
+      g_free (term);
+      g_free (host_filter);
+      return -1;
+    }
+
   *report_cves = report_cve_list_new ();
 
-  init_result_get_iterator (&results, get, report, NULL, NULL);
+  init_result_get_iterator (&results, get, report, host_filter, NULL);
 
   while (next (&results))
     {
@@ -313,6 +349,8 @@ get_report_cves (report_t report,
     }
 
   cleanup_iterator (&results);
+  g_free (term);
+  g_free (host_filter);
 
   return 0;
 }
