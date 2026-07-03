@@ -4195,6 +4195,109 @@ migrate_279_to_280 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 280 to version 281.
+ *
+ * @return 0 success, -1 error.
+ */
+
+int
+migrate_280_to_281 ()
+{
+  sql_begin_immediate ();
+
+  if (manage_db_version () != 280)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Add target_type column to tasks table */
+  sql ("ALTER TABLE tasks ADD target_type INTEGER");
+
+  /* Migrate data to new column */
+  iterator_t tasks;
+  init_iterator (&tasks, "SELECT id,"
+                         "       target, target_location,"
+                         "       agent_group, agent_group_location,"
+                         "       oci_image_target, oci_image_target_location,"
+                         "       web_application_target, web_application_target_location"
+                         " FROM tasks");
+
+  while (next (&tasks))
+    {
+      const int64_t id = iterator_int64 (&tasks, 0);
+      const int64_t target = iterator_int64 (&tasks, 1);
+      const int64_t target_location = iterator_int64 (&tasks, 2);
+      const int64_t agent_group = iterator_int64 (&tasks, 3);
+      const int64_t agent_group_location = iterator_int64 (&tasks, 4);
+      const int64_t oci_image_target = iterator_int64 (&tasks, 5);
+      const int64_t oci_image_target_location = iterator_int64 (&tasks, 6);
+      const int64_t web_application_target = iterator_int64 (&tasks, 7);
+      const int64_t web_application_target_location = iterator_int64 (&tasks, 8);
+
+      int64_t new_target = 0;
+      int64_t new_location = 0;
+      int new_target_type = TASKS_TARGET_TYPE_UNDEFINED;
+
+      if (agent_group != 0)
+        {
+          new_target = agent_group;
+          new_location = agent_group_location;
+          new_target_type = TASKS_TARGET_TYPE_AGENT_GROUP;
+        }
+      else if (oci_image_target != 0)
+        {
+          new_target = oci_image_target;
+          new_location = oci_image_target_location;
+          new_target_type = TASKS_TARGET_TYPE_OCI_IMAGE;
+        }
+      else if (web_application_target != 0)
+        {
+          new_target = web_application_target;
+          new_location = web_application_target_location;
+          new_target_type = TASKS_TARGET_TYPE_WEB_APPLICATION;
+        }
+      else if (target != 0)
+        {
+          new_target = target;
+          new_location = target_location;
+          new_target_type = TASKS_TARGET_TYPE_REGULAR;
+        }
+      else
+        {
+          new_target = 0;
+          new_location = 0;
+          new_target_type = TASKS_TARGET_TYPE_IMPORT_TASK;
+        }
+
+      sql_ps ("UPDATE tasks"
+              " SET target = $2, target_location = $3, target_type = $4"
+              " WHERE id = $1",
+              SQL_RESOURCE_PARAM (id),
+              SQL_RESOURCE_PARAM (new_target),
+              SQL_INT_PARAM (new_location),
+              SQL_INT_PARAM (new_target_type),
+              NULL);
+    }
+  cleanup_iterator (&tasks);
+
+  /* Drop old, unused target columns */
+  sql ("ALTER TABLE tasks DROP COLUMN agent_group,"
+       "                  DROP COLUMN agent_group_location,"
+       "                  DROP COLUMN oci_image_target,"
+       "                  DROP COLUMN oci_image_target_location,"
+       "                  DROP COLUMN web_application_target,"
+       "                  DROP COLUMN web_application_target_location");
+
+  /* Set the database version to 281 */
+  set_db_version (281);
+
+  sql_commit();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4281,6 +4384,7 @@ static migrator_t database_migrators[] = {
   {278, migrate_277_to_278},
   {279, migrate_278_to_279},
   {280, migrate_279_to_280},
+  {281, migrate_280_to_281},
   /* End marker. */
   {-1, NULL}};
 
