@@ -146,7 +146,8 @@ manage_send_report_hosts (report_t report,
                                         &results,
                                         is_container_scanning_report,
                                         &ctx,
-                                        TRUE);
+                                        TRUE,
+                                        host_filter);
       if (ret)
         {
           ret = -1;

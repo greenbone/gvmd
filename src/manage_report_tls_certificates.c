@@ -50,8 +50,10 @@ manage_send_report_tls_certificates (report_t report,
 {
   gchar *xml_file;
   gchar *term;
+  gchar *host_filter;
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
   gboolean xml_dir_created = FALSE;
+  gboolean restrict_to_result_hosts = FALSE;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
   FILE *stream;
   int ret;
@@ -64,6 +66,7 @@ manage_send_report_tls_certificates (report_t report,
   xml_file = NULL;
   stream = NULL;
   result_hosts = NULL;
+  host_filter = NULL;
   results_initialized = 0;
   result_hosts_only = 0;
 
@@ -83,7 +86,7 @@ manage_send_report_tls_certificates (report_t report,
                                                 NULL,
                                                 NULL,
                                                 &result_hosts_only,
-                                                NULL,
+                                                &host_filter,
                                                 NULL,
                                                 NULL,
                                                 NULL,
@@ -105,8 +108,9 @@ manage_send_report_tls_certificates (report_t report,
     }
 
   xml_dir_created = TRUE;
+  restrict_to_result_hosts = result_hosts_only || (host_filter && *host_filter);
 
-  if (get->details && result_hosts_only)
+  if (get->details && restrict_to_result_hosts)
     {
       ret = fill_filtered_result_hosts (&result_hosts,
                                         get,
@@ -114,7 +118,8 @@ manage_send_report_tls_certificates (report_t report,
                                         &results,
                                         is_container_scanning_report,
                                         NULL,
-                                        FALSE);
+                                        FALSE,
+                                        host_filter);
       if (ret)
         {
           ret = -1;
@@ -137,14 +142,14 @@ manage_send_report_tls_certificates (report_t report,
     report,
     stream,
     get->details,
-    result_hosts_only,
+    restrict_to_result_hosts,
     result_hosts);
 
   /* Ownership of result_hosts is transferred to
    * print_report_tls_certificates_xml_summary_or_details when details output
-   * is requested with result_hosts_only.
+   * is requested with restrict_to_result_hosts.
    */
-  if (get->details && result_hosts_only)
+  if (get->details && restrict_to_result_hosts)
     result_hosts = NULL;
 
   if (fclose (stream))
@@ -222,6 +227,7 @@ cleanup:
 
   g_free (xml_file);
   g_free (term);
+  g_free (host_filter);
 
   if (xml_dir_created)
     gvm_file_remove_recurse (xml_dir);
