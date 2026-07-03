@@ -25,6 +25,7 @@ print_report_hosts_xml (print_report_context_t *,
                         int lean,
                         gboolean,
                         gboolean,
+                        const gchar *,
                         array_t *,
                         GString *,
                         gboolean);
