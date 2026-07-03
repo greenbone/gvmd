@@ -1144,6 +1144,7 @@ update_filtered_host_result_counts (print_report_context_t *ctx,
  *                                              container-aware host keys.
  * @param[in, out] ctx  Report print context used to store filtered per-host counts.
  * @param[in]      is_get_report_hosts  Whether called from get_report_hosts.
+ * @param [in]      host_filter Exact host filter, or NULL.
  *
  * @return 0 on success, non-zero on failure.
  */
@@ -1154,7 +1155,8 @@ fill_filtered_result_hosts (array_t **result_hosts,
                             iterator_t *results,
                             gboolean is_container_scanning_report,
                             print_report_context_t *ctx,
-                            gboolean is_get_report_hosts)
+                            gboolean is_get_report_hosts,
+                            const gchar *host_filter)
 {
   int ret;
 
@@ -1163,7 +1165,7 @@ fill_filtered_result_hosts (array_t **result_hosts,
 
   *result_hosts = make_array ();
 
-  ret = init_result_get_iterator (results, get, report, NULL, NULL);
+  ret = init_result_get_iterator (results, get, report, host_filter, NULL);
   if (ret)
     return ret;
 
