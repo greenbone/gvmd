@@ -84,13 +84,13 @@ erDiagram
 
 These are the proposed target types, part of the initial migration
 
-| Target Type                         | Integer Value | Reference Table           | Notes                |
-|-------------------------------------|---------------|---------------------------|----------------------|
-| `TASKS_TARGET_TYPE_IMPORT_TASK`     | 0             | N/A                       | `target` must be `0` |
-| `TASKS_TARGET_TYPE_REGULAR`         | 1             | `targets`                 | N/A                  |
-| `TASKS_TARGET_TYPE_AGENT_GROUP`     | 2             | `agent_groups`            | N/A                  |
-| `TASKS_TARGET_TYPE_OCI_IMAGE`       | 3             | `oci_image_targets`       | N/A                  |
-| `TASKS_TARGET_TYPE_WEB_APPLICATION` | 4             | `web_application_targets` | N/A                  |
+| Target Type                   | Integer Value | Reference Table           | Notes                |
+|-------------------------------|---------------|---------------------------|----------------------|
+| `TARGET_TYPE_IMPORT_TASK`     | 0             | N/A                       | `target` must be `0` |
+| `TARGET_TYPE_REGULAR`         | 1             | `targets`                 | N/A                  |
+| `TARGET_TYPE_AGENT_GROUP`     | 2             | `agent_groups`            | N/A                  |
+| `TARGET_TYPE_OCI_IMAGE`       | 3             | `oci_image_targets`       | N/A                  |
+| `TARGET_TYPE_WEB_APPLICATION` | 4             | `web_application_targets` | N/A                  |
 
 # Migrations
 
