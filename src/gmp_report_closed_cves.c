@@ -27,7 +27,7 @@
  */
 typedef struct
 {
-  get_data_t get;   ///< Get args with filtering.
+  get_data_t get;  ///< Get args with filtering.
   char *report_id; ///< ID of single report to get.
 } get_report_closed_cves_data_t;
 
@@ -70,7 +70,7 @@ get_report_closed_cves_start (const gchar **attribute_names,
                              attribute_values);
 
   if (find_attribute (attribute_names, attribute_values,
-                     "report_id", &attribute))
+                      "report_id", &attribute))
     {
       get_report_closed_cves_data.report_id = g_strdup (attribute);
 
@@ -150,7 +150,8 @@ get_report_closed_cves_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (get_report_closed_cves_data.get.details)
     {
-      ret = get_report_closed_cves (report, &closed_cves);
+      ret = get_report_closed_cves (report, &get_report_closed_cves_data.get,
+                                    &closed_cves);
       if (ret)
         {
           internal_error_send_to_client (error);
@@ -163,7 +164,8 @@ get_report_closed_cves_run (gmp_parser_t *gmp_parser, GError **error)
     }
   else
     {
-      count = report_closed_cve_count (report);
+      count = report_closed_cve_count (
+        report, &get_report_closed_cves_data.get);
       if (count < 0)
         {
           internal_error_send_to_client (error);
@@ -201,7 +203,7 @@ get_report_closed_cves_run (gmp_parser_t *gmp_parser, GError **error)
                                    : "");
 
           SENDF_TO_CLIENT_OR_FAIL ("<nvt oid=\"%s\">",
-                          closed_cve->oid ? closed_cve->oid : "");
+                                   closed_cve->oid ? closed_cve->oid : "");
 
           SENDF_TO_CLIENT_OR_FAIL ("<name>%s</name>",
                                    closed_cve->nvt_name

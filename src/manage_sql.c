@@ -16172,7 +16172,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       PRINT (out,
              "<closed_cves><count>%i</count></closed_cves>",
-             report_closed_cve_count (report));
+             report_closed_cve_count (report, get));
 
       PRINT (out,
              "<cves><count>%i</count></cves>",

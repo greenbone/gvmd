@@ -13,6 +13,8 @@
 #include "manage_sql_report_closed_cves.h"
 
 #include "manage.h"
+#include "manage_filters.h"
+#include "manage_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -82,59 +84,156 @@ report_closed_cve_iterator_severity_double (iterator_t *iterator)
  *
  * @param[in]  iterator  Iterator.
  * @param[in]  report    Report whose closed CVEs the iterator loops over.
+ * @param [in]  host_filter  Optional host filter; NULL for no filter.
  */
 void
-init_report_closed_cve_iterator (iterator_t *iterator, report_t report)
+init_report_closed_cve_iterator (iterator_t *iterator, report_t report,
+                                 const gchar *host_filter)
 {
-  init_ps_iterator (iterator,
-                    "SELECT DISTINCT rh.host,"
-                    "       trim(split_cve) AS cve,"
-                    "       nvts.oid,"
-                    "       nvts.name,"
-                    "       nvts.cvss_base"
-                    " FROM report_hosts rh"
-                    " JOIN report_host_details rhd"
-                    "   ON rhd.report_host = rh.id"
-                    " JOIN nvts"
-                    "   ON nvts.oid = rhd.source_name"
-                    " CROSS JOIN LATERAL regexp_split_to_table(nvts.cve, ',')"
-                    " AS split_cve"
-                    " WHERE rh.report = $1"
-                    "   AND rhd.name = 'EXIT_CODE'"
-                    "   AND rhd.value = 'EXIT_NOTVULN'"
-                    "   AND nvts.cve != ''"
-                    "   AND nvts.family IN (" LSC_FAMILY_LIST ")",
-                    SQL_RESOURCE_PARAM (report),
-                    NULL);
+  if (host_filter && *host_filter)
+    {
+      init_ps_iterator (iterator,
+                        "SELECT DISTINCT rh.host,"
+                        "       trim(split_cve) AS cve,"
+                        "       nvts.oid,"
+                        "       nvts.name,"
+                        "       nvts.cvss_base"
+                        " FROM report_hosts rh"
+                        " JOIN report_host_details rhd"
+                        "   ON rhd.report_host = rh.id"
+                        " JOIN nvts"
+                        "   ON nvts.oid = rhd.source_name"
+                        " CROSS JOIN LATERAL regexp_split_to_table(nvts.cve, ',')"
+                        " AS split_cve"
+                        " WHERE rh.report = $1"
+                        "   AND rh.host = $2"
+                        "   AND rhd.name = 'EXIT_CODE'"
+                        "   AND rhd.value = 'EXIT_NOTVULN'"
+                        "   AND nvts.cve != ''"
+                        "   AND nvts.family IN (" LSC_FAMILY_LIST ")",
+                        SQL_RESOURCE_PARAM (report),
+                        SQL_STR_PARAM (host_filter),
+                        NULL);
+    }
+  else
+    {
+      init_ps_iterator (iterator,
+                        "SELECT DISTINCT rh.host,"
+                        "       trim(split_cve) AS cve,"
+                        "       nvts.oid,"
+                        "       nvts.name,"
+                        "       nvts.cvss_base"
+                        " FROM report_hosts rh"
+                        " JOIN report_host_details rhd"
+                        "   ON rhd.report_host = rh.id"
+                        " JOIN nvts"
+                        "   ON nvts.oid = rhd.source_name"
+                        " CROSS JOIN LATERAL regexp_split_to_table(nvts.cve, ',')"
+                        " AS split_cve"
+                        " WHERE rh.report = $1"
+                        "   AND rhd.name = 'EXIT_CODE'"
+                        "   AND rhd.value = 'EXIT_NOTVULN'"
+                        "   AND nvts.cve != ''"
+                        "   AND nvts.family IN (" LSC_FAMILY_LIST ")",
+                        SQL_RESOURCE_PARAM (report),
+                        NULL);
+    }
 }
 
 /**
  * @brief Count a report's total number of closed CVEs.
  *
  * @param[in]  report  Report.
+ * @param [in]  get     GET params.
  *
  * @return Closed CVE count.
  */
 int
-report_closed_cve_count (report_t report)
+report_closed_cve_count (report_t report, const get_data_t *get)
 {
-  return sql_int_ps (
-    "SELECT COUNT(*)"
-    " FROM ("
-    "   SELECT DISTINCT rh.host, trim(split_cve) AS cve"
-    "   FROM report_hosts rh"
-    "   JOIN report_host_details rhd"
-    "     ON rhd.report_host = rh.id"
-    "   JOIN nvts n"
-    "     ON n.oid = rhd.source_name"
-    "   CROSS JOIN LATERAL regexp_split_to_table(n.cve, ',')"
-    "     AS split_cve"
-    "   WHERE rh.report = $1"
-    "     AND rhd.name = 'EXIT_CODE'"
-    "     AND rhd.value = 'EXIT_NOTVULN'"
-    "     AND n.cve != ''"
-    "     AND n.family IN (" LSC_FAMILY_LIST ")"
-    " ) AS closed_cves;",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
+  int ret;
+  gchar *term;
+  gchar *host_filter;
+  int count;
+
+  term = NULL;
+  host_filter = NULL;
+  /* Derive filter controls, including whether only hosts with results
+     * should be included.
+     */
+  ret = manage_report_filter_controls_from_get (get,
+                                                &term,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                &host_filter,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+
+  if (ret)
+    {
+      g_free (term);
+      g_free (host_filter);
+      return 0;
+    }
+  if (host_filter && *host_filter)
+    {
+      count = sql_int_ps (
+        "SELECT COUNT(*)"
+        " FROM ("
+        "   SELECT DISTINCT rh.host, trim(split_cve) AS cve"
+        "   FROM report_hosts rh"
+        "   JOIN report_host_details rhd"
+        "     ON rhd.report_host = rh.id"
+        "   JOIN nvts n"
+        "     ON n.oid = rhd.source_name"
+        "   CROSS JOIN LATERAL regexp_split_to_table(n.cve, ',')"
+        "     AS split_cve"
+        "   WHERE rh.report = $1"
+        "     AND rh.host = $2"
+        "     AND rhd.name = 'EXIT_CODE'"
+        "     AND rhd.value = 'EXIT_NOTVULN'"
+        "     AND n.cve != ''"
+        "     AND n.family IN (" LSC_FAMILY_LIST ")"
+        " ) AS closed_cves;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (host_filter),
+        NULL);
+    }
+  else
+    {
+      count = sql_int_ps (
+        "SELECT COUNT(*)"
+        " FROM ("
+        "   SELECT DISTINCT rh.host, trim(split_cve) AS cve"
+        "   FROM report_hosts rh"
+        "   JOIN report_host_details rhd"
+        "     ON rhd.report_host = rh.id"
+        "   JOIN nvts n"
+        "     ON n.oid = rhd.source_name"
+        "   CROSS JOIN LATERAL regexp_split_to_table(n.cve, ',')"
+        "     AS split_cve"
+        "   WHERE rh.report = $1"
+        "     AND rhd.name = 'EXIT_CODE'"
+        "     AND rhd.value = 'EXIT_NOTVULN'"
+        "     AND n.cve != ''"
+        "     AND n.family IN (" LSC_FAMILY_LIST ")"
+        " ) AS closed_cves;",
+        SQL_RESOURCE_PARAM (report),
+        NULL);
+    }
+  g_free (host_filter);
+  g_free (term);
+
+  return count;
 }
