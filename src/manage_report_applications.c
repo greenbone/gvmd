@@ -12,6 +12,7 @@
 
 #include "manage_report_applications.h"
 
+#include "manage_filters.h"
 #include "manage_sql_report_applications.h"
 #include "utils.h"
 
@@ -95,15 +96,48 @@ get_report_applications (report_t report,
   GHashTable *app_severities;
   iterator_t results;
   iterator_t report_apps;
+  gchar *host_filter;
+  gchar *term;
+  int ret;
+  int result_hosts_only = 0;
 
   if (report_applications == NULL)
     return -1;
 
+  /* Derive filter controls, including whether only hosts with results
+   * should be included.
+   */
+  ret = manage_report_filter_controls_from_get (get,
+                                                &term,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                &result_hosts_only,
+                                                &host_filter,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL,
+                                                NULL);
+
+  if (ret)
+    {
+      g_free (host_filter);
+      return -1;
+    }
+
   *report_applications = report_application_list_new ();
 
-  fill_report_applications_severities (get, report, &results, &app_severities);
+  fill_report_applications_severities (get, report, &results, &app_severities,
+                                       host_filter);
 
-  init_report_app_iterator (&report_apps, report);
+  init_report_app_iterator (&report_apps, report, host_filter);
 
   while (next (&report_apps))
     {
@@ -131,6 +165,8 @@ get_report_applications (report_t report,
   cleanup_iterator (&report_apps);
   cleanup_iterator (&results);
   g_hash_table_destroy (app_severities);
+  g_free (host_filter);
+  g_free (term);
 
   return 0;
 }
