@@ -17687,6 +17687,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* sort_field */
                                       NULL, /* sort_order */
                                       NULL, /* result_hosts_only */
+                                      NULL, /* host */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
                                       NULL, /* compliance_levels */

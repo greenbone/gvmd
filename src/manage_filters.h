@@ -25,12 +25,15 @@ manage_filter_controls (const gchar *, int *, int *, gchar **, int *);
 void
 manage_report_filter_controls (const gchar *, int *, int *, gchar **, int *,
                                int *, gchar **, gchar **, gchar **, gchar **,
-                               gchar **, int *, int *, int *, int *, gchar **);
+                               gchar **, gchar **, int *, int *, int *, int *,
+                               gchar **);
+
 int
-manage_report_filter_controls_from_get (const get_data_t *, gchar **, int *,
+manage_report_filter_controls_from_get (const get_data_t *get, gchar **, int *,
                                         int *, gchar **, int *, int *, gchar **,
                                         gchar **, gchar **, gchar **, gchar **,
-                                        int *, int *, int *, int *, gchar **);
+                                        gchar **, int *, int *, int *, int *,
+                                        gchar **);
 
 gchar *
 manage_clean_filter (const gchar *, int);

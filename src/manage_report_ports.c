@@ -98,6 +98,7 @@ manage_send_report_ports (report_t report,
                                                 NULL,
                                                 NULL,
                                                 NULL,
+                                                NULL,
                                                 NULL);
   if (ret)
     goto cleanup;
