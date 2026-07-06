@@ -125,6 +125,12 @@
 #if ENABLE_WEB_APPLICATION_SCANNING
 #include "manage_web_application_targets.h"
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
+#if ENABLE_OPENVASD
+#include "manage_openvasd.h"
+#endif /* ENABLE_OPENVASD */
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_container_image_scanner.h"
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 #undef G_LOG_DOMAIN
 /**
@@ -23190,7 +23196,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
-  char *version;
+  char *version = NULL;
 
   assert (uuid);
 
@@ -23205,8 +23211,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   switch ((ret = verify_scanner (uuid, &version)))
     {
       case 0:
-        printf ("Scanner version: %s.\n", version);
-        g_free (version);
+        printf ("Scanner version: %s.\n", version ?: "N/A");
         break;
       case 1:
         fprintf (stderr, "Failed to find scanner.\n");
@@ -23216,7 +23221,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
         break;
       case 3:
         fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
-                 version);
+                 version ?: "N/A");
         break;
       default:
         fprintf (stderr, "Internal Error.\n");
@@ -23225,6 +23230,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   current_credentials.uuid = NULL;
 
   manage_option_cleanup ();
+  g_free (version);
   return ret ? -1 : 0;
 }
 
@@ -24806,7 +24812,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
  * @param[in]   scanner_id  Scanner UUID.
  * @param[out]  version     Version returned by the scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 failed to get version,
+ * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
  *         3 authentication failed, 99 if permission denied, -1 error.
  */
 int
@@ -24835,12 +24841,18 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+#if ENABLE_OPENVASD
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD
-      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     {
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_openvasd_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+      if (res)
+        return 2;
       return 0;
     }
+#endif
 #if ENABLE_AGENTS
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER
            || scanner_iterator_type (&scanner)
@@ -24859,12 +24871,11 @@ verify_scanner (const char *scanner_id, char **version)
 #if ENABLE_CONTAINER_SCANNING
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
     {
-      // Once container scanner is availabe and has version endpoint, replace
-      // this
-      if (version)
-        *version = g_strdup ("TestVersion");
-
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_container_image_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+      if (res)
+        return 2;
       return 0;
     }
 #endif

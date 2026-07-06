@@ -29860,7 +29860,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    ("<verify_scanner_response status=\"" STATUS_OK "\""
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<version>%s</version>"
-                    "</verify_scanner_response>", version);
+                    "</verify_scanner_response>", version ?: "");
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -29883,7 +29883,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     "<version>%s</version>"
                     "</verify_scanner_response>",
                     STATUS_SERVICE_UNAVAILABLE,
-                    version);
+                    version ?: "");
                   break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
@@ -29894,6 +29894,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                            ("verify_scanner"));
                   break;
               }
+            g_free (version);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
