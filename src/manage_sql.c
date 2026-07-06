@@ -23219,10 +23219,6 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
       case 2:
         fprintf (stderr, "Failed to verify scanner.\n");
         break;
-      case 3:
-        fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
-                 version ?: "N/A");
-        break;
       default:
         fprintf (stderr, "Internal Error.\n");
         break;
@@ -24813,7 +24809,7 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
  * @param[out]  version     Version returned by the scanner.
  *
  * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
- *         3 authentication failed, 99 if permission denied, -1 error.
+ *         99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
