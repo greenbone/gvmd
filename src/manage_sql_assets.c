@@ -2262,6 +2262,169 @@ manage_asset_snapshot_delete_stale (int days)
 }
 
 /**
+ * @brief Resolve asset snapshot type for a report.
+ *
+ * @param[in]  report      Report ID.
+ * @param[out] asset_type  Resolved asset type.
+ *
+ * @return TRUE if a type was found, FALSE otherwise.
+ */
+static gboolean
+asset_type_for_report (report_t report, asset_type_t *asset_type)
+{
+  int type;
+
+  if (!report || !asset_type)
+    return FALSE;
+
+  type = sql_int_ps (
+    "SELECT asset_type"
+    " FROM asset_snapshots"
+    " WHERE report_id = $1"
+    " ORDER BY id"
+    " LIMIT 1;",
+    SQL_RESOURCE_PARAM (report),
+    NULL);
+
+  if (type != ASSET_TYPE_TARGET
+      && type != ASSET_TYPE_AGENT
+      && type != ASSET_TYPE_CONTAINER_IMAGE)
+    return FALSE;
+
+  *asset_type = (asset_type_t) type;
+  return TRUE;
+}
+
+/**
+ * @brief Lookup agent_id from report_host_details.
+ *
+ * @param[in] report_host  Report host ID.
+ *
+ * @return Newly allocated agent_id, or NULL if not found.
+ */
+static gchar *
+asset_agent_id_from_report_host_details (report_host_t report_host)
+{
+  if (!report_host)
+    return NULL;
+
+  return sql_string_ps (
+    "SELECT value"
+    " FROM report_host_details"
+    " WHERE report_host = $1"
+    "   AND name = 'agentID'"
+    "   AND value IS NOT NULL"
+    "   AND value <> ''"
+    " ORDER BY id"
+    " LIMIT 1;",
+    SQL_RESOURCE_PARAM (report_host),
+    NULL);
+}
+
+/**
+ * @brief Lookup asset_key by report, asset type and one identifier.
+ *
+ * @param[in] report            Report ID.
+ * @param[in] asset_type        Asset snapshot type.
+ * @param[in] identifier_type   Asset identifier type.
+ * @param[in] identifier_value  Asset identifier value.
+ *
+ * @return Newly allocated asset_key, or NULL if not found.
+ */
+static gchar *
+asset_key_by_report_identifier (report_t report,
+                                asset_type_t asset_type,
+                                int identifier_type,
+                                const gchar *identifier_value)
+{
+  if (!report || !identifier_value || !*identifier_value)
+    return NULL;
+
+  return sql_string_ps (
+    "SELECT s.asset_key"
+    " FROM asset_snapshots s"
+    " JOIN asset_snapshot_identifiers i"
+    "   ON i.asset_snapshot = s.id"
+    " WHERE s.report_id = $1"
+    "   AND s.asset_type = $2"
+    "   AND i.identifier_type = $3"
+    "   AND i.identifier_value = $4"
+    "   AND s.asset_key IS NOT NULL"
+    " ORDER BY s.modification_time DESC"
+    " LIMIT 1;",
+    SQL_RESOURCE_PARAM (report),
+    SQL_INT_PARAM (asset_type),
+    SQL_INT_PARAM (identifier_type),
+    SQL_STR_PARAM (identifier_value),
+    NULL);
+}
+
+/**
+ * @brief Resolve optional asset_key for one report host.
+ *
+ * @param[in] report       Report ID.
+ * @param[in] report_host  Report host ID.
+ * @param[in] host_value   Value from report_hosts.host.
+ *
+ * @return Newly allocated asset_key, or NULL if no key is available.
+ */
+gchar *
+asset_key_for_report_host (report_t report,
+                           report_host_t report_host,
+                           const gchar *host_value)
+{
+  asset_type_t asset_type;
+
+  if (!report)
+    return NULL;
+
+  if (asset_type_for_report (report, &asset_type) == FALSE)
+    return NULL;
+
+  switch (asset_type)
+    {
+    case ASSET_TYPE_AGENT:
+      {
+        gchar *agent_id;
+        gchar *asset_key;
+
+        agent_id = asset_agent_id_from_report_host_details (report_host);
+        if (!agent_id || !*agent_id)
+          {
+            g_free (agent_id);
+            return NULL;
+          }
+
+        asset_key =
+          asset_key_by_report_identifier (report,
+                                          ASSET_TYPE_AGENT,
+                                          ASSET_IDENTIFIER_TYPE_AGENT_ID,
+                                          agent_id);
+
+        g_free (agent_id);
+        return asset_key;
+      }
+
+    case ASSET_TYPE_CONTAINER_IMAGE:
+      return asset_key_by_report_identifier (
+        report,
+        ASSET_TYPE_CONTAINER_IMAGE,
+        ASSET_IDENTIFIER_TYPE_CONTAINER_DIGEST,
+        host_value);
+
+    case ASSET_TYPE_TARGET:
+      return asset_key_by_report_identifier (
+        report,
+        ASSET_TYPE_TARGET,
+        ASSET_IDENTIFIER_TYPE_IP,
+        host_value);
+
+    default:
+      return NULL;
+    }
+}
+
+/**
  * @brief Setup hosts and their identifiers after a scan, from host details.
  *
  * At the end of a scan this revises the decision about which asset host to use
