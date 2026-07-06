@@ -784,4 +784,59 @@ handle_openvasd_scan_end (task_t task, int handle_progress_rc, gboolean discover
     return handle_progress_rc;
 }
 
+/**
+ * @brief Verify connectivity to openvasd scanners.
+ *
+ * @param[in]  scanner Scanner row id.
+ *
+ * @return 0 if the verification succeeds, 1 otherwise.
+ */
+int
+verify_openvasd_scanner_connection (scanner_t scanner)
+{
+  http_scanner_connector_t connector;
+  http_scanner_resp_t response = NULL;
+  int ret;
+
+  connector = http_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to build openvasd connector", __func__);
+      return 1;
+    }
+  response = http_scanner_get_health_ready (connector);
+  http_scanner_connector_free (connector);
+
+  if (!response)
+    {
+      g_warning ("%s: Failed to get openvasd health status", __func__);
+      return 1;
+    }
+
+  if (response->code == 200)
+    {
+      ret = 0;
+    }
+  else if (response->code == -1)
+    {
+      gboolean has_relay = scanner_has_relay (scanner);
+      g_warning ("%s: failed to connect to %s:%d",
+                 __func__,
+                 scanner_host (scanner, has_relay),
+                 scanner_port (scanner, has_relay));
+      ret = 1;
+    }
+  else
+    {
+      g_warning ("%s: openvasd scanner could not be verified,"
+                  " HTTP status code: %ld",
+                 __func__, response->code);
+      ret = 1;
+    }
+
+  http_scanner_response_cleanup (response);
+  return ret;
+}
+
+
 #endif /* ENABLE_OPENVASD */
