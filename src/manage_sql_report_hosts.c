@@ -20,6 +20,8 @@
 
 #include "manage_sql_report_hosts.h"
 
+#include "manage_assets.h"
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -493,6 +495,57 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 }
 
 /**
+ * @brief Print the asset XML element for a report host.
+ *
+ * @param[in] ctx     Report print context.
+ * @param[in] stream  File stream to write to.
+ * @param[in] hosts   Host iterator.
+ * @param[in] host    Single host override, or NULL.
+ * @param[in] lean    Whether to return lean report.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+print_report_host_asset_xml (print_report_context_t *ctx,
+                             FILE *stream,
+                             iterator_t *hosts,
+                             const char *host,
+                             int lean)
+{
+  const char *asset_uuid;
+  const char *host_value;
+  gchar *asset_key;
+
+  if (ctx == NULL || stream == NULL || hosts == NULL)
+    return -1;
+
+  asset_uuid = host_iterator_asset_uuid (hosts);
+  host_value = host ? host : host_iterator_host (hosts);
+
+  asset_key = asset_key_for_report_host (ctx->report,
+                                         host_iterator_report_host (hosts),
+                                         host_value);
+
+  if ((!asset_uuid || !*asset_uuid) && lean != 0)
+    {
+      g_free (asset_key);
+      return 0;
+    }
+
+  PRINT (stream,
+         "<asset asset_id=\"%s\"/>",
+         asset_uuid ? asset_uuid : "");
+
+  if (asset_key && *asset_key)
+    PRINT (stream,
+           "<asset_snapshot asset_key=\"%s\"/>",
+           asset_key);
+
+  g_free (asset_key);
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report's host to a file stream.
  *
  * @param[in]  ctx                  Printing context.
@@ -535,14 +588,7 @@ print_report_host_xml (print_report_context_t *ctx,
          "<ip>%s</ip>",
          host ? host : host_iterator_host (hosts));
 
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-         "<asset asset_id=\"%s\"/>",
-         host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-         "<asset asset_id=\"\"/>");
+  print_report_host_asset_xml (ctx, stream, hosts, host, lean);
 
   if (strcmp (usage_type, "audit") == 0)
     {
@@ -719,14 +765,7 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
          "<ip>%s</ip>",
          host);
 
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-         "<asset asset_id=\"%s\"/>",
-         host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-         "<asset asset_id=\"\"/>");
+  print_report_host_asset_xml (ctx, stream, hosts, host, lean);
 
   criticals_count
     = GPOINTER_TO_INT
