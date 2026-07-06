@@ -4325,14 +4325,18 @@ migrate_281_to_282 ()
     }
   cleanup_iterator (&tasks);
 
+  // TODO: This step will be moved to a later migration.
+  //       For safety reasons, we decided to keep the columns for now and only
+  //       drop them after a certain period, when multiple customers have
+  //       already migrated without any issues.
   /* Drop old, unused target columns */
-  sql ("ALTER TABLE tasks DROP COLUMN agent_group,"
-       "                  DROP COLUMN agent_group_location,"
-       "                  DROP COLUMN oci_image_target,"
-       "                  DROP COLUMN oci_image_target_location,"
-       "                  DROP COLUMN web_application_target,"
-       "                  DROP COLUMN web_application_target_location");
-
+  // sql ("ALTER TABLE tasks DROP COLUMN IF EXISTS agent_group,"
+  //      "                  DROP COLUMN IF EXISTS agent_group_location,"
+  //      "                  DROP COLUMN IF EXISTS oci_image_target,"
+  //      "                  DROP COLUMN IF EXISTS oci_image_target_location,"
+  //      "                  DROP COLUMN IF EXISTS web_application_target,"
+  //      "                  DROP COLUMN IF EXISTS web_application_target_location");
+  //
   /* Set the database version to 281 */
   set_db_version (281);
 
