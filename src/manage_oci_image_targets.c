@@ -120,7 +120,7 @@ valid_oci_url (const gchar *oci_url)
       gchar **host_port_parts = g_strsplit (parts[0], ":", -1);
       int host_port_len = g_strv_length (host_port_parts);
 
-      if (host_port_len > 2)  // ipv6 adress without a port
+      if (host_port_len > 2)  // ipv6 address without a port
         {
           host = g_strjoinv (":", host_port_parts);
           port = NULL;
