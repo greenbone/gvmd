@@ -98,6 +98,9 @@ get_report_applications (report_t report,
   iterator_t report_apps;
   gchar *host_filter;
   gchar *term;
+
+  host_filter = NULL;
+  term = NULL;
   int ret;
 
   if (report_applications == NULL)
