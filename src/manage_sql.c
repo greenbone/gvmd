@@ -7298,7 +7298,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* import task. */)
+      || task_target_type (task) == TASKS_TARGET_TYPE_REGULAR/* import task. */)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -9501,7 +9501,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
     rc = -1;
   else if (task == 0)
     rc = -4;
-  else if (task_target (task))
+  else if (task_target (task, TASKS_TARGET_TYPE_REGULAR))
     rc = -5;
   if (rc)
     {
@@ -16312,8 +16312,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       comment = task_comment (task);
 
-      target = task_target (task);
-      if (task_target_in_trash (task))
+      target = task_target (task, TASKS_TARGET_TYPE_REGULAR);
+      if (task_target_in_trash (task, TASKS_TARGET_TYPE_REGULAR))
         {
           task_target_uuid = trash_target_uuid (target);
           task_target_name = trash_target_name (target);
@@ -16351,7 +16351,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
-             task_target_in_trash (task),
+             task_target_in_trash (task, TASKS_TARGET_TYPE_REGULAR),
              task_target_name ? task_target_name : "",
              task_target_comment ? task_target_comment : "");
 
@@ -19088,7 +19088,7 @@ modify_task (const gchar *task_id, const gchar *name,
     return MODIFY_TASK_NOT_FOUND;
 
 
-  if ((task_target (task) == 0
+  if ((task_target_type (task) == TASKS_TARGET_TYPE_IMPORT_TASK
        && (agent_group_id == NULL)
        && (oci_image_target_id == NULL)
        && (web_application_target_id == NULL))
@@ -19262,7 +19262,7 @@ modify_task (const gchar *task_id, const gchar *name,
       else if (target == 0)
         return MODIFY_TASK_TARGET_NOT_FOUND;
       else
-        set_task_target (task, target);
+        set_task_target (task, target, TASKS_TARGET_TYPE_REGULAR);
     }
 #if ENABLE_AGENTS
   if (agent_group_id) {
