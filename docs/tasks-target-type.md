@@ -165,27 +165,35 @@ in the tasks table. Since we are removing the designated columns for each target
 we can generalize these functions.
 ```c++
 void
-task_update_delete_target (int resource_id, int trash_id) {
-    sql_ps ("UPDATE tasks"
-           " SET target = $1,"
-           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE target = $2"
-           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           SQL_RESOURCE_PARAM (trash_id),
-           SQL_RESOURCE_PARAM (resource_id),
-           NULL);
+task_update_delete_target (target_t trash_id, target_t resource_id,
+                           tasks_target_type_t target_type)
+{
+  sql_ps ("UPDATE tasks"
+          " SET target = $1,"
+          "     target_location = " G_STRINGIFY (LOCATION_TRASH)
+          " WHERE target = $2"
+          " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+          " AND target_type = $3;",
+          SQL_RESOURCE_PARAM (trash_id),
+          SQL_RESOURCE_PARAM (resource_id),
+          SQL_INT_PARAM (target_type),
+          NULL);
 }
 
 void
-task_update_restore_target (int trash_id, int restored_id) {
-    sql_ps ("UPDATE tasks"
-           " SET target = $1,"
-           "     target_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE target = $2"
-           " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-           SQL_RESOURCE_PARAM (restored_id),
-           SQL_RESOURCE_PARAM (trash_id),
-           NULL);
+task_update_restore_target (target_t restored_id, target_t trash_id,
+                            tasks_target_type_t target_type)
+{
+  sql_ps ("UPDATE tasks"
+          " SET target = $1,"
+          "     target_location = " G_STRINGIFY (LOCATION_TABLE)
+          " WHERE target = $2"
+          " AND target_location = " G_STRINGIFY (LOCATION_TRASH)
+          " AND target_type = $3;",
+          SQL_RESOURCE_PARAM (restored_id),
+          SQL_RESOURCE_PARAM (trash_id),
+          SQL_INT_PARAM (target_type),
+          NULL);
 }
 ```
 
