@@ -19936,7 +19936,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
 
       index = get_iterator_resource (&tasks);
-      target = task_target (index);
+      target = task_target (index, TASKS_TARGET_TYPE_REGULAR);
 
       task_schedule_xml = get_task_schedule_xml (index);
 
@@ -19955,7 +19955,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       else
         {
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-          target_in_trash = task_target_in_trash (index);
+          target_in_trash = task_target_in_trash (index, TASKS_TARGET_TYPE_REGULAR);
           if (target && (target == 0)
               && (task_iterator_run_status (&tasks)
                   == TASK_STATUS_RUNNING))
@@ -25756,7 +25756,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             {
               /* Import task. */
 
-              set_task_target (create_task_data->task, 0);
+              set_task_target (create_task_data->task, 0,
+                               TASKS_TARGET_TYPE_IMPORT_TASK);
               set_task_usage_type (create_task_data->task,
                                    create_task_data->usage_type);
               SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
@@ -25929,7 +25930,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                     error_send_to_client (error);
                   goto create_task_fail;
                 }
-              set_task_target (create_task_data->task, target);
+              set_task_target (create_task_data->task, target,
+                               TASKS_TARGET_TYPE_REGULAR);
             }
 
           set_task_scanner (create_task_data->task, scanner);
