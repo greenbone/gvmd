@@ -2334,6 +2334,8 @@ stop_osp_task (task_t task)
   if (!connection)
     goto end_stop_osp;
   ret = osp_delete_scan (connection, scan_id);
+  if (ret)
+    ret = 4;
   osp_connection_close (connection);
 
 end_stop_osp:
@@ -2347,9 +2349,7 @@ end_stop_osp:
     }
   current_scanner_task = previous_task;
   global_current_report = previous_report;
-  if (ret)
-    return -1;
-  return 0;
+  return ret;
 }
 
 /**
@@ -2414,7 +2414,7 @@ stop_task (const char *task_id)
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
-    return stop_osp_task (task);
+    return stop_osp_task (task) * 10;
 
 #if ENABLE_OPENVASD
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
