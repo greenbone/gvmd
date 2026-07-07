@@ -72,7 +72,8 @@ parse_and_insert_zap_vt_json (gvm_json_pull_parser_t *parser,
   if (error_message)
     {
       g_warning ("%s: Error expanding ZAP alert item: %s",
-                 __func__, event->error_message);
+                 __func__, error_message);
+      g_free (error_message);
       cJSON_Delete (entry);
       return -1;
     }
