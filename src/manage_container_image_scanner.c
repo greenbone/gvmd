@@ -1239,10 +1239,12 @@ verify_container_image_scanner_connection (scanner_t scanner)
   else if (response->code == -1)
     {
       gboolean has_relay = scanner_has_relay (scanner);
+      char *host = scanner_host (scanner, has_relay);
       g_warning ("%s: failed to connect to %s:%d",
                  __func__,
-                 scanner_host (scanner, has_relay),
+                 host,
                  scanner_port (scanner, has_relay));
+      g_free (host);
       ret = 1;
     }
   else
