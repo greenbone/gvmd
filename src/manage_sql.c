@@ -6059,6 +6059,72 @@ task_update_restore_target (target_t restored_id, target_t trash_id,
           NULL);
 }
 
+/**
+ * @brief Return whether a target is in use by a task.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_target_in_use (target_t target, tasks_target_type_t target_type)
+{
+  return !!sql_int_ps (
+      "SELECT count(*) FROM tasks"
+      " WHERE target = $1"
+      " AND target_type = $2"
+      " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+      " AND hidden = 0;",
+      SQL_RESOURCE_PARAM (target),
+      SQL_INT_PARAM (target_type),
+      NULL);
+}
+
+/**
+ * @brief Return whether a target is in use by a task,
+ *        even if the task is hidden.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_target_in_use_including_hidden (target_t target,
+                                     tasks_target_type_t target_type)
+{
+  return !!sql_int_ps (
+    "SELECT count(*) FROM tasks"
+    " WHERE target = $1"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+    SQL_RESOURCE_PARAM (target),
+    SQL_INT_PARAM (target_type),
+    NULL);
+}
+
+/**
+ * @brief Return whether a trashcan target is referenced by a task.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_trash_target_in_use (target_t target, tasks_target_type_t target_type)
+{
+  return !!sql_int_ps (
+    "SELECT count(*) FROM tasks"
+    " WHERE target = $1"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+    SQL_RESOURCE_PARAM (target),
+    SQL_INT_PARAM (target_type),
+    NULL);
+}
+
 #if ENABLE_AGENTS
 /**
  * @brief Set the agent group of a task, also updating the agent group location.
