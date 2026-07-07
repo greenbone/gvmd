@@ -165,7 +165,7 @@ in the tasks table. Since we are removing the designated columns for each target
 we can generalize these functions.
 ```c++
 void
-task_update_delete_target (target_t trash_id, target_t resource_id,
+task_update_delete_target (target_t resource_id, target_t trash_id,
                            tasks_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks"
@@ -179,7 +179,6 @@ task_update_delete_target (target_t trash_id, target_t resource_id,
           SQL_INT_PARAM (target_type),
           NULL);
 }
-
 void
 task_update_restore_target (target_t restored_id, target_t trash_id,
                             tasks_target_type_t target_type)
