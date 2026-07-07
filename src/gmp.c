@@ -21574,6 +21574,19 @@ gmp_xml_handle_result ()
         }
     }
 
+  if (create_report_data->result_severity
+      && strlen (create_report_data->result_severity))
+    {
+      double s;
+
+      s = atof (create_report_data->result_severity);
+      if (s > 10.0)
+        {
+          g_free (create_report_data->result_severity);
+          create_report_data->result_severity = g_strdup ("10.0");
+        }
+    }
+
   result = g_malloc (sizeof (create_report_result_t));
   result->description = create_report_data->result_description;
   // sometimes host has newlines in it, so we 0 terminate first newline
