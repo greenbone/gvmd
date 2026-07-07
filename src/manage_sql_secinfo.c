@@ -20,6 +20,7 @@
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_settings.h"
+#include "manage_sql_zap_vts.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -6004,9 +6005,15 @@ manage_feed_timestamp (const gchar *name)
   if (strcasecmp (name, "scap") == 0)
     g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
-  else
+  else if (strcasecmp (name, "cert") == 0)
     g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
+  else if (strcasecmp (name, "extra_vts") == 0)
+    g_file_get_contents (GVM_EXTRA_VTS_DIR "/timestamp", &timestamp, &len,
+                         &error);
+  else
+    return -1;
+
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
@@ -6063,6 +6070,11 @@ secinfo_feed_version_status (const char *feed_type)
   else if (strcmp (feed_type, "scap") == 0)
     {
       if (manage_scap_loaded () == 0)
+        return 2;
+    }
+  else if (strcmp (feed_type, "extra_vts") == 0)
+    {
+      if (manage_extra_vts_loaded () == 0)
         return 2;
     }
   else
@@ -6939,6 +6951,9 @@ update_scap_extra ()
   setproctitle ("Syncing SCAP: Updating VT extra data");
 
   update_vt_scap_extra_data ();
+
+  update_zap_vt_severities_from_cves ();
+  update_zap_vt_group_severity_scores ();
 }
 
 /**
@@ -7035,6 +7050,240 @@ fail:
   manage_option_cleanup ();
   return -1;
 }
+
+
+/* Extra VTs. */
+
+/**
+ * @brief Update timestamp in extra VTs db from feed timestamp.
+ */
+static void
+update_extra_vts_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_EXTRA_VTS_DIR "/timestamp", &timestamp, &len,
+                       &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s",
+                     __func__,
+                     error->message);
+          stamp = time(NULL);
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s",
+                     __func__,
+                     timestamp);
+          g_free (timestamp);
+          stamp = time(NULL);
+        }
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
+    }
+
+  g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
+  sql ("UPDATE extra_vts2.meta SET value = '%lld' WHERE name = 'last_update';",
+       (long long) stamp);
+}
+
+static void
+abort_extra_vts_update ()
+{
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'extra_vts');"))
+    {
+      update_extra_vts_timestamp ();
+      sql ("UPDATE extra_vts.meta SET value = "
+           "    (SELECT value from extra_vts2.meta WHERE name = 'last_update')"
+           "  WHERE name = 'last_update';");
+      sql ("DROP SCHEMA extra_vts2 CASCADE;");
+    }
+  else
+    {
+      /* reset scap2 schema */
+      if (manage_db_init ("extra_vts"))
+        {
+          g_warning ("%s: could not reset extra_vts schema, db init failed",
+                     __func__);
+        }
+
+      if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+                   "               information_schema.schemata"
+                   "               WHERE schema_name = 'extra_vts2');"))
+        {
+          update_extra_vts_timestamp ();
+          sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
+        }
+    }
+
+  g_info ("%s: Updating SCAP data aborted", __func__);
+  setproctitle ("Syncing SCAP: aborted");
+}
+
+static void
+update_extra_vts_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  update_extra_vts_timestamp ();
+
+  /* Replace the real extra_vts schema with the new one. */
+
+  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
+               "               information_schema.schemata"
+               "               WHERE schema_name = 'extra_vts');"))
+    {
+      sql ("ALTER SCHEMA extra_vts RENAME TO extra_vts3;");
+      sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
+      sql ("DROP SCHEMA extra_vts3 CASCADE;");
+    }
+  else
+    sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
+
+  /* Analyze. */
+
+  sql ("ANALYZE extra_vts.zap_vts;");
+
+  g_info ("%s: Updating extra VTs succeeded", __func__);
+  setproctitle ("Syncing extra VTs: done");
+}
+
+static int
+update_extra_vts (gboolean reset_db)
+{
+  if (reset_db)
+    g_warning ("%s: Full rebuild requested, resetting extra VTs db",
+               __func__);
+  else if (manage_extra_vts_loaded () == 0)
+    g_warning ("%s: No extra VTs db present,"
+               " rebuilding extra VTs db from scratch",
+               __func__);
+  else
+    {
+      int last_extra_vts_update;
+
+      last_extra_vts_update
+        = sql_int ("SELECT coalesce ((SELECT value"
+                   "                  FROM extra_vts.meta"
+                   "                  WHERE name = 'last_update'),"
+                   "                 '-3');");
+      if (last_extra_vts_update == -3)
+        g_warning ("%s: Extra VTs db missing last_update record,"
+                   " resetting extra VTs db",
+                   __func__);
+      else if (last_extra_vts_update < 0)
+        g_warning ("%s: Inconsistent data, resetting extra VTs db",
+                   __func__);
+      else
+        {
+          int last_feed_update;
+
+          last_feed_update = manage_feed_timestamp ("scap");
+
+          if (last_feed_update == -1)
+            return -1;
+
+          if (last_extra_vts_update == last_feed_update)
+            {
+              setproctitle ("Syncing extra VTs: done");
+              return 0;
+            }
+
+          if (last_extra_vts_update > last_feed_update)
+            {
+              g_warning ("%s: last extra VTs update later than"
+                         " last feed update",
+                         __func__);
+              return -1;
+            }
+        }
+    }
+
+  /* Drop old schema if that is part of the update strategy */
+  if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    {
+      g_info ("%s: Removing old extra VTs database schema...", __func__);
+      sql ("DROP SCHEMA extra_vts CASCADE;");
+    }
+
+  /* Create a new schema, "extra_vts". */
+
+  if (manage_db_init ("extra_vts"))
+    {
+      g_warning ("%s: could not initialize extra VTs database 2", __func__);
+      return -1;
+    }
+
+  /* Update into the new schema. */
+
+  g_debug ("%s: sync", __func__);
+
+  g_info ("%s: Updating data from feed", __func__);
+
+  g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
+
+  g_debug ("%s: update zap_vts", __func__);
+  setproctitle ("Syncing extra VTs: Updating ZAP VTs");
+
+  if (update_zap_vts_from_feed () == -1)
+    {
+      abort_extra_vts_update ();
+      return -1;
+    }
+
+  update_extra_vts_end ();
+  return 0;
+}
+
+/**
+ * @brief Sync the CERT DB.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_extra_vts ()
+{
+  return update_extra_vts (FALSE);
+}
+
+/**
+ * @brief Sync the extra VTs DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the extra VTs sync, -1 on error.
+ */
+pid_t
+manage_sync_extra_vts (sigset_t *sigmask_current)
+{
+  return sync_secinfo (sigmask_current,
+                       sync_extra_vts,
+                       "Syncing extra VTs");
+}
+
+
+/* Command line options. */
 
 /**
  * @brief Set the affected products query size.

@@ -4096,6 +4096,69 @@ manage_db_init (const gchar *name)
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
+  else if (strcasecmp (name, "extra_vts") == 0)
+    {
+      sql ("CREATE OR REPLACE FUNCTION drop_extra_vts2 () RETURNS void AS $$"
+           " BEGIN"
+           "   IF EXISTS (SELECT schema_name FROM information_schema.schemata"
+           "              WHERE schema_name = 'extra_vts2')"
+           "   THEN"
+           "     DROP SCHEMA IF EXISTS extra_vts2 CASCADE;"
+           "   END IF;"
+           " END;"
+           " $$ LANGUAGE plpgsql;");
+
+      sql ("SELECT set_config ('search_path',"
+           "                   'extra_vts2,' || current_setting ('search_path'),"
+           "                   false);");
+
+      sql ("SELECT drop_extra_vts2 ();");
+      sql ("DROP FUNCTION IF EXISTS drop_extra_vts2 ();");
+
+      sql ("CREATE SCHEMA extra_vts2;");
+
+      sql ("CREATE TABLE extra_vts2.meta"
+           " (id SERIAL PRIMARY KEY,"
+           "  name text UNIQUE,"
+           "  value text);");
+
+      sql ("CREATE TABLE extra_vts2.zap_vts"
+           " (id SERIAL PRIMARY KEY,"
+           "  uuid text UNIQUE NOT NULL,"
+           "  name text NOT NULL,"
+           "  comment text,"
+           "  creation_time integer,"
+           "  modification_time integer,"
+           "  description text,"
+           "  solution text,"
+           "  risk text,"
+           "  severity DOUBLE PRECISION DEFAULT 0,"
+           "  document_type text,"
+           "  zap_id text,"
+           "  alert_type text,"
+           "  status text);");
+
+     sql ("CREATE TABLE extra_vts2.zap_vt_child_vts"
+          " (id SERIAL PRIMARY KEY,"
+          "  parent_zap_id text NOT NULL,"
+          "  child_zap_id text NOT NULL);");
+
+     sql ("CREATE TABLE extra_vts2.zap_vt_refs"
+          " (id SERIAL PRIMARY KEY,"
+          "  vt_id text NOT NULL,"
+          "  type text NOT NULL,"
+          "  ref_id text NOT NULL,"
+          "  ref_text text);");
+
+      /* Init tables. */
+
+      sql ("INSERT INTO extra_vts2.meta (name, value)"
+           " VALUES ('database_version', '%i');",
+           GVMD_EXTRA_VTS_DATABASE_VERSION);
+      sql ("INSERT INTO extra_vts2.meta (name, value)"
+           " VALUES ('last_update', '0');");
+
+    }
   else
     {
       assert (0);
@@ -4306,6 +4369,22 @@ manage_nvts_loaded ()
                     "               WHERE table_catalog = '%s'"
                     "               AND table_schema = 'public'"
                     "               AND table_name = 'nvts')"
+                    " ::integer;",
+                    sql_database ());
+}
+
+/**
+ * @brief Check whether SCAP is available.
+ *
+ * @return 1 if SCAP database is loaded, else 0.
+ */
+int
+manage_extra_vts_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = '%s'"
+                    "               AND table_schema = 'extra_vts'"
+                    "               AND table_name = 'zap_vts')"
                     " ::integer;",
                     sql_database ());
 }

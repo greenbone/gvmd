@@ -244,6 +244,7 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
+  manage_zap_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -317,6 +318,7 @@ set(
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
   manage_sql_report_exports.c
+  manage_sql_zap_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -700,6 +702,9 @@ endif(GMP_VERSION)
 add_definitions(-DGVMD_DATABASE_VERSION=${GVMD_DATABASE_VERSION})
 add_definitions(-DGVMD_SCAP_DATABASE_VERSION=${GVMD_SCAP_DATABASE_VERSION})
 add_definitions(-DGVMD_CERT_DATABASE_VERSION=${GVMD_CERT_DATABASE_VERSION})
+add_definitions(
+  -DGVMD_EXTRA_VTS_DATABASE_VERSION=${GVMD_EXTRA_VTS_DATABASE_VERSION}
+)
 add_definitions(-DGVM_OS_NAME="${CMAKE_SYSTEM}")
 add_definitions(-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
@@ -711,6 +716,8 @@ add_definitions(
 
 add_definitions(-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions(-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
+
+add_definitions(-DGVM_EXTRA_VTS_DIR="${GVM_EXTRA_VTS_DIR}")
 
 if(GVM_SCANNER_CERTIFICATE)
   add_definitions(-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")
