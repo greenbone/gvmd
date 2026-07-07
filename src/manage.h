@@ -2509,6 +2509,9 @@ manage_scap_loaded ();
 int
 manage_nvts_loaded ();
 
+int
+manage_extra_vts_loaded ();
+
 const char *
 manage_scap_update_time ();
 
