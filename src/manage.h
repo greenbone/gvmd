@@ -676,6 +676,12 @@ task_update_delete_target (target_t, target_t, tasks_target_type_t);
 void
 task_update_restore_target (target_t, target_t, tasks_target_type_t);
 
+int task_target_in_use (target_t, tasks_target_type_t);
+
+int task_target_in_use_including_hidden (target_t, tasks_target_type_t);
+
+int task_trash_target_in_use (target_t, tasks_target_type_t);
+
 #if ENABLE_AGENTS
 void
 set_task_agent_group_and_location (task_t task, agent_group_t agent_group);
