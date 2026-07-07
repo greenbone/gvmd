@@ -20548,7 +20548,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               g_free (web_application_target_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
-              cleanup_iterator (&tasks);
               return;
             }
           g_free (response);
