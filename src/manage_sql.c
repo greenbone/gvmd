@@ -6016,12 +6016,12 @@ set_task_target_and_location (task_t task, target_t target,
 /**
  * @brief Update a task after a target was deleted.
  *
- * @param[in]  trash_id      The new ID of the target in trash.
  * @param[in]  resource_id   The old ID of the target in the table.
+ * @param[in]  trash_id      The new ID of the target in trash.
  * @param[in]  target_type   The type of the target being deleted
  */
 void
-task_update_delete_target (target_t trash_id, target_t resource_id,
+task_update_delete_target (target_t resource_id, target_t trash_id,
                            tasks_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks"
