@@ -160,6 +160,63 @@ WHERE target = $1
 AND target_type = {{TARGET_TYPE_WEB_APPLICATION}}
 ```
 
+---
+
+As of the new `target_type`, all current `(.*)task_target(.*)` functions, which work on "regular" target types
+must respect the new `target_type` column.
+A benefit of this change is that they now can be used by domain logic that affect other target types.
+
+One example is the `set_task_target ()` function
+```c++
+void
+set_task_target (task_t task, target_t target, tasks_target_type_t target_type)
+{
+  sql_ps ("UPDATE tasks SET target = $1, target_type = $2,"
+          " modification_time = m_now ()"
+          " WHERE id = $3;",
+          SQL_RESOURCE_PARAM (target),
+          SQL_INT_PARAM (target_type),
+          SQL_RESOURCE_PARAM (task),
+          NULL);
+}
+```
+
+---
+
+Some of the functions used by `oci_image_targets`, `agent_groups` and `web_appliation_targets` can also
+be generalized, to avoid duplicate code.
+
+```c++
+int
+task_target_in_use (target_t target, tasks_target_type_t target_type)
+{
+  return !!sql_int_ps (
+      "SELECT count(*) FROM tasks"
+      " WHERE target = $1"
+      " AND target_type = $2"
+      " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+      " AND hidden = 0;",
+      SQL_RESOURCE_PARAM (target),
+      SQL_INT_PARAM (target_type),
+      NULL);
+}
+
+int
+task_trash_target_in_use (target_t target, tasks_target_type_t target_type)
+{
+  return !!sql_int_ps (
+    "SELECT count(*) FROM tasks"
+    " WHERE target = $1"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+    SQL_RESOURCE_PARAM (target),
+    SQL_INT_PARAM (target_type),
+    NULL);
+}
+```
+
+---
+
 A group of `delete_... ()` and `restore_... ()` functions updates the respective `target` and `target_location`
 in the tasks table. Since we are removing the designated columns for each target type,
 we can generalize these functions.
