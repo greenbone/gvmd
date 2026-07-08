@@ -23,6 +23,12 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
+/**
+ * @brief Insert child ZAP VTs / alerts from a JSON array into the db.
+ *
+ * @param[in] json      The "child_alerts" fields of the current ZAP VT / alert.
+ * @param[in] parent_id The ZAP id of the parent VT / alert.
+ */
 static void
 insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
 {
@@ -35,6 +41,7 @@ insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
     {
       g_warning ("%s: child_alerts is not an array in ZAP alert '%s'",
                  __func__, parent_id);
+      return;
     }
 
   cJSON_ArrayForEach (child_alert, json)
@@ -45,7 +52,7 @@ insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
           gvm_json_obj_check_str (child_alert, "id", &child_id);
           if (child_id)
             {
-              sql_ps ("INSERT INTO extra_vts2.zap_vt_child_vts"
+              sql_ps ("INSERT INTO web_application_vts2.zap_vt_child_vts"
                       " (parent_zap_id, child_zap_id) VALUES ($1, $2)",
                       SQL_STR_PARAM (parent_id),
                       SQL_STR_PARAM (child_id),
@@ -63,6 +70,12 @@ insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
     }
 }
 
+/**
+ * @brief Insert ZAP VT references from a "references" field into the db.
+ *
+ * @param[in] json      The "references" fields of the current ZAP VT / alert.
+ * @param[in] parent_id The ZAP id of the parent VT / alert.
+ */
 static void
 insert_zap_vt_refs_from_references_json (cJSON *parent_json,
                                          const char *parent_id)
@@ -104,7 +117,7 @@ insert_zap_vt_refs_from_references_json (cJSON *parent_json,
           continue;
         }
 
-      sql_ps ("INSERT INTO extra_vts2.zap_vt_refs"
+      sql_ps ("INSERT INTO web_application_vts2.zap_vt_refs"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -114,6 +127,14 @@ insert_zap_vt_refs_from_references_json (cJSON *parent_json,
     }
 }
 
+/**
+ * @brief Insert ZAP VT references from a JSON string array into the db.
+ *
+ * @param[in]  parent_id   The ZAP id of the parent VT / alert.
+ * @param[in]  field_name  Name of the field (for error messages).
+ * @param[in]  array_json  The array field from the current ZAP VT / alert.
+ * @param[in]  ref_type    The reference type to insert into the db.
+ */
 static void
 insert_zap_vt_refs_from_str_array_json (const char *parent_id,
                                         const char *field_name,
@@ -139,7 +160,7 @@ insert_zap_vt_refs_from_str_array_json (const char *parent_id,
           continue;
         }
 
-      sql_ps ("INSERT INTO extra_vts2.zap_vt_refs"
+      sql_ps ("INSERT INTO web_application_vts2.zap_vt_refs"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -149,6 +170,12 @@ insert_zap_vt_refs_from_str_array_json (const char *parent_id,
     }
 }
 
+/**
+ * @brief Insert all known reference types from a ZAP VT into the db.
+ *
+ * @param[in]  parent_json  Parent VT / "alert" JSON object to get ref from.
+ * @param[in]  parent_id   The ZAP id of the parent VT / alert.
+ */
 static void
 insert_zap_vt_refs_from_json (cJSON *parent_json,
                               const char *parent_id)
@@ -181,6 +208,13 @@ insert_zap_vt_refs_from_json (cJSON *parent_json,
     }
 }
 
+/**
+ * @brief Handle adding a single ZAP VT from the parsed JSON object.
+ *
+ * @param[in]  entry  The current JSON entry to insert.
+ *
+ * @return 0 on success, -1 on error
+ */
 int
 insert_zap_vt_from_json (cJSON *entry)
 {
@@ -240,7 +274,7 @@ insert_zap_vt_from_json (cJSON *entry)
   gvm_json_obj_check_str (entry, "status", &status);
   gvm_json_obj_check_str (entry, "alert_type", &alert_type);
 
-  sql_ps ("INSERT INTO extra_vts2.zap_vts"
+  sql_ps ("INSERT INTO web_application_vts2.zap_vts"
           "  (uuid, zap_id, name, creation_time, modification_time,"
           "   description, severity, risk,"
           "   document_type, alert_type, status, solution)"
@@ -269,36 +303,48 @@ insert_zap_vt_from_json (cJSON *entry)
   return 0;
 }
 
+/**
+ * @brief Replace estimate severity scores of ZAP VTs with ones from CVE refs.
+ *
+ * If a ZAP VT contains references to CVEs, its severity score will be
+ *  overwritten with the maximum severity from the refrenced CVEs.
+ */
 void
 update_zap_vt_severities_from_cves ()
 {
   g_info ("%s: updating ZAP VT severities from CVEs", __func__);
-  sql ("UPDATE extra_vts.zap_vts"
+  sql ("UPDATE web_application_vts.zap_vts"
        " SET severity = ("
        "   SELECT coalesce(max(cves.severity), zap_vts.severity)"
        "    FROM scap.cves"
        "    WHERE cves.uuid IN ("
        "      SELECT ref_id"
-       "      FROM extra_vts.zap_vt_refs"
+       "      FROM web_application_vts.zap_vt_refs"
        "      WHERE type = 'cve' AND vt_id = zap_vts.uuid"
        "    )"
        "  )"
-       " WHERE EXISTS (SELECT * FROM extra_vts.zap_vt_refs"
+       " WHERE EXISTS (SELECT * FROM web_application_vts.zap_vt_refs"
        "               WHERE type = 'cve' AND vt_id = uuid);");
 
 }
 
+/**
+ * @brief Try to assign severity scores to "alert group" type ZAP VTs.
+ *
+ * If a ZAP VT has no risk rating, it's likely a group, so try to get the
+ *  maximum severity from the child VTs.
+ */
 void
 update_zap_vt_group_severity_scores ()
 {
   g_info ("%s: updating ZAP VT severities for groups", __func__);
-  sql ("UPDATE extra_vts.zap_vts AS outer_vts"
+  sql ("UPDATE web_application_vts.zap_vts AS outer_vts"
        " SET severity ="
        "   (SELECT coalesce(max(severity), outer_vts.severity)"
-       "    FROM extra_vts.zap_vts AS inner_vts"
+       "    FROM web_application_vts.zap_vts AS inner_vts"
        "    WHERE inner_vts.zap_id IN"
        "      (SELECT child_zap_id"
-       "       FROM extra_vts.zap_vt_child_vts"
+       "       FROM web_application_vts.zap_vt_child_vts"
        "       WHERE parent_zap_id = outer_vts.zap_id)"
        "   )"
        " WHERE risk = '';");

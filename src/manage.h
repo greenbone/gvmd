@@ -2510,7 +2510,7 @@ int
 manage_nvts_loaded ();
 
 int
-manage_extra_vts_loaded ();
+manage_web_application_vts_loaded ();
 
 const char *
 manage_scap_update_time ();

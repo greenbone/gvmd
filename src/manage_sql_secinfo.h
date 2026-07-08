@@ -179,7 +179,7 @@ pid_t
 manage_sync_cert (sigset_t *);
 
 pid_t
-manage_sync_extra_vts (sigset_t *);
+manage_sync_web_application_vts (sigset_t *);
 
 int
 check_scap_db_version ();
@@ -188,7 +188,7 @@ int
 check_cert_db_version ();
 
 int
-check_extra_vts_db_version ();
+check_web_application_vts_db_version ();
 
 int
 get_secinfo_commit_size ();

@@ -6008,9 +6008,9 @@ manage_feed_timestamp (const gchar *name)
   else if (strcasecmp (name, "cert") == 0)
     g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
-  else if (strcasecmp (name, "extra_vts") == 0)
-    g_file_get_contents (GVM_EXTRA_VTS_DIR "/timestamp", &timestamp, &len,
-                         &error);
+  else if (strcasecmp (name, "web_application_vts") == 0)
+    g_file_get_contents (GVM_WEB_APPLICATION_VTS_DIR "/timestamp",
+                         &timestamp, &len, &error);
   else
     return -1;
 
@@ -6072,9 +6072,9 @@ secinfo_feed_version_status (const char *feed_type)
       if (manage_scap_loaded () == 0)
         return 2;
     }
-  else if (strcmp (feed_type, "extra_vts") == 0)
+  else if (strcmp (feed_type, "web_application_vts") == 0)
     {
-      if (manage_extra_vts_loaded () == 0)
+      if (manage_web_application_vts_loaded () == 0)
         return 2;
     }
   else
@@ -7052,13 +7052,13 @@ fail:
 }
 
 
-/* Extra VTs. */
+/* Web Application VTs. */
 
 /**
- * @brief Update timestamp in extra VTs db from feed timestamp.
+ * @brief Update timestamp in web application VTs db from feed timestamp.
  */
 static void
-update_extra_vts_timestamp ()
+update_web_application_vts_timestamp ()
 {
   GError *error;
   gchar *timestamp;
@@ -7066,8 +7066,8 @@ update_extra_vts_timestamp ()
   time_t stamp;
 
   error = NULL;
-  g_file_get_contents (GVM_EXTRA_VTS_DIR "/timestamp", &timestamp, &len,
-                       &error);
+  g_file_get_contents (GVM_WEB_APPLICATION_VTS_DIR "/timestamp",
+                       &timestamp, &len, &error);
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
@@ -7102,38 +7102,41 @@ update_extra_vts_timestamp ()
     }
 
   g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
-  sql ("UPDATE extra_vts2.meta SET value = '%lld' WHERE name = 'last_update';",
+  sql ("UPDATE web_application_vts2.meta SET value = '%lld' WHERE name = 'last_update';",
        (long long) stamp);
 }
 
+/**
+ * @brief Abort Web Application VTs update.
+ */
 static void
-abort_extra_vts_update ()
+abort_web_application_vts_update ()
 {
   if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
                "               information_schema.schemata"
-               "               WHERE schema_name = 'extra_vts');"))
+               "               WHERE schema_name = 'web_application_vts');"))
     {
-      update_extra_vts_timestamp ();
-      sql ("UPDATE extra_vts.meta SET value = "
-           "    (SELECT value from extra_vts2.meta WHERE name = 'last_update')"
+      update_web_application_vts_timestamp ();
+      sql ("UPDATE web_application_vts.meta SET value = "
+           "    (SELECT value from web_application_vts2.meta WHERE name = 'last_update')"
            "  WHERE name = 'last_update';");
-      sql ("DROP SCHEMA extra_vts2 CASCADE;");
+      sql ("DROP SCHEMA web_application_vts2 CASCADE;");
     }
   else
     {
       /* reset scap2 schema */
-      if (manage_db_init ("extra_vts"))
+      if (manage_db_init ("web_application_vts"))
         {
-          g_warning ("%s: could not reset extra_vts schema, db init failed",
+          g_warning ("%s: could not reset web_application_vts schema, db init failed",
                      __func__);
         }
 
       if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
                    "               information_schema.schemata"
-                   "               WHERE schema_name = 'extra_vts2');"))
+                   "               WHERE schema_name = 'web_application_vts2');"))
         {
-          update_extra_vts_timestamp ();
-          sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
+          update_web_application_vts_timestamp ();
+          sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
         }
     }
 
@@ -7141,59 +7144,69 @@ abort_extra_vts_update ()
   setproctitle ("Syncing SCAP: aborted");
 }
 
+/**
+ * @brief Finish Web Application VTs update.
+ */
 static void
-update_extra_vts_end ()
+update_web_application_vts_end ()
 {
   g_debug ("%s: update timestamp", __func__);
 
-  update_extra_vts_timestamp ();
+  update_web_application_vts_timestamp ();
 
-  /* Replace the real extra_vts schema with the new one. */
+  /* Replace the real web_application_vts schema with the new one. */
 
   if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
                "               information_schema.schemata"
-               "               WHERE schema_name = 'extra_vts');"))
+               "               WHERE schema_name = 'web_application_vts');"))
     {
-      sql ("ALTER SCHEMA extra_vts RENAME TO extra_vts3;");
-      sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
-      sql ("DROP SCHEMA extra_vts3 CASCADE;");
+      sql ("ALTER SCHEMA web_application_vts RENAME TO web_application_vts3;");
+      sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
+      sql ("DROP SCHEMA web_application_vts3 CASCADE;");
     }
   else
-    sql ("ALTER SCHEMA extra_vts2 RENAME TO extra_vts;");
+    sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
 
   /* Analyze. */
 
-  sql ("ANALYZE extra_vts.zap_vts;");
+  sql ("ANALYZE web_application_vts.zap_vts;");
 
-  g_info ("%s: Updating extra VTs succeeded", __func__);
-  setproctitle ("Syncing extra VTs: done");
+  g_info ("%s: Updating Web Application VTs succeeded", __func__);
+  setproctitle ("Syncing Web Application VTs: done");
 }
 
+/**
+ * @brief Update all data in the Web Application VTs DB.
+ *
+ * @param[in]  reset_db  Whether to rebuild regardless of last_update.
+ *
+ * @return 0 success, -1 error.
+ */
 static int
-update_extra_vts (gboolean reset_db)
+update_web_application_vts (gboolean reset_db)
 {
   if (reset_db)
-    g_warning ("%s: Full rebuild requested, resetting extra VTs db",
+    g_warning ("%s: Full rebuild requested, resetting Web Application VTs db",
                __func__);
-  else if (manage_extra_vts_loaded () == 0)
-    g_warning ("%s: No extra VTs db present,"
-               " rebuilding extra VTs db from scratch",
+  else if (manage_web_application_vts_loaded () == 0)
+    g_warning ("%s: No Web Application VTs db present,"
+               " rebuilding Web Application VTs db from scratch",
                __func__);
   else
     {
-      int last_extra_vts_update;
+      int last_web_application_vts_update;
 
-      last_extra_vts_update
+      last_web_application_vts_update
         = sql_int ("SELECT coalesce ((SELECT value"
-                   "                  FROM extra_vts.meta"
+                   "                  FROM web_application_vts.meta"
                    "                  WHERE name = 'last_update'),"
                    "                 '-3');");
-      if (last_extra_vts_update == -3)
-        g_warning ("%s: Extra VTs db missing last_update record,"
-                   " resetting extra VTs db",
+      if (last_web_application_vts_update == -3)
+        g_warning ("%s: Web Application VTs db missing last_update record,"
+                   " resetting Web Application VTs db",
                    __func__);
-      else if (last_extra_vts_update < 0)
-        g_warning ("%s: Inconsistent data, resetting extra VTs db",
+      else if (last_web_application_vts_update < 0)
+        g_warning ("%s: Inconsistent data, resetting Web Application VTs db",
                    __func__);
       else
         {
@@ -7204,15 +7217,15 @@ update_extra_vts (gboolean reset_db)
           if (last_feed_update == -1)
             return -1;
 
-          if (last_extra_vts_update == last_feed_update)
+          if (last_web_application_vts_update == last_feed_update)
             {
-              setproctitle ("Syncing extra VTs: done");
+              setproctitle ("Syncing Web Application VTs: done");
               return 0;
             }
 
-          if (last_extra_vts_update > last_feed_update)
+          if (last_web_application_vts_update > last_feed_update)
             {
-              g_warning ("%s: last extra VTs update later than"
+              g_warning ("%s: last Web Application VTs update later than"
                          " last feed update",
                          __func__);
               return -1;
@@ -7223,15 +7236,17 @@ update_extra_vts (gboolean reset_db)
   /* Drop old schema if that is part of the update strategy */
   if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
     {
-      g_info ("%s: Removing old extra VTs database schema...", __func__);
-      sql ("DROP SCHEMA extra_vts CASCADE;");
+      g_info ("%s: Removing old Web Application VTs database schema...",
+              __func__);
+      sql ("DROP SCHEMA web_application_vts CASCADE;");
     }
 
-  /* Create a new schema, "extra_vts". */
+  /* Create a new schema, "web_application_vts". */
 
-  if (manage_db_init ("extra_vts"))
+  if (manage_db_init ("web_application_vts"))
     {
-      g_warning ("%s: could not initialize extra VTs database 2", __func__);
+      g_warning ("%s: could not initialize Web Application VTs database 2",
+                 __func__);
       return -1;
     }
 
@@ -7244,42 +7259,43 @@ update_extra_vts (gboolean reset_db)
   g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
 
   g_debug ("%s: update zap_vts", __func__);
-  setproctitle ("Syncing extra VTs: Updating ZAP VTs");
+  setproctitle ("Syncing Web Application VTs: Updating ZAP VTs");
 
   if (update_zap_vts_from_feed () == -1)
     {
-      abort_extra_vts_update ();
+      abort_web_application_vts_update ();
       return -1;
     }
 
-  update_extra_vts_end ();
+  update_web_application_vts_end ();
   return 0;
 }
 
 /**
- * @brief Sync the CERT DB.
+ * @brief Sync the Web Application VTs DB.
  *
  * @return 0 success, -1 error.
  */
 static int
-sync_extra_vts ()
+sync_web_application_vts ()
 {
-  return update_extra_vts (FALSE);
+  return update_web_application_vts (FALSE);
 }
 
 /**
- * @brief Sync the extra VTs DB.
+ * @brief Sync the Web Application VTs DB.
  *
  * @param[in]  sigmask_current  Sigmask to restore in child.
  *
- * @return PID of the forked process handling the extra VTs sync, -1 on error.
+ * @return PID of the forked process handling the Web Application VTs sync,
+ *         -1 on error.
  */
 pid_t
-manage_sync_extra_vts (sigset_t *sigmask_current)
+manage_sync_web_application_vts (sigset_t *sigmask_current)
 {
   return sync_secinfo (sigmask_current,
-                       sync_extra_vts,
-                       "Syncing extra VTs");
+                       sync_web_application_vts,
+                       "Syncing Web Application VTs");
 }
 
 

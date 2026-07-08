@@ -3735,13 +3735,13 @@ feed_sync_required ()
 
   if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
     {
-      feed_status_ret = secinfo_feed_version_status ("extra_vts");
+      feed_status_ret = secinfo_feed_version_status ("web_application_vts");
       switch (feed_status_ret)
         {
         case 1:
         case 2:
         case 3:
-          g_debug ("%s: Extra VTs need to be updated (status %d)",
+          g_debug ("%s: Web Application VTs need to be updated (status %d)",
                    __func__, feed_status_ret);
           return TRUE;
         default:
@@ -3829,16 +3829,18 @@ manage_sync (sigset_t *sigmask_current,
                         "SecInfo feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
-          pid_t nvts_pid, scap_pid, cert_pid, extra_vts_pid;
+          pid_t nvts_pid, scap_pid, cert_pid, web_application_vts_pid;
           nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
           scap_pid = manage_sync_scap (sigmask_current);
           cert_pid = manage_sync_cert (sigmask_current);
-          extra_vts_pid = manage_sync_extra_vts (sigmask_current);
+          web_application_vts_pid
+            = manage_sync_web_application_vts (sigmask_current);
 
           wait_for_pid (nvts_pid, "NVTs sync");
           wait_for_pid (scap_pid, "SCAP sync");
           wait_for_pid (cert_pid, "CERT sync");
-          wait_for_pid (extra_vts_pid, "Extra VTs sync");
+          wait_for_pid (web_application_vts_pid,
+                        "Web Application VTs sync");
 
           update_scap_extra ();
 

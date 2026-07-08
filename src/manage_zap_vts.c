@@ -30,6 +30,13 @@
 
 #define ZAP_VT_FEED_SCHEMA_VERSION 1
 
+/**
+ * @brief Convert a ZAP risk rating to a CVSS score.
+ *
+ * @param[in]  risk  The ZAP risk rating to convert.
+ *
+ * @return The corresponding CVSS score.
+ */
 double
 zap_risk_to_cvss (const char *risk)
 {
@@ -48,6 +55,15 @@ zap_risk_to_cvss (const char *risk)
   return SEVERITY_UNDEFINED;
 }
 
+/**
+ * @brief Parse an entry in a JSON ZAP alerts array, add its data to the DB.
+ *
+ * @param[in]  parser   The JSON pull parser used for parsing.
+ * @param[in]  event    The JSON pull parser event output structure.
+ *
+ * @return 0 if entry was processed successfully, 1 if end of array was reached,
+ *         -1 on error.
+ */
 static int
 parse_and_insert_zap_vt_json (gvm_json_pull_parser_t *parser,
                               gvm_json_pull_event_t *event)
@@ -88,6 +104,17 @@ parse_and_insert_zap_vt_json (gvm_json_pull_parser_t *parser,
   return 0;
 }
 
+/**
+ * @brief Parse a JSON document until the start of the "alerts" array.
+ *
+ * The function expects a JSON object that first contains the "schema_version"
+ * field, which is also validated, followed by the "alerts" array.
+ *
+ * @param[in]  parser   The JSON pull parser used for parsing.
+ * @param[in]  event    The JSON pull parser event output structure.
+ *
+ * @return 0 on success, -1 on error
+ */
 static int
 seek_zap_alerts_array (gvm_json_pull_parser_t *parser,
                        gvm_json_pull_event_t *event)
@@ -142,6 +169,13 @@ seek_zap_alerts_array (gvm_json_pull_parser_t *parser,
   return 0;
 }
 
+/**
+ * @brief Opens a file at the given path and uses it to update ZAP VTs / alerts
+ *
+ * @param[in]  full_path  The full path to the file.
+ *
+ * @return 0 on success, -1 on error
+ */
 static int
 update_zap_vts_from_json_file (const gchar *full_path)
 {
@@ -227,14 +261,14 @@ update_zap_vts_from_feed ()
 
   g_info ("%s: Updating ZAP VTs from feed", __func__);
 
-  full_path = g_build_filename (GVM_EXTRA_VTS_DIR,
+  full_path = g_build_filename (GVM_WEB_APPLICATION_VTS_DIR,
                                 "zap-alerts.json.gz",
                                 NULL);
 
   if (g_stat (full_path, &state))
     {
       g_free (full_path);
-      full_path = g_build_filename (GVM_EXTRA_VTS_DIR,
+      full_path = g_build_filename (GVM_WEB_APPLICATION_VTS_DIR,
                                     "zap-alerts.json",
                                     NULL);
     }
