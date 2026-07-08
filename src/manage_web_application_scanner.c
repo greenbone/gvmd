@@ -33,7 +33,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-#define WEB_APPLICATION_SCAN_PREFIX "api/v1"
+#define WEB_APPLICATION_PATH_PREFIX "api/v1"
 
 /**
  * @brief Create a new connection to a web application scanner.
@@ -53,8 +53,8 @@ web_application_scanner_connect (scanner_t scanner, const char *scan_id)
 
   if (connection)
     http_scanner_connector_builder (connection,
-                                    HTTP_SCANNER_SCAN_PREFIX,
-                                    WEB_APPLICATION_SCAN_PREFIX);
+                                    HTTP_SCANNER_PATH_PREFIX,
+                                    WEB_APPLICATION_PATH_PREFIX);
   else
     g_warning ("%s: Could not connect to web application scanner", __func__);
 
@@ -1092,6 +1092,64 @@ end_stop_task:
   current_scanner_task = previous_task;
   global_current_report = previous_report;
 
+  return ret;
+}
+
+/**
+ * @brief Verify the connection to the web application scanner.
+ *
+ * @param[in]  scanner  The scanner to verify the connection to.
+ *
+ * @return 0 if the connection is verified, 1 otherwise.
+ */
+int
+verify_web_application_scanner_connection (scanner_t scanner)
+{
+  http_scanner_connector_t connector;
+  http_scanner_resp_t response = NULL;
+  int ret;
+
+  connector = web_application_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to build web application scanner connector",
+                 __func__);
+      return 1;
+    }
+  response = http_scanner_get_health_ready (connector);
+  http_scanner_connector_free (connector);
+
+  if (!response)
+    {
+      g_warning ("%s: Failed to get web application scanner health status",
+                 __func__);
+      return 1;
+    }
+
+  if (response->code == 200)
+    {
+      ret = 0;
+    }
+  else if (response->code == -1)
+    {
+      gboolean has_relay = scanner_has_relay (scanner);
+      char *host = scanner_host (scanner, has_relay);
+      g_warning ("%s: failed to connect to %s:%d",
+                 __func__,
+                 host,
+                 scanner_port (scanner, has_relay));
+      g_free (host);
+      ret = 1;
+    }
+  else
+    {
+      g_warning ("%s: web application scanner could not be verified,"
+                  " HTTP status code: %ld",
+                 __func__, response->code);
+      ret = 1;
+    }
+
+  http_scanner_response_cleanup (response);
   return ret;
 }
 
