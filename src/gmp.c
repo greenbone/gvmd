@@ -19937,7 +19937,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
         }
 
       index = get_iterator_resource (&tasks);
-      target = task_target (index, TASKS_TARGET_TYPE_REGULAR);
+      target = task_target (index);
 
       task_schedule_xml = get_task_schedule_xml (index);
 
@@ -19956,7 +19956,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       else
         {
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
-          target_in_trash = task_target_in_trash (index, TASKS_TARGET_TYPE_REGULAR);
+          target_in_trash = task_target_in_trash (index);
           if (target && (target == 0)
               && (task_iterator_run_status (&tasks)
                   == TASK_STATUS_RUNNING))
