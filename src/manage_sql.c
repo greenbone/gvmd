@@ -5926,19 +5926,16 @@ set_task_config (task_t task, config_t config)
  * @brief Return the target of a task.
  *
  * @param[in]  task         Task.
- * @param[in]  target_type  Target type of task.
  *
  * @return Target of task.
  */
 target_t
-task_target (task_t task, tasks_target_type_t target_type)
+task_target (task_t task)
 {
   target_t target = 0;
   switch (sql_int64_ps (&target,
-                       "SELECT target FROM tasks WHERE id = $1"
-                       "                         AND target_type = $2;",
+                       "SELECT target FROM tasks WHERE id = $1",
                        SQL_RESOURCE_PARAM (task),
-                       SQL_INT_PARAM (target_type),
                        NULL))
     {
       case 0:
@@ -5953,6 +5950,13 @@ task_target (task_t task, tasks_target_type_t target_type)
     }
 }
 
+/**
+ * @brief Return the target type of a task.
+ *
+ * @param[in]  task         Task.
+ *
+ * @return Target of task.
+ */
 tasks_target_type_t
 task_target_type (task_t task)
 {
@@ -6199,7 +6203,7 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 agent_group_t
 task_agent_group (task_t task)
 {
-  return task_target (task, TASKS_TARGET_TYPE_AGENT_GROUP);
+  return task_target (task);
 }
 
 /**
@@ -6212,7 +6216,7 @@ task_agent_group (task_t task)
 int
 task_agent_group_in_trash (task_t task)
 {
-  return task_target_in_trash (task, TASKS_TARGET_TYPE_AGENT_GROUP);
+  return task_target_in_trash (task);
 }
 #endif /*ENABLE_AGENTS*/
 
@@ -6227,7 +6231,7 @@ task_agent_group_in_trash (task_t task)
 oci_image_target_t
 task_oci_image_target (task_t task)
 {
-  return task_target (task, TASKS_TARGET_TYPE_OCI_IMAGE);
+  return task_target (task);
 }
 
 /**
@@ -6240,7 +6244,7 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
-  return task_target_in_trash (task, TASKS_TARGET_TYPE_OCI_IMAGE);
+  return task_target_in_trash (task);
 }
 
 /**
@@ -6269,7 +6273,7 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 web_application_target_t
 task_web_application_target (task_t task)
 {
-  return task_target (task, TASKS_TARGET_TYPE_WEB_APPLICATION);
+  return task_target (task);
 }
 
 /**
@@ -6282,7 +6286,7 @@ task_web_application_target (task_t task)
 int
 task_web_application_target_in_trash (task_t task)
 {
-  return task_target_in_trash (task, TASKS_TARGET_TYPE_WEB_APPLICATION);
+  return task_target_in_trash (task);
 }
 
 /**
@@ -6329,18 +6333,15 @@ clear_task_asset_preferences (task_t task)
  * @brief Return whether the target of a task is in the trashcan.
  *
  * @param[in]  task         Task.
- * @param[in]  target_type  Type of the target
  *
  * @return 1 if in trash, else 0.
  */
 int
-task_target_in_trash (task_t task, tasks_target_type_t target_type)
+task_target_in_trash (task_t task)
 {
   return sql_int_ps ("SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
-                      " FROM tasks WHERE id = $1"
-                      " AND target_type = $2;",
+                      " FROM tasks WHERE id = $1",
                       SQL_RESOURCE_PARAM (task),
-                      SQL_INT_PARAM (target_type),
                       NULL);
 }
 
@@ -9567,7 +9568,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
     rc = -1;
   else if (task == 0)
     rc = -4;
-  else if (task_target (task, TASKS_TARGET_TYPE_REGULAR))
+  else if (task_target (task))
     rc = -5;
   if (rc)
     {
@@ -16378,8 +16379,9 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       comment = task_comment (task);
 
-      target = task_target (task, TASKS_TARGET_TYPE_REGULAR);
-      if (task_target_in_trash (task, TASKS_TARGET_TYPE_REGULAR))
+      target = task_target (task);
+      // TODO: target_type?
+      if (task_target_in_trash (task))
         {
           task_target_uuid = trash_target_uuid (target);
           task_target_name = trash_target_name (target);
@@ -16404,6 +16406,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           progress_xml = g_strdup_printf ("%i", progress);
         }
 
+      // TODO: target_type?
       PRINT (out,
              "<task id=\"%s\">"
              "<name>%s</name>"
@@ -16417,7 +16420,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
-             task_target_in_trash (task, TASKS_TARGET_TYPE_REGULAR),
+             task_target_in_trash (task),
              task_target_name ? task_target_name : "",
              task_target_comment ? task_target_comment : "");
 
