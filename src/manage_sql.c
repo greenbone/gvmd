@@ -124,6 +124,7 @@
 #include "manage_sql_report_tls_certificates.h"
 #if ENABLE_WEB_APPLICATION_SCANNING
 #include "manage_web_application_targets.h"
+#include "manage_web_application_scanner.h"
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
 #if ENABLE_OPENVASD
 #include "manage_openvasd.h"
@@ -24878,11 +24879,11 @@ verify_scanner (const char *scanner_id, char **version)
 #if ENABLE_WEB_APPLICATION_SCANNING
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_WEB_APPLICATION)
     {
-      // TODO: replace with actual version from the scanner
-      if (version)
-        *version = g_strdup ("TestVersion");
-
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_web_application_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+      if (res)
+        return 2;
       return 0;
     }
 #endif

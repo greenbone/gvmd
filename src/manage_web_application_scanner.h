@@ -28,5 +28,8 @@ run_web_application_task (task_t, int, char **);
 int
 stop_web_application_task (task_t);
 
+int
+verify_web_application_scanner_connection (scanner_t);
+
 #endif // not _GVMD_MANAGE_WEB_APPLICATION_SCANNER_H
 #endif // ENABLE_WEB_APPLICATION_SCANNING
