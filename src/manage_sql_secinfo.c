@@ -2616,6 +2616,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       g_warning ("%s: Failed to open CPE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       return -1;
     }
 
@@ -2751,6 +2752,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       g_warning ("%s: Failed to open CPE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       return -1;
     }
   gvm_json_pull_parser_init (&parser, cpe_file);
@@ -4754,6 +4756,7 @@ update_cve_json (const gchar *cve_path,
       g_warning ("%s: Failed to open CVE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       g_free (full_path);
       return -1;
     }
