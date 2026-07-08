@@ -206,6 +206,7 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  sort_field  Sort field.
  * @param[out]  sort_order  Sort order.
  * @param[out]  result_hosts_only  Whether to show only hosts with results.
+ * @param[out]  host           Exact host filter, or NULL if not set.
  * @param[out]  min_qod        Minimum QoD base of included results.  All
  *                              results if NULL.
  * @param[out]  levels         String describing threat levels (message types)
@@ -229,13 +230,22 @@ filter_control_str (keyword_t **point, const char *column, gchar **string)
  * @param[out]  zone               Timezone.
  */
 void
-manage_report_filter_controls (const gchar *filter, int *first, int *max,
-                               gchar **sort_field, int *sort_order,
-                               int *result_hosts_only, gchar **min_qod,
-                               gchar **levels, gchar **compliance_levels,
-                               gchar **delta_states, gchar **search_phrase,
-                               int *search_phrase_exact, int *notes,
-                               int *overrides, int *apply_overrides,
+manage_report_filter_controls (const gchar *filter,
+                               int *first,
+                               int *max,
+                               gchar **sort_field,
+                               int *sort_order,
+                               int *result_hosts_only,
+                               gchar **host,
+                               gchar **min_qod,
+                               gchar **levels,
+                               gchar **compliance_levels,
+                               gchar **delta_states,
+                               gchar **search_phrase,
+                               int *search_phrase_exact,
+                               int *notes,
+                               int *overrides,
+                               int *apply_overrides,
                                gchar **zone)
 {
   keyword_t **point;
@@ -243,98 +253,156 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
   int val;
   gchar *string;
 
+  /*
+   * Initialize allocated outputs so callers can safely free them even when
+   * the filter is NULL or does not contain the corresponding control.
+   */
+  if (sort_field)
+    *sort_field = NULL;
+
+  if (host)
+    *host = NULL;
+
+  if (min_qod)
+    *min_qod = NULL;
+
+  if (levels)
+    *levels = NULL;
+
+  if (compliance_levels)
+    *compliance_levels = NULL;
+
+  if (delta_states)
+    *delta_states = NULL;
+
+  if (search_phrase)
+    *search_phrase = NULL;
+
+  if (zone)
+    *zone = NULL;
+
   if (filter == NULL)
     return;
 
   split = split_filter (filter);
 
-  point = (keyword_t**) split->pdata;
+  point = (keyword_t **) split->pdata;
   if (first)
     {
       *first = 1;
+
       while (*point)
         {
           keyword_t *keyword;
 
           keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "first") == 0))
+
+          if (keyword->column
+              && strcmp (keyword->column, "first") == 0)
             {
               *first = atoi (keyword->string);
+
               if (*first < 0)
                 *first = 0;
+
               break;
             }
+
           point++;
         }
-      /* Switch from 1 to 0 indexing. */
+
+      /* Switch from 1-based to 0-based indexing. */
 
       (*first)--;
     }
 
-  point = (keyword_t**) split->pdata;
+  point = (keyword_t **) split->pdata;
   if (max)
     {
       *max = 100;
+
       while (*point)
         {
           keyword_t *keyword;
 
           keyword = *point;
-          if (keyword->column && (strcmp (keyword->column, "rows") == 0))
+
+          if (keyword->column
+              && strcmp (keyword->column, "rows") == 0)
             {
               *max = atoi (keyword->string);
+
               if (*max == -2)
                 setting_value_int (SETTING_UUID_ROWS_PER_PAGE, max);
               else if (*max < 1)
                 *max = -1;
+
               break;
             }
+
           point++;
         }
     }
 
-  point = (keyword_t**) split->pdata;
+  point = (keyword_t **) split->pdata;
   if (sort_field || sort_order)
     {
-      if (sort_field) *sort_field = NULL;
-      if (sort_order) *sort_order = 1;
+      if (sort_order)
+        *sort_order = 1;
+
       while (*point)
         {
           keyword_t *keyword;
 
           keyword = *point;
+
           if (keyword->column
-              && (strcmp (keyword->column, "sort") == 0))
+              && strcmp (keyword->column, "sort") == 0)
             {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 1;
+              if (sort_field)
+                *sort_field = g_strdup (keyword->string);
+
+              if (sort_order)
+                *sort_order = 1;
+
               break;
             }
+
           if (keyword->column
-              && (strcmp (keyword->column, "sort-reverse") == 0))
+              && strcmp (keyword->column, "sort-reverse") == 0)
             {
-              if (sort_field) *sort_field = g_strdup (keyword->string);
-              if (sort_order) *sort_order = 0;
+              if (sort_field)
+                *sort_field = g_strdup (keyword->string);
+
+              if (sort_order)
+                *sort_order = 0;
+
               break;
             }
+
           point++;
         }
-      if (sort_field && (*sort_field == NULL))
+
+      if (sort_field && *sort_field == NULL)
         *sort_field = g_strdup ("name"); /* NVT name. */
     }
 
   if (search_phrase)
     {
       GString *phrase;
+
       phrase = g_string_new ("");
-      point = (keyword_t**) split->pdata;
+      point = (keyword_t **) split->pdata;
+
       if (search_phrase_exact)
         *search_phrase_exact = 0;
+
       while (*point)
         {
           keyword_t *keyword;
 
           keyword = *point;
+
           if (keyword->column == NULL)
             {
               if (search_phrase_exact && keyword->equal)
@@ -342,10 +410,13 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
                  * for reports the filter terms are combined into a single
                  * search term. */
                 *search_phrase_exact = 1;
+
               g_string_append_printf (phrase, "%s ", keyword->string);
             }
+
           point++;
         }
+
       *search_phrase = g_strchomp (g_string_free (phrase, FALSE));
     }
 
@@ -357,6 +428,14 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
         *result_hosts_only = 1;
       else
         *result_hosts_only = val;
+    }
+
+  if (host)
+    {
+      if (filter_control_str ((keyword_t **) split->pdata,
+                              "host",
+                              &string) == 0)
+        *host = string;
     }
 
   if (notes)
@@ -400,9 +479,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     {
       if (filter_control_str ((keyword_t **) split->pdata,
                               "compliance_levels",
-                              &string))
-        *compliance_levels = NULL;
-      else
+                              &string) == 0)
         *compliance_levels = string;
     }
 
@@ -410,9 +487,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     {
       if (filter_control_str ((keyword_t **) split->pdata,
                               "delta_states",
-                              &string))
-        *delta_states = NULL;
-      else
+                              &string) == 0)
         *delta_states = string;
     }
 
@@ -420,9 +495,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     {
       if (filter_control_str ((keyword_t **) split->pdata,
                               "levels",
-                              &string))
-        *levels = NULL;
-      else
+                              &string) == 0)
         *levels = string;
     }
 
@@ -430,9 +503,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     {
       if (filter_control_str ((keyword_t **) split->pdata,
                               "min_qod",
-                              &string))
-        *min_qod = NULL;
-      else
+                              &string) == 0)
         *min_qod = string;
     }
 
@@ -440,18 +511,15 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
     {
       if (filter_control_str ((keyword_t **) split->pdata,
                               "timezone",
-                              &string))
-        *zone = NULL;
-      else
+                              &string) == 0)
         *zone = string;
     }
 
   filter_free (split);
-  return;
 }
 
 /**
- * @brief Derive report filter control values from GET filter input.
+ * @brief Derive report filter controls from GET input, including host.
  *
  * The caller owns any allocated output strings and must free them.
  *
@@ -463,6 +531,7 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
  * @param[out] sort_order           Sort order.
  * @param[out] result_hosts_only    Whether only hosts with matching results
  *                                  should be included.
+ * @param[out] host                 Exact host filter, or NULL if not set.
  * @param[out] min_qod              Minimum QoD.
  * @param[out] levels               Severity levels filter.
  * @param[out] compliance_levels    Compliance levels filter.
@@ -477,25 +546,28 @@ manage_report_filter_controls (const gchar *filter, int *first, int *max,
  * @return 0 on success, 2 if the referenced filter was not found, -1 on error.
  */
 int
-manage_report_filter_controls_from_get (const get_data_t *get,
-                                        gchar **term,
-                                        int *first_result,
-                                        int *max_results,
-                                        gchar **sort_field,
-                                        int *sort_order,
-                                        int *result_hosts_only,
-                                        gchar **min_qod,
-                                        gchar **levels,
-                                        gchar **compliance_levels,
-                                        gchar **delta_states,
-                                        gchar **search_phrase,
-                                        int *search_phrase_exact,
-                                        int *notes,
-                                        int *overrides,
-                                        int *apply_overrides,
-                                        gchar **zone)
+manage_report_filter_controls_from_get (
+  const get_data_t *get,
+  gchar **term,
+  int *first_result,
+  int *max_results,
+  gchar **sort_field,
+  int *sort_order,
+  int *result_hosts_only,
+  gchar **host,
+  gchar **min_qod,
+  gchar **levels,
+  gchar **compliance_levels,
+  gchar **delta_states,
+  gchar **search_phrase,
+  int *search_phrase_exact,
+  int *notes,
+  int *overrides,
+  int *apply_overrides,
+  gchar **zone)
 {
   gchar *local_term;
+  const gchar *effective_filter;
 
   if (get == NULL || term == NULL)
     {
@@ -505,59 +577,54 @@ manage_report_filter_controls_from_get (const get_data_t *get,
 
   *term = NULL;
   local_term = NULL;
+  effective_filter = NULL;
 
-  if ((get->filt_id && strlen (get->filt_id)
+  if (host)
+    *host = NULL;
+
+  if ((get->filt_id
+       && strlen (get->filt_id)
        && strcmp (get->filt_id, FILT_ID_NONE))
       || (get->filter && strlen (get->filter)))
     {
-      if (get->filt_id && strlen (get->filt_id)
+      if (get->filt_id
+          && strlen (get->filt_id)
           && strcmp (get->filt_id, FILT_ID_NONE))
         {
           local_term = filter_term (get->filt_id);
+
           if (local_term == NULL)
             return 2;
         }
 
-      manage_report_filter_controls (local_term ? local_term : get->filter,
-                                     first_result,
-                                     max_results,
-                                     sort_field,
-                                     sort_order,
-                                     result_hosts_only,
-                                     min_qod,
-                                     levels,
-                                     compliance_levels,
-                                     delta_states,
-                                     search_phrase,
-                                     search_phrase_exact,
-                                     notes,
-                                     overrides,
-                                     apply_overrides,
-                                     zone);
+      effective_filter = local_term ? local_term : get->filter;
     }
   else
     {
       local_term = g_strdup ("");
-
-      manage_report_filter_controls (local_term,
-                                     first_result,
-                                     max_results,
-                                     sort_field,
-                                     sort_order,
-                                     result_hosts_only,
-                                     min_qod,
-                                     levels,
-                                     compliance_levels,
-                                     delta_states,
-                                     search_phrase,
-                                     search_phrase_exact,
-                                     notes,
-                                     overrides,
-                                     apply_overrides,
-                                     zone);
+      effective_filter = local_term;
     }
 
+  manage_report_filter_controls (effective_filter,
+                                 first_result,
+                                 max_results,
+                                 sort_field,
+                                 sort_order,
+                                 result_hosts_only,
+                                 host,
+                                 min_qod,
+                                 levels,
+                                 compliance_levels,
+                                 delta_states,
+                                 search_phrase,
+                                 search_phrase_exact,
+                                 notes,
+                                 overrides,
+                                 apply_overrides,
+                                 zone);
+
   *term = local_term;
+
   return 0;
 }
 

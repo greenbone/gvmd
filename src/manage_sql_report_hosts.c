@@ -20,6 +20,8 @@
 
 #include "manage_sql_report_hosts.h"
 
+#include "manage_assets.h"
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.
@@ -493,6 +495,57 @@ host_summary_append (GString *host_summary_buffer, const char *host,
 }
 
 /**
+ * @brief Print the asset XML element for a report host.
+ *
+ * @param[in] ctx     Report print context.
+ * @param[in] stream  File stream to write to.
+ * @param[in] hosts   Host iterator.
+ * @param[in] host    Single host override, or NULL.
+ * @param[in] lean    Whether to return lean report.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+print_report_host_asset_xml (print_report_context_t *ctx,
+                             FILE *stream,
+                             iterator_t *hosts,
+                             const char *host,
+                             int lean)
+{
+  const char *asset_uuid;
+  const char *host_value;
+  gchar *asset_key;
+
+  if (ctx == NULL || stream == NULL || hosts == NULL)
+    return -1;
+
+  asset_uuid = host_iterator_asset_uuid (hosts);
+  host_value = host ? host : host_iterator_host (hosts);
+
+  asset_key = asset_key_for_report_host (ctx->report,
+                                         host_iterator_report_host (hosts),
+                                         host_value);
+
+  if ((!asset_uuid || !*asset_uuid) && lean != 0)
+    {
+      g_free (asset_key);
+      return 0;
+    }
+
+  PRINT (stream,
+         "<asset asset_id=\"%s\"/>",
+         asset_uuid ? asset_uuid : "");
+
+  if (asset_key && *asset_key)
+    PRINT (stream,
+           "<asset_snapshot asset_key=\"%s\"/>",
+           asset_key);
+
+  g_free (asset_key);
+  return 0;
+}
+
+/**
  * @brief Print the XML for a report's host to a file stream.
  *
  * @param[in]  ctx                  Printing context.
@@ -535,14 +588,7 @@ print_report_host_xml (print_report_context_t *ctx,
          "<ip>%s</ip>",
          host ? host : host_iterator_host (hosts));
 
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-         "<asset asset_id=\"%s\"/>",
-         host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-         "<asset asset_id=\"\"/>");
+  print_report_host_asset_xml (ctx, stream, hosts, host, lean);
 
   if (strcmp (usage_type, "audit") == 0)
     {
@@ -719,14 +765,7 @@ print_container_scan_report_host_xml (print_report_context_t *ctx,
          "<ip>%s</ip>",
          host);
 
-  if (host_iterator_asset_uuid (hosts)
-      && strlen (host_iterator_asset_uuid (hosts)))
-    PRINT (stream,
-         "<asset asset_id=\"%s\"/>",
-         host_iterator_asset_uuid (hosts));
-  else if (lean == 0)
-    PRINT (stream,
-         "<asset asset_id=\"\"/>");
+  print_report_host_asset_xml (ctx, stream, hosts, host, lean);
 
   criticals_count
     = GPOINTER_TO_INT
@@ -854,11 +893,13 @@ print_container_scan_report_hosts_xml (print_report_context_t *ctx,
  * @param[in]  lean                 Whether to return lean report.
  * @param[in]  is_container_scan    Whether this is a container scan report.
  * @param[in]  result_hosts_only    Whether to print only hosts with results.
- * @param[in]  result_hosts         Result hosts array, used when result_hosts_only is set.
+ * @param[in]  host_filter          Exact host filter, or NULL.
+ * @param[in]  result_hosts         Result hosts array, used when
+ *                                  result_hosts_only is set.
  * @param[in]  host_summary_buffer  Host summary buffer.
  * @param[in]  is_get_report_hosts  Whether called from get_report_hosts.
  *
- * @return 0 on success, -1 error.
+ * @return 0 on success, -1 on error.
  */
 int
 print_report_hosts_xml (print_report_context_t *ctx,
@@ -869,6 +910,7 @@ print_report_hosts_xml (print_report_context_t *ctx,
                         int lean,
                         gboolean is_container_scan,
                         gboolean result_hosts_only,
+                        const gchar *host_filter,
                         array_t *result_hosts,
                         GString *host_summary_buffer,
                         gboolean is_get_report_hosts)
@@ -1011,7 +1053,10 @@ print_report_hosts_xml (print_report_context_t *ctx,
     {
       iterator_t hosts;
 
-      init_report_host_iterator (&hosts, report, NULL, 0);
+      init_report_host_iterator (&hosts,
+                                 report,
+                                 host_filter,
+                                 0);
 
       while (next (&hosts))
         {
@@ -1138,6 +1183,7 @@ update_filtered_host_result_counts (print_report_context_t *ctx,
  *                                              container-aware host keys.
  * @param[in, out] ctx  Report print context used to store filtered per-host counts.
  * @param[in]      is_get_report_hosts  Whether called from get_report_hosts.
+ * @param [in]      host_filter Exact host filter, or NULL.
  *
  * @return 0 on success, non-zero on failure.
  */
@@ -1148,7 +1194,8 @@ fill_filtered_result_hosts (array_t **result_hosts,
                             iterator_t *results,
                             gboolean is_container_scanning_report,
                             print_report_context_t *ctx,
-                            gboolean is_get_report_hosts)
+                            gboolean is_get_report_hosts,
+                            const gchar *host_filter)
 {
   int ret;
 
@@ -1157,7 +1204,7 @@ fill_filtered_result_hosts (array_t **result_hosts,
 
   *result_hosts = make_array ();
 
-  ret = init_result_get_iterator (results, get, report, NULL, NULL);
+  ret = init_result_get_iterator (results, get, report, host_filter, NULL);
   if (ret)
     return ret;
 

@@ -60,7 +60,10 @@ add_user_scan_preferences (GHashTable *scanner_options)
                           name,
                           hosts ? hosts : g_strdup (""));
   else
-    g_free (hosts);
+    {
+      g_free (name);
+      g_free (hosts);
+    }
 }
 
 #if ENABLE_CREDENTIAL_STORES

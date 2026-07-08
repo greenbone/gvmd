@@ -56,6 +56,7 @@ manage_send_report_hosts (report_t report,
   gchar *levels;
   gchar *delta_states;
   gchar *search_phrase;
+  gchar *host_filter;
   char xml_dir[] = "/tmp/gvmd_XXXXXX";
   gboolean xml_dir_created = FALSE;
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
@@ -75,6 +76,7 @@ manage_send_report_hosts (report_t report,
   xml_file = NULL;
   stream = NULL;
   result_hosts = NULL;
+  host_filter = NULL;
   results_initialized = 0;
   result_hosts_only = 0;
 
@@ -106,6 +108,7 @@ manage_send_report_hosts (report_t report,
                                                 NULL,
                                                 NULL,
                                                 &result_hosts_only,
+                                                &host_filter,
                                                 NULL,
                                                 NULL,
                                                 NULL,
@@ -143,7 +146,8 @@ manage_send_report_hosts (report_t report,
                                         &results,
                                         is_container_scanning_report,
                                         &ctx,
-                                        TRUE);
+                                        TRUE,
+                                        host_filter);
       if (ret)
         {
           ret = -1;
@@ -170,6 +174,7 @@ manage_send_report_hosts (report_t report,
                                 lean,
                                 is_container_scanning_report,
                                 result_hosts_only,
+                                host_filter,
                                 result_hosts,
                                 NULL,
                                 TRUE);
@@ -253,6 +258,7 @@ cleanup:
   g_free (levels);
   g_free (delta_states);
   g_free (search_phrase);
+  g_free (host_filter);
 
   print_report_context_cleanup (&ctx);
 

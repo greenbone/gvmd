@@ -99,22 +99,51 @@ report_os_iterator_report_host_id (iterator_t *iterator)
   return iterator_int (iterator, 0);
 }
 
+/**
+ * @brief Initialize the report OS iterator.
+ *
+ * @param[out] iterator     Iterator to initialize.
+ * @param[in]  report       Report whose operating systems to iterate.
+ * @param[in]  host_filter  Optional host filter; NULL for no filter.
+ */
 void
-init_report_os_iterator (iterator_t *iterator, report_t report)
+init_report_os_iterator (iterator_t *iterator,
+                         report_t report,
+                         const gchar *host_filter)
 {
-  init_ps_iterator (
-    iterator,
-    "SELECT rh.id AS report_host_id, "
-    "       (SELECT value FROM report_host_details "
-    "         WHERE report_host = rh.id AND name = 'best_os_cpe'"
-    "         LIMIT 1) AS cpe, "
-    "       (SELECT value FROM report_host_details"
-    "         WHERE report_host = rh.id AND name = 'best_os_txt'"
-    "         LIMIT 1) AS os_name"
-    " FROM report_hosts rh"
-    " WHERE rh.report = $1;",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
+  if (host_filter && *host_filter)
+    {
+      init_ps_iterator (
+        iterator,
+        "SELECT rh.id AS report_host_id, "
+        "       (SELECT value FROM report_host_details "
+        "         WHERE report_host = rh.id AND name = 'best_os_cpe'"
+        "         LIMIT 1) AS cpe, "
+        "       (SELECT value FROM report_host_details"
+        "         WHERE report_host = rh.id AND name = 'best_os_txt'"
+        "         LIMIT 1) AS os_name"
+        " FROM report_hosts rh"
+        " WHERE rh.report = $1 AND rh.host = $2;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (host_filter),
+        NULL);
+    }
+  else
+    {
+      init_ps_iterator (
+        iterator,
+        "SELECT rh.id AS report_host_id, "
+        "       (SELECT value FROM report_host_details "
+        "         WHERE report_host = rh.id AND name = 'best_os_cpe'"
+        "         LIMIT 1) AS cpe, "
+        "       (SELECT value FROM report_host_details"
+        "         WHERE report_host = rh.id AND name = 'best_os_txt'"
+        "         LIMIT 1) AS os_name"
+        " FROM report_hosts rh"
+        " WHERE rh.report = $1;",
+        SQL_RESOURCE_PARAM (report),
+        NULL);
+    }
 }
 
 /**

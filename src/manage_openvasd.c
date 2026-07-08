@@ -170,6 +170,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   char *hosts_str, *ports_str, *exclude_hosts_str, *finished_hosts_str;
   gchar *clean_hosts, *clean_exclude_hosts, *clean_finished_hosts_str;
   int alive_test, reverse_lookup_only, reverse_lookup_unify;
+  gchar *reverse_lookup_only_str, *reverse_lookup_unify_str;
   openvasd_target_t *openvasd_target;
   GSList *openvasd_targets, *vts;
   GHashTable *vts_hash_table;
@@ -216,11 +217,19 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   if (target_alive_tests (target) > 0)
     alive_test = target_alive_tests (target);
 
-  if (target_reverse_lookup_only (target) != NULL)
-    reverse_lookup_only = atoi (target_reverse_lookup_only (target));
+  reverse_lookup_only_str = target_reverse_lookup_only (target);
+  if (reverse_lookup_only_str)
+    {
+      reverse_lookup_only = atoi (reverse_lookup_only_str);
+      g_free (reverse_lookup_only_str);
+    }
 
-  if (target_reverse_lookup_unify (target) != NULL)
-    reverse_lookup_unify = atoi (target_reverse_lookup_unify (target));
+  reverse_lookup_unify_str = target_reverse_lookup_unify (target);
+  if (reverse_lookup_unify_str)
+    {
+      reverse_lookup_unify = atoi (reverse_lookup_unify_str);
+      g_free (reverse_lookup_unify_str);
+    }
 
   if (finished_hosts_str)
     {
@@ -774,5 +783,62 @@ handle_openvasd_scan_end (task_t task, int handle_progress_rc, gboolean discover
 
     return handle_progress_rc;
 }
+
+/**
+ * @brief Verify connectivity to openvasd scanners.
+ *
+ * @param[in]  scanner Scanner row id.
+ *
+ * @return 0 if the verification succeeds, 1 otherwise.
+ */
+int
+verify_openvasd_scanner_connection (scanner_t scanner)
+{
+  http_scanner_connector_t connector;
+  http_scanner_resp_t response = NULL;
+  int ret;
+
+  connector = http_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to build openvasd connector", __func__);
+      return 1;
+    }
+  response = http_scanner_get_health_ready (connector);
+  http_scanner_connector_free (connector);
+
+  if (!response)
+    {
+      g_warning ("%s: Failed to get openvasd health status", __func__);
+      return 1;
+    }
+
+  if (response->code == 200)
+    {
+      ret = 0;
+    }
+  else if (response->code == -1)
+    {
+      gboolean has_relay = scanner_has_relay (scanner);
+      char *host = scanner_host (scanner, has_relay);
+      g_warning ("%s: failed to connect to %s:%d",
+                 __func__,
+                 host,
+                 scanner_port (scanner, has_relay));
+      g_free (host);
+      ret = 1;
+    }
+  else
+    {
+      g_warning ("%s: openvasd scanner could not be verified,"
+                  " HTTP status code: %ld",
+                 __func__, response->code);
+      ret = 1;
+    }
+
+  http_scanner_response_cleanup (response);
+  return ret;
+}
+
 
 #endif /* ENABLE_OPENVASD */

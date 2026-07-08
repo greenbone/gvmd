@@ -227,6 +227,8 @@ report_port_count (report_t report)
  * @param[in]  sort_field         Field to sort on.
  * @param[in,out] results         Result iterator.  For caller to reuse.
  * @param[in,out] filtered_count  Filtered port count.
+ * @param[in] host_filter         Exact host filter to apply to the results,
+ *                                or NULL for no filter.
  *
  * @return 0 on success, -1 error.
  */
@@ -234,12 +236,13 @@ int
 print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                        const get_data_t *get, int first_result, int max_results,
                        int sort_order, const char *sort_field,
-                       iterator_t *results, int *filtered_count)
+                       iterator_t *results, int *filtered_count,
+                       const gchar *host_filter)
 {
   result_buffer_t *last_item;
   GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
 
-  init_result_get_iterator (results, get, report, NULL, NULL);
+  init_result_get_iterator (results, get, report, host_filter, NULL);
 
   /* Buffer the results, removing duplicates. */
 
@@ -399,6 +402,8 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
  * @param[in]  sort_field         Field to sort on.
  * @param[in,out] results         Result iterator.  For caller to reuse.
  * @param[in,out] filtered_count  Filtered port count.
+ * @param[in] host_filter         Exact host filter to apply to the results,
+ *                                or NULL for no filter.
  *
  * @return 0 on success, -1 error.
  */
@@ -410,7 +415,8 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
                                           int sort_order,
                                           const char *sort_field,
                                           iterator_t *results,
-                                          int *filtered_count)
+                                          int *filtered_count,
+                                          const gchar *host_filter)
 {
   if (details == 0)
     {
@@ -437,5 +443,5 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
   return print_report_port_xml (ctx, report, out, &get_ignore_pagination,
                                 first_result,
                                 max_results, sort_order, sort_field, results,
-                                filtered_count);
+                                filtered_count, host_filter);
 }

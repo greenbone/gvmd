@@ -27,5 +27,8 @@ handle_openvasd_scan (task_t, report_t, const char *, time_t);
 int
 handle_openvasd_scan_end (task_t, int, gboolean);
 
+int
+verify_openvasd_scanner_connection (scanner_t);
+
 #endif /* not _GVMD_MANAGE_OPENVASD_H */
 #endif /* ENABLE_OPENVASD */

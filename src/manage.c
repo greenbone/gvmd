@@ -1210,7 +1210,11 @@ severity_data_index (double severity)
 {
   int ret;
   if (severity >= 0.0)
-    ret = (int)(round (severity * SEVERITY_SUBDIVISIONS)) + ZERO_SEVERITY_INDEX;
+    {
+      if (severity > SEVERITY_MAX)
+        severity = SEVERITY_MAX;
+      ret = (int)(round (severity * SEVERITY_SUBDIVISIONS)) + ZERO_SEVERITY_INDEX;
+    }
   else if (severity == SEVERITY_FP || severity == SEVERITY_ERROR)
     ret = (int)(round (severity)) + ZERO_SEVERITY_INDEX;
   else
@@ -3990,6 +3994,7 @@ manage_process_report_imports ()
           default:
             /* Parent. */
             g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+            lockfile_unlock (&lockfile);
             g_free (lockfile_path);
             continue;
           }

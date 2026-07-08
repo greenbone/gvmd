@@ -1201,4 +1201,62 @@ end_stop_openvasd:
   return ret;
 }
 
+/**
+ * @brief Verify connectivity to a container image scanner.
+ *
+ * @param[in]  scanner Scanner row id.
+ *
+ * @return 0 if the verification succeeds, 1 otherwise.
+ */
+int
+verify_container_image_scanner_connection (scanner_t scanner)
+{
+  http_scanner_connector_t connector;
+  http_scanner_resp_t response = NULL;
+  int ret;
+
+  connector = container_image_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to build container image scanner connector",
+                 __func__);
+      return 1;
+    }
+  /* container scanner has no separate health endpoint */
+  response = http_scanner_get_scan_preferences (connector);
+  http_scanner_connector_free (connector);
+
+  if (!response)
+    {
+      g_warning ("%s: Failed to get container image scanner preferences",
+                 __func__);
+      return 1;
+    }
+  if (response->code == 200)
+   {
+      ret = 0;
+   }
+  else if (response->code == -1)
+    {
+      gboolean has_relay = scanner_has_relay (scanner);
+      char *host = scanner_host (scanner, has_relay);
+      g_warning ("%s: failed to connect to %s:%d",
+                 __func__,
+                 host,
+                 scanner_port (scanner, has_relay));
+      g_free (host);
+      ret = 1;
+    }
+  else
+    {
+      g_warning ("%s: container image scanner could not be verified,"
+                 " HTTP status code: %ld",
+                 __func__, response->code);
+      ret = 1;
+    }
+
+  http_scanner_response_cleanup (response);
+  return ret;
+}
+
 #endif

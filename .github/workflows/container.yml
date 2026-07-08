@@ -44,7 +44,7 @@ jobs:
       images: |
         ghcr.io/${{ github.repository }},enable=true
         ${{ vars.GREENBONE_REGISTRY }}/community/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && github.ref_type == 'tag' && matrix.build.name == 'default' }}
-        ${{ vars.GREENBONE_REGISTRY }}/openvas-scan-dev/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && github.ref_type == 'tag' && matrix.build.name == 'default' }}
+        ${{ vars.GREENBONE_REGISTRY }}/openvas-scan-dev/${{ github.event.repository.name }},enable=${{ github.event_name != 'pull_request' && github.ref_type == 'tag' && matrix.build.name == 'all features' }}
     secrets: inherit
 
   notify:
@@ -79,5 +79,5 @@ jobs:
       service: openvas-gvmd
       url: ${{ vars.GREENBONE_REGISTRY }}/openvas-scan-dev/${{ github.event.repository.name }}
       tag: ${{ github.ref_name }}
-      artifact-pattern: default
+      artifact-pattern: 'all features'
     secrets: inherit

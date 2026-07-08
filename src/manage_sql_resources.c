@@ -796,7 +796,7 @@ resource_count (const char *type, const get_data_t *get)
             return 0;
           if (report != 0)
             {
-              return report_closed_cve_count (report);
+              return report_closed_cve_count (report, get);
             }
         }
       return 0;

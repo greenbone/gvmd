@@ -17687,6 +17687,7 @@ handle_get_results (gmp_parser_t *gmp_parser, GError **error)
                                       NULL, /* sort_field */
                                       NULL, /* sort_order */
                                       NULL, /* result_hosts_only */
+                                      NULL, /* host */
                                       NULL, /* min_qod */
                                       NULL, /* levels */
                                       NULL, /* compliance_levels */
@@ -20547,7 +20548,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               g_free (web_application_target_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
-              cleanup_iterator (&tasks);
               return;
             }
           g_free (response);
@@ -21574,6 +21574,19 @@ gmp_xml_handle_result ()
         }
     }
 
+  if (create_report_data->result_severity
+      && strlen (create_report_data->result_severity))
+    {
+      double s;
+
+      s = atof (create_report_data->result_severity);
+      if (s > 10.0)
+        {
+          g_free (create_report_data->result_severity);
+          create_report_data->result_severity = g_strdup ("10.0");
+        }
+    }
+
   result = g_malloc (sizeof (create_report_result_t));
   result->description = create_report_data->result_description;
   // sometimes host has newlines in it, so we 0 terminate first newline
@@ -21582,8 +21595,11 @@ gmp_xml_handle_result ()
   // strcspn returns the number of chars spanned so it should be safe
   // without double checking.
   if (create_report_data->result_host)
-    create_report_data
-      ->result_host[strcspn (create_report_data->result_host, "\n")] = 0;
+    {
+      g_strchug (create_report_data->result_host);
+      create_report_data->result_host
+        [strcspn (create_report_data->result_host, "\n")] = 0;
+    }
   result->host = create_report_data->result_host;
   result->hostname = create_report_data->result_hostname;
   result->nvt_oid = create_report_data->result_nvt_oid;
@@ -29858,7 +29874,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    ("<verify_scanner_response status=\"" STATUS_OK "\""
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<version>%s</version>"
-                    "</verify_scanner_response>", version);
+                    "</verify_scanner_response>", version ?: "");
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -29874,15 +29890,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    (XML_ERROR_UNAVAILABLE ("verify_scanner",
                                            "Service unavailable"));
                   break;
-                case 3:
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<verify_scanner_response status=\"%s\""
-                    " status_text=\"Failed to authenticate\">"
-                    "<version>%s</version>"
-                    "</verify_scanner_response>",
-                    STATUS_SERVICE_UNAVAILABLE,
-                    version);
-                  break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("verify_scanner", "Permission denied"));
@@ -29892,6 +29899,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                            ("verify_scanner"));
                   break;
               }
+            g_free (version);
           }
         else
           SEND_TO_CLIENT_OR_FAIL

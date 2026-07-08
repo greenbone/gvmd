@@ -126,6 +126,12 @@
 #if ENABLE_WEB_APPLICATION_SCANNING
 #include "manage_web_application_targets.h"
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
+#if ENABLE_OPENVASD
+#include "manage_openvasd.h"
+#endif /* ENABLE_OPENVASD */
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_container_image_scanner.h"
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 #undef G_LOG_DOMAIN
 /**
@@ -5136,12 +5142,15 @@ auth_cache_find (const char *username, const char *password, int method)
 static void
 auth_cache_insert (const char *username, const char *password, int method)
 {
-  char *hash, *quoted_username;
+  char *hash;
 
-  quoted_username = sql_quote (username);
   hash = manage_authentication_hash (password);
-  sql ("INSERT INTO auth_cache (username, hash, method, creation_time)"
-       " VALUES ('%s', '%s', %i, m_now ());", quoted_username, hash, method);
+  sql_ps ("INSERT INTO auth_cache (username, hash, method, creation_time)"
+          " VALUES ($1, $2, $3, m_now ());",
+          SQL_STR_PARAM (username),
+          SQL_STR_PARAM (hash),
+          SQL_INT_PARAM (method),
+          NULL);
   /* Cleanup cache */
   sql ("DELETE FROM auth_cache WHERE creation_time < m_now () - %d",
        get_auth_timeout()*60);
@@ -16050,6 +16059,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                                     &sort_field,
                                                     &sort_order,
                                                     &result_hosts_only,
+                                                    NULL,
                                                     &min_qod,
                                                     &levels,
                                                     &ctx.compliance_levels,
@@ -16284,7 +16294,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       PRINT (out,
              "<closed_cves><count>%i</count></closed_cves>",
-             report_closed_cve_count (report));
+             report_closed_cve_count (report, get));
 
       PRINT (out,
              "<cves><count>%i</count></cves>",
@@ -16592,7 +16602,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       reuse_result_iterator = 1;
       if (print_report_port_xml (&ctx, report, out, get, first_result,
                                  max_results, sort_order, sort_field, &results,
-                                 NULL))
+                                 NULL, NULL))
         {
           g_free (term);
           g_hash_table_destroy (ctx.f_host_ports);
@@ -17053,6 +17063,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                   lean,
                                   is_container_scanning_report,
                                   result_hosts_only,
+                                  NULL, /* host_filter */
                                   result_hosts,
                                   host_summary_buffer,
                                   FALSE))
@@ -23296,7 +23307,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
-  char *version;
+  char *version = NULL;
 
   assert (uuid);
 
@@ -23311,18 +23322,13 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   switch ((ret = verify_scanner (uuid, &version)))
     {
       case 0:
-        printf ("Scanner version: %s.\n", version);
-        g_free (version);
+        printf ("Scanner version: %s.\n", version ?: "N/A");
         break;
       case 1:
         fprintf (stderr, "Failed to find scanner.\n");
         break;
       case 2:
         fprintf (stderr, "Failed to verify scanner.\n");
-        break;
-      case 3:
-        fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
-                 version);
         break;
       default:
         fprintf (stderr, "Internal Error.\n");
@@ -23331,6 +23337,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   current_credentials.uuid = NULL;
 
   manage_option_cleanup ();
+  g_free (version);
   return ret ? -1 : 0;
 }
 
@@ -24912,8 +24919,8 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
  * @param[in]   scanner_id  Scanner UUID.
  * @param[out]  version     Version returned by the scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 failed to get version,
- *         3 authentication failed, 99 if permission denied, -1 error.
+ * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
+ *         99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
@@ -24941,12 +24948,18 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+#if ENABLE_OPENVASD
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD
-      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     {
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_openvasd_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+      if (res)
+        return 2;
       return 0;
     }
+#endif
 #if ENABLE_AGENTS
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER
            || scanner_iterator_type (&scanner)
@@ -24965,12 +24978,11 @@ verify_scanner (const char *scanner_id, char **version)
 #if ENABLE_CONTAINER_SCANNING
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
     {
-      // Once container scanner is availabe and has version endpoint, replace
-      // this
-      if (version)
-        *version = g_strdup ("TestVersion");
-
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
+      int res = verify_container_image_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+      if (res)
+        return 2;
       return 0;
     }
 #endif
