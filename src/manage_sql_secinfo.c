@@ -16,6 +16,7 @@
 #define _GNU_SOURCE
 
 #include "debug_utils.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
@@ -6955,8 +6956,11 @@ update_scap_extra ()
 
   update_vt_scap_extra_data ();
 
-  update_zap_vt_severities_from_cves ();
-  update_zap_vt_group_severity_scores ();
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+    {
+      update_zap_vt_severities_from_cves ();
+      update_zap_vt_group_severity_scores ();
+    }
 }
 
 /**

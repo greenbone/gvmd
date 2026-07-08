@@ -3833,8 +3833,11 @@ manage_sync (sigset_t *sigmask_current,
           nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
           scap_pid = manage_sync_scap (sigmask_current);
           cert_pid = manage_sync_cert (sigmask_current);
-          web_application_vts_pid
-            = manage_sync_web_application_vts (sigmask_current);
+          if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+            {
+              web_application_vts_pid
+                = manage_sync_web_application_vts (sigmask_current);
+            }
 
           wait_for_pid (nvts_pid, "NVTs sync");
           wait_for_pid (scap_pid, "SCAP sync");
