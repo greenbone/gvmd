@@ -21,6 +21,7 @@
 #include <fcntl.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -201,6 +202,7 @@ update_zap_vts_from_json_file (const gchar *full_path)
       g_warning ("%s: Failed to open ZAP VT file: %s",
                 __func__,
                 strerror (errno));
+      close (fd);
       return -1;
     }
 
