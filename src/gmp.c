@@ -957,6 +957,7 @@ create_report_data_reset (create_report_data_t *data)
               free (result->qod_type);
               free (result->scan_nvt_version);
               free (result->severity);
+              free (result->threat);
             }
         }
       array_free (data->results);
