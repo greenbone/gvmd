@@ -967,6 +967,16 @@ create_report_data_reset (create_report_data_t *data)
   free (data->scan_start);
   free (data->task_id);
   free (data->type);
+  free (data->detail_name);
+  free (data->detail_value);
+  free (data->detail_source_desc);
+  free (data->detail_source_name);
+  free (data->detail_source_type);
+  free (data->result_detection_name);
+  free (data->result_detection_product);
+  free (data->result_detection_location);
+  free (data->result_detection_source_oid);
+  free (data->result_detection_source_name);
 
   memset (data, 0, sizeof (create_report_data_t));
 }
