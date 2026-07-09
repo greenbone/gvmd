@@ -74,7 +74,7 @@ if(ENABLE_WEB_APPLICATION_SCANNING)
   pkg_check_modules(
     LIBGVM_WEB_APPLICATION_SCANNER
     REQUIRED
-    libgvm_web_application_scanner>=23.4
+    libgvm_web_application_scanner>=23.8
   )
 else(ENABLE_WEB_APPLICATION_SCANNING)
   message(STATUS "ENABLE_WEB_APPLICATION_SCANNING flag is not enabled")
