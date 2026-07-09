@@ -24843,8 +24843,9 @@ verify_scanner (const char *scanner_id, char **version)
            || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     {
       scanner_t scanner_row_id = get_iterator_resource (&scanner);
-      int res = verify_openvasd_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+
+      int res = verify_openvasd_scanner_connection (scanner_row_id);
       if (res)
         return 2;
       return 0;
@@ -24856,9 +24857,9 @@ verify_scanner (const char *scanner_id, char **version)
                 == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     {
       scanner_t scanner_row_id = get_iterator_resource (&scanner);
-      int res = verify_agent_controller_connection (scanner_row_id);
       cleanup_iterator (&scanner);
 
+      int res = verify_agent_controller_connection (scanner_row_id);
       if (res == 1)
         return 2;
 
@@ -24869,8 +24870,9 @@ verify_scanner (const char *scanner_id, char **version)
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
     {
       scanner_t scanner_row_id = get_iterator_resource (&scanner);
-      int res = verify_container_image_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+
+      int res = verify_container_image_scanner_connection (scanner_row_id);
       if (res)
         return 2;
       return 0;
@@ -24880,8 +24882,9 @@ verify_scanner (const char *scanner_id, char **version)
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_WEB_APPLICATION)
     {
       scanner_t scanner_row_id = get_iterator_resource (&scanner);
-      int res = verify_web_application_scanner_connection (scanner_row_id);
       cleanup_iterator (&scanner);
+
+      int res = verify_web_application_scanner_connection (scanner_row_id);
       if (res)
         return 2;
       return 0;
