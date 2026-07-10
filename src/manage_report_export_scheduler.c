@@ -195,6 +195,48 @@ calculate_next_retry_time (const int retry_count)
 }
 
 /**
+ * @brief Converts a GPtrArray of error strings into a single string,
+ *        with each error separated by "; ".
+ *
+ * @param[in] errors A GPtrArray containing error strings.
+ *
+ * @return Newly allocated string containing all errors concatenated,
+ *         or NULL if the array is empty or NULL.
+ *         The caller is responsible for freeing the returned string.
+ */
+static gchar *
+errors_to_string (GPtrArray *errors)
+{
+  GString *result;
+
+  if (!errors || errors->len == 0)
+    return NULL;
+
+  result = g_string_new (NULL);
+
+  for (guint i = 0; i < errors->len; ++i)
+    {
+      const gchar *error = g_ptr_array_index (errors, i);
+
+      if (!error || !*error)
+        continue;
+
+      if (result->len > 0)
+        g_string_append (result, "; ");
+
+      g_string_append (result, error);
+    }
+
+  if (result->len == 0)
+    {
+      g_string_free (result, TRUE);
+      return NULL;
+    }
+
+  return g_string_free (result, FALSE);
+}
+
+/**
  * @brief  Process a single report, which is due for export.
  *         Used to separate iterating over all reports from the handling
  *         of the export.
@@ -212,10 +254,11 @@ process_report_export (report_t report, int retry_count,
                                        NULL);
 
   export_report_result_t result = EXPORT_REPORT_RESULT_SUCCESS;
+  GPtrArray *errors = NULL;
 # if ENABLE_SECURITY_INTELLIGENCE_EXPORT
   /* Run the export */
   result =
-    export_report_security_intelligence (report, config);
+    export_report_security_intelligence (report, config, &errors);
 #endif
   gchar *reason = NULL;
 
@@ -231,9 +274,13 @@ process_report_export (report_t report, int retry_count,
   else
     {
       if (result == EXPORT_REPORT_RESULT_TIMEOUT)
-          reason = g_strdup ("The request has timed out");
+        reason = g_strdup ("The request has timed out");
       else if (result == EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED)
         reason = g_strdup ("Could not generate access_token");
+      if (errors && errors->len > 0)
+        {
+          reason = errors_to_string (errors);
+        }
 
       set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_FAILED,
                                            reason);
@@ -250,6 +297,8 @@ process_report_export (report_t report, int retry_count,
       g_free (reason);
       reason = NULL;
     }
+  if (errors)
+    g_ptr_array_free (errors, TRUE);
 
   sql_commit ();
 }
@@ -274,7 +323,6 @@ run_due_exports ()
         __func__);
       return;
     }
-
 
   g_debug ("%s: iterating over due exports", __func__);
 
