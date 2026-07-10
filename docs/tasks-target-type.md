@@ -127,12 +127,12 @@ The migration consists of multiple steps:
     commit()
     ```
 3. ```postgresql
-    ALTER TABLE tasks DROP COLUMN agent_group,
-                      DROP COLUMN agent_group_location,
-                      DROP COLUMN oci_image_target,
-                      DROP COLUMN oci_image_target_location,
-                      DROP COLUMN web_application_target,
-                      DROP COLUMN web_application_target_location
+    ALTER TABLE tasks DROP COLUMN IF EXISTS agent_group,
+                      DROP COLUMN IF EXISTS agent_group_location,
+                      DROP COLUMN IF EXISTS oci_image_target,
+                      DROP COLUMN IF EXISTS oci_image_target_location,
+                      DROP COLUMN IF EXISTS web_application_target,
+                      DROP COLUMN IF EXISTS web_application_target_location
    ```
 
 **Concerns**
