@@ -53,13 +53,13 @@ else(ENABLE_CONTAINER_SCANNING)
 endif(ENABLE_CONTAINER_SCANNING)
 
 if(ENABLE_JWT_AUTH)
-  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.2)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
 else(ENABLE_JWT_AUTH)
   message(STATUS "ENABLE_JWT_AUTH flag is not enabled")
 endif(ENABLE_JWT_AUTH)
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
-  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.2)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
   pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
   pkg_check_modules(
     LIBGVM_SECURITY_INTELLIGENCE

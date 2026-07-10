@@ -55,6 +55,7 @@ generate_access_token (integration_config_data_t config)
       config->oidc_client_secret,
       "",
       30,
+      TRUE,
       &new_err);
 
   if (!token_provider)
@@ -817,6 +818,8 @@ cleanup:
  *
  * @param[in] report Local report.
  * @param[in] config Security Intelligence integration configuration.
+ * @param[in, out] errors List of error strings. If the pointer is NULL,
+ *                        a new list is created.
  *
  * @return EXPORT_REPORT_RESULT_SUCCESS on success,
  *         EXPORT_REPORT_RESULT_TIMEOUT when a request times out,
@@ -826,13 +829,13 @@ cleanup:
  */
 export_report_result_t
 export_report_security_intelligence (report_t report,
-                                     integration_config_data_t config)
+                                     integration_config_data_t config,
+                                     GPtrArray **errors)
 {
   export_report_result_t result = EXPORT_REPORT_RESULT_FAILURE;
   security_intelligence_connector_t conn = NULL;
   security_intelligence_managed_report_t remote_report = NULL;
   security_intelligence_managed_report_page_list_t remote_pages = NULL;
-  GPtrArray *errors = NULL;
   get_data_t count_get;
   gboolean count_get_initialized = FALSE;
   gchar *report_id = NULL;
@@ -901,16 +904,18 @@ export_report_security_intelligence (report_t report,
       goto cleanup;
     }
 
-  if (config->service_cacert
-      && security_intelligence_connector_builder (
-        conn,
-        SECURITY_INTELLIGENCE_CA_CERT,
-        config->service_cacert)
-      != SECURITY_INTELLIGENCE_OK)
+  if (config->service_cacert && !str_blank (config->service_cacert))
     {
-      g_warning ("%s: Failed to configure Security Intelligence CA",
-                 __func__);
-      goto cleanup;
+      if (security_intelligence_connector_builder (
+            conn,
+            SECURITY_INTELLIGENCE_CA_CERT,
+            config->service_cacert)
+          != SECURITY_INTELLIGENCE_OK)
+        {
+          g_warning ("%s: Failed to configure Security Intelligence CA",
+                     __func__);
+          goto cleanup;
+        }
     }
 
   if (!refresh_connector_access_token (conn, config))
@@ -923,14 +928,14 @@ export_report_security_intelligence (report_t report,
     security_intelligence_get_report (
       conn,
       report_id,
-      &errors);
+      errors);
 
   if (!remote_report)
     {
-      if (errors)
+      if (errors && *errors)
         {
-          g_ptr_array_free (errors, TRUE);
-          errors = NULL;
+          g_ptr_array_free (*errors, TRUE);
+          *errors = NULL;
         }
 
       g_debug ("%s: Remote report %s not found, creating it",
@@ -941,7 +946,7 @@ export_report_security_intelligence (report_t report,
             conn,
             report_id,
             &remote_report,
-            &errors)
+            errors)
           != SECURITY_INTELLIGENCE_RESP_OK)
         {
           g_warning ("%s: Failed to create remote report %s",
@@ -975,7 +980,7 @@ export_report_security_intelligence (report_t report,
             conn,
             report_id,
             SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_STARTED,
-            &errors)
+            errors)
           != SECURITY_INTELLIGENCE_RESP_OK)
         {
           g_warning ("%s: Failed to mark report %s as started",
@@ -1030,7 +1035,7 @@ export_report_security_intelligence (report_t report,
     security_intelligence_get_report_pages (
       conn,
       report_id,
-      &errors);
+      errors);
 
   if (!remote_pages)
     {
@@ -1077,7 +1082,7 @@ export_report_security_intelligence (report_t report,
         report,
         report_id,
         page_index,
-        &errors))
+        errors))
         {
           goto cleanup;
         }
@@ -1087,7 +1092,7 @@ export_report_security_intelligence (report_t report,
         conn,
         report_id,
         SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_COMPLETED,
-        &errors)
+        errors)
       != SECURITY_INTELLIGENCE_RESP_OK)
     {
       g_warning ("%s: Failed to complete remote report %s",
@@ -1099,13 +1104,11 @@ export_report_security_intelligence (report_t report,
   result = EXPORT_REPORT_RESULT_SUCCESS;
 
 cleanup:
-  if (result != EXPORT_REPORT_RESULT_SUCCESS && errors)
+  if (result != EXPORT_REPORT_RESULT_SUCCESS && errors && *errors)
     {
-      for (guint i = 0; i < errors->len; ++i)
+      for (guint i = 0; i < (*errors)->len; ++i)
         {
-          const gchar *message;
-
-          message = g_ptr_array_index (errors, i);
+          const gchar *message = g_ptr_array_index (*errors, i);
 
           g_warning ("%s: Security Intelligence error: %s",
                      __func__,
@@ -1115,9 +1118,6 @@ cleanup:
 
   if (count_get_initialized)
     cleanup_report_export_get_data (&count_get);
-
-  if (errors)
-    g_ptr_array_free (errors, TRUE);
 
   security_intelligence_managed_report_page_list_free (remote_pages);
   security_intelligence_managed_report_free (remote_report);

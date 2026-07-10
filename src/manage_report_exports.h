@@ -41,7 +41,8 @@ typedef enum export_report_result
 #if ENABLE_SECURITY_INTELLIGENCE_EXPORT
 export_report_result_t
 export_report_security_intelligence (report_t report,
-                                     integration_config_data_t config);
+                                     integration_config_data_t config,
+                                     GPtrArray **);
 #endif
 
 gboolean
