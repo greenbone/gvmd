@@ -277,7 +277,7 @@ process_report_export (report_t report, int retry_count,
         reason = g_strdup ("The request has timed out");
       else if (result == EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED)
         reason = g_strdup ("Could not generate access_token");
-      if (errors && errors->len > 0)
+      else if (errors && errors->len > 0)
         {
           reason = errors_to_string (errors);
         }
