@@ -981,6 +981,8 @@ create_report_data_reset (create_report_data_t *data)
   free (data->result_qod);
   free (data->result_scan_nvt_version);
   free (data->result_severity);
+  free (data->host_end_host);
+  free (data->host_start_host);
 
   memset (data, 0, sizeof (create_report_data_t));
 }
