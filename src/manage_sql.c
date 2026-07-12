@@ -11556,6 +11556,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   compliance_levels_clause = where_compliance_levels (compliance_levels);
 
+  g_free (compliance_levels);
   g_free (levels);
   g_free (new_severity_sql);
 
