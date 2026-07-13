@@ -11392,6 +11392,11 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
       group_sums = g_array_new (TRUE, TRUE, sizeof (double));
 
       group_c_sums = g_array_new (TRUE, TRUE, sizeof (GTree*));
+      g_array_set_size (group_mins, data_columns->len);
+      g_array_set_size (group_maxs, data_columns->len);
+      g_array_set_size (group_mean_sums, data_columns->len);
+      g_array_set_size (group_sums, data_columns->len);
+      g_array_set_size (group_c_sums, data_columns->len);
       for (index = 0; index < data_columns->len; index++)
         g_array_index (group_c_sums, GTree*, index)
           = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
