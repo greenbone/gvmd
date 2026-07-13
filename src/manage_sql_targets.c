@@ -2101,11 +2101,13 @@ init_target_task_iterator (iterator_t* iterator, target_t target)
                  "%s"
                  " SELECT name, uuid, %s FROM tasks"
                  " WHERE target = %llu"
+                 " AND target_type = %d"
                  " AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
                  available,
-                 target);
+                 target,
+                 TASKS_TARGET_TYPE_REGULAR);
 
   g_free (with_clause);
   g_free (available);
@@ -2155,11 +2157,7 @@ target_task_iterator_readable (iterator_t* iterator)
 int
 target_in_use (target_t target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND hidden = 0;",
-                    target);
+  return task_target_in_use (target, TASKS_TARGET_TYPE_REGULAR);
 }
 
 /**
@@ -2172,10 +2170,7 @@ target_in_use (target_t target)
 int
 trash_target_in_use (target_t target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-                    target);
+  return task_trash_target_in_use (target, TASKS_TARGET_TYPE_REGULAR);
 }
 
 /**
