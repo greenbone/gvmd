@@ -20006,6 +20006,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       task_t index;
       gchar *progress_xml;
       target_t target;
+      tasks_target_type_t target_type;
       scanner_t scanner;
       const char *first_report_id, *last_report_id;
       char *config_name, *config_uuid;
@@ -20051,6 +20052,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
 
       index = get_iterator_resource (&tasks);
       target = task_target (index);
+      target_type = task_target_type (index);
 
       task_schedule_xml = get_task_schedule_xml (index);
 
@@ -20314,24 +20316,33 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           config_name = task_config_name (index);
           config_uuid = task_config_uuid (index);
           target_available = 1;
-          if (target_in_trash)
+
+          if (target_type == TASKS_TARGET_TYPE_REGULAR)
             {
-              task_target_uuid = trash_target_uuid (target);
-              task_target_name = trash_target_name (target);
-              target_available = trash_target_readable (target);
-            }
-          else if (target)
-            {
-              target_t found;
-              task_target_uuid = target_uuid (target);
-              task_target_name = target_name (target);
-              if (find_target_with_permission (task_target_uuid,
-                                                &found,
-                                                "get_targets"))
-                g_error ("%s: GET_TASKS: error finding task target,"
-                         " aborting",
-                         __func__);
-              target_available = (found > 0);
+              if (target_in_trash)
+                {
+                  task_target_uuid = trash_target_uuid (target);
+                  task_target_name = trash_target_name (target);
+                  target_available = trash_target_readable (target);
+                }
+              else if (target)
+                {
+                  target_t found;
+                  task_target_uuid = target_uuid (target);
+                  task_target_name = target_name (target);
+                  if (find_target_with_permission (task_target_uuid,
+                                                    &found,
+                                                    "get_targets"))
+                    g_error ("%s: GET_TASKS: error finding task target,"
+                             " aborting",
+                             __func__);
+                  target_available = (found > 0);
+                }
+              else
+                {
+                  task_target_uuid = NULL;
+                  task_target_name = NULL;
+                }
             }
           else
             {
@@ -20348,7 +20359,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           oci_image_target = task_oci_image_target (index);
           oci_image_target_in_trash = task_oci_image_target_in_trash (index);
 
-          if (oci_image_target || oci_image_target_in_trash)
+          if (target_type == TASKS_TARGET_TYPE_OCI_IMAGE)
             {
               oci_image_target_available = 1;
               if (oci_image_target_in_trash)
@@ -20407,10 +20418,10 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           int group_readable = 0;
           char *task_agent_group_uuid = NULL;
           char *task_agent_group_name = NULL;
-          agent_group =task_agent_group (index); /* row id or 0 */
+          agent_group = task_agent_group (index); /* row id or 0 */
           int agent_group_in_trash = task_agent_group_in_trash (index);
 
-          if (agent_group)
+          if (target_type == TASKS_TARGET_TYPE_AGENT_GROUP)
             {
               if (agent_group_in_trash)
                 {
@@ -20450,7 +20461,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           web_application_target = task_web_application_target (index);
           web_application_target_in_trash = task_web_application_target_in_trash (index);
 
-          if (web_application_target || web_application_target_in_trash)
+          if (target_type == TASKS_TARGET_TYPE_WEB_APPLICATION)
             {
               web_application_target_available = 1;
               if (web_application_target_in_trash)
