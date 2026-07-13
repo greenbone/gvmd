@@ -6008,7 +6008,7 @@ void
 set_task_target_and_location (task_t task, target_t target,
                               tasks_target_type_t target_type)
 {
-  sql_ps ("UPDATE tasks SET target = $1, target_type = $2, target_location = 0"
+  sql_ps ("UPDATE tasks SET target = $1, target_type = $2, target_location = 0,"
           " modification_time = m_now ()"
           " WHERE id = $3;",
           SQL_RESOURCE_PARAM (target),
