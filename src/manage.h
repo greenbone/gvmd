@@ -992,6 +992,7 @@ move_task (const char*, const char*);
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
+  " 'Microsoft Office Local Security Checks'"      \
   " 'openEuler Local Security Checks',"            \
   " 'openSUSE Local Security Checks',"             \
   " 'Oracle Linux Local Security Checks',"         \
@@ -1024,6 +1025,7 @@ move_task (const char*, const char*);
     "Huawei EulerOS Local Security Checks",        \
     "Mageia Linux Local Security Checks",          \
     "Mandrake Local Security Checks",              \
+    "Microsoft Office Local Security Checks",      \
     "openEuler Local Security Checks",             \
     "openSUSE Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
