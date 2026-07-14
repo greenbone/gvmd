@@ -6178,6 +6178,8 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 agent_group_t
 task_agent_group (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_AGENT_GROUP)
+    return 0;
   return task_target (task);
 }
 
@@ -6191,6 +6193,8 @@ task_agent_group (task_t task)
 int
 task_agent_group_in_trash (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_AGENT_GROUP)
+    return 0;
   return task_target_in_trash (task);
 }
 #endif /*ENABLE_AGENTS*/
@@ -6206,6 +6210,8 @@ task_agent_group_in_trash (task_t task)
 oci_image_target_t
 task_oci_image_target (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_OCI_IMAGE)
+    return 0;
   return task_target (task);
 }
 
@@ -6219,6 +6225,8 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_OCI_IMAGE)
+    return 0;
   return task_target_in_trash (task);
 }
 
@@ -6248,6 +6256,8 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 web_application_target_t
 task_web_application_target (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_WEB_APPLICATION)
+    return 0;
   return task_target (task);
 }
 
@@ -6261,6 +6271,8 @@ task_web_application_target (task_t task)
 int
 task_web_application_target_in_trash (task_t task)
 {
+  if (task_target_type (task) != TASKS_TARGET_TYPE_WEB_APPLICATION)
+    return 0;
   return task_target_in_trash (task);
 }
 
@@ -16354,19 +16366,28 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       comment = task_comment (task);
 
-      target = task_target (task);
-      // TODO: target_type?
-      if (task_target_in_trash (task))
+      if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+        target = 0;
+      else
+        target = task_target (task);
+
+      if (target && task_target_in_trash (task))
         {
           task_target_uuid = trash_target_uuid (target);
           task_target_name = trash_target_name (target);
           task_target_comment = trash_target_comment (target);
         }
-      else
+      else if (target)
         {
           task_target_uuid = target_uuid (target);
           task_target_name = target_name (target);
           task_target_comment = target_comment (target);
+        }
+      else
+        {
+          task_target_uuid = NULL;
+          task_target_name = NULL;
+          task_target_comment = NULL;
         }
 
       if ((target == 0)
@@ -16381,7 +16402,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           progress_xml = g_strdup_printf ("%i", progress);
         }
 
-      // TODO: target_type?
       PRINT (out,
              "<task id=\"%s\">"
              "<name>%s</name>"
@@ -16395,7 +16415,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
-             task_target_in_trash (task),
+             (target != 0) ? task_target_in_trash (task) : 0,
              task_target_name ? task_target_name : "",
              task_target_comment ? task_target_comment : "");
 

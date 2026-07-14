@@ -1707,7 +1707,11 @@ run_osp_task (task_t task, int from, char **report_id)
 {
   target_t target;
 
-  target = task_target (task);
+  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+    target = 0;
+  else
+    target = task_target (task);
+
   if (target)
     {
       char *uuid;
@@ -1917,7 +1921,11 @@ run_cve_task (task_t task)
 {
   target_t target;
 
-  target = task_target (task);
+  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+    target = 0;
+  else
+    target = task_target (task);
+
   if (target)
     {
       char *uuid;
@@ -7095,7 +7103,11 @@ run_openvasd_task (task_t task, int from, char **report_id)
     }
   target_t target;
 
-  target = task_target (task);
+  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+    target = 0;
+  else
+    target = task_target (task);
+
   if (target)
     {
       char *uuid;
