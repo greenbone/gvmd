@@ -2531,13 +2531,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
     ,{                                                                        \
       "(SELECT uuid FROM agent_groups"                                        \
-      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      " WHERE agent_groups.id = tasks.target"                                 \
+      " AND tasks.target_type = 2)",                                          \
       "agent_group_id",                                                       \
       KEYWORD_TYPE_STRING                                                     \
     },                                                                        \
     {                                                                         \
       "(SELECT name FROM agent_groups"                                        \
-      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      " WHERE agent_groups.id = tasks.target"                                 \
+      " AND tasks.target_type = 2)",                                          \
       "agent_group",                                                          \
       KEYWORD_TYPE_STRING                                                     \
     }
@@ -2548,35 +2550,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Query for TASK_SEV_CASE_GUARD.
  */
-/**
- * @brief Query for TASK_SEV_CASE_GUARD.
- */
-#define TASK_NO_TARGET_BASE "target IS NULL"
-
-#if ENABLE_AGENTS
-#define TASK_NO_AGENT_GROUP " AND agent_group IS NULL"
-#else
-#define TASK_NO_AGENT_GROUP ""
-#endif
-
-#if ENABLE_CONTAINER_SCANNING
-#define TASK_NO_OCI_IMAGE_TARGET " AND oci_image_target IS NULL"
-#else
-#define TASK_NO_OCI_IMAGE_TARGET ""
-#endif
-
-#if ENABLE_WEB_APPLICATION_SCANNING
-#define TASK_NO_WEB_APPLICATION_TARGET " AND web_application_target IS NULL"
-#else
-#define TASK_NO_WEB_APPLICATION_TARGET ""
-#endif
-
-#define TASK_NO_TARGET_CTX                                \
-"(" TASK_NO_TARGET_BASE                                   \
-TASK_NO_AGENT_GROUP                                       \
-TASK_NO_OCI_IMAGE_TARGET                                  \
-TASK_NO_WEB_APPLICATION_TARGET                            \
-")"
+#define TASK_NO_TARGET_CTX "(target_type = 0)"
 
 /**
  * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
@@ -2810,7 +2784,8 @@ TASK_NO_WEB_APPLICATION_TARGET                            \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT name FROM targets WHERE id = target)",                         \
+     "(SELECT name FROM targets WHERE id = target"                           \
+     " AND tasks.target_type = 1)",                                          \
      "target",                                                               \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
