@@ -11948,6 +11948,17 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   group_column = get_aggregates_data->group_column;
   subgroup_column = get_aggregates_data->subgroup_column;
 
+  if (subgroup_column && group_column == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_aggregates",
+                           "A 'group_column' attribute is required when"
+                           " 'subgroup_column' is given"));
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
   init_aggregate_lists (group_column,
                         subgroup_column,
                         get_aggregates_data->data_columns,
