@@ -5,14 +5,14 @@
 
 /**
  * @file
- * @brief GVM management layer: ZAP vulnerability test SQL.
+ * @brief GVM management layer: Web application vulnerability test SQL.
  *
- * SQL ZAP vulnerability test code for the GVM management layer.
+ * SQL Web application vulnerability test code for the GVM management layer.
  */
 
 #include "manage_utils.h"
 #include "manage_resources_types.h"
-#include "manage_sql_zap_vts.h"
+#include "manage_sql_web_application_vts.h"
 #include "sql.h"
 
 #include <gvm/util/json.h>
