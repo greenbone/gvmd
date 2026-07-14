@@ -51,7 +51,13 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
       case TASK_STATUS_REQUESTED:
         {
           int rc;
-          target_t target = task_target (task);
+          target_t target;
+
+          if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+            target = 0;
+          else
+            target = task_target (task);
+
           rc = handle_osp_scan_start (task, target, scan_id, start_from,
                                       TRUE, &discovery_scan);
           /* Set discovery flag to the report */
@@ -94,8 +100,13 @@ handle_queued_openvasd_scan (const char *scan_id, report_t report,
       case TASK_STATUS_REQUESTED:
         {
           int rc;
-          target_t target = task_target (task);
-          // TODO: target_type?
+          target_t target;
+
+          if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+            target = 0;
+          else
+            target = task_target (task);
+
           rc = handle_openvasd_scan_start (task, target, scan_id, start_from,
                                            TRUE, &discovery_scan);
           /* Set discovery flag to the report */
