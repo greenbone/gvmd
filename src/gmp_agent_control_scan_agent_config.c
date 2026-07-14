@@ -17,7 +17,7 @@
 #include <glib.h>
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "md gmp"
+#define G_LOG_DOMAIN "md    gmp"
 
 /**
  * @brief The modify_agent_control_scan_config command.
