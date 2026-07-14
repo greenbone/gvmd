@@ -21,7 +21,7 @@
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_settings.h"
-#include "manage_sql_zap_vts.h"
+#include "manage_sql_web_application_vts.h"
 #include "sql.h"
 #include "utils.h"
 

@@ -244,7 +244,7 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
-  manage_zap_vts.c
+  manage_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -318,7 +318,7 @@ set(
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
   manage_sql_report_exports.c
-  manage_sql_zap_vts.c
+  manage_sql_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
