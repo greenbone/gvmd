@@ -19213,7 +19213,9 @@ modify_task (const gchar *task_id, const gchar *name,
 
       if ((task_run_status (task) != TASK_STATUS_NEW)
           && (task_alterable (task) == 0))
-        return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
+        {
+          // leave it as is
+        }
       else if (find_oci_image_target_with_permission (oci_image_target_id,
                                                       &oci_image_target,
                                                       "get_oci_image_targets"))
