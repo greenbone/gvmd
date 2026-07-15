@@ -5537,6 +5537,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                   = g_list_append (get_aggregates_data->sort_data,
                                   sort_data);
               }
+            else
+              sort_data_free (sort_data);
 
             append_attribute (attribute_names, attribute_values, "mode",
                               &get_aggregates_data->mode);
