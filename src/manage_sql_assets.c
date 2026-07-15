@@ -3491,7 +3491,7 @@ modify_asset (const char *asset_id, const char *comment)
           " comment = $1,"
           " modification_time = m_now ()"
           " WHERE id = $2;",
-          SQL_STR_PARAM(comment),
+          SQL_STR_PARAM(comment ?: ""),
           SQL_RESOURCE_PARAM(asset),
           NULL);
 
@@ -3824,7 +3824,7 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
   if (auth_ret == 1)
     {
       sql_rollback ();
-      return 2;
+      return 99;
     }
 
   switch (asset_type)
