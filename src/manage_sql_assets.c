@@ -2272,19 +2272,20 @@ manage_asset_snapshot_delete_stale (int days)
 static gboolean
 asset_type_for_report (report_t report, asset_type_t *asset_type)
 {
-  int type;
+  long long int type;
 
   if (!report || !asset_type)
     return FALSE;
 
-  type = sql_int_ps (
-    "SELECT asset_type"
-    " FROM asset_snapshots"
-    " WHERE report_id = $1"
-    " ORDER BY id"
-    " LIMIT 1;",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
+  if (sql_int64_ps (&type,
+                    "SELECT asset_type"
+                    " FROM asset_snapshots"
+                    " WHERE report_id = $1"
+                    " ORDER BY id"
+                    " LIMIT 1;",
+                    SQL_RESOURCE_PARAM (report),
+                    NULL))
+    return FALSE;
 
   if (type != ASSET_TYPE_TARGET
       && type != ASSET_TYPE_AGENT
