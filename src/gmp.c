@@ -21930,14 +21930,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_asset",
-                                    "Attempt to delete a predefined asset"));
-                log_event_fail ("asset", "Asset",
-                                delete_asset_data->asset_id,
-                                "deleted");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_asset",
                                     "An asset_id or a"
                                     "report_id is required"));
                 log_event_fail ("asset", "Asset",
