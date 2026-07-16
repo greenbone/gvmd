@@ -12,6 +12,12 @@
 
 #include <libical/ical.h>
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Create a schedule.
  *
