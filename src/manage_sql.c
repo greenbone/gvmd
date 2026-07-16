@@ -119,6 +119,7 @@
 #include "manage_report_configs.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
+#include "manage_sql_report.h"
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
@@ -227,11 +228,6 @@ task_owner_uuid (task_t);
 
 static int
 user_ensure_in_db (const gchar *, const gchar *);
-
-static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
-                       double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_trash_task (const char*, task_t*);
@@ -13330,22 +13326,6 @@ set_task_end_time_epoch (task_t task, time_t time)
 }
 
 /**
- * @brief Get the start time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return Start time of scan, in a newly allocated string.
- */
-static char*
-scan_start_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (start_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
-}
-
-/**
  * @brief Get the start time of a scan, in seconds since the epoch.
  *
  * @param[in]  report  The report associated with the scan.
@@ -13402,22 +13382,6 @@ set_scan_start_time_ctime (report_t report, const char* timestamp)
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
        parse_utc_ctime (timestamp),
        report);
-}
-
-/**
- * @brief Get the end time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return End time of scan, in a newly allocated string.
- */
-static char*
-scan_end_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (end_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
 }
 
 /**
@@ -13622,23 +13586,6 @@ report_end_time (report_t report)
                      " FROM reports"
                      " WHERE id = %llu",
                      report);
-}
-
-/**
- * @brief Return the run status of the scan associated with a report.
- *
- * @param[in]   report  Report.
- * @param[out]  status  Scan run status.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-report_scan_run_status (report_t report, task_status_t* status)
-{
-  *status = sql_int ("SELECT scan_run_status FROM reports"
-                     " WHERE reports.id = %llu;",
-                     report);
-  return 0;
 }
 
 /**
@@ -13992,7 +13939,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_counts_id_full (report_t report,
                        int* criticals,
                        int* holes,
@@ -15035,22 +14982,6 @@ report_host_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
-                  report);
-}
-
-/**
- * @brief Count a report's total number of vulnerabilities.
- *
- * @param[in]  report  Report.
- *
- * @return Vulnerabilities count.
- */
-static int
-report_vuln_count (report_t report)
-{
-  return sql_int ("SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu"
-                  " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
 }
 
