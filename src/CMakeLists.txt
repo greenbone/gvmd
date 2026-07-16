@@ -212,6 +212,7 @@ set(
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
+  manage_report.c
   manage_report_applications.c
   manage_report_closed_cves.c
   manage_report_configs.c
@@ -290,6 +291,7 @@ set(
   manage_sql_permissions_cache.c
   manage_sql_port_lists.c
   manage_sql_configs.c
+  manage_sql_report.c
   manage_sql_report_applications.c
   manage_sql_report_closed_cves.c
   manage_sql_report_configs.c
