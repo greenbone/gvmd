@@ -19201,11 +19201,13 @@ modify_task (const gchar *task_id, const gchar *name,
     {
       oci_image_target_t oci_image_target = 0;
 
-      if ((task_run_status (task) != TASK_STATUS_NEW)
-          && (task_alterable (task) == 0))
+      if (strcmp (oci_image_target_id, "0") == 0)
         {
-          // leave it as is
+          /* Leave it as is. */
         }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
+          && (task_alterable (task) == 0))
+        return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_oci_image_target_with_permission (oci_image_target_id,
                                                       &oci_image_target,
                                                       "get_oci_image_targets"))
