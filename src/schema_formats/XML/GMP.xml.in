@@ -20076,6 +20076,782 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_report</name>
+    <summary>Get a structured vulnerability report</summary>
+    <description>
+      <p>
+        The client uses the get_report command to retrieve a single structured
+        vulnerability report.
+      </p>
+      <p>
+        The response includes report metadata, task and target information, scan
+        status, scan times, resource counts, result counts, severity information
+        and task progress.
+      </p>
+      <p>
+        Result filters affect the filtered result counts and filtered severity
+        returned by the command. Full result counts remain unchanged.
+      </p>
+      <p>
+        Audit and compliance reports are not supported by this command and must
+        be retrieved using a separate command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the report to retrieve</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply to the report result summary</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first result, starting at 1
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Maximum number of results</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Result column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Result column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>text</type>
+            <summary>
+              Severity levels included in the filtered result summary
+            </summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum quality of detection</summary>
+          </option>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether result overrides are applied</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether only hosts containing matching results are considered
+            </summary>
+          </option>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of a saved filter to apply</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+
+        <o><e>report</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>reports</e></o>
+        <o><e>report_count</e></o>
+      </pattern>
+      <ele>
+        <name>report</name>
+        <summary>Structured vulnerability report</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the report</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>scan_run_status</e>
+          <e>hosts</e>
+          <e>closed_cves</e>
+          <e>cves</e>
+          <e>vulns</e>
+          <e>os</e>
+          <e>apps</e>
+          <e>ssl_certs</e>
+          <e>ports</e>
+          <e>errors</e>
+          <e>task</e>
+          <e>timestamp</e>
+          <e>scan_start</e>
+          <e>timezone</e>
+          <e>timezone_abbrev</e>
+          <e>result_count</e>
+          <e>severity</e>
+          <e>scan_end</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the report owner</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last modification time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report is writable by the current user</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the report is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>scan_run_status</name>
+          <summary>Run status of the scan associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>Host count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of hosts in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>closed_cves</name>
+          <summary>Closed CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of closed CVEs in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>cves</name>
+          <summary>CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of CVEs in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>vulns</name>
+          <summary>Vulnerability count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of vulnerabilities in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>os</name>
+          <summary>Operating system count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of operating systems in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>apps</name>
+          <summary>Application count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of applications in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ssl_certs</name>
+          <summary>TLS certificate count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of TLS certificates in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ports</name>
+          <summary>Port count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of ports in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>errors</name>
+          <summary>Scan error count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of scan errors in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Task associated with the report</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>UUID of the task</summary>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+            <e>comment</e>
+            <o><e>target</e></o>
+            <e>progress</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>comment</name>
+            <summary>Comment associated with the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>target</name>
+            <summary>Target associated with the task</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>UUID of the target</summary>
+                <type>uuid</type>
+              </attrib>
+
+              <e>trash</e>
+              <e>name</e>
+              <e>comment</e>
+            </pattern>
+            <ele>
+              <name>trash</name>
+              <summary>Whether the target is in the trash</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment associated with the target</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>progress</name>
+            <summary>Progress of the task associated with the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>timestamp</name>
+          <summary>Timestamp identifying the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>scan_start</name>
+          <summary>Start time of the scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>timezone</name>
+          <summary>Timezone used for report timestamps</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>timezone_abbrev</name>
+          <summary>Abbreviation of the report timezone</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary>Full and filtered result counts by severity</summary>
+          <pattern>
+            text
+            <e>full</e>
+            <e>filtered</e>
+            <e>critical</e>
+            <e>hole</e>
+            <e>high</e>
+            <e>info</e>
+            <e>low</e>
+            <e>log</e>
+            <e>warning</e>
+            <e>medium</e>
+            <e>false_positive</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of unfiltered results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Total number of filtered results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>critical</name>
+            <summary>Critical result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>hole</name>
+            <summary>Deprecated alias for high result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>high</name>
+            <summary>High result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>info</name>
+            <summary>Deprecated alias for low result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>low</name>
+            <summary>Low result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>log</name>
+            <summary>Log result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <summary>Deprecated alias for medium result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>medium</name>
+            <summary>Medium result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>false_positive</name>
+            <summary>False-positive result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>Full and filtered report severity</summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Severity without result filtering</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Severity after applying the result filter</summary>
+            <pattern>real</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>scan_end</name>
+          <summary>End time of the scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the filter, or empty if no saved filter was used</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Resolved filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern>
+            <any><e>keyword</e></any>
+          </pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Filter column</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Filter relation</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>reports</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First returned report</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of reports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of matching reports</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of additional reports on the current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get a structured vulnerability report</summary>
+      <request>
+        <get_report
+          report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
+          filter="apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1">
+        </get_report>
+      </request>
+      <response>
+        <get_report_response status="200" status_text="OK">
+          <report id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0">
+            <owner>
+              <name>moezgen</name>
+            </owner>
+            <name>2026-06-15T11:24:38Z</name>
+            <comment></comment>
+            <creation_time>2026-06-15T11:24:38Z</creation_time>
+            <modification_time>2026-06-15T12:30:23Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <scan_run_status>Done</scan_run_status>
+            <hosts>
+              <count>1</count>
+            </hosts>
+            <closed_cves>
+              <count>0</count>
+            </closed_cves>
+            <cves>
+              <count>3</count>
+            </cves>
+            <vulns>
+              <count>32</count>
+            </vulns>
+            <os>
+              <count>1</count>
+            </os>
+            <apps>
+              <count>4</count>
+            </apps>
+            <ssl_certs>
+              <count>1</count>
+            </ssl_certs>
+            <ports>
+              <count>6</count>
+            </ports>
+            <errors>
+              <count>0</count>
+            </errors>
+            <task id="7cda9ee9-63d5-4802-9a31-5dacc8f19b5b">
+              <name>test-full-fast</name>
+              <comment></comment>
+              <target id="4809d998-2d2d-4a65-9148-f99f04799b09">
+                <trash>0</trash>
+                <name>samsung-tv</name>
+                <comment></comment>
+              </target>
+              <progress>100</progress>
+            </task>
+            <timestamp>2026-06-15T11:24:38Z</timestamp>
+            <scan_start>2026-06-15T11:24:41Z</scan_start>
+            <timezone>UTC</timezone>
+            <timezone_abbrev>UTC</timezone_abbrev>
+            <result_count>56
+              <full>56</full>
+              <filtered>3</filtered>
+              <critical>
+                <full>0</full>
+                <filtered>0</filtered>
+              </critical>
+              <hole deprecated="1">
+                <full>0</full>
+                <filtered>0</filtered>
+              </hole>
+              <high>
+                <full>0</full>
+                <filtered>0</filtered>
+              </high>
+              <info deprecated="1">
+                <full>2</full>
+                <filtered>2</filtered>
+              </info>
+              <low>
+                <full>2</full>
+                <filtered>2</filtered>
+              </low>
+              <log>
+                <full>53</full>
+                <filtered>0</filtered>
+              </log>
+              <warning deprecated="1">
+                <full>1</full>
+                <filtered>1</filtered>
+              </warning>
+              <medium>
+                <full>1</full>
+                <filtered>1</filtered>
+              </medium>
+              <false_positive>
+                <full>0</full>
+                <filtered>0</filtered>
+              </false_positive>
+            </result_count>
+            <severity>
+              <full>5.0</full>
+              <filtered>5.0</filtered>
+            </severity>
+            <scan_end>2026-06-15T12:30:23Z</scan_end>
+          </report>
+          <filters id="">
+            <term>
+              apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1
+            </term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <reports start="1" max="1"/>
+          <report_count>
+            1
+            <filtered>1</filtered>
+            <page>0</page>
+          </report_count>
+        </get_report_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_report_applications</name>
     <summary>Get applications from a report</summary>
     <description>
