@@ -343,6 +343,7 @@ set(
   gmp_logout.c
   gmp_oci_image_targets.c
   gmp_port_lists.c
+  gmp_report.c
   gmp_report_applications.c
   gmp_report_closed_cves.c
   gmp_report_configs.c

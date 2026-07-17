@@ -90,6 +90,7 @@
 #include "gmp_logout.h"
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
+#include "gmp_report.h"
 #include "gmp_report_applications.h"
 #include "gmp_report_closed_cves.h"
 #include "gmp_report_configs.h"
@@ -4623,6 +4624,7 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_REPORT,
   CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CLOSED_CVES,
   CLIENT_GET_REPORT_CONFIGS,
@@ -5950,6 +5952,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
             set_client_state (CLIENT_GET_REPORTS);
           }
+
+        ELSE_GET_START (report, REPORT)
 
         ELSE_GET_START (report_applications, REPORT_APPLICATIONS)
 
@@ -22496,6 +22500,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_REPORTS:
         handle_get_reports (gmp_parser, error);
         break;
+
+      CASE_GET_END (REPORT, report);
 
       CASE_GET_END (REPORT_APPLICATIONS, report_applications);
 
