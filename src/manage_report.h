@@ -18,8 +18,8 @@
  */
 typedef struct
 {
-    int full;
-    int filtered;
+ int full;
+ int filtered;
 } report_count_t;
 
 /**
@@ -27,8 +27,8 @@ typedef struct
  */
 typedef struct
 {
-    double full;
-    double filtered;
+ double full;
+ double filtered;
 } report_severity_t;
 
 /**
@@ -42,15 +42,15 @@ typedef struct
  */
 typedef struct
 {
-    report_count_t total;
-    report_count_t critical;
-    report_count_t high;
-    report_count_t medium;
-    report_count_t low;
-    report_count_t log;
-    report_count_t false_positive;
+ report_count_t total;
+ report_count_t critical;
+ report_count_t high;
+ report_count_t medium;
+ report_count_t low;
+ report_count_t log;
+ report_count_t false_positive;
 
-    report_severity_t severity;
+ report_severity_t severity;
 } report_result_summary_t;
 
 /**
@@ -58,15 +58,15 @@ typedef struct
  */
 struct report_resource_summary
 {
-    int hosts;
-    int ports;
-    int applications;
-    int operating_systems;
-    int vulnerabilities;
-    int cves;
-    int closed_cves;
-    int tls_certificates;
-    int errors;
+ int hosts;
+ int ports;
+ int applications;
+ int operating_systems;
+ int vulnerabilities;
+ int cves;
+ int closed_cves;
+ int tls_certificates;
+ int errors;
 };
 
 typedef struct report_resource_summary* report_resource_summary_t;
@@ -76,27 +76,27 @@ typedef struct report_resource_summary* report_resource_summary_t;
  */
 typedef enum
 {
-    REPORT_TARGET_TYPE_NONE = 0,
-    REPORT_TARGET_TYPE_TARGET,
-    REPORT_TARGET_TYPE_OCI_IMAGE,
-    REPORT_TARGET_TYPE_WEB_APPLICATION,
-    REPORT_TARGET_TYPE_AGENT_GROUP,
-    REPORT_TARGET_TYPE_IMPORT
-  } report_target_type_t;
+ REPORT_TARGET_TYPE_NONE = 0,
+ REPORT_TARGET_TYPE_TARGET,
+ REPORT_TARGET_TYPE_OCI_IMAGE,
+ REPORT_TARGET_TYPE_WEB_APPLICATION,
+ REPORT_TARGET_TYPE_AGENT_GROUP,
+ REPORT_TARGET_TYPE_IMPORT
+} report_target_type_t;
 
 /**
  * @brief Reference to the resource scanned by a report task.
  */
 struct report_target_reference
 {
-    report_target_type_t type;
+ report_target_type_t type;
 
-    resource_t id;
-    gchar* uuid;
-    gchar* name;
-    gchar* comment;
+ resource_t id;
+ gchar* uuid;
+ gchar* name;
+ gchar* comment;
 
-    int in_trash;
+ int in_trash;
 };
 
 typedef struct report_target_reference* report_target_reference_t;
@@ -106,13 +106,14 @@ typedef struct report_target_reference* report_target_reference_t;
  */
 struct report_task_reference
 {
-    task_t id;
-    gchar* uuid;
-    gchar* name;
-    gchar* comment;
-    gchar* usage_type;
+ task_t id;
+ gchar* uuid;
+ gchar* name;
+ gchar* comment;
+ gchar* usage_type;
+ int progress;
 
-    report_target_reference_t target;
+ report_target_reference_t target;
 };
 
 typedef struct report_task_reference* report_task_reference_t;
@@ -131,30 +132,30 @@ typedef struct report_task_reference* report_task_reference_t;
  */
 struct report_model
 {
-    report_t report;
-    user_t owner;
+ report_t report;
+ user_t owner;
 
-    gchar* id;
-    gchar* name;
-    gchar* comment;
-    gchar* owner_name;
+ gchar* id;
+ gchar* name;
+ gchar* comment;
+ gchar* owner_name;
 
-    time_t creation_time;
-    time_t modification_time;
+ time_t creation_time;
+ time_t modification_time;
 
-    gchar *timestamp;
-    gchar *scan_start;
-    gchar *scan_end;
-    task_status_t scan_run_status;
-    gchar* scan_run_status_str;
+ gchar* timestamp;
+ gchar* scan_start;
+ gchar* scan_end;
+ task_status_t scan_run_status;
+ gchar* scan_run_status_str;
 
-    gchar* timezone;
-    gchar* timezone_abbrev;
+ gchar* timezone;
+ gchar* timezone_abbrev;
 
-    report_task_reference_t task;
+ report_task_reference_t task;
 
-    report_resource_summary_t resources;
-    report_result_summary_t results;
+ report_resource_summary_t resources;
+ report_result_summary_t results;
 };
 
 typedef struct report_model* report_model_t;

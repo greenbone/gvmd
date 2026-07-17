@@ -213,15 +213,46 @@ cleanup:
 }
 
 /**
- * @brief Fill task information associated with a report.
+ * @brief Calculate report task progress.
  *
- * The task accessors return allocated strings. Ownership of successfully
- * loaded strings is transferred to @p model.
+ * Agent tasks are always reported as complete. Running upload tasks without
+ * a network target use their upload progress. All other tasks use the report
+ * progress.
+ *
+ * @param[in] report  Report resource.
+ * @param[in] task    Task associated with the report.
+ *
+ * @return Report progress percentage.
+ */
+static int
+get_report_task_progress (report_t report, task_t task)
+{
+  target_t target;
+
+  if (report == 0 || task == 0)
+    return 0;
+
+#if ENABLE_AGENTS
+  if (task_agent_group (task) != 0)
+    return 100;
+#endif
+
+  target = task_target (task);
+
+  if (target == 0
+      && task_run_status (task) == TASK_STATUS_RUNNING)
+    return task_upload_progress (task);
+
+  return report_progress (report);
+}
+
+/**
+ * @brief Fill task information associated with a report.
  *
  * @param[in]     report  Report to load.
  * @param[in,out] model   Report model to fill.
  *
- * @return 0 on success, -1 on error.
+ * @return 0 on success, or -1 on error.
  */
 static int
 fill_report_task (report_t report, report_model_t model)
@@ -231,6 +262,7 @@ fill_report_task (report_t report, report_model_t model)
   gchar *name = NULL;
   gchar *comment = NULL;
   gchar *usage_type = NULL;
+  int progress = 0;
   int ret = -1;
 
   if (report == 0
@@ -259,21 +291,19 @@ fill_report_task (report_t report, report_model_t model)
   if (task_usage_type (task, &usage_type))
     goto cleanup;
 
-  /*
-   * Commit only after the complete task reference has been loaded.
-   * The model takes ownership of all four strings.
-   */
+  progress = get_report_task_progress (report, task);
+
   g_free (model->task->uuid);
   g_free (model->task->name);
   g_free (model->task->comment);
   g_free (model->task->usage_type);
 
   model->task->id = task;
-
   model->task->uuid = uuid;
   model->task->name = name;
   model->task->comment = comment;
   model->task->usage_type = usage_type;
+  model->task->progress = progress;
 
   uuid = NULL;
   name = NULL;
