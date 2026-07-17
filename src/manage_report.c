@@ -5,7 +5,7 @@
 
 /**
  * @file
- * @brief GVM management layer: Report model and operations.
+ * @brief GVM management layer: Report summary and operations.
  */
 
 #include "manage_report.h"
@@ -143,62 +143,62 @@ report_task_reference_free (report_task_reference_t task)
 }
 
 /**
- * @brief Allocate and initialize a report model.
+ * @brief Allocate and initialize a report summary.
  *
- * @return Newly allocated report model, or NULL on allocation failure.
+ * @return Newly allocated report summary, or NULL on allocation failure.
  */
-report_model_t
-report_model_new (void)
+report_summary_t
+report_summary_new (void)
 {
-  report_model_t model;
+  report_summary_t summary;
 
-  model = g_malloc0 (sizeof (struct report_model));
+  summary = g_malloc0 (sizeof (struct report_summary));
 
-  model->task = report_task_reference_new ();
-  if (model->task == NULL)
+  summary->task = report_task_reference_new ();
+  if (summary->task == NULL)
     {
-      g_free (model);
+      g_free (summary);
       return NULL;
     }
 
-  model->resources = report_resource_summary_new ();
-  if (model->resources == NULL)
+  summary->resources = report_resource_summary_new ();
+  if (summary->resources == NULL)
     {
-      report_task_reference_free (model->task);
-      g_free (model);
+      report_task_reference_free (summary->task);
+      g_free (summary);
       return NULL;
     }
 
-  return model;
+  return summary;
 }
 
 /**
- * @brief Free a report model.
+ * @brief Free a report summary.
  *
- * @param[in] model  Report model to free.
+ * @param[in] summary  Report summary to free.
  */
 void
-report_model_free (report_model_t model)
+report_summary_free (report_summary_t summary)
 {
-  if (model == NULL)
+  if (summary == NULL)
     return;
 
-  g_free (model->id);
-  g_free (model->name);
-  g_free (model->comment);
-  g_free (model->owner_name);
-  g_free (model->timestamp);
-  g_free (model->scan_start);
-  g_free (model->scan_end);
+  g_free (summary->id);
+  g_free (summary->name);
+  g_free (summary->comment);
+  g_free (summary->owner_name);
+  g_free (summary->timestamp);
+  g_free (summary->scan_start);
+  g_free (summary->scan_end);
 
-  g_free (model->scan_run_status_str);
-  g_free (model->timezone);
-  g_free (model->timezone_abbrev);
+  g_free (summary->scan_run_status_str);
+  g_free (summary->timezone);
+  g_free (summary->timezone_abbrev);
 
-  report_task_reference_free (model->task);
-  report_resource_summary_free (model->resources);
+  report_task_reference_free (summary->task);
+  report_resource_summary_free (summary->resources);
 
-  g_free (model);
+  g_free (summary);
 }
 
 /**
@@ -251,7 +251,7 @@ validate_get_report_usage_type (report_t report)
  * @brief Validate and resolve controls needed by GET_REPORT.
  *
  * @param[in]  get       GET command data.
- * @param[out] controls  Resolved controls required by the report model.
+ * @param[out] controls  Resolved controls required by the report summary.
  *
  * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
  */
@@ -313,30 +313,30 @@ resolve_get_report_controls (const get_data_t *get,
 }
 
 /**
- * @brief Load a structured vulnerability report model.
+ * @brief Load a structured vulnerability report summary.
  *
  * @param[in]  report_id  UUID of the report.
  * @param[in]  get        GET command data.
- * @param[out] model      Loaded report model.
+ * @param[out] summary      Loaded report summary.
  *
  * @return Status describing the result of the operation.
  */
 manage_get_report_response_t
-manage_get_report_model (const gchar *report_id,
+manage_get_report_summary (const gchar *report_id,
                          const get_data_t *get,
-                         report_model_t *model)
+                         report_summary_t *summary)
 {
   get_report_controls_t controls = {0};
-  report_model_t loaded_model = NULL;
+  report_summary_t loaded_model = NULL;
   report_t report = 0;
   int ret;
 
   if (report_id == NULL
       || get == NULL
-      || model == NULL)
+      || summary == NULL)
     return MANAGE_GET_REPORT_ERROR;
 
-  *model = NULL;
+  *summary = NULL;
 
   ret = find_report_with_permission (report_id,
                                     &report,
@@ -367,14 +367,14 @@ manage_get_report_model (const gchar *report_id,
       return MANAGE_GET_REPORT_ERROR;
     }
 
-  loaded_model = report_model_new ();
+  loaded_model = report_summary_new ();
   if (loaded_model == NULL)
     {
       get_report_controls_cleanup (&controls);
       return MANAGE_GET_REPORT_ERROR;
     }
 
-  ret = manage_sql_fill_report_model (report,
+  ret = manage_sql_fill_report_summary (report,
                                       get,
                                       controls.zone,
                                       loaded_model);
@@ -383,11 +383,11 @@ manage_get_report_model (const gchar *report_id,
 
   if (ret)
     {
-      report_model_free (loaded_model);
+      report_summary_free (loaded_model);
       return MANAGE_GET_REPORT_ERROR;
     }
 
-  *model = loaded_model;
+  *summary = loaded_model;
 
   return MANAGE_GET_REPORT_SUCCESS;
 }

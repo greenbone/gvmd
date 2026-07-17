@@ -5,9 +5,9 @@
 
 /**
  * @file
- * @brief GVM SQL layer: Structured report model loading.
+ * @brief GVM SQL layer: Structured report summary loading.
  *
- * SQL-backed functions for filling a structured normal report model.
+ * SQL-backed functions for filling a structured normal report summary.
  *
  * This module intentionally excludes:
  *
@@ -38,35 +38,29 @@
 /**
  * @brief Fill basic report metadata.
  *
- * Strings returned by the iterator are borrowed and valid only until
- * cleanup_iterator() is called. This function duplicates those strings and
- * transfers ownership of the copies to @p model.
- *
  * @param[in]     report  Report to load.
- * @param[in,out] model   Report model to fill.
+ * @param[in,out] summary   Report summary to fill.
  *
  * @return 0 on success, -1 on error.
  */
 static int
-fill_report_metadata (report_t report, report_model_t model)
+fill_report_metadata (report_t report, report_summary_t summary)
 {
   iterator_t iterator;
   gchar *id = NULL;
-  gchar *name = NULL;
   gchar *comment = NULL;
   gchar *owner_name = NULL;
   user_t owner;
   time_t creation_time;
   time_t modification_time;
 
-  if (report == 0 || model == NULL)
+  if (report == 0 || summary == NULL)
     return -1;
 
   init_ps_iterator (
     &iterator,
     "SELECT"
     " reports.uuid,"
-    " coalesce(reports.name, ''),"
     " coalesce(reports.comment, ''),"
     " reports.owner,"
     " coalesce("
@@ -75,14 +69,8 @@ fill_report_metadata (report_t report, report_model_t model)
     "     WHERE users.id = reports.owner),"
     "   ''"
     " ),"
-    " coalesce("
-    "   extract(epoch FROM reports.creation_time)::bigint,"
-    "   0"
-    " ),"
-    " coalesce("
-    "   extract(epoch FROM reports.modification_time)::bigint,"
-    "   0"
-    " )"
+    " coalesce(reports.creation_time, 0),"
+    " coalesce(reports.modification_time, 0)"
     " FROM reports"
     " WHERE reports.id = $1;",
     SQL_RESOURCE_PARAM (report),
@@ -94,38 +82,34 @@ fill_report_metadata (report_t report, report_model_t model)
       return -1;
     }
 
-  /*
-   * Duplicate borrowed iterator values before cleaning up the iterator.
-   */
   id = g_strdup (iterator_string (&iterator, 0));
-  name = g_strdup (iterator_string (&iterator, 1));
-  comment = g_strdup (iterator_string (&iterator, 2));
-  owner_name = g_strdup (iterator_string (&iterator, 4));
+  comment = g_strdup (iterator_string (&iterator, 1));
+  owner_name = g_strdup (iterator_string (&iterator, 3));
 
-  owner = (user_t) iterator_int64 (&iterator, 3);
-  creation_time = (time_t) iterator_int64 (&iterator, 5);
-  modification_time = (time_t) iterator_int64 (&iterator, 6);
+  owner = (user_t) iterator_int64 (&iterator, 2);
+  creation_time = (time_t) iterator_int64 (&iterator, 4);
+  modification_time = (time_t) iterator_int64 (&iterator, 5);
 
   cleanup_iterator (&iterator);
 
   /*
    * Commit the loaded values. The model takes ownership of the strings.
    */
-  g_free (model->id);
-  g_free (model->name);
-  g_free (model->comment);
-  g_free (model->owner_name);
+  g_free (summary->id);
+  g_free (summary->name);
+  g_free (summary->comment);
+  g_free (summary->owner_name);
 
-  model->report = report;
-  model->owner = owner;
+  summary->report = report;
+  summary->owner = owner;
 
-  model->id = id;
-  model->name = name;
-  model->comment = comment;
-  model->owner_name = owner_name;
+  summary->id = id;
+  summary->name = g_strdup (iso_if_time (creation_time));
+  summary->comment = comment;
+  summary->owner_name = owner_name;
 
-  model->creation_time = creation_time;
-  model->modification_time = modification_time;
+  summary->creation_time = creation_time;
+  summary->modification_time = modification_time;
 
   return 0;
 }
@@ -133,16 +117,13 @@ fill_report_metadata (report_t report, report_model_t model)
 /**
  * @brief Fill scan timing and run-status information.
  *
- * The model takes ownership of the timestamp, scan start, scan end and
- * run-status strings after all values have been loaded successfully.
- *
  * @param[in]     report  Report to load.
- * @param[in,out] model   Report model to fill.
+ * @param[in,out] summary   Report summary to fill.
  *
  * @return 0 on success, -1 on error.
  */
 static int
-fill_report_scan_information (report_t report, report_model_t model)
+fill_report_scan_information (report_t report, report_summary_t summary)
 {
   task_status_t run_status = TASK_STATUS_INTERRUPTED;
   gchar *report_uuid_value = NULL;
@@ -152,7 +133,7 @@ fill_report_scan_information (report_t report, report_model_t model)
   gchar *run_status_string = NULL;
   int ret = -1;
 
-  if (report == 0 || model == NULL)
+  if (report == 0 || summary == NULL)
     return -1;
 
   if (report_scan_run_status (report, &run_status))
@@ -181,23 +162,23 @@ fill_report_scan_information (report_t report, report_model_t model)
    * Commit only after all values have been loaded successfully.
    * The model takes ownership of all allocated strings.
    */
-  g_free (model->scan_run_status_str);
-  g_free (model->scan_start);
-  g_free (model->scan_end);
-  g_free (model->timestamp);
+  g_free (summary->scan_run_status_str);
+  g_free (summary->scan_start);
+  g_free (summary->scan_end);
+  g_free (summary->timestamp);
 
-  model->scan_run_status = run_status;
+  summary->scan_run_status = run_status;
 
-  model->scan_run_status_str = run_status_string;
+  summary->scan_run_status_str = run_status_string;
   run_status_string = NULL;
 
-  model->scan_start = scan_start_value;
+  summary->scan_start = scan_start_value;
   scan_start_value = NULL;
 
-  model->scan_end = scan_end_value;
+  summary->scan_end = scan_end_value;
   scan_end_value = NULL;
 
-  model->timestamp = timestamp_value;
+  summary->timestamp = timestamp_value;
   timestamp_value = NULL;
 
   ret = 0;
@@ -250,12 +231,12 @@ get_report_task_progress (report_t report, task_t task)
  * @brief Fill task information associated with a report.
  *
  * @param[in]     report  Report to load.
- * @param[in,out] model   Report model to fill.
+ * @param[in,out] summary   Report summary to fill.
  *
  * @return 0 on success, or -1 on error.
  */
 static int
-fill_report_task (report_t report, report_model_t model)
+fill_report_task (report_t report, report_summary_t summary)
 {
   task_t task = 0;
   gchar *uuid = NULL;
@@ -266,8 +247,8 @@ fill_report_task (report_t report, report_model_t model)
   int ret = -1;
 
   if (report == 0
-      || model == NULL
-      || model->task == NULL)
+      || summary == NULL
+      || summary->task == NULL)
     return -1;
 
   if (report_task (report, &task))
@@ -293,17 +274,17 @@ fill_report_task (report_t report, report_model_t model)
 
   progress = get_report_task_progress (report, task);
 
-  g_free (model->task->uuid);
-  g_free (model->task->name);
-  g_free (model->task->comment);
-  g_free (model->task->usage_type);
+  g_free (summary->task->uuid);
+  g_free (summary->task->name);
+  g_free (summary->task->comment);
+  g_free (summary->task->usage_type);
 
-  model->task->id = task;
-  model->task->uuid = uuid;
-  model->task->name = name;
-  model->task->comment = comment;
-  model->task->usage_type = usage_type;
-  model->task->progress = progress;
+  summary->task->id = task;
+  summary->task->uuid = uuid;
+  summary->task->name = name;
+  summary->task->comment = comment;
+  summary->task->usage_type = usage_type;
+  summary->task->progress = progress;
 
   uuid = NULL;
   name = NULL;
@@ -615,22 +596,22 @@ fill_agent_group_report_target_reference (
  * resource is represented as an import task.
  *
  * @param[in]     task   Task to inspect.
- * @param[in,out] model  Report model to fill.
+ * @param[in,out] summary  Report summary to fill.
  *
  * @return 0 on success, or -1 on error.
  */
 static int
-fill_report_target (task_t task, report_model_t model)
+fill_report_target (task_t task, report_summary_t summary)
 {
   report_target_reference_t target_reference;
   int ret;
 
-  if (model == NULL
-      || model->task == NULL
-      || model->task->target == NULL)
+  if (summary == NULL
+      || summary->task == NULL
+      || summary->task->target == NULL)
     return -1;
 
-  target_reference = model->task->target;
+  target_reference = summary->task->target;
 
   if (task == 0)
     return 0;
@@ -681,24 +662,24 @@ fill_report_target (task_t task, report_model_t model)
  *
  * @param[in]     report  Report to inspect.
  * @param[in]     get     Result filter information.
- * @param[in,out] model   Report model to fill.
+ * @param[in,out] summary   Report summary to fill.
  *
  * @return 0 on success, -1 on invalid input.
  */
 static int
 fill_report_resource_summary (report_t report,
                               const get_data_t *get,
-                              report_model_t model)
+                              report_summary_t summary)
 {
   report_resource_summary_t resources;
 
   if (report == 0
       || get == NULL
-      || model == NULL
-      || model->resources == NULL)
+      || summary == NULL
+      || summary->resources == NULL)
     return -1;
 
-  resources = model->resources;
+  resources = summary->resources;
 
   resources->hosts = report_host_count (report);
   resources->ports = report_port_count (report);
@@ -724,14 +705,14 @@ fill_report_resource_summary (report_t report,
  *
  * @param[in]     report  Report to inspect.
  * @param[in]     get     Result filtering information.
- * @param[in,out] model   Report model to fill.
+ * @param[in,out] summary   Report summary to fill.
  *
  * @return 0 on success, -1 on invalid input.
  */
 static int
 fill_report_result_summary (report_t report,
                             const get_data_t *get,
-                            report_model_t model)
+                            report_summary_t summary)
 {
   int criticals;
   int holes;
@@ -750,7 +731,7 @@ fill_report_result_summary (report_t report,
   double full_severity;
   double filtered_severity;
 
-  if (report == 0 || get == NULL || model == NULL)
+  if (report == 0 || get == NULL || summary == NULL)
     return -1;
 
   criticals = 0;
@@ -793,25 +774,25 @@ fill_report_result_summary (report_t report,
     &filtered_false_positives,
     &filtered_severity);
 
-  model->results.critical.full = criticals;
-  model->results.critical.filtered = filtered_criticals;
+  summary->results.critical.full = criticals;
+  summary->results.critical.filtered = filtered_criticals;
 
-  model->results.high.full = holes;
-  model->results.high.filtered = filtered_holes;
+  summary->results.high.full = holes;
+  summary->results.high.filtered = filtered_holes;
 
-  model->results.medium.full = warnings;
-  model->results.medium.filtered = filtered_warnings;
+  summary->results.medium.full = warnings;
+  summary->results.medium.filtered = filtered_warnings;
 
-  model->results.low.full = infos;
-  model->results.low.filtered = filtered_infos;
+  summary->results.low.full = infos;
+  summary->results.low.filtered = filtered_infos;
 
-  model->results.log.full = logs;
-  model->results.log.filtered = filtered_logs;
+  summary->results.log.full = logs;
+  summary->results.log.filtered = filtered_logs;
 
-  model->results.false_positive.full = false_positives;
-  model->results.false_positive.filtered = filtered_false_positives;
+  summary->results.false_positive.full = false_positives;
+  summary->results.false_positive.filtered = filtered_false_positives;
 
-  model->results.total.full =
+  summary->results.total.full =
     criticals
     + holes
     + warnings
@@ -819,7 +800,7 @@ fill_report_result_summary (report_t report,
     + logs
     + false_positives;
 
-  model->results.total.filtered =
+  summary->results.total.filtered =
     filtered_criticals
     + filtered_holes
     + filtered_warnings
@@ -827,8 +808,8 @@ fill_report_result_summary (report_t report,
     + filtered_logs
     + filtered_false_positives;
 
-  model->results.severity.full = full_severity;
-  model->results.severity.filtered = filtered_severity;
+  summary->results.severity.full = full_severity;
+  summary->results.severity.filtered = filtered_severity;
 
   return 0;
 }
@@ -839,13 +820,13 @@ fill_report_result_summary (report_t report,
  * Uses the timezone resolved from the GET request when present. Otherwise,
  * the configured system timezone is used.
  *
- * @param[in,out] model  Report model to fill.
+ * @param[in,out] summary  Report summary to fill.
  * @param[in]     zone   Resolved request timezone, or NULL.
  *
  * @return 0 on success, or -1 on error.
  */
 static int
-fill_report_timezone (report_model_t model, const gchar *zone)
+fill_report_timezone (report_summary_t summary, const gchar *zone)
 {
   gchar *report_zone = NULL;
   gchar *timezone = NULL;
@@ -853,7 +834,7 @@ fill_report_timezone (report_model_t model, const gchar *zone)
   const gchar *abbreviation = NULL;
   time_t scan_start;
 
-  if (model == NULL)
+  if (summary == NULL)
     return -1;
 
   if (zone && *zone)
@@ -861,7 +842,7 @@ fill_report_timezone (report_model_t model, const gchar *zone)
   else
     report_zone = setting_timezone ();
 
-  scan_start = scan_start_time_epoch (model->report);
+  scan_start = scan_start_time_epoch (summary->report);
 
   iso_time_tz (&scan_start, report_zone, &abbreviation);
 
@@ -875,11 +856,11 @@ fill_report_timezone (report_model_t model, const gchar *zone)
     ? abbreviation
     : "UTC");
 
-  g_free (model->timezone);
-  g_free (model->timezone_abbrev);
+  g_free (summary->timezone);
+  g_free (summary->timezone_abbrev);
 
-  model->timezone = timezone;
-  model->timezone_abbrev = timezone_abbrev;
+  summary->timezone = timezone;
+  summary->timezone_abbrev = timezone_abbrev;
 
   g_free (report_zone);
 
@@ -887,7 +868,7 @@ fill_report_timezone (report_model_t model, const gchar *zone)
 }
 
 /**
- * @brief Fill a structured normal report model.
+ * @brief Fill a structured normal report summary.
  *
  * Loads report metadata, scan status, task information, target information,
  * resource counts, result counts, severity and timezone data.
@@ -895,48 +876,48 @@ fill_report_timezone (report_model_t model, const gchar *zone)
  * @param[in]     report  Internal report resource.
  * @param[in]     get     Result filtering controls.
  * @param[in]     zone    Resolved request timezone, or NULL.
- * @param[in,out] model   Allocated report model to populate.
+ * @param[in,out] summary   Allocated report summary to populate.
  *
  * @return 0 on success, or -1 on error.
  */
 int
-manage_sql_fill_report_model (report_t report,
+manage_sql_fill_report_summary (report_t report,
                               const get_data_t *get,
                               const gchar *zone,
-                              report_model_t model)
+                              report_summary_t summary)
 {
   int ret;
 
-  if (report == 0 || get == NULL || model == NULL)
+  if (report == 0 || get == NULL || summary == NULL)
     return -1;
 
-  ret = fill_report_metadata (report, model);
+  ret = fill_report_metadata (report, summary);
   if (ret)
     return ret;
 
-  ret = fill_report_scan_information (report, model);
+  ret = fill_report_scan_information (report, summary);
   if (ret)
     return ret;
 
-  ret = fill_report_task (report, model);
+  ret = fill_report_task (report, summary);
   if (ret)
     return ret;
 
   ret = fill_report_target (
-    model->task ? model->task->id : 0,
-    model);
+    summary->task ? summary->task->id : 0,
+    summary);
   if (ret)
     return ret;
 
-  ret = fill_report_resource_summary (report, get, model);
+  ret = fill_report_resource_summary (report, get, summary);
   if (ret)
     return ret;
 
-  ret = fill_report_result_summary (report, get, model);
+  ret = fill_report_result_summary (report, get, summary);
   if (ret)
     return ret;
 
-  ret = fill_report_timezone (model, zone);
+  ret = fill_report_timezone (summary, zone);
   if (ret)
     return ret;
 
