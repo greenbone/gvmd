@@ -127,6 +127,7 @@ command_t gmp_commands[]
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
     {"GET_REPORTS", "Get all reports."},
     {"GET_REPORT_CONFIGS", "Get all report configs."},
+    {"GET_REPORT", "Get specific report summary."},
     {"GET_REPORT_APPLICATIONS", "Get all applications for specific report."},
     {"GET_REPORT_CLOSED_CVES", "Get all closed CVEs for specific report."},
     {"GET_REPORT_CVES", "Get all CVEs for specific report."},
