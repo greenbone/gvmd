@@ -130,7 +130,7 @@ typedef struct report_task_reference* report_task_reference_t;
  * - report export and report format data
  * - temporary report-rendering state
  */
-struct report_model
+struct report_summary
 {
  report_t report;
  user_t owner;
@@ -158,7 +158,7 @@ struct report_model
  report_result_summary_t results;
 };
 
-typedef struct report_model* report_model_t;
+typedef struct report_summary* report_summary_t;
 
 /**
  * @brief Result of loading a structured report model.
@@ -172,15 +172,15 @@ typedef enum
  MANAGE_GET_REPORT_UNSUPPORTED_TYPE = 3
 } manage_get_report_response_t;
 
-report_model_t
-report_model_new (void);
+report_summary_t
+report_summary_new (void);
 
 void
-report_model_free (report_model_t model);
+report_summary_free (report_summary_t summary);
 
 manage_get_report_response_t
-manage_get_report_model (const gchar *report_id,
-                         const get_data_t *get,
-                         report_model_t *model);
+manage_get_report_summary (const gchar *report_id,
+                           const get_data_t *get,
+                           report_summary_t *summary);
 
 #endif /* _GVMD_MANAGE_REPORT_H */

@@ -14,10 +14,10 @@
 #include "manage_report.h"
 
 int
-manage_sql_fill_report_model (report_t,
-                              const get_data_t *,
-                              const gchar *,
-                              report_model_t);
+manage_sql_fill_report_summary (report_t,
+                                const get_data_t *,
+                                const gchar *,
+                                report_summary_t);
 int
 report_scan_run_status (report_t, task_status_t*);
 
