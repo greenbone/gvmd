@@ -5,11 +5,11 @@
 
 /**
  * @file
- * @brief GVM management layer: Report model and operations.
+ * @brief GVM management layer: Scan report summary and operations.
  */
 
-#ifndef _GVMD_MANAGE_REPORT_H
-#define _GVMD_MANAGE_REPORT_H
+#ifndef _GVMD_MANAGE_SCAN_REPORT_H
+#define _GVMD_MANAGE_SCAN_REPORT_H
 
 #include "manage.h"
 
@@ -165,12 +165,12 @@ typedef struct report_summary* report_summary_t;
  */
 typedef enum
 {
- MANAGE_GET_REPORT_ERROR = -1,
- MANAGE_GET_REPORT_SUCCESS = 0,
- MANAGE_GET_REPORT_NOT_FOUND = 1,
- MANAGE_GET_REPORT_FILTER_NOT_FOUND = 2,
- MANAGE_GET_REPORT_UNSUPPORTED_TYPE = 3
-} manage_get_report_response_t;
+ MANAGE_GET_SCAN_REPORT_ERROR = -1,
+ MANAGE_GET_SCAN_REPORT_SUCCESS = 0,
+ MANAGE_GET_SCAN_REPORT_NOT_FOUND = 1,
+ MANAGE_GET_SCAN_REPORT_FILTER_NOT_FOUND = 2,
+ MANAGE_GET_SCAN_REPORT_UNSUPPORTED_TYPE = 3
+} manage_get_scan_report_response_t;
 
 report_summary_t
 report_summary_new (void);
@@ -178,9 +178,9 @@ report_summary_new (void);
 void
 report_summary_free (report_summary_t summary);
 
-manage_get_report_response_t
-manage_get_report_summary (const gchar *report_id,
-                           const get_data_t *get,
-                           report_summary_t *summary);
+manage_get_scan_report_response_t
+manage_get_scan_report_summary (const gchar *report_id,
+                                const get_data_t *get,
+                                report_summary_t *summary);
 
-#endif /* _GVMD_MANAGE_REPORT_H */
+#endif /* _GVMD_MANAGE_SCAN_REPORT_H */

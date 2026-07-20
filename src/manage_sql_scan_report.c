@@ -7,7 +7,7 @@
  * @file
  * @brief GVM SQL layer: Structured report summary loading.
  *
- * SQL-backed functions for filling a structured normal report summary.
+ * SQL-backed functions for filling a structured scan report summary.
  *
  * This module intentionally excludes:
  *
@@ -18,7 +18,7 @@
  * - report export data
  */
 
-#include "manage_sql_report.h"
+#include "manage_sql_scan_report.h"
 
 #include "manage_sql_report_applications.h"
 #include "manage_sql_report_operating_systems.h"
@@ -304,9 +304,6 @@ cleanup:
 
 /**
  * @brief Initialize a target reference.
- *
- * On success, ownership of @p uuid, @p name and @p comment is transferred
- * to @p target. On failure, ownership remains with the caller.
  *
  * @param[in,out] target    Empty target reference to initialize.
  * @param[in]     type      Target type.
@@ -658,7 +655,7 @@ fill_report_target (task_t task, report_summary_t summary)
 }
 
 /**
- * @brief Fill resource counts for a normal report.
+ * @brief Fill resource counts for a scan report.
  *
  * @param[in]     report  Report to inspect.
  * @param[in]     get     Result filter information.
@@ -882,9 +879,9 @@ fill_report_timezone (report_summary_t summary, const gchar *zone)
  */
 int
 manage_sql_fill_report_summary (report_t report,
-                              const get_data_t *get,
-                              const gchar *zone,
-                              report_summary_t summary)
+                                const get_data_t *get,
+                                const gchar *zone,
+                                report_summary_t summary)
 {
   int ret;
 
