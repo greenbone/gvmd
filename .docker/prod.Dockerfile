@@ -27,6 +27,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN --mount=type=bind,source=.github,target=/source/ \
     sh /source/install-dependencies.sh /source/runtime-dependencies.list \
+    && sh /source/install-ec-dependencies.sh \
     && rm -rf /var/lib/apt/lists/*
 
 COPY .docker/start-gvmd.sh /usr/local/bin/start-gvmd
