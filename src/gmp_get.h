@@ -121,6 +121,27 @@ send_get_common (const char *, get_data_t *, iterator_t *,
   while (0)
 
 int
+send_get_start_singular (const char *, int (*) (const char *, void *), void *);
+
+/**
+ * @brief Send start of singular GET response to client, returning on fail.
+ *
+ * @param[in]  type  Type of resource.
+ */
+#define SEND_GET_START_SINGULAR(type)                               \
+  do                                                                \
+    {                                                               \
+      if (send_get_start_singular (type,                            \
+                                   gmp_parser->client_writer,       \
+                                   gmp_parser->client_writer_data)) \
+        {                                                           \
+          error_send_to_client (error);                             \
+          return;                                                   \
+        }                                                           \
+    }                                                               \
+  while (0)
+
+int
 buffer_get_filter_xml (GString *, const char *, const get_data_t *,
                        const char *, const char *);
 
@@ -149,6 +170,31 @@ send_get_end_no_counts (const char *, get_data_t *,
           return;                                                              \
         }                                                                      \
     }                                                                          \
+  while (0)
+
+int
+send_get_end_singular (const char *, get_data_t *, int, int, int,
+                       int (*) (const char *, void *), void *);
+
+/**
+ * @brief Send end of singular GET response to client, returning on fail.
+ *
+ * @param[in]  type      Type of resource.
+ * @param[in]  get       GET data.
+ * @param[in]  count     Page count.
+ * @param[in]  filtered  Filtered count.
+ */
+#define SEND_GET_END_SINGULAR(type, get, count, filtered)                    \
+  do                                                                         \
+    {                                                                        \
+      if (send_get_end_singular (                                            \
+            type, get, count, filtered, resource_count (type, get),          \
+            gmp_parser->client_writer, gmp_parser->client_writer_data))      \
+        {                                                                    \
+          error_send_to_client (error);                                      \
+          return;                                                            \
+        }                                                                    \
+    }                                                                        \
   while (0)
 
 #endif /* not _GVMD_GMP_GET_H */

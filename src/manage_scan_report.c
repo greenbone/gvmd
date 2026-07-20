@@ -5,14 +5,14 @@
 
 /**
  * @file
- * @brief GVM management layer: Report summary and operations.
+ * @brief GVM management layer: Scan Report summary and operations.
  */
 
-#include "manage_report.h"
+#include "manage_scan_report.h"
 
 #include "manage_filters.h"
 #include "manage_settings.h"
-#include "manage_sql_report.h"
+#include "manage_sql_scan_report.h"
 
 #undef G_LOG_DOMAIN
 
@@ -321,10 +321,10 @@ resolve_get_report_controls (const get_data_t *get,
  *
  * @return Status describing the result of the operation.
  */
-manage_get_report_response_t
-manage_get_report_summary (const gchar *report_id,
-                         const get_data_t *get,
-                         report_summary_t *summary)
+manage_get_scan_report_response_t
+manage_get_scan_report_summary (const gchar *report_id,
+                                const get_data_t *get,
+                                report_summary_t *summary)
 {
   get_report_controls_t controls = {0};
   report_summary_t loaded_model = NULL;
@@ -334,26 +334,26 @@ manage_get_report_summary (const gchar *report_id,
   if (report_id == NULL
       || get == NULL
       || summary == NULL)
-    return MANAGE_GET_REPORT_ERROR;
+    return MANAGE_GET_SCAN_REPORT_ERROR;
 
   *summary = NULL;
 
   ret = find_report_with_permission (report_id,
-                                    &report,
-                                    "get_reports");
+                                     &report,
+                                     "get_reports");
 
   if (ret)
-    return MANAGE_GET_REPORT_ERROR;
+    return MANAGE_GET_SCAN_REPORT_ERROR;
 
   if (report == 0)
-    return MANAGE_GET_REPORT_NOT_FOUND;
+    return MANAGE_GET_SCAN_REPORT_NOT_FOUND;
 
   ret = validate_get_report_usage_type (report);
   if (ret < 0)
-    return MANAGE_GET_REPORT_ERROR;
+    return MANAGE_GET_SCAN_REPORT_ERROR;
 
   if (ret > 0)
-    return MANAGE_GET_REPORT_UNSUPPORTED_TYPE;
+    return MANAGE_GET_SCAN_REPORT_UNSUPPORTED_TYPE;
 
   ret = resolve_get_report_controls (get, &controls);
 
@@ -362,32 +362,32 @@ manage_get_report_summary (const gchar *report_id,
       get_report_controls_cleanup (&controls);
 
       if (ret == 2)
-        return MANAGE_GET_REPORT_FILTER_NOT_FOUND;
+        return MANAGE_GET_SCAN_REPORT_FILTER_NOT_FOUND;
 
-      return MANAGE_GET_REPORT_ERROR;
+      return MANAGE_GET_SCAN_REPORT_ERROR;
     }
 
   loaded_model = report_summary_new ();
   if (loaded_model == NULL)
     {
       get_report_controls_cleanup (&controls);
-      return MANAGE_GET_REPORT_ERROR;
+      return MANAGE_GET_SCAN_REPORT_ERROR;
     }
 
   ret = manage_sql_fill_report_summary (report,
-                                      get,
-                                      controls.zone,
-                                      loaded_model);
+                                        get,
+                                        controls.zone,
+                                        loaded_model);
 
   get_report_controls_cleanup (&controls);
 
   if (ret)
     {
       report_summary_free (loaded_model);
-      return MANAGE_GET_REPORT_ERROR;
+      return MANAGE_GET_SCAN_REPORT_ERROR;
     }
 
   *summary = loaded_model;
 
-  return MANAGE_GET_REPORT_SUCCESS;
+  return MANAGE_GET_SCAN_REPORT_SUCCESS;
 }

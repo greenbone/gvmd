@@ -5,15 +5,15 @@
 
 /**
  * @file
- * @brief GVM GMP layer: Structured report retrieval.
+ * @brief GVM GMP layer: Structured scan report retrieval.
  *
- * Implements GMP handling for the get_report command.
+ * Implements GMP handling for the get_scan_report command.
  */
 
-#include "gmp_report.h"
+#include "gmp_scan_report.h"
 
 #include "gmp_get.h"
-#include "manage_report.h"
+#include "manage_scan_report.h"
 
 #include <stdarg.h>
 
@@ -25,29 +25,29 @@
 #define G_LOG_DOMAIN "md    gmp"
 
 /**
- * @brief Command data for the get_report command.
+ * @brief Command data for the get_scan_report command.
  */
 typedef struct
 {
   get_data_t get;
   gchar *report_id;
-} get_report_data_t;
+} get_scan_report_data_t;
 
 /**
  * @brief Parser callback data.
  */
-static get_report_data_t get_report_data;
+static get_scan_report_data_t get_scan_report_data;
 
 /**
- * @brief Reset the internal state of the get_report command.
+ * @brief Reset the internal state of the get_scan_report command.
  */
 static void
-get_report_reset (void)
+get_scan_report_reset (void)
 {
-  get_data_reset (&get_report_data.get);
-  g_free (get_report_data.report_id);
+  get_data_reset (&get_scan_report_data.get);
+  g_free (get_scan_report_data.report_id);
 
-  memset (&get_report_data, 0, sizeof (get_report_data));
+  memset (&get_scan_report_data, 0, sizeof (get_scan_report_data));
 }
 
 /**
@@ -87,7 +87,7 @@ send_report_xml (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Send report resource count elements.
+ * @brief Send scan report resource count elements.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
  * @param[in] summary       Report summary.
@@ -95,8 +95,8 @@ send_report_xml (gmp_parser_t *gmp_parser,
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
-send_report_resource_counts (gmp_parser_t *gmp_parser,
-                             report_summary_t summary)
+send_scan_report_resource_counts (gmp_parser_t *gmp_parser,
+                                  report_summary_t summary)
 {
   report_resource_summary_t resources;
 
@@ -171,8 +171,8 @@ send_report_resource_counts (gmp_parser_t *gmp_parser,
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
-send_report_task (gmp_parser_t *gmp_parser,
-                  report_summary_t summary)
+send_scan_report_task (gmp_parser_t *gmp_parser,
+                       report_summary_t summary)
 {
   report_task_reference_t task;
   report_target_reference_t target;
@@ -260,8 +260,8 @@ send_report_task (gmp_parser_t *gmp_parser,
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
-send_report_result_count (gmp_parser_t *gmp_parser,
-                          report_summary_t summary)
+send_scan_report_result_count (gmp_parser_t *gmp_parser,
+                               report_summary_t summary)
 {
   const report_result_summary_t *results;
 
@@ -391,7 +391,7 @@ send_report_result_count (gmp_parser_t *gmp_parser,
 }
 
 /**
- * @brief Send the complete structured report.
+ * @brief Send the complete structured scan report.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
  * @param[in] summary       Report summary.
@@ -399,8 +399,8 @@ send_report_result_count (gmp_parser_t *gmp_parser,
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
-send_report_summary (gmp_parser_t *gmp_parser,
-                     report_summary_t summary)
+send_scan_report_summary (gmp_parser_t *gmp_parser,
+                          report_summary_t summary)
 {
   gchar *creation_time = NULL;
   gchar *modification_time = NULL;
@@ -467,10 +467,10 @@ send_report_summary (gmp_parser_t *gmp_parser,
       : ""))
     goto fail;
 
-  if (send_report_resource_counts (gmp_parser, summary))
+  if (send_scan_report_resource_counts (gmp_parser, summary))
     goto fail;
 
-  if (send_report_task (gmp_parser, summary))
+  if (send_scan_report_task (gmp_parser, summary))
     goto fail;
 
   if (send_report_xml (
@@ -499,7 +499,7 @@ send_report_summary (gmp_parser_t *gmp_parser,
       : ""))
     goto fail;
 
-  if (send_report_result_count (gmp_parser, summary))
+  if (send_scan_report_result_count (gmp_parser, summary))
     goto fail;
 
   if (send_report_xml (
@@ -524,18 +524,18 @@ fail:
 }
 
 /**
- * @brief Initialize the get_report command by parsing attributes.
+ * @brief Initialize the get_scan_report command by parsing attributes.
  *
  * @param[in] attribute_names   Null-terminated attribute names.
  * @param[in] attribute_values  Null-terminated attribute values.
  */
 void
-get_report_start (const gchar **attribute_names,
-                  const gchar **attribute_values)
+get_scan_report_start (const gchar **attribute_names,
+                       const gchar **attribute_values)
 {
   const gchar *attribute;
 
-  get_data_parse_attributes (&get_report_data.get,
+  get_data_parse_attributes (&get_scan_report_data.get,
                              "report",
                              attribute_names,
                              attribute_values);
@@ -545,42 +545,42 @@ get_report_start (const gchar **attribute_names,
                       "report_id",
                       &attribute))
     {
-      get_report_data.report_id = g_strdup (attribute);
+      get_scan_report_data.report_id = g_strdup (attribute);
 
-      get_data_set_extra (&get_report_data.get,
+      get_data_set_extra (&get_scan_report_data.get,
                           "report_id",
                           attribute);
     }
 }
 
 /**
- * @brief Execute the get_report GMP command.
+ * @brief Execute the get_scan_report GMP command.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
  * @param[in] error       Location for error information.
  */
 void
-get_report_run (gmp_parser_t *gmp_parser,
-                GError **error)
+get_scan_report_run (gmp_parser_t *gmp_parser,
+                     GError **error)
 {
-  manage_get_report_response_t response;
+  manage_get_scan_report_response_t response;
   report_summary_t summary = NULL;
   int ret;
 
-  if (get_report_data.report_id == NULL)
+  if (get_scan_report_data.report_id == NULL)
     {
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX (
-          "get_report",
+          "get_scan_report",
           "Missing report_id attribute"));
 
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
     }
 
-  ret = init_get ("get_report",
-                  &get_report_data.get,
-                  "Reports",
+  ret = init_get ("get_scan_report",
+                  &get_scan_report_data.get,
+                  "Scan Reports",
                   NULL);
 
   if (ret)
@@ -590,7 +590,7 @@ get_report_run (gmp_parser_t *gmp_parser,
         case 99:
           SEND_TO_CLIENT_OR_FAIL (
             XML_ERROR_SYNTAX (
-              "get_report",
+              "get_scan_report",
               "Permission denied"));
           break;
 
@@ -599,73 +599,77 @@ get_report_run (gmp_parser_t *gmp_parser,
           break;
         }
 
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
     }
 
-  response = manage_get_report_summary (
-    get_report_data.report_id,
-    &get_report_data.get,
+  // Override the subtype to "report"
+  // to ensure correct handling in manage_get_scan_report_summary.
+  g_free (get_scan_report_data.get.subtype);
+  get_scan_report_data.get.subtype = g_strdup ("report");
+  response = manage_get_scan_report_summary (
+    get_scan_report_data.report_id,
+    &get_scan_report_data.get,
     &summary);
 
   switch (response)
     {
-    case MANAGE_GET_REPORT_SUCCESS:
+    case MANAGE_GET_SCAN_REPORT_SUCCESS:
       break;
 
-    case MANAGE_GET_REPORT_NOT_FOUND:
+    case MANAGE_GET_SCAN_REPORT_NOT_FOUND:
       if (send_find_error_to_client (
-        "get_report",
+        "get_scan_report",
         "report",
-        get_report_data.report_id,
+        get_scan_report_data.report_id,
         gmp_parser))
         error_send_to_client (error);
 
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
 
-    case MANAGE_GET_REPORT_FILTER_NOT_FOUND:
+    case MANAGE_GET_SCAN_REPORT_FILTER_NOT_FOUND:
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX (
-          "get_report",
+          "get_scan_report",
           "Failed to find filter"));
 
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
 
-    case MANAGE_GET_REPORT_UNSUPPORTED_TYPE:
+    case MANAGE_GET_SCAN_REPORT_UNSUPPORTED_TYPE:
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX (
-          "get_report",
+          "get_scan_report",
           "Report type is not supported"));
 
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
 
-    case MANAGE_GET_REPORT_ERROR:
+    case MANAGE_GET_SCAN_REPORT_ERROR:
     default:
       internal_error_send_to_client (error);
-      get_report_reset ();
+      get_scan_report_reset ();
       return;
     }
 
-  SEND_GET_START ("report");
+  SEND_GET_START_SINGULAR ("scan_report");
 
-  if (send_report_summary (gmp_parser, summary))
+  if (send_scan_report_summary (gmp_parser, summary))
     goto send_error;
 
-  SEND_GET_END ("report",
-                &get_report_data.get,
-                1,
-                1);
+  SEND_GET_END_SINGULAR ("scan_report",
+                         &get_scan_report_data.get,
+                         1,
+                         1);
 
   report_summary_free (summary);
-  get_report_reset ();
+  get_scan_report_reset ();
 
   return;
 
 send_error:
   error_send_to_client (error);
   report_summary_free (summary);
-  get_report_reset ();
+  get_scan_report_reset ();
 }
