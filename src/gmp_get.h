@@ -131,8 +131,7 @@ send_get_start_singular (const char *, int (*) (const char *, void *), void *);
 #define SEND_GET_START_SINGULAR(type)                               \
   do                                                                \
     {                                                               \
-      if (send_get_start_singular (type,                            \
-                                   gmp_parser->client_writer,       \
+      if (send_get_start_singular (type, gmp_parser->client_writer, \
                                    gmp_parser->client_writer_data)) \
         {                                                           \
           error_send_to_client (error);                             \
@@ -184,17 +183,17 @@ send_get_end_singular (const char *, get_data_t *, int, int, int,
  * @param[in]  count     Page count.
  * @param[in]  filtered  Filtered count.
  */
-#define SEND_GET_END_SINGULAR(type, get, count, filtered)                    \
-  do                                                                         \
-    {                                                                        \
-      if (send_get_end_singular (                                            \
-            type, get, count, filtered, resource_count (type, get),          \
-            gmp_parser->client_writer, gmp_parser->client_writer_data))      \
-        {                                                                    \
-          error_send_to_client (error);                                      \
-          return;                                                            \
-        }                                                                    \
-    }                                                                        \
+#define SEND_GET_END_SINGULAR(type, get, count, filtered)               \
+  do                                                                    \
+    {                                                                   \
+      if (send_get_end_singular (                                       \
+            type, get, count, filtered, resource_count (type, get),     \
+            gmp_parser->client_writer, gmp_parser->client_writer_data)) \
+        {                                                               \
+          error_send_to_client (error);                                 \
+          return;                                                       \
+        }                                                               \
+    }                                                                   \
   while (0)
 
 #endif /* not _GVMD_GMP_GET_H */
