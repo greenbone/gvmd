@@ -20076,11 +20076,11 @@ END:VCALENDAR
     </example>
   </command>
   <command>
-    <name>get_report</name>
+    <name>get_scan_report</name>
     <summary>Get a structured vulnerability report</summary>
     <description>
       <p>
-        The client uses the get_report command to retrieve a single structured
+        The client uses the get_scan_report command to retrieve a single structured
         vulnerability report.
       </p>
       <p>
@@ -20179,8 +20179,8 @@ END:VCALENDAR
         <o><e>report</e></o>
         <o><e>filters</e></o>
         <o><e>sort</e></o>
-        <o><e>reports</e></o>
-        <o><e>report_count</e></o>
+        <o><e>scan_report</e></o>
+        <o><e>scan_report_count</e></o>
       </pattern>
       <ele>
         <name>report</name>
@@ -20668,7 +20668,7 @@ END:VCALENDAR
         </ele>
       </ele>
       <ele>
-        <name>reports</name>
+        <name>scan_report</name>
         <pattern>
           <attrib>
             <name>start</name>
@@ -20685,7 +20685,7 @@ END:VCALENDAR
         </pattern>
       </ele>
       <ele>
-        <name>report_count</name>
+        <name>scan_report_count</name>
         <pattern>
           text
           <e>filtered</e>
@@ -20706,13 +20706,13 @@ END:VCALENDAR
     <example>
       <summary>Get a structured vulnerability report</summary>
       <request>
-        <get_report
+        <get_scan_report
           report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
           filter="apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1">
-        </get_report>
+        </get_scan_report>
       </request>
       <response>
-        <get_report_response status="200" status_text="OK">
+        <get_scan_report_response status="200" status_text="OK">
           <report id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0">
             <owner>
               <name>moezgen</name>
@@ -20841,13 +20841,13 @@ END:VCALENDAR
           <sort>
             <field>severity<order>descending</order></field>
           </sort>
-          <reports start="1" max="1"/>
-          <report_count>
+          <scan_report start="1" max="1"/>
+          <scan_report_count>
             1
             <filtered>1</filtered>
             <page>0</page>
-          </report_count>
-        </get_report_response>
+          </scan_report_count>
+        </get_scan_report_response>
       </response>
     </example>
   </command>
