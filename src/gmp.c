@@ -5953,8 +5953,6 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             set_client_state (CLIENT_GET_REPORTS);
           }
 
-        ELSE_GET_START (scan_report, SCAN_REPORT)
-
         ELSE_GET_START (report_applications, REPORT_APPLICATIONS)
 
         ELSE_GET_START (report_closed_cves, REPORT_CLOSED_CVES)
@@ -6067,6 +6065,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names, attribute_values);
             set_client_state (CLIENT_GET_SCANNERS);
           }
+
+        ELSE_GET_START (scan_report, SCAN_REPORT)
+
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -22501,8 +22502,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_reports (gmp_parser, error);
         break;
 
-      CASE_GET_END (SCAN_REPORT, scan_report);
-
       CASE_GET_END (REPORT_APPLICATIONS, report_applications);
 
       CASE_GET_END (REPORT_CLOSED_CVES, report_closed_cves);
@@ -22544,6 +22543,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_SCANNERS:
         handle_get_scanners (gmp_parser, error);
         break;
+
+      CASE_GET_END (SCAN_REPORT, scan_report);
 
       case CLIENT_GET_SCHEDULES:
         handle_get_schedules (gmp_parser, error);
