@@ -598,7 +598,6 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
   g_free (get_scan_report_data.get.subtype);
   get_scan_report_data.get.subtype = g_strdup ("report");
   response = manage_get_scan_report_summary (
-    get_scan_report_data.get.id,
     &get_scan_report_data.get,
     &summary);
 
