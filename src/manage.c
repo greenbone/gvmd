@@ -3847,6 +3847,8 @@ manage_sync (sigset_t *sigmask_current,
 
           update_scap_extra ();
 
+          g_info ("SecInfo feed sync finished");
+
           lockfile_unlock (&lockfile);
         }
     }
@@ -3870,6 +3872,8 @@ manage_sync (sigset_t *sigmask_current,
           manage_sync_report_formats ();
 
           lockfile_unlock (&lockfile);
+
+          g_info ("Data objects feed sync finished");
         }
     }
 }
@@ -5810,7 +5814,8 @@ gvm_migrate_secinfo (int feed_type)
   lockfile_t lockfile;
   int ret;
 
-  if (feed_type != SCAP_FEED && feed_type != CERT_FEED)
+  if (feed_type != SCAP_FEED && feed_type != CERT_FEED
+      && feed_type != WEB_APPLICATION_VTS_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
@@ -5824,8 +5829,10 @@ gvm_migrate_secinfo (int feed_type)
 
   if (feed_type == SCAP_FEED)
     ret = check_scap_db_version ();
-  else
+  else if (feed_type == CERT_FEED)
     ret = check_cert_db_version ();
+  else if (feed_type == WEB_APPLICATION_VTS_FEED)
+    ret = check_web_application_vts_db_version ();
 
   feed_lockfile_unlock (&lockfile);
 

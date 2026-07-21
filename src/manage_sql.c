@@ -1944,6 +1944,42 @@ manage_cert_db_version ()
 }
 
 /**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_web_application_vts_db_supported_version ()
+{
+  return GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version of the actual database.
+ *
+ * @return Database version read from database if possible, else -1.
+ */
+int
+manage_web_application_vts_db_version ()
+{
+  if (manage_web_application_vts_loaded () == 0)
+    return -1;
+
+  int number;
+  char *version
+    = sql_string ("SELECT value FROM vts.meta"
+                  " WHERE name = 'web_application_vts_database_version'"
+                  " LIMIT 1;");
+  if (version)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
  * @brief Set the database version of the actual database.
  *
  * Caller must organise transaction.
@@ -3803,6 +3839,42 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 }
 
 /**
+ * @brief Ensure that one of the databases is the right versions.
+ *
+ * @param[in]  type                      Type of the database
+ * @param[in]  get_current_db_version    Function to get current DB version.
+ * @param[in]  get_supported_db_version  Function to get supported DB version.
+ *
+ * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
+ */
+static int
+check_secinfo_db_version (const char *type,
+                          int get_current_db_version(),
+                          int get_supported_db_version())
+{
+  int db_version;
+  db_version = get_current_db_version ();
+  if (db_version == -1)
+    g_message ("No %s database found", type);
+  else
+    {
+      int supported;
+
+      supported = get_supported_db_version ();
+      if (db_version != supported)
+        {
+          g_message ("%s: database version of %s database: %i",
+                     __func__, type, db_version);
+          g_message ("%s: %s database version supported by manager: %d",
+                     __func__, type, supported);
+
+          return supported > db_version ? -2 : -5;
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Ensure that the databases are the right versions.
  *
  * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
@@ -3811,7 +3883,7 @@ static int
 check_db_versions ()
 {
   char *database_version;
-  int scap_db_version, cert_db_version;
+  int ret;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
@@ -3842,49 +3914,31 @@ check_db_versions ()
 
   /* Check SCAP database version. */
 
-  scap_db_version = manage_scap_db_version ();
-  if (scap_db_version == -1)
-    g_message ("No SCAP database found");
-  else
-    {
-      int supported;
-
-      supported = manage_scap_db_supported_version ();
-      if (scap_db_version != supported)
-        {
-          g_message ("%s: database version of SCAP database: %i",
-                     __func__,
-                     scap_db_version);
-          g_message ("%s: SCAP database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
-
-          return supported > scap_db_version ? -2 : -5;
-        }
-    }
+  ret = check_secinfo_db_version ("SCAP",
+                                  manage_scap_db_version,
+                                  manage_scap_db_supported_version);
+  if (ret)
+    return ret;
 
   /* Check CERT database version. */
 
-  cert_db_version = manage_cert_db_version ();
-  if (cert_db_version == -1)
-    g_message ("No CERT database found");
-  else
+  ret = check_secinfo_db_version ("CERT",
+                                  manage_cert_db_version,
+                                  manage_cert_db_supported_version);
+  if (ret)
+    return ret;
+
+  /* Check VT database versions. */
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
     {
-      int supported;
-
-      supported = manage_cert_db_supported_version ();
-      if (cert_db_version != supported)
-        {
-          g_message ("%s: database version of CERT database: %i",
-                     __func__,
-                     cert_db_version);
-          g_message ("%s: CERT database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
-
-          return supported > cert_db_version ? -2 : -5;
-        }
+      ret = check_secinfo_db_version (
+                "Web Application VTs",
+                manage_web_application_vts_db_version,
+                manage_web_application_vts_db_supported_version);
+      if (ret)
+        return ret;
     }
+
   return 0;
 }
 

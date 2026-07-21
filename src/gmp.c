@@ -13525,6 +13525,8 @@ feed_type_name (int feed_type)
         return "SCAP";
       case GVMD_DATA_FEED:
         return "GVMD_DATA";
+      case WEB_APPLICATION_VTS_FEED:
+        return "WEB_APPLICATION_VTS";
       default:
         return "Error";
     }

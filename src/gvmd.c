@@ -3362,6 +3362,10 @@ gvmd (int argc, char** argv, char *env[])
             g_warning ("%s: cannot migrate CERT database",
                        __func__);
             return EXIT_FAILURE;
+          case 13:
+            g_warning ("%s: cannot migrate Web Application VTs database",
+                       __func__);
+            return EXIT_FAILURE;
           case -1:
             g_critical ("%s: database migration failed",
                         __func__);
@@ -3372,6 +3376,10 @@ gvmd (int argc, char** argv, char *env[])
             return EXIT_FAILURE;
           case -12:
             g_critical ("%s: CERT database migration failed",
+                        __func__);
+            return EXIT_FAILURE;
+          case -13:
+            g_critical ("%s: Web Application VTs database migration failed",
                         __func__);
             return EXIT_FAILURE;
           default:
