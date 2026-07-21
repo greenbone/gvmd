@@ -30,7 +30,6 @@
 typedef struct
 {
   get_data_t get;
-  gchar *report_id;
 } get_scan_report_data_t;
 
 /**
@@ -45,7 +44,6 @@ static void
 get_scan_report_reset (void)
 {
   get_data_reset (&get_scan_report_data.get);
-  g_free (get_scan_report_data.report_id);
 
   memset (&get_scan_report_data, 0, sizeof (get_scan_report_data));
 }
@@ -539,24 +537,10 @@ void
 get_scan_report_start (const gchar **attribute_names,
                        const gchar **attribute_values)
 {
-  const gchar *attribute;
-
   get_data_parse_attributes (&get_scan_report_data.get,
-                             "report",
+                             "scan_report",
                              attribute_names,
                              attribute_values);
-
-  if (find_attribute (attribute_names,
-                      attribute_values,
-                      "report_id",
-                      &attribute))
-    {
-      get_scan_report_data.report_id = g_strdup (attribute);
-
-      get_data_set_extra (&get_scan_report_data.get,
-                          "report_id",
-                          attribute);
-    }
 }
 
 /**
@@ -573,12 +557,12 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
   report_summary_t summary = NULL;
   int ret;
 
-  if (get_scan_report_data.report_id == NULL)
+  if (get_scan_report_data.get.id == NULL)
     {
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX (
           "get_scan_report",
-          "Missing report_id attribute"));
+          "Missing scan_report_id attribute"));
 
       get_scan_report_reset ();
       return;
@@ -614,7 +598,7 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
   g_free (get_scan_report_data.get.subtype);
   get_scan_report_data.get.subtype = g_strdup ("report");
   response = manage_get_scan_report_summary (
-    get_scan_report_data.report_id,
+    get_scan_report_data.get.id,
     &get_scan_report_data.get,
     &summary);
 
@@ -627,7 +611,7 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
       if (send_find_error_to_client (
         "get_scan_report",
         "report",
-        get_scan_report_data.report_id,
+        get_scan_report_data.get.id,
         gmp_parser))
         error_send_to_client (error);
 

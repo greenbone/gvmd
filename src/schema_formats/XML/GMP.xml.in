@@ -20099,7 +20099,7 @@ END:VCALENDAR
     </description>
     <pattern>
       <attrib>
-        <name>report_id</name>
+        <name>scan_report_id</name>
         <summary>ID of the report to retrieve</summary>
         <type>uuid</type>
         <required>1</required>
@@ -20713,7 +20713,7 @@ END:VCALENDAR
       <summary>Get a structured vulnerability report</summary>
       <request>
         <get_scan_report
-          report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
+          scan_report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
           filter="apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1">
         </get_scan_report>
       </request>

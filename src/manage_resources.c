@@ -325,8 +325,7 @@ type_owned (const char* type)
          && strcasecmp (type, "report_operating_system")
          && strcasecmp (type, "report_port")
          && strcasecmp (type, "report_tls_certificate")
-         && strcasecmp (type, "report_vuln")
-         && strcasecmp (type, "scan_report");
+         && strcasecmp (type, "report_vuln");
 }
 
 /**
