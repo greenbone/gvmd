@@ -69,7 +69,13 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       certificate = g_base64_decode (certificate_b64, &certificate_size);
 
       scanner_fpr_prefixed = iterator_string (&tls_certs, 1);
-      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":") + 1;
+      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":");
+      if (scanner_fpr == NULL)
+        {
+          g_free (certificate);
+          continue;
+        }
+      scanner_fpr++;
 
       quoted_scanner_fpr = sql_quote (scanner_fpr);
 
