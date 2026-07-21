@@ -1522,7 +1522,10 @@ add_tls_certificates_from_report_host (report_host_t report_host,
       gboolean has_ports;
 
       certificate_prefixed = iterator_string (&tls_certs, 0);
-      certificate_b64 = g_strrstr (certificate_prefixed, ":") + 1;
+      certificate_b64 = g_strrstr (certificate_prefixed, ":");
+      if (certificate_b64 == NULL)
+        continue;
+      certificate_b64++;
 
       certificate = g_base64_decode (certificate_b64, &certificate_size);
 
