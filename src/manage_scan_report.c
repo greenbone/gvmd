@@ -391,3 +391,38 @@ manage_get_scan_report_summary (const gchar *report_id,
 
   return MANAGE_GET_SCAN_REPORT_SUCCESS;
 }
+
+/**
+ * @brief Get the string representation of a report target type.
+ *
+ * @param[in] type  Report target type.
+ *
+ * @return String representation of the report target type.
+ */
+const gchar *
+report_target_type_to_string (report_target_type_t type)
+{
+  switch (type)
+    {
+    case REPORT_TARGET_TYPE_NONE:
+      return "none";
+
+    case REPORT_TARGET_TYPE_TARGET:
+      return "target";
+
+    case REPORT_TARGET_TYPE_OCI_IMAGE:
+      return "oci_image";
+
+    case REPORT_TARGET_TYPE_WEB_APPLICATION:
+      return "web_application";
+
+    case REPORT_TARGET_TYPE_AGENT_GROUP:
+      return "agent_group";
+
+    case REPORT_TARGET_TYPE_IMPORT:
+      return "import";
+
+    default:
+      return "unknown";
+    }
+}
