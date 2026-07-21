@@ -176,11 +176,13 @@ report_summary_t
 report_summary_new (void);
 
 void
-report_summary_free (report_summary_t summary);
+report_summary_free (report_summary_t);
 
 manage_get_scan_report_response_t
-manage_get_scan_report_summary (const gchar *report_id,
-                                const get_data_t *get,
-                                report_summary_t *summary);
+manage_get_scan_report_summary (const gchar *, const get_data_t *,
+                                report_summary_t *);
+
+const gchar *
+report_target_type_to_string (report_target_type_t);
 
 #endif /* _GVMD_MANAGE_SCAN_REPORT_H */

@@ -233,6 +233,12 @@ send_scan_report_task (gmp_parser_t *gmp_parser,
         target->comment ? target->comment : ""))
         return TRUE;
 
+      if (send_report_xml (
+        gmp_parser,
+        "<target_type>%s</target_type>",
+        report_target_type_to_string (target->type)))
+        return TRUE;
+
       if (send_report_xml (gmp_parser, "</target>"))
         return TRUE;
     }

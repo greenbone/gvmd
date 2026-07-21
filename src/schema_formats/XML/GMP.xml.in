@@ -20410,6 +20410,7 @@ END:VCALENDAR
               <e>trash</e>
               <e>name</e>
               <e>comment</e>
+              <e>target_type</e>
             </pattern>
             <ele>
               <name>trash</name>
@@ -20424,6 +20425,11 @@ END:VCALENDAR
             <ele>
               <name>comment</name>
               <summary>Comment associated with the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>target_type</name>
+              <summary>Type of the target associated with the task</summary>
               <pattern>text</pattern>
             </ele>
           </ele>
@@ -20756,8 +20762,9 @@ END:VCALENDAR
               <comment></comment>
               <target id="4809d998-2d2d-4a65-9148-f99f04799b09">
                 <trash>0</trash>
-                <name>samsung-tv</name>
+                <name>test-target</name>
                 <comment></comment>
+                <target_type>target</target_type>
               </target>
               <progress>100</progress>
             </task>
