@@ -3842,8 +3842,11 @@ manage_sync (sigset_t *sigmask_current,
           wait_for_pid (nvts_pid, "NVTs sync");
           wait_for_pid (scap_pid, "SCAP sync");
           wait_for_pid (cert_pid, "CERT sync");
-          wait_for_pid (web_application_vts_pid,
-                        "Web Application VTs sync");
+          if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+            {
+              wait_for_pid (web_application_vts_pid,
+                            "Web Application VTs sync");
+            }
 
           update_scap_extra ();
 
