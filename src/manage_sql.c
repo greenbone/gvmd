@@ -16422,7 +16422,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  NULL, NULL))
         {
           g_free (term);
-          g_hash_table_destroy (ctx.f_host_ports);
           goto fail;
         }
     }
