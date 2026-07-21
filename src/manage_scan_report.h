@@ -179,7 +179,7 @@ void
 report_summary_free (report_summary_t);
 
 manage_get_scan_report_response_t
-manage_get_scan_report_summary (const gchar *, const get_data_t *,
+manage_get_scan_report_summary (const get_data_t *,
                                 report_summary_t *);
 
 const gchar *

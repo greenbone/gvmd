@@ -315,15 +315,13 @@ resolve_get_report_controls (const get_data_t *get,
 /**
  * @brief Load a structured vulnerability report summary.
  *
- * @param[in]  report_id  UUID of the report.
- * @param[in]  get        GET command data.
+ * @param[in]  get          GET command data.
  * @param[out] summary      Loaded report summary.
  *
  * @return Status describing the result of the operation.
  */
 manage_get_scan_report_response_t
-manage_get_scan_report_summary (const gchar *report_id,
-                                const get_data_t *get,
+manage_get_scan_report_summary (const get_data_t *get,
                                 report_summary_t *summary)
 {
   get_report_controls_t controls = {0};
@@ -331,14 +329,14 @@ manage_get_scan_report_summary (const gchar *report_id,
   report_t report = 0;
   int ret;
 
-  if (report_id == NULL
-      || get == NULL
-      || summary == NULL)
+  if (get == NULL
+      || summary == NULL
+      || get->id == NULL)
     return MANAGE_GET_SCAN_REPORT_ERROR;
 
   *summary = NULL;
 
-  ret = find_report_with_permission (report_id,
+  ret = find_report_with_permission (get->id,
                                      &report,
                                      "get_reports");
 
