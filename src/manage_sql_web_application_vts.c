@@ -52,10 +52,17 @@ insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
           gvm_json_obj_check_str (child_alert, "id", &child_id);
           if (child_id)
             {
-              sql_ps ("INSERT INTO web_application_vts2.zap_vt_child_vts"
-                      " (parent_zap_id, child_zap_id) VALUES ($1, $2)",
+              sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+                      " (vt_id, ref_id, type)"
+                      " VALUES ('ZAP-' || $1, 'ZAP-' || $2, 'child_vt')",
                       SQL_STR_PARAM (parent_id),
                       SQL_STR_PARAM (child_id),
+                      NULL);
+              sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+                      " (vt_id, ref_id, type)"
+                      " VALUES ('ZAP-' || $1, 'ZAP-' || $2, 'parent_vt')",
+                      SQL_STR_PARAM (child_id),
+                      SQL_STR_PARAM (parent_id),
                       NULL);
             }
           else
@@ -117,7 +124,7 @@ insert_zap_vt_refs_from_references_json (cJSON *parent_json,
           continue;
         }
 
-      sql_ps ("INSERT INTO web_application_vts2.zap_vt_refs"
+      sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -160,7 +167,7 @@ insert_zap_vt_refs_from_str_array_json (const char *parent_id,
           continue;
         }
 
-      sql_ps ("INSERT INTO web_application_vts2.zap_vt_refs"
+      sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -222,8 +229,8 @@ insert_zap_vt_from_json (cJSON *entry)
   char *description = NULL, *solution = NULL;
   char *alert_type = NULL, *status = NULL;
   double severity = SEVERITY_MISSING;
-  cJSON *child_alerts_json;
-  gchar *child_alerts_str = NULL;
+  cJSON *type_metadata_json, *child_alerts_json;
+  char *type_metadata_str = NULL;
 
   gvm_json_obj_check_str (entry, "id", &id);
   gvm_json_obj_check_str (entry, "name", &name);
@@ -274,23 +281,29 @@ insert_zap_vt_from_json (cJSON *entry)
   gvm_json_obj_check_str (entry, "status", &status);
   gvm_json_obj_check_str (entry, "alert_type", &alert_type);
 
-  sql_ps ("INSERT INTO web_application_vts2.zap_vts"
-          "  (uuid, zap_id, name, creation_time, modification_time,"
-          "   description, severity, risk,"
-          "   document_type, alert_type, status, solution)"
-          " VALUES ('ZAP-' || $1, $1, $2, m_now(), m_now(),"
-          "         $3, $4, $5,"
-          "         $6, $7, $8, $9)"
+  type_metadata_json = cJSON_CreateObject ();
+  cJSON_AddStringToObject (type_metadata_json, "document_type", document_type);
+  if (risk)
+    cJSON_AddStringToObject (type_metadata_json, "risk", risk);
+  if (status)
+    cJSON_AddStringToObject (type_metadata_json, "status", status);
+  if (alert_type)
+    cJSON_AddStringToObject (type_metadata_json, "alert_type", alert_type);
+  type_metadata_str = cJSON_PrintBuffered (type_metadata_json, 256, 0);
+
+  sql_ps ("INSERT INTO vts.web_application_vts_rebuild"
+          "  (uuid, name, creation_time, modification_time,"
+          "   type, description, solution, severity, type_metadata)"
+          " VALUES ('ZAP-' || $1, $2, m_now(), m_now(),"
+          "         'ZAP-' || $3, $4, $5, $6, $7)"
           " RETURNING id;",
           SQL_STR_PARAM (id),
           SQL_STR_PARAM (name ?: id),
-          SQL_STR_PARAM (description ?: ""),
-          SQL_DOUBLE_PARAM (severity),
-          SQL_STR_PARAM (risk ?: ""),
           SQL_STR_PARAM (document_type),
-          SQL_STR_PARAM (alert_type ?: ""),
-          SQL_STR_PARAM (status ?: ""),
+          SQL_STR_PARAM (description ?: ""),
           SQL_STR_PARAM (solution ?: ""),
+          SQL_DOUBLE_PARAM (severity),
+          SQL_STR_PARAM (type_metadata_str),
           NULL);
 
   child_alerts_json = cJSON_GetObjectItem (entry, "child_alerts");
@@ -298,7 +311,8 @@ insert_zap_vt_from_json (cJSON *entry)
 
   insert_zap_vt_refs_from_json (entry, id);
 
-  g_free (child_alerts_str);
+  cJSON_free (type_metadata_str);
+  cJSON_Delete (type_metadata_json);
 
   return 0;
 }
@@ -313,17 +327,17 @@ void
 update_zap_vt_severities_from_cves ()
 {
   g_info ("%s: updating ZAP VT severities from CVEs", __func__);
-  sql ("UPDATE web_application_vts.zap_vts"
+  sql ("UPDATE vts.web_application_vts"
        " SET severity = ("
-       "   SELECT coalesce(max(cves.severity), zap_vts.severity)"
+       "   SELECT coalesce(max(cves.severity), web_application_vts.severity)"
        "    FROM scap.cves"
        "    WHERE cves.uuid IN ("
        "      SELECT ref_id"
-       "      FROM web_application_vts.zap_vt_refs"
-       "      WHERE type = 'cve' AND vt_id = zap_vts.uuid"
+       "      FROM vts.web_application_vt_refs"
+       "      WHERE type = 'cve' AND vt_id = web_application_vts.uuid"
        "    )"
        "  )"
-       " WHERE EXISTS (SELECT * FROM web_application_vts.zap_vt_refs"
+       " WHERE EXISTS (SELECT * FROM vts.web_application_vt_refs"
        "               WHERE type = 'cve' AND vt_id = uuid);");
 
 }
@@ -338,14 +352,15 @@ void
 update_zap_vt_group_severity_scores ()
 {
   g_info ("%s: updating ZAP VT severities for groups", __func__);
-  sql ("UPDATE web_application_vts.zap_vts AS outer_vts"
+  sql ("UPDATE vts.web_application_vts AS outer_vts"
        " SET severity ="
        "   (SELECT coalesce(max(severity), outer_vts.severity)"
-       "    FROM web_application_vts.zap_vts AS inner_vts"
-       "    WHERE inner_vts.zap_id IN"
-       "      (SELECT child_zap_id"
-       "       FROM web_application_vts.zap_vt_child_vts"
-       "       WHERE parent_zap_id = outer_vts.zap_id)"
+       "    FROM vts.web_application_vts AS inner_vts"
+       "    WHERE inner_vts.uuid IN"
+       "      (SELECT ref_id"
+       "       FROM vts.web_application_vt_refs"
+       "       WHERE vt_id = outer_vts.uuid"
+       "         AND type = 'child_vt')"
        "   )"
-       " WHERE risk = '';");
+       " WHERE type = 'ZAP';");
 }

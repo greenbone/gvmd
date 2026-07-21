@@ -282,6 +282,12 @@ manage_cert_db_supported_version ();
 int
 manage_cert_db_version ();
 
+int
+manage_web_application_vts_db_supported_version ();
+
+int
+manage_web_application_vts_db_version ();
+
 void
 set_db_version (int version);
 
@@ -2774,6 +2780,7 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+#define WEB_APPLICATION_VTS_FEED 5
 
 gboolean
 manage_gvmd_data_feed_dir_exists (const char *);

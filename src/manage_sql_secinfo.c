@@ -104,11 +104,17 @@ manage_db_init_indexes (const gchar *);
 int
 manage_db_add_constraints (const gchar *);
 
+void
+create_web_application_vts_rebuild_tables ();
+
 static int
 sync_cert ();
 
 static int
 update_scap (gboolean);
+
+static int
+update_web_application_vts (gboolean);
 
 
 /* Helpers. */
@@ -6064,6 +6070,7 @@ manage_feed_timestamp (const gchar *name)
 int
 secinfo_feed_version_status (const char *feed_type)
 {
+  gboolean is_vts_subtype = FALSE;
   int last_feed_update, last_db_update;
 
   if (strcmp (feed_type, "cert") == 0)
@@ -6078,6 +6085,7 @@ secinfo_feed_version_status (const char *feed_type)
     }
   else if (strcmp (feed_type, "web_application_vts") == 0)
     {
+      is_vts_subtype = TRUE;
       if (manage_web_application_vts_loaded () == 0)
         return 2;
     }
@@ -6091,10 +6099,22 @@ secinfo_feed_version_status (const char *feed_type)
   if (last_feed_update == -1)
     return -1;
 
-  last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
-                            "                  WHERE name = 'last_update'),"
-                            "                 '-3');",
-                            feed_type);
+  if (is_vts_subtype)
+    {
+      last_db_update
+        = sql_int ("SELECT coalesce ((SELECT value FROM vts.meta"
+                   "                  WHERE name = 'last_%s_update'),"
+                   "                 '-3');",
+                   feed_type);
+    }
+  else
+    {
+      last_db_update
+        = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                   "                  WHERE name = 'last_update'),"
+                   "                 '-3');",
+                   feed_type);
+    }
   if (last_db_update == -3)
     return 3;
   else if (last_db_update < 0)
@@ -7062,6 +7082,46 @@ fail:
 /* Web Application VTs. */
 
 /**
+ * @brief Ensure Web application VTs db is at the right version.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_web_application_vts_db_version ()
+{
+  int db_version = manage_web_application_vts_db_version ();
+
+  if (db_version < GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION)
+    {
+      int ret;
+      g_info ("Reinitialization of the Web Application VT tables necessary");
+
+      ret = manage_db_init ("vts");
+      if (ret)
+        return ret;
+
+      create_web_application_vts_rebuild_tables ();
+
+      ret = update_web_application_vts (TRUE);
+      if (ret)
+        return ret;
+
+      if (manage_scap_loaded ())
+        update_zap_vt_severities_from_cves ();
+
+      update_zap_vt_group_severity_scores ();
+    }
+  else if (db_version > GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION)
+    {
+      g_warning ("%s: Web application VTs database version %d is newer than"
+                 " supported version %d",
+                 __func__, db_version,
+                 GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION);
+    }
+  return 0;
+}
+
+/**
  * @brief Update timestamp in web application VTs db from feed timestamp.
  */
 static void
@@ -7108,8 +7168,10 @@ update_web_application_vts_timestamp ()
         }
     }
 
-  g_debug ("%s: setting last_update: %lld", __func__, (long long) stamp);
-  sql ("UPDATE web_application_vts2.meta SET value = '%lld' WHERE name = 'last_update';",
+  g_debug ("%s: setting last_web_application_vts_update: %lld",
+           __func__, (long long) stamp);
+  sql ("UPDATE vts.meta SET value = '%lld'"
+       " WHERE name = 'last_web_application_vts_update';",
        (long long) stamp);
 }
 
@@ -7119,36 +7181,30 @@ update_web_application_vts_timestamp ()
 static void
 abort_web_application_vts_update ()
 {
-  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-               "               information_schema.schemata"
-               "               WHERE schema_name = 'web_application_vts');"))
+  if (manage_web_application_vts_loaded ())
     {
       update_web_application_vts_timestamp ();
-      sql ("UPDATE web_application_vts.meta SET value = "
-           "    (SELECT value from web_application_vts2.meta WHERE name = 'last_update')"
-           "  WHERE name = 'last_update';");
-      sql ("DROP SCHEMA web_application_vts2 CASCADE;");
+      sql ("DROP TABLE vts.web_application_vts_rebuild;");
+      sql ("DROP TABLE vts.web_application_vt_refs_rebuild;");
     }
   else
     {
-      /* reset scap2 schema */
-      if (manage_db_init ("web_application_vts"))
-        {
-          g_warning ("%s: could not reset web_application_vts schema, db init failed",
-                     __func__);
-        }
-
-      if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-                   "               information_schema.schemata"
-                   "               WHERE schema_name = 'web_application_vts2');"))
+      if (sql_int ("SELECT EXISTS"
+                   " (SELECT table_schema FROM"
+                   "  information_schema.tables"
+                   "  WHERE table_schema = 'vts'"
+                   "  AND table_name = 'web_application_vts_rebuild');"))
         {
           update_web_application_vts_timestamp ();
-          sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
+          sql ("ALTER TABLE IF EXISTS vts.web_application_vts_rebuild"
+               " RENAME TO web_application_vts;");
+          sql ("ALTER TABLE IF EXISTS vts.web_application_vt_refs_rebuild"
+               " RENAME TO web_application_vt_refs_rebuild;");
         }
     }
 
-  g_info ("%s: Updating SCAP data aborted", __func__);
-  setproctitle ("Syncing SCAP: aborted");
+  g_info ("%s: Updating Web Application VTs aborted", __func__);
+  setproctitle ("Syncing Web Application VTs: aborted");
 }
 
 /**
@@ -7161,22 +7217,37 @@ update_web_application_vts_end ()
 
   update_web_application_vts_timestamp ();
 
-  /* Replace the real web_application_vts schema with the new one. */
+  /* Replace the real web_application_vts tables with the new ones. */
 
-  if (sql_int ("SELECT EXISTS (SELECT schema_name FROM"
-               "               information_schema.schemata"
-               "               WHERE schema_name = 'web_application_vts');"))
+  if (sql_int ("SELECT EXISTS (SELECT table_schema FROM"
+               "               information_schema.tables"
+               "               WHERE table_schema = 'vts'"
+               "               AND table_name = 'web_application_vts');"))
     {
-      sql ("ALTER SCHEMA web_application_vts RENAME TO web_application_vts3;");
-      sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
-      sql ("DROP SCHEMA web_application_vts3 CASCADE;");
+      sql ("ALTER TABLE vts.web_application_vts"
+           " RENAME TO web_application_vts_old;");
+      sql ("ALTER TABLE vts.web_application_vt_refs"
+           " RENAME TO web_application_vt_refs_old;");
+
+      sql ("ALTER TABLE vts.web_application_vts_rebuild"
+           " RENAME TO web_application_vts;");
+      sql ("ALTER TABLE vts.web_application_vt_refs_rebuild"
+           " RENAME TO web_application_vt_refs;");
+
+      sql ("DROP TABLE vts.web_application_vts_old;");
+      sql ("DROP TABLE vts.web_application_vt_refs_old;");
     }
   else
-    sql ("ALTER SCHEMA web_application_vts2 RENAME TO web_application_vts;");
+    {
+      sql ("ALTER TABLE vts.web_application_vts_rebuild"
+           " RENAME TO web_application_vts;");
+      sql ("ALTER TABLE vts.web_application_vt_refs_rebuild"
+           " RENAME TO web_application_vt_refs;");
+    }
 
   /* Analyze. */
 
-  sql ("ANALYZE web_application_vts.zap_vts;");
+  sql ("ANALYZE vts.web_application_vts;");
 
   g_info ("%s: Updating Web Application VTs succeeded", __func__);
   setproctitle ("Syncing Web Application VTs: done");
@@ -7205,11 +7276,12 @@ update_web_application_vts (gboolean reset_db)
 
       last_web_application_vts_update
         = sql_int ("SELECT coalesce ((SELECT value"
-                   "                  FROM web_application_vts.meta"
-                   "                  WHERE name = 'last_update'),"
+                   "                  FROM vts.meta"
+                   "                  WHERE name"
+                   "                    = 'last_web_application_vts_update'),"
                    "                 '-3');");
       if (last_web_application_vts_update == -3)
-        g_warning ("%s: Web Application VTs db missing last_update record,"
+        g_warning ("%s: VTs db missing last_web_application_vts_update record,"
                    " resetting Web Application VTs db",
                    __func__);
       else if (last_web_application_vts_update < 0)
@@ -7219,7 +7291,7 @@ update_web_application_vts (gboolean reset_db)
         {
           int last_feed_update;
 
-          last_feed_update = manage_feed_timestamp ("scap");
+          last_feed_update = manage_feed_timestamp ("web_application_vts");
 
           if (last_feed_update == -1)
             return -1;
@@ -7243,19 +7315,22 @@ update_web_application_vts (gboolean reset_db)
   /* Drop old schema if that is part of the update strategy */
   if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
     {
-      g_info ("%s: Removing old Web Application VTs database schema...",
+      g_info ("%s: Removing old Web Application VTs database tables...",
               __func__);
-      sql ("DROP SCHEMA web_application_vts CASCADE;");
+      sql ("DROP TABLE IF EXISTS vts.web_application_vts;");
+      sql ("DROP TABLE IF EXISTS vts.web_application_vt_refs;");
     }
 
   /* Create a new schema, "web_application_vts". */
 
-  if (manage_db_init ("web_application_vts"))
+  if (manage_db_init ("vts"))
     {
-      g_warning ("%s: could not initialize Web Application VTs database 2",
+      g_warning ("%s: could not initialize VTs database schema",
                  __func__);
       return -1;
     }
+
+  create_web_application_vts_rebuild_tables ();
 
   /* Update into the new schema. */
 
@@ -7265,7 +7340,7 @@ update_web_application_vts (gboolean reset_db)
 
   g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
 
-  g_debug ("%s: update zap_vts", __func__);
+  g_debug ("%s: update ZAP vts", __func__);
   setproctitle ("Syncing Web Application VTs: Updating ZAP VTs");
 
   if (update_zap_vts_from_feed () == -1)
