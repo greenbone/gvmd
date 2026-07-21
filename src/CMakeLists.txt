@@ -20,7 +20,7 @@ pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.41)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
@@ -60,7 +60,7 @@ endif(ENABLE_JWT_AUTH)
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
   pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(
     LIBGVM_SECURITY_INTELLIGENCE
     REQUIRED
