@@ -7199,7 +7199,7 @@ abort_web_application_vts_update ()
           sql ("ALTER TABLE IF EXISTS vts.web_application_vts_rebuild"
                " RENAME TO web_application_vts;");
           sql ("ALTER TABLE IF EXISTS vts.web_application_vt_refs_rebuild"
-               " RENAME TO web_application_vt_refs_rebuild;");
+               " RENAME TO web_application_vt_refs;");
         }
     }
 
