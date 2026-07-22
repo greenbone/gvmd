@@ -5250,6 +5250,12 @@ authenticate_any_method (const gchar *username, const gchar *password,
   gchar *hash;
   gboolean use_cache = TRUE;
 
+  if (password == NULL || *password == '\0')
+    {
+      g_debug ("%s: Empty password rejected", __func__);
+      return 1;
+    }
+
   sql_begin_immediate ();
 
   ret = sql_table_lock_wait ("auth_cache", 30000);
