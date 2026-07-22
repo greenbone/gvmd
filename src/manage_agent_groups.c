@@ -64,6 +64,112 @@ agent_response_to_agent_group_resp (agent_response_t response)
 }
 
 /**
+ * @brief Create a deep copy of scheduler cron-time strings.
+ *
+ * @param[in] source Source array of strings.
+ *
+ * @return A newly allocated array containing duplicated strings,
+ *         or NULL on failure.
+ */
+static GPtrArray *
+copy_scheduler_cron_times (const GPtrArray *source)
+{
+  GPtrArray *copy;
+
+  if (source == NULL)
+    return NULL;
+
+  copy = g_ptr_array_new_with_free_func (g_free);
+  if (copy == NULL)
+    return NULL;
+
+  for (guint i = 0; i < source->len; ++i)
+    {
+      const gchar *cron_time = g_ptr_array_index (source, i);
+      gchar *cron_time_copy;
+
+      if (cron_time == NULL)
+        {
+          g_ptr_array_unref (copy);
+          return NULL;
+        }
+
+      cron_time_copy = g_strdup (cron_time);
+      if (cron_time_copy == NULL)
+        {
+          g_ptr_array_unref (copy);
+          return NULL;
+        }
+
+      g_ptr_array_add (copy, cron_time_copy);
+    }
+
+  return copy;
+}
+
+/**
+ * @brief Get the scanner default scheduler cron times.
+ *
+ * Loads the default Agent Controller configuration when it has not already
+ * been loaded.
+ *
+ * @param[in]     scanner               Scanner associated with the agents.
+ * @param[in,out] default_config        Cached default scanner configuration.
+ * @param[out]    scheduler_cron_times  Borrowed scheduler cron-time array.
+ *
+ * @return AGENT_GROUP_RESP_SUCCESS on success,
+ *         or AGENT_GROUP_RESP_INTERNAL_ERROR on failure.
+ */
+static agent_group_resp_t
+get_default_scheduler_cron_times (
+  scanner_t scanner,
+  agent_controller_scan_agent_config_t *default_config,
+  const GPtrArray **scheduler_cron_times)
+{
+  if (default_config == NULL || scheduler_cron_times == NULL)
+    {
+      g_warning ("%s: Invalid arguments provided", __func__);
+      return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+    }
+
+  if (*default_config == NULL)
+    {
+      *default_config =
+        get_agent_control_scan_agent_config (scanner);
+
+      if (*default_config == NULL)
+        {
+          g_warning (
+            "%s: Failed to retrieve the Agent Controller default config",
+            __func__);
+          return AGENT_GROUP_RESP_INTERNAL_ERROR;
+        }
+    }
+
+  if ((*default_config)->agent_defaults == NULL)
+    {
+      g_warning (
+        "%s: Agent Controller default config has no agent defaults",
+        __func__);
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
+
+  *scheduler_cron_times =
+    (*default_config)->agent_defaults
+                     ->agent_script_executor.scheduler_cron_time;
+
+  if (*scheduler_cron_times == NULL)
+    {
+      g_warning (
+        "%s: Agent Controller default config has no scheduler cron times",
+        __func__);
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
+
+  return AGENT_GROUP_RESP_SUCCESS;
+}
+
+/**
  * @brief Fill an agent update list with the current scheduler cron times.
  *
  * @param[in]  agent_uuids  List of agent UUIDs to retrieve cron times for.
@@ -81,6 +187,7 @@ fill_agents_update_list_from_group_crons (
   agent_controller_agent_update_list_t update_list)
 {
   agent_controller_agent_list_t current_agents = NULL;
+  agent_controller_scan_agent_config_t default_config = NULL;
   agent_response_t response;
   agent_group_resp_t result = AGENT_GROUP_RESP_SUCCESS;
 
@@ -88,9 +195,7 @@ fill_agents_update_list_from_group_crons (
       || agent_uuids->count == 0
       || update_list == NULL)
     {
-      g_warning (
-        "%s: Invalid arguments provided",
-        __func__);
+      g_warning ("%s: Invalid arguments provided", __func__);
       return AGENT_GROUP_RESP_INVALID_ARGUMENT;
     }
 
@@ -132,8 +237,7 @@ fill_agents_update_list_from_group_crons (
         {
           g_warning (
             "%s: Agent at index %d is NULL",
-            __func__,
-            i);
+            __func__, i);
 
           result = AGENT_GROUP_RESP_INTERNAL_ERROR;
           goto cleanup;
@@ -169,67 +273,44 @@ fill_agents_update_list_from_group_crons (
 
       if (scheduler_cron_times->len == 0)
         {
-          agent_controller_scan_agent_config_t default_config = NULL;
+          const GPtrArray *default_scheduler_cron_times = NULL;
 
           g_ptr_array_unref (scheduler_cron_times);
           scheduler_cron_times = NULL;
 
-          default_config =
-            get_agent_control_scan_agent_config (scanner);
+          result =
+            get_default_scheduler_cron_times (
+              scanner,
+              &default_config,
+              &default_scheduler_cron_times);
 
-          if (default_config == NULL)
-            {
-              g_warning (
-                "%s: Failed to retrieve the agent controller"
-                " default agent config for agent UUID %s",
-                __func__, agent_uuid ? agent_uuid : "(null)");
-
-              result = AGENT_GROUP_RESP_INTERNAL_ERROR;
-              goto cleanup;
-            }
-
-          if (default_config->agent_defaults == NULL)
-            {
-              g_warning (
-                "%s: Scanner default config has no agent defaults "
-                "for agent UUID %s",
-                __func__,
-                agent_uuid ? agent_uuid : "(null)");
-
-              agent_controller_scan_agent_config_free (default_config);
-              result = AGENT_GROUP_RESP_INTERNAL_ERROR;
-              goto cleanup;
-            }
+          if (result != AGENT_GROUP_RESP_SUCCESS)
+            goto cleanup;
 
           scheduler_cron_times =
-            default_config->agent_defaults
-                          ->agent_script_executor.scheduler_cron_time;
+            copy_scheduler_cron_times (default_scheduler_cron_times);
 
           if (scheduler_cron_times == NULL)
             {
               g_warning (
-                "%s: Scanner default config has no scheduler cron times "
+                "%s: Failed to copy default scheduler cron times "
                 "for agent UUID %s",
                 __func__,
                 agent_uuid ? agent_uuid : "(null)");
 
-              agent_controller_scan_agent_config_free (default_config);
               result = AGENT_GROUP_RESP_INTERNAL_ERROR;
               goto cleanup;
             }
-
-          /*
-           * Transfer ownership of the default scheduler cron times to the
-           * agent-specific configuration.
-           */
-          default_config->agent_defaults
-                        ->agent_script_executor.scheduler_cron_time = NULL;
-          agent_controller_scan_agent_config_free (default_config);
         }
 
       update = agent_controller_agent_update_new ();
       if (update == NULL)
         {
+          g_warning (
+            "%s: Failed to allocate update for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
           g_ptr_array_unref (scheduler_cron_times);
           result = AGENT_GROUP_RESP_INTERNAL_ERROR;
           goto cleanup;
@@ -238,6 +319,11 @@ fill_agents_update_list_from_group_crons (
       config = agent_controller_agent_config_new ();
       if (config == NULL)
         {
+          g_warning (
+            "%s: Failed to allocate config for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
           g_ptr_array_unref (scheduler_cron_times);
           agent_controller_agent_update_free (update);
           result = AGENT_GROUP_RESP_INTERNAL_ERROR;
@@ -252,8 +338,12 @@ fill_agents_update_list_from_group_crons (
 
       update->base_config =
         copy_agent_controller_scan_agent_config (agent->config);
+
       update->agent_id = g_strdup (agent->agent_id);
 
+      /*
+       * config owns scheduler_cron_times after the assignment above.
+       */
       agent_controller_agent_config_free (config);
 
       if (update->update_config == NULL)
@@ -296,6 +386,7 @@ fill_agents_update_list_from_group_crons (
     }
 
 cleanup:
+  agent_controller_scan_agent_config_free (default_config);
   agent_controller_agent_list_free (current_agents);
 
   return result;
