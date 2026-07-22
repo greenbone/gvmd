@@ -1659,6 +1659,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
               if (versions->len)
                 g_string_append (versions, ", ");
               g_string_append (versions, quoted_version);
+              g_free (quoted_version);
             }
           cleanup_iterator (&versions_iter);
 
