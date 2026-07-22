@@ -898,21 +898,6 @@ fork_connection_internal (gvm_connection_t *client_connection,
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_connection   Client connection.
- * @param[in]  uuid                UUID of schedule user.
- *
- * @return PID parent on success, 0 child on success, -1 error.
- */
-static int
-fork_connection_for_scheduler (gvm_connection_t *client_connection,
-                               const gchar* uuid)
-{
-  return fork_connection_internal (client_connection, uuid, 1);
-}
-
-/**
- * @brief Fork a child connected to the Manager.
- *
  * @param[in]  client_connection  Client connection.
  * @param[in]  uuid               UUID of user.
  *
@@ -1847,8 +1832,7 @@ run_schedule (periodic_times_t *t)
   if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, start))
     return;
 
-  int rc = manage_schedule (fork_connection_for_scheduler,
-                            scheduling_enabled,
+  int rc = manage_schedule (scheduling_enabled,
                             sigmask_normal);
   switch (rc)
     {
