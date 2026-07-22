@@ -8,11 +8,11 @@
  * @brief Agent group data utilities and access control checks for GVMD.
  */
 
+#if ENABLE_AGENTS
+#include "manage_agent_groups.h"
 #include "manage_agents.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
-#if ENABLE_AGENTS
-#include "manage_agent_groups.h"
 
 #undef G_LOG_DOMAIN
 /**
