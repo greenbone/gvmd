@@ -84,12 +84,25 @@ fill_agents_update_list_from_group_crons (
   agent_response_t response;
   agent_group_resp_t result = AGENT_GROUP_RESP_SUCCESS;
 
-  if (agent_uuids == NULL || agent_uuids->count == 0 || update_list == NULL)
-    return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+  if (agent_uuids == NULL
+      || agent_uuids->count == 0
+      || update_list == NULL)
+    {
+      g_warning (
+        "%s: Invalid arguments provided",
+        __func__);
+      return AGENT_GROUP_RESP_INVALID_ARGUMENT;
+    }
 
   current_agents = agent_controller_agent_list_new (agent_uuids->count);
   if (current_agents == NULL)
-    return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    {
+      g_warning (
+        "%s: Failed to allocate agent list for %d agents",
+        __func__,
+        agent_uuids->count);
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
 
   response =
     get_agent_controller_agents_from_uuids (
@@ -97,25 +110,121 @@ fill_agents_update_list_from_group_crons (
 
   if (response != AGENT_RESPONSE_SUCCESS)
     {
+      g_warning (
+        "%s: Failed to retrieve %d agents from Agent Controller: %d",
+        __func__,
+        agent_uuids->count,
+        response);
+
       result = agent_response_to_agent_group_resp (response);
       goto cleanup;
     }
 
   for (int i = 0; i < current_agents->count; ++i)
     {
+      const char *agent_uuid = agent_uuids->agent_uuids[i];
       GPtrArray *scheduler_cron_times = NULL;
       agent_controller_agent_t agent = current_agents->agents[i];
       agent_controller_agent_update_t update = NULL;
       agent_controller_agent_config_t config = NULL;
 
+      if (agent == NULL)
+        {
+          g_warning (
+            "%s: Agent at index %d is NULL",
+            __func__,
+            i);
+
+          result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+          goto cleanup;
+        }
+
       response =
         agent_group_schedule_cron_times_for_agent_uuid (
-          agent_uuids->agent_uuids[i], &scheduler_cron_times);
+          agent_uuid,
+          &scheduler_cron_times);
 
       if (response != AGENT_RESPONSE_SUCCESS)
         {
+          g_warning (
+            "%s: Failed to retrieve group cron times for agent UUID %s: %d",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)",
+            response);
+
           result = agent_response_to_agent_group_resp (response);
           goto cleanup;
+        }
+
+      if (scheduler_cron_times == NULL)
+        {
+          g_warning (
+            "%s: Cron-time lookup returned NULL for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
+          result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+          goto cleanup;
+        }
+
+      if (scheduler_cron_times->len == 0)
+        {
+          agent_controller_scan_agent_config_t default_config = NULL;
+
+          g_ptr_array_unref (scheduler_cron_times);
+          scheduler_cron_times = NULL;
+
+          default_config =
+            get_agent_control_scan_agent_config (scanner);
+
+          if (default_config == NULL)
+            {
+              g_warning (
+                "%s: Failed to retrieve the agent controller"
+                " default agent config for agent UUID %s",
+                __func__, agent_uuid ? agent_uuid : "(null)");
+
+              result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+              goto cleanup;
+            }
+
+          if (default_config->agent_defaults == NULL)
+            {
+              g_warning (
+                "%s: Scanner default config has no agent defaults "
+                "for agent UUID %s",
+                __func__,
+                agent_uuid ? agent_uuid : "(null)");
+
+              agent_controller_scan_agent_config_free (default_config);
+              result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+              goto cleanup;
+            }
+
+          scheduler_cron_times =
+            default_config->agent_defaults
+                          ->agent_script_executor.scheduler_cron_time;
+
+          if (scheduler_cron_times == NULL)
+            {
+              g_warning (
+                "%s: Scanner default config has no scheduler cron times "
+                "for agent UUID %s",
+                __func__,
+                agent_uuid ? agent_uuid : "(null)");
+
+              agent_controller_scan_agent_config_free (default_config);
+              result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+              goto cleanup;
+            }
+
+          /*
+           * Transfer ownership of the default scheduler cron times to the
+           * agent-specific configuration.
+           */
+          default_config->agent_defaults
+                        ->agent_script_executor.scheduler_cron_time = NULL;
+          agent_controller_scan_agent_config_free (default_config);
         }
 
       update = agent_controller_agent_update_new ();
@@ -146,10 +255,38 @@ fill_agents_update_list_from_group_crons (
       update->agent_id = g_strdup (agent->agent_id);
 
       agent_controller_agent_config_free (config);
-      config = NULL;
 
-      if (update->update_config == NULL || update->base_config == NULL)
+      if (update->update_config == NULL)
         {
+          g_warning (
+            "%s: Failed to copy update config for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
+          agent_controller_agent_update_free (update);
+          result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+          goto cleanup;
+        }
+
+      if (update->base_config == NULL)
+        {
+          g_warning (
+            "%s: Failed to copy base config for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
+          agent_controller_agent_update_free (update);
+          result = AGENT_GROUP_RESP_INTERNAL_ERROR;
+          goto cleanup;
+        }
+
+      if (update->agent_id == NULL)
+        {
+          g_warning (
+            "%s: Failed to copy Agent Controller ID for agent UUID %s",
+            __func__,
+            agent_uuid ? agent_uuid : "(null)");
+
           agent_controller_agent_update_free (update);
           result = AGENT_GROUP_RESP_INTERNAL_ERROR;
           goto cleanup;
