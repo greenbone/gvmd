@@ -1618,6 +1618,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
           g_free (subject);
           g_free (issuer);
           g_free (serial);
+          g_free (quoted_scanner_fpr);
           continue;
         }
 
@@ -1685,6 +1686,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
       g_free (subject);
       g_free (issuer);
       g_free (serial);
+      g_free (quoted_scanner_fpr);
     }
   cleanup_iterator (&tls_certs);
 
