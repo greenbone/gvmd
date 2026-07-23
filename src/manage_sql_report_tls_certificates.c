@@ -54,7 +54,7 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
       gsize certificate_size;
       unsigned char *certificate;
       const char *scanner_fpr_prefixed, *scanner_fpr;
-      gchar *quoted_scanner_fpr;
+      gchar *quoted_scanner_fpr, *activation_time_str, *expiration_time_str;;
       char *ssldetails;
       iterator_t ports;
       gboolean valid;
@@ -141,6 +141,9 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
                                    "   AND name = 'hostname'",
                                    report_host);
 
+      activation_time_str = certificate_iso_time (activation_time);
+      expiration_time_str = certificate_iso_time (expiration_time);
+
       PRINT (stream,
              "<tls_certificate>"
              "<name>%s</name>"
@@ -160,13 +163,16 @@ print_report_host_tls_certificates_xml (report_host_t report_host,
              sha256_fingerprint,
              md5_fingerprint,
              valid,
-             certificate_iso_time (activation_time),
-             certificate_iso_time (expiration_time),
+             activation_time_str,
+             expiration_time_str,
              subject,
              issuer,
              serial,
              host_ip,
              hostname ? hostname : "");
+
+      g_free (activation_time_str);
+      g_free (expiration_time_str);
 
       g_free (certificate);
       g_free (md5_fingerprint);
