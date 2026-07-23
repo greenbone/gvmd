@@ -470,6 +470,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
                                     certificate_format_internal);
       if (err)
         {
+          gnutls_x509_crt_deinit (gnutls_cert);
           g_free (cert_truncated);
           return -1;
         }
