@@ -303,6 +303,17 @@ static int update_in_progress = 0;
 static int feed_version_check_in_progress = 0;
 
 /**
+ * @brief PID of the dedicated periodic worker, or -1.
+ */
+
+static pid_t periodic_job_runner_pid = -1;
+
+/**
+ * @brief Set when the periodic worker terminates.
+ */
+static volatile sig_atomic_t periodic_job_runner_terminated = 0;
+
+/**
  * @brief Logging parameters, as passed to setup_log_handlers.
  */
 GSList *log_config = NULL;
@@ -1067,10 +1078,14 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
       if (feed_version_check_in_progress == pid)
         /* This was a version check child, so allow version checks again */
         feed_version_check_in_progress = 0;
+
+      if (periodic_job_runner_pid == pid)
+        {
+          periodic_job_runner_pid = -1;
+          periodic_job_runner_terminated = 1;
+        }
     }
 }
-
-
 
 /**
  * @brief Handle a SIGABRT signal.
@@ -1959,6 +1974,154 @@ run_periodic_block (periodic_times_t *t)
 }
 
 /**
+ * @brief Run periodic jobs in a loop, sleeping 1 second between runs.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ */
+static void
+run_periodic_job_runner_loop (sigset_t *sigmask_current)
+{
+  periodic_times_t times = {0};
+
+  init_sentry ();
+  is_parent = 0;
+  setproctitle ("Periodic scheduler");
+
+  if (sigmask_normal)
+    pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+  else
+    pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+  cleanup_manage_process (FALSE);
+  // might not be needed if manage_schedule() is called from a forked process.
+  init_manage_process (&database);
+
+  /* This worker does not serve client sockets. */
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
+  while (1)
+    {
+      run_periodic_block (&times);
+      gvm_sleep (1);
+      if (termination_signal)
+        {
+          g_debug ("%s, Received %s signal",
+                   __func__, strsignal (termination_signal));
+          break;
+        }
+    }
+
+  cleanup_manage_process (FALSE);
+  gvm_close_sentry ();
+  exit (EXIT_SUCCESS);
+}
+
+/*
+ * @brief Start the periodic job runner loop in a child process.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ *
+ * @return 0 on success, -1 on error.
+*/
+static int
+start_periodic_job_runner (sigset_t *sigmask_current)
+{
+  pid_t pid;
+
+  /* fork() is used instead of fork_with_handlers() for graceful shutdown */
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        run_periodic_job_runner_loop (sigmask_current);
+        exit (EXIT_FAILURE); /* should never be reached */
+
+      case -1:
+        g_warning ("%s: failed to fork periodic job runner: %s",
+                   __func__, strerror (errno));
+        return -1;
+
+      default:
+        periodic_job_runner_pid = pid;
+        periodic_job_runner_terminated = 0;
+        g_debug ("%s: started periodic job runner %d", __func__, pid);
+        return 0;
+    }
+
+  return -1;
+}
+
+/**
+ * @brief Terminate the periodic job runner process.
+ */
+static void
+terminate_periodic_job_runner (void)
+{
+  int status;
+  pid_t pid;
+  int reaped = 0;
+
+  if (periodic_job_runner_pid <= 0)
+    return;
+
+  pid = periodic_job_runner_pid;
+
+  if (kill (pid, SIGTERM) == -1 && errno != ESRCH)
+    g_warning ("%s: failed to send SIGTERM to periodic job runner %d: %s",
+               __func__, pid, strerror (errno));
+
+  for (int i = 0; i < 5; i++)
+    {
+      pid_t ret = waitpid (pid, &status, WNOHANG);
+      if (ret == pid)
+        {
+          reaped = 1;
+          break;
+        }
+      if (ret == -1)
+        {
+          if (errno == EINTR)
+            continue;
+          if (errno == ECHILD)
+            reaped = 1;
+          break;
+        }
+      if (ret == 0)
+        gvm_sleep (1);
+    }
+
+  if (!reaped)
+    {
+      if (kill (pid, SIGKILL) == -1 && errno != ESRCH)
+        g_warning ("%s: failed to send SIGKILL to periodic job runner %d: %s",
+                   __func__, pid, strerror (errno));
+
+      while (waitpid (pid, &status, 0) == -1)
+        {
+          if (errno == EINTR)
+            continue;
+          if (errno == ECHILD)
+            break;
+          g_warning ("%s: failed to wait for periodic job runner %d: %s",
+                     __func__, pid, strerror (errno));
+          break;
+        }
+    }
+
+  periodic_job_runner_pid = -1;
+  periodic_job_runner_terminated = 0;
+}
+
+/**
  * @brief Serve incoming connections, scheduling periodically.
  *
  * Enter an infinite loop, waiting for connections and passing the work to
@@ -1969,13 +2132,6 @@ run_periodic_block (periodic_times_t *t)
 static void
 serve_and_schedule ()
 {
-  periodic_times_t times = {
-    .last_schedule = 0,
-    .last_feed_sync = 0,
-    .last_queue = 0,
-    .last_agents_sync = 0,
-  };
-
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
 
@@ -1993,6 +2149,13 @@ serve_and_schedule ()
     }
   sigmask_normal = &sigmask_current;
 
+  if (start_periodic_job_runner (&sigmask_current))
+    {
+      g_critical ("%s: Failed to start periodic job runner", __func__);
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
+
   g_info ("gvmd is ready to accept GMP connections");
 
   while (1)
@@ -2001,7 +2164,18 @@ serve_and_schedule ()
       fd_set readfds, exceptfds;
       struct timespec timeout;
 
-      run_periodic_block (&times);
+      if (periodic_job_runner_terminated && !termination_signal)
+        {
+          g_warning ("%s: periodic job runner exited; restarting", __func__);
+          periodic_job_runner_terminated = 0;
+          if (start_periodic_job_runner (&sigmask_current))
+            {
+              g_critical ("%s: Failed to restart periodic job runner", __func__);
+              cleanup ();
+              gvm_close_sentry ();
+              exit (EXIT_FAILURE);
+            }
+        }
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
@@ -2021,6 +2195,7 @@ serve_and_schedule ()
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
+          terminate_periodic_job_runner ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -2066,12 +2241,11 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      run_periodic_block (&times);
-
       if (termination_signal)
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
+          terminate_periodic_job_runner ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
