@@ -1673,6 +1673,7 @@ update_nvts_from_json_file (const gchar *full_path,
       g_warning ("%s: Failed to open NVT file: %s",
                 __func__,
                 strerror (errno));
+      close (fd);
       return -1;
     }
 

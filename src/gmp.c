@@ -90,6 +90,7 @@
 #include "gmp_logout.h"
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
+#include "gmp_scan_report.h"
 #include "gmp_report_applications.h"
 #include "gmp_report_closed_cves.h"
 #include "gmp_report_configs.h"
@@ -4623,6 +4624,7 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_SCAN_REPORT,
   CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CLOSED_CVES,
   CLIENT_GET_REPORT_CONFIGS,
@@ -5537,6 +5539,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                   = g_list_append (get_aggregates_data->sort_data,
                                   sort_data);
               }
+            else
+              sort_data_free (sort_data);
 
             append_attribute (attribute_names, attribute_values, "mode",
                               &get_aggregates_data->mode);
@@ -6061,6 +6065,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names, attribute_values);
             set_client_state (CLIENT_GET_SCANNERS);
           }
+
+        ELSE_GET_START (scan_report, SCAN_REPORT)
+
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -11948,6 +11955,17 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   group_column = get_aggregates_data->group_column;
   subgroup_column = get_aggregates_data->subgroup_column;
 
+  if (subgroup_column && group_column == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_aggregates",
+                           "A 'group_column' attribute is required when"
+                           " 'subgroup_column' is given"));
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
+
   init_aggregate_lists (group_column,
                         subgroup_column,
                         get_aggregates_data->data_columns,
@@ -13507,6 +13525,8 @@ feed_type_name (int feed_type)
         return "SCAP";
       case GVMD_DATA_FEED:
         return "GVMD_DATA";
+      case WEB_APPLICATION_VTS_FEED:
+        return "WEB_APPLICATION_VTS";
       default:
         return "Error";
     }
@@ -21917,14 +21937,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case 3:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_asset",
-                                    "Attempt to delete a predefined asset"));
-                log_event_fail ("asset", "Asset",
-                                delete_asset_data->asset_id,
-                                "deleted");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_asset",
                                     "An asset_id or a"
                                     "report_id is required"));
                 log_event_fail ("asset", "Asset",
@@ -22533,6 +22545,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_SCANNERS:
         handle_get_scanners (gmp_parser, error);
         break;
+
+      CASE_GET_END (SCAN_REPORT, scan_report);
 
       case CLIENT_GET_SCHEDULES:
         handle_get_schedules (gmp_parser, error);

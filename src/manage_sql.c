@@ -119,6 +119,7 @@
 #include "manage_report_configs.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
+#include "manage_sql_scan_report.h"
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
@@ -227,11 +228,6 @@ task_owner_uuid (task_t);
 
 static int
 user_ensure_in_db (const gchar *, const gchar *);
-
-static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
-                       double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, int *, double *);
 
 static gboolean
 find_trash_task (const char*, task_t*);
@@ -1938,6 +1934,42 @@ manage_cert_db_version ()
   int number;
   char *version = sql_string ("SELECT value FROM cert.meta"
                               " WHERE name = 'database_version' LIMIT 1;");
+  if (version)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_web_application_vts_db_supported_version ()
+{
+  return GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version of the actual database.
+ *
+ * @return Database version read from database if possible, else -1.
+ */
+int
+manage_web_application_vts_db_version ()
+{
+  if (manage_web_application_vts_loaded () == 0)
+    return -1;
+
+  int number;
+  char *version
+    = sql_string ("SELECT value FROM vts.meta"
+                  " WHERE name = 'web_application_vts_database_version'"
+                  " LIMIT 1;");
   if (version)
     {
       number = atoi (version);
@@ -3807,6 +3839,42 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 }
 
 /**
+ * @brief Ensure that one of the databases is the right versions.
+ *
+ * @param[in]  type                      Type of the database
+ * @param[in]  get_current_db_version    Function to get current DB version.
+ * @param[in]  get_supported_db_version  Function to get supported DB version.
+ *
+ * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
+ */
+static int
+check_secinfo_db_version (const char *type,
+                          int get_current_db_version(),
+                          int get_supported_db_version())
+{
+  int db_version;
+  db_version = get_current_db_version ();
+  if (db_version == -1)
+    g_message ("No %s database found", type);
+  else
+    {
+      int supported;
+
+      supported = get_supported_db_version ();
+      if (db_version != supported)
+        {
+          g_message ("%s: database version of %s database: %i",
+                     __func__, type, db_version);
+          g_message ("%s: %s database version supported by manager: %d",
+                     __func__, type, supported);
+
+          return supported > db_version ? -2 : -5;
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Ensure that the databases are the right versions.
  *
  * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
@@ -3815,7 +3883,7 @@ static int
 check_db_versions ()
 {
   char *database_version;
-  int scap_db_version, cert_db_version;
+  int ret;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
@@ -3846,49 +3914,31 @@ check_db_versions ()
 
   /* Check SCAP database version. */
 
-  scap_db_version = manage_scap_db_version ();
-  if (scap_db_version == -1)
-    g_message ("No SCAP database found");
-  else
-    {
-      int supported;
-
-      supported = manage_scap_db_supported_version ();
-      if (scap_db_version != supported)
-        {
-          g_message ("%s: database version of SCAP database: %i",
-                     __func__,
-                     scap_db_version);
-          g_message ("%s: SCAP database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
-
-          return supported > scap_db_version ? -2 : -5;
-        }
-    }
+  ret = check_secinfo_db_version ("SCAP",
+                                  manage_scap_db_version,
+                                  manage_scap_db_supported_version);
+  if (ret)
+    return ret;
 
   /* Check CERT database version. */
 
-  cert_db_version = manage_cert_db_version ();
-  if (cert_db_version == -1)
-    g_message ("No CERT database found");
-  else
+  ret = check_secinfo_db_version ("CERT",
+                                  manage_cert_db_version,
+                                  manage_cert_db_supported_version);
+  if (ret)
+    return ret;
+
+  /* Check VT database versions. */
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
     {
-      int supported;
-
-      supported = manage_cert_db_supported_version ();
-      if (cert_db_version != supported)
-        {
-          g_message ("%s: database version of CERT database: %i",
-                     __func__,
-                     cert_db_version);
-          g_message ("%s: CERT database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
-
-          return supported > cert_db_version ? -2 : -5;
-        }
+      ret = check_secinfo_db_version (
+                "Web Application VTs",
+                manage_web_application_vts_db_version,
+                manage_web_application_vts_db_supported_version);
+      if (ret)
+        return ret;
     }
+
   return 0;
 }
 
@@ -5199,6 +5249,12 @@ authenticate_any_method (const gchar *username, const gchar *password,
   int ret;
   gchar *hash;
   gboolean use_cache = TRUE;
+
+  if (password == NULL || *password == '\0')
+    {
+      g_debug ("%s: Empty password rejected", __func__);
+      return 1;
+    }
 
   sql_begin_immediate ();
 
@@ -13330,22 +13386,6 @@ set_task_end_time_epoch (task_t task, time_t time)
 }
 
 /**
- * @brief Get the start time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return Start time of scan, in a newly allocated string.
- */
-static char*
-scan_start_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (start_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
-}
-
-/**
  * @brief Get the start time of a scan, in seconds since the epoch.
  *
  * @param[in]  report  The report associated with the scan.
@@ -13402,22 +13442,6 @@ set_scan_start_time_ctime (report_t report, const char* timestamp)
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
        parse_utc_ctime (timestamp),
        report);
-}
-
-/**
- * @brief Get the end time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return End time of scan, in a newly allocated string.
- */
-static char*
-scan_end_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (end_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
 }
 
 /**
@@ -13622,23 +13646,6 @@ report_end_time (report_t report)
                      " FROM reports"
                      " WHERE id = %llu",
                      report);
-}
-
-/**
- * @brief Return the run status of the scan associated with a report.
- *
- * @param[in]   report  Report.
- * @param[out]  status  Scan run status.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-report_scan_run_status (report_t report, task_status_t* status)
-{
-  *status = sql_int ("SELECT scan_run_status FROM reports"
-                     " WHERE reports.id = %llu;",
-                     report);
-  return 0;
 }
 
 /**
@@ -13992,7 +13999,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_counts_id_full (report_t report,
                        int* criticals,
                        int* holes,
@@ -15035,22 +15042,6 @@ report_host_count (report_t report)
 {
   return sql_int ("SELECT count (DISTINCT id) FROM report_hosts"
                   " WHERE report = %llu;",
-                  report);
-}
-
-/**
- * @brief Count a report's total number of vulnerabilities.
- *
- * @param[in]  report  Report.
- *
- * @return Vulnerabilities count.
- */
-static int
-report_vuln_count (report_t report)
-{
-  return sql_int ("SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu"
-                  " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
                   report);
 }
 
@@ -16491,7 +16482,6 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  NULL, NULL))
         {
           g_free (term);
-          g_hash_table_destroy (ctx.f_host_ports);
           goto fail;
         }
     }

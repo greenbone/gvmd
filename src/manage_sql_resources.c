@@ -122,6 +122,21 @@ resource_name (const char *type, const char *uuid, int location, char **name)
                              " WHERE uuid = $1;",
                              SQL_STR_PARAM (uuid), NULL);
     }
+  else if (strcasecmp (type, "scan_report") == 0)
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM reports"
+                             " WHERE uuid = $1;",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
   else if (location == LOCATION_TABLE)
     {
       g_string_printf (query,
@@ -902,6 +917,12 @@ resource_count (const char *type, const get_data_t *get)
     {
       extra_where
         = g_strdup (" AND (severity != " G_STRINGIFY (SEVERITY_ERROR) ")");
+    }
+  else if (strcmp (type, "scan_report") == 0)
+    {
+
+      const gchar *usage_type = get_data_get_extra (get, "usage_type");
+      extra_where = reports_extra_where (0, NULL, usage_type);
     }
   else if (strcmp (type, "vuln") == 0)
     {

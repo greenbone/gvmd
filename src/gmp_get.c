@@ -465,6 +465,39 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
 }
 
 /**
+ * @brief Send start of singular GET response.
+ *
+ * @param[in]  type                  Resource type.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 on success, 1 if sending to the client failed.
+ */
+int
+send_get_start_singular (
+  const char *type,
+  int (*write_to_client) (const char *, void *),
+  void *write_to_client_data)
+{
+  gchar *msg;
+
+  msg = g_markup_printf_escaped (
+    "<get_%s_response"
+    " status=\"" STATUS_OK "\""
+    " status_text=\"" STATUS_OK_TEXT "\">",
+    type);
+
+  if (send_to_client (msg, write_to_client, write_to_client_data))
+    {
+      g_free (msg);
+      return 1;
+    }
+
+  g_free (msg);
+  return 0;
+}
+
+/**
  * @brief Write data of a GET command filter to a string buffer as XML.
  *
  * @param[in] msg          The string buffer to write to.
@@ -549,6 +582,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
  * @param[in]  type                  Type.
  * @param[in]  get                   GET data.
  * @param[in]  get_counts            Include counts.
+ * @param[in]  plural                Whether to use plural form for response.
  * @param[in]  count                 Page count.
  * @param[in]  filtered              Filtered count.
  * @param[in]  full                  Full count.
@@ -560,7 +594,7 @@ buffer_get_filter_xml (GString *msg, const char* type,
  */
 static int
 send_get_end_internal (const char *type, get_data_t *get, int get_counts,
-                       int count, int filtered, int full,
+                       int plural,int count, int filtered, int full,
                        int (*write_to_client) (const char *, void*),
                        void* write_to_client_data)
 {
@@ -610,6 +644,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           || (strcmp (type, "report_tls_certificate") == 0)
           || (strcmp (type, "report_vuln") == 0)
           || (strcmp (type, "result") == 0)
+          || (strcmp (type, "scan_report") == 0)
           || (strcmp (type, "vuln") == 0))
         {
           gchar *value;
@@ -636,7 +671,9 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
               || (strcmp (type, "report_port") == 0)
               || (strcmp (type, "report_tls_certificate") == 0)
               || (strcmp (type, "report_vuln") == 0)
-              || (strcmp (type, "result") == 0))
+              || (strcmp (type, "report_vuln") == 0)
+              || (strcmp (type, "result") == 0)
+              || (strcmp (type, "scan_report") == 0))
             {
               value = filter_term_value (new_filter, "apply_overrides");
               if (value == NULL)
@@ -665,7 +702,8 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           || (strcmp (type, "report_port") == 0)
           || (strcmp (type, "report_tls_certificate") == 0)
           || (strcmp (type, "report_vuln") == 0)
-          || (strcmp (type, "result") == 0))
+          || (strcmp (type, "result") == 0)
+          || (strcmp (type, "scan_report") == 0))
         filter = manage_clean_filter("apply_overrides="
                                      G_STRINGIFY (APPLY_OVERRIDES_DEFAULT)
                                      " min_qod="
@@ -681,7 +719,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
 
   type_many = g_string_new (type);
 
-  if (strcmp (type, "info") != 0)
+  if (plural && strcmp (type, "info") != 0)
     g_string_append (type_many, "s");
 
   msg = g_string_new ("");
@@ -745,8 +783,40 @@ send_get_end (const char *type, get_data_t *get, int count, int filtered,
               int full, int (*write_to_client) (const char *, void*),
               void* write_to_client_data)
 {
-  return send_get_end_internal (type, get, 1, count, filtered, full,
+  return send_get_end_internal (type, get, 1,1, count, filtered, full,
                                 write_to_client, write_to_client_data);
+}
+
+/**
+ * @brief Send end of singular GET response.
+ *
+ * @param[in]  type                  Type.
+ * @param[in]  get                   GET data.
+ * @param[in]  count                 Page count.
+ * @param[in]  filtered              Filtered count.
+ * @param[in]  full                  Full count.
+ * @param[in]  write_to_client       Function that sends to clients.
+ * @param[in]  write_to_client_data  Data for write_to_client.
+ *
+ * @return 0 success, 1 sending to client failed, 2 failed to allocate filter
+ *         term.
+ */
+int
+send_get_end_singular (const char *type, get_data_t *get, int count,
+                       int filtered, int full,
+                       int (*write_to_client) (const char *, void *),
+                       void *write_to_client_data)
+{
+  return send_get_end_internal (
+    type,
+    get,
+    1,
+    0,
+    count,
+    filtered,
+    full,
+    write_to_client,
+    write_to_client_data);
 }
 
 /**
@@ -765,6 +835,6 @@ send_get_end_no_counts (const char *type, get_data_t *get,
                         int (*write_to_client) (const char *, void*),
                         void* write_to_client_data)
 {
-  return send_get_end_internal (type, get, 0, 0, 0, 0, write_to_client,
+  return send_get_end_internal (type, get, 0, 1,0, 0, 0, write_to_client,
                                 write_to_client_data);
 }
