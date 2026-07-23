@@ -71,6 +71,7 @@ valid_type (const char* type)
 #if ENABLE_WEB_APPLICATION_SCANNING
          || (strcasecmp (type, "web_application_target") == 0)
 #endif
+         || (strcasecmp (type, "scan_report") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
 

@@ -470,6 +470,7 @@ get_certificate_info (const gchar* certificate, gssize certificate_len,
                                     certificate_format_internal);
       if (err)
         {
+          gnutls_x509_crt_deinit (gnutls_cert);
           g_free (cert_truncated);
           return -1;
         }
@@ -3733,6 +3734,22 @@ feed_sync_required ()
         }
     }
 
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+    {
+      feed_status_ret = secinfo_feed_version_status ("web_application_vts");
+      switch (feed_status_ret)
+        {
+        case 1:
+        case 2:
+        case 3:
+          g_debug ("%s: Web Application VTs need to be updated (status %d)",
+                   __func__, feed_status_ret);
+          return TRUE;
+        default:
+          break;
+        }
+    }
+
   return FALSE;
 }
 
@@ -3813,16 +3830,28 @@ manage_sync (sigset_t *sigmask_current,
                         "SecInfo feed sync") == 0
           && feed_lockfile_lock (&lockfile) == 0)
         {
-          pid_t nvts_pid, scap_pid, cert_pid;
+          pid_t nvts_pid, scap_pid, cert_pid, web_application_vts_pid;
           nvts_pid = manage_sync_nvts (fork_update_nvt_cache);
           scap_pid = manage_sync_scap (sigmask_current);
           cert_pid = manage_sync_cert (sigmask_current);
+          if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+            {
+              web_application_vts_pid
+                = manage_sync_web_application_vts (sigmask_current);
+            }
 
           wait_for_pid (nvts_pid, "NVTs sync");
           wait_for_pid (scap_pid, "SCAP sync");
           wait_for_pid (cert_pid, "CERT sync");
+          if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+            {
+              wait_for_pid (web_application_vts_pid,
+                            "Web Application VTs sync");
+            }
 
           update_scap_extra ();
+
+          g_info ("SecInfo feed sync finished");
 
           lockfile_unlock (&lockfile);
         }
@@ -3847,6 +3876,8 @@ manage_sync (sigset_t *sigmask_current,
           manage_sync_report_formats ();
 
           lockfile_unlock (&lockfile);
+
+          g_info ("Data objects feed sync finished");
         }
     }
 }
@@ -5787,7 +5818,8 @@ gvm_migrate_secinfo (int feed_type)
   lockfile_t lockfile;
   int ret;
 
-  if (feed_type != SCAP_FEED && feed_type != CERT_FEED)
+  if (feed_type != SCAP_FEED && feed_type != CERT_FEED
+      && feed_type != WEB_APPLICATION_VTS_FEED)
     {
       g_warning ("%s: unsupported feed_type", __func__);
       return -1;
@@ -5801,8 +5833,10 @@ gvm_migrate_secinfo (int feed_type)
 
   if (feed_type == SCAP_FEED)
     ret = check_scap_db_version ();
-  else
+  else if (feed_type == CERT_FEED)
     ret = check_cert_db_version ();
+  else if (feed_type == WEB_APPLICATION_VTS_FEED)
+    ret = check_web_application_vts_db_version ();
 
   feed_lockfile_unlock (&lockfile);
 
@@ -6958,7 +6992,7 @@ launch_agent_control_task (task_t task,
 
   // Create scan
   http_scanner_resp = http_scanner_create_scan (connection, payload);
-  if (!http_scanner_resp || http_scanner_resp->code != 201)
+  if (!http_scanner_resp || http_scanner_resp->code < 200 || http_scanner_resp->code >= 300)
     {
       if (error) *error = g_strdup ("Scanner failed to create the scan");
       goto make_report;

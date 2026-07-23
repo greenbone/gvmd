@@ -4096,6 +4096,20 @@ manage_db_init (const gchar *name)
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
+  else if (strcasecmp (name, "vts") == 0)
+    {
+      /* Ensure basic schema and meta table exist */
+      sql ("CREATE SCHEMA IF NOT EXISTS vts;");
+
+      sql ("CREATE TABLE IF NOT EXISTS vts.meta"
+           " (id SERIAL PRIMARY KEY,"
+           "  name text UNIQUE,"
+           "  value text);");
+
+      sql ("SELECT set_config ('search_path',"
+           "                   'vts,' || current_setting ('search_path'),"
+           "                   false);");
+    }
   else
     {
       assert (0);
@@ -4104,6 +4118,63 @@ manage_db_init (const gchar *name)
 
   return 0;
 }
+
+/**
+ * @brief Create web application VT tables for a rebuild.
+ */
+void
+create_web_application_vts_rebuild_tables ()
+{
+  g_info ("Initializing new web application VT database tables");
+
+  /* Remove any old rebuild tables */
+  sql ("CREATE OR REPLACE FUNCTION drop_web_application_vts_rebuild ()"
+       " RETURNS void AS $$"
+       " BEGIN"
+       "   IF EXISTS (SELECT table_schema FROM information_schema.tables"
+       "              WHERE table_schema = 'vts'"
+       "              AND (table_name = 'web_application_vts_rebuild'"
+       "                   OR table_name = 'web_application_vt_refs_rebuild'))"
+       "   THEN"
+       "     DROP TABLE IF EXISTS vts.web_application_vts_rebuild;"
+       "     DROP TABLE IF EXISTS vts.web_application_vt_refs_rebuild;"
+       "   END IF;"
+       " END;"
+       " $$ LANGUAGE plpgsql;");
+
+  sql ("SELECT drop_web_application_vts_rebuild ();");
+  sql ("DROP FUNCTION IF EXISTS drop_web_application_vts_rebuild ();");
+
+  sql ("CREATE TABLE vts.web_application_vts_rebuild"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text,"
+       "  description text,"
+       "  solution text,"
+       "  severity DOUBLE PRECISION DEFAULT 0,"
+       "  type_metadata text);");
+
+  sql ("CREATE TABLE vts.web_application_vt_refs_rebuild"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_id text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_web_application_vts_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('web_application_vts_database_version', %d)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION);
+}
+
 
 /**
  * @brief Init external database.
@@ -4306,6 +4377,22 @@ manage_nvts_loaded ()
                     "               WHERE table_catalog = '%s'"
                     "               AND table_schema = 'public'"
                     "               AND table_name = 'nvts')"
+                    " ::integer;",
+                    sql_database ());
+}
+
+/**
+ * @brief Check whether Web Application VTs are available.
+ *
+ * @return 1 if Web Application VTs database is loaded, else 0.
+ */
+int
+manage_web_application_vts_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = '%s'"
+                    "               AND table_schema = 'vts'"
+                    "               AND table_name = 'web_application_vts')"
                     " ::integer;",
                     sql_database ());
 }

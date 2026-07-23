@@ -596,6 +596,11 @@ report_compliance_from_counts (const int *,
                                const int *,
                                const int *);
 
+int
+report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
+                       double *, const get_data_t*, const char* ,
+                       int *, int *, int *, int *, int *, int *, double *);
+
 gboolean
 nvt_exists (const char *);
 

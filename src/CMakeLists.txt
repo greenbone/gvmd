@@ -20,7 +20,7 @@ pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.41)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
@@ -60,7 +60,7 @@ endif(ENABLE_JWT_AUTH)
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
   pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(
     LIBGVM_SECURITY_INTELLIGENCE
     REQUIRED
@@ -212,6 +212,7 @@ set(
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
+  manage_scan_report.c
   manage_report_applications.c
   manage_report_closed_cves.c
   manage_report_configs.c
@@ -243,6 +244,7 @@ set(
   manage_users.c
   manage_report_export_scheduler.c
   manage_web_application_scanner.c
+  manage_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -290,6 +292,7 @@ set(
   manage_sql_permissions_cache.c
   manage_sql_port_lists.c
   manage_sql_configs.c
+  manage_sql_scan_report.c
   manage_sql_report_applications.c
   manage_sql_report_closed_cves.c
   manage_sql_report_configs.c
@@ -315,6 +318,7 @@ set(
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
   manage_sql_report_exports.c
+  manage_sql_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -341,6 +345,7 @@ set(
   gmp_logout.c
   gmp_oci_image_targets.c
   gmp_port_lists.c
+  gmp_scan_report.c
   gmp_report_applications.c
   gmp_report_closed_cves.c
   gmp_report_configs.c
@@ -697,6 +702,9 @@ endif(GMP_VERSION)
 add_definitions(-DGVMD_DATABASE_VERSION=${GVMD_DATABASE_VERSION})
 add_definitions(-DGVMD_SCAP_DATABASE_VERSION=${GVMD_SCAP_DATABASE_VERSION})
 add_definitions(-DGVMD_CERT_DATABASE_VERSION=${GVMD_CERT_DATABASE_VERSION})
+add_definitions(
+  -DGVMD_WEB_APPLICATION_VTS_DATABASE_VERSION=${GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION}
+)
 add_definitions(-DGVM_OS_NAME="${CMAKE_SYSTEM}")
 add_definitions(-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
@@ -708,6 +716,8 @@ add_definitions(
 
 add_definitions(-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions(-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
+
+add_definitions(-DGVM_WEB_APPLICATION_VTS_DIR="${GVM_WEB_APPLICATION_VTS_DIR}")
 
 if(GVM_SCANNER_CERTIFICATE)
   add_definitions(-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")
