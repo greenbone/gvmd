@@ -346,12 +346,13 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
          report_port_count (report));
   {
     result_buffer_t *item;
-    int index = 0;
+    int index;
 
-    while ((item = g_array_index (ports, result_buffer_t*, index++)))
+    for (index = 0; index < ports->len; index++)
       {
         int port_count;
 
+        item = g_array_index (ports, result_buffer_t*, index);
         port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
           item->host));
 
