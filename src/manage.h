@@ -2473,8 +2473,7 @@ manage_rebuild_gvmd_data_from_feed (const char *,
                                     gchar **);
 
 int
-manage_schedule (manage_connection_forker_t,
-                 gboolean,
+manage_schedule (gboolean,
                  sigset_t *);
 
 int
