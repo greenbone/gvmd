@@ -3558,7 +3558,7 @@ scheduled_task_stop (scheduled_task_t *scheduled_task,
         return 0;
     }
 
-  /* Start the task. */
+  /* Stop the task. */
   setproctitle ("scheduler: stopping %s", scheduled_task->task_uuid);
 
   task_ret = stop_task (scheduled_task->task_uuid);
