@@ -3243,10 +3243,10 @@ task_average_scan_duration (task_t task)
  *
  * @param[in]  database          Location of manage database.
  *
- * @return 1 if open already, else 0.
+ * @return 0 on success, 1 if open already, -1 on error.
  */
 static int
-init_manage_open_db (const db_conn_info_t *database)
+init_manage_open_db_no_abort (const db_conn_info_t *database)
 {
   if (sql_is_open ())
     return 1;
@@ -3255,7 +3255,7 @@ init_manage_open_db (const db_conn_info_t *database)
   if (sql_open (database))
     {
       g_warning ("%s: sql_open failed", __func__);
-      abort ();
+      return -1;
     }
 
   /* Ensure the user session variables always exists. */
@@ -3266,6 +3266,24 @@ init_manage_open_db (const db_conn_info_t *database)
   manage_attach_databases ();
 
   return 0;
+}
+
+/**
+ * @brief Initialize the manage library: open db.
+ *
+ * @param[in] database  Location of manage database.
+ *
+ * @return 0 on success, 1 if open already, aborts on error.
+ */
+static int
+init_manage_open_db (const db_conn_info_t *database)
+{
+  int ret;
+
+  ret = init_manage_open_db_no_abort (database);
+  if (ret < 0)
+    abort ();
+  return ret;
 }
 
 /**
@@ -3317,6 +3335,29 @@ reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
   init_manage_process (&gvmd_db_conn_info);
+}
+
+/**
+ * @brief Reinitialize the manage library for a process.
+ *
+ * This is mandatory after a fork, to not carry open databases around (refer
+ * to database documentation).
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+reinit_manage_process_no_abort ()
+{
+  cleanup_manage_process (FALSE);
+
+  if (reinit_semaphore_set())
+    return -1;
+
+  if (init_manage_open_db_no_abort (&gvmd_db_conn_info) < 0)
+    return -1;
+
+  init_manage_create_functions ();
+  return 0;
 }
 
 /**

@@ -187,6 +187,9 @@ init_manage_process (const db_conn_info_t*);
 void
 reinit_manage_process ();
 
+int
+reinit_manage_process_no_abort ();
+
 void
 cleanup_manage_process (gboolean);
 
