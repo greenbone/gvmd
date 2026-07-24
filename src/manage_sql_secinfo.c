@@ -1397,6 +1397,217 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
 DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, 0);
 
 
+/* Web Application VT data. */
+
+/**
+ * @brief Gets the SELECT columns for Web Application VT iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+web_application_vt_info_select_columns ()
+{
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for Web Application VT iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+web_application_vt_info_filter_columns ()
+{
+  static const char *filter_columns[]
+    = WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
+
+/**
+ * @brief Initialise an Web Application VT info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find VT, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_web_application_vt_info_iterator (iterator_t* iterator, get_data_t *get,
+                                       const char *name)
+{
+  static const char *filter_columns[] =
+      WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  ret = init_get_iterator (iterator,
+                           "web_application_vt",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Initialise a Web Application VT info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_web_application_vt_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_web_application_vt_info_iterator (iterator, get, NULL);
+}
+
+/**
+ * @brief Count number of Web Application VTs.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of Web Application VTs in filtered set.
+ */
+int
+web_application_vt_info_count (const get_data_t *get)
+{
+  static const char *filter_columns[] =
+                      WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  return count ("web_application_vt", get, columns, NULL, filter_columns,
+                0, 0, 0, FALSE);
+}
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_type,
+            GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the description from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The description of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_description,
+            GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the solution from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_solution,
+            GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the severity from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_severity,
+            GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the type-specific metadata from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type-specific metadata of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_type_metadata,
+            GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Initialize a Web Application VT reference iterator.
+ *
+ * @param[in]  iter   The iterator to initialize.
+ * @param[in]  vt_id  The ID of the VT to get the references of.
+ */
+void
+init_web_application_vt_ref_iterator (iterator_t *iter, const char *vt_id)
+{
+  init_ps_iterator (iter,
+                    "SELECT type, ref_id"
+                    " FROM web_application_vt_refs"
+                    " WHERE vt_id = $1",
+                    SQL_STR_PARAM (vt_id),
+                    NULL);
+}
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT refs iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the Web Application VT reference,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_ref_iterator_type, 0);
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT refs iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The reference id of the Web Application VT reference,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_ref_iterator_ref_id, 1);
+
+
 /* All SecInfo data. */
 
 /**
@@ -1439,6 +1650,11 @@ secinfo_count_after (const get_data_t *get,
     {
       columns = dfn_cert_adv_info_select_columns ();
       filter_columns = dfn_cert_adv_info_filter_columns ();
+    }
+  else if (strcmp (type, "web_application_vt") == 0)
+    {
+      columns = web_application_vt_info_select_columns ();
+      filter_columns = web_application_vt_info_filter_columns ();
     }
   else
     {
