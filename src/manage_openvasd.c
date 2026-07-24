@@ -500,7 +500,8 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
   else
     g_warning ("%s: Failed to create scan: %ld", __func__, response->code);
 
-  openvasd_target_free(openvasd_target);
+  g_slist_free_full (openvasd_targets,
+                     (GDestroyNotify) openvasd_target_free);
   // Credentials are freed with target
   g_slist_free_full (vts, (GDestroyNotify) openvasd_vt_single_free);
   g_hash_table_destroy (scanner_options);

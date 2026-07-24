@@ -3596,6 +3596,16 @@ run_report_format_script (gchar *report_format_id,
 
   report_format = get_iterator_resource (&formats);
 
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1))
+    {
+      g_warning ("%s: Report format '%s' is not trusted,"
+                 " skipping script execution",
+                 __func__, report_format_id);
+      cleanup_iterator (&formats);
+      return -1;
+    }
+
   owner = sql_string ("SELECT uuid FROM users"
                       " WHERE id = (SELECT owner FROM"
                       "             report_formats WHERE id = %llu);",
@@ -3655,14 +3665,23 @@ run_report_format_script (gchar *report_format_id,
   g_free (script_dir);
 
   /* Call the script. */
-
-  command = g_strdup_printf ("%s %s '%s' > %s"
-                             " 2> /dev/null",
-                             script,
-                             xml_file,
-                             report_format_extra,
-                             output_file);
+  gchar *clean_script = g_shell_quote (script);
   g_free (script);
+
+  gchar *clean_xml_file = g_shell_quote (xml_file);
+  gchar *clean_report_format_extra = g_shell_quote (report_format_extra);
+  gchar *clean_output_file = g_shell_quote (output_file);
+
+  command = g_strdup_printf ("%s %s %s > %s"
+                             " 2> /dev/null",
+                             clean_script,
+                             clean_xml_file,
+                             clean_report_format_extra,
+                             clean_output_file);
+  g_free (clean_script);
+  g_free (clean_xml_file);
+  g_free (clean_report_format_extra);
+  g_free (clean_output_file);
 
   g_debug ("   command: %s", command);
 
@@ -4009,6 +4028,15 @@ apply_report_format (gchar *report_format_id,
       return NULL;
     }
 
+  /* Check if report format is trusted. */
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1))
+    {
+      g_warning ("%s: Report format '%s' is not trusted",
+                 __func__, report_format_id);
+      return NULL;
+    }
+
   /* Get subreports. */
   temp_dirs = NULL;
   temp_files = NULL;
@@ -4164,8 +4192,15 @@ apply_report_format (gchar *report_format_id,
       goto cleanup;
     }
 
-  run_report_format_script (report_format_id,
-                            xml_file, xml_dir, files_xml, output_file);
+  if (run_report_format_script (report_format_id,
+                                xml_file, xml_dir,
+                                files_xml,
+                                output_file))
+    {
+      g_free (output_file);
+      output_file = NULL;
+      goto cleanup;
+    }
 
   /* Clean up and return filename. */
  cleanup:

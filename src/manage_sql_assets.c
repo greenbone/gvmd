@@ -162,6 +162,19 @@ typedef enum
   AS_COL_SCANNER = 8
 } asset_snapshot_col_t;
 
+/**
+ * @brief Types of assets that can be deleted including unknown and error.
+ */
+typedef enum
+{
+  DELETE_ASSET_TYPE_UNKNOWN = 0,
+  DELETE_ASSET_TYPE_HOST_IDENTIFIER = 1,
+  DELETE_ASSET_TYPE_HOST_OS = 2,
+  DELETE_ASSET_TYPE_OS = 3,
+  DELETE_ASSET_TYPE_HOST = 4,
+  DELETE_ASSET_TYPE_ERROR = -1,
+} delete_asset_type_t;
+
 static int
 report_host_dead (report_host_t);
 
@@ -2272,19 +2285,20 @@ manage_asset_snapshot_delete_stale (int days)
 static gboolean
 asset_type_for_report (report_t report, asset_type_t *asset_type)
 {
-  int type;
+  long long int type;
 
   if (!report || !asset_type)
     return FALSE;
 
-  type = sql_int_ps (
-    "SELECT asset_type"
-    " FROM asset_snapshots"
-    " WHERE report_id = $1"
-    " ORDER BY id"
-    " LIMIT 1;",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
+  if (sql_int64_ps (&type,
+                    "SELECT asset_type"
+                    " FROM asset_snapshots"
+                    " WHERE report_id = $1"
+                    " ORDER BY id"
+                    " LIMIT 1;",
+                    SQL_RESOURCE_PARAM (report),
+                    NULL))
+    return FALSE;
 
   if (type != ASSET_TYPE_TARGET
       && type != ASSET_TYPE_AGENT
@@ -3419,6 +3433,22 @@ asset_iterator_in_use (iterator_t* iterator)
 }
 
 /**
+ * @brief Find a host for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of host.
+ * @param[out]  host        Host return, 0 if successfully failed to find host.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find host), TRUE on error.
+ */
+static gboolean
+find_host_with_permission (const char* uuid, host_t* host,
+                           const char *permission)
+{
+  return find_resource_with_permission ("host", uuid, host, permission, 0);
+}
+
+/**
  * @brief Modify an asset.
  *
  * @param[in]   asset_id        UUID of asset.
@@ -3430,7 +3460,6 @@ asset_iterator_in_use (iterator_t* iterator)
 int
 modify_asset (const char *asset_id, const char *comment)
 {
-  gchar *quoted_asset_id, *quoted_comment;
   resource_t asset;
 
   if (asset_id == NULL)
@@ -3445,63 +3474,30 @@ modify_asset (const char *asset_id, const char *comment)
     }
 
   /* Host. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM hosts WHERE uuid = '%s';",
-                     quoted_asset_id))
+  if (find_host_with_permission (asset_id,
+                                 &asset,
+                                 "modify_asset"))
     {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
+      sql_rollback ();
+      return -1;
     }
-
-  g_free (quoted_asset_id);
-
   if (asset == 0)
     {
       sql_rollback ();
       return 1;
     }
 
-  quoted_comment = sql_quote (comment ?: "");
-
-  sql ("UPDATE hosts SET"
-       " comment = '%s',"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_comment, asset);
-
-  g_free (quoted_comment);
+  sql_ps ("UPDATE hosts SET"
+          " comment = $1,"
+          " modification_time = m_now ()"
+          " WHERE id = $2;",
+          SQL_STR_PARAM(comment ?: ""),
+          SQL_RESOURCE_PARAM(asset),
+          NULL);
 
   sql_commit ();
 
   return 0;
-}
-
-/**
- * @brief Find a host for a specific permission, given a UUID.
- *
- * @param[in]   uuid        UUID of host.
- * @param[out]  host      Host return, 0 if successfully failed to find host.
- * @param[in]   permission  Permission.
- *
- * @return FALSE on success (including if failed to find host), TRUE on error.
- */
-static gboolean
-find_host_with_permission (const char* uuid, host_t* host,
-                           const char *permission)
-{
-  return find_resource_with_permission ("host", uuid, host, permission, 0);
 }
 
 /**
@@ -3591,6 +3587,184 @@ delete_report_assets (const char *report_id)
 }
 
 /**
+ * @brief Authorize deletion of an asset.
+ *
+ * @param[in]  asset_type   Type of asset to delete.
+ * @param[in]  parent_uuid  UUID of parent resource to check for permissions.
+ *
+ * @return 0 if authorized, 1 if not authorized or -1 on error.
+ */
+static int
+authorize_delete_asset (delete_asset_type_t asset_type,
+                        const char *parent_uuid)
+{
+  resource_t parent = 0;
+
+  if (!parent_uuid || !*parent_uuid)
+    return -1;
+
+  if (asset_type == DELETE_ASSET_TYPE_OS)
+    {
+      if (find_resource_with_permission ("os", parent_uuid, &parent,
+                                         "delete_asset", 0))
+        return -1;
+
+    }
+  else
+    {
+      if (find_host_with_permission (parent_uuid, &parent,
+                                     "delete_asset"))
+        return -1;
+    }
+
+  return parent ? 0 : 1;
+}
+
+/**
+ * @brief Resolve the type of asset to delete.
+ *
+ * @param[in]  asset_id     UUID of asset.
+ * @param[out] asset        Row id of asset.
+ * @param[out] parent_uuid  UUID of parent resource.
+ *                          (Host for host_identifier and host_oss, OS for oss)
+ *                          Has to be freed by caller.
+ *
+ * @return A delete_asset_type_t value.
+ */
+static delete_asset_type_t
+resolve_delete_asset_type (const char *asset_uuid, resource_t *asset,
+                           gchar **parent_uuid)
+{
+  resource_t asset_id = 0;
+
+  if (!asset_uuid || !asset || !parent_uuid)
+    return DELETE_ASSET_TYPE_ERROR;
+
+  *asset = 0;
+  *parent_uuid = NULL;
+
+  /* Host identifier. */
+  switch (sql_int64_ps (&asset_id,
+                        "SELECT id FROM host_identifiers WHERE uuid = $1;",
+                        SQL_STR_PARAM(asset_uuid),
+                        NULL))
+    {
+      case 0:
+        if (asset_id)
+          {
+            *asset = asset_id;
+            *parent_uuid = sql_string_ps ("SELECT uuid FROM hosts"
+                                          " WHERE id = (SELECT host"
+                                          "             FROM host_identifiers"
+                                          "             WHERE id = $1);",
+                                          SQL_RESOURCE_PARAM(asset_id),
+                                          NULL);
+            return *parent_uuid
+                     ? DELETE_ASSET_TYPE_HOST_IDENTIFIER
+                     : DELETE_ASSET_TYPE_ERROR;
+          }
+        break;
+      case 1:
+        asset_id = 0;
+        break;
+      default:
+        assert (0);
+      case -1:
+        return DELETE_ASSET_TYPE_ERROR;
+    }
+
+  /* Host OS. */
+  switch (sql_int64_ps (&asset_id,
+                        "SELECT id FROM host_oss WHERE uuid = $1;",
+                        SQL_STR_PARAM(asset_uuid),
+                        NULL))
+    {
+      case 0:
+        if (asset_id)
+          {
+            *asset = asset_id;
+            *parent_uuid = sql_string_ps ("SELECT uuid FROM hosts"
+                                          " WHERE id = (SELECT host"
+                                          "             FROM host_oss"
+                                          "             WHERE id = $1);",
+                                          SQL_RESOURCE_PARAM(asset_id),
+                                          NULL);
+            return *parent_uuid
+                     ? DELETE_ASSET_TYPE_HOST_OS
+                     : DELETE_ASSET_TYPE_ERROR;
+          }
+        break;
+      case 1:
+        asset_id = 0;
+        break;
+      default:
+        assert (0);
+      case -1:
+        return DELETE_ASSET_TYPE_ERROR;
+    }
+
+  /* OS. */
+  switch (sql_int64_ps (&asset_id,
+                        "SELECT id FROM oss WHERE uuid = $1;",
+                        SQL_STR_PARAM(asset_uuid),
+                        NULL))
+    {
+      case 0:
+        if (asset_id)
+          {
+            *asset = asset_id;
+            *parent_uuid = sql_string_ps ("SELECT uuid FROM oss"
+                                          " WHERE id = $1;",
+                                          SQL_RESOURCE_PARAM(asset_id),
+                                          NULL);
+            return *parent_uuid
+                     ? DELETE_ASSET_TYPE_OS
+                     : DELETE_ASSET_TYPE_ERROR;
+          }
+        break;
+      case 1:
+        asset_id = 0;
+        break;
+      default:
+        assert (0);
+      case -1:
+        return DELETE_ASSET_TYPE_ERROR;
+    }
+
+  /* Host. */
+  switch (sql_int64_ps (&asset_id,
+                        "SELECT id FROM hosts WHERE uuid = $1;",
+                        SQL_STR_PARAM(asset_uuid),
+                        NULL))
+    {
+      case 0:
+        if (asset_id)
+          {
+            *asset = asset_id;
+            *parent_uuid = sql_string_ps ("SELECT uuid FROM hosts"
+                                          " WHERE id = $1;",
+                                          SQL_RESOURCE_PARAM(asset_id),
+                                          NULL);
+            return *parent_uuid
+                     ? DELETE_ASSET_TYPE_HOST
+                     : DELETE_ASSET_TYPE_ERROR;
+          }
+        break;
+      case 1:
+        asset_id = 0;
+        break;
+      default:
+        assert (0);
+      case -1:
+        return DELETE_ASSET_TYPE_ERROR;
+    }
+
+  g_warning ("%s: Error resolving asset type for asset '%s'",
+             __func__, asset_uuid ? asset_uuid : "(null)");
+  return DELETE_ASSET_TYPE_UNKNOWN;
+}
+
+/**
  * @brief Delete an asset.
  *
  * @param[in]  asset_id   UUID of asset.
@@ -3598,16 +3772,16 @@ delete_report_assets (const char *report_id)
  *                        Overridden by asset_id.
  * @param[in]  dummy      Dummy arg to match other delete functions.
  *
- * @return 0 success, 1 asset is in use, 2 failed to find asset, 4 UUID
+ * @return 0 success, 1 asset is in use, 2 failed to find asset, 3 UUID
  *         required, 99 permission denied, -1 error.
  */
 int
 delete_asset (const char *asset_id, const char *report_id, int dummy)
 {
-  resource_t asset, parent;
-  gchar *quoted_asset_id, *parent_id;
-
-  asset = parent = 0;
+  resource_t asset = 0;
+  gchar *parent_uuid = NULL;
+  delete_asset_type_t asset_type;
+  int auth_ret;
 
   sql_begin_immediate ();
 
@@ -3627,182 +3801,83 @@ delete_asset (const char *asset_id, const char *report_id, int dummy)
       return delete_report_assets (report_id);
     }
 
-  /* Host identifier. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM host_identifiers WHERE uuid = '%s';",
-                     quoted_asset_id))
+  asset_type = resolve_delete_asset_type (asset_id, &asset, &parent_uuid);
+  if (asset_type == DELETE_ASSET_TYPE_ERROR)
     {
-      case 0:
+      sql_rollback ();
+      return -1;
+    }
+  if (asset_type == DELETE_ASSET_TYPE_UNKNOWN)
+    {
+      sql_rollback ();
+      return 2;
+    }
+
+  auth_ret = authorize_delete_asset (asset_type, parent_uuid);
+  g_free (parent_uuid);
+
+  if (auth_ret == -1)
+    {
+      sql_rollback ();
+      return auth_ret;
+    }
+  if (auth_ret == 1)
+    {
+      sql_rollback ();
+      return 99;
+    }
+
+  switch (asset_type)
+    {
+      case DELETE_ASSET_TYPE_HOST_IDENTIFIER:
+        sql_ps ("DELETE FROM host_identifiers WHERE id = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
         break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
+
+      case DELETE_ASSET_TYPE_HOST_OS:
+        sql_ps ("DELETE FROM host_oss WHERE id = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
         break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
+
+      case DELETE_ASSET_TYPE_OS:
+        if (sql_int_ps ("SELECT count (*) FROM host_oss"
+                        " WHERE os = $1;",
+                        SQL_RESOURCE_PARAM(asset), NULL))
+          {
+            sql_rollback ();
+            return 1;
+          }
+
+        sql_ps ("DELETE FROM oss WHERE id = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+
+        permissions_set_orphans ("os", asset, LOCATION_TABLE);
+        tags_remove_resource ("os", asset, LOCATION_TABLE);
+        break;
+
+      case DELETE_ASSET_TYPE_HOST:
+        sql_ps ("DELETE FROM host_identifiers WHERE host = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+        sql_ps ("DELETE FROM host_oss WHERE host = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+        sql_ps ("DELETE FROM host_max_severities WHERE host = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+        sql_ps ("DELETE FROM host_details WHERE host = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+        sql_ps ("DELETE FROM hosts WHERE id = $1;",
+                SQL_RESOURCE_PARAM (asset), NULL);
+
+        permissions_set_orphans ("host", asset, LOCATION_TABLE);
+        tags_remove_resource ("host", asset, LOCATION_TABLE);
+        break;
+
+      default:
         sql_rollback ();
         return -1;
-        break;
     }
 
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      parent_id = sql_string ("SELECT uuid FROM hosts"
-                              " WHERE id = (SELECT host FROM host_identifiers"
-                              "             WHERE id = %llu);",
-                              asset);
-      parent = 0;
-      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (parent == 0)
-        {
-          sql_rollback ();
-          return 99;
-        }
-
-      sql ("DELETE FROM host_identifiers WHERE id = %llu;", asset);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* Host OS. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM host_oss WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      parent_id = sql_string ("SELECT uuid FROM hosts"
-                              " WHERE id = (SELECT host FROM host_oss"
-                              "             WHERE id = %llu);",
-                              asset);
-      parent = 0;
-      if (find_host_with_permission (parent_id, &parent, "delete_asset"))
-        {
-          sql_rollback ();
-          return -1;
-        }
-
-      if (parent == 0)
-        {
-          sql_rollback ();
-          return 99;
-        }
-
-      sql ("DELETE FROM host_oss WHERE id = %llu;", asset);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* OS. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM oss WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      if (sql_int ("SELECT count (*) FROM host_oss"
-                   " WHERE os = %llu;",
-                   asset))
-        {
-          sql_rollback ();
-          return 1;
-        }
-
-      sql ("DELETE FROM oss WHERE id = %llu;", asset);
-      permissions_set_orphans ("os", asset, LOCATION_TABLE);
-      tags_remove_resource ("os", asset, LOCATION_TABLE);
-      sql_commit ();
-
-      return 0;
-    }
-
-  /* Host. */
-
-  quoted_asset_id = sql_quote (asset_id);
-  switch (sql_int64 (&asset,
-                     "SELECT id FROM hosts WHERE uuid = '%s';",
-                     quoted_asset_id))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        asset = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_asset_id);
-        sql_rollback ();
-        return -1;
-        break;
-    }
-
-  g_free (quoted_asset_id);
-
-  if (asset)
-    {
-      sql ("DELETE FROM host_identifiers WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_oss WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_max_severities WHERE host = %llu;", asset);
-      sql ("DELETE FROM host_details WHERE host = %llu;", asset);
-      sql ("DELETE FROM hosts WHERE id = %llu;", asset);
-      permissions_set_orphans ("host", asset, LOCATION_TABLE);
-      tags_remove_resource ("host", asset, LOCATION_TABLE);
-      sql_commit ();
-
-      return 0;
-    }
-
-  sql_rollback ();
-  return 2;
+    sql_commit ();
+    return 0;
 }
 
 /**

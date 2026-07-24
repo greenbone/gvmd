@@ -22,6 +22,12 @@
  * The Targets SQL for the GVM management layer.
  */
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Return number of hosts described by a hosts string.
  *

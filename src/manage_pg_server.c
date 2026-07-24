@@ -24,6 +24,12 @@
 PG_MODULE_MAGIC;
 #endif
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Define function for Postgres.
  */

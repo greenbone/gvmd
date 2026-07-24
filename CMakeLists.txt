@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 
 message("-- Configuring Greenbone Vulnerability Manager...")
 
-project(gvm VERSION 26.33.1 LANGUAGES C)
+project(gvm VERSION 26.34.1 LANGUAGES C)
 
 if(POLICY CMP0005)
   cmake_policy(SET CMP0005 NEW)
@@ -101,6 +101,8 @@ set(GVMD_DATABASE_VERSION 280)
 set(GVMD_SCAP_DATABASE_VERSION 22)
 
 set(GVMD_CERT_DATABASE_VERSION 8)
+
+set(GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION 1)
 
 if(ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
   # Set a to the next GMP version if unstable features are enabled
@@ -230,6 +232,10 @@ endif(NOT GVM_CERT_DATA_DIR)
 if(NOT GVM_SCAP_DATA_DIR)
   set(GVM_SCAP_DATA_DIR "${GVM_STATE_DIR}/scap-data")
 endif(NOT GVM_SCAP_DATA_DIR)
+
+if(NOT GVM_WEB_APPLICATION_VTS_DIR)
+  set(GVM_WEB_APPLICATION_VTS_DIR "${GVM_STATE_DIR}/web-application-vts")
+endif(NOT GVM_WEB_APPLICATION_VTS_DIR)
 
 # System username to use when dropping privileges
 if(NOT GVM_DEFAULT_DROP_USER)
