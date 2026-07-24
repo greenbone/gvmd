@@ -15495,6 +15495,24 @@ END:VCALENDAR
             <summary>Number of CVEs referenced by the CERT advisory</summary>
           </column>
         </filter_keywords>
+        <filter_keywords>
+          <condition>type is "web_application_vt"</condition>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description text of the Web Application VT</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>Type of the Web Application VT</summary>
+          </column>
+          <column>
+            <name>solution</name>
+            <type>text</type>
+            <summary>Solution text of the Web Application VT</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15547,6 +15565,7 @@ END:VCALENDAR
             <e>cve</e>
             <e>dfn_cert_adv</e>
             <e>nvt</e>
+            <e>web_application_vt</e>
           </or>
         </pattern>
         <ele>
@@ -16152,6 +16171,78 @@ END:VCALENDAR
             <summary>Source representation of the information. Only when details were requested</summary>
             <pattern>
               text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>web_application_vt</name>
+          <pattern>
+            <e>type</e>
+            <e>description</e>
+            <e>solution</e>
+            <e>severity</e>
+            <e>type_metadata</e>
+            <e>refs</e>
+          </pattern>
+          <summary>A Web Application VT info element</summary>
+          <ele>
+            <name>type</name>
+            <summary>Type of the vulnerability test</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the vulnerability test</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>solution</name>
+            <summary>A suggested solution for mitigating the vulnerability</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Highest CVSS severity score of CVEs referenced by VT or an approximation based type-specific ratings</summary>
+            <pattern>
+              <t>severity</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>type_metadata</name>
+            <summary>Type-specific metadata as a JSON object</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>refs</name>
+            <summary>References of the Web Application VT</summary>
+            <pattern>
+              <any><e>ref</e></any>
+            </pattern>
+            <ele>
+              <name>ref</name>
+              <summary>A reference of the Web Application VT</summary>
+            </ele>
+            <pattern>
+              <attrib>
+                <name>type</name>
+                <summary>The type of the reference</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
+              <attrib>
+                <name>ref_id</name>
+                <summary>The identifier of the reference</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
             </pattern>
           </ele>
         </ele>

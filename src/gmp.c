@@ -14563,6 +14563,17 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING)
+      && g_strcmp0 (get_info_data->type, "web_application_vt") == 0
+      && manage_web_application_vts_loaded () == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                          "The Web Application VTs database is required"));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
 
   if (get_info_data->name && get_info_data->get.id)
     {
@@ -14600,6 +14611,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         name = g_strdup ("DFN-CERT");
       else if (strcmp (get_info_data->type, "nvt") == 0)
         name = g_strdup ("NVT");
+      else if (strcmp (get_info_data->type, "web_application_vt") == 0)
+        name = g_strdup ("Web Application VT");
       else
         {
           if (send_find_error_to_client ("get_info", "type",
@@ -14656,6 +14669,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       init_info_iterator = init_dfn_cert_adv_info_iterator;
       info_count = dfn_cert_adv_info_count;
       get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
+    }
+  else if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING)
+           && g_strcmp0 ("web_application_vt", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_web_application_vt_info_iterator;
+      info_count = web_application_vt_info_count;
+      get_info_data->get.subtype = g_strdup ("web_application_vt");
     }
   else
     {
@@ -14928,6 +14948,39 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                             ? dfn_cert_adv_info_iterator_severity(&info)
                             : "",
                            dfn_cert_adv_info_iterator_cve_refs (&info));
+      else if (g_strcmp0 ("web_application_vt", get_info_data->type) == 0)
+        {
+          iterator_t refs;
+
+          xml_string_append (
+              result,
+              "<web_application_vt>"
+              "<type>%s</type>"
+              "<description>%s</description>"
+              "<solution>%s</solution>"
+              "<severity>%s</severity>"
+              "<type_metadata>%s</type_metadata>"
+              "<refs>",
+              web_application_vt_info_iterator_type (&info),
+              web_application_vt_info_iterator_description (&info),
+              web_application_vt_info_iterator_solution (&info),
+              web_application_vt_info_iterator_severity (&info),
+              web_application_vt_info_iterator_type_metadata (&info));
+
+          init_web_application_vt_ref_iterator (&refs,
+                                                get_iterator_uuid (&info));
+          while (next (&refs))
+            {
+              xml_string_append (
+                  result,
+                  "<ref type=\"%s\" id=\"%s\"/>",
+                  web_application_vt_ref_iterator_type (&refs),
+                  web_application_vt_ref_iterator_ref_id (&refs));
+            }
+          cleanup_iterator (&refs);
+
+          xml_string_append (result, "</refs>");
+        }
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
           if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
