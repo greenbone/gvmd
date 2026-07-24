@@ -947,36 +947,29 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
 }
 
 /**
- * @brief Get if schedule of task in iterator is timed out.
+ * @brief Check if a task schedule is timed out given
+ *        its run status, start time, and duration.
  *
- * @param[in]  iterator  Iterator.
- *
- * @return Whether task schedule is timed out.
+ * @param[in]  run_status  The current run status of the task.
+ * @param[in]  start_time  The start time of the task schedule.
+ * @param[in]  duration    The duration of the task schedule.
  */
-gboolean
-task_schedule_iterator_timed_out (iterator_t* iterator)
+static gboolean
+task_schedule_is_timed_out_common (task_status_t run_status,
+                                   time_t start_time,
+                                   time_t duration)
 {
-  time_t schedule_timeout_secs;
-  int duration;
-  task_status_t run_status;
-  time_t start_time, timeout_time;
+  time_t schedule_timeout_secs, timeout_time;
 
   if (get_schedule_timeout () < 0)
     return FALSE;
 
-  if (iterator->done) return FALSE;
-
-  start_time = task_schedule_iterator_next_time (iterator);
-
-  if (start_time == 0)
+  if (start_time == 0 || duration < 0)
     return FALSE;
 
   schedule_timeout_secs = get_schedule_timeout () * 60;
   if (schedule_timeout_secs < SCHEDULE_TIMEOUT_MIN_SECS)
     schedule_timeout_secs = SCHEDULE_TIMEOUT_MIN_SECS;
-
-  run_status = task_run_status (task_schedule_iterator_task (iterator));
-  duration = task_schedule_iterator_duration (iterator);
 
   if (duration && (duration < schedule_timeout_secs))
     timeout_time = start_time + duration;
@@ -993,6 +986,76 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
   return FALSE;
 }
 
+/**
+ * @brief Get if schedule of task in iterator is timed out.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Whether task schedule is timed out.
+ */
+gboolean
+task_schedule_iterator_timed_out (iterator_t* iterator)
+{
+  task_status_t run_status;
+  time_t start_time, duration;
+
+  if (get_schedule_timeout () < 0)
+    return FALSE;
+
+  if (iterator->done) return FALSE;
+
+  start_time = task_schedule_iterator_next_time (iterator);
+
+  if (start_time == 0)
+    return FALSE;
+
+  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  duration = task_schedule_iterator_duration (iterator);
+
+  return task_schedule_is_timed_out_common (run_status, start_time, duration);
+}
+
+/**
+ * @brief Get if schedule of task is timed out given its UUID.
+ *
+ * @param[in]  task_uuid  Task UUID.
+ *
+ * @return Whether task schedule is timed out.
+ */
+gboolean
+task_schedule_timed_out_uuid (const gchar *task_uuid)
+{
+  task_t task = 0;
+  long long int start_time_int, duration_int;
+  task_status_t run_status;
+
+  if (task_uuid == NULL || strcmp (task_uuid, "") == 0)
+    return FALSE;
+
+  sql_int64_ps (&task,
+                "SELECT id FROM tasks WHERE uuid = $1 AND hidden != 2;",
+                SQL_STR_PARAM(task_uuid), NULL);
+  if (task == 0)
+    return FALSE;
+
+  sql_int64_ps (&start_time_int,
+                "SELECT schedule_next_time FROM tasks WHERE id = $1;",
+                SQL_RESOURCE_PARAM(task), NULL);
+
+  if (start_time_int == 0)
+    return FALSE;
+
+  sql_int64_ps (&duration_int,
+                "SELECT duration FROM schedules"
+                " WHERE id = (SELECT schedule FROM tasks WHERE id = $1);",
+                SQL_RESOURCE_PARAM(task), NULL);
+
+  run_status = task_run_status (task);
+
+  return task_schedule_is_timed_out_common (run_status,
+                                            (time_t) start_time_int,
+                                            (time_t) duration_int);
+}
 /**
  * @brief Initialise a schedule task iterator.
  *

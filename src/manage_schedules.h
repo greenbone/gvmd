@@ -116,6 +116,9 @@ gboolean
 task_schedule_iterator_timed_out (iterator_t *);
 
 gboolean
+task_schedule_timed_out_uuid (const gchar *);
+
+gboolean
 task_schedule_iterator_start_due (iterator_t *);
 
 gboolean

@@ -170,6 +170,26 @@
 #define MAX_REPORTS_PER_TICK 10
 
 /**
+ * @brief Scheduled task actions.
+ */
+typedef enum
+{
+  SCHEDULED_TASK_ACTION_START = 0,
+  SCHEDULED_TASK_ACTION_STOP = 1,
+} scheduled_task_action_t;
+
+/**
+ * @brief Scheduled task startup status.
+ */
+typedef enum
+{
+  SCHEDULED_TASK_STATUS_PENDING = 0,
+  SCHEDULED_TASK_STATUS_DB_OK = 1,
+  SCHEDULED_TASK_STATUS_DB_FAILED = 2,
+  SCHEDULED_TASK_STATUS_UNKNOWN = 3,
+} scheduled_task_startup_status_t;
+
+/**
  * @brief Number of minutes until the authentication cache is deleted
  *        if the session is idle.
  */
@@ -235,6 +255,23 @@ static int schedule_timeout = SCHEDULE_TIMEOUT_DEFAULT;
  *        lost in a running task.
  */
 static int scanner_connection_retry = SCANNER_CONNECTION_RETRY_DEFAULT;
+
+/**
+ * @brief Keep track of scheduled tasks that are currently being processed.
+ *        key format: "<action>:<task_uuid>"
+ */
+static GHashTable *scheduled_task_set = NULL;
+
+/**
+ * @brief Queue of scheduled tasks to be processed.
+ *        Values are of type scheduled_task_item_t*.
+ */
+static GQueue *scheduled_task_queue = NULL;
+
+/**
+ * @brief List of scheduled task runners.
+ */
+static GSList *scheduled_task_runners = NULL;
 
 
 /* Certificate and key management. */
@@ -3381,6 +3418,203 @@ scheduled_task_free (scheduled_task_t *scheduled_task)
 }
 
 /**
+ * @brief Scheduled task queue item.
+ *        Used for deduplicating scheduled tasks in the queue.
+ */
+typedef struct
+{
+  scheduled_task_t *task;                 ///< Pointer to the scheduled task.
+  scheduled_task_action_t action;          ///< Action to be performed.
+} scheduled_task_item_t;
+
+/**
+ * @brief Scheduled task runner.
+ */
+typedef struct
+{
+  pid_t pid;  ///< Process ID of the scheduled task runner.
+  int fd;      //< File descriptor for communication with the scheduled runner.
+  scheduled_task_t *scheduled_task;         ///< Pointer to the scheduled task.
+  scheduled_task_startup_status_t status;   ///< Startup status of the runner.
+  scheduled_task_action_t action;           ///< Action to be performed.
+} scheduled_task_runner_t;
+
+/**
+ * @brief Create a scheduled task runner structure.
+ *
+ * @param[in] pid             Process ID of the runner.
+ * @param[in] pipe_fd         Pipe file descriptor for communication.
+ * @param[in] scheduled_task  Scheduled task.
+ * @param[in] action          Action to be performed by the runner.
+ *
+ * @return Scheduled task runner structure.
+ */
+static scheduled_task_runner_t *
+scheduled_task_runner_new (pid_t pid,
+                           int pipe_fd,
+                           scheduled_task_t *scheduled_task,
+                           scheduled_task_action_t action)
+{
+  if (!scheduled_task)
+    return NULL;
+
+  scheduled_task_runner_t *runner;
+
+  runner = g_malloc (sizeof (*runner));
+  runner->pid = pid;
+  runner->fd = pipe_fd;
+  runner->scheduled_task = scheduled_task;
+  runner->action = action;
+  runner->status = SCHEDULED_TASK_STATUS_PENDING;
+
+  return runner;
+}
+
+/**
+ * @brief Free a scheduled task runner structure.
+ *
+ * @param[in] scheduled_task  Scheduled task.
+ */
+static void
+scheduled_task_runner_free (scheduled_task_runner_t *runner)
+{
+  if (!runner)
+    return;
+
+  if (runner->fd >= 0)
+    {
+      close (runner->fd);
+      runner->fd = -1;
+    }
+  if (runner->scheduled_task)
+    scheduled_task_free (runner->scheduled_task);
+
+  g_free (runner);
+}
+
+/**
+ * @brief Create a key for a scheduled task.
+ */
+static gchar *
+scheduled_task_key_new (scheduled_task_action_t action, const gchar *task_uuid)
+{
+  if (!task_uuid)
+    return NULL;
+  return g_strdup_printf ("%d:%s", action, task_uuid);
+}
+
+/**
+ * @brief Initialise the scheduled task queue and set.
+ */
+static void
+scheduled_task_queue_init_once (void)
+{
+  if (scheduled_task_set == NULL)
+    scheduled_task_set = g_hash_table_new_full (g_str_hash,
+                                                g_str_equal,
+                                                g_free,
+                                                NULL);
+ if (scheduled_task_queue == NULL)
+    scheduled_task_queue = g_queue_new ();
+}
+
+/**
+ * @brief Add a scheduled task to the queue.
+ *
+ * @param[in] task    Scheduled task.
+ * @param[in] action  Action to be performed.
+ *
+ * @return 0 on success, -1 on failure (task already in queue or invalid task).
+ */
+static int
+scheduled_task_queue_add (scheduled_task_t *task, scheduled_task_action_t action)
+{
+  gchar *key;
+  scheduled_task_item_t *item;
+
+  if (!task || !task->task_uuid)
+    return -1;
+
+  scheduled_task_queue_init_once ();
+  key = scheduled_task_key_new (action, task->task_uuid);
+  if (!key)
+    return -1;
+
+  if (g_hash_table_contains (scheduled_task_set, key))
+    {
+      g_free (key);
+      return -1;
+    }
+
+  g_hash_table_insert (scheduled_task_set, key,
+                       GINT_TO_POINTER (1));
+
+  item = g_malloc (sizeof (*item));
+  item->task = task;
+  item->action = action;
+  g_queue_push_tail (scheduled_task_queue, item);
+
+  return 0;
+}
+
+/**
+ * @brief Requeue an existing scheduled task in the queue.
+ *
+ * @param[in] task    Scheduled task.
+ * @param[in] action  Action to be performed.
+ */
+static void
+scheduled_task_requeue_existing (scheduled_task_t *task,
+                                 scheduled_task_action_t action)
+{
+  gchar *key;
+  scheduled_task_item_t *item;
+
+  if (!task || !task->task_uuid)
+    return;
+
+  key = scheduled_task_key_new (action, task->task_uuid);
+  if (!key)
+    return;
+
+  if (!g_hash_table_contains (scheduled_task_set, key))
+    {
+      g_free (key);
+      return;
+    }
+
+  item = g_malloc (sizeof (*item));
+  item->task = task;
+  item->action = action;
+  g_queue_push_tail (scheduled_task_queue, item);
+
+  g_free (key);
+}
+
+/**
+ * @brief Finalize a scheduled task and remove it from the set.
+ *
+ * @param[in] task    Scheduled task.
+ * @param[in] action  Action to be performed.
+ */
+static void
+scheduled_task_finalize (scheduled_task_t *task, scheduled_task_action_t action)
+{
+  gchar *key;
+
+  if (!task || !task->task_uuid)
+    return;
+
+  key = scheduled_task_key_new (action, task->task_uuid);
+  if (!key)
+    return;
+
+  g_hash_table_remove (scheduled_task_set, key);
+  g_free (key);
+  scheduled_task_free (task);
+}
+
+/**
  * @brief Setup owner session for a scheduled task.
  *
  * @param[in] scheduled_task  Scheduled task.
@@ -3447,134 +3681,273 @@ scheduled_task_handle_start_success (scheduled_task_t *scheduled_task)
 }
 
 /**
- * @brief Start a task, for the scheduler.
+ * @brief Fork a runner process for a scheduled task.
  *
- * @param[in]  scheduled_task   Scheduled task.
- * @param[in]  sigmask_current  Sigmask to restore in child.
+ * @param[in] scheduled_task  Scheduled task.
+ * @param[in] action          Action to be performed by the runner.
+ * @param[in] sigmask_current Current signal mask.
  *
- * @return 0 success, -1 error.  Child does not return.
+ * @return 0 on success, or -1 on failure.
  */
 static int
-scheduled_task_start (scheduled_task_t *scheduled_task,
-                      sigset_t *sigmask_current)
+scheduled_task_fork_runner (scheduled_task_t *scheduled_task,
+                            scheduled_task_action_t action,
+                            sigset_t *sigmask_current)
 {
-  int pid, task_ret;
+  int pipe_fds[2];
+  int flags, task_ret;
+  pid_t pid;
+  scheduled_task_runner_t *runner;
 
-  /* Fork a child to start the task so parent can continue scheduler loop. */
+  if (!scheduled_task)
+    {
+      g_warning ("%s: scheduled_task is NULL", __func__);
+      return -1;
+    }
+  if (!sigmask_current)
+    {
+      g_warning ("%s: sigmask_current is NULL", __func__);
+      return -1;
+    }
+
+  if (pipe (pipe_fds))
+    {
+      g_warning ("%s: Failed to create pipe: %s",
+                 __func__, strerror (errno));
+      return -1;
+    }
+
   pid = fork ();
   switch (pid)
     {
       case 0:
-        /* Child.  Carry on to start the task, reopen the database (required
-         * after fork). */
+       {
+         /* Child */
+         scheduled_task_startup_status_t status;
+         close (pipe_fds[0]);
 
-        /* Restore the sigmask that was blanked for pselect. */
-        pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+         pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+         init_sentry ();
 
-        init_sentry ();
-        reinit_manage_process ();
-        scheduled_task_setup_owner_session (scheduled_task);
-        break;
+         if (reinit_manage_process_no_abort ())
+           {
+             status = SCHEDULED_TASK_STATUS_DB_FAILED;
+             if (write (pipe_fds[1], &status, sizeof (status)) != sizeof (status))
+               g_warning ("%s: Failed to write to pipe: %s",
+                          __func__, strerror (errno));
+              close (pipe_fds[1]);
+              gvm_close_sentry ();
+              exit (EXIT_FAILURE);
+           }
 
+          scheduled_task_setup_owner_session (scheduled_task);
+
+          status = SCHEDULED_TASK_STATUS_DB_OK;
+          if (write (pipe_fds[1], &status, sizeof (status)) != sizeof (status))
+            g_warning ("%s: Failed to write to pipe: %s",
+                       __func__, strerror (errno));
+          close (pipe_fds[1]);
+
+          switch (action)
+            {
+              case SCHEDULED_TASK_ACTION_START:
+                {
+                  setproctitle ("scheduler: starting %s", scheduled_task->task_uuid);
+
+                  task_ret = resume_task (scheduled_task->task_uuid, NULL);
+                  if (task_ret)
+                    task_ret = start_task (scheduled_task->task_uuid, NULL);
+
+                  if (task_ret == 0 || task_ret == 99)
+                    {
+                      gvm_close_sentry ();
+                      if (task_ret == 0)
+                        exit (EXIT_SUCCESS);
+                      g_warning ("%s: user denied permission to start task", __func__);
+                      /* Permission denied. No need to reschedule. */
+                      exit (EXIT_SUCCESS);
+                    }
+
+                  g_warning ("%s: start/resume failed for task %s (ret=%d)",
+                            __func__, scheduled_task->task_uuid, task_ret);
+                  gvm_close_sentry ();
+                  exit (EXIT_FAILURE);
+                }
+              case SCHEDULED_TASK_ACTION_STOP:
+                {
+                  task_ret = stop_task (scheduled_task->task_uuid);
+
+                  if (task_ret == 0 || task_ret == 99)
+                    {
+                      gvm_close_sentry ();
+                      if (task_ret == 0)
+                        exit (EXIT_SUCCESS);
+                      g_warning ("%s: user denied permission to stop task", __func__);
+                      /* Permission denied. No need to reschedule. */
+                      exit (EXIT_SUCCESS);
+                    }
+
+                  g_warning ("%s: stop failed for task %s (ret=%d)",
+                            __func__, scheduled_task->task_uuid, task_ret);
+                  gvm_close_sentry ();
+                  exit (EXIT_FAILURE);
+                }
+              default:
+                g_warning ("%s: Unknown action %d", __func__, action);
+                gvm_close_sentry ();
+                exit (EXIT_FAILURE);
+            }
+       }
       case -1:
-        /* Parent on error. */
+        close (pipe_fds[0]);
+        close (pipe_fds[1]);
         g_warning ("%s: fork failed", __func__);
         return -1;
 
       default:
-        /* Parent.  Continue to next task. */
-        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+        /* Parent */
+        close (pipe_fds[1]);
+        flags = fcntl (pipe_fds[0], F_GETFL, 0);
+        if (flags == -1)
+          {
+            g_warning ("%s: fcntl failed: %s", __func__, strerror (errno));
+            close (pipe_fds[0]);
+            return -1;
+          }
+        if (fcntl (pipe_fds[0], F_SETFL, flags | O_NONBLOCK) == -1)
+          {
+            g_warning ("%s: fcntl failed: %s", __func__, strerror (errno));
+            close (pipe_fds[0]);
+            return -1;
+          }
+
+        runner = scheduled_task_runner_new (pid, pipe_fds[0],
+                                            scheduled_task,
+                                            action);
+        if (!runner)
+          {
+            g_warning ("%s: Failed to create scheduled task runner", __func__);
+            close (pipe_fds[0]);
+            return -1;
+          }
+
+        scheduled_task_runners = g_slist_prepend (scheduled_task_runners, runner);
+
+        g_debug ("%s: forked runner %i for task %s",
+                 __func__, pid, scheduled_task->task_uuid);
+
         return 0;
     }
-
-  /* Start the task. */
-  setproctitle ("scheduler: starting %s", scheduled_task->task_uuid);
-
-  task_ret = resume_task (scheduled_task->task_uuid, NULL);
-  if (task_ret)
-    task_ret = start_task (scheduled_task->task_uuid, NULL);
-
-  if (task_ret == 0)
-    {
-      scheduled_task_handle_start_success (scheduled_task);
-      scheduled_task_free (scheduled_task);
-      gvm_close_sentry ();
-      exit (EXIT_SUCCESS);
-    }
-
-  if (task_ret == 99)
-    {
-      /* Permission denied. No need to reschedule. */
-      g_warning ("%s: user denied permission to start task", __func__);
-      scheduled_task_free (scheduled_task);
-      gvm_close_sentry ();
-      exit (EXIT_SUCCESS);
-    }
-
-  g_warning ("%s: start/resume failed for task %s (ret=%d)",
-             __func__, scheduled_task->task_uuid, task_ret);
-  reschedule_task (scheduled_task->task_uuid);
-  scheduled_task_free (scheduled_task);
-  gvm_close_sentry ();
-  exit (EXIT_FAILURE);
 }
 
 /**
- * @brief Stop a task, for the scheduler.
- *
- * @param[in]  scheduled_task   Scheduled task.
- * @param[in]  sigmask_current  Sigmask to restore in child.
- *
- * @return 0 success, -1 error.  Child does not return.
+ * @brief Process forked task runners.
+ *        Append tasks failed to start due to database errors
+ *        to the queue for retrying.
  */
-static int
-scheduled_task_stop (scheduled_task_t *scheduled_task,
-                     sigset_t *sigmask_current)
+static void
+scheduled_task_check_runners_startup_status (void)
 {
-  int pid, task_ret;
-
-  pid = fork ();
-  switch (pid)
+  GSList *iter, *next;
+  for (iter = scheduled_task_runners; iter != NULL; iter = next)
     {
-      case 0:
-        /* Child. */
+      scheduled_task_runner_t *runner;
+      scheduled_task_startup_status_t status;
+      ssize_t bytes_read;
+      pid_t wait_ret;
+      int wait_status;
 
-        /* Restore the sigmask that was blanked for pselect. */
-        pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+      next = iter->next;
+      runner = (scheduled_task_runner_t *) iter->data;
 
-        init_sentry ();
-        reinit_manage_process ();
-        scheduled_task_setup_owner_session (scheduled_task);
-        break;
+      if (runner->fd >= 0 && runner->status == SCHEDULED_TASK_STATUS_PENDING)
+        {
+          bytes_read = read (runner->fd, &status, sizeof (status));
 
-      case -1:
-        /* Parent on error. */
-        g_warning ("%s: fork failed", __func__);
-        return -1;
+          if (bytes_read == (ssize_t) sizeof (status))
+            {
+              runner->status = status;
+              close (runner->fd);
+              runner->fd = -1;
+            }
+          else if (bytes_read == 0)
+            {
+              g_warning ("%s: runner %i for task %s closed pipe without sending status",
+                         __func__, runner->pid, runner->scheduled_task->task_uuid);
+              runner->status = SCHEDULED_TASK_STATUS_UNKNOWN;
+              close (runner->fd);
+              runner->fd = -1;
+            }
+          else if (bytes_read < 0 && errno != EAGAIN && errno != EINTR)
+            {
+              g_warning ("%s: failed to read startup status from runner %i"
+                         " for task %s: %s", __func__, runner->pid,
+                         runner->scheduled_task->task_uuid, strerror(errno));
+              runner->status = SCHEDULED_TASK_STATUS_UNKNOWN;
+              close (runner->fd);
+              runner->fd = -1;
+            }
+        }
 
-      default:
-        /* Parent.  Continue to next task. */
-        g_debug ("%s: %i forked %i", __func__, getpid (), pid);
-        return 0;
+      wait_ret = waitpid (runner->pid, &wait_status, WNOHANG);
+      if (wait_ret == 0)
+        continue;
+
+      if (wait_ret < 0)
+        {
+          if (errno == EINTR)
+            continue;
+
+          g_warning ("%s: waitpid failed for runner %i for task %s: %s",
+                     __func__, runner->pid, runner->scheduled_task->task_uuid,
+                     strerror(errno));
+          // reschedule the task, the status is unknown
+          if (runner->action == SCHEDULED_TASK_ACTION_START)
+            reschedule_task (runner->scheduled_task->task_uuid);
+
+          scheduled_task_finalize (runner->scheduled_task, runner->action);
+          runner->scheduled_task = NULL;
+        }
+      else if (runner->status == SCHEDULED_TASK_STATUS_DB_FAILED)
+        {
+          g_warning ("%s: runner %i for task %s failed to start due to DB error",
+                   __func__, runner->pid, runner->scheduled_task->task_uuid);
+
+          scheduled_task_requeue_existing (runner->scheduled_task, runner->action);
+          // This avoids freeing the scheduled_task, it will be retried later
+          runner->scheduled_task = NULL;
+        }
+      else
+        {
+          if (runner->status == SCHEDULED_TASK_STATUS_UNKNOWN)
+            {
+              g_warning ("%s: runner %i for task %s exited with unknown status",
+                         __func__, runner->pid, runner->scheduled_task->task_uuid);
+              if (runner->action == SCHEDULED_TASK_ACTION_START)
+                reschedule_task (runner->scheduled_task->task_uuid);
+            }
+          else if (WIFEXITED (wait_status) && WEXITSTATUS (wait_status) == EXIT_SUCCESS)
+            {
+              if (runner->action == SCHEDULED_TASK_ACTION_START)
+                scheduled_task_handle_start_success (runner->scheduled_task);
+            }
+          else
+            {
+              if (runner->action == SCHEDULED_TASK_ACTION_START)
+                {
+                  g_warning ("%s: runner %i for task %s failed to start",
+                             __func__, runner->pid,
+                             runner->scheduled_task->task_uuid);
+                  reschedule_task (runner->scheduled_task->task_uuid);
+                }
+            }
+          scheduled_task_finalize (runner->scheduled_task, runner->action);
+          runner->scheduled_task = NULL;
+        }
+
+      scheduled_task_runner_free (runner);
+      scheduled_task_runners = g_slist_delete_link (scheduled_task_runners, iter);
     }
-
-  /* Stop the task. */
-  setproctitle ("scheduler: stopping %s", scheduled_task->task_uuid);
-
-  task_ret = stop_task (scheduled_task->task_uuid);
-
-  if (task_ret == 0)
-    {
-      scheduled_task_free (scheduled_task);
-      gvm_close_sentry ();
-      exit (EXIT_SUCCESS);
-    }
-
-  g_warning ("%s: stop failed for task %s (ret=%d)",
-             __func__, scheduled_task->task_uuid, task_ret);
-  scheduled_task_free (scheduled_task);
-  gvm_close_sentry ();
-  exit (EXIT_FAILURE);
 }
 
 /**
@@ -4110,12 +4483,12 @@ manage_schedule (gboolean run_tasks,
                  sigset_t *sigmask_current)
 {
   iterator_t schedules;
-  GSList *starts, *stops;
   int ret;
   task_t previous_start_task, previous_stop_task;
 
-  starts = NULL;
-  stops = NULL;
+  scheduled_task_queue_init_once ();
+  scheduled_task_check_runners_startup_status ();
+
   previous_start_task = 0;
   previous_stop_task = 0;
 
@@ -4139,150 +4512,169 @@ manage_schedule (gboolean run_tasks,
   if (run_tasks == 0)
     return 0;
 
-  /* Assemble "starts" and "stops" list containing task uuid, owner name and
-   * owner UUID for each (scheduled) task to start or stop. */
+  if (sigmask_current == NULL)
+    {
+      g_warning ("%s: sigmask_current is NULL", __func__);
+      return -1;
+    }
 
   ret = init_task_schedule_iterator (&schedules);
   if (ret)
-    {
-      if (ret == -1)
-        {
-          g_warning ("%s: iterator init error"
-                     " (Perhaps the db went down?)",
-                     __func__);
-          /* Just ignore, in case the db went down temporarily. */
-          return 0;
-        }
+    return (ret == -1) ? 0 : ret;
 
-      return ret;
-    }
   /* This iterator runs in a transaction. */
   while (next (&schedules))
-    if (task_schedule_iterator_start_due (&schedules))
-      {
-        const char *icalendar, *zone;
-        int timed_out;
+   {
+     if (task_schedule_iterator_start_due (&schedules))
+       {
+         const char *icalendar, *zone;
+         int timed_out;
+         scheduled_task_t *scheduled_task;
+         task_t task_id;
 
-        /* Check if task schedule is timed out before updating next due time */
-        timed_out = task_schedule_iterator_timed_out (&schedules);
+         task_id = task_schedule_iterator_task (&schedules);
 
-        /* Update the task schedule info to prevent multiple schedules. */
+         /* Skip duplicates for same task withing the iterator loop to
+          * avoid conflicts between multiple users with permissions. */
+         if (previous_start_task == task_id)
+           continue;
+         previous_start_task = task_id;
 
-        icalendar = task_schedule_iterator_icalendar (&schedules);
-        zone = task_schedule_iterator_timezone (&schedules);
+         /* Check if task schedule is timed out before updating next due time */
+         timed_out = task_schedule_iterator_timed_out (&schedules);
 
-        g_debug ("%s: start due for %llu, setting next_time",
-                 __func__,
-                 task_schedule_iterator_task (&schedules));
-        set_task_schedule_next_time
-         (task_schedule_iterator_task (&schedules),
-          icalendar_next_time_from_string (icalendar, time(NULL), zone, 0));
+         /* Update the task schedule info to prevent multiple schedules. */
 
-        /* Skip this task if it was already added to the starts list
-         * to avoid conflicts between multiple users with permissions. */
+         icalendar = task_schedule_iterator_icalendar (&schedules);
+         zone = task_schedule_iterator_timezone (&schedules);
 
-        if (previous_start_task == task_schedule_iterator_task (&schedules))
-          continue;
+         g_debug ("%s: start due for %llu, setting next_time",
+                  __func__,
+                  task_id);
 
-        if (scans_blocked_by_maintenance_window (
-              task_schedule_iterator_owner_uuid (&schedules))
-            )
-          {
-            g_warning ("%s: task %s cannot be started or resumed"
-                       " in maintenance window", __func__,
-                       task_schedule_iterator_task_uuid (&schedules));
-            continue;
-          }
+         set_task_schedule_next_time (
+           task_id,
+           icalendar_next_time_from_string (icalendar, time(NULL), zone, 0));
 
-        if (timed_out)
-          {
-            g_message (" %s: Task timed out: %s",
-                       __func__,
-                       task_schedule_iterator_task_uuid (&schedules));
-            continue;
-          }
+         if (scans_blocked_by_maintenance_window (
+               task_schedule_iterator_owner_uuid (&schedules))
+             )
+           {
+             g_warning ("%s: task %s cannot be started or resumed"
+                        " in maintenance window", __func__,
+                        task_schedule_iterator_task_uuid (&schedules));
+             continue;
+           }
 
-        previous_start_task = task_schedule_iterator_task (&schedules);
+         if (timed_out)
+           {
+             g_message (" %s: Task timed out: %s",
+                        __func__,
+                        task_schedule_iterator_task_uuid (&schedules));
+             continue;
+           }
 
-        /* Add task UUID and owner name and UUID to the list. */
+         scheduled_task = scheduled_task_new
+                          (task_schedule_iterator_task_uuid (&schedules),
+                           task_schedule_iterator_owner_uuid (&schedules),
+                           task_schedule_iterator_owner_name (&schedules));
 
-        starts = g_slist_prepend
-                  (starts,
-                   scheduled_task_new
-                    (task_schedule_iterator_task_uuid (&schedules),
-                     task_schedule_iterator_owner_uuid (&schedules),
-                     task_schedule_iterator_owner_name (&schedules)));
-      }
-    else if (task_schedule_iterator_stop_due (&schedules))
-      {
-        /* Skip this task if it was already added to the stops list
-         * to avoid conflicts between multiple users with permissions. */
+         if (scheduled_task_queue_add (scheduled_task,
+                                       SCHEDULED_TASK_ACTION_START))
+           {
+             g_warning ("%s: Failed to add task %s to scheduled task queue",
+                        __func__,
+                        task_schedule_iterator_task_uuid (&schedules));
+             scheduled_task_free (scheduled_task);
+           }
+       }
+     else if (task_schedule_iterator_stop_due (&schedules))
+       {
+         task_t task_id;
+         scheduled_task_t *scheduled_task;
 
-        if (previous_stop_task == task_schedule_iterator_task (&schedules))
-          continue;
-        previous_stop_task = task_schedule_iterator_task (&schedules);
+         task_id = task_schedule_iterator_task (&schedules);
+         if (previous_stop_task == task_id)
+           continue;
+         previous_stop_task = task_id;
 
-        /* Add task UUID and owner name and UUID to the list. */
+         scheduled_task = scheduled_task_new
+                          (task_schedule_iterator_task_uuid (&schedules),
+                           task_schedule_iterator_owner_uuid (&schedules),
+                           task_schedule_iterator_owner_name (&schedules));
 
-        stops = g_slist_prepend
-                 (stops,
-                  scheduled_task_new
-                   (task_schedule_iterator_task_uuid (&schedules),
-                    task_schedule_iterator_owner_uuid (&schedules),
-                    task_schedule_iterator_owner_name (&schedules)));
-      }
+         if (scheduled_task_queue_add (scheduled_task,
+                                       SCHEDULED_TASK_ACTION_STOP))
+           {
+             g_warning ("%s: Failed to add task %s to scheduled task queue",
+                        __func__,
+                        task_schedule_iterator_task_uuid (&schedules));
+             scheduled_task_free (scheduled_task);
+           }
+       }
+   }
   cleanup_task_schedule_iterator (&schedules);
 
-  /* Start tasks in forked processes, now that the SQL statement is closed. */
-
-  while (starts)
+  while (!g_queue_is_empty (scheduled_task_queue))
     {
-      scheduled_task_t *scheduled_task;
-      GSList *head;
+      scheduled_task_item_t *item;
 
-      scheduled_task = starts->data;
+      item = g_queue_pop_head (scheduled_task_queue);
 
-      head = starts;
-      starts = starts->next;
-      g_slist_free_1 (head);
-
-      if (scheduled_task_start (scheduled_task,
-                                sigmask_current))
-        /* Error.  Reschedule and continue to next task. */
-        reschedule_task (scheduled_task->task_uuid);
-      scheduled_task_free (scheduled_task);
-    }
-
-  /* Stop tasks in forked processes, now that the SQL statement is closed. */
-
-  while (stops)
-    {
-      scheduled_task_t *scheduled_task;
-      GSList *head;
-
-      scheduled_task = stops->data;
-      head = stops;
-      stops = stops->next;
-      g_slist_free_1 (head);
-
-      if (scheduled_task_stop (scheduled_task,
-                               sigmask_current))
+      if (!item || !item->task || !item->task->task_uuid || !item->task->owner_uuid)
         {
-          /* Error.  Exit. */
-          scheduled_task_free (scheduled_task);
-          while (stops)
+          g_warning ("%s: Invalid scheduled task item", __func__);
+          if (item)
             {
-              scheduled_task_free (stops->data);
-              stops = g_slist_delete_link (stops, stops);
+              if (item->task)
+                {
+                  if (item->task->task_uuid)
+                    scheduled_task_finalize (item->task, item->action);
+                  else
+                    scheduled_task_free (item->task);
+                }
+              g_free (item);
             }
-          return -1;
+          continue;
         }
-      scheduled_task_free (scheduled_task);
+
+      if (item->action == SCHEDULED_TASK_ACTION_START)
+       {
+         if (task_schedule_timed_out_uuid (item->task->task_uuid))
+           {
+             g_message (" %s: Skipping timed out scheduled task: %s",
+                        __func__, item->task->task_uuid);
+             scheduled_task_finalize (item->task, item->action);
+             g_free (item);
+             continue;
+           }
+
+         if (scans_blocked_by_maintenance_window (item->task->owner_uuid))
+           {
+             g_message (" %s: Skipping scheduled task in maintenance window: %s",
+                        __func__, item->task->task_uuid);
+             scheduled_task_finalize (item->task, item->action);
+             g_free (item);
+             continue;
+           }
+       }
+
+      ret = scheduled_task_fork_runner (item->task, item->action,
+                                        sigmask_current);
+      if (ret)
+        {
+          g_warning ("%s: Failed to fork runner for task %s",
+                     __func__,
+                     item->task->task_uuid);
+          if (item->action == SCHEDULED_TASK_ACTION_START)
+            reschedule_task (item->task->task_uuid);
+          scheduled_task_finalize (item->task, item->action);
+        }
+      g_free (item);
     }
 
   clear_duration_schedules (0);
   update_duration_schedule_periods (0);
-
   return 0;
 }
 
