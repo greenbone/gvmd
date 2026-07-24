@@ -2675,6 +2675,44 @@ init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*);
 const char*
 nvt_dfn_cert_adv_iterator_name (iterator_t*);
 
+
+/* Web Application VT data */
+
+int
+init_web_application_vt_info_iterator (iterator_t*, get_data_t *,
+                                       const char *);
+
+int
+init_web_application_vt_info_iterator_all (iterator_t*, get_data_t *);
+
+int
+web_application_vt_info_count (const get_data_t *);
+
+const char *
+web_application_vt_info_iterator_type (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_description (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_solution (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_severity (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_type_metadata (iterator_t *);
+
+void
+init_web_application_vt_ref_iterator (iterator_t *, const char *);
+
+const char *
+web_application_vt_ref_iterator_type (iterator_t *);
+
+const char *
+web_application_vt_ref_iterator_ref_id (iterator_t *);
+
+
 /* All SecInfo Data */
 
 int

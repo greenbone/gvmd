@@ -3847,6 +3847,11 @@ manage_attach_databases ()
     sql ("SELECT set_config ('search_path',"
          "                   current_setting ('search_path') || ',cert',"
          "                   false);");
+
+  if (manage_web_application_vts_loaded ())
+    sql ("SELECT set_config ('search_path',"
+         "                   current_setting ('search_path') || ',vts',"
+         "                   false);");
 }
 
 /**
