@@ -67,20 +67,21 @@ gboolean
 send_report_base_start (gmp_parser_t *gmp_parser,
                         report_summary_base_t base)
 {
-  const gchar *creation_time;
-  const gchar *modification_time;
+  gchar *creation_time = NULL;
+  gchar *modification_time = NULL;
+  gboolean failed = TRUE;
 
   if (gmp_parser == NULL || base == NULL)
     return TRUE;
 
-  creation_time = iso_if_time (base->creation_time);
-  modification_time = iso_if_time (base->modification_time);
+  creation_time = g_strdup (iso_if_time (base->creation_time));
+  modification_time = g_strdup (iso_if_time (base->modification_time));
 
   if (send_report_xml (
     gmp_parser,
     "<report id=\"%s\">",
     base->id ? base->id : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
@@ -88,41 +89,41 @@ send_report_base_start (gmp_parser_t *gmp_parser,
     "<name>%s</name>"
     "</owner>",
     base->owner_name ? base->owner_name : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<name>%s</name>",
     base->name ? base->name : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<comment>%s</comment>",
     base->comment ? base->comment : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<creation_time>%s</creation_time>",
     creation_time ? creation_time : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<modification_time>%s</modification_time>",
     modification_time ? modification_time : ""))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<writable>0</writable>"))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
     "<in_use>0</in_use>"))
-    return TRUE;
+    goto cleanup;
 
   if (send_report_xml (
     gmp_parser,
@@ -130,9 +131,15 @@ send_report_base_start (gmp_parser_t *gmp_parser,
     base->scan_run_status_str
       ? base->scan_run_status_str
       : ""))
-    return TRUE;
+    goto cleanup;
 
-  return FALSE;
+  failed = FALSE;
+
+cleanup:
+  g_free (creation_time);
+  g_free (modification_time);
+
+  return failed;
 }
 
 /**
