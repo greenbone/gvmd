@@ -22,9 +22,13 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Allocate and initialize a report summary.
+ * @brief Allocate and initialize a scan report summary.
  *
- * @return Newly allocated report summary, or NULL on allocation failure.
+ * Allocates the scan report summary and initializes its shared base,
+ * task reference, target reference, and resource summary structures.
+ *
+ * @return Newly allocated scan report summary, or NULL if initialization
+ *         fails.
  */
 scan_report_summary_t
 scan_report_summary_new (void)
@@ -38,6 +42,7 @@ scan_report_summary_new (void)
   summary->task = report_task_reference_new ();
   if (summary->task == NULL)
     {
+      report_summary_base_free (summary->base);
       g_free (summary);
       return NULL;
     }
@@ -45,6 +50,7 @@ scan_report_summary_new (void)
   summary->resources = report_resource_summary_new ();
   if (summary->resources == NULL)
     {
+      report_summary_base_free (summary->base);
       report_task_reference_free (summary->task);
       g_free (summary);
       return NULL;
