@@ -212,6 +212,7 @@ set(
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
+  manage_report_common.c
   manage_scan_report.c
   manage_report_applications.c
   manage_report_closed_cves.c
@@ -295,6 +296,7 @@ set(
   manage_sql_scan_report.c
   manage_sql_report_applications.c
   manage_sql_report_closed_cves.c
+  manage_sql_report_common.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
   manage_sql_report_formats.c
@@ -348,6 +350,7 @@ set(
   gmp_scan_report.c
   gmp_report_applications.c
   gmp_report_closed_cves.c
+  gmp_report_common.c
   gmp_report_configs.c
   gmp_report_cves.c
   gmp_report_errors.c
