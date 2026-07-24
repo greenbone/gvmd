@@ -77,59 +77,59 @@ send_report_base_start (gmp_parser_t *gmp_parser,
   modification_time = iso_if_time (base->modification_time);
 
   if (send_report_xml (
-        gmp_parser,
-        "<report id=\"%s\">",
-        base->id ? base->id : ""))
+    gmp_parser,
+    "<report id=\"%s\">",
+    base->id ? base->id : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<owner>"
-        "<name>%s</name>"
-        "</owner>",
-        base->owner_name ? base->owner_name : ""))
+    gmp_parser,
+    "<owner>"
+    "<name>%s</name>"
+    "</owner>",
+    base->owner_name ? base->owner_name : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<name>%s</name>",
-        base->name ? base->name : ""))
+    gmp_parser,
+    "<name>%s</name>",
+    base->name ? base->name : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<comment>%s</comment>",
-        base->comment ? base->comment : ""))
+    gmp_parser,
+    "<comment>%s</comment>",
+    base->comment ? base->comment : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<creation_time>%s</creation_time>",
-        creation_time ? creation_time : ""))
+    gmp_parser,
+    "<creation_time>%s</creation_time>",
+    creation_time ? creation_time : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<modification_time>%s</modification_time>",
-        modification_time ? modification_time : ""))
+    gmp_parser,
+    "<modification_time>%s</modification_time>",
+    modification_time ? modification_time : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<writable>0</writable>"))
+    gmp_parser,
+    "<writable>0</writable>"))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<in_use>0</in_use>"))
+    gmp_parser,
+    "<in_use>0</in_use>"))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<scan_run_status>%s</scan_run_status>",
-        base->scan_run_status_str
-          ? base->scan_run_status_str
-          : ""))
+    gmp_parser,
+    "<scan_run_status>%s</scan_run_status>",
+    base->scan_run_status_str
+      ? base->scan_run_status_str
+      : ""))
     return TRUE;
 
   return FALSE;
@@ -156,21 +156,21 @@ send_report_task (gmp_parser_t *gmp_parser,
     return send_report_xml (gmp_parser, "<task/>");
 
   if (send_report_xml (
-        gmp_parser,
-        "<task id=\"%s\">",
-        task->uuid ? task->uuid : ""))
+    gmp_parser,
+    "<task id=\"%s\">",
+    task->uuid ? task->uuid : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<name>%s</name>",
-        task->name ? task->name : ""))
+    gmp_parser,
+    "<name>%s</name>",
+    task->name ? task->name : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<comment>%s</comment>",
-        task->comment ? task->comment : ""))
+    gmp_parser,
+    "<comment>%s</comment>",
+    task->comment ? task->comment : ""))
     return TRUE;
 
   target = task->target;
@@ -180,33 +180,33 @@ send_report_task (gmp_parser_t *gmp_parser,
       && target->type != REPORT_TARGET_TYPE_IMPORT)
     {
       if (send_report_xml (
-            gmp_parser,
-            "<target id=\"%s\">",
-            target->uuid ? target->uuid : ""))
+        gmp_parser,
+        "<target id=\"%s\">",
+        target->uuid ? target->uuid : ""))
         return TRUE;
 
       if (send_report_xml (
-            gmp_parser,
-            "<trash>%d</trash>",
-            target->in_trash ? 1 : 0))
+        gmp_parser,
+        "<trash>%d</trash>",
+        target->in_trash ? 1 : 0))
         return TRUE;
 
       if (send_report_xml (
-            gmp_parser,
-            "<name>%s</name>",
-            target->name ? target->name : ""))
+        gmp_parser,
+        "<name>%s</name>",
+        target->name ? target->name : ""))
         return TRUE;
 
       if (send_report_xml (
-            gmp_parser,
-            "<comment>%s</comment>",
-            target->comment ? target->comment : ""))
+        gmp_parser,
+        "<comment>%s</comment>",
+        target->comment ? target->comment : ""))
         return TRUE;
 
       if (send_report_xml (
-            gmp_parser,
-            "<target_type>%s</target_type>",
-            report_target_type_to_string (target->type)))
+        gmp_parser,
+        "<target_type>%s</target_type>",
+        report_target_type_to_string (target->type)))
         return TRUE;
 
       if (send_report_xml (gmp_parser, "</target>"))
@@ -219,9 +219,9 @@ send_report_task (gmp_parser_t *gmp_parser,
     }
 
   if (send_report_xml (
-        gmp_parser,
-        "<progress>%d</progress>",
-        task->progress))
+    gmp_parser,
+    "<progress>%d</progress>",
+    task->progress))
     return TRUE;
 
   if (send_report_xml (gmp_parser, "</task>"))
@@ -246,29 +246,29 @@ send_report_scan_information (gmp_parser_t *gmp_parser,
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<timestamp>%s</timestamp>",
-        base->timestamp ? base->timestamp : ""))
+    gmp_parser,
+    "<timestamp>%s</timestamp>",
+    base->timestamp ? base->timestamp : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<scan_start>%s</scan_start>",
-        base->scan_start ? base->scan_start : ""))
+    gmp_parser,
+    "<scan_start>%s</scan_start>",
+    base->scan_start ? base->scan_start : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<timezone>%s</timezone>",
-        base->timezone ? base->timezone : ""))
+    gmp_parser,
+    "<timezone>%s</timezone>",
+    base->timezone ? base->timezone : ""))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<timezone_abbrev>%s</timezone_abbrev>",
-        base->timezone_abbrev
-          ? base->timezone_abbrev
-          : ""))
+    gmp_parser,
+    "<timezone_abbrev>%s</timezone_abbrev>",
+    base->timezone_abbrev
+      ? base->timezone_abbrev
+      : ""))
     return TRUE;
 
   return FALSE;
@@ -290,9 +290,9 @@ send_report_base_end (gmp_parser_t *gmp_parser,
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<scan_end>%s</scan_end>",
-        base->scan_end ? base->scan_end : ""))
+    gmp_parser,
+    "<scan_end>%s</scan_end>",
+    base->scan_end ? base->scan_end : ""))
     return TRUE;
 
   return send_report_xml (gmp_parser, "</report>");

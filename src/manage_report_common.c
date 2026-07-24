@@ -165,6 +165,7 @@ report_summary_base_free (report_summary_base_t base)
 
   g_free (base);
 }
+
 /**
  * @brief Get the string representation of a report target type.
  *

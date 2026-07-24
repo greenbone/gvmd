@@ -67,57 +67,57 @@ send_scan_report_resource_counts (gmp_parser_t *gmp_parser,
   resources = summary->resources;
 
   if (send_report_xml (
-        gmp_parser,
-        "<hosts><count>%d</count></hosts>",
-        resources->hosts))
+    gmp_parser,
+    "<hosts><count>%d</count></hosts>",
+    resources->hosts))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<closed_cves><count>%d</count></closed_cves>",
-        resources->closed_cves))
+    gmp_parser,
+    "<closed_cves><count>%d</count></closed_cves>",
+    resources->closed_cves))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<cves><count>%d</count></cves>",
-        resources->cves))
+    gmp_parser,
+    "<cves><count>%d</count></cves>",
+    resources->cves))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<vulns><count>%d</count></vulns>",
-        resources->vulnerabilities))
+    gmp_parser,
+    "<vulns><count>%d</count></vulns>",
+    resources->vulnerabilities))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<os><count>%d</count></os>",
-        resources->operating_systems))
+    gmp_parser,
+    "<os><count>%d</count></os>",
+    resources->operating_systems))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<apps><count>%d</count></apps>",
-        resources->applications))
+    gmp_parser,
+    "<apps><count>%d</count></apps>",
+    resources->applications))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<ssl_certs><count>%d</count></ssl_certs>",
-        resources->tls_certificates))
+    gmp_parser,
+    "<ssl_certs><count>%d</count></ssl_certs>",
+    resources->tls_certificates))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<ports><count>%d</count></ports>",
-        resources->ports))
+    gmp_parser,
+    "<ports><count>%d</count></ports>",
+    resources->ports))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<errors><count>%d</count></errors>",
-        resources->errors))
+    gmp_parser,
+    "<errors><count>%d</count></errors>",
+    resources->errors))
     return TRUE;
 
   return FALSE;
@@ -143,120 +143,120 @@ send_scan_report_result_count (gmp_parser_t *gmp_parser,
   results = &summary->results;
 
   if (send_report_xml (
-        gmp_parser,
-        "<result_count>%d",
-        results->total.full))
+    gmp_parser,
+    "<result_count>%d",
+    results->total.full))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<full>%d</full>"
-        "<filtered>%d</filtered>",
-        results->total.full,
-        results->total.filtered))
+    gmp_parser,
+    "<full>%d</full>"
+    "<filtered>%d</filtered>",
+    results->total.full,
+    results->total.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<critical>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</critical>",
-        results->critical.full,
-        results->critical.filtered))
+    gmp_parser,
+    "<critical>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</critical>",
+    results->critical.full,
+    results->critical.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<hole deprecated=\"1\">"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</hole>",
-        results->high.full,
-        results->high.filtered))
+    gmp_parser,
+    "<hole deprecated=\"1\">"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</hole>",
+    results->high.full,
+    results->high.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<high>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</high>",
-        results->high.full,
-        results->high.filtered))
+    gmp_parser,
+    "<high>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</high>",
+    results->high.full,
+    results->high.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<info deprecated=\"1\">"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</info>",
-        results->low.full,
-        results->low.filtered))
+    gmp_parser,
+    "<info deprecated=\"1\">"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</info>",
+    results->low.full,
+    results->low.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<low>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</low>",
-        results->low.full,
-        results->low.filtered))
+    gmp_parser,
+    "<low>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</low>",
+    results->low.full,
+    results->low.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<log>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</log>",
-        results->log.full,
-        results->log.filtered))
+    gmp_parser,
+    "<log>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</log>",
+    results->log.full,
+    results->log.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<warning deprecated=\"1\">"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</warning>",
-        results->medium.full,
-        results->medium.filtered))
+    gmp_parser,
+    "<warning deprecated=\"1\">"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</warning>",
+    results->medium.full,
+    results->medium.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<medium>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</medium>",
-        results->medium.full,
-        results->medium.filtered))
+    gmp_parser,
+    "<medium>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</medium>",
+    results->medium.full,
+    results->medium.filtered))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<false_positive>"
-        "<full>%d</full>"
-        "<filtered>%d</filtered>"
-        "</false_positive>",
-        results->false_positive.full,
-        results->false_positive.filtered))
+    gmp_parser,
+    "<false_positive>"
+    "<full>%d</full>"
+    "<filtered>%d</filtered>"
+    "</false_positive>",
+    results->false_positive.full,
+    results->false_positive.filtered))
     return TRUE;
 
   if (send_report_xml (gmp_parser, "</result_count>"))
     return TRUE;
 
   if (send_report_xml (
-        gmp_parser,
-        "<severity>"
-        "<full>%.1f</full>"
-        "<filtered>%.1f</filtered>"
-        "</severity>",
-        results->severity.full,
-        results->severity.filtered))
+    gmp_parser,
+    "<severity>"
+    "<full>%.1f</full>"
+    "<filtered>%.1f</filtered>"
+    "</severity>",
+    results->severity.full,
+    results->severity.filtered))
     return TRUE;
 
   return FALSE;
@@ -384,10 +384,10 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
 
     case MANAGE_GET_SCAN_REPORT_NOT_FOUND:
       if (send_find_error_to_client (
-            "get_scan_report",
-            "report",
-            get_scan_report_data.get.id,
-            gmp_parser))
+        "get_scan_report",
+        "report",
+        get_scan_report_data.get.id,
+        gmp_parser))
         error_send_to_client (error);
 
       get_scan_report_reset ();
