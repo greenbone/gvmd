@@ -13,9 +13,8 @@
 #include "gmp_scan_report.h"
 
 #include "gmp_get.h"
+#include "gmp_report_common.h"
 #include "manage_scan_report.h"
-
-#include <stdarg.h>
 
 #undef G_LOG_DOMAIN
 
@@ -49,52 +48,16 @@ get_scan_report_reset (void)
 }
 
 /**
- * @brief Send escaped XML content to the GMP client.
- *
- * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] format      printf-style format string.
- *
- * @return FALSE on success, TRUE on failure.
- */
-static gboolean
-send_report_xml (gmp_parser_t *gmp_parser,
-                 const gchar *format,
-                 ...)
-{
-  va_list arguments;
-  gchar *message;
-  gboolean failed;
-
-  if (gmp_parser == NULL || format == NULL)
-    return TRUE;
-
-  va_start (arguments, format);
-  message = g_markup_vprintf_escaped (format, arguments);
-  va_end (arguments);
-
-  if (message == NULL)
-    return TRUE;
-
-  failed = send_to_client (message,
-                           gmp_parser->client_writer,
-                           gmp_parser->client_writer_data);
-
-  g_free (message);
-
-  return failed;
-}
-
-/**
  * @brief Send scan report resource count elements.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] summary       Report summary.
+ * @param[in] summary     Scan report summary.
  *
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
 send_scan_report_resource_counts (gmp_parser_t *gmp_parser,
-                                  report_summary_t summary)
+                                  scan_report_summary_t summary)
 {
   report_resource_summary_t resources;
 
@@ -104,152 +67,57 @@ send_scan_report_resource_counts (gmp_parser_t *gmp_parser,
   resources = summary->resources;
 
   if (send_report_xml (
-    gmp_parser,
-    "<hosts><count>%d</count></hosts>",
-    resources->hosts))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<closed_cves><count>%d</count></closed_cves>",
-    resources->closed_cves))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<cves><count>%d</count></cves>",
-    resources->cves))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<vulns><count>%d</count></vulns>",
-    resources->vulnerabilities))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<os><count>%d</count></os>",
-    resources->operating_systems))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<apps><count>%d</count></apps>",
-    resources->applications))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<ssl_certs><count>%d</count></ssl_certs>",
-    resources->tls_certificates))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<ports><count>%d</count></ports>",
-    resources->ports))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<errors><count>%d</count></errors>",
-    resources->errors))
-    return TRUE;
-
-  return FALSE;
-}
-
-/**
- * @brief Send the detailed task and target information.
- *
- * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] summary       Report summary.
- *
- * @return FALSE on success, TRUE on failure.
- */
-static gboolean
-send_scan_report_task (gmp_parser_t *gmp_parser,
-                       report_summary_t summary)
-{
-  report_task_reference_t task;
-  report_target_reference_t target;
-
-  if (summary == NULL)
-    return TRUE;
-
-  if (summary->task == NULL || summary->task->id == 0)
-    return send_report_xml (gmp_parser, "<task/>");
-
-  task = summary->task;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<task id=\"%s\">",
-    task->uuid ? task->uuid : ""))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<name>%s</name>",
-    task->name ? task->name : ""))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<comment>%s</comment>",
-    task->comment ? task->comment : ""))
-    return TRUE;
-
-  target = task->target;
-
-  if (target
-      && target->type != REPORT_TARGET_TYPE_NONE
-      && target->type != REPORT_TARGET_TYPE_IMPORT)
-    {
-      if (send_report_xml (
         gmp_parser,
-        "<target id=\"%s\">",
-        target->uuid ? target->uuid : ""))
-        return TRUE;
-
-      if (send_report_xml (
-        gmp_parser,
-        "<trash>%d</trash>",
-        target->in_trash ? 1 : 0))
-        return TRUE;
-
-      if (send_report_xml (
-        gmp_parser,
-        "<name>%s</name>",
-        target->name ? target->name : ""))
-        return TRUE;
-
-      if (send_report_xml (
-        gmp_parser,
-        "<comment>%s</comment>",
-        target->comment ? target->comment : ""))
-        return TRUE;
-
-      if (send_report_xml (
-        gmp_parser,
-        "<target_type>%s</target_type>",
-        report_target_type_to_string (target->type)))
-        return TRUE;
-
-      if (send_report_xml (gmp_parser, "</target>"))
-        return TRUE;
-    }
-  else
-    {
-      if (send_report_xml (gmp_parser, "<target/>"))
-        return TRUE;
-    }
-
-  if (send_report_xml (gmp_parser, "<progress>%d</progress>", task->progress))
+        "<hosts><count>%d</count></hosts>",
+        resources->hosts))
     return TRUE;
 
-  if (send_report_xml (gmp_parser, "</task>"))
+  if (send_report_xml (
+        gmp_parser,
+        "<closed_cves><count>%d</count></closed_cves>",
+        resources->closed_cves))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<cves><count>%d</count></cves>",
+        resources->cves))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<vulns><count>%d</count></vulns>",
+        resources->vulnerabilities))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<os><count>%d</count></os>",
+        resources->operating_systems))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<apps><count>%d</count></apps>",
+        resources->applications))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<ssl_certs><count>%d</count></ssl_certs>",
+        resources->tls_certificates))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<ports><count>%d</count></ports>",
+        resources->ports))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<errors><count>%d</count></errors>",
+        resources->errors))
     return TRUE;
 
   return FALSE;
@@ -259,13 +127,13 @@ send_scan_report_task (gmp_parser_t *gmp_parser,
  * @brief Send the result count summary.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] summary       Report summary.
+ * @param[in] summary     Scan report summary.
  *
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
 send_scan_report_result_count (gmp_parser_t *gmp_parser,
-                               report_summary_t summary)
+                               scan_report_summary_t summary)
 {
   const report_result_summary_t *results;
 
@@ -275,120 +143,120 @@ send_scan_report_result_count (gmp_parser_t *gmp_parser,
   results = &summary->results;
 
   if (send_report_xml (
-    gmp_parser,
-    "<result_count>%d",
-    results->total.full))
+        gmp_parser,
+        "<result_count>%d",
+        results->total.full))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<full>%d</full>"
-    "<filtered>%d</filtered>",
-    results->total.full,
-    results->total.filtered))
+        gmp_parser,
+        "<full>%d</full>"
+        "<filtered>%d</filtered>",
+        results->total.full,
+        results->total.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<critical>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</critical>",
-    results->critical.full,
-    results->critical.filtered))
+        gmp_parser,
+        "<critical>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</critical>",
+        results->critical.full,
+        results->critical.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<hole deprecated=\"1\">"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</hole>",
-    results->high.full,
-    results->high.filtered))
+        gmp_parser,
+        "<hole deprecated=\"1\">"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</hole>",
+        results->high.full,
+        results->high.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<high>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</high>",
-    results->high.full,
-    results->high.filtered))
+        gmp_parser,
+        "<high>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</high>",
+        results->high.full,
+        results->high.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<info deprecated=\"1\">"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</info>",
-    results->low.full,
-    results->low.filtered))
+        gmp_parser,
+        "<info deprecated=\"1\">"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</info>",
+        results->low.full,
+        results->low.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<low>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</low>",
-    results->low.full,
-    results->low.filtered))
+        gmp_parser,
+        "<low>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</low>",
+        results->low.full,
+        results->low.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<log>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</log>",
-    results->log.full,
-    results->log.filtered))
+        gmp_parser,
+        "<log>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</log>",
+        results->log.full,
+        results->log.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<warning deprecated=\"1\">"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</warning>",
-    results->medium.full,
-    results->medium.filtered))
+        gmp_parser,
+        "<warning deprecated=\"1\">"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</warning>",
+        results->medium.full,
+        results->medium.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<medium>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</medium>",
-    results->medium.full,
-    results->medium.filtered))
+        gmp_parser,
+        "<medium>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</medium>",
+        results->medium.full,
+        results->medium.filtered))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<false_positive>"
-    "<full>%d</full>"
-    "<filtered>%d</filtered>"
-    "</false_positive>",
-    results->false_positive.full,
-    results->false_positive.filtered))
+        gmp_parser,
+        "<false_positive>"
+        "<full>%d</full>"
+        "<filtered>%d</filtered>"
+        "</false_positive>",
+        results->false_positive.full,
+        results->false_positive.filtered))
     return TRUE;
 
   if (send_report_xml (gmp_parser, "</result_count>"))
     return TRUE;
 
   if (send_report_xml (
-    gmp_parser,
-    "<severity>"
-    "<full>%.1f</full>"
-    "<filtered>%.1f</filtered>"
-    "</severity>",
-    results->severity.full,
-    results->severity.filtered))
+        gmp_parser,
+        "<severity>"
+        "<full>%.1f</full>"
+        "<filtered>%.1f</filtered>"
+        "</severity>",
+        results->severity.full,
+        results->severity.filtered))
     return TRUE;
 
   return FALSE;
@@ -398,133 +266,38 @@ send_scan_report_result_count (gmp_parser_t *gmp_parser,
  * @brief Send the complete structured scan report.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] summary       Report summary.
+ * @param[in] summary     Scan report summary.
  *
  * @return FALSE on success, TRUE on failure.
  */
 static gboolean
 send_scan_report_summary (gmp_parser_t *gmp_parser,
-                          report_summary_t summary)
+                          scan_report_summary_t summary)
 {
-  gchar *creation_time = NULL;
-  gchar *modification_time = NULL;
-
-  if (summary == NULL)
+  if (gmp_parser == NULL
+      || summary == NULL
+      || summary->base == NULL)
     return TRUE;
 
-  creation_time = g_strdup (iso_if_time (summary->creation_time));
-  modification_time = g_strdup (iso_if_time (summary->modification_time));
-
-  if (send_report_xml (
-    gmp_parser,
-    "<report id=\"%s\">",
-    summary->id ? summary->id : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<owner>"
-    "<name>%s</name>"
-    "</owner>",
-    summary->owner_name ? summary->owner_name : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<name>%s</name>",
-    summary->name ? summary->name : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<comment>%s</comment>",
-    summary->comment ? summary->comment : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<creation_time>%s</creation_time>",
-    creation_time ? creation_time : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<modification_time>%s</modification_time>",
-    modification_time ? modification_time : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<writable>0</writable>"))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<in_use>0</in_use>"))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<scan_run_status>%s</scan_run_status>",
-    summary->scan_run_status_str
-      ? summary->scan_run_status_str
-      : ""))
-    goto fail;
+  if (send_report_base_start (gmp_parser, summary->base))
+    return TRUE;
 
   if (send_scan_report_resource_counts (gmp_parser, summary))
-    goto fail;
+    return TRUE;
 
-  if (send_scan_report_task (gmp_parser, summary))
-    goto fail;
+  if (send_report_task (gmp_parser, summary->task))
+    return TRUE;
 
-  if (send_report_xml (
-    gmp_parser,
-    "<timestamp>%s</timestamp>",
-    summary->timestamp ? summary->timestamp : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<scan_start>%s</scan_start>",
-    summary->scan_start ? summary->scan_start : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<timezone>%s</timezone>",
-    summary->timezone ? summary->timezone : ""))
-    goto fail;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<timezone_abbrev>%s</timezone_abbrev>",
-    summary->timezone_abbrev
-      ? summary->timezone_abbrev
-      : ""))
-    goto fail;
+  if (send_report_scan_information (gmp_parser, summary->base))
+    return TRUE;
 
   if (send_scan_report_result_count (gmp_parser, summary))
-    goto fail;
+    return TRUE;
 
-  if (send_report_xml (
-    gmp_parser,
-    "<scan_end>%s</scan_end>",
-    summary->scan_end ? summary->scan_end : ""))
-    goto fail;
-
-  if (send_report_xml (gmp_parser, "</report>"))
-    goto fail;
-
-  g_free (creation_time);
-  g_free (modification_time);
+  if (send_report_base_end (gmp_parser, summary->base))
+    return TRUE;
 
   return FALSE;
-
-fail:
-  g_free (creation_time);
-  g_free (modification_time);
-
-  return TRUE;
 }
 
 /**
@@ -554,7 +327,7 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
                      GError **error)
 {
   manage_get_scan_report_response_t response;
-  report_summary_t summary = NULL;
+  scan_report_summary_t summary = NULL;
   int ret;
 
   if (get_scan_report_data.get.id == NULL)
@@ -593,10 +366,13 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
       return;
     }
 
-  // Override the subtype to "report"
-  // to ensure correct handling in manage_get_scan_report_summary.
+  /*
+   * Override the subtype with the underlying report resource type used by
+   * the management and SQL layers.
+   */
   g_free (get_scan_report_data.get.subtype);
   get_scan_report_data.get.subtype = g_strdup ("report");
+
   response = manage_get_scan_report_summary (
     &get_scan_report_data.get,
     &summary);
@@ -608,10 +384,10 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
 
     case MANAGE_GET_SCAN_REPORT_NOT_FOUND:
       if (send_find_error_to_client (
-        "get_scan_report",
-        "report",
-        get_scan_report_data.get.id,
-        gmp_parser))
+            "get_scan_report",
+            "report",
+            get_scan_report_data.get.id,
+            gmp_parser))
         error_send_to_client (error);
 
       get_scan_report_reset ();
@@ -652,13 +428,13 @@ get_scan_report_run (gmp_parser_t *gmp_parser,
                          1,
                          1);
 
-  report_summary_free (summary);
+  scan_report_summary_free (summary);
   get_scan_report_reset ();
 
   return;
 
 send_error:
   error_send_to_client (error);
-  report_summary_free (summary);
+  scan_report_summary_free (summary);
   get_scan_report_reset ();
 }

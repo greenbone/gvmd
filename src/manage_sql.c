@@ -119,7 +119,7 @@
 #include "manage_report_configs.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
-#include "manage_sql_scan_report.h"
+#include "manage_sql_report_common.h"
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
