@@ -1522,12 +1522,21 @@ add_tls_certificates_from_report_host (report_host_t report_host,
       gboolean has_ports;
 
       certificate_prefixed = iterator_string (&tls_certs, 0);
-      certificate_b64 = g_strrstr (certificate_prefixed, ":") + 1;
+      certificate_b64 = g_strrstr (certificate_prefixed, ":");
+      if (certificate_b64 == NULL)
+        continue;
+      certificate_b64++;
 
       certificate = g_base64_decode (certificate_b64, &certificate_size);
 
       scanner_fpr_prefixed = iterator_string (&tls_certs, 1);
-      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":") + 1;
+      scanner_fpr = g_strrstr (scanner_fpr_prefixed, ":");
+      if (scanner_fpr == NULL)
+        {
+          g_free (certificate);
+          continue;
+        }
+      scanner_fpr++;
 
       quoted_scanner_fpr = sql_quote (scanner_fpr);
 
@@ -1609,6 +1618,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
           g_free (subject);
           g_free (issuer);
           g_free (serial);
+          g_free (quoted_scanner_fpr);
           continue;
         }
 
@@ -1649,6 +1659,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
               if (versions->len)
                 g_string_append (versions, ", ");
               g_string_append (versions, quoted_version);
+              g_free (quoted_version);
             }
           cleanup_iterator (&versions_iter);
 
@@ -1676,6 +1687,7 @@ add_tls_certificates_from_report_host (report_host_t report_host,
       g_free (subject);
       g_free (issuer);
       g_free (serial);
+      g_free (quoted_scanner_fpr);
     }
   cleanup_iterator (&tls_certs);
 

@@ -282,6 +282,12 @@ manage_cert_db_supported_version ();
 int
 manage_cert_db_version ();
 
+int
+manage_web_application_vts_db_supported_version ();
+
+int
+manage_web_application_vts_db_version ();
+
 void
 set_db_version (int version);
 
@@ -2467,8 +2473,7 @@ manage_rebuild_gvmd_data_from_feed (const char *,
                                     gchar **);
 
 int
-manage_schedule (manage_connection_forker_t,
-                 gboolean,
+manage_schedule (gboolean,
                  sigset_t *);
 
 int
@@ -2508,6 +2513,9 @@ manage_scap_loaded ();
 
 int
 manage_nvts_loaded ();
+
+int
+manage_web_application_vts_loaded ();
 
 const char *
 manage_scap_update_time ();
@@ -2771,6 +2779,7 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+#define WEB_APPLICATION_VTS_FEED 5
 
 gboolean
 manage_gvmd_data_feed_dir_exists (const char *);

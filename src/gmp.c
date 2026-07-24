@@ -90,6 +90,7 @@
 #include "gmp_logout.h"
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
+#include "gmp_scan_report.h"
 #include "gmp_report_applications.h"
 #include "gmp_report_closed_cves.h"
 #include "gmp_report_configs.h"
@@ -4623,6 +4624,7 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_SCAN_REPORT,
   CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CLOSED_CVES,
   CLIENT_GET_REPORT_CONFIGS,
@@ -6063,6 +6065,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names, attribute_values);
             set_client_state (CLIENT_GET_SCANNERS);
           }
+
+        ELSE_GET_START (scan_report, SCAN_REPORT)
+
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -13520,6 +13525,8 @@ feed_type_name (int feed_type)
         return "SCAP";
       case GVMD_DATA_FEED:
         return "GVMD_DATA";
+      case WEB_APPLICATION_VTS_FEED:
+        return "WEB_APPLICATION_VTS";
       default:
         return "Error";
     }
@@ -22538,6 +22545,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_SCANNERS:
         handle_get_scanners (gmp_parser, error);
         break;
+
+      CASE_GET_END (SCAN_REPORT, scan_report);
 
       case CLIENT_GET_SCHEDULES:
         handle_get_schedules (gmp_parser, error);

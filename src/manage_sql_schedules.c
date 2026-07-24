@@ -866,6 +866,39 @@ report_scheduled (report_t report)
 }
 
 /**
+ * @brief Set the report's scheduled flag.
+ *
+ * @param[in]   task_uuid  Task UUID.
+ * @param[in]   scheduled  Scheduled flag.
+ */
+void
+set_task_report_scheduled (const gchar *task_uuid, int scheduled)
+{
+  task_t task = 0;
+  report_t report = 0;
+
+  if (task_uuid == NULL || strcmp (task_uuid, "") == 0)
+    return;
+
+  sql_int64_ps (&task,
+                "SELECT id FROM tasks WHERE uuid = $1"
+                " AND hidden != 2;",
+                SQL_STR_PARAM(task_uuid),
+                NULL);
+  if (task == 0)
+    return;
+
+  report = task_running_report (task);
+  if (report == 0)
+    return;
+
+  sql_ps ("UPDATE reports SET flags = $1 WHERE id = $2;",
+          SQL_INT_PARAM (scheduled > 0 ? 1 : 0),
+          SQL_RESOURCE_PARAM (report),
+          NULL);
+}
+
+/**
  * @brief Get the stop due state from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.

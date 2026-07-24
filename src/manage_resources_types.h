@@ -53,5 +53,6 @@ typedef resource_t ticket_t;
 typedef resource_t tls_certificate_t;
 typedef resource_t user_t;
 typedef resource_t web_application_target_t;
+typedef resource_t zap_vt_t;
 
 #endif /* not _GVMD_MANAGE_RESOURCES_TYPES_H */

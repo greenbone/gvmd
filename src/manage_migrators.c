@@ -114,6 +114,7 @@
 #include <sys/wait.h>
 #endif
 #include "manage_migrators_219_to_220_names.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "sql.h"
 #include "utils.h"
@@ -4336,6 +4337,70 @@ migrate_is_available (int old_version, int new_version)
 }
 
 /**
+ * @brief Check version and migrate of a specific SecInfo database.
+ *
+ * @param[in]  type_name   Name of the database type.
+ * @param[in]  type        Type of the database (for gvm_migrate_secinfo).
+ * @param[in]  get_old_version  Function to get the old version.
+ * @param[in]  get_new_version  Function to get the new version.
+ * @param[out] is_current_ret   Set to 1 if DB version is already current.
+ *
+ * @return 0 DB migrated successfully, 1 sync already in progress,
+ *         2 database too new, -1 error during sync.
+ */
+static int
+check_secinfo_migration (const char *type_name,
+                         int type,
+                         int get_old_version (),
+                         int get_new_version (),
+                         int *is_current_ret)
+{
+  int old_version = get_old_version ();
+  int new_version = get_new_version ();
+
+  if (old_version == new_version)
+    {
+      g_debug ("%s database already at current version", type_name);
+      if (is_current_ret)
+        *is_current_ret = 1;
+    }
+  else if (old_version == -1)
+    {
+      g_message ("No %s database found for migration", type_name);
+      if (is_current_ret)
+        *is_current_ret = 1;
+    }
+  else if (old_version > new_version)
+    {
+      g_warning ("%s database version too new: %d", type_name, old_version);
+      return 2;
+    }
+  else
+    {
+      g_message ("Migrating %s database", type_name);
+      switch (gvm_migrate_secinfo (type))
+        {
+        case 0:
+          g_message ("%s database migrated successfully", type_name);
+          break;
+        case 1:
+          g_warning ("%s sync already running", type_name);
+          cleanup_manage_process (TRUE);
+          return 1;
+          break;
+        default:
+          assert (0);
+        case -1:
+          cleanup_manage_process (TRUE);
+          return -1;
+          break;
+        }
+    }
+
+  return 0;
+}
+
+/**
  * @brief Migrate database to version supported by this manager.
  *
  * @param[in]  log_config  Log configuration.
@@ -4343,17 +4408,22 @@ migrate_is_available (int old_version, int new_version)
  *
  * @return 0 success, 1 already on supported version, 2 too hard,
  * 11 cannot migrate SCAP DB, 12 cannot migrate CERT DB,
- * -1 error, -11 error running SCAP migration, -12 error running CERT migration.
+ * 13 cannot migrate Web Application VTs DB,
+ * -1 error, -11 error running SCAP migration, -12 error running CERT migration,
+ * -13 error running Web Application VTs migration.
  */
 int
 manage_migrate (GSList *log_config, const db_conn_info_t *database)
 {
+  int ret;
   migrator_t *migrators;
   /* The version on the disk. */
-  int old_version, old_scap_version, old_cert_version;
+  int old_version;
   /* The version that this program requires. */
-  int new_version, new_scap_version, new_cert_version;
+  int new_version;
+
   int version_current = 0, scap_version_current = 0, cert_version_current = 0;
+  int web_application_vts_current = 0;
 
   g_log_set_handler (
     G_LOG_DOMAIN, ALL_LOG_LEVELS, (GLogFunc) gvm_log_func, log_config);
@@ -4414,87 +4484,41 @@ manage_migrate (GSList *log_config, const db_conn_info_t *database)
         }
     }
 
-  /* Migrate SCAP and CERT databases */
-  old_scap_version = manage_scap_db_version ();
-  new_scap_version = manage_scap_db_supported_version ();
-  old_cert_version = manage_cert_db_version ();
-  new_cert_version = manage_cert_db_supported_version ();
+  /* Migrate SCAP, CERT and VT databases */
 
-  if (old_scap_version == new_scap_version)
-    {
-      g_debug ("SCAP database already at current version");
-      scap_version_current = 1;
-    }
-  else if (old_scap_version == -1)
-    {
-      g_message ("No SCAP database found for migration");
-      scap_version_current = 1;
-    }
-  else if (old_scap_version > new_scap_version)
-    {
-      g_warning ("SCAP database version too new: %d", old_scap_version);
-      return 11;
-    }
-  else
-    {
-      g_message ("Migrating SCAP database");
-      switch (gvm_migrate_secinfo (SCAP_FEED))
-        {
-        case 0:
-          g_message ("SCAP database migrated successfully");
-          break;
-        case 1:
-          g_warning ("SCAP sync already running");
-          cleanup_manage_process (TRUE);
-          return 11;
-          break;
-        default:
-          assert (0);
-        case -1:
-          cleanup_manage_process (TRUE);
-          return -11;
-          break;
-        }
-    }
+  ret = check_secinfo_migration ("SCAP",
+                                 SCAP_FEED,
+                                 manage_scap_db_version,
+                                 manage_scap_db_supported_version,
+                                 &scap_version_current);
+  if (ret > 0)
+    return 11;
+  else if (ret)
+    return -11;
 
-  if (old_cert_version == new_cert_version)
-    {
-      g_debug ("CERT database already at current version");
-      cert_version_current = 1;
-    }
-  else if (old_cert_version == -1)
-    {
-      g_message ("No CERT database found for migration");
-      cert_version_current = 1;
-    }
-  else if (old_cert_version > new_cert_version)
-    {
-      g_warning ("CERT database version too new: %d", old_cert_version);
-      return 12;
-    }
-  else
-    {
-      g_message ("Migrating CERT database");
-      switch (gvm_migrate_secinfo (CERT_FEED))
-        {
-        case 0:
-          g_message ("CERT database migrated successfully");
-          break;
-        case 1:
-          g_warning ("CERT sync already running");
-          cleanup_manage_process (TRUE);
-          return 12;
-          break;
-        default:
-          assert (0);
-        case -1:
-          cleanup_manage_process (TRUE);
-          return -12;
-          break;
-        }
-    }
+  ret = check_secinfo_migration ("CERT",
+                                 CERT_FEED,
+                                 manage_cert_db_version,
+                                 manage_cert_db_supported_version,
+                                 &cert_version_current);
+  if (ret > 0)
+    return 12;
+  else if (ret)
+    return -12;
 
-  if (version_current && scap_version_current && cert_version_current)
+  ret = check_secinfo_migration (
+                "Web Application VTs",
+                WEB_APPLICATION_VTS_FEED,
+                manage_web_application_vts_db_version,
+                manage_web_application_vts_db_supported_version,
+                &web_application_vts_current);
+      if (ret > 0)
+        return 13;
+      else if (ret)
+        return -13;
+
+  if (version_current && scap_version_current && cert_version_current
+      && web_application_vts_current)
     {
       cleanup_manage_process (TRUE);
       return 1;

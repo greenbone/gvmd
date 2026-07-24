@@ -124,4 +124,7 @@ task_schedule_iterator_stop_due (iterator_t *);
 time_t
 task_schedule_iterator_initial_offset (iterator_t *);
 
+void
+set_task_report_scheduled (const gchar *, int);
+
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */
