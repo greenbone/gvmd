@@ -232,8 +232,8 @@ fill_report_scan_information (report_t report, report_summary_base_t summary)
 
   ret = 0;
 
-  cleanup:
-    g_free (run_status_string);
+cleanup:
+  g_free (run_status_string);
   g_free (scan_start_value);
   g_free (scan_end_value);
   g_free (timestamp_value);
@@ -711,7 +711,6 @@ fill_report_resource_summary (report_t report,
                               const get_data_t *get,
                               report_resource_summary_t resources)
 {
-
   if (report == 0
       || get == NULL
       || resources == NULL)
