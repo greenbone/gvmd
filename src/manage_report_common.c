@@ -100,11 +100,6 @@ report_task_reference_new (void)
   task = g_malloc0 (sizeof (struct report_task_reference));
 
   task->target = report_target_reference_new ();
-  if (task->target == NULL)
-    {
-      g_free (task);
-      return NULL;
-    }
 
   return task;
 }
