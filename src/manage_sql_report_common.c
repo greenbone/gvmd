@@ -11,6 +11,7 @@
 
 #include "manage_sql_settings.h"
 #include "manage_sql_targets.h"
+#include "manage_utils.h" // for SEVERITY_ERROR
 
 #undef G_LOG_DOMAIN
 
