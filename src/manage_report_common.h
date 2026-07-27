@@ -132,6 +132,16 @@ struct report_summary_base
  gchar *timezone_abbrev;
 };
 
+/**
+* @brief Usage type of a report,
+*        used to validate the report type for GET_%s_REPORT.
+*/
+typedef enum
+{
+ REPORT_USAGE_TYPE_SCAN = 0,
+ REPORT_USAGE_TYPE_AUDIT = 1
+} report_usage_type_t;
+
 typedef struct report_summary_base *report_summary_base_t;
 
 report_summary_base_t
@@ -157,5 +167,12 @@ get_report_controls_cleanup (get_report_controls_t *);
 
 const gchar *
 report_target_type_to_string (report_target_type_t);
+
+int
+validate_get_report_usage_type (report_t, report_usage_type_t);
+
+int
+resolve_get_report_controls (const get_data_t *,
+                             get_report_controls_t *);
 
 #endif //_GVM_MANAGE_REPORT_COMMON_H
