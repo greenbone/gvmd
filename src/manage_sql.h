@@ -605,6 +605,10 @@ int
 report_compliance_f_counts (report_t, const get_data_t*, int*, int*, int*,
                             int*);
 
+int
+report_compliance_counts (report_t, const get_data_t*, int* , int*, int* ,
+                          int*);
+
 gboolean
 nvt_exists (const char *);
 

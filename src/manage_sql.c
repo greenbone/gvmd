@@ -14274,7 +14274,7 @@ report_compliance_f_counts (report_t report,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_compliance_counts (report_t report,
                           const get_data_t* get,
                           int* compliance_yes,

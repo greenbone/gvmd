@@ -29,4 +29,8 @@ send_report_scan_information (gmp_parser_t *, report_summary_base_t);
 gboolean
 send_report_base_end (gmp_parser_t *, report_summary_base_t);
 
+gboolean
+send_report_resource_counts (gmp_parser_t *,
+                             report_resource_summary_t);
+
 #endif /* _GVM_GMP_REPORT_COMMON_H */

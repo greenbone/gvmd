@@ -85,6 +85,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
+#include "gmp_audit_report.h"
 #include "gmp_integration_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4603,6 +4604,7 @@ typedef enum
   CLIENT_GET_AGGREGATES_TEXT_COLUMN,
   CLIENT_GET_ALERTS,
   CLIENT_GET_ASSETS,
+  CLIENT_GET_AUDIT_REPORT,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
 #if ENABLE_CREDENTIAL_STORES
@@ -5607,6 +5609,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_assets_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_ASSETS);
           }
+
+        ELSE_GET_START (audit_report, AUDIT_REPORT)
+
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -22477,6 +22482,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_ASSETS:
         handle_get_assets (gmp_parser, error);
         break;
+
+      CASE_GET_END (AUDIT_REPORT, audit_report)
 
       case CLIENT_GET_CONFIGS:
         handle_get_configs (gmp_parser, error);

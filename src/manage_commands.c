@@ -104,6 +104,7 @@ command_t gmp_commands[]
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
+    {"GET_AUDIT_REPORT", "Get specific audit report summary."},
     {"GET_CONFIGS", "Get all configs."},
     {"GET_CREDENTIALS", "Get all credentials."},
 #if ENABLE_CREDENTIAL_STORES

@@ -64,7 +64,22 @@ resource_name (const char *type, const char *uuid, int location, char **name)
 
   GString *query = g_string_new ("");
 
-  if (strcasecmp (type, "note") == 0)
+  if (strcasecmp (type, "audit_report") == 0)
+    {
+      *name = sql_string_ps ("SELECT (SELECT name FROM tasks WHERE id = task)"
+                             " || ' - '"
+                             " || (SELECT"
+                             "       CASE (SELECT end_time FROM tasks"
+                             "             WHERE id = task)"
+                             "       WHEN 0 THEN 'N/A'"
+                             "       ELSE (SELECT iso_time (end_time)"
+                             "             FROM tasks WHERE id = task)"
+                             "    END)"
+                             " FROM reports"
+                             " WHERE uuid = $1;",
+                             SQL_STR_PARAM (uuid), NULL);
+    }
+  else if (strcasecmp (type, "note") == 0)
     {
       g_string_printf (query,
                        "SELECT 'Note for: '"
