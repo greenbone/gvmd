@@ -48,82 +48,6 @@ get_scan_report_reset (void)
 }
 
 /**
- * @brief Send scan report resource count elements.
- *
- * @param[in] gmp_parser  GMP parser handling the current session.
- * @param[in] summary     Scan report summary.
- *
- * @return FALSE on success, TRUE on failure.
- */
-static gboolean
-send_scan_report_resource_counts (gmp_parser_t *gmp_parser,
-                                  scan_report_summary_t summary)
-{
-  report_resource_summary_t resources;
-
-  if (summary == NULL || summary->resources == NULL)
-    return TRUE;
-
-  resources = summary->resources;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<hosts><count>%d</count></hosts>",
-    resources->hosts))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<closed_cves><count>%d</count></closed_cves>",
-    resources->closed_cves))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<cves><count>%d</count></cves>",
-    resources->cves))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<vulns><count>%d</count></vulns>",
-    resources->vulnerabilities))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<os><count>%d</count></os>",
-    resources->operating_systems))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<apps><count>%d</count></apps>",
-    resources->applications))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<ssl_certs><count>%d</count></ssl_certs>",
-    resources->tls_certificates))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<ports><count>%d</count></ports>",
-    resources->ports))
-    return TRUE;
-
-  if (send_report_xml (
-    gmp_parser,
-    "<errors><count>%d</count></errors>",
-    resources->errors))
-    return TRUE;
-
-  return FALSE;
-}
-
-/**
  * @brief Send the result count summary.
  *
  * @param[in] gmp_parser  GMP parser handling the current session.
@@ -282,7 +206,7 @@ send_scan_report_summary (gmp_parser_t *gmp_parser,
   if (send_report_base_start (gmp_parser, summary->base))
     return TRUE;
 
-  if (send_scan_report_resource_counts (gmp_parser, summary))
+  if (send_report_resource_counts (gmp_parser, summary->resources))
     return TRUE;
 
   if (send_report_task (gmp_parser, summary->task))

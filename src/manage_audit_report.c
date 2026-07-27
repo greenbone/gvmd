@@ -123,6 +123,8 @@ manage_get_audit_report_summary (const get_data_t *get,
 
   if (ret)
     {
+      g_warning ("%s: Failed to load audit report summary for report %lld",
+                 __func__, report);
       audit_report_summary_free (loaded_summary);
       return MANAGE_GET_AUDIT_REPORT_ERROR;
     }

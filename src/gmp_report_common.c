@@ -304,3 +304,75 @@ send_report_base_end (gmp_parser_t *gmp_parser,
 
   return send_report_xml (gmp_parser, "</report>");
 }
+
+/**
+ * @brief Send common report resource count elements.
+ *
+ * @param[in] gmp_parser  GMP parser handling the current session.
+ * @param[in] resources   Report resource summary.
+ *
+ * @return FALSE on success, TRUE on failure.
+ */
+gboolean
+send_report_resource_counts (gmp_parser_t *gmp_parser,
+                             report_resource_summary_t resources)
+{
+  if (gmp_parser == NULL || resources == NULL)
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<hosts><count>%d</count></hosts>",
+        resources->hosts))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<closed_cves><count>%d</count></closed_cves>",
+        resources->closed_cves))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<cves><count>%d</count></cves>",
+        resources->cves))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<vulns><count>%d</count></vulns>",
+        resources->vulnerabilities))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<os><count>%d</count></os>",
+        resources->operating_systems))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<apps><count>%d</count></apps>",
+        resources->applications))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<ssl_certs><count>%d</count></ssl_certs>",
+        resources->tls_certificates))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<ports><count>%d</count></ports>",
+        resources->ports))
+    return TRUE;
+
+  if (send_report_xml (
+        gmp_parser,
+        "<errors><count>%d</count></errors>",
+        resources->errors))
+    return TRUE;
+
+  return FALSE;
+}

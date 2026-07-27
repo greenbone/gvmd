@@ -41,6 +41,7 @@ valid_type (const char* type)
 
   return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "asset") == 0)
+         || (strcasecmp (type, "audit_report") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "filter") == 0)

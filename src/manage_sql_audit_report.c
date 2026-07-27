@@ -76,6 +76,21 @@ fill_audit_report_result_summary (
   filtered_undefined = 0;
   res = -1;
 
+  res = report_compliance_counts (
+    report,
+    get,
+    &yes,
+    &no,
+    &incomplete,
+    &undefined);
+
+  if (res != 0)
+    {
+      g_warning ("%s: Failed to get compliance counts for report %lld",
+                 __func__, report);
+      return res;
+    }
+
   res = report_compliance_f_counts (
     report,
     get,
@@ -85,7 +100,11 @@ fill_audit_report_result_summary (
     &filtered_undefined);
 
   if (res != 0)
-    return res;
+    {
+      g_warning ("%s: Failed to get filtered compliance counts for report %lld",
+                 __func__, report);
+      return res;
+    }
 
   summary->results.yes.full = yes;
   summary->results.yes.filtered =
