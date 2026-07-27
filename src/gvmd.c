@@ -309,9 +309,19 @@ static int feed_version_check_in_progress = 0;
 static pid_t periodic_job_runner_pid = -1;
 
 /**
+ * @brief PID of the dedicated scheduler, or -1.
+ */
+static pid_t scheduler_pid = -1;
+
+/**
  * @brief Set when the periodic worker terminates.
  */
 static volatile sig_atomic_t periodic_job_runner_terminated = 0;
+
+/**
+ * @brief Set when the scheduler terminates.
+ */
+static volatile sig_atomic_t scheduler_terminated = 0;
 
 /**
  * @brief Logging parameters, as passed to setup_log_handlers.
@@ -1084,6 +1094,11 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
           periodic_job_runner_pid = -1;
           periodic_job_runner_terminated = 1;
         }
+      else if (scheduler_pid == pid)
+        {
+          scheduler_pid = -1;
+          scheduler_terminated = 1;
+        }
     }
 }
 
@@ -1797,7 +1812,6 @@ fork_asset_snapshot_delete_stale ()
  */
 typedef struct
 {
-  time_t last_schedule;    ///< Last time the scheduler management was executed.
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
   time_t last_report_export; ///< Last time report export was executed
@@ -1838,24 +1852,24 @@ set_last_run_time (time_t *last, time_t now)
  *
  * On fatal error this exits the process.
  *
- * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * @param[in,out] last_schedule   Periodic timestamp; updates on success.
+ * @param[in]     sigmask_current Current signal mask.
  */
 static void
-run_schedule (periodic_times_t *t)
+run_schedule (time_t* last_schedule, sigset_t* sigmask_current)
 {
   time_t start = time (NULL);
-  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, start))
+  if (!time_to_run (*last_schedule, SCHEDULE_PERIOD, start))
     return;
 
-  int rc = manage_schedule (scheduling_enabled,
-                            sigmask_normal);
+  int rc = manage_schedule (scheduling_enabled, sigmask_current);
   switch (rc)
     {
     case 0:
       {
         time_t end = time (NULL);
-        set_last_run_time (&t->last_schedule, end);
-        g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
+        set_last_run_time (last_schedule, end);
+        g_debug ("%s: last_schedule_time: %li", __func__, *last_schedule);
         break;
       }
     case 1:
@@ -1965,7 +1979,6 @@ run_asset_snapshot_delete_stale (periodic_times_t *t)
 static void
 run_periodic_block (periodic_times_t *t)
 {
-  run_schedule (t);
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
@@ -1985,7 +1998,7 @@ run_periodic_job_runner_loop (sigset_t *sigmask_current)
 
   init_sentry ();
   is_parent = 0;
-  setproctitle ("Periodic scheduler");
+  setproctitle ("Periodic jobs");
 
   if (sigmask_normal)
     pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
@@ -2025,6 +2038,94 @@ run_periodic_job_runner_loop (sigset_t *sigmask_current)
   exit (EXIT_SUCCESS);
 }
 
+/**
+ * @brief Run the schedule in a loop.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the loop.
+ */
+static void
+run_scheduler_loop (sigset_t *sigmask_current)
+{
+  init_sentry ();
+  setproctitle ("Scheduler");
+
+  /* Reset SIGCHLD to default so manage_schedule can reap its own children. */
+  setup_signal_handler (SIGCHLD, SIG_DFL, 0);
+
+  if (sigmask_normal)
+    pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+  else
+    pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+  cleanup_manage_process (FALSE);
+  init_manage_process (&database);
+
+  /* This worker does not serve client sockets. */
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
+  time_t last_schedule = 0;
+  while (1)
+    {
+      gvm_sleep (1);
+      run_schedule (&last_schedule, sigmask_current);
+
+      if (termination_signal)
+        {
+          g_debug ("%s, Received %s signal",
+                   __func__, strsignal (termination_signal));
+          break;
+        }
+    }
+
+  cleanup_manage_process (FALSE);
+  gvm_close_sentry ();
+  exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Start the scheduler in a child process.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+start_scheduler (sigset_t *sigmask_current)
+{
+  pid_t pid;
+
+  /* fork() is used instead of fork_with_handlers() for graceful shutdown */
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        run_scheduler_loop (sigmask_current);
+        exit (EXIT_FAILURE); /* should never be reached */
+
+      case -1:
+        g_warning ("%s: failed to fork scheduler: %s",
+                   __func__, strerror (errno));
+        return -1;
+
+      default:
+        scheduler_pid = pid;
+        scheduler_terminated = 0;
+        g_debug ("%s: started scheduler %d", __func__, pid);
+        return 0;
+    }
+
+  return -1;
+}
+
 /*
  * @brief Start the periodic job runner loop in a child process.
  *
@@ -2061,23 +2162,27 @@ start_periodic_job_runner (sigset_t *sigmask_current)
 }
 
 /**
- * @brief Terminate the periodic job runner process.
+ * @brief Terminate a child process gracefully.
+ *
+ * @param[in,out] pid_ptr     Pointer to the PID of the process to terminate.
+ * @param[in,out] term_ptr    Pointer to the termination flag.
+ * @param[in]     name        Name of the process for logging.
  */
 static void
-terminate_periodic_job_runner (void)
+terminate_child_process (pid_t *pid_ptr, volatile sig_atomic_t *term_ptr, const char *name)
 {
   int status;
   pid_t pid;
   int reaped = 0;
 
-  if (periodic_job_runner_pid <= 0)
+  if (pid_ptr == NULL || *pid_ptr <= 0)
     return;
 
-  pid = periodic_job_runner_pid;
+  pid = *pid_ptr;
 
   if (kill (pid, SIGTERM) == -1 && errno != ESRCH)
-    g_warning ("%s: failed to send SIGTERM to periodic job runner %d: %s",
-               __func__, pid, strerror (errno));
+    g_warning ("%s: failed to send SIGTERM to %s %d: %s",
+               __func__, name, pid, strerror (errno));
 
   for (int i = 0; i < 5; i++)
     {
@@ -2102,8 +2207,8 @@ terminate_periodic_job_runner (void)
   if (!reaped)
     {
       if (kill (pid, SIGKILL) == -1 && errno != ESRCH)
-        g_warning ("%s: failed to send SIGKILL to periodic job runner %d: %s",
-                   __func__, pid, strerror (errno));
+        g_warning ("%s: failed to send SIGKILL to %s %d: %s",
+                   __func__, name, pid, strerror (errno));
 
       while (waitpid (pid, &status, 0) == -1)
         {
@@ -2111,14 +2216,29 @@ terminate_periodic_job_runner (void)
             continue;
           if (errno == ECHILD)
             break;
-          g_warning ("%s: failed to wait for periodic job runner %d: %s",
-                     __func__, pid, strerror (errno));
+          g_warning ("%s: failed to wait for %s %d: %s",
+                     __func__, name, pid, strerror (errno));
           break;
         }
     }
 
-  periodic_job_runner_pid = -1;
-  periodic_job_runner_terminated = 0;
+  *pid_ptr = -1;
+  if (term_ptr)
+    *term_ptr = 0;
+}
+
+/**
+ * @brief Terminate the periodic job runner and scheduler processes.
+ */
+static void
+terminate_processes (void)
+{
+  terminate_child_process (&periodic_job_runner_pid,
+                           &periodic_job_runner_terminated,
+                           "periodic job runner");
+  terminate_child_process (&scheduler_pid,
+                           &scheduler_terminated,
+                           "scheduler");
 }
 
 /**
@@ -2155,6 +2275,13 @@ serve_and_schedule ()
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+  if (start_scheduler (&sigmask_current))
+    {
+      g_critical ("%s: Failed to start scheduler", __func__);
+      terminate_processes ();
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
 
   g_info ("gvmd is ready to accept GMP connections");
 
@@ -2171,6 +2298,19 @@ serve_and_schedule ()
           if (start_periodic_job_runner (&sigmask_current))
             {
               g_critical ("%s: Failed to restart periodic job runner", __func__);
+              cleanup ();
+              gvm_close_sentry ();
+              exit (EXIT_FAILURE);
+            }
+        }
+
+      if (scheduler_terminated && !termination_signal)
+        {
+          g_warning ("%s: scheduler exited; restarting", __func__);
+          scheduler_terminated = 0;
+          if (start_scheduler (&sigmask_current))
+            {
+              g_critical ("%s: Failed to restart scheduler", __func__);
               cleanup ();
               gvm_close_sentry ();
               exit (EXIT_FAILURE);
@@ -2195,7 +2335,7 @@ serve_and_schedule ()
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
-          terminate_periodic_job_runner ();
+          terminate_processes ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -2245,7 +2385,7 @@ serve_and_schedule ()
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
-          terminate_periodic_job_runner ();
+          terminate_processes ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
