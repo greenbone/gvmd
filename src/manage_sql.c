@@ -11625,7 +11625,10 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                 compliance_levels_clause ?: "");
 
   g_free (min_qod_clause);
-  g_string_free (levels_clause, TRUE);
+
+  if (levels_clause)
+    g_string_free (levels_clause, TRUE);
+
   g_free (report_clause);
   g_free (host_clause);
   g_free (compliance_levels_clause);
