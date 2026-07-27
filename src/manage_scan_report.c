@@ -27,8 +27,7 @@
  * Allocates the scan report summary and initializes its shared base,
  * task reference, target reference, and resource summary structures.
  *
- * @return Newly allocated scan report summary, or NULL if initialization
- *         fails.
+ * @return Newly allocated scan report summary.
  */
 scan_report_summary_t
 scan_report_summary_new (void)
@@ -40,21 +39,8 @@ scan_report_summary_new (void)
   summary->base = report_summary_base_new ();
 
   summary->task = report_task_reference_new ();
-  if (summary->task == NULL)
-    {
-      report_summary_base_free (summary->base);
-      g_free (summary);
-      return NULL;
-    }
 
   summary->resources = report_resource_summary_new ();
-  if (summary->resources == NULL)
-    {
-      report_summary_base_free (summary->base);
-      report_task_reference_free (summary->task);
-      g_free (summary);
-      return NULL;
-    }
 
   return summary;
 }
@@ -242,11 +228,6 @@ manage_get_scan_report_summary (const get_data_t *get,
     }
 
   loaded_model = scan_report_summary_new ();
-  if (loaded_model == NULL)
-    {
-      get_report_controls_cleanup (&controls);
-      return MANAGE_GET_SCAN_REPORT_ERROR;
-    }
 
   ret = manage_sql_fill_report_summary (report,
                                         get,
