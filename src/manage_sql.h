@@ -601,6 +601,10 @@ report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
                        double *, const get_data_t*, const char* ,
                        int *, int *, int *, int *, int *, int *, double *);
 
+int
+report_compliance_f_counts (report_t, const get_data_t*, int*, int*, int*,
+                            int*);
+
 gboolean
 nvt_exists (const char *);
 

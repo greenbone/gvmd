@@ -10,6 +10,8 @@
 
 #include "manage_report_common.h"
 
+#include "manage_filters.h"
+
 #undef G_LOG_DOMAIN
 
 /**
@@ -194,4 +196,155 @@ report_target_type_to_string (report_target_type_t type)
     default:
       return "unknown";
     }
+}
+
+/**
+ * @brief Check whether a report is supported by GET_%s_REPORT.
+ *
+ * @param[in] report  Report resource.
+ * @param [in] expected_usage_type  Expected usage type of the report.
+ *
+ * @return 0 if supported, 1 if unsupported, or -1 on error.
+ */
+static int
+validate_report_usage_type (report_t report,
+                             const gchar *expected_usage_type)
+{
+  task_t task = 0;
+  gchar *usage_type = NULL;
+  int ret;
+
+  if (report == 0)
+    return -1;
+
+  ret = report_task (report, &task);
+  if (ret)
+    return -1;
+
+  /*
+   * A report without an associated task has no usage type to validate.
+   */
+  if (task == 0)
+    return 0;
+
+  ret = task_usage_type (task, &usage_type);
+  if (ret)
+    return -1;
+
+  if (usage_type && !strcmp (usage_type, expected_usage_type) == 0)
+    {
+      g_free (usage_type);
+      return 1;
+    }
+
+  g_free (usage_type);
+
+  return 0;
+}
+
+/**
+ * @brief Get the expected usage type string for a report.
+ *
+ * @param[in] usage_type  Expected usage type of the report.
+ *
+ * @return String representation of the expected usage type, or NULL if
+ *         unsupported.
+ */
+static const gchar *
+get_report_expected_usage_type (report_usage_type_t usage_type)
+{
+  switch (usage_type)
+    {
+    case REPORT_USAGE_TYPE_SCAN:
+      return "scan";
+
+    case REPORT_USAGE_TYPE_AUDIT:
+      return "audit";
+
+    default:
+      return NULL;
+    }
+}
+
+/**
+ * @brief Check whether a report is supported by GET_%s_REPORT.
+ *
+ * @param[in] report      Report resource.
+ * @param[in] usage_type  Expected usage type of the report.
+ *
+ * @return 0 if supported, 1 if unsupported, or -1 on error.
+ */
+int
+validate_get_report_usage_type (report_t report, report_usage_type_t usage_type)
+{
+  const gchar *expected_usage_type = get_report_expected_usage_type (usage_type);
+  if (expected_usage_type == NULL)
+    return -1;
+
+  return validate_report_usage_type (report, expected_usage_type);
+}
+
+/**
+ * @brief Validate and resolve controls needed by GET_%s_REPORT.
+ *
+ * @param[in]  get       GET command data.
+ * @param[out] controls  Resolved controls required by the report summary.
+ *
+ * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
+ */
+int
+resolve_get_report_controls (const get_data_t *get,
+                             get_report_controls_t *controls)
+{
+  gchar *term = NULL;
+  gchar *sort_field = NULL;
+  gchar *min_qod = NULL;
+  gchar *levels = NULL;
+  gchar *compliance_levels = NULL;
+  gchar *delta_states = NULL;
+  gchar *search_phrase = NULL;
+  int first_result = 0;
+  int max_results = 0;
+  int sort_order = 0;
+  int result_hosts_only = 0;
+  int search_phrase_exact = 0;
+  int notes = 0;
+  int overrides = 0;
+  int apply_overrides = 0;
+  int ret;
+
+  if (get == NULL || controls == NULL)
+    return -1;
+
+  controls->zone = NULL;
+
+  ret = manage_report_filter_controls_from_get (
+    get,
+    &term,
+    &first_result,
+    &max_results,
+    &sort_field,
+    &sort_order,
+    &result_hosts_only,
+    NULL,
+    &min_qod,
+    &levels,
+    &compliance_levels,
+    &delta_states,
+    &search_phrase,
+    &search_phrase_exact,
+    &notes,
+    &overrides,
+    &apply_overrides,
+    &controls->zone);
+
+  g_free (term);
+  g_free (sort_field);
+  g_free (min_qod);
+  g_free (levels);
+  g_free (compliance_levels);
+  g_free (delta_states);
+  g_free (search_phrase);
+
+  return ret;
 }
