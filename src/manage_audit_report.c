@@ -21,7 +21,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-
 /**
  * @brief Allocate and initialize an audit report summary.
  *
@@ -60,6 +59,9 @@ audit_report_summary_free (audit_report_summary_t summary)
   report_summary_base_free (summary->base);
   report_task_reference_free (summary->task);
   report_resource_summary_free (summary->resources);
+
+  g_free (summary->results.compliance.full);
+  g_free (summary->results.compliance.filtered);
 
   g_free (summary);
 }
