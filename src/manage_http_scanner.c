@@ -445,13 +445,13 @@ delete_http_scanner_scan_with_retry (http_scanner_connector_t connector,
         {
           break;
         }
-      else if (response->code == 406)
+      else if (response->code == 409 || response->code == 406)
         {
           if (delete_retry > 0)
             {
-              g_warning ("%s: Scan %s is still running and cannot be deleted yet,"
-                         " retrying stop and delete.",
-                         __func__, scan_id);
+              g_info ("%s: Scan %s is still running and cannot be deleted yet,"
+                      " retrying stop and delete.",
+                      __func__, scan_id);
 
               http_scanner_resp_t stop_response = http_scanner_stop_scan (connector);
               if (stop_response->code != 204)
