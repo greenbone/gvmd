@@ -4255,75 +4255,91 @@ migrate_281_to_282 ()
       return -1;
     }
 
+  /* Check for invalid data */
+  int count_multiple_targets =
+    sql_int ("SELECT COUNT(*) FROM tasks"
+             " WHERE (agent_group IS NOT NULL"
+             "        AND oci_image_target IS NOT NULL)"
+             "    OR (agent_group IS NOT NULL"
+             "        AND web_application_target IS NOT NULL)"
+             "    OR (oci_image_target IS NOT NULL"
+             "        AND web_application_target IS NOT NULL)"
+             "    OR (target != 0 AND agent_group IS NOT NULL)"
+             "    OR (target != 0 AND oci_image_target IS NOT NULL)"
+             "    OR (target != 0 AND web_application_target IS NOT NULL);");
+
+  if (count_multiple_targets > 0)
+    {
+      g_error ("Invalid data: Multiple targets specified for a task");
+      sql_rollback ();
+      return -1;
+    }
+
   /* Add target_type column to tasks table */
-  sql ("ALTER TABLE tasks ADD target_type INTEGER");
+  sql ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS target_type INTEGER;");
 
   /* Migrate data to new column */
-  iterator_t tasks;
-  init_iterator (&tasks, "SELECT id,"
-                         "       target, target_location,"
-                         "       agent_group, agent_group_location,"
-                         "       oci_image_target, oci_image_target_location,"
-                         "       web_application_target, web_application_target_location"
-                         " FROM tasks");
+  /* Default tasks */
+  sql ("UPDATE tasks"
+       " SET target_type = 1"
+       " WHERE target != 0;");
 
-  while (next (&tasks))
-    {
-      const int64_t id = iterator_int64 (&tasks, 0);
-      const int64_t target = iterator_int64 (&tasks, 1);
-      const int64_t target_location = iterator_int64 (&tasks, 2);
-      const int64_t agent_group = iterator_int64 (&tasks, 3);
-      const int64_t agent_group_location = iterator_int64 (&tasks, 4);
-      const int64_t oci_image_target = iterator_int64 (&tasks, 5);
-      const int64_t oci_image_target_location = iterator_int64 (&tasks, 6);
-      const int64_t web_application_target = iterator_int64 (&tasks, 7);
-      const int64_t web_application_target_location = iterator_int64 (&tasks, 8);
+  /* Import tasks */
+  sql ("UPDATE tasks"
+       " SET target_type = 0"
+       " WHERE target = 0"
+       " AND oci_image_target IS NULL"
+       " AND agent_group IS NULL"
+       " AND web_application_target IS NULL;");
 
-      int64_t new_target = 0;
-      int64_t new_location = 0;
-      tasks_target_type_t new_target_type = TASKS_TARGET_TYPE_UNDEFINED;
+  /* Agent group tasks */
+  sql ("UPDATE tasks"
+       " SET target          = agent_group,"
+       "     target_location = agent_group_location,"
+       "     target_type     = 2"
+       " WHERE agent_group IS NOT NULL;");
 
-      if (agent_group != 0)
-        {
-          new_target = agent_group;
-          new_location = agent_group_location;
-          new_target_type = TASKS_TARGET_TYPE_AGENT_GROUP;
-        }
-      else if (oci_image_target != 0)
-        {
-          new_target = oci_image_target;
-          new_location = oci_image_target_location;
-          new_target_type = TASKS_TARGET_TYPE_OCI_IMAGE;
-        }
-      else if (web_application_target != 0)
-        {
-          new_target = web_application_target;
-          new_location = web_application_target_location;
-          new_target_type = TASKS_TARGET_TYPE_WEB_APPLICATION;
-        }
-      else if (target != 0)
-        {
-          new_target = target;
-          new_location = target_location;
-          new_target_type = TASKS_TARGET_TYPE_REGULAR;
-        }
-      else
-        {
-          new_target = 0;
-          new_location = 0;
-          new_target_type = TASKS_TARGET_TYPE_IMPORT_TASK;
-        }
+  /* OCI image tasks */
+  sql ("UPDATE tasks"
+       " SET target          = oci_image_target,"
+       "     target_location = oci_image_target_location,"
+       "     target_type     = 3"
+       " WHERE oci_image_target IS NOT NULL;");
 
-      sql_ps ("UPDATE tasks"
-              " SET target = $2, target_location = $3, target_type = $4"
-              " WHERE id = $1",
-              SQL_RESOURCE_PARAM (id),
-              SQL_RESOURCE_PARAM (new_target),
-              SQL_INT_PARAM (new_location),
-              SQL_INT_PARAM (new_target_type),
-              NULL);
-    }
-  cleanup_iterator (&tasks);
+  /* Web application tasks */
+  sql ("UPDATE tasks"
+       " SET target          = web_application_target,"
+       "     target_location = web_application_target_location,"
+       "     target_type     = 4"
+       " WHERE web_application_target IS NOT NULL;");
+
+  /**
+   * Reverting DB version 281 to 280 is possible:
+   *
+   *  UPDATE tasks
+   *  SET agent_group = target,
+   *      agent_group_location = target_location,
+   *      target      = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 2;
+   *
+   *  UPDATE tasks
+   *  SET oci_image_target = target,
+   *      oci_image_target_location = target_location,
+   *      target           = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 3;
+
+   *  UPDATE tasks
+   *  SET web_application_target = target,
+   *      web_application_target_location = target_location,
+   *      target                 = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 4;
+   *
+   *  ALTER TABLE tasks DROP COLUMN IF EXISTS target_type;
+   */
+
 
   // TODO: This step will be moved to a later migration.
   //       For safety reasons, we decided to keep the columns for now and only
