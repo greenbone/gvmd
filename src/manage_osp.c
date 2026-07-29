@@ -820,16 +820,7 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
       /* Ensure the report is marked as requested. */
       set_report_scan_run_status (resume_report, TASK_STATUS_REQUESTED);
 
-      /* Update the scheduled flag for this run, like create_current_report
-       * does for a new report.  The flag says whether the run that is now
-       * starting was triggered by the scheduler, so it has to follow the
-       * current session and must not be inherited from the earlier run of
-       * this report.  Otherwise a report that the scheduler once started
-       * keeps the flag forever, and task_schedule_iterator_stop_due () stops
-       * the task again right after a manual resume, because the duration of
-       * its schedule is long over.  The scheduler itself sets the flag again
-       * in scheduled_task_handle_start_success () when it is the one
-       * resuming. */
+      /* Flag the report as manually started */
       set_report_scheduled (resume_report);
 
       /* Clear the end times of the task and partial report. */
