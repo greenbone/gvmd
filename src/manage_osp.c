@@ -820,6 +820,9 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
       /* Ensure the report is marked as requested. */
       set_report_scan_run_status (resume_report, TASK_STATUS_REQUESTED);
 
+      /* Flag the report as manually started */
+      set_report_scheduled (resume_report);
+
       /* Clear the end times of the task and partial report. */
       set_task_start_time_epoch (task,
                                  scan_start_time_epoch (resume_report));
