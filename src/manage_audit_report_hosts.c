@@ -81,12 +81,6 @@ manage_send_audit_report_hosts (
       return -1;
     }
 
-  if (report == 0 || get == NULL || send == NULL)
-    {
-      g_warning ("%s: Invalid argument", __func__);
-      return -1;
-    }
-
   ret = validate_get_report_usage_type (report,
                                         REPORT_USAGE_TYPE_AUDIT);
   if (ret < 0)
