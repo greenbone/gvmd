@@ -106,19 +106,16 @@ fill_filtered_audit_report_hosts (array_t **result_hosts,
   while (next (results))
     {
       const gchar *host;
-      gchar *host_key;
 
       host = result_iterator_host (results);
       if (host == NULL)
         continue;
 
-      host_key = g_strdup (host);
-
-      array_add_new_string (*result_hosts, host_key);
+      array_add_new_string (*result_hosts, host);
 
       update_filtered_host_compliance_counts (ctx,
                                               results,
-                                              host_key);
+                                              host);
     }
 
   return 0;
