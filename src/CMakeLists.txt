@@ -347,6 +347,7 @@ set(
   gmp_delete.c
   gmp_get.c
   gmp_audit_report.c
+  gmp_audit_report_hosts.c
   gmp_integration_configs.c
   gmp_license.c
   gmp_logout.c

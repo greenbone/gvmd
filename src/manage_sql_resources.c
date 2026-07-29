@@ -861,7 +861,8 @@ resource_count (const char *type, const get_data_t *get)
         }
       return 0;
     }
-  else if (strcmp (type, "report_host") == 0)
+  else if (strcmp (type, "report_host") == 0 ||
+           strcmp (type, "audit_report_host") == 0)
     {
       const gchar *report_uuid = get_data_get_extra (get, "report_id");
       if (!str_blank (report_uuid))
