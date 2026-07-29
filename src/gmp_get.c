@@ -633,6 +633,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
                                         get->ignore_max_rows_per_page);
       g_free (filter);
       if ((strcmp (type, "audit_report") == 0)
+          || (strcmp (type, "audit_report_host") == 0)
           || (strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
           || (strcmp (type, "report_application") == 0)
@@ -662,6 +663,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
           g_free (value);
 
           if ((strcmp (type, "audit_report") == 0)
+              || (strcmp (type, "audit_report_host") == 0)
               || (strcmp (type, "task") == 0)
               || (strcmp (type, "report") == 0)
               || (strcmp (type, "report_application") == 0)
@@ -694,6 +696,7 @@ send_get_end_internal (const char *type, get_data_t *get, int get_counts,
   else
     {
       if ((strcmp (type, "audit_report") == 0)
+          || (strcmp (type, "audit_report_host") == 0)
           || (strcmp (type, "task") == 0)
           || (strcmp (type, "report") == 0)
           || (strcmp (type, "report_application") == 0)
