@@ -194,6 +194,7 @@ set(
   manage_alerts.c
   manage_asset_keys.c
   manage_audit_report.c
+  manage_audit_report_hosts.c
   manage_configs.c
   manage_events.c
   manage_filter_utils.c
@@ -283,6 +284,7 @@ set(
   manage_sql_alerts.c
   manage_sql_assets.c
   manage_sql_audit_report.c
+  manage_sql_audit_report_hosts.c
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
