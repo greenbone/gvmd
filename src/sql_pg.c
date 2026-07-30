@@ -108,6 +108,51 @@ sql_prepared_statements_clear ()
   prepared_statement_count = 0;
 }
 
+/**
+ * @brief User UUID currently set in the database session, NULL if unknown.
+ *
+ * manage_session_init is called far more often than the session actually
+ * changes.  Creating an override walks every report the overridden NVT
+ * appears in, and each report switches to the owning user, back to the
+ * caller, and into the ACL check for every user that can see it.  Measured
+ * over 1064 reports that was 25 of the 68 statements per report, and all but
+ * a handful set the session to the user it was already on.
+ *
+ * Caching the UUID here rather than in the manage layer keeps it with the
+ * connection whose state it describes, so it can be dropped in the same
+ * places the prepared statements are.  SET SESSION is transactional, so a
+ * rollback undoes it and the cache has to be dropped there too.
+ */
+static gchar *session_uuid = NULL;
+
+/**
+ * @brief Get the user UUID currently set in the database session.
+ *
+ * @return The UUID, or NULL if it is not known.
+ */
+const char *
+sql_session_uuid ()
+{
+  return session_uuid;
+}
+
+/**
+ * @brief Record the user UUID now set in the database session.
+ *
+ * Pass NULL to forget the session, which makes the next manage_session_init
+ * write the variables out again.
+ *
+ * @param[in]  uuid  The UUID, or NULL to forget.
+ */
+void
+sql_session_uuid_set (const char *uuid)
+{
+  gchar *new_uuid = uuid ? g_strdup (uuid) : NULL;
+
+  g_free (session_uuid);
+  session_uuid = new_uuid;
+}
+
 
 /* Helpers. */
 
@@ -303,6 +348,14 @@ sql_open (const db_conn_info_t *database)
   PostgresPollingStatusType poll_status;
   int socket;
 
+  /* Both caches describe state that lives in a database session, and this is
+   * about to be a different one.  The close paths clear them, but clearing
+   * here as well means a reconnect that skips the close cannot leave a
+   * prepared statement name or a user UUID behind that the new session has
+   * never heard of. */
+  sql_prepared_statements_clear ();
+  sql_session_uuid_set (NULL);
+
   conn_info = g_strdup_printf (
     "dbname='%s'"
     " host='%s'"
@@ -423,6 +476,7 @@ fail:
   PQfinish (conn);
   conn = NULL;
   sql_prepared_statements_clear ();
+  sql_session_uuid_set (NULL);
   semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
   return -1;
 }
@@ -436,6 +490,7 @@ sql_close ()
   PQfinish (conn);
   conn = NULL;
   sql_prepared_statements_clear ();
+  sql_session_uuid_set (NULL);
   semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
@@ -447,6 +502,7 @@ sql_close_fork ()
 {
   conn = NULL;
   sql_prepared_statements_clear ();
+  sql_session_uuid_set (NULL);
 }
 
 /**
@@ -767,6 +823,9 @@ void
 sql_rollback ()
 {
   sql ("ROLLBACK;");
+  /* SET SESSION is transactional, so the rollback has just undone whatever
+   * the transaction set the session variables to. */
+  sql_session_uuid_set (NULL);
 }
 
 /**

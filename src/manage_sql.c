@@ -738,6 +738,13 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
  * @param[in]  acl_with_optional  Whether default permission WITH clauses are
  *                                 optional.
  * @param[in]  assume_permitted   Whether to skip permission checks.
+ * @param[in]  bind_param      Single value to bind as $1, or NULL to format
+ *                             every value into the statement text as usual.
+ *                             The caller is responsible for putting $1 into
+ *                             the fragments it passes in; see
+ *                             init_result_get_iterator_severity, which binds
+ *                             the report so that the same plan serves every
+ *                             report instead of one plan per report.
  *
  * @return 0 success, 1 failed to find resource, 2 failed to find filter, -1
  *         error.
@@ -756,7 +763,8 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
                          const char *extra_order,
                          const char *extra_with,
                          int acl_with_optional,
-                         int assume_permitted)
+                         int assume_permitted,
+                         const sql_param_t *bind_param)
 {
   int first, max;
   gchar *clause, *order, *filter, *owned_clause, *with_clause;
@@ -899,81 +907,98 @@ init_get_iterator2_with (iterator_t* iterator, const char *type,
       order = NULL;
     }
 
-  if (resource && get->trash)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss%s %s"
-                   " WHERE %ss%s.id = %llu"
-                   " AND %s%s"
-                   "%s%s;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
-                   extra_tables ? extra_tables : "",
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
-                   resource,
-                   owned_clause,
-                   extra_where_single ? extra_where_single : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "");
-  else if (get->trash)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss%s %s"
-                   " WHERE"
-                   "%s"
-                   "%s"
-                   "%s%s;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   type_trash_in_table (type) ? "" : "_trash",
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   extra_where ? extra_where : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "");
-  else if (resource)
-    init_iterator (iterator,
-                   "%sSELECT %s"
-                   " FROM %ss %s"
-                   " WHERE %ss.id = %llu"
-                   " AND %s%s"
-                   "%s%s;",
-                   with_clause ? with_clause : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   type,
-                   resource,
-                   owned_clause,
-                   extra_where_single ? extra_where_single : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "");
-  else
-    init_iterator (iterator,
-                   "%s%sSELECT %s"
-                   " FROM %ss %s"
-                   " WHERE"
-                   " %s%s%s%s%s%s%s"
-                   " LIMIT %s OFFSET %i%s;",
-                   with_clause ? with_clause : "",
-                   distinct ? "SELECT DISTINCT * FROM (" : "",
-                   columns,
-                   type,
-                   extra_tables ? extra_tables : "",
-                   owned_clause,
-                   clause ? " AND (" : "",
-                   clause ? clause : "",
-                   clause ? ")" : "",
-                   extra_where ? extra_where : "",
-                   order ? order : "",
-                   order ? (extra_order ? extra_order : "") : "",
-                   sql_select_limit (max),
-                   first,
-                   distinct ? ") AS subquery_for_distinct" : "");
+  /* Assemble the statement first and run it in one place, so that the bound
+   * form and the formatted form cannot drift apart.  init_ps_iterator does
+   * not printf its argument - it takes the text as given - so the statement
+   * has to be complete before it goes in either way. */
+  {
+    gchar *statement;
+
+    if (resource && get->trash)
+      statement = g_strdup_printf
+                    ("%sSELECT %s"
+                     " FROM %ss%s %s"
+                     " WHERE %ss%s.id = %llu"
+                     " AND %s%s"
+                     "%s%s;",
+                     with_clause ? with_clause : "",
+                     columns,
+                     type,
+                     type_trash_in_table (type) ? "" : "_trash",
+                     extra_tables ? extra_tables : "",
+                     type,
+                     type_trash_in_table (type) ? "" : "_trash",
+                     resource,
+                     owned_clause,
+                     extra_where_single ? extra_where_single : "",
+                     order ? order : "",
+                     order ? (extra_order ? extra_order : "") : "");
+    else if (get->trash)
+      statement = g_strdup_printf
+                    ("%sSELECT %s"
+                     " FROM %ss%s %s"
+                     " WHERE"
+                     "%s"
+                     "%s"
+                     "%s%s;",
+                     with_clause ? with_clause : "",
+                     columns,
+                     type,
+                     type_trash_in_table (type) ? "" : "_trash",
+                     extra_tables ? extra_tables : "",
+                     owned_clause,
+                     extra_where ? extra_where : "",
+                     order ? order : "",
+                     order ? (extra_order ? extra_order : "") : "");
+    else if (resource)
+      statement = g_strdup_printf
+                    ("%sSELECT %s"
+                     " FROM %ss %s"
+                     " WHERE %ss.id = %llu"
+                     " AND %s%s"
+                     "%s%s;",
+                     with_clause ? with_clause : "",
+                     columns,
+                     type,
+                     extra_tables ? extra_tables : "",
+                     type,
+                     resource,
+                     owned_clause,
+                     extra_where_single ? extra_where_single : "",
+                     order ? order : "",
+                     order ? (extra_order ? extra_order : "") : "");
+    else
+      statement = g_strdup_printf
+                    ("%s%sSELECT %s"
+                     " FROM %ss %s"
+                     " WHERE"
+                     " %s%s%s%s%s%s%s"
+                     " LIMIT %s OFFSET %i%s;",
+                     with_clause ? with_clause : "",
+                     distinct ? "SELECT DISTINCT * FROM (" : "",
+                     columns,
+                     type,
+                     extra_tables ? extra_tables : "",
+                     owned_clause,
+                     clause ? " AND (" : "",
+                     clause ? clause : "",
+                     clause ? ")" : "",
+                     extra_where ? extra_where : "",
+                     order ? order : "",
+                     order ? (extra_order ? extra_order : "") : "",
+                     sql_select_limit (max),
+                     first,
+                     distinct ? ") AS subquery_for_distinct" : "");
+
+    if (bind_param)
+      init_ps_iterator (iterator, statement, bind_param, NULL);
+    else
+      /* "%s" and not the statement itself: the text is finished and must not
+       * be run through printf a second time. */
+      init_iterator (iterator, "%s", statement);
+
+    g_free (statement);
+  }
 
   g_free (columns);
   g_free (with_clause);
@@ -1027,7 +1052,8 @@ init_get_iterator2 (iterator_t* iterator, const char *type,
                                  trash_select_columns, where_columns,
                                  trash_where_columns, filter_columns, distinct,
                                  extra_tables, extra_where, extra_where_single,
-                                 owned, ignore_id, extra_order, NULL, 0, 0);
+                                 owned, ignore_id, extra_order, NULL, 0, 0,
+                                 NULL);
 }
 
 /**
@@ -3261,6 +3287,8 @@ init_manage_open_db_no_abort (const db_conn_info_t *database)
   /* Ensure the user session variables always exists. */
   sql ("SET SESSION \"gvmd.user.id\" = 0;");
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
+  /* Written here without going through manage_session_init. */
+  sql_session_uuid_set (NULL);
 
   /* Attach the SCAP and CERT databases. */
   manage_attach_databases ();
@@ -5011,6 +5039,7 @@ manage_reset_currents ()
   current_scanner_task = (task_t) 0;
   sql ("RESET \"gvmd.user.id\";");
   sql ("RESET \"gvmd.tz_override\";");
+  sql_session_uuid_set (NULL);
   free_credentials (&current_credentials);
 }
 
@@ -9010,6 +9039,19 @@ report_cache_counts (report_t report, int clear_original, int clear_overridden,
       int min_qod = report_counts_build_iterator_min_qod (&cache_iterator);
       user_t user = report_counts_build_iterator_user (&cache_iterator);
 
+      /* Rebuild only what is being invalidated.  The iterator yields a row
+       * for both values of override, but an override cannot change the
+       * counts that ignore overrides, so when only the overridden counts are
+       * cleared the other row is still correct and report_counts_id would do
+       * nothing but read the cache back and throw it away.
+       *
+       * Callers that clear neither ask for a plain warm of the whole cache,
+       * and those still get every row. */
+      if ((clear_original || clear_overridden)
+          && !((clear_original && override == 0)
+               || (clear_overridden && override)))
+        continue;
+
       current_credentials.uuid
         = sql_string ("SELECT uuid FROM users WHERE id = %llu",
                       user);
@@ -11611,13 +11653,19 @@ new_severity_clause (int apply_overrides, int dynamic_severity)
  * @param[in]  dynamic_severity Whether to use dynamic severity.
  * @param[in]  filter           Filter string.
  * @param[in]  given_new_severity_sql  SQL for new severity, or NULL.
+ * @param[in]  bind_report      Whether to write the report as $1 instead of
+ *                              formatting its rowid into the text, so that
+ *                              the statement is the same for every report.
+ *                              Only for callers that pass the report to
+ *                              init_get_iterator2_with as a bound parameter.
  *
  * @return     Newly allocated extra_where string.
  */
 static gchar*
 results_extra_where (int trash, report_t report, const gchar* host,
                      int apply_overrides, int dynamic_severity,
-                     const gchar *filter, const gchar *given_new_severity_sql)
+                     const gchar *filter, const gchar *given_new_severity_sql,
+                     int bind_report)
 {
   gchar *extra_where;
   int min_qod;
@@ -11644,8 +11692,11 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   // Build filter clauses
 
-  report_clause = report ? g_strdup_printf (" AND (report = %llu) ", report)
-                         : NULL;
+  report_clause = report
+                    ? (bind_report
+                         ? g_strdup (" AND (report = $1) ")
+                         : g_strdup_printf (" AND (report = %llu) ", report))
+                    : NULL;
 
   if (host)
     {
@@ -11865,13 +11916,15 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter,
-                                     "lateral_severity");
+                                     "lateral_severity",
+                                     1);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0",
-                                            "lateral_severity");
+                                            "lateral_severity",
+                                            1);
 
   free (filter);
 
@@ -11889,6 +11942,18 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                               &overrides_with);
       free (user_id);
 
+      /* The report goes in as $1, not as its rowid.  This clause used to be
+       * the most expensive statement in gvmd: rebuilding the count cache
+       * after an override changes runs it once per affected report, and with
+       * the rowid in the text every report was a statement PostgreSQL had
+       * never seen, so it planned the whole thing - the permissions CTE
+       * included - from scratch every time.  Measured over 1064 reports it
+       * cost 964 ms of the 2100 ms the database spent on the call, nearly
+       * all of it planning.
+       *
+       * With the rowid bound the text is identical for every report, so it
+       * reaches the prepared statement cache in sql_pg.c and is planned
+       * once. */
       with_clause = g_strdup_printf
                       (" %s,"
                        " valid_overrides"
@@ -11898,21 +11963,19 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                        "     WHERE %s"
                        /*    Only use if override's NVT is in report. */
                        "     AND EXISTS (SELECT * FROM result_nvt_reports"
-                       "                 WHERE report = %llu"
+                       "                 WHERE report = $1"
                        "                 AND result_nvt"
                        "                     = overrides.result_nvt)"
                        "     AND (task = 0"
                        "          OR task = (SELECT reports.task"
                        "                     FROM reports"
-                       "                     WHERE reports.id = %llu))"
+                       "                     WHERE reports.id = $1))"
                        "     AND ((end_time = 0) OR (end_time >= m_now ()))"
                        "     ORDER BY result DESC, task DESC, port DESC,"
                        "              severity ASC, creation_time DESC)"
                        " ",
                        overrides_with + strlen ("WITH "),
-                       owned_clause,
-                       report,
-                       report);
+                       owned_clause);
       g_free (overrides_with);
       g_free (owned_clause);
     }
@@ -11939,7 +12002,12 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                  extra_order,
                                  with_clause,
                                  1,
-                                 1);
+                                 1,
+                                 /* The report is $1 in extra_where and, when
+                                  * overrides apply, in the valid_overrides
+                                  * clause.  assert (report) above guarantees
+                                  * there is a placeholder to bind to. */
+                                 SQL_RESOURCE_PARAM (report));
   table_order_if_sort_not_specified = 0;
   column_array_free (filterable_columns);
   g_free (with_clause);
@@ -12089,13 +12157,13 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter,
-                                     NULL);
+                                     NULL, 0);
 
   extra_where_single = results_extra_where (get->trash, report, host,
                                             apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0",
-                                            NULL);
+                                            NULL, 0);
 
   free (filter);
 
@@ -12195,7 +12263,7 @@ result_count (const get_data_t *get, report_t report, const char* host)
   extra_where = results_extra_where (get->trash, report, host,
                                      apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter,
-                                     NULL);
+                                     NULL, 0);
 
   ret = count ("result", get,
                 manage_cert_loaded () ? columns : columns_no_cert,
@@ -15327,6 +15395,9 @@ tz_revert (gchar *zone, char *tz, char *old_tz_override)
       sql ("SET SESSION \"gvmd.tz_override\" = %s;",
            quoted_old_tz_override);
       g_free (quoted_old_tz_override);
+      /* tz_override no longer matches what manage_session_init leaves
+       * behind, so the next call has to write the variables out again. */
+      sql_session_uuid_set (NULL);
     }
   return 0;
 }
@@ -15408,13 +15479,13 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
   extra_where = results_extra_where (get->trash, 0, NULL,
                                      apply_overrides, dynamic_severity,
                                      filter ? filter : get->filter,
-                                     NULL);
+                                     NULL, 0);
 
   extra_where_single = results_extra_where (get->trash, 0, NULL,
                                             apply_overrides,
                                             dynamic_severity,
                                             "min_qod=0",
-                                            NULL);
+                                            NULL, 0);
 
   free (filter);
 
@@ -15522,7 +15593,8 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                 NULL,
                                 extra_with,
                                 0,
-                                0);
+                                0,
+                                NULL);
   g_free (extra_tables);
   g_free (extra_where);
   g_free (extra_where_single);
@@ -15844,6 +15916,9 @@ print_report_init_zone (print_report_context_t *ctx)
       quoted_zone = sql_insert (ctx->zone);
       sql ("SET SESSION \"gvmd.tz_override\" = %s;", quoted_zone);
       g_free (quoted_zone);
+      /* tz_override no longer matches what manage_session_init leaves
+       * behind, so the next call has to write the variables out again. */
+      sql_session_uuid_set (NULL);
 
       tzset ();
     }
@@ -26796,7 +26871,8 @@ init_vuln_iterator (iterator_t* iterator, const get_data_t *get)
                                  NULL, /* extra_order */
                                  extra_with,
                                  0,    /* acl_with_optional */
-                                 0);   /* assume_permitted */
+                                 0,    /* assume_permitted */
+                                 NULL);
 
   g_free (extra_with);
   g_free (extra_tables);
@@ -27742,7 +27818,7 @@ type_extra_where (const char *type, int trash, const char *filter,
                                          apply_overrides,
                                          setting_dynamic_severity_int (),
                                          filter,
-                                         NULL);
+                                         NULL, 0);
     }
   else if (strcasecmp (type, "VULN") == 0)
     {
