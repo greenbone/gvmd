@@ -703,7 +703,8 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " schedules.id, tasks.schedule_next_time,"
                  " schedules.icalendar, schedules.timezone,"
                  " schedules.duration,"
-                 " users.uuid, users.name"
+                 " users.uuid, users.name,"
+                 " tasks.run_status"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
@@ -820,6 +821,23 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 7);
 DEF_ACCESS (task_schedule_iterator_owner_name, 8);
 
 /**
+ * @brief Get the run status from a task schedule iterator.
+ *
+ * Comes with the row.  The three due checks each used to ask the database for
+ * it separately, once per row and once per pass of the schedule loop.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task run status.
+ */
+static task_status_t
+task_schedule_iterator_run_status (iterator_t* iterator)
+{
+  if (iterator->done) return TASK_STATUS_DONE;
+  return (task_status_t) iterator_int (iterator, 9);
+}
+
+/**
  * @brief Get the start due state from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -837,7 +855,7 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   if (task_schedule_iterator_next_time (iterator) == 0)
     return FALSE;
 
-  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  run_status = task_schedule_iterator_run_status (iterator);
   start_time = task_schedule_iterator_next_time (iterator);
 
   if ((run_status == TASK_STATUS_DONE
@@ -922,17 +940,20 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
       report_t report;
       task_status_t run_status;
 
-      report = task_running_report (task_schedule_iterator_task (iterator));
-      if (report && (report_scheduled (report) == 0))
-        return FALSE;
-
-      run_status = task_run_status (task_schedule_iterator_task (iterator));
+      run_status = task_schedule_iterator_run_status (iterator);
 
       if (run_status == TASK_STATUS_RUNNING
           || run_status == TASK_STATUS_REQUESTED
           || run_status == TASK_STATUS_QUEUED)
         {
           time_t now, start;
+
+          /* Only a task that is on its way can have a running report, so the
+           * lookup - and the run status query inside it - is not needed for
+           * any of the others. */
+          report = task_running_report (task_schedule_iterator_task (iterator));
+          if (report && (report_scheduled (report) == 0))
+            return FALSE;
 
           now = time (NULL);
 
@@ -1009,7 +1030,7 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
   if (start_time == 0)
     return FALSE;
 
-  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  run_status = task_schedule_iterator_run_status (iterator);
   duration = task_schedule_iterator_duration (iterator);
 
   return task_schedule_is_timed_out_common (run_status, start_time, duration);
