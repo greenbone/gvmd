@@ -42,10 +42,24 @@ check_db_extensions ();
 void
 manage_session_init (const char *uuid)
 {
+  /* Three statements - the lookup and the two SET SESSION - and the callers
+   * repeat them constantly on the same user.  Creating an override switches
+   * user once per report and then straight back again, so over 1064 reports
+   * this ran about eleven times per report and nearly every call set the
+   * session to the user it was already on.
+   *
+   * The cache lives in sql_pg.c so that it is dropped whenever the
+   * connection or the transaction that carries the session state goes away.
+   * The two direct writers of these variables in manage_sql.c forget it by
+   * hand. */
+  if (uuid && sql_session_uuid () && strcmp (sql_session_uuid (), uuid) == 0)
+    return;
+
   sql ("SET SESSION \"gvmd.user.id\" = %llu;",
        sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
                     uuid));
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
+  sql_session_uuid_set (uuid);
 }
 
 /**
@@ -3632,6 +3646,19 @@ create_tables ()
 
   create_indexes_nvt ();
 
+  /* Rebuilding the count cache after an override changes runs two queries
+   * per affected report that select from overrides by NVT: the valid_overrides
+   * clause of the result iterator matches on result_nvt, and the end_time of
+   * the cache row is the earliest expiry among the overrides that touch the
+   * report, matched on nvt.  Without these the table is scanned end to end
+   * every time, so creating an override got slower the more overrides were
+   * already stored - measured over 133 reports it went from 0.854 s at none
+   * to 0.992 s at 255. */
+  sql ("SELECT create_index ('overrides_by_nvt',"
+       "                     'overrides', 'nvt');");
+  sql ("SELECT create_index ('overrides_by_result_nvt',"
+       "                     'overrides', 'result_nvt');");
+
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
   sql ("SELECT create_index ('permissions_by_resource',"
@@ -4339,6 +4366,38 @@ manage_db_init_indexes (const gchar *name)
 }
 
 /**
+ * @brief Check whether a table exists, by way of the system catalogue.
+ *
+ * These three predicates sit in hot paths - init_result_get_iterator_severity
+ * asks for CERT every time it builds a result iterator, which while an
+ * override is being created happens twice for every report the overridden NVT
+ * appears in.
+ *
+ * information_schema.tables is a view over pg_class, pg_namespace and the
+ * privilege functions, and gvmd formats the schema and table names straight
+ * into the statement text, so it is not one of the statements that reach the
+ * prepared statement cache and PostgreSQL plans the whole view again on every
+ * call.  Measured on this database:
+ *
+ *   information_schema  planning 1.503 ms  execution 0.215 ms  (21 plan rows)
+ *   to_regclass         planning 0.035 ms  execution 0.067 ms  (3 plan rows)
+ *
+ * to_regclass is a syscache lookup and answers the same question.  It returns
+ * NULL rather than raising when the object is absent, and an unknown schema is
+ * NULL too, so it needs no separate check that the schema exists.
+ *
+ * @param[in]  qualified_name  Schema qualified table name.
+ *
+ * @return 1 if the table exists, else 0.
+ */
+static int
+table_exists_regclass (const char *qualified_name)
+{
+  return !!sql_int ("SELECT (to_regclass ('%s') IS NOT NULL)::integer;",
+                    qualified_name);
+}
+
+/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.
@@ -4346,12 +4405,7 @@ manage_db_init_indexes (const gchar *name)
 int
 manage_cert_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'cert'"
-                    "               AND table_name = 'dfn_cert_advs')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("cert.dfn_cert_advs");
 }
 
 /**
@@ -4362,12 +4416,7 @@ manage_cert_loaded ()
 int
 manage_scap_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'scap'"
-                    "               AND table_name = 'cves')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("scap.cves");
 }
 
 /**
@@ -4378,12 +4427,7 @@ manage_scap_loaded ()
 int
 manage_nvts_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'public'"
-                    "               AND table_name = 'nvts')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("public.nvts");
 }
 
 /**
