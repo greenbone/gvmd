@@ -4931,7 +4931,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>create_oci_image_target</name>
     <summary>Create an OCI image target</summary>
@@ -5038,7 +5038,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>create_override</name>
     <summary>Create an override</summary>
@@ -6516,9 +6516,9 @@ END:VCALENDAR
       @IF_ENABLE_AGENTS@
       <e>agent_group</e>
       @ENDIF_ENABLE_AGENTS@
-      @IF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_CONTAINER_SCANNING@
       <e>oci_image_target</e>
-      @ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @ENDIF_ENABLE_CONTAINER_SCANNING@
       @IF_ENABLE_WEB_APPLICATION_SCANNING@
       <e>web_application_target</e>
       @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
@@ -6599,7 +6599,7 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <ele>
       <name>oci_image_target</name>
       <summary>The OCI images scanned by the task</summary>
@@ -6611,7 +6611,7 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>web_application_target</name>
@@ -6782,7 +6782,7 @@ END:VCALENDAR
       </response>
     </example>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <example>
       <summary>Create an OCI image task</summary>
       <request>
@@ -6801,7 +6801,7 @@ END:VCALENDAR
         </create_task_response>
       </response>
     </example>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <example>
       <summary>Create a web application task</summary>
@@ -7777,7 +7777,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>delete_oci_image_target</name>
     <summary>Delete an OCI image target</summary>
@@ -7830,7 +7830,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>delete_override</name>
     <summary>Delete an override</summary>
@@ -14225,13 +14225,13 @@ END:VCALENDAR
         <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-      @IF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_CONTAINER_SCANNING@
       <attrib>
         <name>oci_image_targets</name>
         <summary>Whether to include a list of OCI image targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-      @ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @ENDIF_ENABLE_CONTAINER_SCANNING@
       <attrib>
         <name>format</name>
         <type>
@@ -14292,9 +14292,9 @@ END:VCALENDAR
           <o><e>public_key_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
-          @IF_ENABLE_CONTAINER_SCANNNING@
+          @IF_ENABLE_CONTAINER_SCANNING@
           <o><e>oci_image_targets</e></o>
-          @ENDIF_ENABLE_CONTAINER_SCANNNING@
+          @ENDIF_ENABLE_CONTAINER_SCANNING@
           <o>
             <or>
               <e>public_key</e>
@@ -14604,7 +14604,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>oci_image_targets</name>
           <summary>All OCI image targets using this credential</summary>
@@ -14634,7 +14634,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>public_key</name>
           <pattern>text</pattern>
@@ -19373,7 +19373,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>get_oci_image_targets</name>
     <summary>Get one or many OCI image targets</summary>
@@ -19891,7 +19891,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>get_overrides</name>
     <summary>Get one or many overrides</summary>
@@ -32355,9 +32355,9 @@ END:VCALENDAR
               <e>usage_type</e>
               <e>config</e>
               <e>target</e>
-              @IF_ENABLE_CONTAINER_SCANNNING@
+              @IF_ENABLE_CONTAINER_SCANNING@
               <o><e>oci_image_target</e></o>
-              @ENDIF_ENABLE_CONTAINER_SCANNNING@
+              @ENDIF_ENABLE_CONTAINER_SCANNING@
               @IF_ENABLE_AGENTS@
               <o><e>agent_group</e></o>
               @ENDIF_ENABLE_AGENTS@
@@ -32578,7 +32578,7 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>oci_image_target</name>
           <summary>The OCI images scanned by the task</summary>
@@ -32609,7 +32609,7 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         @IF_ENABLE_AGENTS@
         <ele>
           <name>agent_group</name>
@@ -38090,7 +38090,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>modify_oci_image_target</name>
     <summary>Modify an existing OCI image target</summary>
@@ -38173,7 +38173,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>modify_override</name>
     <summary>Modify an existing override</summary>
@@ -39341,9 +39341,9 @@ END:VCALENDAR
         @IF_ENABLE_AGENTS@
         <e>agent_group</e>
         @ENDIF_ENABLE_AGENTS@
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <e>oci_image_target</e>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         @IF_ENABLE_WEB_APPLICATION_SCANNING@
         <e>web_application_target</e>
         @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
@@ -39466,7 +39466,7 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <ele>
       <name>oci_image_target</name>
       <summary>The OCI images scanned by the task</summary>
@@ -39478,7 +39478,7 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>web_application_target</name>
