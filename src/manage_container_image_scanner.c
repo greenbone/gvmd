@@ -14,7 +14,7 @@
 #include "debug_utils.h"
 #include "manage_assets.h"
 #include "manage_container_image_scanner.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_oci_image_targets.h"
@@ -1048,7 +1048,7 @@ fork_container_image_scan_handler (task_t task,
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
         {
-          queue_report_for_export (global_current_report);
+          queue_integration_report_for_export (global_current_report);
         }
     }
   else if (rc == -1 || rc == -2)

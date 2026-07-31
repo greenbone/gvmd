@@ -12,7 +12,7 @@
 
 # if ENABLE_SECURITY_INTELLIGENCE_EXPORT
 
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 
 #include "gmp_base.h"
 #include "manage.h"

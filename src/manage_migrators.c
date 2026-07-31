@@ -4196,6 +4196,48 @@ migrate_279_to_280 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 280 to version 281.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_280_to_281 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 280. */
+
+  if (manage_db_version () != 280)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Rename the report integration exports table. */
+
+  sql ("ALTER TABLE IF EXISTS report_exports"
+       " RENAME TO integration_report_exports;");
+
+  /* Rename the associated indexes. */
+
+  sql ("ALTER INDEX IF EXISTS report_exports_by_report_id"
+       " RENAME TO integration_report_exports_by_report_id;");
+
+  sql ("ALTER INDEX IF EXISTS"
+       " report_exports_by_status_retry_count_retry_time"
+       " RENAME TO"
+       " integration_report_exports_by_status_retry_count_retry_time;");
+
+  /* Set the database version to 281. */
+
+  set_db_version (281);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4282,6 +4324,7 @@ static migrator_t database_migrators[] = {
   {278, migrate_277_to_278},
   {279, migrate_278_to_279},
   {280, migrate_279_to_280},
+  {281, migrate_280_to_281},
   /* End marker. */
   {-1, NULL}};
 

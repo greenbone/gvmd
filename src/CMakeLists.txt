@@ -245,7 +245,7 @@ set(
   manage_tags.c
   manage_targets.c
   manage_users.c
-  manage_report_export_scheduler.c
+  manage_integration_report_export_scheduler.c
   manage_web_application_scanner.c
   manage_web_application_vts.c
 )
@@ -274,7 +274,7 @@ if(ENABLE_WEB_APPLICATION_SCANNING)
 endif()
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
-  list(APPEND ALL_MANAGE_SRC manage_report_exports.c)
+  list(APPEND ALL_MANAGE_SRC manage_integration_report_exports.c)
 endif()
 
 set(
@@ -323,7 +323,7 @@ set(
   manage_sql_nvts_common.c
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
-  manage_sql_report_exports.c
+  manage_sql_integration_report_exports.c
   manage_sql_web_application_vts.c
 )
 
