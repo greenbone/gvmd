@@ -3214,7 +3214,7 @@ create_tables ()
        "  value text,"
        "  UNIQUE (report_config, name));");
 
-  sql ("CREATE TABLE IF NOT EXISTS report_exports"
+  sql ("CREATE TABLE IF NOT EXISTS integration_report_exports"
        " (id SERIAL PRIMARY KEY,"
        "  report_id integer NOT NULL,"
        "  status text,"
@@ -3663,13 +3663,13 @@ create_tables ()
        "                     'origin_id, origin_type')");
 
   sql ("SELECT create_index"
-       "    ('report_exports_by_report_id',"
-       "     'report_exports',"
+       "    ('integration_report_exports_by_report_id',"
+       "     'integration_report_exports',"
        "     'report_id');");
 
   sql ("SELECT create_index"
-       "    ('report_exports_by_status_retry_count_retry_time',"
-       "     'report_exports',"
+       "    ('integration_report_exports_by_status_retry_count_retry_time',"
+       "     'integration_report_exports',"
        "     'status, retry_count, next_retry_time');");
 
   /* Previously this included the value column but that can be bigger than 8191,

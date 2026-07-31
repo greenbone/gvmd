@@ -45,7 +45,7 @@
 #include "manage_osp.h"
 #include "manage_port_lists.h"
 #include "manage_report_configs.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "manage_report_formats.h"
 #include "manage_scan_queue.h"
 #include "manage_schedules.h"
@@ -1897,7 +1897,7 @@ fork_cve_scan_handler (task_t task, target_t target)
   set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
   if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
-      queue_report_for_export (global_current_report);
+      queue_integration_report_for_export (global_current_report);
     }
   global_current_report = 0;
   current_scanner_task = (task_t) 0;
@@ -7432,7 +7432,7 @@ fork_agent_controller_scan_handler (task_t task, agent_group_t agent_group,
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
         {
-          queue_report_for_export (global_current_report);
+          queue_integration_report_for_export (global_current_report);
         }
     }
   else if (rc == -1)

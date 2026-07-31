@@ -14,7 +14,7 @@
 #include "debug_utils.h"
 #include "manage_assets.h"
 #include "manage_web_application_scanner.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_web_application_targets.h"
@@ -846,7 +846,7 @@ handle_web_application_scan_end (task_t task, int handle_progress_rc)
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
         {
-          queue_report_for_export (global_current_report);
+          queue_integration_report_for_export (global_current_report);
         }
     }
   else if (handle_progress_rc == -1 || handle_progress_rc == -2)
