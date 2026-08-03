@@ -37,6 +37,7 @@ typedef resource_t port_list_t;
 typedef resource_t port_range_t;
 typedef resource_t report_config_param_t;
 typedef resource_t report_config_t;
+typedef resource_t report_export_t;
 typedef resource_t report_format_param_t;
 typedef resource_t report_format_t;
 typedef resource_t report_host_t;
