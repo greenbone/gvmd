@@ -221,6 +221,7 @@ set(
   manage_report_configs.c
   manage_report_cves.c
   manage_report_errors.c
+  manage_report_exports.c
   manage_report_formats.c
   manage_report_hosts.c
   manage_report_operating_systems.c
@@ -303,6 +304,7 @@ set(
   manage_sql_report_common.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
+  manage_sql_report_exports.c
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_report_hosts.c
