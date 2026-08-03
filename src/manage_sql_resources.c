@@ -325,40 +325,54 @@ find_resource_with_permission (const char* type, const char* uuid,
       *resource = 0;
       return FALSE;
     }
-  switch (sql_int64 (resource,
-                     "SELECT id FROM %ss%s WHERE uuid = '%s'%s%s;",
-                     type,
-                     (trash && strcmp (type, "task") && strcmp (type, "report"))
-                      ? "_trash"
-                      : "",
-                     quoted_uuid,
-                     strcmp (type, "task")
-                      ? ""
-                      : (trash ? " AND hidden = 2" : " AND hidden < 2"),
-                     strcmp (type, "report")
-                      ? ""
-                      : (trash
-                          ? " AND (SELECT hidden FROM tasks"
-                            "      WHERE tasks.id = task)"
-                            "     = 2"
-                          : " AND (SELECT hidden FROM tasks"
-                          "        WHERE tasks.id = task)"
-                          "       = 0")))
-    {
-      case 0:
-        break;
-      case 1:        /* Too few rows in result of query. */
-        *resource = 0;
-        break;
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        g_free (quoted_uuid);
-        return TRUE;
-        break;
-    }
-
+  /* The statement below binds the UUID, so the quoted copy is done with. */
   g_free (quoted_uuid);
+  /* The UUID is bound, so the statement text only varies with type and
+   * trash - a handful of combinations, which the statement cache in
+   * sql_pg.c can keep plans for.  type is safe to keep in the text:
+   * valid_db_resource_type above rejects anything that is not a known
+   * resource type, so it never carries user input. */
+  {
+    gchar *statement;
+
+    statement
+      = g_strdup_printf ("SELECT id FROM %ss%s WHERE uuid = $1%s%s;",
+                         type,
+                         (trash && strcmp (type, "task")
+                          && strcmp (type, "report"))
+                          ? "_trash"
+                          : "",
+                         strcmp (type, "task")
+                          ? ""
+                          : (trash ? " AND hidden = 2" : " AND hidden < 2"),
+                         strcmp (type, "report")
+                          ? ""
+                          : (trash
+                              ? " AND (SELECT hidden FROM tasks"
+                                "      WHERE tasks.id = task)"
+                                "     = 2"
+                              : " AND (SELECT hidden FROM tasks"
+                              "        WHERE tasks.id = task)"
+                              "       = 0"));
+
+    switch (sql_int64_ps (resource, statement, SQL_STR_PARAM (uuid), NULL))
+      {
+        case 0:
+          break;
+        case 1:        /* Too few rows in result of query. */
+          *resource = 0;
+          break;
+        default:       /* Programming error. */
+          assert (0);
+        case -1:
+          g_free (statement);
+          return TRUE;
+          break;
+      }
+
+    g_free (statement);
+  }
+
   return FALSE;
 }
 
