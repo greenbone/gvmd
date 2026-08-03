@@ -3503,6 +3503,36 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS report_exports"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid text UNIQUE NOT NULL,"
+     "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+     "  name text,"
+     "  comment text,"
+     "  report integer NOT NULL REFERENCES reports (id) ON DELETE CASCADE,"
+     "  delta_report integer REFERENCES reports (id) ON DELETE CASCADE,"
+     "  report_format integer REFERENCES report_formats (id)"
+     "    ON DELETE RESTRICT,"
+     "  report_config integer REFERENCES report_configs (id)"
+     "    ON DELETE SET NULL,"
+     "  export_type integer NOT NULL,"
+     "  status integer NOT NULL,"
+     "  progress integer NOT NULL,"
+     "  filter text,"
+     "  ignore_pagination integer NOT NULL DEFAULT 1,"
+     "  lean integer NOT NULL DEFAULT 0,"
+     "  worker_pid integer,"
+     "  file_path text,"
+     "  file_size bigint,"
+     "  content_type text,"
+     "  extension text,"
+     "  error_message text,"
+     "  attempt_count integer NOT NULL DEFAULT 0,"
+     "  creation_time integer,"
+     "  start_time integer,"
+     "  end_time integer,"
+     "  modification_time integer);");
+
   /* Create result views. */
 
   /* Create functions, so that current_severity is created for
@@ -3671,6 +3701,26 @@ create_tables ()
        "    ('integration_report_exports_by_status_retry_count_retry_time',"
        "     'integration_report_exports',"
        "     'status, retry_count, next_retry_time');");
+
+  sql ("SELECT create_index"
+     "    ('report_exports_by_report',"
+     "     'report_exports',"
+     "     'report');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_owner',"
+       "     'report_exports',"
+       "     'owner');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_status_creation_time',"
+       "     'report_exports',"
+       "     'status, creation_time');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_delta_report',"
+       "     'report_exports',"
+       "     'delta_report');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
