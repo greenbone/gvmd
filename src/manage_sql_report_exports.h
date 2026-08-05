@@ -34,6 +34,9 @@
     { "ignore_pagination", NULL, KEYWORD_TYPE_INTEGER },                   \
     { "lean", NULL, KEYWORD_TYPE_INTEGER },                                \
     { "worker_pid", NULL, KEYWORD_TYPE_INTEGER },                          \
+    { "notes_details", NULL, KEYWORD_TYPE_INTEGER },                       \
+    { "overrides_details", NULL, KEYWORD_TYPE_INTEGER },                   \
+    { "result_tags", NULL, KEYWORD_TYPE_INTEGER },                         \
     { "file_path", NULL, KEYWORD_TYPE_STRING },                            \
     { "file_size", NULL, KEYWORD_TYPE_INTEGER },                           \
     { "content_type", NULL, KEYWORD_TYPE_STRING },                         \
@@ -73,6 +76,9 @@
     "ignore_pagination",                                                   \
     "lean",                                                                \
     "worker_pid",                                                          \
+    "notes_details",                                                       \
+    "overrides_details",                                                   \
+    "result_tags",                                                         \
     "file_size",                                                           \
     "content_type",                                                        \
     "extension",                                                           \
@@ -94,6 +100,9 @@ create_report_export (report_t,
                       const gchar *,
                       const gchar *,
                       const gchar *,
+                      gboolean,
+                      gboolean,
+                      gboolean,
                       gboolean,
                       gboolean,
                       report_export_t *);
@@ -206,6 +215,15 @@ report_export_iterator_lean (iterator_t *);
 
 int
 report_export_iterator_worker_pid (iterator_t *);
+
+int
+report_export_iterator_notes_details (iterator_t *);
+
+int
+report_export_iterator_overrides_details (iterator_t *);
+
+int
+report_export_iterator_result_tags (iterator_t *);
 
 const gchar *
 report_export_iterator_file_path (iterator_t *);

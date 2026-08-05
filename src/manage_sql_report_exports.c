@@ -87,6 +87,41 @@ init_report_export_iterator_with_where (iterator_t *iterator,
 }
 
 /**
+ * @brief Initialize an iterator for a report export row ID.
+ *
+ * @param[out] iterator      Iterator to initialize.
+ * @param[in]  report_export Report export row ID.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+init_report_export_iterator_by_id (iterator_t *iterator,
+                                   report_export_t report_export)
+{
+  get_data_t get = {0};
+  gchar *where_clause;
+  int ret;
+
+  g_return_val_if_fail (iterator, -1);
+
+  if (report_export == 0)
+    return -1;
+
+  where_clause = g_strdup_printf (
+    "report_exports.id = %lld",
+     report_export);
+
+  ret = init_report_export_iterator_with_where (
+    iterator,
+    &get,
+    where_clause);
+
+  g_free (where_clause);
+
+  return ret;
+}
+
+/**
  * @brief Initialize a SQL-based report export iterator.
  *
  * @param[out] iterator  Iterator to initialize.
@@ -135,6 +170,9 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
  * @param[in]  filter              Optional report filter.
  * @param[in]  ignore_pagination   Whether to ignore pagination.
  * @param[in]  lean                Whether to generate lean report data.
+ * @param[in]  notes_details       Whether to include notes details in the export.
+ * @param[in]  overrides_details   Whether to include override details.
+ * @param[in]  result_tags         Whether to include tags.
  * @param[out] report_export       Created report export.
  *
  * @return 0 on success, -1 on failure.
@@ -150,6 +188,9 @@ create_report_export (report_t report,
                       const gchar *filter,
                       gboolean ignore_pagination,
                       gboolean lean,
+                      gboolean notes_details,
+                      gboolean overrides_details,
+                      gboolean result_tags,
                       report_export_t *report_export)
 {
   report_export_t new_report_export;
@@ -176,6 +217,9 @@ create_report_export (report_t report,
     "  filter,"
     "  ignore_pagination,"
     "  lean,"
+    "  notes_details,"
+    "  overrides_details,"
+    "  result_tags,"
     "  attempt_count,"
     "  creation_time,"
     "  modification_time)"
@@ -194,6 +238,9 @@ create_report_export (report_t report,
     "  $11,"
     "  $12,"
     "  $13,"
+    "  $14,"
+    "  $15,"
+    "  $16,"
     "  0,"
     "  m_now (),"
     "  m_now ());",
@@ -210,6 +257,9 @@ create_report_export (report_t report,
     SQL_STR_PARAM (filter),
     SQL_INT_PARAM (ignore_pagination),
     SQL_INT_PARAM (lean),
+    SQL_INT_PARAM (notes_details),
+    SQL_INT_PARAM (overrides_details),
+    SQL_INT_PARAM (result_tags),
     NULL);
 
   new_report_export = sql_last_insert_id ();
@@ -221,7 +271,6 @@ create_report_export (report_t report,
 
   return 0;
 }
-
 /**
  * @brief Get the status of a report export.
  *
@@ -590,6 +639,112 @@ init_report_export_iterator_stale (iterator_t *iterator,
 }
 
 /**
+ * @brief Load report export data.
+ *
+ * @param[in]  report_export  Report export to load.
+ * @param[out] data           Report export data to fill.
+ *
+ * @return 0 on success, 1 if not found, and -1 on failure.
+ */
+int
+load_report_export_data (report_export_t report_export,
+                         report_export_data_t data)
+{
+  iterator_t iterator;
+
+  if (report_export == 0 || data == NULL)
+    return -1;
+
+  if (init_report_export_iterator_by_id (&iterator, report_export))
+    return -1;
+
+  if (next (&iterator) == FALSE)
+    {
+      cleanup_iterator (&iterator);
+      return 1;
+    }
+
+  data->row_id = report_export;
+
+  data->uuid = g_strdup (
+    get_iterator_uuid (&iterator));
+  data->name = g_strdup (
+    get_iterator_name (&iterator));
+  data->comment = g_strdup (
+    get_iterator_comment (&iterator));
+
+  data->owner = get_iterator_owner (&iterator);
+
+  data->report = report_export_iterator_report (&iterator);
+  data->delta_report =
+    report_export_iterator_delta_report (&iterator);
+
+  data->report_format =
+    report_export_iterator_report_format (&iterator);
+  data->report_config =
+    report_export_iterator_report_config (&iterator);
+
+  data->export_type =
+    report_export_iterator_export_type (&iterator);
+  data->status =
+    report_export_iterator_status (&iterator);
+  data->progress =
+    report_export_iterator_progress (&iterator);
+
+  data->filter = g_strdup (
+    report_export_iterator_filter (&iterator));
+
+  data->ignore_pagination =
+    report_export_iterator_ignore_pagination (&iterator);
+  data->lean =
+    report_export_iterator_lean (&iterator);
+  data->worker_pid =
+    report_export_iterator_worker_pid (&iterator);
+
+  data->notes_details =
+  report_export_iterator_notes_details (&iterator);
+  data->overrides_details =
+    report_export_iterator_overrides_details (&iterator);
+  data->result_tags =
+    report_export_iterator_result_tags (&iterator);
+
+  data->file_path = g_strdup (
+    report_export_iterator_file_path (&iterator));
+  data->file_size =
+    report_export_iterator_file_size (&iterator);
+  data->content_type = g_strdup (
+    report_export_iterator_content_type (&iterator));
+  data->extension = g_strdup (
+    report_export_iterator_extension (&iterator));
+  data->error_message = g_strdup (
+    report_export_iterator_error_message (&iterator));
+
+  data->attempt_count =
+    report_export_iterator_attempt_count (&iterator);
+
+  data->creation_time =
+    get_iterator_creation_time (&iterator);
+  data->start_time =
+    report_export_iterator_start_time (&iterator);
+  data->end_time =
+    report_export_iterator_end_time (&iterator);
+  data->modification_time =
+    get_iterator_modification_time (&iterator);
+
+  cleanup_iterator (&iterator);
+
+  if (data->uuid == NULL
+      || data->report == 0
+      || data->report_format == 0
+      || report_export_type_valid (data->export_type) == FALSE
+      || report_export_status_valid (data->status) == FALSE
+      || report_export_progress_valid (data->progress) == FALSE)
+    return -1;
+
+  return 0;
+}
+
+/**
  * @brief Retrieve report of the current report export.
  *
  * @param[in] iterator  Iterator pointing to the current report export.
@@ -759,6 +914,54 @@ report_export_iterator_worker_pid (iterator_t *iterator)
 }
 
 /**
+ * @brief Retrieve notes-details flag of the current report export.
+ *
+ * @param[in] iterator  Iterator pointing to the current report export.
+ *
+ * @return The notes-details flag.
+ */
+int
+report_export_iterator_notes_details (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+}
+
+/**
+ * @brief Retrieve overrides-details flag of the current report export.
+ *
+ * @param[in] iterator  Iterator pointing to the current report export.
+ *
+ * @return The overrides-details flag.
+ */
+int
+report_export_iterator_overrides_details (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+}
+
+/**
+ * @brief Retrieve result-tags flag of the current report export.
+ *
+ * @param[in] iterator  Iterator pointing to the current report export.
+ *
+ * @return The result-tags flag.
+ */
+int
+report_export_iterator_result_tags (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+}
+
+/**
  * @brief Retrieve file path of the current report export.
  *
  * @param[in] iterator  Iterator pointing to the current report export.
@@ -766,7 +969,7 @@ report_export_iterator_worker_pid (iterator_t *iterator)
  * @return The generated file path.
  */
 DEF_ACCESS (report_export_iterator_file_path,
-            GET_ITERATOR_COLUMN_COUNT + 11);
+            GET_ITERATOR_COLUMN_COUNT + 14);
 
 /**
  * @brief Retrieve file size of the current report export.
@@ -781,7 +984,7 @@ report_export_iterator_file_size (iterator_t *iterator)
   if (iterator->done)
     return 0;
 
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
 }
 
 /**
@@ -792,7 +995,7 @@ report_export_iterator_file_size (iterator_t *iterator)
  * @return The generated file content type.
  */
 DEF_ACCESS (report_export_iterator_content_type,
-            GET_ITERATOR_COLUMN_COUNT + 13);
+            GET_ITERATOR_COLUMN_COUNT + 16);
 
 /**
  * @brief Retrieve extension of the current report export.
@@ -802,7 +1005,7 @@ DEF_ACCESS (report_export_iterator_content_type,
  * @return The generated file extension.
  */
 DEF_ACCESS (report_export_iterator_extension,
-            GET_ITERATOR_COLUMN_COUNT + 14);
+            GET_ITERATOR_COLUMN_COUNT + 17);
 
 /**
  * @brief Retrieve error message of the current report export.
@@ -812,7 +1015,7 @@ DEF_ACCESS (report_export_iterator_extension,
  * @return The report export error message.
  */
 DEF_ACCESS (report_export_iterator_error_message,
-            GET_ITERATOR_COLUMN_COUNT + 15);
+            GET_ITERATOR_COLUMN_COUNT + 18);
 
 /**
  * @brief Retrieve attempt count of the current report export.
@@ -827,7 +1030,7 @@ report_export_iterator_attempt_count (iterator_t *iterator)
   if (iterator->done)
     return 0;
 
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 19);
 }
 
 /**
@@ -843,7 +1046,7 @@ report_export_iterator_start_time (iterator_t *iterator)
   if (iterator->done)
     return 0;
 
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
 }
 
 /**
@@ -859,7 +1062,7 @@ report_export_iterator_end_time (iterator_t *iterator)
   if (iterator->done)
     return 0;
 
-  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
+  return iterator_int64 (iterator, GET_ITERATOR_COLUMN_COUNT + 21);
 }
 
 /**
@@ -870,7 +1073,7 @@ report_export_iterator_end_time (iterator_t *iterator)
  * @return The UUID of the associated report.
  */
 DEF_ACCESS (report_export_iterator_report_uuid,
-            GET_ITERATOR_COLUMN_COUNT + 19);
+            GET_ITERATOR_COLUMN_COUNT + 22);
 
 /**
  * @brief Retrieve delta report UUID of the current report export.
@@ -880,7 +1083,7 @@ DEF_ACCESS (report_export_iterator_report_uuid,
  * @return The UUID of the associated delta report.
  */
 DEF_ACCESS (report_export_iterator_delta_report_uuid,
-            GET_ITERATOR_COLUMN_COUNT + 20);
+            GET_ITERATOR_COLUMN_COUNT + 23);
 
 /**
  * @brief Retrieve report format UUID of the current report export.
@@ -890,7 +1093,7 @@ DEF_ACCESS (report_export_iterator_delta_report_uuid,
  * @return The UUID of the associated report format.
  */
 DEF_ACCESS (report_export_iterator_report_format_uuid,
-            GET_ITERATOR_COLUMN_COUNT + 21);
+            GET_ITERATOR_COLUMN_COUNT + 24);
 
 /**
  * @brief Retrieve report format name of the current report export.
@@ -900,7 +1103,7 @@ DEF_ACCESS (report_export_iterator_report_format_uuid,
  * @return The name of the associated report format.
  */
 DEF_ACCESS (report_export_iterator_report_format_name,
-            GET_ITERATOR_COLUMN_COUNT + 22);
+            GET_ITERATOR_COLUMN_COUNT + 25);
 
 /**
  * @brief Retrieve report config UUID of the current report export.
@@ -910,7 +1113,7 @@ DEF_ACCESS (report_export_iterator_report_format_name,
  * @return The UUID of the associated report config.
  */
 DEF_ACCESS (report_export_iterator_report_config_uuid,
-            GET_ITERATOR_COLUMN_COUNT + 23);
+            GET_ITERATOR_COLUMN_COUNT + 26);
 
 /**
  * @brief Retrieve report config name of the current report export.
@@ -920,4 +1123,4 @@ DEF_ACCESS (report_export_iterator_report_config_uuid,
  * @return The name of the associated report config.
  */
 DEF_ACCESS (report_export_iterator_report_config_name,
-            GET_ITERATOR_COLUMN_COUNT + 24);
+            GET_ITERATOR_COLUMN_COUNT + 27);

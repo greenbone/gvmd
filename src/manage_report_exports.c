@@ -20,6 +20,40 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief Allocate an empty report export model.
+ *
+ * @return Newly allocated report export model.
+ */
+report_export_data_t
+report_export_data_new (void)
+{
+  return g_malloc0 (sizeof (struct report_export_data));
+}
+
+/**
+ * @brief Free a report export model.
+ *
+ * @param[in] data  Model to free.
+ */
+void
+report_export_data_free (report_export_data_t data)
+{
+  if (data == NULL)
+    return;
+
+  g_free (data->uuid);
+  g_free (data->name);
+  g_free (data->comment);
+  g_free (data->filter);
+  g_free (data->file_path);
+  g_free (data->content_type);
+  g_free (data->extension);
+  g_free (data->error_message);
+
+  g_free (data);
+}
+
+/**
  * @brief Check whether a report export type is valid.
  *
  * @param[in] type  Report export type.
@@ -181,9 +215,14 @@ report_export_progress_name (report_export_progress_t progress)
  * @param[in]  report_format       Report format to use.
  * @param[in]  report_config       Optional report configuration.
  * @param[in]  export_type         Report export type.
+ * @param[in]  name                Report export name.
+ * @param[in]  comment             Optional report export comment.
  * @param[in]  filter              Optional report filter.
  * @param[in]  ignore_pagination   Whether pagination should be ignored.
  * @param[in]  lean                Whether lean report data should be used.
+ * @param[in]  notes_details       Whether note details should be included.
+ * @param[in]  overrides_details   Whether override details should be included.
+ * @param[in]  result_tags         Whether result tags should be included.
  * @param[out] report_export       Created report export.
  *
  * @return 0 on success, -1 on invalid arguments or failure.
@@ -199,6 +238,9 @@ manage_create_report_export (report_t report,
                              const gchar *filter,
                              gboolean ignore_pagination,
                              gboolean lean,
+                             gboolean notes_details,
+                             gboolean overrides_details,
+                             gboolean result_tags,
                              report_export_t *report_export)
 {
   gboolean delta_export;
@@ -233,6 +275,9 @@ manage_create_report_export (report_t report,
                                filter,
                                ignore_pagination,
                                lean,
+                               notes_details,
+                               overrides_details,
+                               result_tags,
                                report_export);
 }
 
