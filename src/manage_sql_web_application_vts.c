@@ -52,13 +52,13 @@ insert_zap_child_vts_from_json (cJSON *json, const char *parent_id)
           gvm_json_obj_check_str (child_alert, "id", &child_id);
           if (child_id)
             {
-              sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+              sql_ps ("INSERT INTO vts.web_application_vt_refs"
                       " (vt_id, ref_id, type)"
                       " VALUES ('ZAP-' || $1, 'ZAP-' || $2, 'child_vt')",
                       SQL_STR_PARAM (parent_id),
                       SQL_STR_PARAM (child_id),
                       NULL);
-              sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+              sql_ps ("INSERT INTO vts.web_application_vt_refs"
                       " (vt_id, ref_id, type)"
                       " VALUES ('ZAP-' || $1, 'ZAP-' || $2, 'parent_vt')",
                       SQL_STR_PARAM (child_id),
@@ -124,7 +124,7 @@ insert_zap_vt_refs_from_references_json (cJSON *parent_json,
           continue;
         }
 
-      sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+      sql_ps ("INSERT INTO vts.web_application_vt_refs"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -167,7 +167,7 @@ insert_zap_vt_refs_from_str_array_json (const char *parent_id,
           continue;
         }
 
-      sql_ps ("INSERT INTO vts.web_application_vt_refs_rebuild"
+      sql_ps ("INSERT INTO vts.web_application_vt_refs"
               " (vt_id, type, ref_id, ref_text)"
               " VALUES ('ZAP-' || $1, $2, $3, '');",
               SQL_STR_PARAM (parent_id),
@@ -291,11 +291,19 @@ insert_zap_vt_from_json (cJSON *entry)
     cJSON_AddStringToObject (type_metadata_json, "alert_type", alert_type);
   type_metadata_str = cJSON_PrintBuffered (type_metadata_json, 256, 0);
 
-  sql_ps ("INSERT INTO vts.web_application_vts_rebuild"
+  sql_ps ("INSERT INTO vts.web_application_vts"
           "  (uuid, name, creation_time, modification_time,"
           "   type, description, solution, severity, type_metadata)"
           " VALUES ('ZAP-' || $1, $2, m_now(), m_now(),"
           "         'ZAP-' || $3, $4, $5, $6, $7)"
+          " ON CONFLICT (uuid) DO UPDATE"
+          "  SET name = EXCLUDED.name,"
+          "      modification_time = EXCLUDED.modification_time,"
+          "      type = EXCLUDED.type,"
+          "      description = EXCLUDED.description,"
+          "      solution = EXCLUDED.solution,"
+          "      severity = EXCLUDED.severity,"
+          "      type_metadata = EXCLUDED.type_metadata"
           " RETURNING id;",
           SQL_STR_PARAM (id),
           SQL_STR_PARAM (name ?: id),
@@ -304,6 +312,11 @@ insert_zap_vt_from_json (cJSON *entry)
           SQL_STR_PARAM (solution ?: ""),
           SQL_DOUBLE_PARAM (severity),
           SQL_STR_PARAM (type_metadata_str),
+          NULL);
+
+  sql_ps ("DELETE FROM vts.web_application_vt_refs"
+          " WHERE vt_id = 'ZAP-' || $1",
+          SQL_STR_PARAM (id),
           NULL);
 
   child_alerts_json = cJSON_GetObjectItem (entry, "child_alerts");

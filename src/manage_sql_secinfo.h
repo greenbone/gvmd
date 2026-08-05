@@ -213,6 +213,12 @@ check_cert_db_version ();
 int
 check_web_application_vts_db_version ();
 
+void
+create_web_application_vts_tables ();
+
+void
+drop_web_application_vts_tables ();
+
 int
 get_secinfo_commit_size ();
 
