@@ -237,10 +237,6 @@ update_zap_vts_from_json_file (const gchar *full_path)
       gvm_json_pull_parser_next (&parser, &event);
     }
 
-  g_info ("%s: Finalizing ZAP VTs insert", __func__);
-
-  // finalize_nvts_insert (count_new_vts, count_modified_vts,
-  //                       nvts_feed_file_version, 1);
   sql_commit ();
 
   gvm_json_pull_event_cleanup (&event);

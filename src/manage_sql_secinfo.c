@@ -104,9 +104,6 @@ manage_db_init_indexes (const gchar *);
 int
 manage_db_add_constraints (const gchar *);
 
-void
-create_web_application_vts_rebuild_tables ();
-
 static int
 sync_cert ();
 
@@ -7312,11 +7309,11 @@ check_web_application_vts_db_version ()
       int ret;
       g_info ("Reinitialization of the Web Application VT tables necessary");
 
+      drop_web_application_vts_tables ();
+
       ret = manage_db_init ("vts");
       if (ret)
         return ret;
-
-      create_web_application_vts_rebuild_tables ();
 
       ret = update_web_application_vts (TRUE);
       if (ret)
@@ -7400,23 +7397,6 @@ abort_web_application_vts_update ()
   if (manage_web_application_vts_loaded ())
     {
       update_web_application_vts_timestamp ();
-      sql ("DROP TABLE vts.web_application_vts_rebuild;");
-      sql ("DROP TABLE vts.web_application_vt_refs_rebuild;");
-    }
-  else
-    {
-      if (sql_int ("SELECT EXISTS"
-                   " (SELECT table_schema FROM"
-                   "  information_schema.tables"
-                   "  WHERE table_schema = 'vts'"
-                   "  AND table_name = 'web_application_vts_rebuild');"))
-        {
-          update_web_application_vts_timestamp ();
-          sql ("ALTER TABLE IF EXISTS vts.web_application_vts_rebuild"
-               " RENAME TO web_application_vts;");
-          sql ("ALTER TABLE IF EXISTS vts.web_application_vt_refs_rebuild"
-               " RENAME TO web_application_vt_refs;");
-        }
     }
 
   g_info ("%s: Updating Web Application VTs aborted", __func__);
@@ -7432,34 +7412,6 @@ update_web_application_vts_end ()
   g_debug ("%s: update timestamp", __func__);
 
   update_web_application_vts_timestamp ();
-
-  /* Replace the real web_application_vts tables with the new ones. */
-
-  if (sql_int ("SELECT EXISTS (SELECT table_schema FROM"
-               "               information_schema.tables"
-               "               WHERE table_schema = 'vts'"
-               "               AND table_name = 'web_application_vts');"))
-    {
-      sql ("ALTER TABLE vts.web_application_vts"
-           " RENAME TO web_application_vts_old;");
-      sql ("ALTER TABLE vts.web_application_vt_refs"
-           " RENAME TO web_application_vt_refs_old;");
-
-      sql ("ALTER TABLE vts.web_application_vts_rebuild"
-           " RENAME TO web_application_vts;");
-      sql ("ALTER TABLE vts.web_application_vt_refs_rebuild"
-           " RENAME TO web_application_vt_refs;");
-
-      sql ("DROP TABLE vts.web_application_vts_old;");
-      sql ("DROP TABLE vts.web_application_vt_refs_old;");
-    }
-  else
-    {
-      sql ("ALTER TABLE vts.web_application_vts_rebuild"
-           " RENAME TO web_application_vts;");
-      sql ("ALTER TABLE vts.web_application_vt_refs_rebuild"
-           " RENAME TO web_application_vt_refs;");
-    }
 
   /* Analyze. */
 
@@ -7545,8 +7497,6 @@ update_web_application_vts (gboolean reset_db)
                  __func__);
       return -1;
     }
-
-  create_web_application_vts_rebuild_tables ();
 
   /* Update into the new schema. */
 

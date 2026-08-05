@@ -19,6 +19,7 @@
 #include "manage_utils.h"
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
+#include "manage_sql_secinfo.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -4167,6 +4168,9 @@ manage_db_init (const gchar *name)
       sql ("SELECT set_config ('search_path',"
            "                   'vts,' || current_setting ('search_path'),"
            "                   false);");
+
+      if (manage_web_application_vts_loaded () == FALSE)
+        create_web_application_vts_tables ();
     }
   else
     {
@@ -4181,29 +4185,11 @@ manage_db_init (const gchar *name)
  * @brief Create web application VT tables for a rebuild.
  */
 void
-create_web_application_vts_rebuild_tables ()
+create_web_application_vts_tables ()
 {
   g_info ("Initializing new web application VT database tables");
 
-  /* Remove any old rebuild tables */
-  sql ("CREATE OR REPLACE FUNCTION drop_web_application_vts_rebuild ()"
-       " RETURNS void AS $$"
-       " BEGIN"
-       "   IF EXISTS (SELECT table_schema FROM information_schema.tables"
-       "              WHERE table_schema = 'vts'"
-       "              AND (table_name = 'web_application_vts_rebuild'"
-       "                   OR table_name = 'web_application_vt_refs_rebuild'))"
-       "   THEN"
-       "     DROP TABLE IF EXISTS vts.web_application_vts_rebuild;"
-       "     DROP TABLE IF EXISTS vts.web_application_vt_refs_rebuild;"
-       "   END IF;"
-       " END;"
-       " $$ LANGUAGE plpgsql;");
-
-  sql ("SELECT drop_web_application_vts_rebuild ();");
-  sql ("DROP FUNCTION IF EXISTS drop_web_application_vts_rebuild ();");
-
-  sql ("CREATE TABLE vts.web_application_vts_rebuild"
+  sql ("CREATE TABLE vts.web_application_vts"
        " (id SERIAL PRIMARY KEY,"
        "  uuid text UNIQUE NOT NULL,"
        "  name text NOT NULL,"
@@ -4216,7 +4202,7 @@ create_web_application_vts_rebuild_tables ()
        "  severity DOUBLE PRECISION DEFAULT 0,"
        "  type_metadata text);");
 
-  sql ("CREATE TABLE vts.web_application_vt_refs_rebuild"
+  sql ("CREATE TABLE vts.web_application_vt_refs"
        " (id SERIAL PRIMARY KEY,"
        "  vt_id text NOT NULL,"
        "  type text NOT NULL,"
@@ -4231,6 +4217,24 @@ create_web_application_vts_rebuild_tables ()
        " VALUES ('web_application_vts_database_version', %d)"
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
        GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION);
+}
+
+/**
+ * @brief Drop old web application VT tables.
+ */
+void
+drop_web_application_vts_tables ()
+{
+  g_info ("Dropping old web application VT database tables");
+
+  sql ("DROP MATERIALIZED VIEW IF EXISTS vts.all_vts");
+
+  sql ("DROP TABLE IF EXISTS vts.web_application_vt_refs");
+  sql ("DROP TABLE IF EXISTS vts.web_application_vts");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_web_application_vts_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
 }
 
 
