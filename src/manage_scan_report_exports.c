@@ -224,8 +224,6 @@ validate_scan_report_export (const gchar *report_id,
  * @param[in]  report_id          UUID of the report to export.
  * @param[in]  report_format_id   UUID of the report format.
  * @param[in]  report_config_id   Optional UUID of the report config.
- * @param[in]  name               Name of the export.
- * @param[in]  comment            Optional export comment.
  * @param[in]  filter             Optional resolved result filter.
  * @param[in]  ignore_pagination  Whether result pagination is ignored.
  * @param[in]  lean               Whether lean report data is generated.
@@ -240,25 +238,29 @@ manage_export_scan_report_response_t
 manage_export_scan_report (const gchar *report_id,
                            const gchar *report_format_id,
                            const gchar *report_config_id,
-                           const gchar *name,
-                           const gchar *comment,
                            const gchar *filter,
                            gboolean ignore_pagination,
                            gboolean lean,
                            gboolean notes_details,
                            gboolean overrides_details,
                            gboolean result_tags,
-                           report_export_t *report_export)
+                           report_export_t *report_export,
+                           report_export_status_t *status,
+                           gboolean *created)
 {
   report_t report;
   report_format_t report_format;
   report_config_t report_config;
   manage_export_scan_report_response_t response;
 
-  if (report_export == NULL || name == NULL)
+  if (report_export == NULL
+      || status == NULL
+      || created == NULL)
     return MANAGE_EXPORT_SCAN_REPORT_ERROR;
 
   *report_export = 0;
+  *status = REPORT_EXPORT_STATUS_PENDING;
+  *created = FALSE;
 
   response = validate_scan_report_export (report_id,
                                           &report,
@@ -274,15 +276,17 @@ manage_export_scan_report (const gchar *report_id,
                                    report_format,
                                    report_config,
                                    REPORT_EXPORT_TYPE_SCAN,
-                                   name,
-                                   comment,
+                                   "",
+                                   "",
                                    filter,
                                    ignore_pagination,
                                    lean,
                                    notes_details,
                                    overrides_details,
                                    result_tags,
-                                   report_export))
+                                   report_export,
+                                   status,
+                                   created))
     return MANAGE_EXPORT_SCAN_REPORT_ERROR;
 
   return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;

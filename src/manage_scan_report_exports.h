@@ -29,14 +29,14 @@ manage_export_scan_report (const gchar *,
                            const gchar *,
                            const gchar *,
                            const gchar *,
-                           const gchar *,
-                           const gchar *,
                            gboolean,
                            gboolean,
                            gboolean,
                            gboolean,
                            gboolean,
-                           report_export_t *);
+                           report_export_t *,
+                           report_export_status_t *,
+                           gboolean *);
 
 int
 manage_process_scan_report_export (report_export_t);

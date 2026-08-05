@@ -105,7 +105,9 @@ create_report_export (report_t,
                       gboolean,
                       gboolean,
                       gboolean,
-                      report_export_t *);
+                      report_export_t *,
+                      report_export_status_t *,
+                      gboolean *);
 
 int
 get_report_export_status (report_export_t,
