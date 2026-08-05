@@ -17057,6 +17057,50 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 }
 
 /**
+ * @brief Generate the XML input for a normal scan report export.
+ *
+ * This wrapper preserves the existing report XML generation behavior while
+ * excluding delta report generation.
+ *
+ * @param[in] report             Report to export.
+ * @param[in] task               Task associated with the report.
+ * @param[in] xml_start          Destination XML path.
+ * @param[in] get                Result filter data.
+ * @param[in] notes_details      Whether to include note details.
+ * @param[in] overrides_details  Whether to include override details.
+ * @param[in] result_tags        Whether to include result tags.
+ * @param[in] ignore_pagination  Whether to ignore result pagination.
+ * @param[in] lean               Whether to generate a lean report.
+ *
+ * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
+ */
+int
+manage_print_scan_report_xml_start (report_t report,
+                                    task_t task,
+                                    gchar *xml_start,
+                                    const get_data_t *get,
+                                    int notes_details,
+                                    int overrides_details,
+                                    int result_tags,
+                                    int ignore_pagination,
+                                    int lean)
+{
+  return print_report_xml_start (report,
+                                 0,
+                                 task,
+                                 xml_start,
+                                 get,
+                                 notes_details,
+                                 overrides_details,
+                                 result_tags,
+                                 ignore_pagination,
+                                 lean,
+                                 NULL,
+                                 NULL,
+                                 NULL);
+}
+
+/**
  * @brief Generate a report.
  *
  * @param[in]  report             Report.

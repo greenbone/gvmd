@@ -216,6 +216,7 @@ set(
   manage_resources.c
   manage_report_common.c
   manage_scan_report.c
+  manage_scan_report_exports.c
   manage_report_applications.c
   manage_report_closed_cves.c
   manage_report_configs.c

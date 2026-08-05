@@ -1,0 +1,1123 @@
+/* Copyright (C) 2026 Greenbone AG
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+/**
+ * @file
+ * @brief GVM management layer: Scan report exports.
+ */
+
+#include "manage_scan_report_exports.h"
+
+#include "manage.h"
+#include "manage_report_configs.h"
+#include "manage_report_formats.h"
+#include "manage_sql_report_exports.h"
+#include "manage_sql_report_formats.h"
+#include "manage_sql_users.h"
+
+#include <errno.h>
+#include <glib.h>
+#include <glib/gstdio.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <gvm/util/fileutils.h>
+
+#undef G_LOG_DOMAIN
+
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+/**
+ * @brief Size of the buffer used when copying generated report files.
+ */
+#define SCAN_REPORT_EXPORT_COPY_BUFFER_SIZE (64 * 1024)
+
+
+/**
+ * @brief Temporary and final files used by a scan report export.
+ */
+typedef struct
+{
+  gchar *work_dir;
+  gchar *xml_start_path;
+  gchar *xml_target_path;
+  gchar *formatted_path;
+  gchar *final_path;
+  gchar *content_type;
+  gchar *extension;
+  long long file_size;
+} scan_report_export_files_t;
+
+/**
+ * @brief Temporary user context used by a report export worker.
+ */
+typedef struct
+{
+  gchar *previous_user_uuid;
+  gchar *export_user_uuid;
+  gboolean active;
+} scan_report_export_user_context_t;
+
+/**
+ * @brief Get the directory for persistent report export files.
+ *
+ * @return Report export directory.
+ */
+static const gchar *
+report_export_dir (void)
+{
+  static gchar *path = NULL;
+
+  if (path == NULL)
+    path = g_build_filename (GVMD_STATE_DIR,
+                             "report-exports",
+                             NULL);
+
+  return path;
+}
+
+/**
+ * @brief Check whether a string contains a non-empty value.
+ *
+ * @param[in] value  String to inspect.
+ *
+ * @return TRUE if the string is not NULL or empty.
+ */
+static gboolean
+scan_report_export_has_value (const gchar *value)
+{
+  return value != NULL && value[0] != '\0';
+}
+
+/**
+ * @brief Validate and resolve resources used by a scan report export.
+ *
+ * @param[in]  report_id         UUID of the report to export.
+ * @param[out] report            Resolved report.
+ * @param[in]  report_format_id  UUID of the report format.
+ * @param[out] report_format     Resolved report format.
+ * @param[in]  report_config_id  Optional UUID of the report config.
+ * @param[out] report_config     Resolved report config.
+ *
+ * @return Validation result.
+ */
+static manage_export_scan_report_response_t
+validate_scan_report_export (const gchar *report_id,
+                             report_t *report,
+                             const gchar *report_format_id,
+                             report_format_t *report_format,
+                             const gchar *report_config_id,
+                             report_config_t *report_config)
+{
+  task_t task;
+  gchar *usage_type;
+  gchar *format_report_type;
+  int ret;
+
+  if (scan_report_export_has_value (report_id) == FALSE
+      || report == NULL
+      || scan_report_export_has_value (report_format_id) == FALSE
+      || report_format == NULL
+      || report_config == NULL)
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  *report = 0;
+  *report_format = 0;
+  *report_config = 0;
+
+  ret = find_report_with_permission (report_id,
+                                     report,
+                                     "get_reports");
+  if (ret)
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  if (*report == 0)
+    return MANAGE_EXPORT_SCAN_REPORT_NOT_FOUND;
+
+  task = 0;
+
+  if (report_task (*report, &task))
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  if (task == 0)
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  usage_type = NULL;
+
+  if (task_usage_type (task, &usage_type))
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  if (usage_type == NULL || strcmp (usage_type, "audit") == 0)
+    {
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_UNSUPPORTED_TYPE;
+    }
+
+  ret = find_report_format_with_permission (report_format_id,
+                                            report_format,
+                                            "get_report_formats");
+  if (ret)
+    {
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    }
+
+  if (*report_format == 0)
+    {
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_FORMAT_NOT_FOUND;
+    }
+
+  if (report_format_active (*report_format) == 0)
+    {
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_FORMAT_NOT_FOUND;
+    }
+
+  if (report_format_predefined (*report_format) == 0
+      && report_format_trust (*report_format) != TRUST_YES)
+    {
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    }
+
+  format_report_type = report_format_report_type (*report_format);
+
+  if (format_report_type
+      && strcmp (format_report_type, "all")
+      && strcmp (format_report_type, usage_type))
+    {
+      g_free (format_report_type);
+      g_free (usage_type);
+      return MANAGE_EXPORT_SCAN_REPORT_UNSUPPORTED_TYPE;
+    }
+
+  g_free (format_report_type);
+  g_free (usage_type);
+
+  if (scan_report_export_has_value (report_config_id))
+    {
+      ret = find_report_config_with_permission (report_config_id,
+                                                report_config,
+                                                "get_report_configs");
+      if (ret)
+        return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+      if (*report_config == 0)
+        return MANAGE_EXPORT_SCAN_REPORT_CONFIG_NOT_FOUND;
+
+      if (report_config_report_format (*report_config) != *report_format)
+        return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    }
+
+  return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;
+}
+
+/**
+ * @brief Create a queued scan report export.
+ *
+ * @param[in]  report_id          UUID of the report to export.
+ * @param[in]  report_format_id   UUID of the report format.
+ * @param[in]  report_config_id   Optional UUID of the report config.
+ * @param[in]  name               Name of the export.
+ * @param[in]  comment            Optional export comment.
+ * @param[in]  filter             Optional resolved result filter.
+ * @param[in]  ignore_pagination  Whether result pagination is ignored.
+ * @param[in]  lean               Whether lean report data is generated.
+ * @param[in]  notes_details      Whether note details are included.
+ * @param[in]  overrides_details  Whether override details are included.
+ * @param[in]  result_tags        Whether result tags are included.
+ * @param[out] report_export      Created report export.
+ *
+ * @return Result of creating the scan report export.
+ */
+manage_export_scan_report_response_t
+manage_export_scan_report (const gchar *report_id,
+                           const gchar *report_format_id,
+                           const gchar *report_config_id,
+                           const gchar *name,
+                           const gchar *comment,
+                           const gchar *filter,
+                           gboolean ignore_pagination,
+                           gboolean lean,
+                           gboolean notes_details,
+                           gboolean overrides_details,
+                           gboolean result_tags,
+                           report_export_t *report_export)
+{
+  report_t report;
+  report_format_t report_format;
+  report_config_t report_config;
+  manage_export_scan_report_response_t response;
+
+  if (report_export == NULL || name == NULL)
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  *report_export = 0;
+
+  response = validate_scan_report_export (report_id,
+                                          &report,
+                                          report_format_id,
+                                          &report_format,
+                                          report_config_id,
+                                          &report_config);
+  if (response != MANAGE_EXPORT_SCAN_REPORT_SUCCESS)
+    return response;
+
+  if (manage_create_report_export (report,
+                                   0,
+                                   report_format,
+                                   report_config,
+                                   REPORT_EXPORT_TYPE_SCAN,
+                                   name,
+                                   comment,
+                                   filter,
+                                   ignore_pagination,
+                                   lean,
+                                   notes_details,
+                                   overrides_details,
+                                   result_tags,
+                                   report_export))
+    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+
+  return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;
+}
+
+/**
+ * @brief Clean up scan report export file information.
+ *
+ * @param[in] files  File information to clean up.
+ */
+static void
+scan_report_export_files_cleanup (scan_report_export_files_t *files)
+{
+  if (files == NULL)
+    return;
+
+  if (files->work_dir)
+    gvm_file_remove_recurse (files->work_dir);
+
+  g_free (files->work_dir);
+  g_free (files->xml_start_path);
+  g_free (files->xml_target_path);
+  g_free (files->formatted_path);
+  g_free (files->final_path);
+  g_free (files->content_type);
+  g_free (files->extension);
+
+  memset (files, 0, sizeof (*files));
+}
+
+/**
+ * @brief Remove the completed file belonging to an export.
+ *
+ * @param[in] files  Report export file information.
+ */
+static void
+scan_report_export_remove_final_file (
+  const scan_report_export_files_t *files)
+{
+  if (files && files->final_path)
+    g_unlink (files->final_path);
+}
+
+/**
+ * @brief Initialize temporary paths used for report generation.
+ *
+ * @param[out] files  File information to initialize.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+init_scan_report_export_files (scan_report_export_files_t *files)
+{
+  GError *error;
+
+  if (files == NULL)
+    return -1;
+
+  memset (files, 0, sizeof (*files));
+
+  error = NULL;
+
+  files->work_dir = g_dir_make_tmp (
+    "gvmd-scan-report-export-XXXXXX",
+    &error);
+
+  if (files->work_dir == NULL)
+    {
+      g_warning ("%s: failed to create temporary directory: %s",
+                 __func__,
+                 error ? error->message : "Unknown error");
+
+      g_clear_error (&error);
+      return -1;
+    }
+
+  files->xml_start_path = g_build_filename (
+    files->work_dir,
+    "report-start.xml",
+    NULL);
+
+  files->xml_target_path = g_build_filename (
+    files->work_dir,
+    "report.xml",
+    NULL);
+
+  if (files->xml_start_path == NULL
+      || files->xml_target_path == NULL)
+    {
+      scan_report_export_files_cleanup (files);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Switch report generation to the export owner's user context.
+ *
+ * @param[out] context  User context to initialize.
+ * @param[in]  owner    Owner of the report export.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+init_scan_report_export_user_context (
+  scan_report_export_user_context_t *context,
+  user_t owner)
+{
+  if (context == NULL || owner == 0)
+    return -1;
+
+  memset (context, 0, sizeof (*context));
+
+  context->previous_user_uuid = current_credentials.uuid;
+  context->export_user_uuid = user_uuid (owner);
+
+  if (context->export_user_uuid == NULL)
+    return -1;
+
+  current_credentials.uuid = context->export_user_uuid;
+  manage_session_init (current_credentials.uuid);
+
+  context->active = TRUE;
+
+  return 0;
+}
+
+/**
+ * @brief Restore the user context active before report generation.
+ *
+ * @param[in] context  User context to restore.
+ */
+static void
+cleanup_scan_report_export_user_context (
+  scan_report_export_user_context_t *context)
+{
+  if (context == NULL)
+    return;
+
+  if (context->active)
+    {
+      current_credentials.uuid = context->previous_user_uuid;
+      manage_session_init (current_credentials.uuid);
+    }
+
+  g_free (context->export_user_uuid);
+
+  memset (context, 0, sizeof (*context));
+}
+
+/**
+ * @brief Initialize GET data used by the existing XML report generator.
+ *
+ * @param[in]  data  Stored report export data.
+ * @param[out] get   GET data to initialize.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+init_scan_report_export_get_data (
+  const report_export_data_t data,
+  get_data_t *get)
+{
+  if (data == NULL || get == NULL)
+    return -1;
+
+  memset (get, 0, sizeof (*get));
+
+  get->type = g_strdup ("result");
+  get->filter = g_strdup (data->filter ? data->filter : "");
+  get->details = 1;
+  get->ignore_pagination = data->ignore_pagination;
+  get->ignore_max_rows_per_page = data->ignore_pagination;
+
+  if (get->type == NULL || get->filter == NULL)
+    {
+      g_free (get->type);
+      g_free (get->filter);
+      memset (get, 0, sizeof (*get));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Clean up GET data initialized for report generation.
+ *
+ * @param[in] get  GET data to clean up.
+ */
+static void
+cleanup_scan_report_export_get_data (get_data_t *get)
+{
+  if (get == NULL)
+    return;
+
+  g_free (get->type);
+  g_free (get->filter);
+
+  memset (get, 0, sizeof (*get));
+}
+
+/**
+ * @brief Generate the intermediate XML used by a report format.
+ *
+ * @param[in] data      Report export data.
+ * @param[in] xml_path  Destination XML path.
+ *
+ * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
+ */
+static int
+generate_scan_report_export_xml (
+  const report_export_data_t data,
+  gchar *xml_path)
+{
+  get_data_t get;
+  task_t task;
+  int ret;
+
+  if (data == NULL
+      || data->report == 0
+      || xml_path == NULL)
+    return -1;
+
+  task = 0;
+
+  if (report_task (data->report, &task))
+    return -1;
+
+  if (task == 0)
+    return -1;
+
+  if (init_scan_report_export_get_data (data, &get))
+    return -1;
+
+  ret = manage_print_scan_report_xml_start (
+    data->report,
+    task,
+    xml_path,
+    &get,
+    data->notes_details,
+    data->overrides_details,
+    data->result_tags,
+    data->ignore_pagination,
+    data->lean);
+
+  cleanup_scan_report_export_get_data (&get);
+
+  return ret;
+}
+
+/**
+ * @brief Apply the selected report format to generated scan report XML.
+ *
+ * @param[in]  data   Report export data.
+ * @param[out] files  Report export file information.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+format_scan_report_export (
+  const report_export_data_t data,
+  scan_report_export_files_t *files)
+{
+  gchar *format_uuid;
+  GList *used_report_formats;
+
+  if (data == NULL
+      || files == NULL
+      || files->work_dir == NULL
+      || files->xml_start_path == NULL
+      || files->xml_target_path == NULL
+      || data->report_format == 0)
+    return -1;
+
+  if (report_format_active (data->report_format) == 0)
+    {
+      g_warning ("%s: report format is not active", __func__);
+      return -1;
+    }
+
+  if (report_format_predefined (data->report_format) == 0
+      && report_format_trust (data->report_format) != TRUST_YES)
+    {
+      g_warning ("%s: report format is not trusted", __func__);
+      return -1;
+    }
+
+  if (data->report_config
+      && report_config_report_format (data->report_config)
+      != data->report_format)
+    {
+      g_warning ("%s: report config is not compatible with report format",
+                 __func__);
+      return -1;
+    }
+
+  format_uuid = report_format_uuid (data->report_format);
+  if (format_uuid == NULL)
+    return -1;
+
+  used_report_formats = NULL;
+
+  files->formatted_path = apply_report_format (
+    format_uuid,
+    data->report_config,
+    files->xml_start_path,
+    files->xml_target_path,
+    files->work_dir,
+    &used_report_formats);
+
+  g_list_free (used_report_formats);
+  g_free (format_uuid);
+
+  if (files->formatted_path == NULL)
+    {
+      g_warning ("%s: report format returned no output file",
+                 __func__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Build the final destination path of an exported report.
+ *
+ * @param[in] export_uuid  UUID of the report export.
+ * @param[in] extension    File extension.
+ *
+ * @return Newly allocated path or NULL on failure.
+ */
+static gchar *
+build_scan_report_export_path (const gchar *export_uuid,
+                               const gchar *extension)
+{
+  gchar *filename;
+  gchar *path;
+
+  if (scan_report_export_has_value (export_uuid) == FALSE
+      || extension == NULL)
+    return NULL;
+
+  if (g_mkdir_with_parents (report_export_dir (), 0700))
+    {
+      g_warning ("%s: failed to create %s: %s",
+                 __func__,
+                 report_export_dir (),
+                 strerror (errno));
+      return NULL;
+    }
+
+  if (extension[0])
+    filename = g_strdup_printf ("%s.%s",
+                                export_uuid,
+                                extension);
+  else
+    filename = g_strdup (export_uuid);
+
+  if (filename == NULL)
+    return NULL;
+
+  path = g_build_filename (report_export_dir (),
+                           filename,
+                           NULL);
+
+  g_free (filename);
+
+  return path;
+}
+
+/**
+ * @brief Copy a generated report without loading it fully into memory.
+ *
+ * @param[in] source       Source path.
+ * @param[in] destination  Destination path.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+copy_scan_report_export_file (const gchar *source,
+                              const gchar *destination)
+{
+  FILE *input;
+  FILE *output;
+  guchar buffer[SCAN_REPORT_EXPORT_COPY_BUFFER_SIZE];
+  size_t bytes_read;
+  int ret;
+
+  if (source == NULL || destination == NULL)
+    return -1;
+
+  input = NULL;
+  output = NULL;
+  ret = -1;
+
+  input = g_fopen (source, "rb");
+  if (input == NULL)
+    {
+      g_warning ("%s: failed to open %s: %s",
+                 __func__,
+                 source,
+                 strerror (errno));
+      goto cleanup;
+    }
+
+  output = g_fopen (destination, "wb");
+  if (output == NULL)
+    {
+      g_warning ("%s: failed to open %s: %s",
+                 __func__,
+                 destination,
+                 strerror (errno));
+      goto cleanup;
+    }
+
+  while ((bytes_read = fread (buffer,
+                              1,
+                              sizeof (buffer),
+                              input))
+         > 0)
+    {
+      if (fwrite (buffer,
+                  1,
+                  bytes_read,
+                  output)
+          != bytes_read)
+        {
+          g_warning ("%s: failed to write %s: %s",
+                     __func__,
+                     destination,
+                     strerror (errno));
+          goto cleanup;
+        }
+    }
+
+  if (ferror (input))
+    {
+      g_warning ("%s: failed to read %s",
+                 __func__,
+                 source);
+      goto cleanup;
+    }
+
+  if (fflush (output))
+    {
+      g_warning ("%s: failed to flush %s: %s",
+                 __func__,
+                 destination,
+                 strerror (errno));
+      goto cleanup;
+    }
+
+  ret = 0;
+
+cleanup:
+  if (input && fclose (input))
+    ret = -1;
+
+  if (output && fclose (output))
+    ret = -1;
+
+  if (ret == 0 && g_chmod (destination, 0600))
+    {
+      g_warning ("%s: failed to set permissions on %s: %s",
+                 __func__,
+                 destination,
+                 strerror (errno));
+      ret = -1;
+    }
+
+  if (ret)
+    g_unlink (destination);
+
+  return ret;
+}
+
+/**
+ * @brief Store a generated report in its persistent location.
+ *
+ * @param[in]  data   Report export data.
+ * @param[out] files  Report export file information.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+static int
+store_scan_report_export_file (
+  const report_export_data_t data,
+  scan_report_export_files_t *files)
+{
+  GStatBuf stat_buffer;
+
+  if (data == NULL
+      || files == NULL
+      || data->uuid == NULL
+      || files->formatted_path == NULL)
+    return -1;
+
+  files->extension = report_format_extension (data->report_format);
+  files->content_type = report_format_content_type (data->report_format);
+
+  if (files->extension == NULL || files->content_type == NULL)
+    {
+      g_warning ("%s: report format metadata is incomplete",
+                 __func__);
+      return -1;
+    }
+
+  files->final_path = build_scan_report_export_path (
+    data->uuid,
+    files->extension);
+
+  if (files->final_path == NULL)
+    return -1;
+
+  if (g_rename (files->formatted_path,
+                files->final_path))
+    {
+      if (errno != EXDEV)
+        {
+          g_warning ("%s: failed to move generated report: %s",
+                     __func__,
+                     strerror (errno));
+          return -1;
+        }
+
+      if (copy_scan_report_export_file (files->formatted_path,
+                                        files->final_path))
+        return -1;
+
+      if (g_unlink (files->formatted_path))
+        g_warning ("%s: failed to remove temporary report %s: %s",
+                 __func__,
+                 files->formatted_path,
+                 strerror (errno));
+    }
+
+  if (g_chmod (files->final_path, 0600))
+    {
+      g_warning ("%s: failed to set permissions on %s: %s",
+                 __func__,
+                 files->final_path,
+                 strerror (errno));
+
+      g_unlink (files->final_path);
+      return -1;
+    }
+
+  if (g_stat (files->final_path, &stat_buffer))
+    {
+      g_warning ("%s: failed to stat %s: %s",
+                 __func__,
+                 files->final_path,
+                 strerror (errno));
+
+      g_unlink (files->final_path);
+      return -1;
+    }
+
+  files->file_size = (long long) stat_buffer.st_size;
+
+  return 0;
+}
+
+/**
+ * @brief Check whether cancellation was requested.
+ *
+ * When cancellation is requested, the export is marked as canceled.
+ *
+ * @param[in] report_export  Report export.
+ *
+ * @return 0 to continue, 1 if canceled, or -1 on failure.
+ */
+static int
+check_scan_report_export_cancel (report_export_t report_export)
+{
+  int ret;
+
+  ret = manage_report_export_cancel_requested (report_export);
+  if (ret < 0)
+    return -1;
+
+  if (ret == 0)
+    return 0;
+
+  if (manage_finish_report_export_cancel (report_export))
+    return -1;
+
+  return 1;
+}
+
+/**
+ * @brief Mark a report export as failed.
+ *
+ * @param[in] report_export  Report export.
+ * @param[in] message        Failure message.
+ *
+ * @return Always -1.
+ */
+static int
+fail_scan_report_export (report_export_t report_export,
+                         const gchar *message)
+{
+  if (manage_fail_report_export (report_export, message))
+    g_warning ("%s: failed to mark report export as failed",
+             __func__);
+
+  return -1;
+}
+
+/**
+ * @brief Process a queued normal scan report export.
+ *
+ * @param[in] report_export  Report export to process.
+ *
+ * @return 0 on success, 1 if canceled, or -1 on failure.
+ */
+int
+manage_process_scan_report_export (report_export_t report_export)
+{
+  report_export_data_t data;
+  scan_report_export_files_t files;
+  scan_report_export_user_context_t user_context;
+  gboolean final_file_stored;
+  int ret;
+
+  if (report_export == 0)
+    return -1;
+
+  data = NULL;
+  memset (&files, 0, sizeof (files));
+  memset (&user_context, 0, sizeof (user_context));
+
+  final_file_stored = FALSE;
+  ret = -1;
+
+  data = report_export_data_new ();
+  if (data == NULL)
+    return -1;
+
+  if (load_report_export_data (report_export, data))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to load report export data");
+      goto cleanup;
+    }
+
+  if (data->export_type != REPORT_EXPORT_TYPE_SCAN
+      || data->delta_report != 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Unsupported scan report export type");
+      goto cleanup;
+    }
+
+  if (data->status != REPORT_EXPORT_STATUS_RUNNING
+      && data->status != REPORT_EXPORT_STATUS_CANCEL_REQUESTED)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Report export is not running");
+      goto cleanup;
+    }
+
+  ret = check_scan_report_export_cancel (report_export);
+
+  if (ret < 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to check report export cancellation");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (ret > 0)
+    goto cleanup;
+
+  if (init_scan_report_export_user_context (&user_context,
+                                            data->owner))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to initialize report export user context");
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (init_scan_report_export_files (&files))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to initialize report export files");
+      ret = -1;
+      goto cleanup;
+    }
+
+  ret = check_scan_report_export_cancel (report_export);
+
+  if (ret < 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to check report export cancellation");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (ret > 0)
+    goto cleanup;
+
+  if (manage_set_report_export_progress (
+    report_export,
+    REPORT_EXPORT_PROGRESS_GENERATING))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to update report export progress");
+      ret = -1;
+      goto cleanup;
+    }
+
+  ret = generate_scan_report_export_xml (
+    data,
+    files.xml_start_path);
+
+  if (ret)
+    {
+      fail_scan_report_export (
+        report_export,
+        ret == 2
+          ? "Report filter was not found"
+          : "Failed to generate scan report XML");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  ret = check_scan_report_export_cancel (report_export);
+
+  if (ret < 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to check report export cancellation");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (ret > 0)
+    goto cleanup;
+
+  if (format_scan_report_export (data, &files))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to apply report format");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  ret = check_scan_report_export_cancel (report_export);
+
+  if (ret < 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to check report export cancellation");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (ret > 0)
+    goto cleanup;
+
+  if (store_scan_report_export_file (data, &files))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to store generated report");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  final_file_stored = TRUE;
+
+  ret = check_scan_report_export_cancel (report_export);
+
+  if (ret < 0)
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to check report export cancellation");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  if (ret > 0)
+    goto cleanup;
+
+  if (manage_complete_report_export (
+    report_export,
+    files.final_path,
+    files.file_size,
+    files.content_type,
+    files.extension))
+    {
+      fail_scan_report_export (
+        report_export,
+        "Failed to complete report export");
+
+      ret = -1;
+      goto cleanup;
+    }
+
+  final_file_stored = FALSE;
+  ret = 0;
+
+cleanup:
+  if (ret != 0 && final_file_stored)
+    scan_report_export_remove_final_file (&files);
+
+  scan_report_export_files_cleanup (&files);
+  cleanup_scan_report_export_user_context (&user_context);
+  report_export_data_free (data);
+
+  return ret;
+}
