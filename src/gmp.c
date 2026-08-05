@@ -87,6 +87,7 @@
 #include "gmp_configs.h"
 #include "gmp_audit_report.h"
 #include "gmp_audit_report_hosts.h"
+#include "gmp_scan_report_exports.h"
 #include "gmp_integration_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
@@ -4593,6 +4594,7 @@ typedef enum
 #endif
   CLIENT_DESCRIBE_AUTH,
   CLIENT_EMPTY_TRASHCAN,
+  CLIENT_EXPORT_SCAN_REPORT,
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
   CLIENT_GET_AGENT_INSTALLER_INSTRUCTION,
@@ -5483,6 +5485,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_DESCRIBE_AUTH);
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+        else if (strcasecmp ("EXPORT_SCAN_REPORT", element_name) == 0)
+          {
+            export_scan_report_start (gmp_parser,
+                                      attribute_names,
+                                      attribute_values);
+            set_client_state (CLIENT_EXPORT_SCAN_REPORT);
+          }
 
 #if ENABLE_AGENTS
         ELSE_GET_START (agent_groups, AGENT_GROUPS)
@@ -22460,6 +22469,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+    case CLIENT_EXPORT_SCAN_REPORT:
+      export_scan_report_element_end (gmp_parser, error, element_name);
+      break;
 
 #if ENABLE_AGENTS
       CASE_GET_END (AGENT_GROUPS, agent_groups);

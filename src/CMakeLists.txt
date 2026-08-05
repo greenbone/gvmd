@@ -348,6 +348,7 @@ set(
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
+  gmp_scan_report_exports.c
   gmp_get.c
   gmp_audit_report.c
   gmp_audit_report_hosts.c
