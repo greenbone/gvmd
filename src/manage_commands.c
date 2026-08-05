@@ -95,7 +95,7 @@ command_t gmp_commands[]
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
-    {"EXPORT_SCAN_REPORT", "Create an export request for a vulnerability report."},
+    {"EXPORT_SCAN_REPORT", "Create an asynchronous scan report export."},
 #if ENABLE_AGENTS
     {"GET_AGENT_GROUPS", "Get all agent groups."},
     {"GET_AGENTS", "Get all agents."},

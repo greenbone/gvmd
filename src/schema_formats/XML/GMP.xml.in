@@ -8797,6 +8797,101 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  <command>
+    <name>export_scan_report</name>
+    <summary>Create an asynchronous scan report export</summary>
+    <description>
+      <p>The client uses the export_scan_report command to create an asynchronous export request for a scan report.</p>
+      <p>The command validates the report, report format and optional report configuration, and then queues the report export for asynchronous processing.</p>
+      <p>The response contains the UUID and current status of the report export. The generated report file can be retrieved after the export reaches the done status.</p>
+      <p>When a matching report export already exists with a reusable status, the command returns the existing export instead of creating a duplicate.</p>
+      <p>Audit reports and delta reports are not supported by this command.</p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>UUID of the scan report to export</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>UUID of the report format to apply</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>UUID of an optional report configuration</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply while generating the report</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>Whether pagination settings in the filter are ignored</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether lean report data is generated</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>notes_details</name>
+        <summary>Whether note details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>overrides_details</name>
+        <summary>Whether override details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether result tags are included</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <summary>UUID of the created or existing report export</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>export_status</name>
+          <summary>Current processing status of the report export</summary>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asynchronous scan report export</summary>
+      <request>
+        <export_scan_report report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0" format_id="a994b278-1f62-11e1-96ac-406186ea4fc5" filter="levels=hml apply_overrides=1" ignore_pagination="1" lean="0" notes_details="1" overrides_details="1" result_tags="1"/>
+      </request>
+      <response>
+        <export_scan_report_response status="200" status_text="OK" id="e6e2f6e1-daa9-411d-aa5a-1321c9894ab9" export_status="pending"/>
+      </response>
+    </example>
+  </command>
   @IF_ENABLE_AGENTS@
   <command>
     <name>get_agent_groups</name>
