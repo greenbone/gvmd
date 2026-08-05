@@ -660,12 +660,12 @@ build_scan_report_export_path (const gchar *export_uuid,
 }
 
 /**
- * @brief Copy a generated report without loading it fully into memory.
+ * @brief Copy a report export file.
  *
- * @param[in] source       Source path.
- * @param[in] destination  Destination path.
+ * @param[in] source       Source file path.
+ * @param[in] destination  Destination file path.
  *
- * @return 0 on success or -1 on failure.
+ * @return 0 on success, -1 on failure.
  */
 static int
 copy_scan_report_export_file (const gchar *source,
@@ -704,6 +704,15 @@ copy_scan_report_export_file (const gchar *source,
       goto cleanup;
     }
 
+  if (fchmod (fileno (output), 0600))
+    {
+      g_warning ("%s: failed to set permissions on %s: %s",
+                 __func__,
+                 destination,
+                 strerror (errno));
+      goto cleanup;
+    }
+
   while ((bytes_read = fread (buffer,
                               1,
                               sizeof (buffer),
@@ -726,9 +735,10 @@ copy_scan_report_export_file (const gchar *source,
 
   if (ferror (input))
     {
-      g_warning ("%s: failed to read %s",
+      g_warning ("%s: failed to read %s: %s",
                  __func__,
-                 source);
+                 source,
+                 strerror (errno));
       goto cleanup;
     }
 
@@ -749,15 +759,6 @@ cleanup:
 
   if (output && fclose (output))
     ret = -1;
-
-  if (ret == 0 && g_chmod (destination, 0600))
-    {
-      g_warning ("%s: failed to set permissions on %s: %s",
-                 __func__,
-                 destination,
-                 strerror (errno));
-      ret = -1;
-    }
 
   if (ret)
     g_unlink (destination);
