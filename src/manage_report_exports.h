@@ -122,7 +122,9 @@ manage_create_report_export (report_t,
                              gboolean,
                              gboolean,
                              gboolean,
-                             report_export_t *);
+                             report_export_t *,
+                             report_export_status_t *,
+                             gboolean *);
 
 int
 manage_start_report_export (report_export_t, int);

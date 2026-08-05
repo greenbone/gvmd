@@ -208,7 +208,7 @@ report_export_progress_name (report_export_progress_t progress)
 }
 
 /**
- * @brief Create a report export request.
+ * @brief Create or reuse a report export request.
  *
  * @param[in]  report              Report to export.
  * @param[in]  delta_report        Optional report used for a delta export.
@@ -223,7 +223,9 @@ report_export_progress_name (report_export_progress_t progress)
  * @param[in]  notes_details       Whether note details should be included.
  * @param[in]  overrides_details   Whether override details should be included.
  * @param[in]  result_tags         Whether result tags should be included.
- * @param[out] report_export       Created report export.
+ * @param[out] report_export       Existing or newly created report export.
+ * @param[out] status              Current status of the returned export.
+ * @param[out] created             TRUE if a new export was created.
  *
  * @return 0 on success, -1 on invalid arguments or failure.
  */
@@ -241,7 +243,9 @@ manage_create_report_export (report_t report,
                              gboolean notes_details,
                              gboolean overrides_details,
                              gboolean result_tags,
-                             report_export_t *report_export)
+                             report_export_t *report_export,
+                             report_export_status_t *status,
+                             gboolean *created)
 {
   gboolean delta_export;
 
@@ -249,8 +253,14 @@ manage_create_report_export (report_t report,
       || report_format == 0
       || name == NULL
       || report_export == NULL
+      || status == NULL
+      || created == NULL
       || report_export_type_valid (export_type) == FALSE)
     return -1;
+
+  *report_export = 0;
+  *status = REPORT_EXPORT_STATUS_PENDING;
+  *created = FALSE;
 
   delta_export = export_type == REPORT_EXPORT_TYPE_DELTA_SCAN
                  || export_type == REPORT_EXPORT_TYPE_DELTA_AUDIT;
@@ -278,7 +288,9 @@ manage_create_report_export (report_t report,
                                notes_details,
                                overrides_details,
                                result_tags,
-                               report_export);
+                               report_export,
+                               status,
+                               created);
 }
 
 /**

@@ -108,8 +108,8 @@ init_report_export_iterator_by_id (iterator_t *iterator,
     return -1;
 
   where_clause = g_strdup_printf (
-    "report_exports.id = %lld",
-     report_export);
+    " AND report_exports.id = %lld",
+    report_export);
 
   ret = init_report_export_iterator_with_where (
     iterator,
@@ -143,7 +143,7 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
     {
       quoted = sql_quote (get->id);
       where_clause = g_strdup_printf (
-        "report_exports.uuid = '%s'",
+        "AND report_exports.uuid = '%s'",
         quoted);
     }
 
@@ -158,7 +158,116 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
 }
 
 /**
- * @brief Queue a report export.
+ * @brief Find the latest report export with the same request parameters.
+ *
+ * @param[in]  report              Report to export.
+ * @param[in]  delta_report        Optional delta report.
+ * @param[in]  report_format       Report format.
+ * @param[in]  report_config       Optional report configuration.
+ * @param[in]  export_type         Report export type.
+ * @param[in]  filter              Optional report filter.
+ * @param[in]  ignore_pagination   Whether pagination is ignored.
+ * @param[in]  lean                Whether lean report data is requested.
+ * @param[in]  notes_details       Whether note details are requested.
+ * @param[in]  overrides_details   Whether override details are requested.
+ * @param[in]  result_tags         Whether result tags are requested.
+ * @param[out] report_export       Matching report export, or 0 if not found.
+ * @param[out] status              Status of the matching export.
+ *
+ * @return 0 on success, including when no matching row exists, or -1 on
+ *         invalid arguments.
+ */
+static int
+find_matching_report_export (
+  report_t report,
+  report_t delta_report,
+  report_format_t report_format,
+  report_config_t report_config,
+  report_export_type_t export_type,
+  const gchar *filter,
+  gboolean ignore_pagination,
+  gboolean lean,
+  gboolean notes_details,
+  gboolean overrides_details,
+  gboolean result_tags,
+  report_export_t *report_export,
+  report_export_status_t *status)
+{
+  const gchar *normalized_filter;
+  iterator_t iterator;
+
+  if (report == 0
+      || report_format == 0
+      || report_export == NULL
+      || status == NULL)
+    return -1;
+
+  *report_export = 0;
+  *status = REPORT_EXPORT_STATUS_EXPIRED;
+
+  normalized_filter = filter ? filter : "";
+
+  init_ps_iterator (
+    &iterator,
+    "SELECT id, status"
+    "  FROM report_exports"
+    " WHERE owner ="
+    "       (SELECT id"
+    "          FROM users"
+    "         WHERE uuid = $1)"
+    "   AND report = $2"
+    "   AND COALESCE (delta_report, 0) = $3"
+    "   AND report_format = $4"
+    "   AND COALESCE (report_config, 0) = $5"
+    "   AND export_type = $6"
+    "   AND COALESCE (filter, '') = $7"
+    "   AND ignore_pagination = $8"
+    "   AND lean = $9"
+    "   AND notes_details = $10"
+    "   AND overrides_details = $11"
+    "   AND result_tags = $12"
+    " ORDER BY creation_time DESC"
+    " LIMIT 1",
+    SQL_STR_PARAM (current_credentials.uuid),
+    SQL_INT_PARAM (report),
+    SQL_INT_PARAM (delta_report),
+    SQL_INT_PARAM (report_format),
+    SQL_INT_PARAM (report_config),
+    SQL_INT_PARAM (export_type),
+    SQL_STR_PARAM (normalized_filter),
+    SQL_INT_PARAM (ignore_pagination),
+    SQL_INT_PARAM (lean),
+    SQL_INT_PARAM (notes_details),
+    SQL_INT_PARAM (overrides_details),
+    SQL_INT_PARAM (result_tags),
+    NULL);
+
+  if (next (&iterator))
+    {
+      *report_export =
+        (report_export_t) iterator_int64 (&iterator, 0);
+
+      *status =
+        (report_export_status_t) iterator_int (&iterator, 1);
+    }
+
+  cleanup_iterator (&iterator);
+
+  if (*report_export
+      && report_export_status_valid (*status) == FALSE)
+    {
+      *report_export = 0;
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Queue a report export or reuse an identical export.
+ *
+ * Pending, running and completed exports are reused. Failed, canceled,
+ * cancel-requested and expired exports are replaced by a new export.
  *
  * @param[in]  report              Report to export.
  * @param[in]  delta_report        Optional delta report.
@@ -170,12 +279,14 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
  * @param[in]  filter              Optional report filter.
  * @param[in]  ignore_pagination   Whether to ignore pagination.
  * @param[in]  lean                Whether to generate lean report data.
- * @param[in]  notes_details       Whether to include notes details in the export.
+ * @param[in]  notes_details       Whether to include note details.
  * @param[in]  overrides_details   Whether to include override details.
- * @param[in]  result_tags         Whether to include tags.
- * @param[out] report_export       Created report export.
+ * @param[in]  result_tags         Whether to include result tags.
+ * @param[out] report_export       Existing or newly created report export.
+ * @param[out] status              Current status of the returned export.
+ * @param[out] created             TRUE if a new row was inserted.
  *
- * @return 0 on success, -1 on failure.
+ * @return 0 on success or -1 on failure.
  */
 int
 create_report_export (report_t report,
@@ -191,15 +302,76 @@ create_report_export (report_t report,
                       gboolean notes_details,
                       gboolean overrides_details,
                       gboolean result_tags,
-                      report_export_t *report_export)
+                      report_export_t *report_export,
+                      report_export_status_t *status,
+                      gboolean *created)
 {
+  const gchar *normalized_filter;
+  report_export_status_t existing_status;
+  report_export_t existing_report_export;
   report_export_t new_report_export;
+  int ret;
 
   if (report == 0
       || report_format == 0
       || name == NULL
-      || report_export == NULL)
+      || report_export == NULL
+      || status == NULL
+      || created == NULL)
     return -1;
+
+  *report_export = 0;
+  *status = REPORT_EXPORT_STATUS_PENDING;
+  *created = FALSE;
+
+  normalized_filter = filter ? filter : "";
+
+  existing_report_export = 0;
+  existing_status = REPORT_EXPORT_STATUS_EXPIRED;
+
+  ret = find_matching_report_export (
+          report,
+          delta_report,
+          report_format,
+          report_config,
+          export_type,
+          normalized_filter,
+          ignore_pagination,
+          lean,
+          notes_details,
+          overrides_details,
+          result_tags,
+          &existing_report_export,
+          &existing_status);
+
+  if (ret)
+    return -1;
+
+  if (existing_report_export)
+    {
+      switch (existing_status)
+        {
+        case REPORT_EXPORT_STATUS_PENDING:
+        case REPORT_EXPORT_STATUS_RUNNING:
+        case REPORT_EXPORT_STATUS_DONE:
+          *report_export = existing_report_export;
+          *status = existing_status;
+          *created = FALSE;
+          return 0;
+
+        case REPORT_EXPORT_STATUS_ERROR:
+        case REPORT_EXPORT_STATUS_CANCEL_REQUESTED:
+        case REPORT_EXPORT_STATUS_CANCELED:
+        case REPORT_EXPORT_STATUS_EXPIRED:
+          /*
+           * Do not reuse this export. Continue and create a new row.
+           */
+          break;
+
+        default:
+          return -1;
+        }
+    }
 
   sql_ps (
     "INSERT INTO report_exports"
@@ -254,7 +426,7 @@ create_report_export (report_t report,
     SQL_INT_PARAM (export_type),
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_PENDING),
     SQL_INT_PARAM (REPORT_EXPORT_PROGRESS_QUEUED),
-    SQL_STR_PARAM (filter),
+    SQL_STR_PARAM (normalized_filter),
     SQL_INT_PARAM (ignore_pagination),
     SQL_INT_PARAM (lean),
     SQL_INT_PARAM (notes_details),
@@ -268,9 +440,12 @@ create_report_export (report_t report,
     return -1;
 
   *report_export = new_report_export;
+  *status = REPORT_EXPORT_STATUS_PENDING;
+  *created = TRUE;
 
   return 0;
 }
+
 /**
  * @brief Get the status of a report export.
  *
@@ -382,11 +557,10 @@ int
 get_report_export_worker_pid (report_export_t report_export,
                               int *worker_pid)
 {
-
   if (report_export == 0 || worker_pid == NULL)
     return -1;
 
- *worker_pid =  sql_int_ps (
+  *worker_pid = sql_int_ps (
     "SELECT COALESCE (worker_pid, 0)"
     "  FROM report_exports"
     " WHERE id = $1",
@@ -589,7 +763,7 @@ init_report_export_iterator_pending (iterator_t *iterator,
   g_return_val_if_fail (get, -1);
 
   where_clause = g_strdup_printf (
-    "report_exports.status = %d"
+    " AND report_exports.status = %d"
     " AND report_exports.attempt_count < %d",
     REPORT_EXPORT_STATUS_PENDING,
     max_attempts);
@@ -624,7 +798,7 @@ init_report_export_iterator_stale (iterator_t *iterator,
   g_return_val_if_fail (get, -1);
 
   where_clause = g_strdup_printf (
-    "report_exports.status = %d"
+    "AND report_exports.status = %d"
     " AND report_exports.modification_time < %lld",
     REPORT_EXPORT_STATUS_RUNNING,
     (long long) threshold);
@@ -702,7 +876,7 @@ load_report_export_data (report_export_t report_export,
     report_export_iterator_worker_pid (&iterator);
 
   data->notes_details =
-  report_export_iterator_notes_details (&iterator);
+    report_export_iterator_notes_details (&iterator);
   data->overrides_details =
     report_export_iterator_overrides_details (&iterator);
   data->result_tags =
