@@ -175,7 +175,10 @@ export_scan_report_run (gmp_parser_t *gmp_parser,
   status = REPORT_EXPORT_STATUS_PENDING;
   created = FALSE;
 
-  if (!acl_user_may ("get_reports"))
+  if (!acl_user_may ("get_reports")
+      || !acl_user_may ("get_report_formats")
+      || !acl_user_may ("get_report_configs")
+      || !acl_user_may ("export_scan_report"))
     {
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX ("export_scan_report",
