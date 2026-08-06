@@ -304,6 +304,8 @@ create_agent_group (agent_group_data_t group_data,
       /* Verify that the agent is authorized before adding it to the group. */
       if (!agent_authorized (uuid, group_data->scanner))
         {
+          db_copy_buffer_cleanup (&buffer);
+          sql_rollback ();
           return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
         }
 
@@ -403,6 +405,8 @@ modify_agent_group (agent_group_t agent_group,
       /* Verify that the agent is authorized before adding it to the group. */
       if (!agent_authorized (uuid, group_data->scanner))
         {
+          db_copy_buffer_cleanup (&buffer);
+          sql_rollback ();
           return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
         }
       db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", agent_group,
