@@ -12,7 +12,6 @@
 
 #include "manage.h"
 #include "manage_report_configs.h"
-#include "manage_report_formats.h"
 #include "manage_sql_report_exports.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_users.h"
