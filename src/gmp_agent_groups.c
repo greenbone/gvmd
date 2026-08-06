@@ -660,6 +660,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t root, name, comment, scheduler_cron_time, agents_elem;
   const char *agent_group_uuid, *name_text, *scheduler_cron_time_text;
   GPtrArray *errs = NULL;
+  agent_group_t agent_group;
 
   if (!acl_user_may ("modify_agent_group"))
     {
@@ -681,8 +682,9 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  agent_group_t agent_group = agent_group_id_by_uuid (agent_group_uuid);
-  if (!agent_group)
+  if (find_agent_group_with_permission (agent_group_uuid, &agent_group,
+                                        "modify_agent_group")
+      || !agent_group)
     {
       if (send_find_error_to_client ("modify_agent_group",
                                      "agent_group",

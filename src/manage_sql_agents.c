@@ -19,6 +19,7 @@
 #include "manage_sql_agents.h"
 
 #include "manage_sql_copy.h"
+#include "manage_sql_resources.h"
 
 #include <util/uuidutils.h>
 
@@ -887,8 +888,25 @@ agent_id_by_uuid (const gchar *agent_uuid)
 {
   g_return_val_if_fail (agent_uuid != NULL, NULL);
 
-  return sql_string ("SELECT agent_id FROM agents WHERE uuid = '%s';",
-                     agent_uuid);
+  return sql_string_ps ("SELECT agent_id FROM agents WHERE uuid = $1;",
+                     SQL_STR_PARAM (agent_uuid), NULL);
+}
+
+/**
+ * @brief Find an agent for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of agent group.
+ * @param[out]  agent       Agent id return.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find agent), TRUE on error.
+ */
+gboolean
+find_agent_with_permission (const char *uuid, agent_t *agent,
+                                  const char *permission)
+{
+  return find_resource_with_permission ("agent", uuid, agent,
+                                        permission, 0);
 }
 
 /**

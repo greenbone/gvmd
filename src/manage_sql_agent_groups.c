@@ -1017,7 +1017,6 @@ find_agent_group_with_permission (const char *uuid, agent_group_t *agent_group,
                                         permission, 0);
 }
 
-
 /**
  * @brief Return whether a agent_group is in use.
  *

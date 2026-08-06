@@ -207,7 +207,8 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   if (!get_agent_support_bundle_data.agent_uuid
-      || *get_agent_support_bundle_data.agent_uuid == '\0')
+      || *get_agent_support_bundle_data.agent_uuid == '\0'
+      || !is_uuid (get_agent_support_bundle_data.agent_uuid))
     {
       SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_agent_support_bundle",
