@@ -20,9 +20,24 @@
  */
 typedef enum
 {
+  /**
+   * Export of a regular vulnerability scan report.
+   */
   REPORT_EXPORT_TYPE_SCAN = 0,
+
+  /**
+   * Export of an audit or compliance report.
+   */
   REPORT_EXPORT_TYPE_AUDIT,
+
+  /**
+   * Export comparing two vulnerability scan reports.
+   */
   REPORT_EXPORT_TYPE_DELTA_SCAN,
+
+  /**
+   * Export comparing two audit or compliance reports.
+   */
   REPORT_EXPORT_TYPE_DELTA_AUDIT
 } report_export_type_t;
 
@@ -31,12 +46,39 @@ typedef enum
  */
 typedef enum
 {
+  /**
+   * The export is queued and waiting to be processed.
+   */
   REPORT_EXPORT_STATUS_PENDING = 0,
+
+  /**
+   * The export is currently being processed.
+   */
   REPORT_EXPORT_STATUS_RUNNING,
+
+  /**
+   * The export completed successfully and its file is available.
+   */
   REPORT_EXPORT_STATUS_DONE,
+
+  /**
+   * The export failed during processing.
+   */
   REPORT_EXPORT_STATUS_ERROR,
+
+  /**
+   * Cancellation was requested, but processing has not stopped yet.
+   */
   REPORT_EXPORT_STATUS_CANCEL_REQUESTED,
+
+  /**
+   * The export was canceled.
+   */
   REPORT_EXPORT_STATUS_CANCELED,
+
+  /**
+   * The export expired and is no longer available.
+   */
   REPORT_EXPORT_STATUS_EXPIRED
 } report_export_status_t;
 
@@ -47,9 +89,24 @@ typedef enum
  */
 typedef enum
 {
+  /**
+   * The export is queued and waiting for a worker.
+   */
   REPORT_EXPORT_PROGRESS_QUEUED = 0,
+
+  /**
+   * The worker is preparing report data and temporary files.
+   */
   REPORT_EXPORT_PROGRESS_PREPARING,
+
+  /**
+   * The report file is being generated and formatted.
+   */
   REPORT_EXPORT_PROGRESS_GENERATING,
+
+  /**
+   * Report generation completed successfully.
+   */
   REPORT_EXPORT_PROGRESS_COMPLETED
 } report_export_progress_t;
 
