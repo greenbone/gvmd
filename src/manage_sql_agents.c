@@ -14,7 +14,6 @@
  * for iterating agent data and handling agent IP address relationships.
  */
 
-
 #if ENABLE_AGENTS
 
 #include "manage_sql_agents.h"
