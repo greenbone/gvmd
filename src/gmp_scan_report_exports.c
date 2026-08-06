@@ -381,6 +381,28 @@ export_scan_report_run (gmp_parser_t *gmp_parser,
                       "created");
       break;
 
+    case MANAGE_EXPORT_SCAN_REPORT_UNTRUSTED_REPORT_FORMAT:
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("export_scan_report",
+                          "Report format is untrusted"));
+
+      log_event_fail ("report_export",
+                      "Report Export",
+                      NULL,
+                      "created");
+      break;
+
+    case MANAGE_EXPORT_SCAN_REPORT_FORMAT_CONFIG_MISMATCH:
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("export_scan_report",
+                          "Report format does not match report config"));
+
+      log_event_fail ("report_export",
+                      "Report Export",
+                      NULL,
+                      "created");
+      break;
+
     case MANAGE_EXPORT_SCAN_REPORT_ERROR:
     default:
       SEND_TO_CLIENT_OR_FAIL (

@@ -81,19 +81,6 @@ report_export_dir (void)
 }
 
 /**
- * @brief Check whether a string contains a non-empty value.
- *
- * @param[in] value  String to inspect.
- *
- * @return TRUE if the string is not NULL or empty.
- */
-static gboolean
-scan_report_export_has_value (const gchar *value)
-{
-  return value != NULL && value[0] != '\0';
-}
-
-/**
  * @brief Validate and resolve resources used by a scan report export.
  *
  * @param[in]  report_id         UUID of the report to export.
@@ -118,9 +105,9 @@ validate_scan_report_export (const gchar *report_id,
   gchar *format_report_type;
   int ret;
 
-  if (scan_report_export_has_value (report_id) == FALSE
+  if (str_blank (report_id) == TRUE
       || report == NULL
-      || scan_report_export_has_value (report_format_id) == FALSE
+      || str_blank (report_format_id) == TRUE
       || report_format == NULL
       || report_config == NULL)
     return MANAGE_EXPORT_SCAN_REPORT_ERROR;
@@ -182,7 +169,7 @@ validate_scan_report_export (const gchar *report_id,
       && report_format_trust (*report_format) != TRUST_YES)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+      return MANAGE_EXPORT_SCAN_REPORT_UNTRUSTED_REPORT_FORMAT;
     }
 
   format_report_type = report_format_report_type (*report_format);
@@ -199,7 +186,7 @@ validate_scan_report_export (const gchar *report_id,
   g_free (format_report_type);
   g_free (usage_type);
 
-  if (scan_report_export_has_value (report_config_id))
+  if (!str_blank (report_config_id))
     {
       ret = find_report_config_with_permission (report_config_id,
                                                 report_config,
@@ -211,7 +198,7 @@ validate_scan_report_export (const gchar *report_id,
         return MANAGE_EXPORT_SCAN_REPORT_CONFIG_NOT_FOUND;
 
       if (report_config_report_format (*report_config) != *report_format)
-        return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+        return MANAGE_EXPORT_SCAN_REPORT_FORMAT_CONFIG_MISMATCH;
     }
 
   return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;
@@ -626,8 +613,7 @@ build_scan_report_export_path (const gchar *export_uuid,
   gchar *filename;
   gchar *path;
 
-  if (scan_report_export_has_value (export_uuid) == FALSE
-      || extension == NULL)
+  if (str_blank (export_uuid) || extension == NULL)
     return NULL;
 
   if (g_mkdir_with_parents (report_export_dir (), 0700))
