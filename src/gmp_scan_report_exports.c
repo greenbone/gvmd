@@ -199,13 +199,19 @@ export_scan_report_run (gmp_parser_t *gmp_parser,
       return;
     }
 
-  if (export_scan_report_data.format_id == NULL
-      || !is_uuid (export_scan_report_data.format_id))
+  if (export_scan_report_data.format_id == NULL)
     {
       /**
-       * Set XML report format to the default format if not specified.
+       * Use XML as the default report format when none is specified.
        */
       export_scan_report_data.format_id = g_strdup (REPORT_FORMAT_UUID_XML);
+    }
+  else if (!is_uuid (export_scan_report_data.format_id))
+    {
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("export_scan_report",
+                          "Invalid format_id"));
+      return;
     }
 
   if (export_scan_report_data.config_id
