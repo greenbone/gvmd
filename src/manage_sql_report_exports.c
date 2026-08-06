@@ -266,7 +266,7 @@ find_matching_report_export (
 /**
  * @brief Queue a report export or reuse an identical export.
  *
- * Pending, running and completed exports are reused. Failed, canceled,
+ * Pending and running exports are reused. Failed, canceled,
  * cancel-requested and expired exports are replaced by a new export.
  *
  * @param[in]  report              Report to export.
@@ -353,7 +353,6 @@ create_report_export (report_t report,
         {
         case REPORT_EXPORT_STATUS_PENDING:
         case REPORT_EXPORT_STATUS_RUNNING:
-        case REPORT_EXPORT_STATUS_DONE:
           *report_export = existing_report_export;
           *status = existing_status;
           *created = FALSE;
