@@ -202,12 +202,10 @@ export_scan_report_run (gmp_parser_t *gmp_parser,
   if (export_scan_report_data.format_id == NULL
       || !is_uuid (export_scan_report_data.format_id))
     {
-      SEND_TO_CLIENT_OR_FAIL (
-        XML_ERROR_SYNTAX ("export_scan_report",
-                          "Missing or invalid format_id"));
-
-      export_scan_report_reset ();
-      return;
+      /**
+       * Set XML report format to the default format if not specified.
+       */
+      export_scan_report_data.format_id = g_strdup (REPORT_FORMAT_UUID_XML);
     }
 
   if (export_scan_report_data.config_id

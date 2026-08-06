@@ -7,6 +7,7 @@
 #define _GVMD_MANAGE_SCAN_REPORT_EXPORTS_H
 
 #include "manage_report_exports.h"
+#include "manage_report_formats.h"
 
 /**
  * @brief Result of creating a scan report export.
