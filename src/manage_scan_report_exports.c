@@ -696,113 +696,6 @@ build_scan_report_export_path (const gchar *export_uuid,
 }
 
 /**
- * @brief Copy a report export file.
- *
- * @param[in] source       Source file path.
- * @param[in] destination  Destination file path.
- *
- * @return 0 on success, -1 on failure.
- */
-static int
-copy_scan_report_export_file (const gchar *source,
-                              const gchar *destination)
-{
-  FILE *input;
-  FILE *output;
-  guchar buffer[SCAN_REPORT_EXPORT_COPY_BUFFER_SIZE];
-  size_t bytes_read;
-  int ret;
-
-  if (source == NULL || destination == NULL)
-    return -1;
-
-  input = NULL;
-  output = NULL;
-  ret = -1;
-
-  input = g_fopen (source, "rb");
-  if (input == NULL)
-    {
-      g_warning ("%s: failed to open %s: %s",
-                 __func__,
-                 source,
-                 strerror (errno));
-      goto cleanup;
-    }
-
-  output = g_fopen (destination, "wb");
-  if (output == NULL)
-    {
-      g_warning ("%s: failed to open %s: %s",
-                 __func__,
-                 destination,
-                 strerror (errno));
-      goto cleanup;
-    }
-
-  if (fchmod (fileno (output), 0600))
-    {
-      g_warning ("%s: failed to set permissions on %s: %s",
-                 __func__,
-                 destination,
-                 strerror (errno));
-      goto cleanup;
-    }
-
-  while ((bytes_read = fread (buffer,
-                              1,
-                              sizeof (buffer),
-                              input))
-         > 0)
-    {
-      if (fwrite (buffer,
-                  1,
-                  bytes_read,
-                  output)
-          != bytes_read)
-        {
-          g_warning ("%s: failed to write %s: %s",
-                     __func__,
-                     destination,
-                     strerror (errno));
-          goto cleanup;
-        }
-    }
-
-  if (ferror (input))
-    {
-      g_warning ("%s: failed to read %s: %s",
-                 __func__,
-                 source,
-                 strerror (errno));
-      goto cleanup;
-    }
-
-  if (fflush (output))
-    {
-      g_warning ("%s: failed to flush %s: %s",
-                 __func__,
-                 destination,
-                 strerror (errno));
-      goto cleanup;
-    }
-
-  ret = 0;
-
-cleanup:
-  if (input && fclose (input))
-    ret = -1;
-
-  if (output && fclose (output))
-    ret = -1;
-
-  if (ret)
-    g_unlink (destination);
-
-  return ret;
-}
-
-/**
  * @brief Store a generated report in its persistent location.
  *
  * @param[in]  data   Report export data.
@@ -840,38 +733,20 @@ store_scan_report_export_file (
   if (files->final_path == NULL)
     return -1;
 
-  if (g_rename (files->formatted_path,
-                files->final_path))
-    {
-      if (errno != EXDEV)
-        {
-          g_warning ("%s: failed to move generated report: %s",
-                     __func__,
-                     strerror (errno));
-          return -1;
-        }
-
-      if (copy_scan_report_export_file (files->formatted_path,
-                                        files->final_path))
-        return -1;
-
-      if (g_unlink (files->formatted_path))
-        g_warning ("%s: failed to remove temporary report %s: %s",
-                 __func__,
-                 files->formatted_path,
-                 strerror (errno));
-    }
-
-  if (g_chmod (files->final_path, 0600))
+  /*
+   * Set the permissions before moving the file. The permissions are preserved
+   */
+  if (g_chmod (files->formatted_path, 0600))
     {
       g_warning ("%s: failed to set permissions on %s: %s",
                  __func__,
-                 files->final_path,
+                 files->formatted_path,
                  strerror (errno));
-
-      g_unlink (files->final_path);
       return -1;
     }
+
+  if (gvm_file_move (files->formatted_path, files->final_path) == FALSE)
+    return -1;
 
   if (g_stat (files->final_path, &stat_buffer))
     {
