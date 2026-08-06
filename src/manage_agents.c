@@ -1087,11 +1087,15 @@ get_agent_support_bundle (
   gvmd_agent_connector_t connector = NULL;
   scanner_t scanner;
   gchar *agent_id;
+  agent_t agent;
 
   if (!agent_uuid || !out_bundle || days < 0)
     return AGENT_RESPONSE_INVALID_ARGUMENT;
 
   *out_bundle = NULL;
+
+  if(find_agent_with_permission (agent_uuid, &agent, "get_agents") != 0 || !agent)
+    return AGENT_RESPONSE_AGENT_NOT_FOUND;
 
   agent_id = agent_id_by_uuid (agent_uuid);
   if (!agent_id)
