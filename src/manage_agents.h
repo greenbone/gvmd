@@ -130,6 +130,9 @@ agent_data_list_free (agent_data_list_t);
 agent_response_t
 sync_agents_from_agent_controller (gvmd_agent_connector_t);
 
+void
+manage_agents_sync_from_scanner (scanner_t scanner);
+
 agent_response_t
 get_agents_by_scanner_and_uuids (scanner_t, agent_uuid_list_t,
                                  agent_data_list_t);

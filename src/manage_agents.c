@@ -18,6 +18,7 @@
 #include "manage_sql_agents.h"
 #include "manage_sql_resources.h"
 #include "manage_sql_settings.h"
+#include "manage_runtime_flags.h"
 
 #include <assert.h>
 
@@ -1065,6 +1066,55 @@ out_unlock:
              __func__, AGENT_SYNC_LOCK_NAME);
 
   return ret;
+}
+
+/**
+ * @brief Synchronize agents from a specific agent controller scanner.
+ *
+ * @param[in] scanner  The scanner ID of the agent controller to sync from.
+ */
+void
+manage_agents_sync_from_scanner (scanner_t scanner)
+{
+  if (scanner == 0)
+    {
+      g_warning ("%s: Invalid scanner provided", __func__);
+      return;
+    }
+
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_debug ("%s: Agents feature is disabled, skipping sync", __func__);
+      return;
+    }
+
+  int type = scanner_type (scanner);
+  if (type != SCANNER_TYPE_AGENT_CONTROLLER &&
+      type != SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      g_debug ("%s: Scanner is not an agent controller type", __func__);
+      return;
+    }
+
+  gvmd_agent_connector_t connector =
+    gvmd_agent_connector_new_from_scanner (scanner);
+
+  if (!connector || !connector->base)
+    {
+      g_warning ("%s: Failed to create agent connector for scanner", __func__);
+      gvmd_agent_connector_free (connector);
+      return;
+    }
+
+  agent_response_t response = sync_agents_from_agent_controller (connector);
+
+  if (response != AGENT_RESPONSE_SUCCESS)
+    {
+      g_warning ("%s: Synchronizing agent data failed: %s",
+                 __func__, agent_response_to_string (response));
+    }
+
+  gvmd_agent_connector_free (connector);
 }
 
 /**
