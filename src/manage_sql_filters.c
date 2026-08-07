@@ -866,6 +866,8 @@ columns_select_column_single (column_t *select_columns,
     *type = KEYWORD_TYPE_UNKNOWN;
   if (select_columns == NULL)
     return NULL;
+  if (filter_column == NULL)
+    return NULL;
   columns = select_columns;
   while ((*columns).select)
     {
