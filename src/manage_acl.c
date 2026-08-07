@@ -479,11 +479,18 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
  *      is "name" then "SELECT ... format" will choose arbitrarily between
  *      the resources that have the same name. */
 /**
- * @brief Super clause.
+ * @brief Super clause with the resource value and the user UUID bound.
  *
- * @param[in]  format  Value format specifier.
+ * The resource value becomes $1 and the user UUID $2.  Both appear three
+ * times in the clause; PostgreSQL allows a parameter to be used more than
+ * once.
+ *
+ * The resource type, the trash suffix and the field name stay in the
+ * statement text.  They come from gvmd's own tables of valid types, never
+ * from user input, and take only a handful of combinations, which keeps
+ * the statement cache in sql_pg.c small.
  */
-#define ACL_SUPER_CLAUSE(format)                                          \
+#define ACL_SUPER_CLAUSE_PS                                               \
   "                name = 'Super'"                                        \
   /*                    Super on everyone. */                             \
   "                AND ((resource = 0)"                                   \
@@ -491,7 +498,7 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
   "                     OR ((resource_type = 'user')"                     \
   "                         AND (resource = (SELECT %ss%s.owner"          \
   "                                          FROM %ss%s"                  \
-  "                                          WHERE %s = " format ")))"    \
+  "                                          WHERE %s = $1)))"            \
   /*                    Super on other_user's role. */                    \
   "                     OR ((resource_type = 'role')"                     \
   "                         AND (resource"                                \
@@ -501,7 +508,7 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
   "                                        = (SELECT %ss%s.owner"         \
   "                                           FROM %ss%s"                 \
   "                                           WHERE %s"                   \
-  "                                                 = " format "))))"     \
+  "                                                 = $1))))"             \
   /*                    Super on other_user's group. */                   \
   "                     OR ((resource_type = 'group')"                    \
   "                         AND (resource"                                \
@@ -510,12 +517,12 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
   "                                  WHERE \"user\""                      \
   "                                        = (SELECT %ss%s.owner"         \
   "                                           FROM %ss%s"                 \
-  "                                           WHERE %s = " format ")))))" \
+  "                                           WHERE %s = $1)))))"         \
   "                AND subject_location = " G_STRINGIFY (LOCATION_TABLE)  \
   "                AND ((subject_type = 'user'"                           \
   "                      AND subject"                                     \
   "                          = (SELECT id FROM users"                     \
-  "                             WHERE users.uuid = '%s'))"                \
+  "                             WHERE users.uuid = $2))"                  \
   "                     OR (subject_type = 'group'"                       \
   "                         AND subject"                                  \
   "                             IN (SELECT DISTINCT \"group\""            \
@@ -524,7 +531,7 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
   "                                       = (SELECT id"                   \
   "                                          FROM users"                  \
   "                                          WHERE users.uuid"            \
-  "                                                = '%s')))"             \
+  "                                                = $2)))"               \
   "                     OR (subject_type = 'role'"                        \
   "                         AND subject"                                  \
   "                             IN (SELECT DISTINCT role"                 \
@@ -533,39 +540,34 @@ acl_user_has_role (const char *user_uuid, const char *role_uuid)
   "                                       = (SELECT id"                   \
   "                                          FROM users"                  \
   "                                          WHERE users.uuid"            \
-  "                                                = '%s'))))"
+  "                                                = $2))))"
 
 /**
- * @brief Super clause arguments.
+ * @brief Structural arguments for ACL_SUPER_CLAUSE_PS.
  *
- * @param[in]  type     Type of resource.
- * @param[in]  field    Field to compare.  Typically "uuid".
- * @param[in]  value    Expected value of field.
- * @param[in]  user_id  UUID of user.
- * @param[in]  trash    Whether to search trash.
+ * The value and the user UUID are not among them; they are bound as $1
+ * and $2.
+ *
+ * @param[in]  type   Type of resource.
+ * @param[in]  field  Field to compare.  Typically "uuid".
+ * @param[in]  trash  Whether to search trash.
  */
-#define ACL_SUPER_CLAUSE_ARGS(type, field, value, user_id, trash) \
+#define ACL_SUPER_CLAUSE_PS_ARGS(type, field, trash)          \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   field,                                                      \
-  value,                                                      \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   field,                                                      \
-  value,                                                      \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
   type,                                                       \
   trash ? (strcasecmp (type, "task") ? "_trash" : "") : "",   \
-  field,                                                      \
-  value,                                                      \
-  user_id,                                                    \
-  user_id,                                                    \
-  user_id
+  field
 
 /**
  * @brief Test whether a user has Super permission on a resource.
@@ -581,18 +583,25 @@ static int
 acl_user_has_super_on (const char *type, const char *field, const char *value,
                        int trash)
 {
-  gchar *quoted_value;
-  quoted_value = sql_quote (value);
-  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " ACL_SUPER_CLAUSE ("'%s'") ");",
-               ACL_SUPER_CLAUSE_ARGS (type, field, quoted_value,
-                                      current_credentials.uuid, trash)))
-    {
-      g_free (quoted_value);
-      return 1;
-    }
-  g_free (quoted_value);
-  return 0;
+  gchar *statement;
+  int ret;
+
+  /* Value and user UUID are bound, so the statement text only varies with
+   * type, trash and field - see ACL_SUPER_CLAUSE_PS.  sql_quote is gone with
+   * the formatting: a bound parameter is never part of the statement text,
+   * so there is nothing to escape. */
+  statement = g_strdup_printf ("SELECT EXISTS (SELECT * FROM permissions"
+                               "               WHERE " ACL_SUPER_CLAUSE_PS
+                               ");",
+                               ACL_SUPER_CLAUSE_PS_ARGS (type, field, trash));
+
+  ret = sql_int_ps (statement,
+                    SQL_STR_PARAM (value),
+                    SQL_STR_PARAM (current_credentials.uuid),
+                    NULL);
+  g_free (statement);
+
+  return ret ? 1 : 0;
 }
 
 /**
@@ -609,12 +618,24 @@ static int
 acl_user_has_super_on_resource (const char *type, const char *field,
                                 resource_t resource, int trash)
 {
-  if (sql_int ("SELECT EXISTS (SELECT * FROM permissions"
-               "               WHERE " ACL_SUPER_CLAUSE ("%llu") ");",
-               ACL_SUPER_CLAUSE_ARGS (type, field, resource,
-                                      current_credentials.uuid, trash)))
-    return 1;
-  return 0;
+  gchar *statement;
+  int ret;
+
+  /* As in acl_user_has_super_on, but the resource is numeric.  The field
+   * name sits in the statement text, so this call site gets its own cache
+   * entry and PostgreSQL infers $1 as the column type of that field. */
+  statement = g_strdup_printf ("SELECT EXISTS (SELECT * FROM permissions"
+                               "               WHERE " ACL_SUPER_CLAUSE_PS
+                               ");",
+                               ACL_SUPER_CLAUSE_PS_ARGS (type, field, trash));
+
+  ret = sql_int_ps (statement,
+                    SQL_RESOURCE_PARAM (resource),
+                    SQL_STR_PARAM (current_credentials.uuid),
+                    NULL);
+  g_free (statement);
+
+  return ret ? 1 : 0;
 }
 
 /**
@@ -662,7 +683,6 @@ int
 acl_user_owns_uuid (const char *type, const char *uuid, int trash)
 {
   int ret;
-  gchar *quoted_uuid;
 
   assert (current_credentials.uuid);
 
@@ -676,45 +696,55 @@ acl_user_owns_uuid (const char *type, const char *uuid, int trash)
   if (acl_user_has_super_on (type, "uuid", uuid, 0))
     return 1;
 
-  quoted_uuid = sql_quote (uuid);
-  if (strcmp (type, "result") == 0)
-    ret = sql_int ("SELECT count(*) FROM results, reports"
-                   " WHERE results.uuid = '%s'"
-                   " AND results.report = reports.id"
-                   " AND (reports.owner = (SELECT users.id FROM users"
-                   "                       WHERE users.uuid = '%s'));",
-                   quoted_uuid,
-                   current_credentials.uuid);
-  else if (strcmp (type, "report") == 0)
-    ret = sql_int ("SELECT count(*) FROM reports"
-                   " WHERE uuid = '%s'"
-                   " AND (owner = (SELECT users.id FROM users"
-                   "               WHERE users.uuid = '%s'));",
-                   quoted_uuid,
-                   current_credentials.uuid);
-  else if (strcmp (type, "permission") == 0)
-    ret = sql_int ("SELECT count(*) FROM permissions%s"
-                   " WHERE uuid = '%s'"
-                   " AND ((owner IS NULL)"
-                   "      OR (owner = (SELECT users.id FROM users"
-                   "                   WHERE users.uuid = '%s')));",
-                   trash ? "_trash" : "",
-                   quoted_uuid,
-                   current_credentials.uuid);
-  else
-    ret = sql_int ("SELECT count(*) FROM %ss%s"
-                   " WHERE uuid = '%s'"
-                   "%s"
-                   " AND (owner = (SELECT users.id FROM users"
-                   "               WHERE users.uuid = '%s'));",
-                   type,
-                   (strcmp (type, "task") && trash) ? "_trash" : "",
-                   quoted_uuid,
-                   (strcmp (type, "task")
-                     ? ""
-                     : (trash ? " AND hidden = 2" : " AND hidden < 2")),
-                   current_credentials.uuid);
-  g_free (quoted_uuid);
+  /* type is not user input; it comes from gvmd's own resource type names,
+   * and the callers that reach this point have passed
+   * valid_db_resource_type.  The UUIDs are bound as $1 and $2, so they are
+   * not part of the statement text and need no quoting. */
+  {
+    gchar *statement;
+
+    if (strcmp (type, "result") == 0)
+      statement
+        = g_strdup ("SELECT count(*) FROM results, reports"
+                    " WHERE results.uuid = $1"
+                    " AND results.report = reports.id"
+                    " AND (reports.owner = (SELECT users.id FROM users"
+                    "                       WHERE users.uuid = $2));");
+    else if (strcmp (type, "report") == 0)
+      statement
+        = g_strdup ("SELECT count(*) FROM reports"
+                    " WHERE uuid = $1"
+                    " AND (owner = (SELECT users.id FROM users"
+                    "               WHERE users.uuid = $2));");
+    else if (strcmp (type, "permission") == 0)
+      statement
+        = g_strdup_printf ("SELECT count(*) FROM permissions%s"
+                           " WHERE uuid = $1"
+                           " AND ((owner IS NULL)"
+                           "      OR (owner = (SELECT users.id FROM users"
+                           "                   WHERE users.uuid = $2)));",
+                           trash ? "_trash" : "");
+    else
+      statement
+        = g_strdup_printf ("SELECT count(*) FROM %ss%s"
+                           " WHERE uuid = $1"
+                           "%s"
+                           " AND (owner = (SELECT users.id FROM users"
+                           "               WHERE users.uuid = $2));",
+                           type,
+                           (strcmp (type, "task") && trash) ? "_trash" : "",
+                           (strcmp (type, "task")
+                             ? ""
+                             : (trash
+                                 ? " AND hidden = 2"
+                                 : " AND hidden < 2")));
+
+    ret = sql_int_ps (statement,
+                      SQL_STR_PARAM (uuid),
+                      SQL_STR_PARAM (current_credentials.uuid),
+                      NULL);
+    g_free (statement);
+  }
 
   return ret;
 }
