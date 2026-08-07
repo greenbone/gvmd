@@ -4238,6 +4238,129 @@ migrate_280_to_281 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 280 to version 281.
+ *
+ * @return 0 success, -1 error.
+ */
+
+int
+migrate_281_to_282 ()
+{
+  sql_begin_immediate ();
+
+  if (manage_db_version () != 281)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Check for invalid data */
+  int count_multiple_targets =
+    sql_int ("SELECT COUNT(*) FROM tasks"
+             " WHERE (agent_group IS NOT NULL"
+             "        AND oci_image_target IS NOT NULL)"
+             "    OR (agent_group IS NOT NULL"
+             "        AND web_application_target IS NOT NULL)"
+             "    OR (oci_image_target IS NOT NULL"
+             "        AND web_application_target IS NOT NULL)"
+             "    OR (target != 0 AND agent_group IS NOT NULL)"
+             "    OR (target != 0 AND oci_image_target IS NOT NULL)"
+             "    OR (target != 0 AND web_application_target IS NOT NULL);");
+
+  if (count_multiple_targets > 0)
+    {
+      g_error ("Invalid data: Multiple targets specified for a task");
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Add target_type column to tasks table */
+  sql ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS target_type INTEGER;");
+
+  /* Migrate data to new column */
+  /* Default tasks */
+  sql ("UPDATE tasks"
+       " SET target_type = 1"
+       " WHERE target != 0;");
+
+  /* Import tasks */
+  sql ("UPDATE tasks"
+       " SET target_type = 0"
+       " WHERE target = 0"
+       " AND oci_image_target IS NULL"
+       " AND agent_group IS NULL"
+       " AND web_application_target IS NULL;");
+
+  /* Agent group tasks */
+  sql ("UPDATE tasks"
+       " SET target          = agent_group,"
+       "     target_location = agent_group_location,"
+       "     target_type     = 2"
+       " WHERE agent_group IS NOT NULL;");
+
+  /* OCI image tasks */
+  sql ("UPDATE tasks"
+       " SET target          = oci_image_target,"
+       "     target_location = oci_image_target_location,"
+       "     target_type     = 3"
+       " WHERE oci_image_target IS NOT NULL;");
+
+  /* Web application tasks */
+  sql ("UPDATE tasks"
+       " SET target          = web_application_target,"
+       "     target_location = web_application_target_location,"
+       "     target_type     = 4"
+       " WHERE web_application_target IS NOT NULL;");
+
+  /**
+   * Reverting DB version 281 to 280 is possible:
+   *
+   *  UPDATE tasks
+   *  SET agent_group = target,
+   *      agent_group_location = target_location,
+   *      target      = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 2;
+   *
+   *  UPDATE tasks
+   *  SET oci_image_target = target,
+   *      oci_image_target_location = target_location,
+   *      target           = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 3;
+
+   *  UPDATE tasks
+   *  SET web_application_target = target,
+   *      web_application_target_location = target_location,
+   *      target                 = 0,
+   *      target_location = NULL
+   *  WHERE target_type = 4;
+   *
+   *  ALTER TABLE tasks DROP COLUMN IF EXISTS target_type;
+   */
+
+
+  // TODO: This step will be moved to a later migration.
+  //       For safety reasons, we decided to keep the columns for now and only
+  //       drop them after a certain period, when multiple customers have
+  //       already migrated without any issues.
+  /* Drop old, unused target columns */
+  // sql ("ALTER TABLE tasks DROP COLUMN IF EXISTS agent_group,"
+  //      "                  DROP COLUMN IF EXISTS agent_group_location,"
+  //      "                  DROP COLUMN IF EXISTS oci_image_target,"
+  //      "                  DROP COLUMN IF EXISTS oci_image_target_location,"
+  //      "                  DROP COLUMN IF EXISTS web_application_target,"
+  //      "                  DROP COLUMN IF EXISTS web_application_target_location");
+  //
+  /* Set the database version to 281 */
+  set_db_version (281);
+
+  sql_commit();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4325,6 +4448,7 @@ static migrator_t database_migrators[] = {
   {279, migrate_278_to_279},
   {280, migrate_279_to_280},
   {281, migrate_280_to_281},
+  {282, migrate_281_to_282},
   /* End marker. */
   {-1, NULL}};
 
