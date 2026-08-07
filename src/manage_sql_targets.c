@@ -2073,6 +2073,138 @@ target_iterator_krb5_trash (iterator_t* iterator)
 DEF_ACCESS (target_iterator_allow_simultaneous_ips,
             GET_ITERATOR_COLUMN_COUNT + 22);
 
+/* Credential names and UUIDs straight from the iterator.
+ *
+ * The name columns (23 to 28) already existed for filtering and sorting,
+ * they simply had no accessor.  The UUID columns are 31 to 36; 29 and 30
+ * are the "hosts" and "ips" filter columns that sit between them.
+ *
+ * Only valid on the non-trash iterator.  TARGET_ITERATOR_TRASH_COLUMNS
+ * ends after index 22, so calling these on a trash iterator would read
+ * past the column list.  Callers must branch on get.trash first, as
+ * gmp.c does.
+ */
+
+/**
+ * @brief Get the SSH credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 23);
+
+/**
+ * @brief Get the SMB credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_smb_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 24);
+
+/**
+ * @brief Get the ESXi credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_esxi_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 25);
+
+/**
+ * @brief Get the SNMP credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_snmp_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 26);
+
+/**
+ * @brief Get the SSH elevate credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_elevate_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 27);
+
+/**
+ * @brief Get the KRB5 credential name from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_krb5_credential_name,
+            GET_ITERATOR_COLUMN_COUNT + 28);
+
+/**
+ * @brief Get the SSH credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 31);
+
+/**
+ * @brief Get the SMB credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_smb_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 32);
+
+/**
+ * @brief Get the ESXi credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_esxi_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 33);
+
+/**
+ * @brief Get the SNMP credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_snmp_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 34);
+
+/**
+ * @brief Get the SSH elevate credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_ssh_elevate_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 35);
+
+/**
+ * @brief Get the KRB5 credential UUID from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Credential UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_krb5_credential_uuid,
+            GET_ITERATOR_COLUMN_COUNT + 36);
+
 /**
  * @brief Initialise a target task iterator.
  *
