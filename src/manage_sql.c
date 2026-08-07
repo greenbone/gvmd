@@ -23620,6 +23620,11 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   sql_commit ();
+
+#if ENABLE_AGENTS
+  manage_agents_sync_from_scanner (*new_scanner);
+#endif
+
   return CREATE_SCANNER_SUCCESS;
 }
 
@@ -23977,6 +23982,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
 
   sql_commit ();
+
+#if ENABLE_AGENTS
+  manage_agents_sync_from_scanner (scanner);
+#endif
+
   return MODIFY_SCANNER_SUCCESS;
 }
 
@@ -26018,6 +26028,10 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM scanners_trash WHERE id = %llu;", resource);
       sql_commit ();
+
+#if ENABLE_AGENTS
+      manage_agents_sync_from_scanner (scanner);
+#endif
       return 0;
     }
 
