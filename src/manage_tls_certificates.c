@@ -70,11 +70,13 @@ parse_ssldetails (const char *ssldetails,
               if (strcmp (detail_split[1], ""))
                 {
                   // Time is given as UTC time and uses special format
+                  char *end;
                   struct tm tm;
                   memset (&tm, 0, sizeof (struct tm));
                   tm.tm_isdst = -1;
 
-                  if (strptime (detail_split[1], "%Y%m%dT%H%M%S", &tm)[0] == 0)
+                  end = strptime (detail_split[1], "%Y%m%dT%H%M%S", &tm);
+                  if (end && *end == 0)
                     *activation_time = mktime (&tm);
                   else
                     *activation_time = -1;
@@ -87,11 +89,13 @@ parse_ssldetails (const char *ssldetails,
               if (strcmp (detail_split[1], ""))
                 {
                   // Time is given as UTC time and uses special format
+                  char *end;
                   struct tm tm;
                   memset (&tm, 0, sizeof (struct tm));
                   tm.tm_isdst = -1;
 
-                  if (strptime (detail_split[1], "%Y%m%dT%H%M%S", &tm)[0] == 0)
+                  end = strptime (detail_split[1], "%Y%m%dT%H%M%S", &tm);
+                  if (end && *end == 0)
                     *expiration_time = mktime (&tm);
                   else
                     *expiration_time = -1;
