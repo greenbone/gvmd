@@ -59,9 +59,11 @@ get_scanner_by_agent_group_id (agent_group_t agent_group_id, scanner_t *scanner)
 static int
 agent_group_in_use_in_hidden_task (agent_group_t agent_group)
 {
-  return !!sql_int ("SELECT COUNT(*) FROM tasks "
-                    "WHERE hidden != 0 AND agent_group = %llu;",
-                    agent_group);
+  return !!sql_int_ps (
+    "SELECT COUNT(*) FROM tasks"
+    " WHERE hidden != 0 AND target = $1 AND target_type = $2;",
+    SQL_RESOURCE_PARAM (agent_group),
+    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP));
 }
 
 /**
