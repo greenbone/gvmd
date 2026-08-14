@@ -4331,7 +4331,7 @@ migrate_281_to_282 ()
   sql ("ALTER TABLE tasks ALTER COLUMN target_type SET DEFAULT 0;");
 
   /**
-   * Reverting DB version 281 to 280 is possible:
+   * Reverting data from DB version 282 to 281 is possible:
    *
    *  UPDATE tasks
    *  SET agent_group = target,
