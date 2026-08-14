@@ -4353,8 +4353,8 @@ migrate_281_to_282 ()
   //      "                  DROP COLUMN IF EXISTS web_application_target,"
   //      "                  DROP COLUMN IF EXISTS web_application_target_location");
   //
-  /* Set the database version to 281 */
-  set_db_version (281);
+  /* Set the database version to 282 */
+  set_db_version (282);
 
   sql_commit();
 
