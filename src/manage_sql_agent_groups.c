@@ -63,7 +63,8 @@ agent_group_in_use_in_hidden_task (agent_group_t agent_group)
     "SELECT COUNT(*) FROM tasks"
     " WHERE hidden != 0 AND target = $1 AND target_type = $2;",
     SQL_RESOURCE_PARAM (agent_group),
-    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP));
+    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP),
+    NULL);
 }
 
 /**
