@@ -3229,21 +3229,27 @@ create_tables ()
        "  start_time integer,"
        "  end_time integer,"
        "  config integer," // REFERENCES configs (id) ON DELETE RESTRICT,"
-       "  target integer," // REFERENCES targets (id) ON DELETE RESTRICT,"
-       "  target_type integer NOT NULL DEFAULT 0,"
+       "  target integer," // May refer to several tables, see target_type.
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
        "  schedule_periods integer,"
        "  scanner integer," // REFERENCES scanner (id) ON DELETE RESTRICT,"
+       "  agent_group integer," // Deprecated.
        "  config_location integer,"
        "  target_location integer,"
        "  schedule_location integer,"
        "  scanner_location integer,"
+       "  oci_image_target integer," // Deprecated.
+       "  oci_image_target_location integer," // Deprecated.
+       "  agent_group_location integer," // Deprecated.
+       "  web_application_target integer," // Deprecated.
+       "  web_application_target_location integer," // Deprecated.
        "  upload_result_count integer,"
        "  alterable integer,"
        "  creation_time integer,"
        "  modification_time integer,"
-       "  usage_type text);");
+       "  usage_type text,"
+       "  target_type integer NOT NULL DEFAULT 0);");
 
   sql ("CREATE TABLE IF NOT EXISTS task_files"
        " (id SERIAL PRIMARY KEY,"

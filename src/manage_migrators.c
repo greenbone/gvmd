@@ -4362,6 +4362,8 @@ migrate_281_to_282 ()
   //       For safety reasons, we decided to keep the columns for now and only
   //       drop them after a certain period, when multiple customers have
   //       already migrated without any issues.
+  //       When they are dropped, they must also be removed from the tasks
+  //       table in create_tables ()
   /* Drop old, unused target columns */
   // sql ("ALTER TABLE tasks DROP COLUMN IF EXISTS agent_group,"
   //      "                  DROP COLUMN IF EXISTS agent_group_location,"
