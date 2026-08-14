@@ -7352,7 +7352,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target_type (task) == TASKS_TARGET_TYPE_REGULAR/* import task. */)
+      || task_target_type (task) == TASKS_TARGET_TYPE_IMPORT_TASK)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
