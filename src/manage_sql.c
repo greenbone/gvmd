@@ -5948,7 +5948,7 @@ task_target_type (task_t task)
     default:       /* Programming error. */
       assert (0);
     case -1:
-      return 0;
+      return TASKS_TARGET_TYPE_UNDEFINED;
       break;
     }
 }
