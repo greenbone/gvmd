@@ -3230,7 +3230,7 @@ create_tables ()
        "  end_time integer,"
        "  config integer," // REFERENCES configs (id) ON DELETE RESTRICT,"
        "  target integer," // REFERENCES targets (id) ON DELETE RESTRICT,"
-       "  target_type integer,"
+       "  target_type integer NOT NULL DEFAULT 0,"
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
        "  schedule_periods integer,"
