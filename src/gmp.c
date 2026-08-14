@@ -167,7 +167,8 @@
  */
 #define G_LOG_DOMAIN "md    gmp"
 
-
+
+
 /* Static headers. */
 
 /** @todo Exported for manage_sql.c. */
@@ -175,7 +176,8 @@ void
 buffer_results_xml (GString *, iterator_t *, task_t, int, int, int, int, int,
                     int, int, const char *, iterator_t *, int, int, int, int);
 
-
+
+
 /* Helper functions. */
 
 /**
@@ -394,7 +396,8 @@ check_public_key (const char *key_str)
   return ret;
 }
 
-
+
+
 /* GMP parser. */
 
 static int
@@ -457,7 +460,8 @@ command_disabled (gmp_parser_t *gmp_parser, const gchar *name)
   return 0;
 }
 
-
+
+
 /* Command data passed between parser callbacks. */
 
 /**
@@ -3635,7 +3639,8 @@ command_data_init (command_data_t *data)
   memset (data, 0, sizeof (command_data_t));
 }
 
-
+
+
 /* Global variables. */
 
 /**
@@ -4248,7 +4253,8 @@ xml_context = NULL;
  */
 static GMarkupParser xml_parser;
 
-
+
+
 /* Client state. */
 
 /**
@@ -4904,7 +4910,8 @@ set_client_state (client_state_t state)
   g_debug ("   client state set: %i", client_state);
 }
 
-
+
+
 /* XML parser handlers. */
 
 /**
@@ -25829,8 +25836,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
 
-              set_task_agent_group_and_location (create_task_data->task,
-                                                 agent_group);
+              set_task_agent_group (create_task_data->task, agent_group);
             }
 #endif /* ENABLE_AGENTS */
 
@@ -31153,7 +31159,8 @@ gmp_xml_handle_error (/* unused */ GMarkupParseContext* context,
   g_debug ("   XML ERROR %s", error->message);
 }
 
-
+
+
 /* GMP input processor. */
 
 /** @todo Most likely the client should get these from init_gmp_process

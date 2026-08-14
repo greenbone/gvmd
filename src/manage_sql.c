@@ -5955,6 +5955,7 @@ task_target_type (task_t task)
 
 /**
  * @brief Set the target of a task.
+ *        Also updates the location to 0 (LOCATION_TABLE)
  *
  * @param[in]  task          Task.
  * @param[in]  target        Target.
@@ -5962,26 +5963,6 @@ task_target_type (task_t task)
  */
 void
 set_task_target (task_t task, target_t target, tasks_target_type_t target_type)
-{
-  sql_ps ("UPDATE tasks SET target = $1, target_type = $2,"
-          " modification_time = m_now ()"
-          " WHERE id = $3;",
-          SQL_RESOURCE_PARAM (target),
-          SQL_INT_PARAM (target_type),
-          SQL_RESOURCE_PARAM (task),
-          NULL);
-}
-
-/**
- * @brief Set the target of a task, also updating the agent group location.
- *
- * @param[in]  task          Task.
- * @param[in]  target        Target.
- * @param[in]  target_type   The type of the target
- */
-void
-set_task_target_and_location (task_t task, target_t target,
-                              tasks_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks SET target = $1, target_type = $2, target_location = 0,"
           " modification_time = m_now ()"
@@ -6112,10 +6093,9 @@ task_trash_target_in_use (target_t target, tasks_target_type_t target_type)
  * @param[in]  agent_group  Agent group.
  */
 void
-set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
+set_task_agent_group (task_t task, agent_group_t agent_group)
 {
-  set_task_target_and_location (task, agent_group,
-                                TASKS_TARGET_TYPE_AGENT_GROUP);
+  set_task_target (task, agent_group, TASKS_TARGET_TYPE_AGENT_GROUP);
 }
 
 /**
@@ -6239,8 +6219,7 @@ task_oci_image_target_in_trash (task_t task)
 void
 set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 {
-  set_task_target_and_location (task, oci_image_target,
-                                TASKS_TARGET_TYPE_OCI_IMAGE);
+  set_task_target (task, oci_image_target, TASKS_TARGET_TYPE_OCI_IMAGE);
 }
 
 #endif
@@ -6285,8 +6264,8 @@ task_web_application_target_in_trash (task_t task)
 void
 set_task_web_application_target (task_t task, web_application_target_t web_application_target)
 {
-  set_task_target_and_location (task, web_application_target,
-                                TASKS_TARGET_TYPE_WEB_APPLICATION);
+  set_task_target (task, web_application_target,
+                   TASKS_TARGET_TYPE_WEB_APPLICATION);
 }
 
 #endif
@@ -19388,7 +19367,7 @@ modify_task (const gchar *task_id, const gchar *name,
       return MODIFY_TASK_AGENT_GROUP_NOT_FOUND;
     else
       {
-        set_task_agent_group_and_location (task, agent_group);
+        set_task_agent_group (task, agent_group);
       }
   }
 #endif
