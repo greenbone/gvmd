@@ -4276,6 +4276,7 @@ migrate_281_to_282 ()
       g_critical ("Invalid data: Multiple targets specified for task %s (%s)",
                   iterator_string (&tasks_multiple_targets, 0),
                   iterator_string (&tasks_multiple_targets, 1));
+      count_multiple_targets++;
     }
   if (count_multiple_targets > 0)
     {
