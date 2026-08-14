@@ -409,14 +409,10 @@ fill_network_target_reference (
   gchar *name = NULL;
   gchar *comment = NULL;
 
-  target = task_target (task);
-
-  /*
-   * Import tasks do not have a target.
-   */
-  if (target == 0)
+  if (task_target_type(task) != TASKS_TARGET_TYPE_REGULAR)
     return 0;
 
+  target = task_target (task);
   in_trash = task_target_in_trash (task);
 
   if (in_trash)
