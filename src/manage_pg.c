@@ -1285,7 +1285,7 @@ manage_create_sql_functions ()
             "$$ LANGUAGE SQL;");
 
       /* column hostname in table report_hosts was added in version 273 */
-      if (current_db_version >= 281)
+      if (current_db_version >= 282)
           {
             sql ("CREATE OR REPLACE FUNCTION report_result_host_count (report integer,"
                  "                                                     min_qod integer)"
@@ -1461,8 +1461,8 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
-     /* target_type was added in version 281 */
-     if (current_db_version >= 281)
+     /* target_type was added in version 282 */
+     if (current_db_version >= 282)
        {
           sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
                "                                          integer," // overrides
@@ -1579,7 +1579,7 @@ manage_create_sql_functions ()
                TASK_STATUS_DONE);
         }
 
-      if (current_db_version >= 281)
+      if (current_db_version >= 282)
         {
           sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer, integer)"
                " RETURNS text AS $$"
