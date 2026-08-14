@@ -4239,7 +4239,7 @@ migrate_280_to_281 ()
 }
 
 /**
- * @brief Migrate the database from version 280 to version 281.
+ * @brief Migrate the database from version 281 to version 282.
  *
  * @return 0 success, -1 error.
  */
