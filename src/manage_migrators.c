@@ -4270,7 +4270,7 @@ migrate_281_to_282 ()
 
   if (count_multiple_targets > 0)
     {
-      g_error ("Invalid data: Multiple targets specified for a task");
+      g_critical ("Invalid data: Multiple targets specified for a task");
       sql_rollback ();
       return -1;
     }
