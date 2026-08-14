@@ -458,10 +458,7 @@ delete_target (const char *target_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   target))
+      if (task_trash_target_in_use (target, TASKS_TARGET_TYPE_REGULAR))
         {
           sql_rollback ();
           return 1;
@@ -478,11 +475,7 @@ delete_target (const char *target_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND hidden = 0;",
-                   target))
+      if (task_target_in_use (target, TASKS_TARGET_TYPE_REGULAR))
         {
           sql_rollback ();
           return 1;
@@ -513,13 +506,8 @@ delete_target (const char *target_id, int ultimate)
            trash_target, target);
 
       /* Update the location of the target in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET target = %llu,"
-           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           target);
+      task_update_delete_target (target, sql_last_insert_id (),
+                                 TASKS_TARGET_TYPE_REGULAR);
 
       permissions_set_locations ("target", target,
                                  sql_last_insert_id (),
@@ -528,10 +516,8 @@ delete_target (const char *target_id, int ultimate)
                           sql_last_insert_id (),
                           LOCATION_TRASH);
     }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
-                    target))
+  else if (task_target_in_use_including_hidden (target,
+                                                TASKS_TARGET_TYPE_REGULAR))
     {
       sql_rollback ();
       return 1;

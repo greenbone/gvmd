@@ -26299,13 +26299,9 @@ manage_restore (const char *id)
            resource);
 
       /* Update the target in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET target = %llu,"
-           "     target_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-           restored_target,
-           resource);
+      task_update_restore_target (restored_target, resource,
+                                  TASKS_TARGET_TYPE_REGULAR);
+
 
       permissions_set_locations ("target", resource,
                                  sql_last_insert_id (),
