@@ -4278,6 +4278,8 @@ migrate_281_to_282 ()
                   iterator_string (&tasks_multiple_targets, 1));
       count_multiple_targets++;
     }
+  cleanup_iterator (&tasks_multiple_targets);
+
   if (count_multiple_targets > 0)
     {
       g_critical ("Aborting migration, since there are %d tasks with multiple targets specified.",
