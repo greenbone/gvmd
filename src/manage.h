@@ -152,6 +152,7 @@ typedef enum {
   MODIFY_TASK_CANNOT_SET_SCAN_MODE_VALUE = 23,
   MODIFY_TASK_CANNOT_SET_AJAX_SPIDER_TIMEOUT_VALUE = 24,
   MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH = 25,
+  MODIFY_TASK_MULTIPLE_TARGETS = 26,
   MODIFY_TASK_ERROR = -1
 } modify_task_return_t;
 
@@ -443,6 +444,9 @@ check_scanner_feature (scanner_type_t);
 
 scanner_type_t
 get_scanner_type_by_uuid (const char *);
+
+tasks_target_type_t
+scanner_type_target_type (scanner_type_t);
 
 
 /* Resources. */

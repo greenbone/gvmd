@@ -19124,6 +19124,129 @@ manage_task_remove_file (const gchar *task_id, const char *name)
 }
 
 /**
+ * @brief Get the task target type that a scanner type requires.
+ *
+ * @param[in]  type  Scanner type.
+ *
+ * @return The target type associated with the scanner type,
+ *         TASKS_TARGET_TYPE_UNDEFINED if the scanner type is unknown.
+ */
+tasks_target_type_t
+scanner_type_target_type (scanner_type_t type)
+{
+  switch (type)
+    {
+      case SCANNER_TYPE_OPENVAS:
+      case SCANNER_TYPE_OSP_SENSOR:
+      case SCANNER_TYPE_OPENVASD:
+      case SCANNER_TYPE_OPENVASD_SENSOR:
+      case SCANNER_TYPE_CVE:
+        return TASKS_TARGET_TYPE_REGULAR;
+      case SCANNER_TYPE_AGENT_CONTROLLER:
+      case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+        return TASKS_TARGET_TYPE_AGENT_GROUP;
+      case SCANNER_TYPE_CONTAINER_IMAGE:
+        return TASKS_TARGET_TYPE_OCI_IMAGE;
+      case SCANNER_TYPE_WEB_APPLICATION:
+        return TASKS_TARGET_TYPE_WEB_APPLICATION;
+      default:
+        return TASKS_TARGET_TYPE_UNDEFINED;
+    }
+}
+
+/**
+ * @brief Whether a modify_task resource element requests a change.
+ *
+ * @param[in]  resource_id  The id from the request, or NULL.
+ *
+ * @return 1 if the element requests a change, else 0.
+ */
+static int
+modify_task_resource_given (const gchar *resource_id)
+{
+  return resource_id && strcmp (resource_id, "0");
+}
+
+/**
+ * @brief Check that a modify_task request carries a consistent target.
+ *
+ * @param[in]  task                       Task.
+ * @param[in]  scanner_id                 Scanner from the request, or NULL.
+ * @param[in]  target_id                  Target from the request, or NULL.
+ * @param[in]  agent_group_id             Agent group from the request, or NULL.
+ * @param[in]  oci_image_target_id        OCI image target, or NULL.
+ * @param[in]  web_application_target_id  Web application target, or NULL.
+ *
+ * @return 0 consistent, 1 more than one target given, 2 target kind does not
+ *         match the scanner type, 3 failed to find scanner, -1 error.
+ */
+static int
+modify_task_check_target_scanner (task_t task,
+                                  const gchar *scanner_id,
+                                  const gchar *target_id,
+                                  const gchar *agent_group_id,
+                                  const gchar *oci_image_target_id,
+                                  const gchar *web_application_target_id)
+{
+  scanner_t scanner;
+  tasks_target_type_t given_type, required_type;
+  int given_count;
+
+  given_count = 0;
+  given_type = TASKS_TARGET_TYPE_UNDEFINED;
+
+  if (modify_task_resource_given (target_id))
+    {
+      given_count++;
+      given_type = TASKS_TARGET_TYPE_REGULAR;
+    }
+  if (modify_task_resource_given (agent_group_id))
+    {
+      given_count++;
+      given_type = TASKS_TARGET_TYPE_AGENT_GROUP;
+    }
+  if (modify_task_resource_given (oci_image_target_id))
+    {
+      given_count++;
+      given_type = TASKS_TARGET_TYPE_OCI_IMAGE;
+    }
+  if (modify_task_resource_given (web_application_target_id))
+    {
+      given_count++;
+      given_type = TASKS_TARGET_TYPE_WEB_APPLICATION;
+    }
+
+  if (given_count == 0)
+    return 0;
+  if (given_count > 1)
+    return 1;
+
+  /* Resolve the scanner that the task will have after this request. */
+  scanner = 0;
+  if (modify_task_resource_given (scanner_id))
+    {
+      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
+        return -1;
+      if (scanner == 0)
+        return 3;
+    }
+  else
+    scanner = task_scanner (task);
+
+  required_type = scanner_type_target_type (scanner_type (scanner));
+
+  if (required_type == TASKS_TARGET_TYPE_UNDEFINED)
+    {
+      g_warning ("%s: task %llu has scanner %llu of unknown type,"
+                 " skipping target type check",
+                 __func__, task, scanner);
+      return 0;
+    }
+
+  return given_type == required_type ? 0 : 2;
+}
+
+/**
  * @brief Modify a task.
  *
  * @param[in]  task_id     Task.
@@ -19190,6 +19313,26 @@ modify_task (const gchar *task_id, const gchar *name,
         return MODIFY_TASK_CONFIG_SCANNER_TYPE_MISMATCH;
       case 2:
         return MODIFY_TASK_CONFIG_NOT_FOUND;
+      case 3:
+        return MODIFY_TASK_SCANNER_NOT_FOUND;
+      default:
+        assert (0);
+        /* fallthrough */
+      case -1:
+        return MODIFY_TASK_ERROR;
+    }
+
+  switch (modify_task_check_target_scanner (task, scanner_id, target_id,
+                                            agent_group_id,
+                                            oci_image_target_id,
+                                            web_application_target_id))
+    {
+      case 0:
+        break;
+      case 1:
+        return MODIFY_TASK_MULTIPLE_TARGETS;
+      case 2:
+        return MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH;
       case 3:
         return MODIFY_TASK_SCANNER_NOT_FOUND;
       default:
@@ -19339,9 +19482,6 @@ modify_task (const gchar *task_id, const gchar *name,
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
         return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
-      else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE
-               || type_of_scanner == SCANNER_TYPE_WEB_APPLICATION)
-        return MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH;
       else if (find_target_with_permission (target_id,
                                             &target,
                                             "get_targets"))
@@ -19356,7 +19496,11 @@ modify_task (const gchar *task_id, const gchar *name,
     agent_group_t agent_group;
 
     agent_group = 0;
-    if ((task_run_status(task) != TASK_STATUS_NEW)
+    if (strcmp (agent_group_id, "0") == 0)
+      {
+        /* Leave it as it is. */
+      }
+    else if ((task_run_status(task) != TASK_STATUS_NEW)
         && (task_alterable(task) == 0))
       return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
     else if (find_agent_group_with_permission(agent_group_id,
@@ -19400,7 +19544,11 @@ modify_task (const gchar *task_id, const gchar *name,
     {
       web_application_target_t web_application_target = 0;
 
-      if ((task_run_status (task) != TASK_STATUS_NEW)
+      if (strcmp (web_application_target_id, "0") == 0)
+        {
+          /* Leave it as is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
           && (task_alterable (task) == 0))
         return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_web_application_target_with_permission (web_application_target_id,

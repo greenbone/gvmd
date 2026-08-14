@@ -29040,6 +29040,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   modify_task_data->task_id,
                                   "modified");
                   break;
+                case MODIFY_TASK_MULTIPLE_TARGETS:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("modify_task",
+                                      "Only one of target, agent_group,"
+                                      " oci_image_target or"
+                                      " web_application_target"
+                                      " must be provided"));
+                  log_event_fail ("task", "Task",
+                                  modify_task_data->task_id,
+                                  "modified");
+                  break;
                 default:
                 case MODIFY_TASK_ERROR:
                   SEND_TO_CLIENT_OR_FAIL
