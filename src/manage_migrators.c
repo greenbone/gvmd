@@ -4256,21 +4256,31 @@ migrate_281_to_282 ()
     }
 
   /* Check for invalid data */
-  int count_multiple_targets =
-    sql_int ("SELECT COUNT(*) FROM tasks"
-             " WHERE (agent_group IS NOT NULL"
-             "        AND oci_image_target IS NOT NULL)"
-             "    OR (agent_group IS NOT NULL"
-             "        AND web_application_target IS NOT NULL)"
-             "    OR (oci_image_target IS NOT NULL"
-             "        AND web_application_target IS NOT NULL)"
-             "    OR (target != 0 AND agent_group IS NOT NULL)"
-             "    OR (target != 0 AND oci_image_target IS NOT NULL)"
-             "    OR (target != 0 AND web_application_target IS NOT NULL);");
+  int count_multiple_targets = 0;
+  iterator_t tasks_multiple_targets;
+  init_iterator (
+    &tasks_multiple_targets,
+    "SELECT uuid, name FROM tasks"
+    " WHERE (agent_group IS NOT NULL"
+    "        AND oci_image_target IS NOT NULL)"
+    "    OR (agent_group IS NOT NULL"
+    "        AND web_application_target IS NOT NULL)"
+    "    OR (oci_image_target IS NOT NULL"
+    "        AND web_application_target IS NOT NULL)"
+    "    OR (target != 0 AND agent_group IS NOT NULL)"
+    "    OR (target != 0 AND oci_image_target IS NOT NULL)"
+    "    OR (target != 0 AND web_application_target IS NOT NULL);");
 
+  while (next (&tasks_multiple_targets))
+    {
+      g_critical ("Invalid data: Multiple targets specified for task %s (%s)",
+                  iterator_string (&tasks_multiple_targets, 0),
+                  iterator_string (&tasks_multiple_targets, 1));
+    }
   if (count_multiple_targets > 0)
     {
-      g_critical ("Invalid data: Multiple targets specified for a task");
+      g_critical ("Aborting migration, since there are %d tasks with multiple targets specified.",
+                  count_multiple_targets);
       sql_rollback ();
       return -1;
     }
