@@ -113,7 +113,22 @@ permission_subject (permission_t permission)
 static char *
 permission_subject_id (permission_t permission)
 {
-  return sql_string ("SELECT subject_id FROM permissions WHERE id = %llu;",
+  return sql_string ("SELECT"
+                     " (CASE"
+                     "  WHEN subject_type = 'user'"
+                     "  THEN (SELECT uuid FROM users WHERE users.id = subject)"
+                     "  WHEN subject_type = 'group'"
+                     "       AND subject_location = " G_STRINGIFY (LOCATION_TRASH)
+                     "  THEN (SELECT uuid FROM groups_trash"
+                     "        WHERE groups_trash.id = subject)"
+                     "  WHEN subject_type = 'group'"
+                     "  THEN (SELECT uuid FROM groups WHERE groups.id = subject)"
+                     "  WHEN subject_location = " G_STRINGIFY (LOCATION_TRASH)
+                     "  THEN (SELECT uuid FROM roles_trash"
+                     "        WHERE roles_trash.id = subject)"
+                     "  ELSE (SELECT uuid FROM roles WHERE roles.id = subject)"
+                     "  END)"
+                     " FROM permissions WHERE id = %llu;",
                      permission);
 }
 
@@ -141,7 +156,7 @@ permission_resource_type (permission_t permission)
 static char *
 permission_resource_id (permission_t permission)
 {
-  return sql_string ("SELECT resource_id FROM permissions WHERE id = %llu;",
+  return sql_string ("SELECT resource_uuid FROM permissions WHERE id = %llu;",
                      permission);
 }
 
