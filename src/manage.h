@@ -675,6 +675,9 @@ tasks_target_type_t
 task_target_type (task_t);
 
 int
+task_regular_target (task_t, target_t *);
+
+int
 task_target_in_trash (task_t);
 
 void

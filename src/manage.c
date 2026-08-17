@@ -1707,10 +1707,8 @@ run_osp_task (task_t task, int from, char **report_id)
 {
   target_t target;
 
-  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
-    target = 0;
-  else
-    target = task_target (task);
+  if (task_regular_target (task, &target))
+    return -1;
 
   if (target)
     {
@@ -1921,10 +1919,8 @@ run_cve_task (task_t task)
 {
   target_t target;
 
-  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
-    target = 0;
-  else
-    target = task_target (task);
+  if (task_regular_target (task, &target))
+    return -1;
 
   if (target)
     {
@@ -7103,10 +7099,8 @@ run_openvasd_task (task_t task, int from, char **report_id)
     }
   target_t target;
 
-  if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
-    target = 0;
-  else
-    target = task_target (task);
+  if (task_regular_target (task, &target))
+    return -1;
 
   if (target)
     {

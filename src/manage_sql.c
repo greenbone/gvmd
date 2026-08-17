@@ -5930,7 +5930,7 @@ task_target (task_t task)
  *
  * @param[in]  task         Task.
  *
- * @return Target of task.
+ * @return Target type of task, TASKS_TARGET_TYPE_UNDEFINED on error.
  */
 tasks_target_type_t
 task_target_type (task_t task)
@@ -5951,6 +5951,38 @@ task_target_type (task_t task)
       return TASKS_TARGET_TYPE_UNDEFINED;
       break;
     }
+}
+
+/**
+ * @brief Get the regular target of a task.
+ *
+ * Fails if the target type of the task cannot be read, or if the task has no
+ * regular target.
+ *
+ * @param[in]   task    Task.
+ * @param[out]  target  Regular target of the task, or 0 if it has none.  Also
+ *                      set to 0 on error.
+ *
+ * @return 0 success, -1 failed to get the target type of the task.
+ */
+int
+task_regular_target (task_t task, target_t *target)
+{
+  assert (target);
+  *target = 0;
+
+  tasks_target_type_t target_type = task_target_type (task);
+  if (target_type == TASKS_TARGET_TYPE_UNDEFINED)
+    {
+      g_warning ("%s: failed to get the target type of task %llu",
+                 __func__, task);
+      return -1;
+    }
+
+  if (target_type == TASKS_TARGET_TYPE_REGULAR)
+    *target = task_target (task);
+
+  return 0;
 }
 
 /**
