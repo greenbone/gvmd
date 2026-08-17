@@ -2565,14 +2565,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
     ,{                                                                        \
       "(SELECT uuid FROM agent_groups"                                        \
       " WHERE agent_groups.id = tasks.target"                                 \
-      " AND tasks.target_type = 2)",                                          \
+      " AND tasks.target_type = 2)",/*TASKS_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group_id",                                                       \
       KEYWORD_TYPE_STRING                                                     \
     },                                                                        \
     {                                                                         \
       "(SELECT name FROM agent_groups"                                        \
       " WHERE agent_groups.id = tasks.target"                                 \
-      " AND tasks.target_type = 2)",                                          \
+      " AND tasks.target_type = 2)",/*TASKS_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group",                                                          \
       KEYWORD_TYPE_STRING                                                     \
     }
@@ -2583,7 +2583,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Query for TASK_SEV_CASE_GUARD.
  */
-#define TASK_NO_TARGET_CTX "(target_type = 0)"
+#define TASK_NO_TARGET_CTX "(target_type = 0)"//TASKS_TARGET_TYPE_IMPORT_TASK
 
 /**
  * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
@@ -2818,7 +2818,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                                        \
    {                                                                         \
      "(SELECT name FROM targets WHERE id = target"                           \
-     " AND tasks.target_type = 1)",                                          \
+     " AND tasks.target_type = 1)",/*TASKS_TARGET_TYPE_REGULAR*/             \
      "target",                                                               \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
