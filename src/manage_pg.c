@@ -1470,8 +1470,7 @@ manage_create_sql_functions ()
                " RETURNS double precision AS $$"
                /* Calculate the severity of a task. */
                "  SELECT CASE"
-               "         WHEN (SELECT target = 0 "
-               "               AND target_type = 0 " // TASKS_TARGET_TYPE_IMPORT_TASK
+               "         WHEN (SELECT target_type = 0" // TASKS_TARGET_TYPE_IMPORT_TASK
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
@@ -1610,7 +1609,7 @@ manage_create_sql_functions ()
                "   WHEN gvmd_user () = 0"
                "   THEN RETURN ''::text;"
                /*  Skip running and import tasks. */
-               "   WHEN (SELECT run_status = %u OR (target = 0 OR target_type = 0)" // TASKS_TARGET_TYPE_IMPORT_TASK
+               "   WHEN (SELECT run_status = %u OR target_type = 0" // TASKS_TARGET_TYPE_IMPORT_TASK
                "         FROM tasks WHERE id = $1)"
                "   THEN RETURN ''::text;"
                "   ELSE"
