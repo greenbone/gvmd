@@ -25609,6 +25609,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           gboolean is_agent_task = FALSE;
           gboolean is_container_scanning_task = FALSE;
           gboolean is_web_application_scanning_task = FALSE;
+          int targets_given;
           guint index;
 
           /* @todo Buffer the entire task creation and pass everything to a
@@ -25778,11 +25779,23 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               goto create_task_fail;
             }
 
-          if (create_task_data->target_id && create_task_data->agent_group_id)
+          targets_given = 0;
+          if (create_task_data->target_id)
+            targets_given++;
+          if (create_task_data->agent_group_id)
+            targets_given++;
+          if (create_task_data->oci_image_target_id)
+            targets_given++;
+          if (create_task_data->web_application_target_id)
+            targets_given++;
+
+          if (targets_given > 1)
             {
               SEND_TO_CLIENT_OR_FAIL
                (XML_ERROR_SYNTAX ("create_task",
-                                  "Only one of target_id or agent_group_id must be provided"));
+                                  "Only one of target_id, agent_group_id,"
+                                  " oci_image_target_id or"
+                                  " web_application_target_id may be given"));
               goto create_task_fail;
             }
           if (create_task_data->target_id && is_container_scanning_task)
