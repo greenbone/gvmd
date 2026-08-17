@@ -3229,7 +3229,7 @@ create_tables ()
        "  start_time integer,"
        "  end_time integer,"
        "  config integer," // REFERENCES configs (id) ON DELETE RESTRICT,"
-       "  target integer," // May refer to several tables, see target_type.
+       "  target integer NOT NULL DEFAULT 0," // May refer to several tables, see target_type.
        "  schedule integer," // REFERENCES schedules (id) ON DELETE RESTRICT,"
        "  schedule_next_time integer,"
        "  schedule_periods integer,"

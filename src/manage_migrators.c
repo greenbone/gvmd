@@ -4298,9 +4298,10 @@ migrate_281_to_282 ()
        " WHERE target != 0;");
 
   /* Import tasks */
+  sql("UPDATE tasks SET target = 0 WHERE target IS NULL;");
   sql ("UPDATE tasks"
        " SET target_type = 0"
-       " WHERE (target = 0 OR target IS NULL)"
+       " WHERE target = 0"
        " AND oci_image_target IS NULL"
        " AND agent_group IS NULL"
        " AND web_application_target IS NULL;");
@@ -4329,6 +4330,8 @@ migrate_281_to_282 ()
   sql ("UPDATE tasks SET target_type = 0 WHERE target_type IS NULL;");
   sql ("ALTER TABLE tasks ALTER COLUMN target_type SET NOT NULL;");
   sql ("ALTER TABLE tasks ALTER COLUMN target_type SET DEFAULT 0;");
+  sql ("ALTER TABLE tasks ALTER COLUMN target SET NOT NULL;");
+  sql ("ALTER TABLE tasks ALTER COLUMN target SET DEFAULT 0;");
 
   /**
    * Reverting data from DB version 282 to 281 is possible:
