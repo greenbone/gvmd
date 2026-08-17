@@ -20029,6 +20029,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       report_t running_report;
       char *owner, *observers;
       int target_in_trash, scanner_in_trash;
+      int target_location_trash;
       int holes = 0, infos = 0, logs = 0, warnings = 0;
       int holes_2 = 0, infos_2 = 0, warnings_2 = 0;
       int criticals = 0, criticals_2 = 0;
@@ -20078,8 +20079,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       else
         {
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
+
+          target_location_trash
+            = (target_type == TASKS_TARGET_TYPE_IMPORT_TASK)
+                ? 0
+                : task_target_in_trash (index);
+
           target_in_trash = (target_type == TASKS_TARGET_TYPE_REGULAR)
-                              ? task_target_in_trash (index)
+                              ? target_location_trash
                               : 0;
           if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
               && (task_iterator_run_status (&tasks) == TASK_STATUS_RUNNING))
@@ -20359,17 +20366,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 
 #if ENABLE_CONTAINER_SCANNING
-          oci_image_target_t oci_image_target;
-          int oci_image_target_in_trash, oci_image_target_available;
-          char *task_oci_image_target_uuid, *task_oci_image_target_name;
-          gchar *task_oci_image_target_name_escaped;
-
-          oci_image_target = task_oci_image_target (index);
-          oci_image_target_in_trash = task_oci_image_target_in_trash (index);
-
           if (target_type == TASKS_TARGET_TYPE_OCI_IMAGE)
             {
-              oci_image_target_available = 1;
+              oci_image_target_t oci_image_target = target;
+              int oci_image_target_in_trash = target_location_trash;
+              int oci_image_target_available = 1;
+              char *task_oci_image_target_uuid, *task_oci_image_target_name;
+              gchar *task_oci_image_target_name_escaped;
+
               if (oci_image_target_in_trash)
                 {
                   task_oci_image_target_uuid
@@ -20422,15 +20426,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 #endif
 #if ENABLE_AGENTS
-          agent_group_t agent_group = 0;
-          int group_readable = 0;
-          char *task_agent_group_uuid = NULL;
-          char *task_agent_group_name = NULL;
-          agent_group = task_agent_group (index); /* row id or 0 */
-          int agent_group_in_trash = task_agent_group_in_trash (index);
-
           if (target_type == TASKS_TARGET_TYPE_AGENT_GROUP)
             {
+              agent_group_t agent_group = target;
+              int agent_group_in_trash = target_location_trash;
+              int group_readable = 0;
+              char *task_agent_group_uuid = NULL;
+              char *task_agent_group_name = NULL;
+
               if (agent_group_in_trash)
                 {
                   task_agent_group_uuid = trash_agent_group_uuid (agent_group);
@@ -20461,17 +20464,15 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 #endif /* ENABLE_AGENT_GROUPS */
 #if ENABLE_WEB_APPLICATION_SCANNING
-          web_application_target_t web_application_target;
-          int web_application_target_in_trash, web_application_target_available;
-          char *task_web_application_target_uuid, *task_web_application_target_name;
-          gchar *task_web_application_target_name_escaped;
-
-          web_application_target = task_web_application_target (index);
-          web_application_target_in_trash = task_web_application_target_in_trash (index);
-
           if (target_type == TASKS_TARGET_TYPE_WEB_APPLICATION)
             {
-              web_application_target_available = 1;
+              web_application_target_t web_application_target = target;
+              int web_application_target_in_trash = target_location_trash;
+              int web_application_target_available = 1;
+              char *task_web_application_target_uuid;
+              char *task_web_application_target_name;
+              gchar *task_web_application_target_name_escaped;
+
               if (web_application_target_in_trash)
                 {
                   task_web_application_target_uuid
