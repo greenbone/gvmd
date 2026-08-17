@@ -20081,9 +20081,8 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           target_in_trash = (target_type == TASKS_TARGET_TYPE_REGULAR)
                               ? task_target_in_trash (index)
                               : 0;
-          if (target && (target == 0)
-              && (task_iterator_run_status (&tasks)
-                  == TASK_STATUS_RUNNING))
+          if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
+              && (task_iterator_run_status (&tasks) == TASK_STATUS_RUNNING))
             {
               progress_xml = g_strdup_printf
                               ("%i",
