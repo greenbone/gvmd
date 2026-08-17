@@ -3869,6 +3869,10 @@ create_tables ()
   sql ("SELECT create_index ('tag_resources_trash_by_tag',"
        "                     'tag_resources_trash', 'tag');");
 
+  sql ("SELECT create_index ('tasks_by_target',"
+       "                     'tasks',"
+       "                     'target_type, target, target_location');");
+
   sql ("SELECT create_index ('tls_certificate_locations_by_host_ip',"
        "                     'tls_certificate_locations', 'host_ip')");
 
