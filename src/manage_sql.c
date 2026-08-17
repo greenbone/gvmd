@@ -16333,6 +16333,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       char *tsk_name, *task_target_uuid, *task_target_name;
       char *task_target_comment, *comment;
       target_t target;
+      tasks_target_type_t target_type;
       gchar *progress_xml;
       iterator_t tags;
 
@@ -16345,7 +16346,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       comment = task_comment (task);
 
-      if (task_target_type (task) != TASKS_TARGET_TYPE_REGULAR)
+      target_type = task_target_type (task);
+      if (target_type != TASKS_TARGET_TYPE_REGULAR)
         target = 0;
       else
         target = task_target (task);
@@ -16369,7 +16371,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           task_target_comment = NULL;
         }
 
-      if ((target == 0)
+      if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
           && (task_run_status (task) == TASK_STATUS_RUNNING))
         progress_xml = g_strdup_printf
                         ("%i",
