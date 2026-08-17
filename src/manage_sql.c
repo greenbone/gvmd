@@ -9534,7 +9534,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
     rc = -1;
   else if (task == 0)
     rc = -4;
-  else if (task_target (task))
+  else if (task_target_type (task) != TASKS_TARGET_TYPE_IMPORT_TASK)
     rc = -5;
   if (rc)
     {
