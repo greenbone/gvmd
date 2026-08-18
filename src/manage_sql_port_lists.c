@@ -1498,7 +1498,7 @@ modify_port_list (const char *port_list_id, const char *name,
  * @param[out]  port_range_return  Created port range.
  *
  * @return 0 success, 1 syntax error in start, 2 syntax error in end, 3 failed
- *         to find port list, 4 syntax error in type, 5 port list in use,
+ *         to find port list, 4 syntax error in type,
  *         6 new range overlaps an existing range, 99 permission denied,
  *         -1 error.
  */
@@ -1555,12 +1555,6 @@ create_port_range (const char *port_list_id, const char *type,
     {
       sql_rollback ();
       return 3;
-    }
-
-  if (port_list_in_use (port_list))
-    {
-      sql_rollback ();
-      return 5;
     }
 
   if (sql_int ("SELECT count (*) FROM port_ranges"
@@ -2093,7 +2087,7 @@ trash_port_list_in_use (port_list_t port_list)
 int
 port_list_writable (port_list_t port_list)
 {
-  return port_list_in_use (port_list) == 0;
+  return 1;
 }
 
 /**
