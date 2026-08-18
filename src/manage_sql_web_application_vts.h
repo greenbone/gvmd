@@ -26,4 +26,7 @@ update_zap_vt_severities_from_cves ();
 void
 update_zap_vt_group_severity_scores ();
 
+gchar *
+web_application_vt_severity_by_id (const char*);
+
 #endif /* _GVMD_MANAGE_SQL_WEB_APPLICATION_VTS_H */
