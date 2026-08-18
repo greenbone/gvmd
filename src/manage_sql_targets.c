@@ -1136,7 +1136,7 @@ create_target (const char* name, const char* asset_hosts_filter,
  *         find SMB cred, 9 failed to find target, 10 error in alive tests,
  *         11 zero length name, 12 exclude hosts requires hosts
  *         13 hosts requires exclude hosts,
- *         14 hosts must be at least one character, 15 target is in use,
+ *         14 hosts must be at least one character,
  *         16 failed to find ESXi cred, 17 failed to find SNMP cred,
  *         18 invalid SSH credential type, 19 invalid SMB credential type,
  *         20 invalid ESXi credential type, 21 invalid SNMP credential type,
@@ -1241,12 +1241,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (allow_simultaneous_ips)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       sql ("UPDATE targets SET"
            " allow_simultaneous_ips = '%i',"
            " modification_time = m_now ()"
@@ -1297,12 +1291,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       port_list_t port_list;
 
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       port_list = 0;
       if (find_port_list_with_permission (port_list_id, &port_list,
                                           "get_port_lists"))
@@ -1327,12 +1315,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (ssh_credential_id)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       ssh_credential = 0;
       if (strcmp (ssh_credential_id, "0"))
         {
@@ -1385,12 +1367,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (ssh_elevate_credential_id)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       ssh_elevate_credential = 0;
       if (strcmp (ssh_elevate_credential_id, "0"))
         {
@@ -1429,12 +1405,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (smb_credential_id)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       smb_credential = 0;
       if (strcmp (smb_credential_id, "0"))
         {
@@ -1477,12 +1447,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       credential_t esxi_credential;
 
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       esxi_credential = 0;
       if (strcmp (esxi_credential_id, "0"))
         {
@@ -1522,12 +1486,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   if (snmp_credential_id)
     {
       credential_t snmp_credential;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
 
       snmp_credential = 0;
       if (strcmp (snmp_credential_id, "0"))
@@ -1586,12 +1544,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (krb5_credential_id)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       krb5_credential = 0;
       if (strcmp (krb5_credential_id, "0"))
         {
@@ -1637,12 +1589,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       gchar *quoted_exclude_hosts, *quoted_hosts, *clean, *clean_exclude;
       int max;
-
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
 
       if (hosts == NULL)
         {
@@ -1695,12 +1641,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (reverse_lookup_only)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       sql ("UPDATE targets SET"
            " reverse_lookup_only = '%i',"
            " modification_time = m_now ()"
@@ -1711,12 +1651,6 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (reverse_lookup_unify)
     {
-      if (target_in_use (target))
-        {
-          sql_rollback ();
-          return 15;
-        }
-
       sql ("UPDATE targets SET"
            " reverse_lookup_unify = '%i',"
            " modification_time = m_now ()"
