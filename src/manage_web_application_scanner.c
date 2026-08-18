@@ -18,6 +18,7 @@
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_web_application_targets.h"
+#include "manage_sql_web_application_vts.h"
 #include "manage_openvas.h"
 #include "manage_osp.h"
 #include <sys/types.h>
@@ -62,19 +63,24 @@ web_application_scanner_connect (scanner_t scanner, const char *scan_id)
 }
 
 /**
- * @brief Get a severity string from result type.
+ * @brief Get a severity string from result type and VT id.
  *
  * @param[in]  type     Result type.
+ * @param[in]  vt_id    VT id to look up severity score for "Alarm" results.
  *
  * @return A severity string, NULL if unknown type.
  */
 char *
-web_application_nvt_severity (const char *type)
+web_application_nvt_severity (const char *type, const char *vt_id)
 {
   char *severity = NULL;
 
   if ((strcasecmp (type, "alarm") == 0 || strcasecmp (type, "Alarm") == 0))
-    severity = g_strdup (G_STRINGIFY (SEVERITY_MAX));
+    {
+      severity = web_application_vt_severity_by_id (vt_id);
+      if (severity == NULL)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_MAX));
+    }
   else if (strcasecmp (type, "Log Message") == 0
            || strcasecmp (type, "log") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
@@ -196,7 +202,7 @@ check_web_application_scanner_result_exists (report_t report,
           hostname = res->hostname ?: "";
           type = convert_http_scanner_type_to_osp_type(res->type ?: "");
           desc = res->message ?: "";
-          severity = web_application_nvt_severity (type);
+          severity = web_application_nvt_severity (type, res->oid);
           port = res->port ?: "";
 
           if (!severity)
@@ -315,7 +321,7 @@ add_web_application_scan_result (http_scanner_result_t res,
 
       nvt_id = g_strdup (test_id);
       result_type = convert_http_scanner_type_to_osp_type (type);
-      severity_str = web_application_nvt_severity (result_type);
+      severity_str = web_application_nvt_severity (result_type, res->oid);
       qod_int = QOD_DEFAULT;
 
       if (!check_web_application_scanner_result_exists (rep_aux->report,

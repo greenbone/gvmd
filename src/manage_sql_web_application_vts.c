@@ -377,3 +377,19 @@ update_zap_vt_group_severity_scores ()
        "   )"
        " WHERE type = 'ZAP';");
 }
+
+/**
+ * @brief Get the severity score of a web application VT by id.
+ *
+ * @param[in]  vt_id  Identifier of the VT to get the severity of.
+ *
+ * @return  Newly allocated severity score string.
+ */
+gchar *
+web_application_vt_severity_by_id (const char *vt_id)
+{
+  return sql_string_ps ("SELECT severity FROM web_application_vts"
+                        " WHERE uuid = $1",
+                        SQL_STR_PARAM (vt_id),
+                        NULL);
+}
