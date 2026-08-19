@@ -462,7 +462,7 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
 
       /* Update the location of the target in any task. */
       task_update_delete_target (oci_image_target, sql_last_insert_id (),
-                                 TASKS_TARGET_TYPE_OCI_IMAGE);
+                                 TASK_TARGET_TYPE_OCI_IMAGE);
 
       permissions_set_locations ("oci_image_target", oci_image_target,
                                  sql_last_insert_id (),
@@ -472,7 +472,7 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
                           LOCATION_TRASH);
     }
   else if (task_target_in_use_including_hidden (oci_image_target,
-                                                TASKS_TARGET_TYPE_OCI_IMAGE))
+                                                TASK_TARGET_TYPE_OCI_IMAGE))
     {
       sql_rollback ();
       return 1;
@@ -560,7 +560,7 @@ restore_oci_image_target (const char *oci_image_target_id)
 
   /* Update the oci image target in any tasks. */
   task_update_restore_target (oci_image_target, resource,
-                              TASKS_TARGET_TYPE_OCI_IMAGE);
+                              TASK_TARGET_TYPE_OCI_IMAGE);
 
   permissions_set_locations ("oci_image_target", resource, oci_image_target,
                              LOCATION_TABLE);
@@ -882,7 +882,7 @@ trash_oci_image_target_readable (oci_image_target_t oci_image_target)
 int
 oci_image_target_in_use (oci_image_target_t oci_image_target)
 {
-  return task_target_in_use (oci_image_target, TASKS_TARGET_TYPE_OCI_IMAGE);
+  return task_target_in_use (oci_image_target, TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 /**
@@ -896,7 +896,7 @@ int
 trash_oci_image_target_in_use (oci_image_target_t oci_image_target)
 {
   return task_trash_target_in_use (oci_image_target,
-                                   TASKS_TARGET_TYPE_OCI_IMAGE);
+                                   TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 /**
@@ -954,7 +954,7 @@ init_oci_image_target_task_iterator (iterator_t* iterator,
                  with_clause ? with_clause : "",
                  available,
                  oci_image_target,
-                 TASKS_TARGET_TYPE_OCI_IMAGE);
+                 TASK_TARGET_TYPE_OCI_IMAGE);
 
   g_free (with_clause);
   g_free (available);

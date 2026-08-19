@@ -1356,7 +1356,7 @@ filter_clause (const char* type, const char* filter,
                  (order,
                   " ORDER BY"
                   "  (CASE WHEN (SELECT "
-                  "               ( target_type = 0 ) " //TASKS_TARGET_TYPE_IMPORT_TASK
+                  "               ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "              FROM tasks"
                   "              WHERE tasks.id = task)"
                   "    THEN '0'"
@@ -1373,7 +1373,7 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN ( target_type = 0 ) " //TASKS_TARGET_TYPE_IMPORT_TASK
+                  "  (CASE WHEN ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
@@ -1554,7 +1554,7 @@ filter_clause (const char* type, const char* filter,
                  (order,
                   " ORDER BY"
                   "  (CASE WHEN (SELECT "
-                  "               ( target_type = 0 ) " //TASKS_TARGET_TYPE_IMPORT_TASK
+                  "               ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "              FROM tasks"
                   "              WHERE tasks.id = task)"
                   "    THEN '0'"
@@ -1571,7 +1571,7 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN ( target_type = 0 ) " //TASKS_TARGET_TYPE_IMPORT_TASK
+                  "  (CASE WHEN ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"

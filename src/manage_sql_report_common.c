@@ -260,14 +260,14 @@ get_report_task_progress (report_t report, task_t task)
   if (report == 0 || task == 0)
     return 0;
 
-  tasks_target_type_t target_type = task_target_type (task);
+  task_target_type_t target_type = task_target_type (task);
 
 #if ENABLE_AGENTS
-  if (target_type == TASKS_TARGET_TYPE_AGENT_GROUP)
+  if (target_type == TASK_TARGET_TYPE_AGENT_GROUP)
     return 100;
 #endif
 
-  if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
+  if (target_type == TASK_TARGET_TYPE_IMPORT_TASK
       && task_run_status (task) == TASK_STATUS_RUNNING)
     return task_upload_progress (task);
 
@@ -406,7 +406,7 @@ fill_network_target_reference (
   gchar *name = NULL;
   gchar *comment = NULL;
 
-  if (task_target_type(task) != TASKS_TARGET_TYPE_REGULAR)
+  if (task_target_type(task) != TASK_TARGET_TYPE_REGULAR)
     return 0;
 
   target = task_target (task);

@@ -445,7 +445,7 @@ check_scanner_feature (scanner_type_t);
 scanner_type_t
 get_scanner_type_by_uuid (const char *);
 
-tasks_target_type_t
+task_target_type_t
 scanner_type_target_type (scanner_type_t);
 
 
@@ -671,7 +671,7 @@ set_task_config (task_t, config_t);
 target_t
 task_target (task_t);
 
-tasks_target_type_t
+task_target_type_t
 task_target_type (task_t);
 
 int
@@ -681,22 +681,22 @@ int
 task_target_in_trash (task_t);
 
 void
-set_task_target (task_t, target_t, tasks_target_type_t);
+set_task_target (task_t, target_t, task_target_type_t);
 
 void
-task_update_delete_target (target_t, target_t, tasks_target_type_t);
+task_update_delete_target (target_t, target_t, task_target_type_t);
 
 void
-task_update_restore_target (target_t, target_t, tasks_target_type_t);
+task_update_restore_target (target_t, target_t, task_target_type_t);
 
 int
-task_target_in_use (target_t, tasks_target_type_t);
+task_target_in_use (target_t, task_target_type_t);
 
 int
-task_target_in_use_including_hidden (target_t, tasks_target_type_t);
+task_target_in_use_including_hidden (target_t, task_target_type_t);
 
 int
-task_trash_target_in_use (target_t, tasks_target_type_t);
+task_trash_target_in_use (target_t, task_target_type_t);
 
 #if ENABLE_AGENTS
 void

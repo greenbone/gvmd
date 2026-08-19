@@ -510,7 +510,7 @@ delete_web_application_target (
 
       task_update_delete_target (web_application_target,
                                  trash_web_application_target,
-                                 TASKS_TARGET_TYPE_WEB_APPLICATION);
+                                 TASK_TARGET_TYPE_WEB_APPLICATION);
 
       permissions_set_locations ("web_application_target",
                                  web_application_target,
@@ -523,7 +523,7 @@ delete_web_application_target (
                           LOCATION_TRASH);
     }
   else if (task_target_in_use_including_hidden (
-             web_application_target, TASKS_TARGET_TYPE_WEB_APPLICATION))
+             web_application_target, TASK_TARGET_TYPE_WEB_APPLICATION))
     {
       sql_rollback ();
       return 1;
@@ -624,7 +624,7 @@ restore_web_application_target (const char *web_application_target_id)
   web_application_target = sql_last_insert_id ();
 
   task_update_restore_target (web_application_target, resource,
-                              TASKS_TARGET_TYPE_WEB_APPLICATION);
+                              TASK_TARGET_TYPE_WEB_APPLICATION);
 
   permissions_set_locations ("web_application_target",
                              resource,
@@ -939,7 +939,7 @@ int
 web_application_target_in_use (web_application_target_t web_application_target)
 {
   return task_target_in_use (web_application_target,
-                             TASKS_TARGET_TYPE_WEB_APPLICATION);
+                             TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 /**
@@ -955,7 +955,7 @@ trash_web_application_target_in_use (
   web_application_target_t web_application_target)
 {
   return task_trash_target_in_use (web_application_target,
-                                   TASKS_TARGET_TYPE_WEB_APPLICATION);
+                                   TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 /**
@@ -1023,7 +1023,7 @@ init_web_application_target_task_iterator (
                  with_clause ? with_clause : "",
                  available,
                  web_application_target,
-                 TASKS_TARGET_TYPE_WEB_APPLICATION);
+                 TASK_TARGET_TYPE_WEB_APPLICATION);
 
   g_free (with_clause);
   g_free (available);

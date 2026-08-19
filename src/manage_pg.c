@@ -1295,7 +1295,7 @@ manage_create_sql_functions ()
                  "                      FROM tasks"
                  "                      WHERE id = (SELECT task"
                  "                                  FROM reports WHERE id = $1)"
-                 "                        AND target_type = 3)" // TASKS_TARGET_TYPE_OCI_IMAGE
+                 "                        AND target_type = 3)" // TASK_TARGET_TYPE_OCI_IMAGE
                  "         THEN (SELECT count (DISTINCT id) FROM report_hosts"
                  "               WHERE report_hosts.report = $1"
                  "               AND EXISTS (SELECT * FROM results"

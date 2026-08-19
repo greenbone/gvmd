@@ -177,7 +177,8 @@ __cyg_profile_func_exit (void *func, void *caller)
 }
 #endif
 
-
+
+
 /* Headers from backend specific manage_xxx.c file. */
 
 int
@@ -198,7 +199,8 @@ check_db_encryption_key ();
 void
 manage_attach_databases ();
 
-
+
+
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
 /**
@@ -213,7 +215,8 @@ int delete_reports (task_t);
 int
 stop_task_internal (task_t);
 
-
+
+
 /* Static headers. */
 
 static int
@@ -267,7 +270,8 @@ static void
 set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
 
-
+
+
 /* Variables. */
 
 /**
@@ -290,7 +294,8 @@ db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
  */
 static gchar *vt_verification_collation = NULL;
 
-
+
+
 /* General helpers. */
 
 /**
@@ -706,7 +711,8 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
     }
 }
 
-
+
+
 /* GET iterators. */
 
 /**
@@ -1835,7 +1841,8 @@ info_name_count (const char *type, const char *name)
   return count;
 }
 
-
+
+
 /* Versions. */
 
 /**
@@ -1997,7 +2004,8 @@ set_db_version (int version)
        version);
 }
 
-
+
+
 /* Encryption. */
 
 /**
@@ -2379,7 +2387,8 @@ validate_sort_field (const gchar *table, const gchar *sort_field)
   return !db_table_has_column ("public", table, sort_field);
 }
 
-
+
+
 /* Task subject iterators. */
 
 /**
@@ -2465,7 +2474,8 @@ DEF_ACCESS (task_role_iterator_name, 3);
 
 DEF_ACCESS (task_role_iterator_uuid, 4);
 
-
+
+
 /* Task functions. */
 
 /**
@@ -2565,14 +2575,14 @@ append_to_task_string (task_t task, const char* field, const char* value)
     ,{                                                                        \
       "(SELECT uuid FROM agent_groups"                                        \
       " WHERE agent_groups.id = tasks.target"                                 \
-      " AND tasks.target_type = 2)",/*TASKS_TARGET_TYPE_AGENT_GROUP*/         \
+      " AND tasks.target_type = 2)",/*TASK_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group_id",                                                       \
       KEYWORD_TYPE_STRING                                                     \
     },                                                                        \
     {                                                                         \
       "(SELECT name FROM agent_groups"                                        \
       " WHERE agent_groups.id = tasks.target"                                 \
-      " AND tasks.target_type = 2)",/*TASKS_TARGET_TYPE_AGENT_GROUP*/         \
+      " AND tasks.target_type = 2)",/*TASK_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group",                                                          \
       KEYWORD_TYPE_STRING                                                     \
     }
@@ -2583,7 +2593,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Query for TASK_SEV_CASE_GUARD.
  */
-#define TASK_NO_TARGET_CTX "(target_type = 0)"//TASKS_TARGET_TYPE_IMPORT_TASK
+#define TASK_NO_TARGET_CTX "(target_type = 0)"//TASK_TARGET_TYPE_IMPORT_TASK
 
 /**
  * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
@@ -2818,7 +2828,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
    },                                                                        \
    {                                                                         \
      "(SELECT name FROM targets WHERE id = target"                           \
-     " AND tasks.target_type = 1)",/*TASKS_TARGET_TYPE_REGULAR*/             \
+     " AND tasks.target_type = 1)",/*TASK_TARGET_TYPE_REGULAR*/             \
      "target",                                                               \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
@@ -5932,7 +5942,7 @@ task_target (task_t task)
  *
  * @return Target type of task, TASKS_TARGET_TYPE_UNDEFINED on error.
  */
-tasks_target_type_t
+task_target_type_t
 task_target_type (task_t task)
 {
   // sql_int_ps does not support return value through parameter
@@ -5942,13 +5952,13 @@ task_target_type (task_t task)
                         SQL_RESOURCE_PARAM (task), NULL))
     {
     case 0:
-      return (tasks_target_type_t)target_type;
+      return (task_target_type_t)target_type;
       break;
     case 1:        /* Too few rows in result of query. */
     default:       /* Programming error. */
       assert (0);
     case -1:
-      return TASKS_TARGET_TYPE_UNDEFINED;
+      return TASK_TARGET_TYPE_UNDEFINED;
       break;
     }
 }
@@ -5971,15 +5981,15 @@ task_regular_target (task_t task, target_t *target)
   assert (target);
   *target = 0;
 
-  tasks_target_type_t target_type = task_target_type (task);
-  if (target_type == TASKS_TARGET_TYPE_UNDEFINED)
+  task_target_type_t target_type = task_target_type (task);
+  if (target_type == TASK_TARGET_TYPE_UNDEFINED)
     {
       g_warning ("%s: failed to get the target type of task %llu",
                  __func__, task);
       return -1;
     }
 
-  if (target_type == TASKS_TARGET_TYPE_REGULAR)
+  if (target_type == TASK_TARGET_TYPE_REGULAR)
     *target = task_target (task);
 
   return 0;
@@ -5994,7 +6004,7 @@ task_regular_target (task_t task, target_t *target)
  * @param[in]  target_type   The type of the target
  */
 void
-set_task_target (task_t task, target_t target, tasks_target_type_t target_type)
+set_task_target (task_t task, target_t target, task_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks SET target = $1, target_type = $2, target_location = 0,"
           " modification_time = m_now ()"
@@ -6014,7 +6024,7 @@ set_task_target (task_t task, target_t target, tasks_target_type_t target_type)
  */
 void
 task_update_delete_target (target_t resource_id, target_t trash_id,
-                           tasks_target_type_t target_type)
+                           task_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks"
           " SET target = $1,"
@@ -6037,7 +6047,7 @@ task_update_delete_target (target_t resource_id, target_t trash_id,
  */
 void
 task_update_restore_target (target_t restored_id, target_t trash_id,
-                            tasks_target_type_t target_type)
+                            task_target_type_t target_type)
 {
   sql_ps ("UPDATE tasks"
           " SET target = $1,"
@@ -6060,7 +6070,7 @@ task_update_restore_target (target_t restored_id, target_t trash_id,
  * @return 1 if in use, else 0.
  */
 int
-task_target_in_use (target_t target, tasks_target_type_t target_type)
+task_target_in_use (target_t target, task_target_type_t target_type)
 {
   return !!sql_int_ps (
       "SELECT count(*) FROM tasks"
@@ -6084,7 +6094,7 @@ task_target_in_use (target_t target, tasks_target_type_t target_type)
  */
 int
 task_target_in_use_including_hidden (target_t target,
-                                     tasks_target_type_t target_type)
+                                     task_target_type_t target_type)
 {
   return !!sql_int_ps (
     "SELECT count(*) FROM tasks"
@@ -6105,7 +6115,7 @@ task_target_in_use_including_hidden (target_t target,
  * @return 1 if in use, else 0.
  */
 int
-task_trash_target_in_use (target_t target, tasks_target_type_t target_type)
+task_trash_target_in_use (target_t target, task_target_type_t target_type)
 {
   return !!sql_int_ps (
     "SELECT count(*) FROM tasks"
@@ -6127,7 +6137,7 @@ task_trash_target_in_use (target_t target, tasks_target_type_t target_type)
 void
 set_task_agent_group (task_t task, agent_group_t agent_group)
 {
-  set_task_target (task, agent_group, TASKS_TARGET_TYPE_AGENT_GROUP);
+  set_task_target (task, agent_group, TASK_TARGET_TYPE_AGENT_GROUP);
 }
 
 /**
@@ -6147,7 +6157,7 @@ agent_group_tasks_exist_by_scanner (scanner_t scanner)
     " AND target_type = $2"
     " AND target_location = " G_STRINGIFY (LOCATION_TABLE) " AND hidden = 0;",
     SQL_RESOURCE_PARAM (scanner),
-    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP),
+    SQL_INT_PARAM (TASK_TARGET_TYPE_AGENT_GROUP),
     NULL);
 }
 /**
@@ -6173,7 +6183,7 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
     "   AND target IN ("
     "    SELECT id FROM agent_groups_trash WHERE scanner = $3 ))"
     ");",
-    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP),
+    SQL_INT_PARAM (TASK_TARGET_TYPE_AGENT_GROUP),
     SQL_INT_PARAM (LOCATION_TABLE),
     SQL_RESOURCE_PARAM (scanner),
     SQL_INT_PARAM (LOCATION_TRASH),
@@ -6190,7 +6200,7 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 agent_group_t
 task_agent_group (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_AGENT_GROUP)
+  if (task_target_type (task) != TASK_TARGET_TYPE_AGENT_GROUP)
     return 0;
   return task_target (task);
 }
@@ -6205,7 +6215,7 @@ task_agent_group (task_t task)
 int
 task_agent_group_in_trash (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_AGENT_GROUP)
+  if (task_target_type (task) != TASK_TARGET_TYPE_AGENT_GROUP)
     return 0;
   return task_target_in_trash (task);
 }
@@ -6222,7 +6232,7 @@ task_agent_group_in_trash (task_t task)
 oci_image_target_t
 task_oci_image_target (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_OCI_IMAGE)
+  if (task_target_type (task) != TASK_TARGET_TYPE_OCI_IMAGE)
     return 0;
   return task_target (task);
 }
@@ -6237,7 +6247,7 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_OCI_IMAGE)
+  if (task_target_type (task) != TASK_TARGET_TYPE_OCI_IMAGE)
     return 0;
   return task_target_in_trash (task);
 }
@@ -6251,7 +6261,7 @@ task_oci_image_target_in_trash (task_t task)
 void
 set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 {
-  set_task_target (task, oci_image_target, TASKS_TARGET_TYPE_OCI_IMAGE);
+  set_task_target (task, oci_image_target, TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 #endif
@@ -6267,7 +6277,7 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 web_application_target_t
 task_web_application_target (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_WEB_APPLICATION)
+  if (task_target_type (task) != TASK_TARGET_TYPE_WEB_APPLICATION)
     return 0;
   return task_target (task);
 }
@@ -6282,7 +6292,7 @@ task_web_application_target (task_t task)
 int
 task_web_application_target_in_trash (task_t task)
 {
-  if (task_target_type (task) != TASKS_TARGET_TYPE_WEB_APPLICATION)
+  if (task_target_type (task) != TASK_TARGET_TYPE_WEB_APPLICATION)
     return 0;
   return task_target_in_trash (task);
 }
@@ -6297,7 +6307,7 @@ void
 set_task_web_application_target (task_t task, web_application_target_t web_application_target)
 {
   set_task_target (task, web_application_target,
-                   TASKS_TARGET_TYPE_WEB_APPLICATION);
+                   TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 #endif
@@ -7363,7 +7373,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target_type (task) == TASKS_TARGET_TYPE_IMPORT_TASK)
+      || task_target_type (task) == TASK_TARGET_TYPE_IMPORT_TASK)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -7773,7 +7783,8 @@ reschedule_task (const gchar *task_id)
     }
 }
 
-
+
+
 /* Results. */
 
 /**
@@ -8306,7 +8317,8 @@ detect_cleanup:
 }
 
 
-
+
+
 /* Prognostics. */
 
 /**
@@ -8744,7 +8756,8 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
 DEF_ACCESS (prognosis_iterator_description, 2);
 DEF_ACCESS (prognosis_iterator_cpe, 3);
 
-
+
+
 /* Reports. */
 
 /**
@@ -9566,7 +9579,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
     rc = -1;
   else if (task == 0)
     rc = -4;
-  else if (task_target_type (task) != TASKS_TARGET_TYPE_IMPORT_TASK)
+  else if (task_target_type (task) != TASK_TARGET_TYPE_IMPORT_TASK)
     rc = -5;
   if (rc)
     {
@@ -16365,7 +16378,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       char *tsk_name, *task_target_uuid, *task_target_name;
       char *task_target_comment, *comment;
       target_t target;
-      tasks_target_type_t target_type;
+      task_target_type_t target_type;
       gchar *progress_xml;
       iterator_t tags;
 
@@ -16379,7 +16392,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       comment = task_comment (task);
 
       target_type = task_target_type (task);
-      if (target_type != TASKS_TARGET_TYPE_REGULAR)
+      if (target_type != TASK_TARGET_TYPE_REGULAR)
         target = 0;
       else
         target = task_target (task);
@@ -16403,7 +16416,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           task_target_comment = NULL;
         }
 
-      if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
+      if (target_type == TASK_TARGET_TYPE_IMPORT_TASK
           && (task_run_status (task) == TASK_STATUS_RUNNING))
         progress_xml = g_strdup_printf
                         ("%i",
@@ -18165,7 +18178,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   free_entity (entity);
 }
 
-
+
+
 /* More task stuff. */
 
 /**
@@ -19165,7 +19179,7 @@ manage_task_remove_file (const gchar *task_id, const char *name)
  * @return The target type associated with the scanner type,
  *         TASKS_TARGET_TYPE_UNDEFINED if the scanner type is unknown.
  */
-tasks_target_type_t
+task_target_type_t
 scanner_type_target_type (scanner_type_t type)
 {
   switch (type)
@@ -19175,16 +19189,16 @@ scanner_type_target_type (scanner_type_t type)
       case SCANNER_TYPE_OPENVASD:
       case SCANNER_TYPE_OPENVASD_SENSOR:
       case SCANNER_TYPE_CVE:
-        return TASKS_TARGET_TYPE_REGULAR;
+        return TASK_TARGET_TYPE_REGULAR;
       case SCANNER_TYPE_AGENT_CONTROLLER:
       case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
-        return TASKS_TARGET_TYPE_AGENT_GROUP;
+        return TASK_TARGET_TYPE_AGENT_GROUP;
       case SCANNER_TYPE_CONTAINER_IMAGE:
-        return TASKS_TARGET_TYPE_OCI_IMAGE;
+        return TASK_TARGET_TYPE_OCI_IMAGE;
       case SCANNER_TYPE_WEB_APPLICATION:
-        return TASKS_TARGET_TYPE_WEB_APPLICATION;
+        return TASK_TARGET_TYPE_WEB_APPLICATION;
       default:
-        return TASKS_TARGET_TYPE_UNDEFINED;
+        return TASK_TARGET_TYPE_UNDEFINED;
     }
 }
 
@@ -19223,31 +19237,31 @@ modify_task_check_target_scanner (task_t task,
                                   const gchar *web_application_target_id)
 {
   scanner_t scanner;
-  tasks_target_type_t given_type, required_type;
+  task_target_type_t given_type, required_type;
   int given_count;
 
   given_count = 0;
-  given_type = TASKS_TARGET_TYPE_UNDEFINED;
+  given_type = TASK_TARGET_TYPE_UNDEFINED;
 
   if (modify_task_resource_given (target_id))
     {
       given_count++;
-      given_type = TASKS_TARGET_TYPE_REGULAR;
+      given_type = TASK_TARGET_TYPE_REGULAR;
     }
   if (modify_task_resource_given (agent_group_id))
     {
       given_count++;
-      given_type = TASKS_TARGET_TYPE_AGENT_GROUP;
+      given_type = TASK_TARGET_TYPE_AGENT_GROUP;
     }
   if (modify_task_resource_given (oci_image_target_id))
     {
       given_count++;
-      given_type = TASKS_TARGET_TYPE_OCI_IMAGE;
+      given_type = TASK_TARGET_TYPE_OCI_IMAGE;
     }
   if (modify_task_resource_given (web_application_target_id))
     {
       given_count++;
-      given_type = TASKS_TARGET_TYPE_WEB_APPLICATION;
+      given_type = TASK_TARGET_TYPE_WEB_APPLICATION;
     }
 
   if (given_count == 0)
@@ -19269,7 +19283,7 @@ modify_task_check_target_scanner (task_t task,
 
   required_type = scanner_type_target_type (scanner_type (scanner));
 
-  if (required_type == TASKS_TARGET_TYPE_UNDEFINED)
+  if (required_type == TASK_TARGET_TYPE_UNDEFINED)
     {
       g_warning ("%s: task %llu has scanner %llu of unknown type,"
                  " skipping target type check",
@@ -19332,7 +19346,7 @@ modify_task (const gchar *task_id, const gchar *name,
     return MODIFY_TASK_NOT_FOUND;
 
 
-  if ((task_target_type (task) == TASKS_TARGET_TYPE_IMPORT_TASK
+  if ((task_target_type (task) == TASK_TARGET_TYPE_IMPORT_TASK
        && (agent_group_id == NULL)
        && (oci_image_target_id == NULL)
        && (web_application_target_id == NULL))
@@ -19523,7 +19537,7 @@ modify_task (const gchar *task_id, const gchar *name,
       else if (target == 0)
         return MODIFY_TASK_TARGET_NOT_FOUND;
       else
-        set_task_target (task, target, TASKS_TARGET_TYPE_REGULAR);
+        set_task_target (task, target, TASK_TARGET_TYPE_REGULAR);
     }
 #if ENABLE_AGENTS
   if (agent_group_id) {
@@ -19620,7 +19634,8 @@ modify_task (const gchar *task_id, const gchar *name,
   return MODIFY_TASK_OK;
 }
 
-
+
+
 /* Credentials. */
 
 /**
@@ -22868,7 +22883,8 @@ credential_scanner_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 2);
 }
 
-
+
+
 /* Notes and Overrides. */
 
 /**
@@ -22950,7 +22966,8 @@ nvt_exists (const char* nvt)
   return 0;
 }
 
-
+
+
 /* Scanners */
 
 /**
@@ -25355,7 +25372,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
   return 0;
 }
 
-
+
+
 /* Schema. */
 
 /**
@@ -25566,7 +25584,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
   }
 }
 
-
+
+
 /* Trashcan. */
 
 /**
@@ -26461,7 +26480,7 @@ manage_restore (const char *id)
 
       /* Update the target in any trashcan tasks. */
       task_update_restore_target (restored_target, resource,
-                                  TASKS_TARGET_TYPE_REGULAR);
+                                  TASK_TARGET_TYPE_REGULAR);
 
 
       permissions_set_locations ("target", resource,
@@ -26715,7 +26734,8 @@ manage_empty_trashcan ()
   return 0;
 }
 
-
+
+
 /* Vulns. */
 
 /**
@@ -27492,7 +27512,8 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
   sql_commit ();
 }
 
-
+
+
 /* SQL construction */
 
 /**
@@ -28178,7 +28199,8 @@ type_build_select (const char *type, const char *columns_str,
   return 0;
 }
 
-
+
+
 /* Optimize. */
 
 /**

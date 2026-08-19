@@ -63,7 +63,7 @@ agent_group_in_use_in_hidden_task (agent_group_t agent_group)
     "SELECT COUNT(*) FROM tasks"
     " WHERE hidden != 0 AND target = $1 AND target_type = $2;",
     SQL_RESOURCE_PARAM (agent_group),
-    SQL_INT_PARAM (TASKS_TARGET_TYPE_AGENT_GROUP),
+    SQL_INT_PARAM (TASK_TARGET_TYPE_AGENT_GROUP),
     NULL);
 }
 
@@ -654,7 +654,7 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
 
       /* Update the location of the agent_group in any trashcan tasks. */
       task_update_delete_target (agent_group, trash_id,
-                                 TASKS_TARGET_TYPE_AGENT_GROUP);
+                                 TASK_TARGET_TYPE_AGENT_GROUP);
 
       permissions_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
       tags_set_locations ("agent_group", agent_group, trash_id, LOCATION_TRASH);
@@ -740,7 +740,7 @@ restore_agent_group (const char *agent_group_uuid)
 
   /* Update the agent_group in any tasks. */
   task_update_restore_target (restored_id, trash_id,
-                              TASKS_TARGET_TYPE_AGENT_GROUP);
+                              TASK_TARGET_TYPE_AGENT_GROUP);
 
 
   // Clean up trash entries
@@ -1024,7 +1024,7 @@ find_agent_group_with_permission (const char *uuid, agent_group_t *agent_group,
 int
 agent_group_in_use (agent_group_t agent_group)
 {
-  return task_target_in_use (agent_group, TASKS_TARGET_TYPE_AGENT_GROUP);
+  return task_target_in_use (agent_group, TASK_TARGET_TYPE_AGENT_GROUP);
 }
 
 /**
@@ -1037,7 +1037,7 @@ agent_group_in_use (agent_group_t agent_group)
 int
 trash_agent_group_in_use (agent_group_t agent_group)
 {
-  return task_trash_target_in_use (agent_group, TASKS_TARGET_TYPE_AGENT_GROUP);
+  return task_trash_target_in_use (agent_group, TASK_TARGET_TYPE_AGENT_GROUP);
 }
 
 /**

@@ -20013,7 +20013,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
       task_t index;
       gchar *progress_xml;
       target_t target;
-      tasks_target_type_t target_type;
+      task_target_type_t target_type;
       scanner_t scanner;
       const char *first_report_id, *last_report_id;
       char *config_name, *config_uuid;
@@ -20081,14 +20081,14 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           SEND_GET_COMMON (task, &get_tasks_data->get, &tasks);
 
           target_location_trash
-            = (target_type == TASKS_TARGET_TYPE_IMPORT_TASK)
+            = (target_type == TASK_TARGET_TYPE_IMPORT_TASK)
                 ? 0
                 : task_target_in_trash (index);
 
-          target_in_trash = (target_type == TASKS_TARGET_TYPE_REGULAR)
+          target_in_trash = (target_type == TASK_TARGET_TYPE_REGULAR)
                               ? target_location_trash
                               : 0;
-          if (target_type == TASKS_TARGET_TYPE_IMPORT_TASK
+          if (target_type == TASK_TARGET_TYPE_IMPORT_TASK
               && (task_iterator_run_status (&tasks) == TASK_STATUS_RUNNING))
             {
               progress_xml = g_strdup_printf
@@ -20332,7 +20332,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
           config_uuid = task_config_uuid (index);
           target_available = 1;
 
-          if (target_type == TASKS_TARGET_TYPE_REGULAR)
+          if (target_type == TASK_TARGET_TYPE_REGULAR)
             {
               if (target_in_trash)
                 {
@@ -20366,7 +20366,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 
 #if ENABLE_CONTAINER_SCANNING
-          if (target_type == TASKS_TARGET_TYPE_OCI_IMAGE)
+          if (target_type == TASK_TARGET_TYPE_OCI_IMAGE)
             {
               oci_image_target_t oci_image_target = target;
               int oci_image_target_in_trash = target_location_trash;
@@ -20426,7 +20426,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 #endif
 #if ENABLE_AGENTS
-          if (target_type == TASKS_TARGET_TYPE_AGENT_GROUP)
+          if (target_type == TASK_TARGET_TYPE_AGENT_GROUP)
             {
               agent_group_t agent_group = target;
               int agent_group_in_trash = target_location_trash;
@@ -20464,7 +20464,7 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
             }
 #endif /* ENABLE_AGENT_GROUPS */
 #if ENABLE_WEB_APPLICATION_SCANNING
-          if (target_type == TASKS_TARGET_TYPE_WEB_APPLICATION)
+          if (target_type == TASK_TARGET_TYPE_WEB_APPLICATION)
             {
               web_application_target_t web_application_target = target;
               int web_application_target_in_trash = target_location_trash;
@@ -25920,7 +25920,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               /* Import task. */
 
               set_task_target (create_task_data->task, 0,
-                               TASKS_TARGET_TYPE_IMPORT_TASK);
+                               TASK_TARGET_TYPE_IMPORT_TASK);
               set_task_usage_type (create_task_data->task,
                                    create_task_data->usage_type);
               SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_task"),
@@ -26094,7 +26094,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   goto create_task_fail;
                 }
               set_task_target (create_task_data->task, target,
-                               TASKS_TARGET_TYPE_REGULAR);
+                               TASK_TARGET_TYPE_REGULAR);
             }
 
           set_task_scanner (create_task_data->task, scanner);
