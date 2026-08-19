@@ -911,8 +911,8 @@ manage_modify_config_commit ()
  * @param[in]  grow_families         1 if families should grow, else 0.
  * @param[out] rejected_family       Return of family if one was rejected.
  *
- * @return 0 success, 1 config in use, 2 whole-only families must be growing
- *         and include entire family, -1 error.
+ * @return 0 success, 2 whole-only families must be growing and include entire
+ *         family, -1 error.
  */
 int
 manage_set_config_families (config_t config,
@@ -949,15 +949,6 @@ manage_set_config_families (config_t config,
             *rejected_family = g_strdup (*whole);
           return 2;
         }
-    }
-
-  /* Check the args. */
-
-  if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND hidden = 0;",
-               config))
-    {
-      return 1;
     }
 
   constraining = config_families_growing (config);
@@ -3573,8 +3564,7 @@ config_nvt_selector (config_t config)
  * @param[in]  value_64    Preference value in base64.  NULL for an NVT
  *                         preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, 3 failed to find
- *         config, -1 error.
+ * @return 0 success, 2 empty radio value, 3 failed to find config, -1 error.
  */
 static int
 modify_config_preference (config_t config, const char* nvt,
@@ -3725,7 +3715,7 @@ modify_config_preference (config_t config, const char* nvt,
  * @param[in]  value_64    Preference value in base64.  NULL for an NVT
  *                         preference removes the preference from the config.
  *
- * @return 0 success, 1 config in use, 2 empty radio value, -1 error.
+ * @return 0 success, 2 empty radio value, -1 error.
  */
 int
 manage_set_config_preference (config_t config, const char* nvt,
@@ -3736,13 +3726,6 @@ manage_set_config_preference (config_t config, const char* nvt,
   if (value_64 == NULL)
     {
       gchar *quoted_name, **splits;
-
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE config = %llu AND hidden = 0;",
-                   config))
-        {
-          return 1;
-        }
 
       quoted_name = sql_quote (name);
 
@@ -3765,13 +3748,6 @@ manage_set_config_preference (config_t config, const char* nvt,
 
       g_free (quoted_name);
       return 0;
-    }
-
-  if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND hidden = 0;",
-               config))
-    {
-      return 1;
     }
 
   ret = modify_config_preference (config, nvt, name, value_64);
@@ -3877,7 +3853,7 @@ config_family_entire_and_growing (config_t config, const char* family)
  * @param[in]  family         Family name.
  * @param[in]  selected_nvts  NVT's.
  *
- * @return 0 success, 1 config in use, 2 whole-only family, -1 error.
+ * @return 0 success, 2 whole-only family, -1 error.
  */
 int
 manage_set_config_nvts (config_t config, const char* family,
@@ -3889,13 +3865,6 @@ manage_set_config_nvts (config_t config, const char* family,
 
   if (family_whole_only (family))
     return 2;
-
-  if (sql_int ("SELECT count(*) FROM tasks"
-               " WHERE config = %llu AND hidden = 0;",
-               config))
-    {
-      return 1;
-    }
 
   quoted_family = sql_quote (family);
 

@@ -817,10 +817,6 @@ modify_config_handle_family_selection (config_t config,
     {
       case 0:
         return 0;
-      case 1:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-        return -1;
       case 2:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1,
@@ -905,10 +901,6 @@ modify_config_handle_nvt_selection (config_t config,
     {
       case 0:
         return 0;
-      case 1:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-        return -1;
       case 2:
         SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
           (-1,
@@ -951,10 +943,6 @@ modify_config_handle_preference (config_t config,
     {
       case 0:
         return 0;
-      case 1:
-        SENDF_TO_CLIENT_OR_FAIL_WITH_RETURN
-          (-1, XML_ERROR_SYNTAX ("modify_config", "Config is in use"));
-        return -1;
       case 2:
         if (nvt_oid)
           {
