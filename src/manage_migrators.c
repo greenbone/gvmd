@@ -4255,12 +4255,27 @@ migrate_281_to_282 ()
       return -1;
     }
 
-  /* Check for invalid data */
+  /* Tasks with multiple targets are resolved by keeping only the target that
+   * matches the type of the scanner of the task.  If none of the targets
+   * matches the scanner type, all of them are removed, so that the task
+   * becomes an import task (a note is added to its comment, so users know
+   * why this has happened). */
   int count_multiple_targets = 0;
   iterator_t tasks_multiple_targets;
   init_iterator (
     &tasks_multiple_targets,
-    "SELECT uuid, name FROM tasks"
+    "SELECT uuid, name, id, target, agent_group, oci_image_target,"
+    "       web_application_target,"
+    "       target_location, agent_group_location,"
+    "       oci_image_target_location, web_application_target_location,"
+    "       CASE WHEN coalesce (scanner_location, 0)"
+    "                 = " G_STRINGIFY (LOCATION_TRASH)
+    "            THEN (SELECT type FROM scanners_trash"
+    "                  WHERE scanners_trash.id = tasks.scanner)"
+    "            ELSE (SELECT type FROM scanners"
+    "                  WHERE scanners.id = tasks.scanner)"
+    "       END"
+    " FROM tasks"
     " WHERE (agent_group IS NOT NULL"
     "        AND oci_image_target IS NOT NULL)"
     "    OR (agent_group IS NOT NULL"
@@ -4273,20 +4288,102 @@ migrate_281_to_282 ()
 
   while (next (&tasks_multiple_targets))
     {
-      g_critical ("Invalid data: Multiple targets specified for task %s (%s)",
-                  iterator_string (&tasks_multiple_targets, 0),
-                  iterator_string (&tasks_multiple_targets, 1));
+      g_warning ("Invalid data: Multiple targets specified for task %s (%s)",
+                 iterator_string (&tasks_multiple_targets, 0),
+                 iterator_string (&tasks_multiple_targets, 1));
       count_multiple_targets++;
+
+      resource_t task = iterator_int64 (&tasks_multiple_targets, 2);
+      resource_t target_id = iterator_int64 (&tasks_multiple_targets, 3);
+      resource_t agent_group_id = iterator_int64 (&tasks_multiple_targets, 4);
+      resource_t oci_image_target_id =
+        iterator_int64 (&tasks_multiple_targets, 5);
+      resource_t web_application_target_id =
+        iterator_int64 (&tasks_multiple_targets, 6);
+      int target_loc = iterator_int (&tasks_multiple_targets, 7);
+      int agent_group_loc = iterator_int (&tasks_multiple_targets, 8);
+      int oci_image_target_loc = iterator_int (&tasks_multiple_targets, 9);
+      int web_application_target_loc =
+        iterator_int (&tasks_multiple_targets, 10);
+
+      scanner_type_t scanner_type = iterator_int (&tasks_multiple_targets, 11);
+      task_target_type_t target_type = scanner_type_target_type (scanner_type);
+
+      resource_t kept_target;
+      switch (target_type)
+        {
+          case TASK_TARGET_TYPE_REGULAR:
+            g_warning(" => scanner type (%d), the target type is set to regular", scanner_type);
+            kept_target = target_id;
+            break;
+          case TASK_TARGET_TYPE_AGENT_GROUP:
+            g_warning(" => scanner type (%d), the target type is set to agent group", scanner_type);
+            kept_target = agent_group_id;
+            break;
+          case TASK_TARGET_TYPE_OCI_IMAGE:
+            g_warning(" => scanner type (%d), the target type is set to oci image", scanner_type);
+            kept_target = oci_image_target_id;
+            break;
+          case TASK_TARGET_TYPE_WEB_APPLICATION:
+            g_warning(" => scanner type (%d), the target type is set to web application", scanner_type);
+            kept_target = web_application_target_id;
+            break;
+          default:
+            g_warning (" => scanner type matches no target, the target type is set to import task");
+            kept_target = 0;
+            target_type = TASK_TARGET_TYPE_IMPORT_TASK;
+        }
+
+      /* Remove the targets that do not match the scanner type, preparing the
+       * data for the migration running right after. */
+      sql_ps ("UPDATE tasks"
+              " SET target                          = $1,"
+              "     target_location                 = $2,"
+              "     agent_group                     = $3,"
+              "     agent_group_location            = $4,"
+              "     oci_image_target                = $5,"
+              "     oci_image_target_location       = $6,"
+              "     web_application_target          = $7,"
+              "     web_application_target_location = $8"
+              " WHERE id = $9;",
+              target_type == TASK_TARGET_TYPE_REGULAR
+                ? SQL_RESOURCE_PARAM (target_id) : SQL_RESOURCE_PARAM (0),
+              target_type == TASK_TARGET_TYPE_REGULAR
+                ? SQL_RESOURCE_PARAM (target_loc) : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_AGENT_GROUP
+                ? SQL_RESOURCE_PARAM (agent_group_id) : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_AGENT_GROUP
+                ? SQL_RESOURCE_PARAM (agent_group_loc) : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_OCI_IMAGE
+                ? SQL_RESOURCE_PARAM (oci_image_target_id) : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_OCI_IMAGE
+                ? SQL_RESOURCE_PARAM (oci_image_target_loc) : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_WEB_APPLICATION
+                ? SQL_RESOURCE_PARAM (web_application_target_id)
+                : SQL_NULL_PARAM,
+              target_type == TASK_TARGET_TYPE_WEB_APPLICATION
+                ? SQL_RESOURCE_PARAM (web_application_target_loc)
+                : SQL_NULL_PARAM,
+              SQL_RESOURCE_PARAM (task),
+              NULL);
+
+      /* Add an explanatory comment to tasks that have no targets matching
+       * their scanner type */
+      if (target_type == TASK_TARGET_TYPE_IMPORT_TASK)
+        sql ("UPDATE tasks"
+             " SET comment = coalesce (comment || ' ', '')"
+             "               || 'Note: Multiple targets were assigned to this"
+             " task, but none of them matched the type of its scanner, so the"
+             " targets were removed and the task became an import task.'"
+             " WHERE id = %llu;",
+             task);
     }
   cleanup_iterator (&tasks_multiple_targets);
 
   if (count_multiple_targets > 0)
-    {
-      g_critical ("Aborting migration, since there are %d tasks with multiple targets specified.",
-                  count_multiple_targets);
-      sql_rollback ();
-      return -1;
-    }
+    g_warning ("Resolved %d tasks with multiple targets specified,"
+               " using the type of the scanner of each task.",
+               count_multiple_targets);
 
   /* Add target_type column to tasks table */
   sql ("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS target_type INTEGER;");
