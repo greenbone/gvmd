@@ -4313,26 +4313,29 @@ migrate_281_to_282 ()
       switch (target_type)
         {
           case TASK_TARGET_TYPE_REGULAR:
-            g_warning(" => scanner type (%d), the target type is set to regular", scanner_type);
+            g_warning (" => scanner type (%d), the target type is set to regular", scanner_type);
             kept_target = target_id;
             break;
           case TASK_TARGET_TYPE_AGENT_GROUP:
-            g_warning(" => scanner type (%d), the target type is set to agent group", scanner_type);
+            g_warning (" => scanner type (%d), the target type is set to agent group", scanner_type);
             kept_target = agent_group_id;
             break;
           case TASK_TARGET_TYPE_OCI_IMAGE:
-            g_warning(" => scanner type (%d), the target type is set to oci image", scanner_type);
+            g_warning (" => scanner type (%d), the target type is set to oci image", scanner_type);
             kept_target = oci_image_target_id;
             break;
           case TASK_TARGET_TYPE_WEB_APPLICATION:
-            g_warning(" => scanner type (%d), the target type is set to web application", scanner_type);
+            g_warning (" => scanner type (%d), the target type is set to web application", scanner_type);
             kept_target = web_application_target_id;
             break;
           default:
             g_warning (" => scanner type matches no target, the target type is set to import task");
             kept_target = 0;
-            target_type = TASK_TARGET_TYPE_IMPORT_TASK;
         }
+
+      /* Scanner type does not match target type */
+      if (kept_target == 0)
+        target_type = TASK_TARGET_TYPE_IMPORT_TASK;
 
       /* Remove the targets that do not match the scanner type, preparing the
        * data for the migration running right after. */
