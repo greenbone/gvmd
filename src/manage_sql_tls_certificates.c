@@ -19,6 +19,7 @@
 #include "utils.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 

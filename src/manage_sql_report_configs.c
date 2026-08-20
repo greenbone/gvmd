@@ -19,6 +19,8 @@
 #include "manage_sql_tags.h"
 #include "sql.h"
 #include "utils.h"
+
+#include <assert.h>
 #include <glib.h>
 
 #undef G_LOG_DOMAIN

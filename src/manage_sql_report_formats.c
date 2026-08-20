@@ -22,6 +22,7 @@
 #include "sql.h"
 #include "utils.h"
 
+#include <assert.h>
 #include <cjson/cJSON.h>
 #include <errno.h>
 #include <glib.h>

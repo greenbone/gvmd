@@ -19,6 +19,8 @@
 #include "manage_sql_nvts.h"
 #include "manage_sql_targets.h"
 
+#include <assert.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

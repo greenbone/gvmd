@@ -23,6 +23,8 @@
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
+#include <assert.h>
+
 #include <gvm/base/pwpolicy.h>
 #include <gvm/util/uuidutils.h>
 

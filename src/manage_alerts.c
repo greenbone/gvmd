@@ -24,6 +24,7 @@
 #include "manage_tickets.h"
 #include "manage_users.h"
 
+#include <assert.h>
 #include <bsd/unistd.h>
 #include <glib/gstdio.h>
 #include <grp.h>

@@ -10,6 +10,7 @@
 #include "manage_sql_resources.h"
 #include "manage_sql_tags.h"
 
+#include <assert.h>
 #include <libical/ical.h>
 
 #undef G_LOG_DOMAIN
