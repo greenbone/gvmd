@@ -219,6 +219,9 @@ create_web_application_vts_tables ();
 void
 drop_web_application_vts_tables ();
 
+void
+refresh_all_vts_table ();
+
 int
 get_secinfo_commit_size ();
 

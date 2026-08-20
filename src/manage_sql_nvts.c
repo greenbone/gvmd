@@ -1375,6 +1375,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     {
       update_scap_extra ();
       manage_discovery_nvts ();
+      refresh_all_vts_table ();
     }
 
   feed_lockfile_unlock (&lockfile);
