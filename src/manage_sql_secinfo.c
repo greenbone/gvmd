@@ -7417,6 +7417,8 @@ update_web_application_vts_end ()
 
   sql ("ANALYZE vts.web_application_vts;");
 
+  refresh_all_vts_table ();
+
   g_info ("%s: Updating Web Application VTs succeeded", __func__);
   setproctitle ("Syncing Web Application VTs: done");
 }
@@ -7545,6 +7547,43 @@ manage_sync_web_application_vts (sigset_t *sigmask_current)
                        sync_web_application_vts,
                        "Syncing Web Application VTs");
 }
+
+/**
+ * @brief Refresh the "all VTs" table.
+ */
+void
+refresh_all_vts_table ()
+{
+  g_info ("Refreshing all_vts table...");
+
+  sql ("TRUNCATE vts.all_vts;");
+
+  sql ("INSERT INTO vts.all_vts ("
+       "  oid, name, family, cvss_base, cve,"
+       "  summary, impact, solution_type, solution, detection,"
+       "  insight, affected, tag, type, type_metadata"
+       " )"
+       " SELECT"
+       "  oid, name, family, cvss_base, cve,"
+       "  summary, impact, solution_type, solution, detection,"
+       "  insight, affected, tag, 'NVT', ''"
+       " FROM nvts;");
+
+  if (manage_web_application_vts_loaded ())
+    {
+      sql ("INSERT INTO vts.all_vts ("
+           "  oid, name, family, cvss_base, cve,"
+           "  summary, impact, solution_type, solution, detection,"
+           "  insight, affected, tag, type, type_metadata"
+           " )"
+           " SELECT"
+           "  uuid, name, '', severity, '',"
+           "  description, '', '', solution, '',"
+           "  '', '', '', type, type_metadata"
+           " FROM vts.web_application_vts;");
+    }
+}
+
 
 
 /* Command line options. */

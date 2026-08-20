@@ -4171,6 +4171,24 @@ manage_db_init (const gchar *name)
 
       if (manage_web_application_vts_loaded () == FALSE)
         create_web_application_vts_tables ();
+
+      sql ("CREATE TABLE IF NOT EXISTS vts.all_vts ("
+           "  oid TEXT PRIMARY KEY,"
+           "  name TEXT,"
+           "  family TEXT,"
+           "  cvss_base TEXT,"
+           "  cve TEXT,"
+           "  summary TEXT,"
+           "  impact TEXT,"
+           "  solution_type TEXT,"
+           "  solution TEXT,"
+           "  detection TEXT,"
+           "  insight TEXT,"
+           "  affected TEXT,"
+           "  tag TEXT,"
+           "  type TEXT,"
+           "  type_metadata TEXT"
+           ")");
     }
   else
     {
@@ -4227,8 +4245,6 @@ drop_web_application_vts_tables ()
 {
   g_info ("Dropping old web application VT database tables");
 
-  sql ("DROP MATERIALIZED VIEW IF EXISTS vts.all_vts");
-
   sql ("DROP TABLE IF EXISTS vts.web_application_vt_refs");
   sql ("DROP TABLE IF EXISTS vts.web_application_vts");
 
@@ -4236,7 +4252,6 @@ drop_web_application_vts_tables ()
        " VALUES ('last_web_application_vts_update', 0)"
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
 }
-
 
 /**
  * @brief Init external database.

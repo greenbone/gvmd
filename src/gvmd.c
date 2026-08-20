@@ -100,6 +100,7 @@
 #include "manage_scan_queue.h"
 #include "manage_scanner_relays.h"
 #include "manage_settings.h"
+#include "manage_sql_secinfo.h"
 #include "manage_targets.h"
 #include "manage_users.h"
 #include "gmpd.h"
@@ -1326,6 +1327,7 @@ fork_update_nvt_cache (pid_t *child_pid_out)
         reinit_manage_process ();
         manage_session_init (current_credentials.uuid);
         manage_discovery_nvts ();
+        refresh_all_vts_table ();
 
         /* Exit. */
 

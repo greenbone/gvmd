@@ -14,6 +14,7 @@
 #include "manage_sql.h"
 #include "manage_sql_configs.h"
 #include "manage_sql_nvts_common.h"
+#include "manage_sql_secinfo.h"
 #include "sql.h"
 
 #include <assert.h>
@@ -533,6 +534,7 @@ finalize_nvts_insert (int count_new_vts, int count_modified_vts,
       sql("DROP VIEW vulns;");
       sql("DROP MATERIALIZED VIEW IF EXISTS result_vt_epss;");
       sql("DROP TABLE nvts, nvt_preferences, vt_refs, vt_severities;");
+
       sql("ALTER TABLE vt_refs_rebuild RENAME TO vt_refs;");
       sql("ALTER TABLE vt_severities_rebuild RENAME TO vt_severities;");
       sql("ALTER TABLE nvt_preferences_rebuild RENAME TO nvt_preferences;");
