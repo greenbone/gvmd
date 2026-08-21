@@ -11001,7 +11001,7 @@ where_qod (int min_qod)
 #define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
     { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "(SELECT name FROM all_vts WHERE all_vts.oid =  nvt)",                  \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -11028,19 +11028,19 @@ where_qod (int min_qod)
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+    { "(SELECT cvss_base FROM all_vts WHERE all_vts.oid =  nvt)",             \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "(SELECT name FROM all_vts WHERE all_vts.oid =  nvt)",                  \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+    { "(SELECT solution_type FROM all_vts WHERE all_vts.oid = nvt)",          \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
@@ -11060,7 +11060,9 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT cve FROM all_vts WHERE oid = nvt)",                            \
+      "cve",                                                                  \
+      KEYWORD_TYPE_STRING },                                                  \
     { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
@@ -11175,7 +11177,7 @@ where_qod (int min_qod)
     { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
     { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
-    { "nvts.name",                                                            \
+    { "all_vts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -11206,7 +11208,7 @@ where_qod (int min_qod)
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "nvts.cvss_base",                                                       \
+    { "all_vts.cvss_base",                                                       \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
@@ -11215,14 +11217,14 @@ where_qod (int min_qod)
     { new_severity_sql,                                                       \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "nvts.name",                                                            \
+    { "all_vts.name",                                                            \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.solution_type",                                                   \
+    { "all_vts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
@@ -11233,7 +11235,7 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
+    { "all_vts.cve", "cve", KEYWORD_TYPE_STRING },                               \
     /* ^ 30 = 20 */                                                           \
     { "path",                                                                 \
       NULL,                                                                   \
@@ -11280,29 +11282,29 @@ where_qod (int min_qod)
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
       "task",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.summary",                                                         \
+    { "all_vts.summary",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.insight",                                                         \
+    { "all_vts.insight",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.affected",                                                        \
+    { "all_vts.affected",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.impact",                                                          \
+    { "all_vts.impact",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 40 = 30 */                                                           \
-    { "nvts.solution",                                                        \
+    { "all_vts.solution",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.detection",                                                       \
+    { "all_vts.detection",                                                       \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.family",                                                          \
+    { "all_vts.family",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.tag",                                                             \
+    { "all_vts.tag",                                                             \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
@@ -11775,7 +11777,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                  ((CASE WHEN results.severity"
             "                              > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                    THEN CAST (nvts.cvss_base"
+            "                    THEN CAST (all_vts.cvss_base"
             "                               AS double precision)"
             "                    ELSE results.severity"
             "                    END),"
@@ -11785,7 +11787,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "          coalesce ((CASE WHEN results.severity"
             "                               > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                     THEN CAST (nvts.cvss_base"
+            "                     THEN CAST (all_vts.cvss_base"
             "                                AS double precision)"
             "                     ELSE results.severity"
             "                     END),"
@@ -11794,7 +11796,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
         lateral
           = "coalesce ((CASE WHEN results.severity"
             "                     > " G_STRINGIFY (SEVERITY_LOG)
-            "                THEN CAST (nvts.cvss_base"
+            "                THEN CAST (all_vts.cvss_base"
             "                           AS double precision)"
             "                ELSE results.severity"
             "                END),"
@@ -11841,8 +11843,8 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
   if (dynamic_severity)
-    extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                    " ON results.nvt = nvts.oid,"
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN all_vts"
+                                    " ON results.nvt = all_vts.oid,"
                                     " LATERAL %s AS lateral_severity%s",
                                     lateral, opts);
   else
@@ -12062,12 +12064,12 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
@@ -12168,12 +12170,12 @@ result_count (const get_data_t *get, report_t report, const char* host)
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
@@ -15360,7 +15362,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" JOIN comparison "
                                   " ON results.id = COALESCE (result1_id,"
@@ -15398,7 +15400,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "              severity, nvt, results.qod, results.uuid, hostname,"
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
-    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
+    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM all_vts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
     "       %s, LATERAL %s AS r1_lateral"
@@ -27814,7 +27816,7 @@ type_build_select (const char *type, const char *columns_str,
       lateral_clause = result_iterator_lateral (overrides,
                                                 dynamic,
                                                 "results",
-                                                "nvts");
+                                                "all_vts");
 
       opts_table = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                     " ON results.nvt = result_vt_epss.vt_id"
