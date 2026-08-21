@@ -12,6 +12,7 @@
 #include "manage_sql_resources.h"
 #include "manage_sql_tags.h"
 
+#include <assert.h>
 #include <ctype.h>
 
 #include <gvm/base/hosts.h>

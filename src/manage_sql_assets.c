@@ -22,6 +22,8 @@
 #include "manage_sql_tls_certificates.h"
 #include "sql.h"
 
+#include <assert.h>
+
 #include <gvm/base/array.h>
 #include <gvm/base/hosts.h>
 #include <gvm/util/xmlutils.h>

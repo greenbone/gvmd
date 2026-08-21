@@ -18,6 +18,7 @@
 #include "manage_sql_tags.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <glib.h>
 #include <glib/gstdio.h>

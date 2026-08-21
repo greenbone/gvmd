@@ -18,6 +18,7 @@
 #include "manage_sql_tags.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 

@@ -12,6 +12,8 @@
 #include "manage_sql_tickets.h"
 #include "sql.h"
 
+#include <assert.h>
+
 /**
  * @file
  * @brief GVM management layer: Tags SQL
