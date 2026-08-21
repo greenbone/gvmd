@@ -4174,6 +4174,7 @@ manage_db_init (const gchar *name)
 
       sql ("CREATE TABLE IF NOT EXISTS vts.all_vts ("
            "  oid TEXT PRIMARY KEY,"
+           "  uuid TEXT UNIQUE,"
            "  name TEXT,"
            "  family TEXT,"
            "  cvss_base TEXT,"

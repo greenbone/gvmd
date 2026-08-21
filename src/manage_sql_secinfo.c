@@ -7556,15 +7556,17 @@ refresh_all_vts_table ()
 {
   g_info ("Refreshing all_vts table...");
 
+  sql_begin_immediate ();
+
   sql ("TRUNCATE vts.all_vts;");
 
   sql ("INSERT INTO vts.all_vts ("
-       "  oid, name, family, cvss_base, cve,"
+       "  oid, uuid, name, family, cvss_base, cve,"
        "  summary, impact, solution_type, solution, detection,"
        "  insight, affected, tag, type, type_metadata"
        " )"
        " SELECT"
-       "  oid, name, family, cvss_base, cve,"
+       "  oid, uuid, name, family, cvss_base, cve,"
        "  summary, impact, solution_type, solution, detection,"
        "  insight, affected, tag, 'NVT', ''"
        " FROM nvts;");
@@ -7572,16 +7574,20 @@ refresh_all_vts_table ()
   if (manage_web_application_vts_loaded ())
     {
       sql ("INSERT INTO vts.all_vts ("
-           "  oid, name, family, cvss_base, cve,"
+           "  oid, uuid, name, family, cvss_base, cve,"
            "  summary, impact, solution_type, solution, detection,"
            "  insight, affected, tag, type, type_metadata"
            " )"
            " SELECT"
-           "  uuid, name, '', severity, '',"
+           "  uuid, uuid, name, '', severity, '',"
            "  description, '', '', solution, '',"
            "  '', '', '', type, type_metadata"
            " FROM vts.web_application_vts;");
     }
+
+  sql_commit ();
+
+  g_info ("Finished all_vts table refresh");
 }
 
 
