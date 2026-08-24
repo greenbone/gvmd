@@ -295,7 +295,7 @@ insert_zap_vt_from_json (cJSON *entry)
           "  (uuid, name, creation_time, modification_time,"
           "   type, description, solution, severity, type_metadata)"
           " VALUES ('ZAP-' || $1, $2, m_now(), m_now(),"
-          "         'ZAP-' || $3, $4, $5, $6, $7)"
+          "         'zap-' || lower($3), $4, $5, $6, $7)"
           " ON CONFLICT (uuid) DO UPDATE"
           "  SET name = EXCLUDED.name,"
           "      modification_time = EXCLUDED.modification_time,"
