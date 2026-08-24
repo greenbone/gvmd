@@ -7568,7 +7568,7 @@ refresh_all_vts_table ()
        " SELECT"
        "  oid, uuid, name, family, cvss_base, cve,"
        "  summary, impact, solution_type, solution, detection,"
-       "  insight, affected, tag, 'NVT', ''"
+       "  insight, affected, tag, 'nvt', ''"
        " FROM nvts;");
 
   if (manage_web_application_vts_loaded ())
