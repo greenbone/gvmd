@@ -11356,7 +11356,12 @@ where_qod (int min_qod)
     { "coalesce (result_vt_epss.max_epss_severity, 0.0)",                     \
       "max_epss_severity",                                                    \
       KEYWORD_TYPE_DOUBLE },                                                  \
-
+    { "all_vts.type",                                                         \
+      "vt_type",                                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "all_vts.type_metadata",                                                \
+      "type_metadata",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
 /**
  * @brief Result iterator columns.
  */
@@ -12806,6 +12811,24 @@ result_iterator_max_epss_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the VT type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return VT type of the result.
+ */
+DEF_ACCESS (result_iterator_vt_type, GET_ITERATOR_COLUMN_COUNT + 49)
+
+/**
+ * @brief Get the VT type specific metadata from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return VT type specific metadata of the result.
+ */
+DEF_ACCESS (result_iterator_vt_type_metadata, GET_ITERATOR_COLUMN_COUNT + 50)
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12816,7 +12839,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 49);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 51);
 }
 
 /**
@@ -12830,7 +12853,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 50);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 52);
 }
 
 /**

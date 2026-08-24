@@ -1537,6 +1537,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <e>severities</e>
         <e>cpe</e>
         <e>tags</e>
+        <o><e>type_metadata</e></o>
         <o><e>epss</e></o>
         <e>refs</e>
       </pattern>
@@ -1574,6 +1575,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <name>tags</name>
         <summary>Tags associated with the NVT</summary>
         <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>type_metadata</name>
+        <summary>Additional, type specific information about vulnerability test as JSON</summary>
+        <pattern><t>text</t></pattern>
       </ele>
       <ele>
         <name>epss</name>

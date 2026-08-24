@@ -1413,6 +1413,12 @@ result_iterator_max_epss_cve (iterator_t*);
 double
 result_iterator_max_epss_severity (iterator_t*);
 
+const char *
+result_iterator_vt_type (iterator_t *);
+
+const char *
+result_iterator_vt_type_metadata (iterator_t *);
+
 gchar **
 result_iterator_cert_bunds (iterator_t*);
 

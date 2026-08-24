@@ -9989,6 +9989,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
   if (oid)
     {
+      const char *vt_type = result_iterator_vt_type (results);
+
       if (g_str_has_prefix (oid, "CVE-"))
         {
           gchar *severity;
@@ -10021,6 +10023,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
       {
         const char *cvss_base = result_iterator_nvt_cvss_base (results);
+        const char *vt_type_metadata
+          = result_iterator_vt_type_metadata (results);
         GString *tags = g_string_new (result_iterator_nvt_tag (results));
         int first;
         iterator_t severities;
@@ -10098,12 +10102,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
         buffer_xml_append_printf (buffer,
                                   "<nvt oid=\"%s\">"
-                                  "<type>nvt</type>"
+                                  "<type>%s</type>"
                                   "<name>%s</name>"
                                   "<family>%s</family>"
                                   "<cvss_base>%s</cvss_base>"
                                   "<severities score=\"%s\">",
                                   oid,
+                                  vt_type,
                                   result_iterator_nvt_name (results) ?: oid,
                                   result_iterator_nvt_family (results) ?: "",
                                   cvss_base ?: "",
@@ -10132,6 +10137,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                   "</severities>"
                                   "<tags>%s</tags>",
                                   tags->str ?: "");
+
+        if (! str_blank (vt_type_metadata))
+          {
+            buffer_xml_append_printf (buffer,
+                                      "<type_metadata>%s</type_metadata>",
+                                      vt_type_metadata);
+          }
 
         if (result_iterator_nvt_solution (results)
             || result_iterator_nvt_solution_type (results)
