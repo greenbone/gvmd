@@ -10108,7 +10108,7 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                   "<cvss_base>%s</cvss_base>"
                                   "<severities score=\"%s\">",
                                   oid,
-                                  vt_type,
+                                  vt_type ?: "",
                                   result_iterator_nvt_name (results) ?: oid,
                                   result_iterator_nvt_family (results) ?: "",
                                   cvss_base ?: "",
