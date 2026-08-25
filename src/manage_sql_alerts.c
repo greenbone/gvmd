@@ -2439,6 +2439,7 @@ check_alerts ()
   if (manage_scap_loaded ())
     {
       int max_time;
+      int initialized;
 
       max_time
        = sql_int ("SELECT %s"
@@ -2448,26 +2449,29 @@ check_alerts ()
                   "         (SELECT max (creation_time) FROM scap.cpes));",
                   sql_greatest ());
 
-      if (sql_int ("SELECT value = '0' FROM %s.meta"
-                   " WHERE name = 'scap_check_time';",
-                   sql_schema ()))
-        sql ("UPDATE meta SET value = %i"
-             " WHERE name = 'scap_check_time';",
-             max_time);
-      else
+      initialized
+        = sql_int ("SELECT EXISTS (SELECT 1 FROM %s.meta"
+                   "               WHERE name = 'scap_check_time'"
+                   "                 AND value <> '0');",
+                   sql_schema ());
+
+      if (initialized)
         {
           check_for_new_scap ();
           check_for_updated_scap ();
-          sql ("INSERT INTO %s.meta (name, value)"
-               " VALUES ('scap_check_time', %i)"
-               " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
-               sql_schema (), max_time);
         }
+
+      sql ("INSERT INTO %s.meta (name, value)"
+           " VALUES ('scap_check_time', %i)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           sql_schema (), max_time);
     }
+
 
   if (manage_cert_loaded ())
     {
       int max_time;
+      int initialized;
 
       max_time
        = sql_int ("SELECT"
@@ -2478,21 +2482,22 @@ check_alerts ()
                   "   (SELECT max (creation_time) FROM cert.dfn_cert_advs));",
                   sql_greatest ());
 
-      if (sql_int ("SELECT value = '0' FROM %s.meta"
-                   " WHERE name = 'cert_check_time';",
-                   sql_schema ()))
-        sql ("UPDATE %s.meta SET value = %i"
-             " WHERE name = 'cert_check_time';",
-             sql_schema(), max_time);
-      else
+      initialized
+        = sql_int ("SELECT EXISTS (SELECT 1 FROM %s.meta"
+                   "               WHERE name = 'cert_check_time'"
+                   "                 AND value <> '0');",
+                   sql_schema ());
+
+      if (initialized)
         {
           check_for_new_cert ();
           check_for_updated_cert ();
-          sql ("INSERT INTO %s.meta (name, value)"
-               " VALUES ('cert_check_time', %i)"
-               " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
-               sql_schema (), max_time);
         }
+
+      sql ("INSERT INTO %s.meta (name, value)"
+           " VALUES ('cert_check_time', %i)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           sql_schema (), max_time);
     }
 }
 
