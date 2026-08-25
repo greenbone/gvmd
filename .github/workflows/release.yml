@@ -70,6 +70,7 @@ jobs:
         id: release
         uses: greenbone/actions/release@v3
         with:
+          admin-bypass: "false"
           github-user: ${{ secrets.GREENBONE_BOT }}
           github-user-mail: ${{ secrets.GREENBONE_BOT_MAIL }}
           github-user-token: ${{ secrets.GREENBONE_BOT_TOKEN }}
