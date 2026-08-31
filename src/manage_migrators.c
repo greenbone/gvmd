@@ -4383,7 +4383,7 @@ migrate_is_available (int old_version, int new_version)
  * @brief Check version and migrate of a specific SecInfo database.
  *
  * @param[in]  type_name   Name of the database type.
- * @param[in]  type        Type of the database (for gvm_migrate_secinfo).
+ * @param[in]  schema      Database schema (for gvm_migrate_secinfo).
  * @param[in]  get_old_version  Function to get the old version.
  * @param[in]  get_new_version  Function to get the new version.
  * @param[out] is_current_ret   Set to 1 if DB version is already current.
@@ -4393,7 +4393,7 @@ migrate_is_available (int old_version, int new_version)
  */
 static int
 check_secinfo_migration (const char *type_name,
-                         int type,
+                         secinfo_schema_t schema,
                          int get_old_version (),
                          int get_new_version (),
                          int *is_current_ret)
@@ -4421,7 +4421,7 @@ check_secinfo_migration (const char *type_name,
   else
     {
       g_message ("Migrating %s database", type_name);
-      switch (gvm_migrate_secinfo (type))
+      switch (gvm_migrate_secinfo (schema))
         {
         case 0:
           g_message ("%s database migrated successfully", type_name);
@@ -4530,7 +4530,7 @@ manage_migrate (GSList *log_config, const db_conn_info_t *database)
   /* Migrate SCAP, CERT and VT databases */
 
   ret = check_secinfo_migration ("SCAP",
-                                 SCAP_FEED,
+                                 SECINFO_SCHEMA_SCAP,
                                  manage_scap_db_version,
                                  manage_scap_db_supported_version,
                                  &scap_version_current);
@@ -4540,7 +4540,7 @@ manage_migrate (GSList *log_config, const db_conn_info_t *database)
     return -11;
 
   ret = check_secinfo_migration ("CERT",
-                                 CERT_FEED,
+                                 SECINFO_SCHEMA_CERT,
                                  manage_cert_db_version,
                                  manage_cert_db_supported_version,
                                  &cert_version_current);
@@ -4551,7 +4551,7 @@ manage_migrate (GSList *log_config, const db_conn_info_t *database)
 
   ret = check_secinfo_migration (
                 "VTs",
-                WEB_APPLICATION_VTS_FEED,
+                SECINFO_SCHEMA_VTS,
                 manage_vts_db_version,
                 manage_vts_db_supported_version,
                 &web_application_vts_current);

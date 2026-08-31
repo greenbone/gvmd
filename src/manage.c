@@ -6099,20 +6099,21 @@ nvts_check_feed (int *lockfile_in_use,
  *
  * Calls a sync script to migrate the SCAP or CERT database.
  *
- * @param[in]  feed_type     Could be SCAP_FEED or CERT_FEED.
+ * @param[in]  schema     The schema to check.
  *
  * @return 0 sync complete, 1 sync already in progress, -1 error
  */
 int
-gvm_migrate_secinfo (int feed_type)
+gvm_migrate_secinfo (secinfo_schema_t schema)
 {
   lockfile_t lockfile;
   int ret;
 
-  if (feed_type != SCAP_FEED && feed_type != CERT_FEED
-      && feed_type != WEB_APPLICATION_VTS_FEED)
+  if (schema != SECINFO_SCHEMA_SCAP
+      && schema != SECINFO_SCHEMA_CERT
+      && schema != SECINFO_SCHEMA_VTS)
     {
-      g_warning ("%s: unsupported feed_type", __func__);
+      g_warning ("%s: unsupported schema", __func__);
       return -1;
     }
 
@@ -6122,11 +6123,11 @@ gvm_migrate_secinfo (int feed_type)
   else if (ret)
     return -1;
 
-  if (feed_type == SCAP_FEED)
+  if (schema == SECINFO_SCHEMA_SCAP)
     ret = check_scap_db_version ();
-  else if (feed_type == CERT_FEED)
+  else if (schema == SECINFO_SCHEMA_CERT)
     ret = check_cert_db_version ();
-  else if (feed_type == WEB_APPLICATION_VTS_FEED)
+  else if (schema == SECINFO_SCHEMA_VTS)
     ret = check_vts_db_version ();
 
   feed_lockfile_unlock (&lockfile);
