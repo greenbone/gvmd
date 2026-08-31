@@ -1548,12 +1548,12 @@ fork_queued_task_actions ()
 }
 
 /**
- * @brief  Fork process for handling the report export scheduling
+ * @brief  Fork process for handling the  integration report export scheduling
  *
  * @return 0 on success, -1 on error
  */
-int
-fork_report_export_scheduler ()
+static int
+fork_integration_report_export_scheduler ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1816,7 +1816,8 @@ typedef struct
 {
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
-  time_t last_report_export; ///< Last time report export was executed
+  time_t last_integration_report_export; ///< Last time integration report export
+                                         ///  was executed
   time_t last_agents_sync; ///< Last time the agents sync was executed.
   time_t last_asset_snapshot_stale_delete; ///< Last time the delete
                                            ///  asset snapshots was executed.
@@ -1913,8 +1914,13 @@ run_queue (periodic_times_t *t)
   set_last_run_time (&t->last_queue, time (NULL));
 }
 
+/**
+ * @brief Run integration report export if due; updates last timestamp when executed.
+ *
+ * @param t [in,out] Periodic timestamps; updates t->last_report_export on run.
+ */
 static void
-run_report_export (periodic_times_t *t)
+run_integration_report_export (periodic_times_t *t)
 {
   if (!feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
@@ -1925,11 +1931,11 @@ run_report_export (periodic_times_t *t)
     }
 
   time_t now = time (NULL);
-  if (!time_to_run (t->last_report_export, REPORT_EXPORT_PERIOD, now))
+  if (!time_to_run (t->last_integration_report_export, REPORT_EXPORT_PERIOD, now))
     return;
 
-  fork_report_export_scheduler();
-  set_last_run_time (&t->last_report_export, time (NULL));
+  fork_integration_report_export_scheduler();
+  set_last_run_time (&t->last_integration_report_export, time (NULL));
 }
 
 /**
@@ -1984,7 +1990,7 @@ run_periodic_block (periodic_times_t *t)
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
-  run_report_export (t);
+  run_integration_report_export (t);
   run_asset_snapshot_delete_stale (t);
 }
 
