@@ -4190,6 +4190,11 @@ manage_db_init (const gchar *name)
            "  type TEXT,"
            "  type_metadata TEXT"
            ")");
+
+      sql ("INSERT INTO vts.meta (name, value)"
+           " VALUES ('vts_database_version', %d)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           GVMD_VTS_DATABASE_VERSION);
     }
   else
     {
@@ -4233,9 +4238,9 @@ create_web_application_vts_tables ()
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
 
   sql ("INSERT INTO vts.meta (name, value)"
-       " VALUES ('web_application_vts_database_version', %d)"
+       " VALUES ('vts_database_version', %d)"
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
-       GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION);
+       GVMD_VTS_DATABASE_VERSION);
 }
 
 /**

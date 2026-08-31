@@ -96,9 +96,6 @@ void
 manage_db_remove (const gchar *);
 
 int
-manage_db_init (const gchar *);
-
-int
 manage_db_init_indexes (const gchar *);
 
 int
@@ -7295,19 +7292,19 @@ fail:
 /* Web Application VTs. */
 
 /**
- * @brief Ensure Web application VTs db is at the right version.
+ * @brief Ensure VTs db is at the right version.
  *
  * @return 0 success, -1 error.
  */
 int
-check_web_application_vts_db_version ()
+check_vts_db_version ()
 {
-  int db_version = manage_web_application_vts_db_version ();
+  int db_version = manage_vts_db_version ();
 
-  if (db_version < GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION)
+  if (db_version < GVMD_VTS_DATABASE_VERSION)
     {
       int ret;
-      g_info ("Reinitialization of the Web Application VT tables necessary");
+      g_info ("Reinitialization of the VTs database necessary");
 
       drop_web_application_vts_tables ();
 
@@ -7324,12 +7321,12 @@ check_web_application_vts_db_version ()
 
       update_zap_vt_group_severity_scores ();
     }
-  else if (db_version > GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION)
+  else if (db_version > GVMD_VTS_DATABASE_VERSION)
     {
-      g_warning ("%s: Web application VTs database version %d is newer than"
+      g_warning ("%s: VTs database version %d is newer than"
                  " supported version %d",
                  __func__, db_version,
-                 GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION);
+                 GVMD_VTS_DATABASE_VERSION);
     }
   return 0;
 }

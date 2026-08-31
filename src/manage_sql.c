@@ -1949,9 +1949,9 @@ manage_cert_db_version ()
  * @return Database version supported by this manager.
  */
 int
-manage_web_application_vts_db_supported_version ()
+manage_vts_db_supported_version ()
 {
-  return GVMD_WEB_APPLICATION_VTS_DATABASE_VERSION;
+  return GVMD_VTS_DATABASE_VERSION;
 }
 
 /**
@@ -1960,15 +1960,15 @@ manage_web_application_vts_db_supported_version ()
  * @return Database version read from database if possible, else -1.
  */
 int
-manage_web_application_vts_db_version ()
+manage_vts_db_version ()
 {
-  if (manage_web_application_vts_loaded () == 0)
+  if (sql_table_exists ("vts", "meta") == 0)
     return -1;
 
   int number;
   char *version
     = sql_string ("SELECT value FROM vts.meta"
-                  " WHERE name = 'web_application_vts_database_version'"
+                  " WHERE name = 'vts_database_version'"
                   " LIMIT 1;");
   if (version)
     {
@@ -3970,15 +3970,12 @@ check_db_versions ()
     return ret;
 
   /* Check VT database versions. */
-  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
-    {
-      ret = check_secinfo_db_version (
-                "Web Application VTs",
-                manage_web_application_vts_db_version,
-                manage_web_application_vts_db_supported_version);
-      if (ret)
-        return ret;
-    }
+
+  ret = check_secinfo_db_version ("VTs",
+                                  manage_vts_db_version,
+                                  manage_vts_db_supported_version);
+  if (ret)
+    return ret;
 
   return 0;
 }
@@ -4502,6 +4499,14 @@ check_db (int check_encryption_key, int avoid_db_check_inserts)
   if (check_db_extensions ())
     goto fail;
   create_tables ();
+  if (! sql_table_exists("vts", "meta")
+      || sql_int ("SELECT EXISTS ("
+                  " SELECT value FROM vts.meta"
+                  " WHERE name = 'vts_database_version');") == 0)
+    {
+      manage_db_init ("vts");
+      refresh_all_vts_table ();
+    }
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
   if (avoid_db_check_inserts == 0)

@@ -30,6 +30,7 @@
 #include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
 #include "manage_report_tls_certificates.h"
+#include "manage_secinfo.h"
 #include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"
@@ -286,10 +287,10 @@ int
 manage_cert_db_version ();
 
 int
-manage_web_application_vts_db_supported_version ();
+manage_vts_db_supported_version ();
 
 int
-manage_web_application_vts_db_version ();
+manage_vts_db_version ();
 
 void
 set_db_version (int version);
@@ -2910,7 +2911,7 @@ int
 feed_lockfile_unlock (lockfile_t *);
 
 int
-gvm_migrate_secinfo (int);
+gvm_migrate_secinfo (secinfo_schema_t);
 
 int
 nvts_feed_info (gchar **, gchar **, gchar **, gchar **);
