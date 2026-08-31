@@ -193,6 +193,9 @@ typedef enum {
 #define SECINFO_UPDATE_STRATEGY_DEFAULT SECINFO_UPDATE_STRATEGY_KEEP_SCHEMA
 
 int
+manage_db_init (const gchar *);
+
+int
 secinfo_feed_version_status (const char *);
 
 pid_t
@@ -211,7 +214,7 @@ int
 check_cert_db_version ();
 
 int
-check_web_application_vts_db_version ();
+check_vts_db_version ();
 
 void
 create_web_application_vts_tables ();

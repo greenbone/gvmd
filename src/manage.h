@@ -286,10 +286,10 @@ int
 manage_cert_db_version ();
 
 int
-manage_web_application_vts_db_supported_version ();
+manage_vts_db_supported_version ();
 
 int
-manage_web_application_vts_db_version ();
+manage_vts_db_version ();
 
 void
 set_db_version (int version);

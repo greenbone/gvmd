@@ -6127,7 +6127,7 @@ gvm_migrate_secinfo (int feed_type)
   else if (feed_type == CERT_FEED)
     ret = check_cert_db_version ();
   else if (feed_type == WEB_APPLICATION_VTS_FEED)
-    ret = check_web_application_vts_db_version ();
+    ret = check_vts_db_version ();
 
   feed_lockfile_unlock (&lockfile);
 

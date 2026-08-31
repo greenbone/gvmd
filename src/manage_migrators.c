@@ -4550,10 +4550,10 @@ manage_migrate (GSList *log_config, const db_conn_info_t *database)
     return -12;
 
   ret = check_secinfo_migration (
-                "Web Application VTs",
+                "VTs",
                 WEB_APPLICATION_VTS_FEED,
-                manage_web_application_vts_db_version,
-                manage_web_application_vts_db_supported_version,
+                manage_vts_db_version,
+                manage_vts_db_supported_version,
                 &web_application_vts_current);
       if (ret > 0)
         return 13;
