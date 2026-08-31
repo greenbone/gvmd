@@ -4499,7 +4499,10 @@ check_db (int check_encryption_key, int avoid_db_check_inserts)
   if (check_db_extensions ())
     goto fail;
   create_tables ();
-  if (! sql_table_exists("vts", "meta"))
+  if (! sql_table_exists("vts", "meta")
+      || sql_int ("SELECT EXISTS ("
+                  " SELECT value FROM vts.meta"
+                  " WHERE name = 'vts_database_version');") == 0)
     {
       manage_db_init ("vts");
       refresh_all_vts_table ();
