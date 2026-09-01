@@ -83,7 +83,7 @@ init_report_export_iterator_with_where (iterator_t *iterator,
     0, /* No trashcan. */
     REPORT_EXPORT_ITERATOR_JOIN_CLAUSE,
     where_clause,
-    TRUE);
+    0);
 }
 
 /**
@@ -142,8 +142,9 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
   if (get->id)
     {
       quoted = sql_quote (get->id);
+
       where_clause = g_strdup_printf (
-        "AND report_exports.uuid = '%s'",
+        "report_exports.uuid = '%s'",
         quoted);
     }
 
@@ -330,19 +331,19 @@ create_report_export (report_t report,
   existing_status = REPORT_EXPORT_STATUS_EXPIRED;
 
   ret = find_matching_report_export (
-          report,
-          delta_report,
-          report_format,
-          report_config,
-          export_type,
-          normalized_filter,
-          ignore_pagination,
-          lean,
-          notes_details,
-          overrides_details,
-          result_tags,
-          &existing_report_export,
-          &existing_status);
+    report,
+    delta_report,
+    report_format,
+    report_config,
+    export_type,
+    normalized_filter,
+    ignore_pagination,
+    lean,
+    notes_details,
+    overrides_details,
+    result_tags,
+    &existing_report_export,
+    &existing_status);
 
   if (ret)
     return -1;
@@ -1383,3 +1384,30 @@ DEF_ACCESS (report_export_iterator_report_config_uuid,
  */
 DEF_ACCESS (report_export_iterator_report_config_name,
             GET_ITERATOR_COLUMN_COUNT + 27);
+
+/**
+ * @brief Count report exports matching GET filter criteria.
+ *
+ * @param[in] get  GET parameters containing filtering criteria.
+ *
+ * @return Number of matching report exports.
+ */
+int
+report_export_count (const get_data_t *get)
+{
+  static const char *extra_columns[] =
+    REPORT_EXPORT_ITERATOR_FILTER_COLUMNS;
+
+  static column_t columns[] =
+    REPORT_EXPORT_ITERATOR_COLUMNS;
+
+  return count ("report_export",
+                get,
+                columns,
+                NULL,
+                extra_columns,
+                0,
+                NULL,
+                0,
+                TRUE);
+}
