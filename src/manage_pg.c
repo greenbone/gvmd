@@ -143,6 +143,8 @@ manage_cert_db_exists ()
  "         OR overrides.result = 0)"                        \
  "    AND (overrides.hosts is NULL"                         \
  "         OR overrides.hosts = ''"                         \
+ "         OR oci_digest_list_contains (overrides.hosts,"   \
+ "                                      results.host)"      \
  "         OR hosts_contains (overrides.hosts,"             \
  "                            results.host))"               \
  "    AND (overrides.port is NULL"                          \
@@ -1031,6 +1033,18 @@ manage_create_sql_functions ()
           "    END CASE;"
           " END;"
           " $$ LANGUAGE plpgsql"
+          " IMMUTABLE;");
+
+     sql ("CREATE OR REPLACE FUNCTION oci_digest_list_contains (digests text,"
+          "                                                     item text)"
+          " RETURNS boolean AS $$"
+          "  SELECT $2 ~ '^[[:alnum:]_+.-]+:[[:xdigit:]]+$'"
+          "     AND EXISTS ("
+          "       SELECT 1"
+          "       FROM unnest (string_to_array ($1, ',')) AS digest_list (item)"
+          "       WHERE trim (item) = $2"
+          "  );"
+          "$$ LANGUAGE SQL"
           " IMMUTABLE;");
 
  /* Functions in SQL. */
@@ -3565,6 +3579,7 @@ create_tables ()
        "      OR overrides.result = 0)"
        " AND (overrides.hosts is NULL"
        "      OR overrides.hosts = ''"
+       "      OR oci_digest_list_contains (overrides.hosts, results.host)"
        "      OR hosts_contains (overrides.hosts, results.host))"
        " AND (overrides.port is NULL"
        "      OR overrides.port = ''"
