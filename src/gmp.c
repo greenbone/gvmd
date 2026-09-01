@@ -189,6 +189,16 @@ typedef struct
 } auth_conf_setting_t;
 
 /**
+ * @brief Status codes for note or override hosts validation.
+ */
+typedef enum
+{
+  NOTE_OR_OVERRIDE_SCOPE_OK = 0,
+  NOTE_OR_OVERRIDE_SCOPE_INVALID = -1,
+  NOTE_OR_OVERRIDE_SCOPE_TOO_MANY = -2
+} note_or_override_scope_status_t;
+
+/**
  * @brief Check that a string represents a valid x509 Certificate.
  *
  * @param[in]  cert_str     Certificate string.
@@ -393,6 +403,45 @@ check_public_key (const char *key_str)
   g_array_free (key_types, TRUE);
 
   return ret;
+}
+
+
+/**
+ * @brief Validate the notes or overrides hosts field.
+ *
+ * Checks whether the value contains OCI image digests or
+ * traditional hosts and validates accordingly.
+ *
+ * @param[in]  value  Free-form comma-separated value.
+ *
+ * @return Status of the validation.
+ */
+static note_or_override_scope_status_t
+validate_notes_or_overrides_scope (const gchar *value)
+{
+  int n = 0;
+
+  if (value == NULL || *value == '\0')
+    return NOTE_OR_OVERRIDE_SCOPE_OK;
+
+#if ENABLE_CONTAINER_SCANNING
+  /* Try digests first and fallback to hosts otherwise */
+  n = manage_count_oci_image_digests (value);
+  if (n > 0)
+    {
+      if (n > get_oci_target_max_images ())
+        return NOTE_OR_OVERRIDE_SCOPE_TOO_MANY;
+      return NOTE_OR_OVERRIDE_SCOPE_OK;
+    }
+#endif
+
+  n = manage_count_hosts (value, NULL);
+  if (n == -1)
+    return NOTE_OR_OVERRIDE_SCOPE_INVALID;
+  if (n > manage_max_hosts ())
+    return NOTE_OR_OVERRIDE_SCOPE_TOO_MANY;
+
+  return NOTE_OR_OVERRIDE_SCOPE_OK;
 }
 
 
@@ -23984,7 +24033,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           note_t new_note;
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (create_note_data->copy)
             switch (copy_note (create_note_data->copy, &new_note))
@@ -24037,16 +24086,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_note",
                                 "A TEXT entity is required"));
           else if (create_note_data->hosts
-                   && ((max = manage_count_hosts (create_note_data->hosts, NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Error in host specification"));
-          else if (create_note_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Host specification exceeds maximum number of"
-                                " hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      create_note_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_note",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_note",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+            }
           else if (create_note_data->task_id
                    && find_task_with_permission (create_note_data->task_id,
                                                  &task,
@@ -24157,7 +24210,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           override_t new_override;
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (create_override_data->copy)
             switch (copy_override (create_override_data->copy, &new_override))
@@ -24210,17 +24263,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_override",
                                 "A TEXT entity is required"));
           else if (create_override_data->hosts
-                   && ((max = manage_count_hosts (create_override_data->hosts,
-                                                  NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Error in host specification"));
-          else if (create_override_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Host specification exceeds maximum number"
-                                " of hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      create_override_data->hosts
+                                    ))!= NOTE_OR_OVERRIDE_SCOPE_OK))
+           {
+             if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+               SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Error in host specification"));
+             else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+               SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+           }
           else if (create_override_data->new_threat == NULL
                    && create_override_data->new_severity == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -27446,6 +27502,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_NOTE:
         {
+          note_or_override_scope_status_t scope_ret;
           if (acl_user_may ("modify_note") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27464,6 +27521,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
                                 "A TEXT entity is required"));
+          else if (modify_note_data->hosts
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      modify_note_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Host specification exceeds maximum number of"
+                                    " hosts"));
+            }
           else switch (modify_note (modify_note_data->note_id,
                                     modify_note_data->active,
                                     modify_note_data->nvt_oid,
@@ -27566,7 +27638,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_OVERRIDE:
         {
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (acl_user_may ("modify_override") == 0)
             {
@@ -27587,17 +27659,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_override",
                                 "A TEXT entity is required"));
           else if (modify_override_data->hosts
-                   && ((max = manage_count_hosts (modify_override_data->hosts,
-                                                  NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_override",
-                                "Error in host specification"));
-          else if (modify_override_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_override",
-                                "Host specification exceeds maximum number"
-                                " of hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      modify_override_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+            }
           else switch (modify_override (modify_override_data->override_id,
                                         modify_override_data->active,
                                         modify_override_data->nvt_oid,

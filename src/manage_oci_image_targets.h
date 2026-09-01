@@ -18,6 +18,11 @@
 #include "iterator.h"
 #include "manage_get.h"
 
+/**
+ * @brief Default maximum number of images per OCI image target.
+ */
+#define MANAGE_MAX_OCI_IMAGES 4095  // What is a reasoable limit here ?
+
 typedef enum {
   CREATE_OCI_IMAGE_TARGET_OK = 0,
   CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY = 1,
@@ -26,6 +31,7 @@ typedef enum {
   CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND = 4,
   CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 5,
   CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 6,
+  CREATE_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS = 7,
   CREATE_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
   CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
 } create_oci_image_target_return_t;
@@ -40,6 +46,7 @@ typedef enum {
   MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 6,
   MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS = 7,
   MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 8,
+  MODIFY_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS = 9,
   MODIFY_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
   MODIFY_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
 } modify_oci_image_target_return_t;
@@ -142,6 +149,18 @@ oci_image_target_task_iterator_readable (iterator_t*);
 
 gchar*
 clean_images (const char *);
+
+int
+hosts_are_sha256_digests (const gchar *);
+
+int
+get_oci_target_max_images ();
+
+void
+set_oci_target_max_images (int);
+
+int
+manage_count_oci_image_digests (const gchar *);
 
 #endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
 
