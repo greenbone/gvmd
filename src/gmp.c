@@ -29924,8 +29924,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   assert (0);
                 case -1:
                   /* Some other error occurred. */
-                  /** @todo Should respond with internal error. */
-                  abort ();
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Internal error stopping task"));
               }
           }
         else
