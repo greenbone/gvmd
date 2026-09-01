@@ -667,3 +667,29 @@ process_report_export (report_export_t report_export)
 
   return ret;
 }
+
+/**
+ * @brief Check if a report export is writable.
+ *
+ * @param report_export Resource identifier.
+ * @return Always returns 1 (writable).
+ */
+int
+report_export_writable (report_export_t report_export)
+{
+  (void) report_export;
+  return 1;
+}
+
+/**
+ * @brief Check if a report export is in-use.
+ *
+ * @param report_export Resource identifier.
+ * @return Always returns 1 (writable).
+ */
+int
+report_export_in_use (report_export_t report_export)
+{
+  (void) report_export;
+  return 0;
+}

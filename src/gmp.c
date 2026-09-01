@@ -99,6 +99,7 @@
 #include "gmp_report_configs.h"
 #include "gmp_report_cves.h"
 #include "gmp_report_errors.h"
+#include "gmp_report_exports.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
 #include "gmp_report_operating_systems.h"
@@ -4636,6 +4637,7 @@ typedef enum
   CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_CVES,
   CLIENT_GET_REPORT_ERRORS,
+  CLIENT_GET_REPORT_EXPORTS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_REPORT_HOSTS,
   CLIENT_GET_REPORT_OPERATING_SYSTEMS,
@@ -5988,6 +5990,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_GET_START (report_cves, REPORT_CVES)
 
         ELSE_GET_START (report_errors, REPORT_ERRORS)
+
+        ELSE_GET_START (report_exports, REPORT_EXPORTS)
 
         else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
           {
@@ -22606,6 +22610,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_GET_END (REPORT_CVES, report_cves);
 
       CASE_GET_END (REPORT_ERRORS, report_errors);
+
+      CASE_GET_END (REPORT_EXPORTS, report_exports);
 
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
