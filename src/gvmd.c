@@ -1576,7 +1576,7 @@ fork_integration_report_export_scheduler ()
     case 0:
       /* Child */
       init_sentry ();
-      setproctitle ("Exporting reports");
+      setproctitle ("Exporting integration reports");
 
       if (sigmask_normal)
         pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
@@ -1620,6 +1620,134 @@ fork_integration_report_export_scheduler ()
     }
 }
 
+/**
+ * @brief Fork a worker process for a report export.
+ *
+ * @param[in] report_export  Report export to process.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+fork_report_export_worker (report_export_t report_export)
+{
+  int pid;
+
+  pid = fork_with_handlers ();
+
+  switch (pid)
+    {
+    case 0:
+      {
+        int ret;
+
+        /* Child */
+        init_sentry ();
+        setproctitle ("Exporting report");
+
+        cleanup_manage_process (FALSE);
+        init_manage_process (&database);
+
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        if (manage_start_report_export (report_export, getpid ()))
+          ret = -1;
+        else
+          ret = process_report_export (report_export);
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+
+        exit (ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+      }
+
+    case -1:
+      g_warning ("%s: fork: %s",
+                 __func__,
+                 strerror (errno));
+      return -1;
+
+    default:
+      g_debug ("%s: forked report export worker %i for export %lld",
+               __func__,
+               pid,
+               report_export);
+      return 0;
+    }
+}
+
+/**
+ * @brief Start workers for pending report exports.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+run_pending_report_exports (void)
+{
+  iterator_t iterator;
+  get_data_t get = {0};
+  int worker_count;
+
+  cleanup_manage_process (FALSE);
+  init_manage_process (&database);
+
+  reset_stale_report_exports (REPORT_EXPORT_MAX_RETRIES,
+                              REPORT_EXPORT_STALE_TIMEOUT_SECONDS);
+
+  worker_count = report_export_worker_pid_count ();
+
+  if (worker_count >= REPORT_EXPORT_MAX_WORKERS)
+    {
+      g_debug ("%s: report export worker limit reached (%d/%d)",
+               __func__,
+               worker_count,
+               REPORT_EXPORT_MAX_WORKERS);
+      return 0;
+    }
+
+  if (init_report_export_iterator_pending (&iterator,
+                                           &get,
+                                           REPORT_EXPORT_MAX_RETRIES))
+    {
+      g_warning ("%s: failed to initialize pending report export iterator",
+                 __func__);
+      return -1;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+
+      if (worker_count >= REPORT_EXPORT_MAX_WORKERS)
+        break;
+
+      report_export = get_iterator_resource (&iterator);
+
+      if (fork_report_export_worker (report_export))
+        {
+          g_warning ("%s: failed to start worker for report export %lld",
+                     __func__,
+                     report_export);
+        }
+      else
+        {
+          worker_count++;
+        }
+    }
+
+  cleanup_iterator (&iterator);
+
+  return 0;
+}
 
 #if ENABLE_AGENTS
 /**
@@ -1810,6 +1938,79 @@ fork_asset_snapshot_delete_stale ()
 }
 
 /**
+ * @brief Forks a process for handling the scheduling of report exports.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_report_export_scheduler ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+
+  switch (pid)
+    {
+    case 0:
+      init_sentry ();
+      setproctitle ("Scheduling report exports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+      run_pending_report_exports ();
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+
+      return -1;
+
+    default:
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+
+      return 0;
+    }
+}
+
+/**
  * @brief Periodic timestamps for background jobs in the main loop.
  */
 typedef struct
@@ -1821,6 +2022,7 @@ typedef struct
   time_t last_agents_sync; ///< Last time the agents sync was executed.
   time_t last_asset_snapshot_stale_delete; ///< Last time the delete
                                            ///  asset snapshots was executed.
+  time_t last_report_export; ///< Last time the report export was executed.
 } periodic_times_t;
 
 /**
@@ -1931,7 +2133,7 @@ run_integration_report_export (periodic_times_t *t)
     }
 
   time_t now = time (NULL);
-  if (!time_to_run (t->last_integration_report_export, REPORT_EXPORT_PERIOD, now))
+  if (!time_to_run (t->last_integration_report_export, INTEGRATION_REPORT_EXPORT_PERIOD, now))
     return;
 
   fork_integration_report_export_scheduler();
@@ -1980,6 +2182,22 @@ run_asset_snapshot_delete_stale (periodic_times_t *t)
 }
 
 /**
+ * @brief Run to export reports.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_ on run.
+ */
+static void
+run_report_exports (periodic_times_t *t)
+{
+  time_t now = time (NULL);
+  if (!time_to_run (t->last_report_export,
+                    REPORT_EXPORT_PERIOD, now))
+    return;
+  fork_report_export_scheduler ();
+  set_last_run_time (&t->last_report_export, time (NULL));
+}
+
+/**
  * @brief Execute all periodic jobs in order.
  *
  * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
@@ -1992,6 +2210,7 @@ run_periodic_block (periodic_times_t *t)
   run_queue (t);
   run_integration_report_export (t);
   run_asset_snapshot_delete_stale (t);
+  run_report_exports (t);
 }
 
 /**

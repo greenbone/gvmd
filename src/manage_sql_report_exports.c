@@ -229,10 +229,10 @@ find_matching_report_export (
     " ORDER BY creation_time DESC"
     " LIMIT 1",
     SQL_STR_PARAM (current_credentials.uuid),
-    SQL_INT_PARAM (report),
-    SQL_INT_PARAM (delta_report),
-    SQL_INT_PARAM (report_format),
-    SQL_INT_PARAM (report_config),
+    SQL_RESOURCE_PARAM (report),
+    SQL_RESOURCE_PARAM (delta_report),
+    SQL_RESOURCE_PARAM (report_format),
+    SQL_RESOURCE_PARAM (report_config),
     SQL_INT_PARAM (export_type),
     SQL_STR_PARAM (normalized_filter),
     SQL_INT_PARAM (ignore_pagination),
@@ -362,6 +362,7 @@ create_report_export (report_t report,
         case REPORT_EXPORT_STATUS_CANCEL_REQUESTED:
         case REPORT_EXPORT_STATUS_CANCELED:
         case REPORT_EXPORT_STATUS_EXPIRED:
+        case REPORT_EXPORT_STATUS_DONE:
           /*
            * Do not reuse this export. Continue and create a new row.
            */
@@ -467,7 +468,7 @@ get_report_export_status (report_export_t report_export,
         "SELECT count (*)"
         "  FROM report_exports"
         " WHERE id = $1",
-        SQL_INT_PARAM (report_export),
+        SQL_RESOURCE_PARAM (report_export),
         NULL)
       == 0)
     return -1;
@@ -476,7 +477,7 @@ get_report_export_status (report_export_t report_export,
     "SELECT status"
     "  FROM report_exports"
     " WHERE id = $1",
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 
   if (report_export_status_valid ((report_export_status_t) value) == FALSE)
@@ -515,7 +516,7 @@ get_report_export_status_and_progress (
     "SELECT status, progress"
     "  FROM report_exports"
     " WHERE id = $1",
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 
   if (next (&iterator) == FALSE)
@@ -563,7 +564,7 @@ get_report_export_worker_pid (report_export_t report_export,
     "SELECT COALESCE (worker_pid, 0)"
     "  FROM report_exports"
     " WHERE id = $1",
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 
   return 0;
@@ -585,7 +586,7 @@ set_report_export_status (report_export_t report_export,
     "       modification_time = m_now ()"
     " WHERE id = $2",
     SQL_INT_PARAM (status),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 }
 
@@ -605,7 +606,7 @@ set_report_export_progress (report_export_t report_export,
     "       modification_time = m_now ()"
     " WHERE id = $2",
     SQL_INT_PARAM (progress),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 }
 
@@ -633,7 +634,7 @@ start_report_export (report_export_t report_export,
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_RUNNING),
     SQL_INT_PARAM (REPORT_EXPORT_PROGRESS_PREPARING),
     SQL_INT_PARAM (worker_pid),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 }
 
@@ -672,7 +673,7 @@ complete_report_export (report_export_t report_export,
     SQL_RESOURCE_PARAM (file_size),
     SQL_STR_PARAM (content_type),
     SQL_STR_PARAM (extension),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 }
 
@@ -696,7 +697,7 @@ fail_report_export (report_export_t report_export,
     " WHERE id = $3",
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_ERROR),
     SQL_STR_PARAM (error_message),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
 }
 
@@ -715,7 +716,7 @@ request_report_export_cancel (report_export_t report_export)
     " WHERE id = $2"
     "   AND status IN ($3, $4)",
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_CANCEL_REQUESTED),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_PENDING),
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_RUNNING),
     NULL);
@@ -737,8 +738,93 @@ cancel_report_export (report_export_t report_export)
     "       modification_time = m_now ()"
     " WHERE id = $2",
     SQL_INT_PARAM (REPORT_EXPORT_STATUS_CANCELED),
-    SQL_INT_PARAM (report_export),
+    SQL_RESOURCE_PARAM (report_export),
     NULL);
+}
+
+/**
+ * @brief Reset a report export for another processing attempt.
+ *
+ * @param[in] report_export  Report export.
+ */
+void
+reset_report_export (report_export_t report_export)
+{
+  sql_ps (
+    "UPDATE report_exports"
+    "   SET status = $1,"
+    "       progress = $2,"
+    "       worker_pid = NULL,"
+    "       start_time = NULL,"
+    "       end_time = NULL,"
+    "       error_message = NULL,"
+    "       modification_time = m_now ()"
+    " WHERE id = $3",
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_PENDING),
+    SQL_INT_PARAM (REPORT_EXPORT_PROGRESS_QUEUED),
+    SQL_RESOURCE_PARAM (report_export),
+    NULL);
+}
+
+/**
+ * @brief Count the number of report exports currently being processed.
+ *
+ * @return Number of report exports with a non-null worker PID and a status
+ *         of running or cancel-requested.
+ */
+int
+report_export_worker_pid_count ()
+{
+  return sql_int_ps (
+    "SELECT count(*)"
+    " FROM report_exports"
+    " WHERE worker_pid IS NOT NULL"
+    "   AND status IN ($1, $2)",
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_RUNNING),
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_CANCEL_REQUESTED),
+    NULL);
+}
+
+/**
+ * @brief Get the export type of a report export.
+ *
+ * @param[in]  report_export  Report export.
+ * @param[out] export_type    Current report export type.
+ *
+ * @return 0 on success, -1 if the export does not exist, the stored type
+ *         is invalid, or the arguments are invalid.
+ */
+int
+get_report_export_type (report_export_t report_export,
+                        report_export_type_t *export_type)
+{
+  int value;
+
+  if (report_export == 0 || export_type == NULL)
+    return -1;
+
+  if (sql_int_ps (
+        "SELECT count (*)"
+        "  FROM report_exports"
+        " WHERE id = $1",
+        SQL_RESOURCE_PARAM (report_export),
+        NULL)
+      == 0)
+    return -1;
+
+  value = sql_int_ps (
+    "SELECT export_type"
+    "  FROM report_exports"
+    " WHERE id = $1",
+    SQL_RESOURCE_PARAM (report_export),
+    NULL);
+
+  if (report_export_type_valid ((report_export_type_t) value) == FALSE)
+    return -1;
+
+  *export_type = (report_export_type_t) value;
+
+  return 0;
 }
 
 /**
