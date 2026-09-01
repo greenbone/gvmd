@@ -149,20 +149,7 @@ void
 request_report_export_cancel (report_export_t);
 
 void
-cancel_report_export (report_export_t report_export);
-
-int
-init_report_export_iterator_pending (iterator_t *,
-                                     get_data_t *,
-                                     int);
-
-int
-init_report_export_iterator_stale (iterator_t *,
-                                   get_data_t *,
-                                   time_t);
-
-report_export_t
-report_export_iterator_id (iterator_t *);
+cancel_report_export (report_export_t);
 
 const gchar *
 report_export_iterator_uuid (iterator_t *);

@@ -10,6 +10,7 @@
 
 #include "manage_report_exports.h"
 
+#include "manage_scan_report_exports.h"
 #include "manage_sql_report_exports.h"
 
 #undef G_LOG_DOMAIN
@@ -526,4 +527,143 @@ manage_report_export_cancel_requested (report_export_t report_export)
     return -1;
 
   return status == REPORT_EXPORT_STATUS_CANCEL_REQUESTED;
+}
+
+/**
+ * @brief Check whether a report export worker process is still running.
+ *
+ * @param[in] worker_pid  PID of the worker process.
+ *
+ * @return TRUE if the worker is running, FALSE otherwise.
+ */
+static gboolean
+report_export_worker_running (int worker_pid)
+{
+  if (worker_pid <= 0)
+    return FALSE;
+
+  if (kill (worker_pid, 0) == 0)
+    return TRUE;
+
+  return errno == EPERM;
+}
+
+/**
+ * @brief Reset stale report exports.
+ *
+ * A running report export is considered stale when it has not been updated
+ * for the configured timeout and its worker process is no longer running.
+ *
+ * Stale exports are reset to pending while processing attempts remain.
+ * Otherwise they are marked as failed.
+ *
+ * @param[in] max_attempts  Maximum number of processing attempts.
+ * @param[in] stale_timeout Maximum inactivity time in seconds.
+ */
+void
+reset_stale_report_exports (int max_attempts,
+                            time_t stale_timeout)
+{
+  iterator_t iterator;
+  get_data_t get = {0};
+  time_t threshold;
+
+  threshold = time (NULL) - stale_timeout;
+
+  if (init_report_export_iterator_stale (&iterator,
+                                         &get,
+                                         threshold))
+    {
+      g_warning ("%s: failed to initialize stale report export iterator",
+                 __func__);
+      return;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      int worker_pid;
+      int attempt_count;
+
+      report_export = get_iterator_resource (&iterator);
+      worker_pid = report_export_iterator_worker_pid (&iterator);
+      attempt_count = report_export_iterator_attempt_count (&iterator);
+
+      /*
+       * A worker still exists, so the export is not stale.
+       */
+      if (report_export_worker_running (worker_pid))
+        continue;
+
+      g_warning ("%s: report export %lld has stale worker %d",
+                 __func__,
+                 report_export,
+                 worker_pid);
+
+      if (attempt_count < max_attempts)
+        reset_report_export (report_export);
+      else
+        fail_report_export (
+          report_export,
+          "Report export worker terminated unexpectedly");
+    }
+
+  cleanup_iterator (&iterator);
+}
+
+/**
+ * @brief Process a report export according to its export type.
+ *
+ * @param[in] report_export  Report export to process.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+process_report_export (report_export_t report_export)
+{
+  report_export_type_t export_type;
+  int ret;
+
+  if (get_report_export_type (report_export, &export_type))
+    {
+      g_warning ("%s: failed to get report export type for %lld",
+                 __func__,
+                 report_export);
+      return -1;
+    }
+
+  switch (export_type)
+    {
+    case REPORT_EXPORT_TYPE_SCAN:
+      ret = manage_process_scan_report_export (report_export);
+      break;
+
+    case REPORT_EXPORT_TYPE_AUDIT:
+    case REPORT_EXPORT_TYPE_DELTA_SCAN:
+    case REPORT_EXPORT_TYPE_DELTA_AUDIT:
+      g_warning ("%s: unsupported report export type %s",
+                 __func__,
+                 report_export_type_name (export_type));
+
+      manage_fail_report_export (
+        report_export,
+        "Unsupported report export type");
+
+      ret = -1;
+      break;
+
+    default:
+      g_warning ("%s: invalid report export type %d",
+                 __func__,
+                 export_type);
+
+      manage_fail_report_export (
+        report_export,
+        "Invalid report export type");
+
+      ret = -1;
+      break;
+    }
+
+  return ret;
 }

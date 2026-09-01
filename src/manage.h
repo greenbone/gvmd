@@ -24,8 +24,9 @@
 #include "manage_report_applications.h"
 #include "manage_report_closed_cves.h"
 #include "manage_report_cves.h"
-#include "manage_report_vulns.h"
 #include "manage_report_errors.h"
+#include "manage_report_exports.h"
+#include "manage_report_vulns.h"
 #include "manage_report_hosts.h"
 #include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
@@ -2439,7 +2440,7 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 /**
  * @brief Seconds between calls to fork_report_export
  */
-#define REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
+#define INTEGRATION_REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
 
 /**
  * @brief Minimum schedule timeout seconds.
@@ -2463,6 +2464,26 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  * @brief Seconds between calls to manage_asset_snapshot_delete_stale.
  */
 #define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
+
+/**
+ * @brief Seconds between calls to run_pending_report_exports.
+ */
+#define REPORT_EXPORT_PERIOD 2 /* every 2 seconds */
+
+/**
+ * @brief Seconds between calls to manage_report_export_stale.
+ */
+#define REPORT_EXPORT_STALE_TIMEOUT_SECONDS (3 * 24 * 60 * 60) /* 3 days */
+
+/**
+ * @brief Maximum number of retries for report export.
+ */
+#define REPORT_EXPORT_MAX_RETRIES 10
+
+/**
+ * @brief Maximum number of concurrent workers for report export.
+ */
+#define REPORT_EXPORT_MAX_WORKERS 3
 
 void
 manage_auth_allow_all (int);

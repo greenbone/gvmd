@@ -236,4 +236,29 @@ int
 load_report_export_data (report_export_t,
                          report_export_data_t);
 
+void
+reset_report_export (report_export_t);
+
+int
+init_report_export_iterator_pending (iterator_t *,
+                                     get_data_t *,
+                                     int);
+
+int
+init_report_export_iterator_stale (iterator_t *,
+                                   get_data_t *,
+                                   time_t);
+
+int
+process_report_export (report_export_t);
+
+void
+reset_stale_report_exports (int, time_t);
+
+int
+report_export_worker_pid_count ();
+
+int
+get_report_export_type (report_export_t, report_export_type_t *);
+
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */
