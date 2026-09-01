@@ -25,6 +25,36 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
+ * @brief Max number of images per oci_image_target.
+ */
+static int oci_target_max_images = MANAGE_MAX_OCI_IMAGES;
+
+/**
+ * @brief Get the maximum allowed number of images per oci_image_target.
+ *
+ * @return Maximum.
+ */
+int
+get_oci_target_max_images ()
+{
+  return oci_target_max_images;
+}
+
+/**
+ * @brief Set the maximum allowed number of images per oci_image_target.
+ *
+ * @param[in]   new_max   New max_images value.
+ */
+void
+set_oci_target_max_images (int new_max)
+{
+  if (new_max > 0)
+    oci_target_max_images = new_max;
+  else
+    oci_target_max_images = MANAGE_MAX_OCI_IMAGES;
+}
+
+/**
  * @brief Find an OCI image target for a specific permission, given a UUID.
  *
  * @param[in]   uuid               UUID of target.
@@ -315,6 +345,65 @@ validate_oci_image_references (const char *image_refs_input,
 
   g_strfreev (parts);
   return TRUE;
+}
+
+/**
+ * @brief Check whether a string is a valid OCI image digest.
+ *        A valid OCI image digest must start with "sha256:"
+ *        followed by 64 hexadecimal characters.
+ *
+ * @param[in] digest  The digest to validate.
+ *
+ * @return 1 if the digest is a valid OCI image digest, 0 otherwise.
+ */
+static int
+is_valid_oci_image_digest (const gchar *digest)
+{
+  if (!digest || !*digest)
+    return 0;
+
+  static GRegex *regex = NULL;
+  if (regex == NULL)
+    regex = g_regex_new ("^sha256:[0-9a-f]{64}$", 0, 0, NULL);
+
+  return g_regex_match (regex, digest, 0, NULL);
+}
+
+/**
+ * @brief Validate and count comma-separated OCI image digests.
+ *
+ * @param[in] digests  A list of comma-separated SHA256 digests
+ *                     Empty entries are ignored.
+ *
+ * @return Count of valid OCI image digests, -1 on any invalid digest, 0 if empty/NULL.
+ */
+int
+manage_count_oci_image_digests (const gchar *digests)
+{
+  int count = 0;
+
+  if (digests == NULL || *digests == '\0')
+    return 0;
+
+  gchar **parts = g_strsplit (digests, ",", 0);
+  for (gchar **p = parts; *p != NULL; p++)
+    {
+      gchar *s = g_strstrip (*p);
+
+      if (*s == '\0')
+        continue;
+
+      if (!is_valid_oci_image_digest (s))
+        {
+          g_strfreev (parts);
+          return -1;
+        }
+      count++;
+    }
+
+  g_strfreev (parts);
+
+  return count;
 }
 
 #endif //ENABLE_CONTAINER_SCANNING
