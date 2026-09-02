@@ -86,8 +86,6 @@ get_report_exports_run (gmp_parser_t *gmp_parser, GError **error)
                   "Report Exports",
                   &first);
 
-  g_warning ("here we are ");
-
   if (ret)
     {
       switch (ret)
