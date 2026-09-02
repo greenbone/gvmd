@@ -1411,3 +1411,30 @@ report_export_count (const get_data_t *get)
                 0,
                 TRUE);
 }
+
+/**
+ * @brief Initialize an iterator over active report exports.
+ *
+ * Active exports are exports that were running or had cancellation requested.
+ *
+ * @param[out] iterator  Iterator to initialize.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+init_report_export_iterator_active (iterator_t *iterator)
+{
+  g_return_val_if_fail (iterator, -1);
+
+  init_iterator (
+    iterator,
+    "SELECT id,"
+    "       status,"
+    "       attempt_count"
+    "  FROM report_exports"
+    " WHERE status IN (%d, %d)",
+    REPORT_EXPORT_STATUS_RUNNING,
+    REPORT_EXPORT_STATUS_CANCEL_REQUESTED);
+
+  return 0;
+}

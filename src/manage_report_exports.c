@@ -693,3 +693,66 @@ report_export_in_use (report_export_t report_export)
   (void) report_export;
   return 0;
 }
+
+/**
+ * @brief Recover report exports left active by a previous gvmd instance.
+ *
+ * Running exports are requeued if retries remain. Exports with cancellation
+ * requested are marked as canceled.
+ *
+ * @param[in] max_attempts  Maximum allowed processing attempts.
+ */
+void
+recover_report_exports (int max_attempts)
+{
+  iterator_t iterator;
+
+  if (init_report_export_iterator_active (&iterator))
+    {
+      g_warning ("%s: failed to initialize active report export iterator",
+                 __func__);
+      return;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      report_export_status_t status;
+      int attempt_count;
+
+      report_export = get_iterator_resource (&iterator);
+      status = iterator_int (&iterator, 1);
+      attempt_count = iterator_int (&iterator, 2);
+
+      if (status == REPORT_EXPORT_STATUS_CANCEL_REQUESTED)
+        {
+          g_debug ("%s: canceling report export %lld after restart",
+                   __func__,
+                   report_export);
+
+          cancel_report_export (report_export);
+          continue;
+        }
+
+      if (attempt_count < max_attempts)
+        {
+          g_debug ("%s: requeueing report export %lld after restart",
+                   __func__,
+                   report_export);
+
+          reset_report_export (report_export);
+        }
+      else
+        {
+          g_warning ("%s: report export %lld exceeded retry limit",
+                     __func__,
+                     report_export);
+
+          fail_report_export (
+            report_export,
+            "Report export worker terminated unexpectedly");
+        }
+    }
+
+  cleanup_iterator (&iterator);
+}
