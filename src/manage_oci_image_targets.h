@@ -21,7 +21,14 @@
 /**
  * @brief Default maximum number of images per OCI image target.
  */
-#define MANAGE_MAX_OCI_IMAGES 4095  // What is a reasoable limit here ?
+#define MANAGE_MAX_OCI_IMAGES 1024
+
+/**
+ * @brief Absolute maximum number of OCI Images per target.
+ *        This limit is set by analogy to the absolute maximum
+ *        number of IPs per target.
+ */
+#define MANAGE_ABSOLUTE_MAX_OCI_IMAGES 65536
 
 typedef enum {
   CREATE_OCI_IMAGE_TARGET_OK = 0,

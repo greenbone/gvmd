@@ -2931,6 +2931,7 @@ gvmd (int argc, char** argv, char *env[])
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
+  static int max_images_per_oci_target = MANAGE_MAX_OCI_IMAGES;
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
   static int max_email_message_size = 0;
@@ -3234,6 +3235,11 @@ gvmd (int argc, char** argv, char *env[])
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT,
           &max_ips_per_target,
           "Maximum number of IPs per target.",
+          "<number>" },
+        { "max-images-per-oci-target", '\0', 0, G_OPTION_ARG_INT,
+          &max_images_per_oci_target,
+          "Maximum number of images per OCI target."
+          " Default: "G_STRINGIFY (MANAGE_MAX_OCI_IMAGES),
           "<number>" },
         { "mem-wait-retries", '\0', 0, G_OPTION_ARG_INT,
           &mem_wait_retries,
@@ -4499,7 +4505,7 @@ gvmd (int argc, char** argv, char *env[])
 
   switch (init_gmpd (log_config, &database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size,
-                     max_email_message_size,
+                     max_email_message_size, max_images_per_oci_target,
                      fork_connection_for_event, 0))
     {
       case 0:
@@ -4529,6 +4535,16 @@ gvmd (int argc, char** argv, char *env[])
                     __func__,
                     MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
                     max_ips_per_target);
+        log_config_free ();
+        gvm_close_sentry ();
+        exit (EXIT_FAILURE);
+        break;
+      case -6:
+        g_critical ("%s: --max-images-per-oci-target out of range"
+                    " (min=1, max=%i, requested=%i)",
+                    __func__,
+                    MANAGE_ABSOLUTE_MAX_OCI_IMAGES,
+                    max_images_per_oci_target);
         log_config_free ();
         gvm_close_sentry ();
         exit (EXIT_FAILURE);

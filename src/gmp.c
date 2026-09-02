@@ -31254,17 +31254,20 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
+ *         -6 max_images_per_oci_target out of range.
  */
 int
 init_gmp (GSList *log_config, const db_conn_info_t *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, int max_email_message_size,
+          int max_images_per_oci_target,
           manage_connection_forker_t fork_connection, int skip_db_check)
 {
   g_log_set_handler (G_LOG_DOMAIN,
@@ -31274,7 +31277,7 @@ init_gmp (GSList *log_config, const db_conn_info_t *database,
   command_data_init (&command_data);
   return init_manage (log_config, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
-                      max_email_message_size,
+                      max_email_message_size, max_images_per_oci_target,
                       fork_connection, skip_db_check);
 }
 
