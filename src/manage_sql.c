@@ -4239,6 +4239,7 @@ check_db_permissions ()
     {
       if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
           && strcmp (command[0].name, "GET_VERSION")
+          && strcmp (command[0].name, "MODIFY_AUTH")
           && strcmp (command[0].name, "MODIFY_LICENSE")
           && strstr (command[0].name, "GROUP") == NULL
           && strstr (command[0].name, "ROLE") == NULL
@@ -4280,6 +4281,10 @@ check_db_permissions ()
   add_permissions_on_globals (ROLE_UUID_GUEST);
   add_permissions_on_globals (ROLE_UUID_OBSERVER);
   add_permissions_on_globals (ROLE_UUID_USER);
+
+  // Delete revoked permissions for built-in roles
+  sql ("DELETE FROM permissions"
+       " WHERE name = 'modify_auth' AND owner IS NULL;");
 }
 
 /**
