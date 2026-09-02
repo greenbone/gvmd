@@ -264,7 +264,6 @@ get_report_export_type (report_export_t, report_export_type_t *);
 int
 init_report_export_iterator (iterator_t *, get_data_t *);
 
-
 report_t
 report_export_iterator_report (iterator_t *);
 
@@ -357,5 +356,11 @@ report_export_in_use (resource_t);
 
 int
 report_export_count (const get_data_t *);
+
+int
+init_report_export_iterator_active (iterator_t *);
+
+void
+recover_report_exports (int);
 
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */

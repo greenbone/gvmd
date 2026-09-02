@@ -4690,6 +4690,9 @@ gvmd (int argc, char** argv, char *env[])
       exit (EXIT_FAILURE);
     }
 
+  /* Recover report exports left active by the previous gvmd instance. */
+  recover_report_exports (REPORT_EXPORT_MAX_RETRIES);
+
   /* Load discovery OID cache once in the parent, before forking children. */
   nvts_discovery_oid_cache_reload ();
 
