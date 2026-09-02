@@ -1038,7 +1038,7 @@ manage_create_sql_functions ()
      sql ("CREATE OR REPLACE FUNCTION oci_digest_list_contains (digests text,"
           "                                                     item text)"
           " RETURNS boolean AS $$"
-          "  SELECT $2 ~ '^[[:alnum:]_+.-]+:[[:xdigit:]]+$'"
+          "  SELECT $2 ~ '^[[:alnum:]_-]+:[[:xdigit:]]+$'"
           "     AND EXISTS ("
           "       SELECT 1"
           "       FROM unnest (string_to_array ($1, ',')) AS digest_list (item)"

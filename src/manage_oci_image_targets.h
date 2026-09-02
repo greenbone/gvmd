@@ -10,7 +10,6 @@
  * General management headers of OCI Image Targets.
  */
 
-#if ENABLE_CONTAINER_SCANNING
 
 #ifndef _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
 #define _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
@@ -30,6 +29,14 @@
  */
 #define MANAGE_ABSOLUTE_MAX_OCI_IMAGES 65536
 
+int
+get_oci_target_max_images ();
+
+void
+set_oci_target_max_images (int);
+
+
+#if ENABLE_CONTAINER_SCANNING
 typedef enum {
   CREATE_OCI_IMAGE_TARGET_OK = 0,
   CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY = 1,
@@ -158,17 +165,11 @@ gchar*
 clean_images (const char *);
 
 int
-hosts_are_sha256_digests (const gchar *);
-
-int
-get_oci_target_max_images ();
-
-void
-set_oci_target_max_images (int);
-
-int
 manage_count_oci_image_digests (const gchar *);
 
-#endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
+int
+count_effective_oci_image_references (const char*, const char*);
 
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */

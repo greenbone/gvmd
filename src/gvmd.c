@@ -95,6 +95,7 @@
 #include "manage_authentication.h"
 #include "manage_nvts.h"
 #include "manage_integration_report_export_scheduler.h"
+#include "manage_oci_image_targets.h"
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
