@@ -20,56 +20,6 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-/*
-  * @brief Count the number of OCI image references after excluding any specified images
-           from the include set.
-  *
-  * @param[in]   image_references Comma-separated list of image references.
-  * @param[in]   exclude_images   Comma-separated list of images to exclude.
-  *
-  * @return The count of image references after excluding specified images,
-  *         or -1 if image_references is NULL.
-*/
-static int
-count_effective_oci_image_references (const char* image_references, const char* exclude_images)
-{
-  int count = 0;
-  GHashTable *includes;
-  gchar **split, **exclude_split;
-
-  if (image_references == NULL)
-    return -1;
-
-  includes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-
-  split = g_strsplit (image_references, ",", -1);
-  for (gchar **ref = split; *ref; ++ref)
-    {
-      gchar *s = g_strstrip (*ref);
-      if (*s)
-        {
-          g_hash_table_add (includes, g_strdup (s));
-          count++;
-        }
-    }
-  g_strfreev (split);
-
-  if (exclude_images && *exclude_images)
-    {
-      exclude_split = g_strsplit (exclude_images, ",", -1);
-      for (gchar **ex = exclude_split; *ex; ++ex)
-        {
-          gchar *s = g_strstrip (*ex);
-          if (*s && g_hash_table_remove (includes, s))
-            count--;
-        }
-      g_strfreev (exclude_split);
-    }
-
-  g_hash_table_destroy (includes);
-  return count;
-}
-
 /**
  * @brief Create an OCI image target.
  *
@@ -393,9 +343,9 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
         }
 
       gchar *target_excludes = oci_image_target_exclude_images (oci_image_target);
-      int count = count_effective_oci_image_references (image_references,
+      int count = count_effective_oci_image_references (clean_references,
                                                         target_excludes);
-      if (count == 0)
+      if (count <= 0)
         {
           sql_rollback ();
           g_free (clean_references);

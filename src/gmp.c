@@ -410,11 +410,12 @@ check_public_key (const char *key_str)
  * @brief Validate the notes or overrides hosts field.
  *
  * Checks whether the value contains OCI image digests or
- * traditional hosts and validates accordingly.
+ *   hosts and validates accordingly.
  *
  * @param[in]  value  Free-form comma-separated value.
  *
- * @return Status of the validation.
+ * @return note_or_override_scope_status_t indicating
+ *         the result of the validation.
  */
 static note_or_override_scope_status_t
 validate_notes_or_overrides_scope (const gchar *value)

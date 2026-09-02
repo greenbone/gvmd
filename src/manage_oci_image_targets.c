@@ -10,7 +10,6 @@
  * General management of OCI Image Targets.
  */
 
-#if ENABLE_CONTAINER_SCANNING
 
 #include "manage_oci_image_targets.h"
 #include "manage_sql.h"
@@ -53,6 +52,8 @@ set_oci_target_max_images (int new_max)
   else
     oci_target_max_images = MANAGE_MAX_OCI_IMAGES;
 }
+
+#if ENABLE_CONTAINER_SCANNING
 
 /**
  * @brief Find an OCI image target for a specific permission, given a UUID.
@@ -362,47 +363,103 @@ is_valid_oci_image_digest (const gchar *digest)
   if (!digest || !*digest)
     return 0;
 
-  static GRegex *regex = NULL;
-  if (regex == NULL)
-    regex = g_regex_new ("^sha256:[0-9a-f]{64}$", 0, 0, NULL);
-
-  return g_regex_match (regex, digest, 0, NULL);
+  return g_regex_match_simple ("^sha256:[0-9a-f]{64}$",
+                               digest, 0, 0)
+         ? 1 : 0;
 }
 
 /**
- * @brief Validate and count comma-separated OCI image digests.
+ * @brief Validate and count unique comma-separated OCI image digests.
  *
  * @param[in] digests  A list of comma-separated SHA256 digests
  *                     Empty entries are ignored.
  *
- * @return Count of valid OCI image digests, -1 on any invalid digest, 0 if empty/NULL.
+ * @return Count of valid OCI image digests,
+ *         -1 on any invalid digest, 0 if empty/NULL.
  */
 int
 manage_count_oci_image_digests (const gchar *digests)
 {
+  GHashTable *seen = NULL;
+  gchar **parts = NULL;
   int count = 0;
 
   if (digests == NULL || *digests == '\0')
     return 0;
 
-  gchar **parts = g_strsplit (digests, ",", 0);
+  parts = g_strsplit (digests, ",", 0);
+  seen = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
   for (gchar **p = parts; *p != NULL; p++)
     {
-      gchar *s = g_strstrip (*p);
+      gchar *digest = g_strstrip (*p);
 
-      if (*s == '\0')
+      if (*digest == '\0')
         continue;
 
-      if (!is_valid_oci_image_digest (s))
+      if (!is_valid_oci_image_digest (digest))
         {
+          g_warning ("Invalid OCI image digest: %s", digest);
           g_strfreev (parts);
+          g_hash_table_destroy (seen);
           return -1;
         }
-      count++;
+
+      if (g_hash_table_add (seen, g_strdup (digest)))
+        count++;
     }
 
   g_strfreev (parts);
+  g_hash_table_destroy (seen);
 
+  return count;
+}
+
+/**
+  * @brief Count the number of unique OCI image references after excluding
+  *        any specified images from the include set.
+  *
+  * @param[in]   image_references Comma-separated list of image references.
+  * @param[in]   exclude_images   Comma-separated list of images to exclude.
+  *
+  * @return The count of image references after excluding specified images,
+  *         or -1 if image_references is NULL.
+*/
+int
+count_effective_oci_image_references (const char* image_references,
+                                      const char* exclude_images)
+{
+  GHashTable *includes;
+  gchar **split, **exclude_split;
+
+  if (image_references == NULL)
+    return -1;
+
+  includes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+  split = g_strsplit (image_references, ",", -1);
+  for (gchar **ref = split; *ref; ++ref)
+    {
+      gchar *s = g_strstrip (*ref);
+      if (*s != '\0')
+        g_hash_table_add (includes, g_strdup (s));
+    }
+  g_strfreev (split);
+
+  if (exclude_images && *exclude_images)
+    {
+      exclude_split = g_strsplit (exclude_images, ",", -1);
+      for (gchar **ex = exclude_split; *ex; ++ex)
+        {
+          gchar *s = g_strstrip (*ex);
+          if (*s != '\0')
+            g_hash_table_remove (includes, s);
+        }
+      g_strfreev (exclude_split);
+    }
+
+  int count = g_hash_table_size (includes);
+  g_hash_table_destroy (includes);
   return count;
 }
 
