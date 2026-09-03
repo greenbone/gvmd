@@ -32,7 +32,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.6
+    libgvm_agent_controller>=23.10
   )
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")

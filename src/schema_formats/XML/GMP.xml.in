@@ -9185,6 +9185,12 @@ END:VCALENDAR
         <type>integer</type>
         <required>0</required>
       </attrib>
+      <attrib>
+        <name>encryption</name>
+        <summary>Whether agent support bundle is encrypted (1) or not (0) (Default 1)</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
     </pattern>
     <response>
       <pattern>
@@ -9243,7 +9249,8 @@ END:VCALENDAR
       <request>
         <get_agent_support_bundle
           agent_uuid="31acafd6-5f48-43c5-bac0-dbeeccc526dd"
-          days="7"/>
+          days="7"
+          encryption="1"/>
       </request>
       <response>
         <get_agent_support_bundle_response status="200" status_text="OK">

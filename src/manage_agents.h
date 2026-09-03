@@ -158,7 +158,7 @@ int
 manage_agents_sync_from_agent_controllers (gboolean *);
 
 agent_response_t
-get_agent_support_bundle (const gchar *, int,
+get_agent_support_bundle (const gchar *, int, int,
                           agent_controller_support_bundle_t *);
 
 int
