@@ -14,7 +14,7 @@ Prerequisites:
 * glib-2.0 >= 2.42
 * gnutls >= 3.2.15
 * gpgme
-* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 23.9
+* [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 23.9 (or 23.10 if ENABLE_AGENTS)
 * [gvm-auth-lib](https://github.com/greenbone/gvm-auth-lib/) >= 0.3 (if ENABLE_SECURITY_INTELLIGENCE_EXPORT or ENABLE_JWT_AUTH is enabled)
 * libical >= 1.0.0
 * libbsd

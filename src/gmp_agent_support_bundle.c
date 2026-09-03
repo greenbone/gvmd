@@ -31,6 +31,7 @@ typedef struct
 {
   gchar *agent_uuid; ///< UUID of the agent.
   gchar *days;       ///< Optional number of days to include.
+  gchar *encryption; ///< Whether to get encrypted the support bundle (0 or 1).
 } get_agent_support_bundle_t;
 
 /**
@@ -73,6 +74,10 @@ get_agent_support_bundle_start (const gchar **attribute_names,
   if (find_attribute (attribute_names, attribute_values,
                       "days", &attribute))
     get_agent_support_bundle_data.days = g_strdup (attribute);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "encryption", &attribute))
+    get_agent_support_bundle_data.encryption = g_strdup (attribute);
 }
 
 /**
@@ -105,6 +110,40 @@ get_agent_support_bundle_parse_days (int *days)
     return FALSE;
 
   *days = (int) parsed;
+  return TRUE;
+}
+
+/**
+ * @brief Parse the optional encryption attribute.
+ *
+ * @param[out] encryption Whether the support bundle should be encrypted.
+ *
+ * @return TRUE if valid, FALSE otherwise.
+ */
+static gboolean
+get_agent_support_bundle_parse_encryption (int *encryption)
+{
+  gchar *end = NULL;
+  gint64 parsed;
+
+  if (!encryption)
+    return FALSE;
+
+  *encryption = 1;
+
+  if (!get_agent_support_bundle_data.encryption)
+    return TRUE;
+
+  parsed =
+    g_ascii_strtoll (get_agent_support_bundle_data.encryption, &end, 10);
+
+  if (end == get_agent_support_bundle_data.encryption
+      || *end != '\0'
+      || parsed < 0
+      || parsed > 1)
+    return FALSE;
+
+  *encryption = (int) parsed;
   return TRUE;
 }
 
@@ -195,6 +234,7 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
   agent_response_t result;
   gchar *escaped_filename = NULL;
   int days;
+  int encryption;
   int ret;
 
   if (!acl_user_may ("get_agents"))
@@ -226,9 +266,19 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (!get_agent_support_bundle_parse_encryption (&encryption))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_agent_support_bundle",
+        "Invalid encryption value"));
+      get_agent_support_bundle_reset ();
+      return;
+    }
+
   result =
     get_agent_support_bundle (get_agent_support_bundle_data.agent_uuid,
                               days,
+                              encryption,
                               &bundle);
 
   switch (result)
