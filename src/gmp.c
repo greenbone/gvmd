@@ -12009,6 +12009,8 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_aggregates",
                              "A 'type' attribute is required"));
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
       return;
     }
 
@@ -12155,6 +12157,8 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
         sort_data_free (g_array_index (sort_data, sort_data_t*, index));
       g_array_free (sort_data, TRUE);
       g_array_free (c_sums, TRUE);
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
       return;
     }
 
