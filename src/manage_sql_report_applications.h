@@ -34,4 +34,13 @@ fill_report_applications_severities (const get_data_t *,
                                      GHashTable **,
                                      const gchar *);
 
+void
+init_report_app_vulnerable_product_iterator (iterator_t *,
+                                             report_t,
+                                             const gchar *);
+
+int
+fill_report_app_vulnerable_product_severities (report_t, GHashTable *,
+                                               const gchar *);
+
 #endif //_GVM_MANAGE_SQL_REPORT_APPLICATIONS_H
