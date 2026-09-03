@@ -458,10 +458,7 @@ delete_target (const char *target_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
-                   target))
+      if (task_trash_target_in_use (target, TASK_TARGET_TYPE_REGULAR))
         {
           sql_rollback ();
           return 1;
@@ -478,11 +475,7 @@ delete_target (const char *target_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE target = %llu"
-                   " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                   " AND hidden = 0;",
-                   target))
+      if (task_target_in_use (target, TASK_TARGET_TYPE_REGULAR))
         {
           sql_rollback ();
           return 1;
@@ -513,13 +506,8 @@ delete_target (const char *target_id, int ultimate)
            trash_target, target);
 
       /* Update the location of the target in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET target = %llu,"
-           "     target_location = " G_STRINGIFY (LOCATION_TRASH)
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           target);
+      task_update_delete_target (target, sql_last_insert_id (),
+                                 TASK_TARGET_TYPE_REGULAR);
 
       permissions_set_locations ("target", target,
                                  sql_last_insert_id (),
@@ -528,10 +516,8 @@ delete_target (const char *target_id, int ultimate)
                           sql_last_insert_id (),
                           LOCATION_TRASH);
     }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE),
-                    target))
+  else if (task_target_in_use_including_hidden (target,
+                                                TASK_TARGET_TYPE_REGULAR))
     {
       sql_rollback ();
       return 1;
@@ -2101,11 +2087,13 @@ init_target_task_iterator (iterator_t* iterator, target_t target)
                  "%s"
                  " SELECT name, uuid, %s FROM tasks"
                  " WHERE target = %llu"
+                 " AND target_type = %d"
                  " AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
                  available,
-                 target);
+                 target,
+                 TASK_TARGET_TYPE_REGULAR);
 
   g_free (with_clause);
   g_free (available);
@@ -2155,11 +2143,7 @@ target_task_iterator_readable (iterator_t* iterator)
 int
 target_in_use (target_t target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND hidden = 0;",
-                    target);
+  return task_target_in_use (target, TASK_TARGET_TYPE_REGULAR);
 }
 
 /**
@@ -2172,10 +2156,7 @@ target_in_use (target_t target)
 int
 trash_target_in_use (target_t target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-                    target);
+  return task_trash_target_in_use (target, TASK_TARGET_TYPE_REGULAR);
 }
 
 /**

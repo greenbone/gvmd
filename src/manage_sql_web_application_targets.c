@@ -462,12 +462,7 @@ delete_web_application_target (
           return 0;
         }
 
-      if (sql_int_ps ("SELECT count(*) FROM tasks"
-                      " WHERE web_application_target = $1"
-                      " AND web_application_target_location = "
-                      G_STRINGIFY (LOCATION_TRASH) ";",
-                      SQL_RESOURCE_PARAM (web_application_target),
-                      NULL))
+      if (trash_web_application_target_in_use (web_application_target))
         {
           sql_rollback ();
           return 1;
@@ -494,13 +489,7 @@ delete_web_application_target (
     {
       web_application_target_t trash_web_application_target;
 
-      if (sql_int_ps ("SELECT count(*) FROM tasks"
-                      " WHERE web_application_target = $1"
-                      " AND web_application_target_location = "
-                      G_STRINGIFY (LOCATION_TABLE)
-                      " AND hidden = 0;",
-                      SQL_RESOURCE_PARAM (web_application_target),
-                      NULL))
+      if (web_application_target_in_use (web_application_target))
         {
           sql_rollback ();
           return 1;
@@ -519,16 +508,9 @@ delete_web_application_target (
 
       trash_web_application_target = sql_last_insert_id ();
 
-      sql_ps ("UPDATE tasks"
-              " SET web_application_target = $1,"
-              "     web_application_target_location = "
-              G_STRINGIFY (LOCATION_TRASH)
-              " WHERE web_application_target = $2"
-              " AND web_application_target_location = "
-              G_STRINGIFY (LOCATION_TABLE) ";",
-              SQL_RESOURCE_PARAM (trash_web_application_target),
-              SQL_RESOURCE_PARAM (web_application_target),
-              NULL);
+      task_update_delete_target (web_application_target,
+                                 trash_web_application_target,
+                                 TASK_TARGET_TYPE_WEB_APPLICATION);
 
       permissions_set_locations ("web_application_target",
                                  web_application_target,
@@ -540,12 +522,8 @@ delete_web_application_target (
                           trash_web_application_target,
                           LOCATION_TRASH);
     }
-  else if (sql_int_ps ("SELECT count(*) FROM tasks"
-                       " WHERE web_application_target = $1"
-                       " AND web_application_target_location = "
-                       G_STRINGIFY (LOCATION_TABLE) ";",
-                       SQL_RESOURCE_PARAM (web_application_target),
-                       NULL))
+  else if (task_target_in_use_including_hidden (
+             web_application_target, TASK_TARGET_TYPE_WEB_APPLICATION))
     {
       sql_rollback ();
       return 1;
@@ -645,16 +623,8 @@ restore_web_application_target (const char *web_application_target_id)
 
   web_application_target = sql_last_insert_id ();
 
-  sql_ps ("UPDATE tasks"
-          " SET web_application_target = $1,"
-          " web_application_target_location = "
-          G_STRINGIFY (LOCATION_TABLE)
-          " WHERE web_application_target = $2"
-          " AND web_application_target_location = "
-          G_STRINGIFY (LOCATION_TRASH) ";",
-          SQL_RESOURCE_PARAM (web_application_target),
-          SQL_RESOURCE_PARAM (resource),
-          NULL);
+  task_update_restore_target (web_application_target, resource,
+                              TASK_TARGET_TYPE_WEB_APPLICATION);
 
   permissions_set_locations ("web_application_target",
                              resource,
@@ -968,13 +938,8 @@ trash_web_application_target_readable (
 int
 web_application_target_in_use (web_application_target_t web_application_target)
 {
-  return !!sql_int_ps ("SELECT count(*) FROM tasks"
-                       " WHERE web_application_target = $1"
-                       " AND web_application_target_location = "
-                       G_STRINGIFY (LOCATION_TABLE)
-                       " AND hidden = 0;",
-                       SQL_RESOURCE_PARAM (web_application_target),
-                       NULL);
+  return task_target_in_use (web_application_target,
+                             TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 /**
@@ -989,12 +954,8 @@ int
 trash_web_application_target_in_use (
   web_application_target_t web_application_target)
 {
-  return !!sql_int_ps ("SELECT count(*) FROM tasks"
-                       " WHERE web_application_target = $1"
-                       " AND web_application_target_location = "
-                       G_STRINGIFY (LOCATION_TRASH) ";",
-                       SQL_RESOURCE_PARAM (web_application_target),
-                       NULL);
+  return task_trash_target_in_use (web_application_target,
+                                   TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 /**
@@ -1055,12 +1016,14 @@ init_web_application_target_task_iterator (
   init_iterator (iterator,
                  "%s"
                  " SELECT name, uuid, %s FROM tasks"
-                 " WHERE web_application_target = %llu"
+                 " WHERE target = %llu"
+                 " AND target_type = %d"
                  " AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
                  available,
-                 web_application_target);
+                 web_application_target,
+                 TASK_TARGET_TYPE_WEB_APPLICATION);
 
   g_free (with_clause);
   g_free (available);

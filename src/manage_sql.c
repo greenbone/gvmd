@@ -66,6 +66,7 @@
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql_users.h"
+#include "manage_tasks.h"
 #include "manage_acl.h"
 #include "manage_commands.h"
 #include "manage_authentication.h"
@@ -176,7 +177,8 @@ __cyg_profile_func_exit (void *func, void *caller)
 }
 #endif
 
-
+
+
 /* Headers from backend specific manage_xxx.c file. */
 
 int
@@ -197,7 +199,8 @@ check_db_encryption_key ();
 void
 manage_attach_databases ();
 
-
+
+
 /* Headers for symbols defined in manage.c which are private to libmanage. */
 
 /**
@@ -212,7 +215,8 @@ int delete_reports (task_t);
 int
 stop_task_internal (task_t);
 
-
+
+
 /* Static headers. */
 
 static int
@@ -266,7 +270,8 @@ static void
 set_credential_snmp_secret (credential_t, const char *, const char *,
                             const char *);
 
-
+
+
 /* Variables. */
 
 /**
@@ -289,7 +294,8 @@ db_conn_info_t gvmd_db_conn_info = { NULL, NULL, NULL, NULL, 60 };
  */
 static gchar *vt_verification_collation = NULL;
 
-
+
+
 /* General helpers. */
 
 /**
@@ -705,7 +711,8 @@ column_array_set (column_t *columns, const gchar *filter, gchar *select)
     }
 }
 
-
+
+
 /* GET iterators. */
 
 /**
@@ -1834,7 +1841,8 @@ info_name_count (const char *type, const char *name)
   return count;
 }
 
-
+
+
 /* Versions. */
 
 /**
@@ -1996,7 +2004,8 @@ set_db_version (int version)
        version);
 }
 
-
+
+
 /* Encryption. */
 
 /**
@@ -2378,7 +2387,8 @@ validate_sort_field (const gchar *table, const gchar *sort_field)
   return !db_table_has_column ("public", table, sort_field);
 }
 
-
+
+
 /* Task subject iterators. */
 
 /**
@@ -2464,7 +2474,8 @@ DEF_ACCESS (task_role_iterator_name, 3);
 
 DEF_ACCESS (task_role_iterator_uuid, 4);
 
-
+
+
 /* Task functions. */
 
 /**
@@ -2563,13 +2574,15 @@ append_to_task_string (task_t task, const char* field, const char* value)
   #define TASK_AGENT_GROUP_ITERATOR_COLUMNS                                   \
     ,{                                                                        \
       "(SELECT uuid FROM agent_groups"                                        \
-      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      " WHERE agent_groups.id = tasks.target"                                 \
+      " AND tasks.target_type = 2)",/*TASK_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group_id",                                                       \
       KEYWORD_TYPE_STRING                                                     \
     },                                                                        \
     {                                                                         \
       "(SELECT name FROM agent_groups"                                        \
-      " WHERE agent_groups.id = tasks.agent_group)",                          \
+      " WHERE agent_groups.id = tasks.target"                                 \
+      " AND tasks.target_type = 2)",/*TASK_TARGET_TYPE_AGENT_GROUP*/         \
       "agent_group",                                                          \
       KEYWORD_TYPE_STRING                                                     \
     }
@@ -2580,35 +2593,7 @@ append_to_task_string (task_t task, const char* field, const char* value)
 /**
  * @brief Query for TASK_SEV_CASE_GUARD.
  */
-/**
- * @brief Query for TASK_SEV_CASE_GUARD.
- */
-#define TASK_NO_TARGET_BASE "target IS NULL"
-
-#if ENABLE_AGENTS
-#define TASK_NO_AGENT_GROUP " AND agent_group IS NULL"
-#else
-#define TASK_NO_AGENT_GROUP ""
-#endif
-
-#if ENABLE_CONTAINER_SCANNING
-#define TASK_NO_OCI_IMAGE_TARGET " AND oci_image_target IS NULL"
-#else
-#define TASK_NO_OCI_IMAGE_TARGET ""
-#endif
-
-#if ENABLE_WEB_APPLICATION_SCANNING
-#define TASK_NO_WEB_APPLICATION_TARGET " AND web_application_target IS NULL"
-#else
-#define TASK_NO_WEB_APPLICATION_TARGET ""
-#endif
-
-#define TASK_NO_TARGET_CTX                                \
-"(" TASK_NO_TARGET_BASE                                   \
-TASK_NO_AGENT_GROUP                                       \
-TASK_NO_OCI_IMAGE_TARGET                                  \
-TASK_NO_WEB_APPLICATION_TARGET                            \
-")"
+#define TASK_NO_TARGET_CTX "(target_type = 0)"//TASK_TARGET_TYPE_IMPORT_TASK
 
 /**
  * @brief SQL for TASK_ITERATOR_WHERE_COLUMNS_INNER.
@@ -2842,7 +2827,8 @@ TASK_NO_WEB_APPLICATION_TARGET                            \
      KEYWORD_TYPE_INTEGER                                                    \
    },                                                                        \
    {                                                                         \
-     "(SELECT name FROM targets WHERE id = target)",                         \
+     "(SELECT name FROM targets WHERE id = target"                           \
+     " AND tasks.target_type = 1)",/*TASK_TARGET_TYPE_REGULAR*/             \
      "target",                                                               \
      KEYWORD_TYPE_STRING                                                     \
    },                                                                        \
@@ -5934,7 +5920,7 @@ set_task_config (task_t task, config_t config)
 /**
  * @brief Return the target of a task.
  *
- * @param[in]  task  Task.
+ * @param[in]  task         Task.
  *
  * @return Target of task.
  */
@@ -5942,9 +5928,10 @@ target_t
 task_target (task_t task)
 {
   target_t target = 0;
-  switch (sql_int64 (&target,
-                     "SELECT target FROM tasks WHERE id = %llu;",
-                     task))
+  switch (sql_int64_ps (&target,
+                       "SELECT target FROM tasks WHERE id = $1",
+                       SQL_RESOURCE_PARAM (task),
+                       NULL))
     {
       case 0:
         return target;
@@ -5959,18 +5946,195 @@ task_target (task_t task)
 }
 
 /**
- * @brief Set the target of a task.
+ * @brief Return the target type of a task.
  *
- * @param[in]  task    Task.
- * @param[in]  target  Target.
+ * @param[in]  task         Task.
+ *
+ * @return Target type of task, TASKS_TARGET_TYPE_UNDEFINED on error.
+ */
+task_target_type_t
+task_target_type (task_t task)
+{
+  // sql_int_ps does not support return value through parameter
+  resource_t target_type = 0;
+  switch (sql_int64_ps (&target_type,
+                        "SELECT target_type FROM tasks WHERE id = $1;",
+                        SQL_RESOURCE_PARAM (task), NULL))
+    {
+    case 0:
+      return (task_target_type_t)target_type;
+      break;
+    case 1:        /* Too few rows in result of query. */
+    default:       /* Programming error. */
+      assert (0);
+    case -1:
+      return TASK_TARGET_TYPE_UNDEFINED;
+      break;
+    }
+}
+
+/**
+ * @brief Get the regular target of a task.
+ *
+ * Fails if the target type of the task cannot be read, or if the task has no
+ * regular target.
+ *
+ * @param[in]   task    Task.
+ * @param[out]  target  Regular target of the task, or 0 if it has none.  Also
+ *                      set to 0 on error.
+ *
+ * @return 0 success, -1 failed to get the target type of the task.
+ */
+int
+task_regular_target (task_t task, target_t *target)
+{
+  assert (target);
+  *target = 0;
+
+  task_target_type_t target_type = task_target_type (task);
+  if (target_type == TASK_TARGET_TYPE_UNDEFINED)
+    {
+      g_warning ("%s: failed to get the target type of task %llu",
+                 __func__, task);
+      return -1;
+    }
+
+  if (target_type == TASK_TARGET_TYPE_REGULAR)
+    *target = task_target (task);
+
+  return 0;
+}
+
+/**
+ * @brief Set the target of a task.
+ *        Also updates the location to 0 (LOCATION_TABLE)
+ *
+ * @param[in]  task          Task.
+ * @param[in]  target        Target.
+ * @param[in]  target_type   The type of the target
  */
 void
-set_task_target (task_t task, target_t target)
+set_task_target (task_t task, target_t target, task_target_type_t target_type)
 {
-  sql ("UPDATE tasks SET target = %llu, modification_time = m_now ()"
-       " WHERE id = %llu;",
-       target,
-       task);
+  sql_ps ("UPDATE tasks SET target = $1, target_type = $2, target_location = 0,"
+          " modification_time = m_now ()"
+          " WHERE id = $3;",
+          SQL_RESOURCE_PARAM (target),
+          SQL_INT_PARAM (target_type),
+          SQL_RESOURCE_PARAM (task),
+          NULL);
+}
+
+/**
+ * @brief Update a task after a target was deleted.
+ *
+ * @param[in]  resource_id   The old ID of the target in the table.
+ * @param[in]  trash_id      The new ID of the target in trash.
+ * @param[in]  target_type   The type of the target being deleted
+ */
+void
+task_update_delete_target (target_t resource_id, target_t trash_id,
+                           task_target_type_t target_type)
+{
+  sql_ps ("UPDATE tasks"
+          " SET target = $1,"
+          "     target_location = " G_STRINGIFY (LOCATION_TRASH)
+          " WHERE target = $2"
+          " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+          " AND target_type = $3;",
+          SQL_RESOURCE_PARAM (trash_id),
+          SQL_RESOURCE_PARAM (resource_id),
+          SQL_INT_PARAM (target_type),
+          NULL);
+}
+
+/**
+ * @brief Update a task after a target was restored.
+ *
+ * @param[in]  restored_id  The new ID of the target in the table.
+ * @param[in]  trash_id     The old ID of the target in trash.
+ * @param[in]  target_type  The type of the target being restored
+ */
+void
+task_update_restore_target (target_t restored_id, target_t trash_id,
+                            task_target_type_t target_type)
+{
+  sql_ps ("UPDATE tasks"
+          " SET target = $1,"
+          "     target_location = " G_STRINGIFY (LOCATION_TABLE)
+          " WHERE target = $2"
+          " AND target_location = " G_STRINGIFY (LOCATION_TRASH)
+          " AND target_type = $3;",
+          SQL_RESOURCE_PARAM (restored_id),
+          SQL_RESOURCE_PARAM (trash_id),
+          SQL_INT_PARAM (target_type),
+          NULL);
+}
+
+/**
+ * @brief Return whether a target is in use by a task.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_target_in_use (target_t target, task_target_type_t target_type)
+{
+  return !!sql_int_ps (
+      "SELECT count(*) FROM tasks"
+      " WHERE target = $1"
+      " AND target_type = $2"
+      " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+      " AND hidden = 0;",
+      SQL_RESOURCE_PARAM (target),
+      SQL_INT_PARAM (target_type),
+      NULL);
+}
+
+/**
+ * @brief Return whether a target is in use by a task,
+ *        even if the task is hidden.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_target_in_use_including_hidden (target_t target,
+                                     task_target_type_t target_type)
+{
+  return !!sql_int_ps (
+    "SELECT count(*) FROM tasks"
+    " WHERE target = $1"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TABLE) ";",
+    SQL_RESOURCE_PARAM (target),
+    SQL_INT_PARAM (target_type),
+    NULL);
+}
+
+/**
+ * @brief Return whether a trashcan target is referenced by a task.
+ *
+ * @param[in]  target       Target.
+ * @param[in]  target_type  Type of target
+ *
+ * @return 1 if in use, else 0.
+ */
+int
+task_trash_target_in_use (target_t target, task_target_type_t target_type)
+{
+  return !!sql_int_ps (
+    "SELECT count(*) FROM tasks"
+    " WHERE target = $1"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TRASH) ";",
+    SQL_RESOURCE_PARAM (target),
+    SQL_INT_PARAM (target_type),
+    NULL);
 }
 
 #if ENABLE_AGENTS
@@ -5981,13 +6145,9 @@ set_task_target (task_t task, target_t target)
  * @param[in]  agent_group  Agent group.
  */
 void
-set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
+set_task_agent_group (task_t task, agent_group_t agent_group)
 {
-  sql ("UPDATE tasks SET agent_group = %llu, agent_group_location = 0,"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       agent_group,
-       task);
+  set_task_target (task, agent_group, TASK_TARGET_TYPE_AGENT_GROUP);
 }
 
 /**
@@ -6000,14 +6160,15 @@ set_task_agent_group_and_location (task_t task, agent_group_t agent_group)
 int
 agent_group_tasks_exist_by_scanner (scanner_t scanner)
 {
-  return !!sql_int (
+  return !!sql_int_ps (
     "SELECT COUNT(*) FROM tasks"
-    " WHERE agent_group IN ("
-    "  SELECT id FROM agent_groups WHERE scanner = %llu)"
-    " AND agent_group_location = "
-    G_STRINGIFY (LOCATION_TABLE)
-    " AND hidden = 0;",
-    scanner);
+    " WHERE target IN ("
+    "  SELECT id FROM agent_groups WHERE scanner = $1)"
+    " AND target_type = $2"
+    " AND target_location = " G_STRINGIFY (LOCATION_TABLE) " AND hidden = 0;",
+    SQL_RESOURCE_PARAM (scanner),
+    SQL_INT_PARAM (TASK_TARGET_TYPE_AGENT_GROUP),
+    NULL);
 }
 /**
  * @brief Return whether any hidden task exists for agent groups of a scanner.
@@ -6019,19 +6180,24 @@ agent_group_tasks_exist_by_scanner (scanner_t scanner)
 int
 agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 {
-  return !!sql_int (
+  return !!sql_int_ps (
     "SELECT COUNT(*) FROM tasks "
     "WHERE hidden != 0 "
+    " AND target_type = $1"
     " AND ("
-    "  (agent_group_location = %d"
-    "   AND agent_group IN ("
-    "    SELECT id FROM agent_groups WHERE scanner = %llu ))"
+    "  (target_location = $2"
+    "   AND target IN ("
+    "    SELECT id FROM agent_groups WHERE scanner = $3 ))"
     " OR "
-    "  (agent_group_location = %d "
-    "   AND agent_group IN ("
-    "    SELECT id FROM agent_groups_trash WHERE scanner = %llu ))"
+    "  (target_location = $4 "
+    "   AND target IN ("
+    "    SELECT id FROM agent_groups_trash WHERE scanner = $3 ))"
     ");",
-    LOCATION_TABLE, scanner, LOCATION_TRASH, scanner);
+    SQL_INT_PARAM (TASK_TARGET_TYPE_AGENT_GROUP),
+    SQL_INT_PARAM (LOCATION_TABLE),
+    SQL_RESOURCE_PARAM (scanner),
+    SQL_INT_PARAM (LOCATION_TRASH),
+    NULL);
 }
 
 /**
@@ -6044,21 +6210,9 @@ agent_group_hidden_tasks_exist_by_scanner (scanner_t scanner)
 agent_group_t
 task_agent_group (task_t task)
 {
-  agent_group_t agent_group = 0;
-  switch (sql_int64 (&agent_group,
-                     "SELECT agent_group FROM tasks WHERE id = %llu;",
-                     task))
-    {
-    case 0:
-      return agent_group;
-      break;
-    case 1:        /* Too few rows in result of query. */
-    default:       /* Programming error. */
-      assert (0);
-    case -1:
-      return 0;
-      break;
-    }
+  if (task_target_type (task) != TASK_TARGET_TYPE_AGENT_GROUP)
+    return 0;
+  return task_target (task);
 }
 
 /**
@@ -6071,10 +6225,9 @@ task_agent_group (task_t task)
 int
 task_agent_group_in_trash (task_t task)
 {
-  return sql_int ("SELECT agent_group_location = "
-                  G_STRINGIFY (LOCATION_TRASH)
-                  " FROM tasks WHERE id = %llu;",
-                  task);
+  if (task_target_type (task) != TASK_TARGET_TYPE_AGENT_GROUP)
+    return 0;
+  return task_target_in_trash (task);
 }
 #endif /*ENABLE_AGENTS*/
 
@@ -6089,21 +6242,9 @@ task_agent_group_in_trash (task_t task)
 oci_image_target_t
 task_oci_image_target (task_t task)
 {
-  oci_image_target_t oci_image_target = 0;
-  switch (sql_int64 (&oci_image_target,
-                     "SELECT oci_image_target FROM tasks WHERE id = %llu;",
-                     task))
-    {
-      case 0:
-        return oci_image_target;
-        break;
-      case 1:        /* Too few rows in result of query. */
-      default:       /* Programming error. */
-        assert (0);
-      case -1:
-        return 0;
-        break;
-    }
+  if (task_target_type (task) != TASK_TARGET_TYPE_OCI_IMAGE)
+    return 0;
+  return task_target (task);
 }
 
 /**
@@ -6116,27 +6257,21 @@ task_oci_image_target (task_t task)
 int
 task_oci_image_target_in_trash (task_t task)
 {
-  return sql_int ("SELECT oci_image_target_location = "
-                  G_STRINGIFY (LOCATION_TRASH)
-                  " FROM tasks WHERE id = %llu;",
-                  task);
+  if (task_target_type (task) != TASK_TARGET_TYPE_OCI_IMAGE)
+    return 0;
+  return task_target_in_trash (task);
 }
 
 /**
  * @brief Set the OCI image target of a task.
  *
- * @param[in]  task    Task.
- * @param[in]  target  Target.
+ * @param[in]  task              Task.
+ * @param[in]  oci_image_target  Target.
  */
 void
 set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 {
-  sql ("UPDATE tasks SET oci_image_target = %llu,"
-       " oci_image_target_location = 0,"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       oci_image_target,
-       task);
+  set_task_target (task, oci_image_target, TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 #endif
@@ -6152,13 +6287,9 @@ set_task_oci_image_target (task_t task, oci_image_target_t oci_image_target)
 web_application_target_t
 task_web_application_target (task_t task)
 {
-  web_application_target_t web_application_target = 0;
-  sql_int64_ps (&web_application_target,
-                "SELECT web_application_target FROM tasks"
-                " WHERE id = $1;",
-                SQL_RESOURCE_PARAM(task),
-                NULL);
-  return web_application_target;
+  if (task_target_type (task) != TASK_TARGET_TYPE_WEB_APPLICATION)
+    return 0;
+  return task_target (task);
 }
 
 /**
@@ -6171,29 +6302,22 @@ task_web_application_target (task_t task)
 int
 task_web_application_target_in_trash (task_t task)
 {
-  return sql_int_ps ("SELECT web_application_target_location = "
-                     G_STRINGIFY (LOCATION_TRASH)
-                     " FROM tasks WHERE id = $1;",
-                     SQL_RESOURCE_PARAM(task),
-                     NULL);
+  if (task_target_type (task) != TASK_TARGET_TYPE_WEB_APPLICATION)
+    return 0;
+  return task_target_in_trash (task);
 }
 
 /**
  * @brief Set the web application target of a task.
  *
- * @param[in]  task    Task.
- * @param[in]  target  Target.
+ * @param[in]  task                    Task.
+ * @param[in]  web_application_target  Target.
  */
 void
 set_task_web_application_target (task_t task, web_application_target_t web_application_target)
 {
-  sql_ps ("UPDATE tasks SET web_application_target = $1,"
-          " web_application_target_location = 0,"
-          " modification_time = m_now ()"
-          " WHERE id = $2;",
-          SQL_RESOURCE_PARAM(web_application_target),
-          SQL_RESOURCE_PARAM(task),
-          NULL);
+  set_task_target (task, web_application_target,
+                   TASK_TARGET_TYPE_WEB_APPLICATION);
 }
 
 #endif
@@ -6226,16 +6350,17 @@ clear_task_asset_preferences (task_t task)
 /**
  * @brief Return whether the target of a task is in the trashcan.
  *
- * @param[in]  task  Task.
+ * @param[in]  task         Task.
  *
  * @return 1 if in trash, else 0.
  */
 int
 task_target_in_trash (task_t task)
 {
-  return sql_int ("SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
-                  " FROM tasks WHERE id = %llu;",
-                  task);
+  return sql_int_ps ("SELECT target_location = " G_STRINGIFY (LOCATION_TRASH)
+                      " FROM tasks WHERE id = $1",
+                      SQL_RESOURCE_PARAM (task),
+                      NULL);
 }
 
 /**
@@ -7258,7 +7383,7 @@ task_severity_double (task_t task, int overrides, int min_qod, int offset)
   report_t report;
 
   if (current_credentials.uuid == NULL
-      || task_target (task) == 0 /* import task. */)
+      || task_target_type (task) == TASK_TARGET_TYPE_IMPORT_TASK)
     return SEVERITY_MISSING;
 
   report = sql_int64_0 ("SELECT id FROM reports"
@@ -7668,7 +7793,8 @@ reschedule_task (const gchar *task_id)
     }
 }
 
-
+
+
 /* Results. */
 
 /**
@@ -8201,7 +8327,8 @@ detect_cleanup:
 }
 
 
-
+
+
 /* Prognostics. */
 
 /**
@@ -8639,7 +8766,8 @@ prognosis_iterator_cvss_double (iterator_t* iterator)
 DEF_ACCESS (prognosis_iterator_description, 2);
 DEF_ACCESS (prognosis_iterator_cpe, 3);
 
-
+
+
 /* Reports. */
 
 /**
@@ -9461,7 +9589,7 @@ create_report (array_t *results, const char *task_id, const char *in_assets,
     rc = -1;
   else if (task == 0)
     rc = -4;
-  else if (task_target (task))
+  else if (task_target_type (task) != TASK_TARGET_TYPE_IMPORT_TASK)
     rc = -5;
   if (rc)
     {
@@ -16285,6 +16413,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
       char *tsk_name, *task_target_uuid, *task_target_name;
       char *task_target_comment, *comment;
       target_t target;
+      task_target_type_t target_type;
       gchar *progress_xml;
       iterator_t tags;
 
@@ -16297,21 +16426,32 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
 
       comment = task_comment (task);
 
-      target = task_target (task);
-      if (task_target_in_trash (task))
+      target_type = task_target_type (task);
+      if (target_type != TASK_TARGET_TYPE_REGULAR)
+        target = 0;
+      else
+        target = task_target (task);
+
+      if (target && task_target_in_trash (task))
         {
           task_target_uuid = trash_target_uuid (target);
           task_target_name = trash_target_name (target);
           task_target_comment = trash_target_comment (target);
         }
-      else
+      else if (target)
         {
           task_target_uuid = target_uuid (target);
           task_target_name = target_name (target);
           task_target_comment = target_comment (target);
         }
+      else
+        {
+          task_target_uuid = NULL;
+          task_target_name = NULL;
+          task_target_comment = NULL;
+        }
 
-      if ((target == 0)
+      if (target_type == TASK_TARGET_TYPE_IMPORT_TASK
           && (task_run_status (task) == TASK_STATUS_RUNNING))
         progress_xml = g_strdup_printf
                         ("%i",
@@ -16336,7 +16476,7 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
              tsk_name ? tsk_name : "",
              comment ? comment : "",
              task_target_uuid ? task_target_uuid : "",
-             task_target_in_trash (task),
+             (target != 0) ? task_target_in_trash (task) : 0,
              task_target_name ? task_target_name : "",
              task_target_comment ? task_target_comment : "");
 
@@ -18073,7 +18213,8 @@ parse_osp_report (task_t task, report_t report, const char *report_xml)
   free_entity (entity);
 }
 
-
+
+
 /* More task stuff. */
 
 /**
@@ -18241,10 +18382,10 @@ make_task (char* name, char* comment, int in_assets, int event)
   sql ("INSERT into tasks"
        " (owner, uuid, name, hidden, comment, schedule,"
        "  schedule_next_time, config_location, target, target_location,"
-       "  scanner_location, schedule_location, alterable,"
+       "  target_type, scanner_location, schedule_location, alterable,"
        "  creation_time, modification_time, usage_type)"
        " VALUES ((SELECT id FROM users WHERE users.uuid = '%s'),"
-       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
+       "         '%s', '%s', 0, '%s', 0, 0, 0, 0, 0, 0, 0, 0, 0, m_now (),"
        "         m_now (), 'scan');",
        current_credentials.uuid,
        uuid,
@@ -18352,17 +18493,12 @@ copy_task (const char* name, const char* comment, const char *task_id,
   sql_begin_immediate ();
 
   ret = copy_resource_lock ("task", name, comment, task_id,
-                            "config, target, oci_image_target,"
-                            " web_application_target,"
+                            "config, target, target_type,"
                             " schedule, schedule_periods,"
                             " scanner, schedule_next_time,"
                             " config_location, target_location,"
                             " schedule_location, scanner_location,"
-                            " oci_image_target_location,"
-                            " web_application_target_location,"
-                            " usage_type,"
-                            " agent_group, agent_group_location,"
-                            " alterable",
+                            " usage_type, alterable",
                             1, &new, &old);
   if (ret)
     {
@@ -19071,6 +19207,129 @@ manage_task_remove_file (const gchar *task_id, const char *name)
 }
 
 /**
+ * @brief Get the task target type that a scanner type requires.
+ *
+ * @param[in]  type  Scanner type.
+ *
+ * @return The target type associated with the scanner type,
+ *         TASKS_TARGET_TYPE_UNDEFINED if the scanner type is unknown.
+ */
+task_target_type_t
+scanner_type_target_type (scanner_type_t type)
+{
+  switch (type)
+    {
+      case SCANNER_TYPE_OPENVAS:
+      case SCANNER_TYPE_OSP_SENSOR:
+      case SCANNER_TYPE_OPENVASD:
+      case SCANNER_TYPE_OPENVASD_SENSOR:
+      case SCANNER_TYPE_CVE:
+        return TASK_TARGET_TYPE_REGULAR;
+      case SCANNER_TYPE_AGENT_CONTROLLER:
+      case SCANNER_TYPE_AGENT_CONTROLLER_SENSOR:
+        return TASK_TARGET_TYPE_AGENT_GROUP;
+      case SCANNER_TYPE_CONTAINER_IMAGE:
+        return TASK_TARGET_TYPE_OCI_IMAGE;
+      case SCANNER_TYPE_WEB_APPLICATION:
+        return TASK_TARGET_TYPE_WEB_APPLICATION;
+      default:
+        return TASK_TARGET_TYPE_UNDEFINED;
+    }
+}
+
+/**
+ * @brief Whether a modify_task resource element requests a change.
+ *
+ * @param[in]  resource_id  The id from the request, or NULL.
+ *
+ * @return 1 if the element requests a change, else 0.
+ */
+static int
+modify_task_resource_given (const gchar *resource_id)
+{
+  return resource_id && strcmp (resource_id, "0");
+}
+
+/**
+ * @brief Check that a modify_task request carries a consistent target.
+ *
+ * @param[in]  task                       Task.
+ * @param[in]  scanner_id                 Scanner from the request, or NULL.
+ * @param[in]  target_id                  Target from the request, or NULL.
+ * @param[in]  agent_group_id             Agent group from the request, or NULL.
+ * @param[in]  oci_image_target_id        OCI image target, or NULL.
+ * @param[in]  web_application_target_id  Web application target, or NULL.
+ *
+ * @return 0 consistent, 1 more than one target given, 2 target kind does not
+ *         match the scanner type, 3 failed to find scanner, -1 error.
+ */
+static int
+modify_task_check_target_scanner (task_t task,
+                                  const gchar *scanner_id,
+                                  const gchar *target_id,
+                                  const gchar *agent_group_id,
+                                  const gchar *oci_image_target_id,
+                                  const gchar *web_application_target_id)
+{
+  scanner_t scanner;
+  task_target_type_t given_type, required_type;
+  int given_count;
+
+  given_count = 0;
+  given_type = TASK_TARGET_TYPE_UNDEFINED;
+
+  if (modify_task_resource_given (target_id))
+    {
+      given_count++;
+      given_type = TASK_TARGET_TYPE_REGULAR;
+    }
+  if (modify_task_resource_given (agent_group_id))
+    {
+      given_count++;
+      given_type = TASK_TARGET_TYPE_AGENT_GROUP;
+    }
+  if (modify_task_resource_given (oci_image_target_id))
+    {
+      given_count++;
+      given_type = TASK_TARGET_TYPE_OCI_IMAGE;
+    }
+  if (modify_task_resource_given (web_application_target_id))
+    {
+      given_count++;
+      given_type = TASK_TARGET_TYPE_WEB_APPLICATION;
+    }
+
+  if (given_count == 0)
+    return 0;
+  if (given_count > 1)
+    return 1;
+
+  /* Resolve the scanner that the task will have after this request. */
+  scanner = 0;
+  if (modify_task_resource_given (scanner_id))
+    {
+      if (find_scanner_with_permission (scanner_id, &scanner, "get_scanners"))
+        return -1;
+      if (scanner == 0)
+        return 3;
+    }
+  else
+    scanner = task_scanner (task);
+
+  required_type = scanner_type_target_type (scanner_type (scanner));
+
+  if (required_type == TASK_TARGET_TYPE_UNDEFINED)
+    {
+      g_warning ("%s: task %llu has scanner %llu of unknown type,"
+                 " skipping target type check",
+                 __func__, task, scanner);
+      return 0;
+    }
+
+  return given_type == required_type ? 0 : 2;
+}
+
+/**
  * @brief Modify a task.
  *
  * @param[in]  task_id     Task.
@@ -19122,7 +19381,7 @@ modify_task (const gchar *task_id, const gchar *name,
     return MODIFY_TASK_NOT_FOUND;
 
 
-  if ((task_target (task) == 0
+  if ((task_target_type (task) == TASK_TARGET_TYPE_IMPORT_TASK
        && (agent_group_id == NULL)
        && (oci_image_target_id == NULL)
        && (web_application_target_id == NULL))
@@ -19137,6 +19396,26 @@ modify_task (const gchar *task_id, const gchar *name,
         return MODIFY_TASK_CONFIG_SCANNER_TYPE_MISMATCH;
       case 2:
         return MODIFY_TASK_CONFIG_NOT_FOUND;
+      case 3:
+        return MODIFY_TASK_SCANNER_NOT_FOUND;
+      default:
+        assert (0);
+        /* fallthrough */
+      case -1:
+        return MODIFY_TASK_ERROR;
+    }
+
+  switch (modify_task_check_target_scanner (task, scanner_id, target_id,
+                                            agent_group_id,
+                                            oci_image_target_id,
+                                            web_application_target_id))
+    {
+      case 0:
+        break;
+      case 1:
+        return MODIFY_TASK_MULTIPLE_TARGETS;
+      case 2:
+        return MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH;
       case 3:
         return MODIFY_TASK_SCANNER_NOT_FOUND;
       default:
@@ -19286,9 +19565,6 @@ modify_task (const gchar *task_id, const gchar *name,
       else if ((task_run_status (task) != TASK_STATUS_NEW)
                && (task_alterable (task) == 0))
         return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
-      else if (type_of_scanner == SCANNER_TYPE_CONTAINER_IMAGE
-               || type_of_scanner == SCANNER_TYPE_WEB_APPLICATION)
-        return MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH;
       else if (find_target_with_permission (target_id,
                                             &target,
                                             "get_targets"))
@@ -19296,14 +19572,18 @@ modify_task (const gchar *task_id, const gchar *name,
       else if (target == 0)
         return MODIFY_TASK_TARGET_NOT_FOUND;
       else
-        set_task_target (task, target);
+        set_task_target (task, target, TASK_TARGET_TYPE_REGULAR);
     }
 #if ENABLE_AGENTS
   if (agent_group_id) {
     agent_group_t agent_group;
 
     agent_group = 0;
-    if ((task_run_status(task) != TASK_STATUS_NEW)
+    if (strcmp (agent_group_id, "0") == 0)
+      {
+        /* Leave it as it is. */
+      }
+    else if ((task_run_status(task) != TASK_STATUS_NEW)
         && (task_alterable(task) == 0))
       return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
     else if (find_agent_group_with_permission(agent_group_id,
@@ -19314,7 +19594,7 @@ modify_task (const gchar *task_id, const gchar *name,
       return MODIFY_TASK_AGENT_GROUP_NOT_FOUND;
     else
       {
-        set_task_agent_group_and_location (task, agent_group);
+        set_task_agent_group (task, agent_group);
       }
   }
 #endif
@@ -19347,7 +19627,11 @@ modify_task (const gchar *task_id, const gchar *name,
     {
       web_application_target_t web_application_target = 0;
 
-      if ((task_run_status (task) != TASK_STATUS_NEW)
+      if (strcmp (web_application_target_id, "0") == 0)
+        {
+          /* Leave it as is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
           && (task_alterable (task) == 0))
         return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_web_application_target_with_permission (web_application_target_id,
@@ -19385,7 +19669,8 @@ modify_task (const gchar *task_id, const gchar *name,
   return MODIFY_TASK_OK;
 }
 
-
+
+
 /* Credentials. */
 
 /**
@@ -22633,7 +22918,8 @@ credential_scanner_iterator_readable (iterator_t* iterator)
   return iterator_int (iterator, 2);
 }
 
-
+
+
 /* Notes and Overrides. */
 
 /**
@@ -22715,7 +23001,8 @@ nvt_exists (const char* nvt)
   return 0;
 }
 
-
+
+
 /* Scanners */
 
 /**
@@ -25120,7 +25407,8 @@ manage_get_scanners (GSList *log_config, const db_conn_info_t *database)
   return 0;
 }
 
-
+
+
 /* Schema. */
 
 /**
@@ -25331,7 +25619,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
   }
 }
 
-
+
+
 /* Trashcan. */
 
 /**
@@ -26225,13 +26514,9 @@ manage_restore (const char *id)
            resource);
 
       /* Update the target in any trashcan tasks. */
-      sql ("UPDATE tasks"
-           " SET target = %llu,"
-           "     target_location = " G_STRINGIFY (LOCATION_TABLE)
-           " WHERE target = %llu"
-           " AND target_location = " G_STRINGIFY (LOCATION_TRASH),
-           restored_target,
-           resource);
+      task_update_restore_target (restored_target, resource,
+                                  TASK_TARGET_TYPE_REGULAR);
+
 
       permissions_set_locations ("target", resource,
                                  sql_last_insert_id (),
@@ -26484,7 +26769,8 @@ manage_empty_trashcan ()
   return 0;
 }
 
-
+
+
 /* Vulns. */
 
 /**
@@ -27261,7 +27547,8 @@ manage_set_radius_info (int enabled, gchar *host, gchar *key)
   sql_commit ();
 }
 
-
+
+
 /* SQL construction */
 
 /**
@@ -27947,7 +28234,8 @@ type_build_select (const char *type, const char *columns_str,
   return 0;
 }
 
-
+
+
 /* Optimize. */
 
 /**

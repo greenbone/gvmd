@@ -154,6 +154,7 @@ typedef enum {
   MODIFY_TASK_CANNOT_SET_SCAN_MODE_VALUE = 23,
   MODIFY_TASK_CANNOT_SET_AJAX_SPIDER_TIMEOUT_VALUE = 24,
   MODIFY_TASK_TARGET_SCANNER_TYPE_MISMATCH = 25,
+  MODIFY_TASK_MULTIPLE_TARGETS = 26,
   MODIFY_TASK_ERROR = -1
 } modify_task_return_t;
 
@@ -255,7 +256,7 @@ parse_ssldetails (const char *, time_t *, time_t *, gchar **, gchar **);
 const char*
 tls_certificate_format_str (gnutls_x509_crt_fmt_t certificate_format);
 
-
+
 /* Credentials. */
 
 extern credentials_t current_credentials;
@@ -266,7 +267,7 @@ authenticate (credentials_t*);
 void
 logout_user ();
 
-
+
 /* Database. */
 
 int
@@ -326,7 +327,7 @@ validate_sort_field (const gchar*, const gchar*);
 void
 manage_session_set_timezone (const char *);
 
-
+
 /* Task macros and structures. */
 
 /**
@@ -446,7 +447,10 @@ check_scanner_feature (scanner_type_t);
 scanner_type_t
 get_scanner_type_by_uuid (const char *);
 
-
+task_target_type_t
+scanner_type_target_type (scanner_type_t);
+
+
 /* Resources. */
 
 int
@@ -458,7 +462,7 @@ trash_id_exists (const char *, const char *);
 int
 delete_resource (const char *, const char *, int);
 
-
+
 /* Events and Alerts. */
 
 /**
@@ -563,7 +567,7 @@ delete_resource (const char *, const char *, int);
  "Please contact your local system administrator if you think it\n"           \
  "was created or assigned erroneously.\n"
 
-
+
 /* Task global variables and preprocessor variables. */
 
 /**
@@ -573,7 +577,7 @@ extern task_t current_scanner_task;
 
 extern report_t global_current_report;
 
-
+
 /* Task code specific to the representation of tasks. */
 
 unsigned int
@@ -669,15 +673,36 @@ set_task_config (task_t, config_t);
 target_t
 task_target (task_t);
 
+task_target_type_t
+task_target_type (task_t);
+
+int
+task_regular_target (task_t, target_t *);
+
 int
 task_target_in_trash (task_t);
 
 void
-set_task_target (task_t, target_t);
+set_task_target (task_t, target_t, task_target_type_t);
+
+void
+task_update_delete_target (target_t, target_t, task_target_type_t);
+
+void
+task_update_restore_target (target_t, target_t, task_target_type_t);
+
+int
+task_target_in_use (target_t, task_target_type_t);
+
+int
+task_target_in_use_including_hidden (target_t, task_target_type_t);
+
+int
+task_trash_target_in_use (target_t, task_target_type_t);
 
 #if ENABLE_AGENTS
 void
-set_task_agent_group_and_location (task_t task, agent_group_t agent_group);
+set_task_agent_group (task_t task, agent_group_t agent_group);
 
 int
 agent_group_tasks_exist_by_scanner (scanner_t scanner);
@@ -912,7 +937,7 @@ config_task_iterator_uuid (iterator_t*);
 int
 config_task_iterator_readable (iterator_t*);
 
-
+
 /* General severity related facilities. */
 
 const char *
@@ -956,7 +981,7 @@ void
 severity_data_level_counts (const severity_data_t*,
                             int*, int*, int*, int*, int*, int*, int*);
 
-
+
 /* General task facilities. */
 
 const char*
@@ -977,7 +1002,7 @@ resume_task (const char *, char **);
 int
 move_task (const char*, const char*);
 
-
+
 /* Results. */
 
 /**
@@ -1554,7 +1579,7 @@ manage_report_xml_page (report_t, const get_data_t *, const gchar *);
 int
 manage_report_result_count (report_t, const get_data_t *, int *);
 
-
+
 /* Reports. */
 
 void
@@ -1653,7 +1678,7 @@ prognosis_iterator_cve (iterator_t*);
 const char*
 prognosis_iterator_description (iterator_t*);
 
-
+
 /* Configs.
  *
  * These are here because they need definitions that are still in manage.h. */
@@ -1664,7 +1689,7 @@ create_task_check_scanner_type (scanner_t);
 int
 modify_task_check_config_scanner (task_t, const char *, const char *);
 
-
+
 /* NVT's. */
 
 char *
@@ -1794,7 +1819,7 @@ nvt_default_timeout (const char *);
 int
 family_nvt_count (const char *);
 
-
+
 /* NVT selectors. */
 
 /**
@@ -1847,7 +1872,7 @@ nvt_selector_iterator_include (iterator_t*);
 int
 nvt_selector_iterator_type (iterator_t*);
 
-
+
 /* NVT preferences. */
 
 void
@@ -1933,7 +1958,7 @@ nvt_severity_iterator_score (iterator_t *);
 const char *
 nvt_severity_iterator_value (iterator_t *);
 
-
+
 /* Credentials. */
 
 /**
@@ -2156,7 +2181,7 @@ credential_value (credential_t, const char*);
 gchar*
 credential_encrypted_value (credential_t, const char*);
 
-
+
 /* System reports. */
 
 /**
@@ -2188,7 +2213,7 @@ int
 manage_system_report (const char *, const char *, const char *, const char *,
                       const char *, char **);
 
-
+
 /* Scanners. */
 
 /**
@@ -2513,13 +2538,13 @@ get_schedule_timeout ();
 void
 set_schedule_timeout (int);
 
-
+
 /* Schema. */
 
 int
 manage_schema (gchar *, gchar **, gsize *, gchar **, gchar **);
 
-
+
 /* Trashcan. */
 
 int
@@ -2528,7 +2553,7 @@ manage_restore (const char *);
 int
 manage_empty_trashcan ();
 
-
+
 /* SecInfo */
 
 int
@@ -2706,7 +2731,7 @@ init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*);
 const char*
 nvt_dfn_cert_adv_iterator_name (iterator_t*);
 
-
+
 /* Web Application VT data */
 
 int
@@ -2743,13 +2768,13 @@ web_application_vt_ref_iterator_type (iterator_t *);
 const char *
 web_application_vt_ref_iterator_ref_id (iterator_t *);
 
-
+
 /* All SecInfo Data */
 
 int
 secinfo_count_after (const get_data_t *, const char *, time_t, gboolean);
 
-
+
 /* Vulns. */
 
 int
@@ -2797,7 +2822,7 @@ manage_get_radius_info (int *, char **, char **);
 void
 manage_set_radius_info (int, gchar *, gchar *);
 
-
+
 /* Resource aggregates */
 
 /**
@@ -2841,7 +2866,7 @@ aggregate_iterator_value (iterator_t*);
 const char*
 aggregate_iterator_subgroup_value (iterator_t*);
 
-
+
 /* Feeds. */
 
 #define NVT_FEED 1
@@ -2956,7 +2981,7 @@ manage_asset_snapshot_delete_stale (int);
 int
 manage_dump_asset_snapshot_counts (GSList *, const db_conn_info_t *);
 
-
+
 /* Timezone info. */
 array_t *
 manage_get_timezones ();
@@ -2964,7 +2989,7 @@ manage_get_timezones ();
 gboolean
 manage_timezone_supported (const char *);
 
-
+
 /* Wizards. */
 
 int
@@ -2972,7 +2997,7 @@ manage_run_wizard (const gchar *, int (*) (void*, gchar*, gchar**),
                    void *, array_t *, int, const char*,
                    gchar **, gchar **, gchar **);
 
-
+
 /* Helpers. */
 
 gchar *
@@ -2993,19 +3018,19 @@ type_filter_columns (const char *);
 gboolean
 manage_migrate_needs_timezone (GSList *, const db_conn_info_t *);
 
-
+
 /* Optimize. */
 
 int
 manage_optimize (GSList *, const db_conn_info_t *, const gchar *);
 
-
+
 /* Signal management */
 
 int
 manage_cancel ();
 
-
+
 /* General settings */
 const char *
 get_vt_verification_collation ();

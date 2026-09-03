@@ -424,11 +424,7 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
         }
 
       /* Check if it's in use by a task in the trashcan. */
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE oci_image_target = %llu"
-                   " AND oci_image_target_location = "
-                   G_STRINGIFY (LOCATION_TRASH) ";",
-                   oci_image_target))
+      if (trash_oci_image_target_in_use (oci_image_target))
         {
           sql_rollback ();
           return 1;
@@ -448,12 +444,7 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
 
   if (ultimate == 0)
     {
-      if (sql_int ("SELECT count(*) FROM tasks"
-                   " WHERE oci_image_target = %llu"
-                   " AND oci_image_target_location = "
-                   G_STRINGIFY (LOCATION_TABLE)
-                   " AND hidden = 0;",
-                   oci_image_target))
+      if (oci_image_target_in_use (oci_image_target))
         {
           sql_rollback ();
           return 1;
@@ -470,15 +461,8 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
            oci_image_target);
 
       /* Update the location of the target in any task. */
-      sql ("UPDATE tasks"
-           " SET oci_image_target = %llu,"
-           "     oci_image_target_location = "
-           G_STRINGIFY (LOCATION_TRASH)
-           " WHERE oci_image_target = %llu"
-           " AND oci_image_target_location = "
-           G_STRINGIFY (LOCATION_TABLE) ";",
-           sql_last_insert_id (),
-           oci_image_target);
+      task_update_delete_target (oci_image_target, sql_last_insert_id (),
+                                 TASK_TARGET_TYPE_OCI_IMAGE);
 
       permissions_set_locations ("oci_image_target", oci_image_target,
                                  sql_last_insert_id (),
@@ -487,11 +471,8 @@ delete_oci_image_target (const char *oci_image_target_id, int ultimate)
                           sql_last_insert_id (),
                           LOCATION_TRASH);
     }
-  else if (sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE oci_image_target = %llu"
-                    " AND oci_image_target_location = "
-                    G_STRINGIFY (LOCATION_TABLE),
-                    oci_image_target))
+  else if (task_target_in_use_including_hidden (oci_image_target,
+                                                TASK_TARGET_TYPE_OCI_IMAGE))
     {
       sql_rollback ();
       return 1;
@@ -578,13 +559,8 @@ restore_oci_image_target (const char *oci_image_target_id)
   oci_image_target = sql_last_insert_id ();
 
   /* Update the oci image target in any tasks. */
-  sql ("UPDATE tasks"
-        " SET oci_image_target = %llu,"
-        " oci_image_target_location = " G_STRINGIFY (LOCATION_TABLE)
-        " WHERE oci_image_target = %llu"
-        " AND oci_image_target_location = " G_STRINGIFY (LOCATION_TRASH),
-        oci_image_target,
-        resource);
+  task_update_restore_target (oci_image_target, resource,
+                              TASK_TARGET_TYPE_OCI_IMAGE);
 
   permissions_set_locations ("oci_image_target", resource, oci_image_target,
                              LOCATION_TABLE);
@@ -906,12 +882,7 @@ trash_oci_image_target_readable (oci_image_target_t oci_image_target)
 int
 oci_image_target_in_use (oci_image_target_t oci_image_target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE oci_image_target = %llu"
-                    " AND oci_image_target_location = "
-                    G_STRINGIFY (LOCATION_TABLE)
-                    " AND hidden = 0;",
-                    oci_image_target);
+  return task_target_in_use (oci_image_target, TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 /**
@@ -924,11 +895,8 @@ oci_image_target_in_use (oci_image_target_t oci_image_target)
 int
 trash_oci_image_target_in_use (oci_image_target_t oci_image_target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE oci_image_target = %llu"
-                    " AND oci_image_target_location = "
-                    G_STRINGIFY (LOCATION_TRASH),
-                    oci_image_target);
+  return task_trash_target_in_use (oci_image_target,
+                                   TASK_TARGET_TYPE_OCI_IMAGE);
 }
 
 /**
@@ -979,12 +947,14 @@ init_oci_image_target_task_iterator (iterator_t* iterator,
   init_iterator (iterator,
                  "%s"
                  " SELECT name, uuid, %s FROM tasks"
-                 " WHERE oci_image_target = %llu"
+                 " WHERE target = %llu"
+                 " AND target_type = %d"
                  " AND hidden = 0"
                  " ORDER BY name ASC;",
                  with_clause ? with_clause : "",
                  available,
-                 oci_image_target);
+                 oci_image_target,
+                 TASK_TARGET_TYPE_OCI_IMAGE);
 
   g_free (with_clause);
   g_free (available);

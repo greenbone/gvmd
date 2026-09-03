@@ -51,7 +51,17 @@ handle_queued_osp_scan (const char *scan_id, report_t report,
       case TASK_STATUS_REQUESTED:
         {
           int rc;
-          target_t target = task_target (task);
+          target_t target;
+
+          if (task_regular_target (task, &target))
+            {
+              set_task_interrupted (task,
+                                    "Internal error:"
+                                    " Failed to get target of task");
+              set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
+              return -1;
+            }
+
           rc = handle_osp_scan_start (task, target, scan_id, start_from,
                                       TRUE, &discovery_scan);
           /* Set discovery flag to the report */
@@ -94,7 +104,17 @@ handle_queued_openvasd_scan (const char *scan_id, report_t report,
       case TASK_STATUS_REQUESTED:
         {
           int rc;
-          target_t target = task_target (task);
+          target_t target;
+
+          if (task_regular_target (task, &target))
+            {
+              set_task_interrupted (task,
+                                    "Internal error:"
+                                    " Failed to get target of task");
+              set_report_scan_run_status (report, TASK_STATUS_INTERRUPTED);
+              return -1;
+            }
+
           rc = handle_openvasd_scan_start (task, target, scan_id, start_from,
                                            TRUE, &discovery_scan);
           /* Set discovery flag to the report */

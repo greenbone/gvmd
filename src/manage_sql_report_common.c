@@ -246,9 +246,8 @@ cleanup:
 /**
  * @brief Calculate report task progress.
  *
- * Agent tasks are always reported as complete. Running upload tasks without
- * a network target use their upload progress. All other tasks use the report
- * progress.
+ * Agent tasks are always reported as complete. Running import tasks use
+ * their upload progress. All other tasks use the report progress.
  *
  * @param[in] report  Report resource.
  * @param[in] task    Task associated with the report.
@@ -258,19 +257,17 @@ cleanup:
 static int
 get_report_task_progress (report_t report, task_t task)
 {
-  target_t target;
-
   if (report == 0 || task == 0)
     return 0;
 
+  task_target_type_t target_type = task_target_type (task);
+
 #if ENABLE_AGENTS
-  if (task_agent_group (task) != 0)
+  if (target_type == TASK_TARGET_TYPE_AGENT_GROUP)
     return 100;
 #endif
 
-  target = task_target (task);
-
-  if (target == 0
+  if (target_type == TASK_TARGET_TYPE_IMPORT_TASK
       && task_run_status (task) == TASK_STATUS_RUNNING)
     return task_upload_progress (task);
 
@@ -409,14 +406,10 @@ fill_network_target_reference (
   gchar *name = NULL;
   gchar *comment = NULL;
 
-  target = task_target (task);
-
-  /*
-   * Import tasks do not have a target.
-   */
-  if (target == 0)
+  if (task_target_type(task) != TASK_TARGET_TYPE_REGULAR)
     return 0;
 
+  target = task_target (task);
   in_trash = task_target_in_trash (task);
 
   if (in_trash)

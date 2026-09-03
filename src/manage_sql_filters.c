@@ -1357,11 +1357,7 @@ filter_clause (const char* type, const char* filter,
                  (order,
                   " ORDER BY"
                   "  (CASE WHEN (SELECT "
-                  "               ( "
-                  "                  target = 0 "
-                  "                  and COALESCE( agent_group, 0) = 0 "
-                  "                  and COALESCE( oci_image_target, 0) = 0"
-                  "               ) "
+                  "               ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "              FROM tasks"
                   "              WHERE tasks.id = task)"
                   "    THEN '0'"
@@ -1378,10 +1374,7 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN ( target = 0 "
-                  "               and COALESCE( agent_group, 0) = 0 "
-                  "               and COALESCE( oci_image_target, 0) = 0"
-                  "             ) "
+                  "  (CASE WHEN ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
@@ -1562,11 +1555,7 @@ filter_clause (const char* type, const char* filter,
                  (order,
                   " ORDER BY"
                   "  (CASE WHEN (SELECT "
-                  "               ( "
-                  "                  target = 0 "
-                  "                  and COALESCE( agent_group, 0) = 0 "
-                  "                  and COALESCE( oci_image_target, 0) = 0"
-                  "               ) "
+                  "               ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "              FROM tasks"
                   "              WHERE tasks.id = task)"
                   "    THEN '0'"
@@ -1583,10 +1572,7 @@ filter_clause (const char* type, const char* filter,
                 g_string_append_printf
                  (order,
                   " ORDER BY"
-                  "  (CASE WHEN ( target = 0 "
-                  "               and COALESCE( agent_group, 0) = 0 "
-                  "               and COALESCE( oci_image_target, 0) = 0"
-                  "             ) "
+                  "  (CASE WHEN ( target_type = 0 ) " //TASK_TARGET_TYPE_IMPORT_TASK
                   "    THEN '0'"
                   "    ELSE run_status_name (run_status)"
                   "         || (SELECT CAST (temp / 100 AS text)"
