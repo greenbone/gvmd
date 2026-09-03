@@ -236,4 +236,131 @@ int
 load_report_export_data (report_export_t,
                          report_export_data_t);
 
+void
+reset_report_export (report_export_t);
+
+int
+init_report_export_iterator_pending (iterator_t *,
+                                     get_data_t *,
+                                     int);
+
+int
+init_report_export_iterator_stale (iterator_t *,
+                                   get_data_t *,
+                                   time_t);
+
+int
+process_report_export (report_export_t);
+
+void
+reset_stale_report_exports (int, time_t);
+
+int
+report_export_worker_pid_count ();
+
+int
+get_report_export_type (report_export_t, report_export_type_t *);
+
+int
+init_report_export_iterator (iterator_t *, get_data_t *);
+
+report_t
+report_export_iterator_report (iterator_t *);
+
+report_t
+report_export_iterator_delta_report (iterator_t *);
+
+report_format_t
+report_export_iterator_report_format (iterator_t *);
+
+report_config_t
+report_export_iterator_report_config (iterator_t *);
+
+report_export_type_t
+report_export_iterator_export_type (iterator_t *);
+
+report_export_status_t
+report_export_iterator_status (iterator_t *);
+
+report_export_progress_t
+report_export_iterator_progress (iterator_t *);
+
+const gchar *
+report_export_iterator_filter (iterator_t *);
+
+int
+report_export_iterator_ignore_pagination (iterator_t *);
+
+int
+report_export_iterator_lean (iterator_t *);
+
+int
+report_export_iterator_worker_pid (iterator_t *);
+
+int
+report_export_iterator_notes_details (iterator_t *);
+
+int
+report_export_iterator_overrides_details (iterator_t *);
+
+int
+report_export_iterator_result_tags (iterator_t *);
+
+const gchar *
+report_export_iterator_file_path (iterator_t *);
+
+long long
+report_export_iterator_file_size (iterator_t *);
+
+const gchar *
+report_export_iterator_content_type (iterator_t *);
+
+const gchar *
+report_export_iterator_extension (iterator_t *);
+
+const gchar *
+report_export_iterator_error_message (iterator_t *);
+
+int
+report_export_iterator_attempt_count (iterator_t *);
+
+time_t
+report_export_iterator_start_time (iterator_t *);
+
+time_t
+report_export_iterator_end_time (iterator_t *);
+
+const gchar *
+report_export_iterator_report_uuid (iterator_t *);
+
+const gchar *
+report_export_iterator_delta_report_uuid (iterator_t *);
+
+const gchar *
+report_export_iterator_report_format_uuid (iterator_t *);
+
+const gchar *
+report_export_iterator_report_format_name (iterator_t *);
+
+const gchar *
+report_export_iterator_report_config_uuid (iterator_t *);
+
+const gchar *
+report_export_iterator_report_config_name (iterator_t *);
+
+int
+report_export_writable (report_export_t);
+
+int
+report_export_in_use (resource_t);
+
+int
+report_export_count (const get_data_t *);
+
+int
+init_report_export_iterator_active (iterator_t *);
+
+void
+recover_report_exports (int);
+
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */
