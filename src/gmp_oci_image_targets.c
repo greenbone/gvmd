@@ -287,6 +287,13 @@ create_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
         log_event_fail ("oci_image_target", "OCI Image Target",
                         NULL, "created");
         break;
+      case CREATE_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS:
+        SENDF_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_oci_image_target",
+                             "Too many image URLs"));
+        log_event_fail ("oci_image_target", "OCI Image Target",
+                        NULL, "created");
+        break;
       default:
         SEND_TO_CLIENT_OR_FAIL
           (XML_INTERNAL_ERROR ("create_oci_image_target"));
@@ -519,6 +526,13 @@ modify_oci_image_target_run (gmp_parser_t *gmp_parser, GError **error)
           (XML_ERROR_SYNTAX ("modify_oci_image_target",
                              "Invalid exclude images: %s"),
                              error_message);
+        log_event_fail ("oci_image_target", "OCI Image Target",
+                        oci_image_target_id, "modified");
+        break;
+      case MODIFY_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS:
+        SENDF_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("modify_oci_image_target",
+                             "Too many image URLs"));
         log_event_fail ("oci_image_target", "OCI Image Target",
                         oci_image_target_id, "modified");
         break;

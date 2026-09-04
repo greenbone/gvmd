@@ -44,6 +44,9 @@ create_oci_image_target (const char* name,
 {
   oci_image_target_t new_oci_image_target;
   credential_t credential = 0;
+  gchar *clean_references = NULL;
+  gchar *clean_excludes = NULL;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -61,27 +64,36 @@ create_oci_image_target (const char* name,
       return CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY;
     }
 
-  gchar *clean_references = clean_images (image_references);
+  clean_references = clean_images (image_references);
   if (!clean_references
       || !validate_oci_image_references (clean_references, error_message))
     {
-      sql_rollback ();
-      g_free (clean_references);
-      return CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+      ret = CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+      goto cleanup;
     }
 
-  gchar *clean_excludes = NULL;
   if (exclude_images && strlen (exclude_images) > 0)
     {
       clean_excludes = clean_images (exclude_images);
       if (!clean_excludes || !validate_oci_image_references (clean_excludes,
                                                              error_message))
         {
-          sql_rollback ();
-          g_free (clean_references);
-          g_free (clean_excludes);
-          return CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+          ret = CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+          goto cleanup;
         }
+    }
+
+  int count = count_effective_oci_image_references (clean_references,
+                                                    clean_excludes);
+  if (count <= 0)
+    {
+      ret = CREATE_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+      goto cleanup;
+    }
+  if (count > get_oci_target_max_images ())
+    {
+      ret = CREATE_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS;
+      goto cleanup;
     }
 
   if (credential_id)
@@ -93,29 +105,29 @@ create_oci_image_target (const char* name,
                                                &credential,
                                                "get_credentials"))
             {
-              sql_rollback ();
-              return CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR;
+              ret = CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR;
+              goto cleanup;
             }
 
           if (credential == 0)
             {
-              sql_rollback ();
-              return CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND;
+              ret = CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND;
+              goto cleanup;
             }
 
           type = credential_type (credential);
-          if (strcmp (type, "up"))
+          if (!type || strcmp (type, "up"))
             {
-              sql_rollback ();
               g_free (type);
-              return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
+              ret = CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
+              goto cleanup;
             }
           g_free (type);
         }
       else
         {
-          sql_rollback ();
-          return CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL;
+          ret = CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL;
+          goto cleanup;
         }
     }
 
@@ -128,7 +140,8 @@ create_oci_image_target (const char* name,
           SQL_STR_PARAM (name),
           SQL_STR_PARAM (current_credentials.uuid),
           SQL_STR_PARAM (clean_references),
-          clean_excludes ? SQL_STR_PARAM (clean_excludes) : SQL_NULL_PARAM,
+          clean_excludes ? SQL_STR_PARAM (clean_excludes)
+                         : SQL_NULL_PARAM,
           comment ? SQL_STR_PARAM (comment) : SQL_NULL_PARAM,
           NULL);
 
@@ -145,11 +158,16 @@ create_oci_image_target (const char* name,
     *oci_image_target = new_oci_image_target;
 
   sql_commit ();
+  ret = CREATE_OCI_IMAGE_TARGET_OK;
+
+
+cleanup:
+  if (ret != CREATE_OCI_IMAGE_TARGET_OK)
+    sql_rollback ();
 
   g_free (clean_references);
   g_free (clean_excludes);
-
-  return CREATE_OCI_IMAGE_TARGET_OK;
+  return ret;
 }
 
 /**
@@ -204,6 +222,9 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
 {
   oci_image_target_t oci_image_target;
   credential_t credential;
+  gchar *target_references = NULL;
+  gchar *target_excludes = NULL;
+  int ret;
 
   assert (oci_image_target_id);
   assert (current_credentials.uuid);
@@ -291,8 +312,9 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
             }
 
           type = credential_type (credential);
-          if (strcmp (type, "up"))
+          if (!type || strcmp (type, "up"))
             {
+              g_free (type);
               sql_rollback ();
               return MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE;
             }
@@ -317,60 +339,81 @@ modify_oci_image_target (const char *oci_image_target_id, const char *name,
 
   if (image_references)
     {
-      gchar *clean_references = clean_images (image_references);
-      if (!clean_references
-          || !validate_oci_image_references (clean_references, error_message))
+      target_references = clean_images (image_references);
+      if (!target_references
+          || !validate_oci_image_references (target_references, error_message))
         {
-          sql_rollback ();
-          g_free (clean_references);
-          return MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+          ret = MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+          goto cleanup;
         }
+    }
+  else
+    target_references = oci_image_target_image_references (oci_image_target);
 
+  if (exclude_images)
+    {
+      if (!g_str_equal (exclude_images, ""))
+        {
+          target_excludes = clean_images (exclude_images);
+          if (!target_excludes
+              || !validate_oci_image_references (target_excludes,
+                                                 error_message))
+            {
+              ret = MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
+              goto cleanup;
+            }
+        }
+    }
+  else
+    target_excludes = oci_image_target_exclude_images (oci_image_target);
+
+  int count = count_effective_oci_image_references (target_references,
+                                                    target_excludes);
+  if (count <= 0)
+    {
+      ret = MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS;
+      goto cleanup;
+    }
+
+  if (count > get_oci_target_max_images ())
+    {
+      ret = MODIFY_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS;
+      goto cleanup;
+    }
+
+  if (image_references)
+    {
       sql_ps ("UPDATE oci_image_targets SET"
               " image_references = $1,"
               " modification_time = m_now ()"
               " WHERE id = $2;",
-              SQL_STR_PARAM (clean_references),
+              SQL_STR_PARAM (target_references),
               SQL_RESOURCE_PARAM (oci_image_target),
               NULL);
-      g_free (clean_references);
     }
 
   if (exclude_images)
     {
-      if (g_str_equal (exclude_images, ""))
-        {
-          sql_ps ("UPDATE oci_image_targets SET"
-                  " exclude_images = NULL,"
-                  " modification_time = m_now ()"
-                  " WHERE id = $1;",
-                  SQL_RESOURCE_PARAM (oci_image_target),
-                  NULL);
-        }
-      else
-        {
-          gchar *clean_excludes = clean_images (exclude_images);
-          if (!clean_excludes || !validate_oci_image_references (clean_excludes, error_message))
-            {
-              sql_rollback ();
-              g_free (clean_excludes);
-              return MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES;
-            }
-
-          sql_ps ("UPDATE oci_image_targets SET"
-                  " exclude_images = $1,"
-                  " modification_time = m_now ()"
-                  " WHERE id = $2;",
-                  SQL_STR_PARAM (clean_excludes),
-                  SQL_RESOURCE_PARAM (oci_image_target),
-                  NULL);
-          g_free (clean_excludes);
-        }
+      sql_ps ("UPDATE oci_image_targets SET"
+              " exclude_images = $1,"
+              " modification_time = m_now ()"
+              " WHERE id = $2;",
+              target_excludes ? SQL_STR_PARAM (target_excludes)
+                              : SQL_NULL_PARAM,
+              SQL_RESOURCE_PARAM (oci_image_target),
+              NULL);
     }
 
   sql_commit ();
+  ret = MODIFY_OCI_IMAGE_TARGET_OK;
 
-  return MODIFY_OCI_IMAGE_TARGET_OK;
+cleanup:
+  if (ret != MODIFY_OCI_IMAGE_TARGET_OK)
+    sql_rollback ();
+
+  g_free (target_references);
+  g_free (target_excludes);
+  return ret;
 }
 
 /**

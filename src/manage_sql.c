@@ -588,6 +588,7 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database,
 
   ret = init_manage_helper (log_config, database,
                             MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                            MANAGE_ABSOLUTE_MAX_OCI_IMAGES,
                             avoid_db_check_inserts);
   assert (ret != -4);
   switch (ret)
@@ -4698,6 +4699,7 @@ cleanup_tables ()
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
@@ -4708,11 +4710,13 @@ cleanup_tables ()
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
+ *         -6 max_images_per_oci_target out of range.
  */
 static int
 init_manage_internal (GSList *log_config,
                       const db_conn_info_t *database,
                       int max_ips_per_target,
+                      int max_images_per_oci_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
                       int max_email_message_size,
@@ -4766,6 +4770,13 @@ init_manage_internal (GSList *log_config,
     return -4;
 
   manage_set_max_hosts (max_ips_per_target);
+
+  if ((max_images_per_oci_target <= 0)
+      || (max_images_per_oci_target > MANAGE_ABSOLUTE_MAX_OCI_IMAGES))
+    return -6;
+
+  set_oci_target_max_images (max_images_per_oci_target);
+
   if (max_email_attachment_size)
     set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
@@ -4874,6 +4885,7 @@ init_manage_funcs () {
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
  *                                 with GMP when an alert occurs.
@@ -4881,18 +4893,20 @@ init_manage_funcs () {
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
- *         -5 database is too new.
+ *         -5 database is too new. -6 max_images_per_oci_target out of range.
  */
 int
 init_manage (GSList *log_config, const db_conn_info_t *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
+             int max_images_per_oci_target,
              manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
                                database,
                                max_ips_per_target,
+                               max_images_per_oci_target,
                                max_email_attachment_size,
                                max_email_include_size,
                                max_email_message_size,
@@ -4913,19 +4927,22 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target   Max number of IPs per target.
+ * @param[in]  max_images_per_oci_target   Max number of images per OCI target.
  * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
- *         -5 database is too new.
+ *         -5 database is too new, -6 max_images_per_oci_target out of range.
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
-                    int max_ips_per_target, int avoid_db_check_inserts)
+                    int max_ips_per_target, int max_images_per_oci_target,
+                    int avoid_db_check_inserts)
 {
   return init_manage_internal (log_config,
                                database,
                                max_ips_per_target,
+                               max_images_per_oci_target,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
                                0,   /* Default max_email_message_size */
@@ -10133,6 +10150,8 @@ report_add_result_for_buffer (report_t report, result_t result)
                           "      OR overrides.result = 0)"
                           " AND (overrides.hosts is NULL"
                           "      OR overrides.hosts = ''"
+                          "      OR oci_digest_list_contains (overrides.hosts,"
+                          "                                   results.host)"
                           "      OR hosts_contains (overrides.hosts,"
                           "                         results.host))"
                           " AND (overrides.port is NULL"
@@ -11780,6 +11799,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   = results.id)"
             "           AND (valid_overrides.hosts is NULL"
             "                OR valid_overrides.hosts = ''"
+            "                OR oci_digest_list_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host)"
             "                OR hosts_contains"
             "                    (valid_overrides.hosts,"
             "                     results.host))"
@@ -11829,6 +11851,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   = results.id)"
             "           AND (valid_overrides.hosts is NULL"
             "                OR valid_overrides.hosts = ''"
+            "                OR oci_digest_list_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host)"
             "                OR hosts_contains"
             "                    (valid_overrides.hosts,"
             "                     results.host))"

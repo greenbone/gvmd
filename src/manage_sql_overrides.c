@@ -774,6 +774,9 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -785,6 +788,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,
@@ -913,6 +917,9 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -924,6 +931,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,
