@@ -1136,10 +1136,14 @@ manage_create_sql_functions ()
        "$$ LANGUAGE SQL"
        " STABLE;");
 
+  /* STABLE indicates that the function cannot modify the database,
+   * and that within a single table scan it will consistently return the same result for the same argument values,
+   * but that its result could change across SQL statements.
+   */
   sql ("CREATE OR REPLACE FUNCTION gvmd_user ()"
        " RETURNS integer AS $$"
        "  SELECT current_setting ('gvmd.user.id')::integer;"
-       "$$ LANGUAGE SQL;");
+       "$$ LANGUAGE SQL STABLE;");
 
   sql ("CREATE OR REPLACE FUNCTION common_cve (text, text)"
        " RETURNS boolean AS $$"
@@ -1222,7 +1226,7 @@ manage_create_sql_functions ()
            "  AND ((owner IS NULL)"
            "       OR (owner = gvmd_user ()))"
            "  ORDER BY coalesce (owner, 0) DESC LIMIT 1;"
-           "$$ LANGUAGE SQL;");
+           "$$ LANGUAGE SQL STABLE;");
 
       sql ("CREATE OR REPLACE FUNCTION current_severity (real, text)"
            " RETURNS double precision AS $$"
@@ -1238,23 +1242,44 @@ manage_create_sql_functions ()
 
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189 */
       if (current_db_version >= 189)
-        sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
-             "                                            overrides integer,"
-             "                                            min_qod integer)"
+        {
+        /* Severity of a report, split into three functions on purpose.
+         *
+         * Almost every call is answered by the cached value in
+         * report_counts, a single index lookup.  The four dynamic branches
+         * underneath scan the results table, and planning those is what is
+         * expensive.
+         *
+         * A function body is only planned when the function is actually
+         * invoked.  Putting the expensive branches in their own function
+         * and calling it as the second argument of coalesce means it is
+         * planned only in the rare case where there is no cached value,
+         * because coalesce stops at the first non null argument at
+         * execution time.
+         *
+         * report_severity itself is left with a body of two function
+         * calls, no FROM and no CTE, which makes it inlinable while
+         * STABLE. */
+        sql ("CREATE OR REPLACE FUNCTION report_severity_cached"
+             "         (report integer, overrides integer, min_qod integer)"
              " RETURNS double precision AS $$"
-             /* Calculate the severity of a report. */
-             "  WITH max_severity"
-             "       AS (SELECT max(severity) AS max"
-             "           FROM report_counts"
-             "           WHERE report = $1"
-             "           AND \"user\" = gvmd_user ()"
-             "           AND override = $2"
-             "           AND min_qod = $3"
-             "           AND (end_time = 0 or end_time >= m_now ()))"
+             /* The cached severity of a report, or NULL if there is none. */
+             "  SELECT max(severity)::double precision"
+             "  FROM report_counts"
+             "  WHERE report = $1"
+             "  AND \"user\" = gvmd_user ()"
+             "  AND override = $2"
+             "  AND min_qod = $3"
+             "  AND (end_time = 0 or end_time >= m_now ());"
+             "$$ LANGUAGE SQL STABLE;");
+
+        sql ("CREATE OR REPLACE FUNCTION report_severity_dynamic"
+             "         (report integer, overrides integer, min_qod integer)"
+             " RETURNS double precision AS $$"
+             /* Severity computed from the results, for reports without a
+              * cached count.  Only called, and therefore only planned, when
+              * report_severity_cached came back NULL. */
              "  SELECT CASE"
-             "         WHEN EXISTS (SELECT max FROM max_severity)"
-             "              AND (SELECT max FROM max_severity) IS NOT NULL"
-             "         THEN (SELECT max::double precision FROM max_severity)"
              "         WHEN dynamic_severity () AND $2::boolean"
              /*        Dynamic severity, overrides on. */
              "         THEN (SELECT max"
@@ -1291,7 +1316,17 @@ manage_create_sql_functions ()
              "               WHERE results.report = $1"
              "                 AND results.qod >= $3)"
              "         END;"
-             "$$ LANGUAGE SQL;");
+             "$$ LANGUAGE SQL STABLE;");
+
+        sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
+             "                                            overrides integer,"
+             "                                            min_qod integer)"
+             " RETURNS double precision AS $$"
+             /* Calculate the severity of a report. */
+             "  SELECT coalesce (report_severity_cached ($1, $2, $3),"
+             "                   report_severity_dynamic ($1, $2, $3));"
+             "$$ LANGUAGE SQL STABLE;");
+        }
 
       sql ("CREATE OR REPLACE FUNCTION report_host_count (report integer)"
             " RETURNS bigint AS $$"
@@ -1473,7 +1508,7 @@ manage_create_sql_functions ()
                "                                   ORDER BY creation_time DESC"
                "                                   LIMIT 1 OFFSET 0), $2, $3))"
                "         END;"
-               "$$ LANGUAGE SQL;",
+               "$$ LANGUAGE SQL STABLE;",
                TASK_STATUS_DONE);
        }
       /* column oci_image_target in table task was added in version 261 */
@@ -1498,7 +1533,7 @@ manage_create_sql_functions ()
                "                                   ORDER BY creation_time DESC"
                "                                   LIMIT 1 OFFSET 0), $2, $3))"
                "         END;"
-               "$$ LANGUAGE SQL;",
+               "$$ LANGUAGE SQL STABLE;",
                TASK_STATUS_DONE);
         }
       /* column date in table reports was renamed to creation_time in version 245 */
@@ -1520,7 +1555,7 @@ manage_create_sql_functions ()
                "                                   ORDER BY creation_time DESC"
                "                                   LIMIT 1 OFFSET 0), $2, $3))"
                "         END;"
-               "$$ LANGUAGE SQL;",
+               "$$ LANGUAGE SQL STABLE;",
                TASK_STATUS_DONE);
         }
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189. */
@@ -1542,7 +1577,7 @@ manage_create_sql_functions ()
                "                                   ORDER BY date DESC"
                "                                   LIMIT 1 OFFSET 0), $2, $3))"
                "         END;"
-               "$$ LANGUAGE SQL;",
+               "$$ LANGUAGE SQL STABLE;",
                TASK_STATUS_DONE);
         }
 
