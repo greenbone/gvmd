@@ -1374,21 +1374,33 @@ resource_tag_count (const char* type, resource_t resource, int active_only)
   else
     parent_type = type;
 
-  ret = sql_int ("SELECT count (id)"
-                " FROM tags"
-                " WHERE resource_type = '%s'"
-                "   AND EXISTS"
-                "     (SELECT * FROM tag_resources"
-                "      WHERE tag = tags.id"
-                "        AND resource = %llu"
-                "        AND resource_location = %d"
-                "        AND tag_resources.resource_type = '%s')"
-                "   %s;",
-                type,
-                resource,
-                LOCATION_TABLE,
-                parent_type,
-                active_only ? "AND active=1": "");
+  /* Everything except the active_only clause is bound, so this has
+   * exactly two statement texts and the cache in sql_pg.c keeps a plan
+   * for each. */
+  {
+    gchar *statement;
+
+    statement
+      = g_strdup_printf ("SELECT count (id)"
+                         " FROM tags"
+                         " WHERE resource_type = $1"
+                         "   AND EXISTS"
+                         "     (SELECT * FROM tag_resources"
+                         "      WHERE tag = tags.id"
+                         "        AND resource = $2"
+                         "        AND resource_location = "
+                                  G_STRINGIFY (LOCATION_TABLE)
+                         "        AND tag_resources.resource_type = $3)"
+                         "   %s;",
+                         active_only ? "AND active=1": "");
+
+    ret = sql_int_ps (statement,
+                      SQL_STR_PARAM (type),
+                      SQL_RESOURCE_PARAM (resource),
+                      SQL_STR_PARAM (parent_type),
+                      NULL);
+    g_free (statement);
+  }
 
   return ret;
 }
