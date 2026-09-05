@@ -29998,6 +29998,42 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
+                case 10:   /* Internal error */
+                  g_warning ("Internal error while sending command");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Internal error while sending command"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case 20:   /* Sending command timed out */
+                  g_warning ("Sending command timed out");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Sending command timed out"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case 30:   /* Reading command response timed out */
+                  g_warning ("Reading command response timed out");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Reading command response timed out"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case 40:   /* Problem deleting scan from scanner */
+                  g_warning ("Problem deleting scan from scanner");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Problem deleting scan from scanner"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("stop_task",
