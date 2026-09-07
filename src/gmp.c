@@ -11428,7 +11428,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       GArray *text_columns, GArray *text_column_types,
                       GArray *c_sums)
 {
-  int index;
+  int index, first_group;
   long c_count, previous_c_count;
   gchar *previous_group_value;
   long int aggregate_group_count;
@@ -11471,6 +11471,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                             subgroup_column);
 
   previous_group_value = NULL;
+  first_group = 1;
   aggregate_group_count = 0L;
   c_count = 0L;
   previous_c_count = 0L;
@@ -11576,7 +11577,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
               *subgroup_c_count += aggregate_iterator_count (aggregate);
 
               // Output of group elements
-              if (previous_group_value == NULL)
+              if (first_group)
                 {
                   // Output start of first group
                   g_string_append_printf (xml,
@@ -11657,7 +11658,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                 }
 
               // Update group statistics using current subgroup after output
-              if (previous_group_value == NULL
+              if (first_group
                   || g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of any group:
@@ -11700,6 +11701,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
               g_free (previous_group_value);
               previous_group_value = g_strdup (value);
+              first_group = 0;
 
               // Add subgroup values
               g_string_append_printf (xml,
