@@ -602,9 +602,9 @@ handle_openvasd_scan_start (task_t task, target_t target, const char *scan_id,
                                          parse_http_scanner_report, &retry,
                                          &queued_status_updated, &started);
 
-          // Exit loop on error or if scan finished
-          if (rc <= 0)
-            break;
+          // Update the report modification time on last scanner connection success
+          if (rc == 0 || rc == 2)
+            update_report_modification_time (report);
 
           if (scan_semaphore_update_end (TRUE, task, report))
             {
@@ -612,6 +612,10 @@ handle_openvasd_scan_start (task_t task, target_t target, const char *scan_id,
               rc = -3;
               break;
             }
+
+          // Exit loop on error or if scan finished
+          if (rc <= 0)
+            break;
 
           // Exit loop if scan is queued or started
           if (rc == 2)
@@ -661,12 +665,6 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id,
   gboolean started, queued_status_updated;
   int retry, connection_retry, max_active_scans;
 
-  if (connector == NULL)
-    {
-      g_warning ("%s: Could not connect to http scanner", __func__);
-      return -1;
-    }
-
   if (yield_time)
     {
       max_active_scans = get_max_active_scan_handlers ();
@@ -705,17 +703,19 @@ handle_openvasd_scan (task_t task, report_t report, const char *scan_id,
                                      parse_http_scanner_report, &retry,
                                      &queued_status_updated, &started);
 
-      int ret = scan_semaphore_update_end (TRUE, task, report);
+      // Update the report modification time on last scanner connection success
+      if (rc == 0 || rc == 2)
+        update_report_modification_time (report);
 
-      if (rc <= 0)
-        break;
-
-      if (ret)
+      if (scan_semaphore_update_end (TRUE, task, report))
         {
           response = http_scanner_delete_scan (connector);
           rc = -3;
           break;
         }
+
+      if (rc <= 0)
+        break;
 
       if (yield_time
           && time (NULL) >= yield_time
