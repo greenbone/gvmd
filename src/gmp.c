@@ -11584,7 +11584,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                                           "<value>%s</value>",
                                           value_escaped);
                 }
-              else if (strcmp (previous_group_value, value))
+              else if (g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of a new group:
                   //  output collected data of previous group and close it, ...
@@ -11658,7 +11658,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
               // Update group statistics using current subgroup after output
               if (previous_group_value == NULL
-                  || strcmp (previous_group_value, value))
+                  || g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of any group:
                   //  Reset group statistics using current subgroup data
