@@ -986,7 +986,7 @@ email (const char *to_address, const char *from_address, const char *subject,
     }
 
   command = g_strdup_printf ("read FROM TO < %s;"
-                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" < %s"
+                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" -i < %s"
                              " > /dev/null 2>&1",
                              args_file_name,
                              content_file_name);
