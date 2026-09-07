@@ -11583,7 +11583,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
               else if (g_strcmp0 (previous_group_value, value))
                 {
@@ -11654,7 +11654,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
 
               // Update group statistics using current subgroup after output
