@@ -15427,8 +15427,8 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
                                   "                           result2_id)"
                                   " LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
