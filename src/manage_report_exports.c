@@ -809,3 +809,38 @@ find_report_export_with_permission (const char *uuid,
   return find_resource_with_permission ("report_export", uuid, report_export,
                                         permission, 0);
 }
+
+/**
+ * @brief Remove old terminal report exports and their generated files.
+ *
+ * @param[in] retention_seconds Maximum age of report exports in seconds.
+ */
+void
+manage_cleanup_old_report_exports (time_t retention_seconds)
+{
+  iterator_t iterator;
+  time_t threshold;
+
+  threshold = time (NULL) - retention_seconds;
+  init_report_export_iterator_cleanup (&iterator, threshold);
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      const gchar *file_path;
+
+      report_export =
+        (report_export_t) iterator_int64 (&iterator, 0);
+
+      file_path = iterator_string (&iterator, 1);
+
+      if (manage_delete_report_export (report_export, file_path))
+        {
+          g_warning ("%s: failed to clean up report export %lld",
+                     __func__,
+                     report_export);
+        }
+    }
+
+  cleanup_iterator (&iterator);
+}

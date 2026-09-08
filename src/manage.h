@@ -2485,6 +2485,17 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define REPORT_EXPORT_MAX_WORKERS 3
 
+/**
+ * @brief Retention period for report export clean up.
+ */
+#define REPORT_EXPORT_RETENTION_SECONDS (30 * 24 * 60 * 60) /* 30 days */
+
+/**
+ * @brief Seconds between calls to manage_cleanup_old_report_exports.
+ */
+#define REPORT_EXPORT_CLEANUP_PERIOD (60 * 60) /* every hour */
+
+
 void
 manage_auth_allow_all (int);
 

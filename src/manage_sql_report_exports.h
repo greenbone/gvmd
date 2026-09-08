@@ -151,4 +151,7 @@ cancel_report_export (report_export_t);
 void
 delete_report_export (report_export_t);
 
+void
+init_report_export_iterator_cleanup (iterator_t *, time_t);
+
 #endif /* _GVM_MANAGE_SQL_REPORT_EXPORTS_H */
