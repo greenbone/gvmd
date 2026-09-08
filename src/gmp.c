@@ -11435,7 +11435,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       GArray *text_columns, GArray *text_column_types,
                       GArray *c_sums)
 {
-  int index;
+  int index, first_group;
   long c_count, previous_c_count;
   gchar *previous_group_value;
   long int aggregate_group_count;
@@ -11478,6 +11478,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                             subgroup_column);
 
   previous_group_value = NULL;
+  first_group = 1;
   aggregate_group_count = 0L;
   c_count = 0L;
   previous_c_count = 0L;
@@ -11583,15 +11584,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
               *subgroup_c_count += aggregate_iterator_count (aggregate);
 
               // Output of group elements
-              if (previous_group_value == NULL)
+              if (first_group)
                 {
                   // Output start of first group
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
-              else if (strcmp (previous_group_value, value))
+              else if (g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of a new group:
                   //  output collected data of previous group and close it, ...
@@ -11660,12 +11661,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
 
               // Update group statistics using current subgroup after output
-              if (previous_group_value == NULL
-                  || strcmp (previous_group_value, value))
+              if (first_group
+                  || g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of any group:
                   //  Reset group statistics using current subgroup data
@@ -11707,6 +11708,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
               g_free (previous_group_value);
               previous_group_value = g_strdup (value);
+              first_group = 0;
 
               // Add subgroup values
               g_string_append_printf (xml,
@@ -24836,7 +24838,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_start;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_starts, result);
 
@@ -24849,7 +24851,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_end;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_ends, result);
 
