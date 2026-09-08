@@ -1453,3 +1453,29 @@ delete_report_export (report_export_t report_export)
     SQL_INT_PARAM (report_export),
     NULL);
 }
+
+/**
+ * @brief Initialize an iterator over report exports eligible for cleanup.
+ *
+ * @param[out] iterator   Iterator to initialize.
+ * @param[in]  threshold  End time threshold.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+void
+init_report_export_iterator_cleanup (iterator_t *iterator,
+                                     time_t threshold)
+{
+  init_ps_iterator (
+    iterator,
+    "SELECT id, file_path"
+    "  FROM report_exports"
+    " WHERE modification_time < $1"
+    "   AND status IN ($2, $3, $4, $5)",
+    SQL_INT_PARAM ((long long) threshold),
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_DONE),
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_ERROR),
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_CANCELED),
+    SQL_INT_PARAM (REPORT_EXPORT_STATUS_EXPIRED),
+    NULL);
+}

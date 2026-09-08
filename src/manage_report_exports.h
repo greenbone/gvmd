@@ -370,4 +370,7 @@ gboolean
 find_report_export_with_permission (const char *,report_export_t *,
                                     const char *);
 
+void
+manage_cleanup_old_report_exports (time_t);
+
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */
