@@ -763,27 +763,30 @@ recover_report_exports (int max_attempts)
 /**
  * @brief Delete a completed report export and its generated file.
  *
- * @param[in] report_export  Report export to delete.
+ * @param[in] report_export  Report export row id  to delete.
+ * @param [in]file_path Path to the generated report export file to delete.
  *
  * @return 0 on success, -1 on failure.
  */
 int
-manage_delete_report_export (report_export_data_t report_export)
+manage_delete_report_export (report_export_t report_export,
+                             const gchar *file_path)
 {
-  if (report_export == NULL)
+  if (report_export == 0)
     return -1;
 
-  if (report_export->file_path
-      && g_unlink (report_export->file_path))
+  if (file_path
+      && g_unlink (file_path)
+      && errno != ENOENT)
     {
       g_warning ("%s: failed to remove report export file %s: %s",
                  __func__,
-                 report_export->file_path,
+                 file_path,
                  strerror (errno));
       return -1;
     }
 
-  delete_report_export (report_export->row_id);
+  delete_report_export (report_export);
 
   return 0;
 }

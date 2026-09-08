@@ -364,7 +364,7 @@ void
 recover_report_exports (int);
 
 int
-manage_delete_report_export (report_export_data_t);
+manage_delete_report_export (report_export_t, const gchar *);
 
 gboolean
 find_report_export_with_permission (const char *,report_export_t *,
