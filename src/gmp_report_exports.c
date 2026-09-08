@@ -536,7 +536,7 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
   /*
    * Remove the export only after the complete response has been sent.
    */
-  if (manage_delete_report_export (data))
+  if (manage_delete_report_export (data->row_id, data->file_path))
     {
       g_warning ("%s: failed to delete downloaded report export %lld",
                  __func__,
