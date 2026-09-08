@@ -24827,7 +24827,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_start;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_starts, result);
 
@@ -24840,7 +24840,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_end;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_ends, result);
 
