@@ -23,4 +23,15 @@ get_report_exports_start (const gchar **, const gchar **);
 void
 get_report_exports_run (gmp_parser_t *, GError **);
 
+/* DOWNLOAD_REPORT_EXPORTS. */
+
+void
+download_report_export_start (const gchar **, const gchar **);
+
+void
+download_report_export_run (gmp_parser_t *, GError **);
+
+int
+download_report_export_element_end (gmp_parser_t *,GError **, const gchar *);
+
 #endif /* _GVM_GMP_REPORT_EXPORTS_H */
