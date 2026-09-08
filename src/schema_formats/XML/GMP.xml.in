@@ -8769,6 +8769,194 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>download_report_export</name>
+    <summary>Download a report export</summary>
+    <description>
+      <p>
+        The client uses the download_report_export command to download the
+        generated file of a completed report export.
+      </p>
+      <p>
+        The report export must have completed successfully before it can be
+        downloaded.
+      </p>
+      <p>
+        The response contains information about the report export and the
+        generated report file encoded as Base64 content.
+      </p>
+      <p>
+        After a successful download, the report export and its generated file
+        are removed.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_export_id</name>
+        <summary>ID of the report export to download</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>report_export</e>
+      </pattern>
+      <ele>
+        <name>report_export</name>
+        <summary>The downloaded report export</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the report export</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>type</e>
+          <e>status</e>
+          <e>progress</e>
+          <e>report</e>
+          <o><e>delta_report</e></o>
+          <e>report_format</e>
+          <o><e>report_config</e></o>
+          <e>file_size</e>
+          <e>content_type</e>
+          <e>extension</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>type</name>
+          <summary>Type of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt>delta_scan</alt>
+              <alt>delta_audit</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>status</name>
+          <summary>Processing status of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>done</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>progress</name>
+          <summary>Processing progress of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>completed</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report</name>
+          <summary>Report used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>delta_report</name>
+          <summary>Delta report used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the delta report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_format</name>
+          <summary>Report format used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report format</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_config</name>
+          <summary>Report configuration used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report configuration</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>file_size</name>
+          <summary>Size of the generated report export file in bytes</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <summary>Content type of the generated report export file</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>extension</name>
+          <summary>File extension of the generated report export</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content</name>
+          <summary>Base64 encoded content of the generated report export file</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Download a completed report export</summary>
+      <request>
+        <download_report_export
+          report_export_id="b553afd9-df88-4428-8623-587d839332d2"/>
+      </request>
+      <response>
+        <download_report_export_response status="200" status_text="OK">
+          <report_export id="b553afd9-df88-4428-8623-587d839332d2">
+            <type>scan</type>
+            <status>done</status>
+            <progress>completed</progress>
+            <report id="c2cba4ff-2145-47f1-abe1-33b0c3859d65"/>
+            <report_format id="c402cc3e-b531-11e1-9163-406186ea4fc5"/>
+            <file_size>150298</file_size>
+            <content_type>application/pdf</content_type>
+            <extension>pdf</extension>
+            <content>JVBERi0xLjUK...</content>
+          </report_export>
+        </download_report_export_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>empty_trashcan</name>
     <summary>Empty the trashcan</summary>
     <description>
