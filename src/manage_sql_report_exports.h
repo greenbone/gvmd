@@ -148,4 +148,7 @@ request_report_export_cancel (report_export_t);
 void
 cancel_report_export (report_export_t);
 
+void
+delete_report_export (report_export_t);
+
 #endif /* _GVM_MANAGE_SQL_REPORT_EXPORTS_H */

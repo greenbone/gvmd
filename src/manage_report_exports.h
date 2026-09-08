@@ -363,4 +363,11 @@ init_report_export_iterator_active (iterator_t *);
 void
 recover_report_exports (int);
 
+int
+manage_delete_report_export (report_export_data_t);
+
+gboolean
+find_report_export_with_permission (const char *,report_export_t *,
+                                    const char *);
+
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */

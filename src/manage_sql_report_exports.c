@@ -1438,3 +1438,18 @@ init_report_export_iterator_active (iterator_t *iterator)
 
   return 0;
 }
+
+/**
+ * @brief Delete a report export.
+ *
+ * @param[in] report_export  Report export to delete.
+ */
+void
+delete_report_export (report_export_t report_export)
+{
+  sql_ps (
+    "DELETE FROM report_exports"
+    " WHERE id = $1",
+    SQL_INT_PARAM (report_export),
+    NULL);
+}

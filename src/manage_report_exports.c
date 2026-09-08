@@ -12,6 +12,9 @@
 
 #include "manage_scan_report_exports.h"
 #include "manage_sql_report_exports.h"
+#include "manage_sql_resources.h"
+
+#include <glib/gstdio.h>
 
 #undef G_LOG_DOMAIN
 
@@ -755,4 +758,51 @@ recover_report_exports (int max_attempts)
     }
 
   cleanup_iterator (&iterator);
+}
+
+/**
+ * @brief Delete a completed report export and its generated file.
+ *
+ * @param[in] report_export  Report export to delete.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_delete_report_export (report_export_data_t report_export)
+{
+  if (report_export == NULL)
+    return -1;
+
+  if (report_export->file_path
+      && g_unlink (report_export->file_path))
+    {
+      g_warning ("%s: failed to remove report export file %s: %s",
+                 __func__,
+                 report_export->file_path,
+                 strerror (errno));
+      return -1;
+    }
+
+  delete_report_export (report_export->row_id);
+
+  return 0;
+}
+
+/**
+ * @brief Find a report export for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report export.
+ * @param[out]  report_export Report Export return,
+ *                            0 if successfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_report_export_with_permission (const char *uuid,
+                                    report_export_t *report_export,
+                                    const char *permission)
+{
+  return find_resource_with_permission ("report_export", uuid, report_export,
+                                        permission, 0);
 }
