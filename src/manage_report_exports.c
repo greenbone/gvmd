@@ -10,6 +10,7 @@
 
 #include "manage_report_exports.h"
 
+#include "manage_audit_report_exports.h"
 #include "manage_report_configs.h"
 #include "manage_scan_report_exports.h"
 #include "manage_sql_report_exports.h"
@@ -664,6 +665,9 @@ process_report_export (report_export_t report_export)
       break;
 
     case REPORT_EXPORT_TYPE_AUDIT:
+      ret = manage_process_audit_report_export (report_export);
+      break;
+
     case REPORT_EXPORT_TYPE_DELTA_SCAN:
     case REPORT_EXPORT_TYPE_DELTA_AUDIT:
       g_warning ("%s: unsupported report export type %s",
@@ -926,7 +930,7 @@ init_report_export_files (report_export_files_t *files)
   error = NULL;
 
   files->work_dir = g_dir_make_tmp (
-    "gvmd-scan-report-export-XXXXXX",
+    "gvmd-report-export-XXXXXX",
     &error);
 
   if (files->work_dir == NULL)
@@ -1012,6 +1016,41 @@ cleanup_report_export_user_context (
   g_free (context->export_user_uuid);
 
   memset (context, 0, sizeof (*context));
+}
+
+/**
+ * @brief Initialize GET data used by the existing XML report generator.
+ *
+ * @param[in]  data  Stored report export data.
+ * @param[out] get   GET data to initialize.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+int
+init_report_export_get_data (
+  const report_export_data_t data,
+  get_data_t *get)
+{
+  if (data == NULL || get == NULL)
+    return -1;
+
+  memset (get, 0, sizeof (*get));
+
+  get->type = g_strdup ("result");
+  get->filter = g_strdup (data->filter ? data->filter : "");
+  get->details = 1;
+  get->ignore_pagination = data->ignore_pagination;
+  get->ignore_max_rows_per_page = data->ignore_pagination;
+
+  if (get->type == NULL || get->filter == NULL)
+    {
+      g_free (get->type);
+      g_free (get->filter);
+      memset (get, 0, sizeof (*get));
+      return -1;
+    }
+
+  return 0;
 }
 
 /**
