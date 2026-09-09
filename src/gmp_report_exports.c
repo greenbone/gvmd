@@ -379,6 +379,29 @@ send_report_export_file (gmp_parser_t *gmp_parser,
 }
 
 /**
+ * @brief Check if a report export file is valid.
+ *
+ * @param[in] file_path  Path of the generated report export.
+ *
+ * @return TRUE if the file is valid, FALSE otherwise.
+ */
+static gboolean
+report_export_file_is_valid (const gchar *file_path)
+{
+  FILE *stream;
+
+  if (file_path == NULL)
+    return FALSE;
+
+  stream = fopen (file_path, "rb");
+  if (stream == NULL)
+    return FALSE;
+
+  fclose (stream);
+  return TRUE;
+}
+
+/**
  * @brief Execute the <download_report_export> GMP command.
  *
  * @param[in] gmp_parser GMP parser handling the current session.
@@ -450,7 +473,8 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if (data->file_path == NULL)
+  if (data->file_path == NULL
+    || report_export_file_is_valid (data->file_path) == FALSE)
     {
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX (
