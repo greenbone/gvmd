@@ -1265,11 +1265,13 @@ fork_update_nvt_cache (pid_t *child_pid_out)
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      update_in_progress = 0;
       return -1;
     }
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      update_in_progress = 0;
       return -1;
     }
 
@@ -1775,12 +1777,14 @@ fork_agents_sync ()
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      agent_sync_in_progress = FALSE;
       return -1;
     }
 
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      agent_sync_in_progress = FALSE;
       return -1;
     }
 
@@ -1877,12 +1881,14 @@ fork_asset_snapshot_delete_stale ()
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      asset_snapshot_delete_in_progress = FALSE;
       return -1;
     }
 
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      asset_snapshot_delete_in_progress = FALSE;
       return -1;
     }
 
@@ -2187,11 +2193,16 @@ run_schedule (time_t* last_schedule, sigset_t* sigmask_current)
 static void
 run_feed_sync (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_feed_sync, SCHEDULE_PERIOD, now))
     return;
-  fork_feed_sync ();
-  set_last_run_time (&t->last_feed_sync, time (NULL));
+
+  ret = fork_feed_sync ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_feed_sync, time (NULL));
 }
 
 /**
@@ -2202,11 +2213,16 @@ run_feed_sync (periodic_times_t *t)
 static void
 run_queue (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_queue, QUEUE_PERIOD, now))
     return;
-  fork_queued_task_actions ();
-  set_last_run_time (&t->last_queue, time (NULL));
+
+  ret = fork_queued_task_actions ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_queue, time (NULL));
 }
 
 /**
@@ -2225,12 +2241,16 @@ run_integration_report_export (periodic_times_t *t)
       return;
     }
 
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_integration_report_export, INTEGRATION_REPORT_EXPORT_PERIOD, now))
     return;
 
-  fork_integration_report_export_scheduler();
-  set_last_run_time (&t->last_integration_report_export, time (NULL));
+  ret = fork_integration_report_export_scheduler();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_integration_report_export, time (NULL));
 }
 
 /**
@@ -2248,11 +2268,17 @@ run_agents_sync (periodic_times_t *t)
               __func__);
       return;
     }
+
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
     return;
-  fork_agents_sync ();
-  set_last_run_time (&t->last_agents_sync, time (NULL));
+
+  ret = fork_agents_sync ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_agents_sync, time (NULL));
 #else
   (void)t;
 #endif
@@ -2266,12 +2292,17 @@ run_agents_sync (periodic_times_t *t)
 static void
 run_asset_snapshot_delete_stale (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_asset_snapshot_stale_delete,
                     ASSET_SNAPSHOT_STALE_DELETE_PERIOD, now))
     return;
-  fork_asset_snapshot_delete_stale ();
-  set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
+
+  ret = fork_asset_snapshot_delete_stale ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
 }
 
 /**
@@ -2282,12 +2313,17 @@ run_asset_snapshot_delete_stale (periodic_times_t *t)
 static void
 run_report_exports (periodic_times_t *t)
 {
+  int ret = 0;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_report_export,
                     REPORT_EXPORT_PERIOD, now))
     return;
-  fork_report_export_scheduler ();
-  set_last_run_time (&t->last_report_export, time (NULL));
+
+  ret = fork_report_export_scheduler ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_report_export, time (NULL));
 }
 
 /**
