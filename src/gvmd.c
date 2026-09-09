@@ -2038,12 +2038,14 @@ fork_cleanup_old_report_exports ()
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      in_progress = FALSE;
       return -1;
     }
 
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      in_progress = FALSE;
       return -1;
     }
 
@@ -2296,12 +2298,17 @@ run_report_exports (periodic_times_t *t)
 static void
 run_cleanup_old_report_exports (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_cleanup_old_report_export,
                     REPORT_EXPORT_CLEANUP_PERIOD, now))
     return;
-  fork_cleanup_old_report_exports ();
-  set_last_run_time (&t->last_cleanup_old_report_export, time (NULL));
+
+  ret = fork_cleanup_old_report_exports ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_cleanup_old_report_export, time (NULL));
 }
 
 /**
