@@ -619,14 +619,14 @@ void
 result_nvt_notice (const gchar *);
 
 int
-manage_print_scan_report_xml_start (report_t,
-                                    task_t,
-                                    gchar *,
-                                    const get_data_t *,
-                                    int,
-                                    int,
-                                    int,
-                                    int,
-                                    int);
+manage_print_report_xml_start (report_t,
+                               task_t,
+                               gchar *,
+                               const get_data_t *,
+                               int,
+                               int,
+                               int,
+                               int,
+                               int);
 
 #endif /* not _GVMD_MANAGE_SQL_H */
