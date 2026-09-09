@@ -190,7 +190,7 @@ init_report_response_get_data (get_data_t *get)
  * @param[in,out] get GET data to clean up.
  */
 static void
-cleanup_report_export_get_data (get_data_t *get)
+cleanup_integration_report_export_get_data (get_data_t *get)
 {
   if (!get)
     return;
@@ -384,7 +384,7 @@ cleanup:
   if (iterator_initialized)
     cleanup_iterator (&reports);
 
-  cleanup_report_export_get_data (&report_get);
+  cleanup_integration_report_export_get_data (&report_get);
   return prefix;
 }
 
@@ -802,10 +802,10 @@ cleanup:
   g_free (report_xml);
 
   if (response_get_initialized)
-    cleanup_report_export_get_data (&response_get);
+    cleanup_integration_report_export_get_data (&response_get);
 
   if (result_get_initialized)
-    cleanup_report_export_get_data (&result_get);
+    cleanup_integration_report_export_get_data (&result_get);
 
   return success;
 }
@@ -1016,7 +1016,7 @@ export_report_security_intelligence (report_t report,
       goto cleanup;
     }
 
-  cleanup_report_export_get_data (&count_get);
+  cleanup_integration_report_export_get_data (&count_get);
   count_get_initialized = FALSE;
 
   /*
@@ -1117,7 +1117,7 @@ cleanup:
     }
 
   if (count_get_initialized)
-    cleanup_report_export_get_data (&count_get);
+    cleanup_integration_report_export_get_data (&count_get);
 
   security_intelligence_managed_report_page_list_free (remote_pages);
   security_intelligence_managed_report_free (remote_report);

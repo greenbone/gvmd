@@ -17135,15 +17135,15 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
  * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
  */
 int
-manage_print_scan_report_xml_start (report_t report,
-                                    task_t task,
-                                    gchar *xml_start,
-                                    const get_data_t *get,
-                                    int notes_details,
-                                    int overrides_details,
-                                    int result_tags,
-                                    int ignore_pagination,
-                                    int lean)
+manage_print_report_xml_start (report_t report,
+                               task_t task,
+                               gchar *xml_start,
+                               const get_data_t *get,
+                               int notes_details,
+                               int overrides_details,
+                               int result_tags,
+                               int ignore_pagination,
+                               int lean)
 {
   return print_report_xml_start (report,
                                  0,
