@@ -471,6 +471,9 @@ init_report_export_user_context (report_export_user_context_t *,
 void
 cleanup_report_export_user_context (report_export_user_context_t *);
 
+int
+init_report_export_get_data (const report_export_data_t, get_data_t *);
+
 void
 cleanup_report_export_get_data (get_data_t *);
 

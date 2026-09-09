@@ -194,6 +194,7 @@ set(
   manage_alerts.c
   manage_asset_keys.c
   manage_audit_report.c
+  manage_audit_report_exports.c
   manage_audit_report_hosts.c
   manage_configs.c
   manage_events.c

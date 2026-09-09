@@ -128,9 +128,9 @@ refresh_connector_access_token (security_intelligence_connector_t conn,
  * @return 0 on success, -1 on invalid input or allocation failure.
  */
 static int
-init_report_export_get_data (get_data_t *get,
-                             int first_result,
-                             int max_results)
+init_integration_report_export_get_data (get_data_t *get,
+                                         int first_result,
+                                         int max_results)
 {
   if (!get || first_result < 0 || max_results == 0)
     return -1;
@@ -623,7 +623,7 @@ upload_report_page (security_intelligence_connector_t conn,
   first_result =
     page_index * SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE;
 
-  if (init_report_export_get_data (
+  if (init_integration_report_export_get_data (
     &result_get,
     first_result,
     SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE))
@@ -993,7 +993,7 @@ export_report_security_intelligence (report_t report,
   /*
    * Use the same result filter for counting and page generation.
    */
-  if (init_report_export_get_data (
+  if (init_integration_report_export_get_data (
     &count_get,
     0,
     -1))

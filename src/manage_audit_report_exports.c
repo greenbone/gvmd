@@ -5,10 +5,10 @@
 
 /**
  * @file
- * @brief GVM management layer: Scan report exports.
+ * @brief GVM management layer: Audit report exports.
  */
 
-#include "manage_scan_report_exports.h"
+#include "manage_audit_report_exports.h"
 
 #include "manage.h"
 #include "manage_report_configs.h"
@@ -28,7 +28,7 @@
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Validate and resolve resources used by a scan report export.
+ * @brief Validate and resolve resources used by an audit report export.
  *
  * @param[in]  report_id         UUID of the report to export.
  * @param[out] report            Resolved report.
@@ -39,13 +39,13 @@
  *
  * @return Validation result.
  */
-static manage_export_scan_report_response_t
-validate_scan_report_export (const gchar *report_id,
-                             report_t *report,
-                             const gchar *report_format_id,
-                             report_format_t *report_format,
-                             const gchar *report_config_id,
-                             report_config_t *report_config)
+static manage_export_audit_report_response_t
+validate_audit_report_export (const gchar *report_id,
+                              report_t *report,
+                              const gchar *report_format_id,
+                              report_format_t *report_format,
+                              const gchar *report_config_id,
+                              report_config_t *report_config)
 {
   task_t task;
   gchar *usage_type;
@@ -57,7 +57,7 @@ validate_scan_report_export (const gchar *report_id,
       || str_blank (report_format_id) == TRUE
       || report_format == NULL
       || report_config == NULL)
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
   *report = 0;
   *report_format = 0;
@@ -67,28 +67,28 @@ validate_scan_report_export (const gchar *report_id,
                                      report,
                                      "get_reports");
   if (ret)
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
   if (*report == 0)
-    return MANAGE_EXPORT_SCAN_REPORT_NOT_FOUND;
+    return MANAGE_EXPORT_AUDIT_REPORT_NOT_FOUND;
 
   task = 0;
 
   if (report_task (*report, &task))
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
   if (task == 0)
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
   usage_type = NULL;
 
   if (task_usage_type (task, &usage_type))
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
-  if (usage_type == NULL || strcmp (usage_type, "audit") == 0)
+  if (usage_type == NULL || strcmp (usage_type, "audit") != 0)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_UNSUPPORTED_TYPE;
+      return MANAGE_EXPORT_AUDIT_REPORT_UNSUPPORTED_TYPE;
     }
 
   ret = find_report_format_with_permission (report_format_id,
@@ -97,26 +97,26 @@ validate_scan_report_export (const gchar *report_id,
   if (ret)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+      return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
     }
 
   if (*report_format == 0)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_FORMAT_NOT_FOUND;
+      return MANAGE_EXPORT_AUDIT_REPORT_FORMAT_NOT_FOUND;
     }
 
   if (report_format_active (*report_format) == 0)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_FORMAT_NOT_FOUND;
+      return MANAGE_EXPORT_AUDIT_REPORT_FORMAT_NOT_FOUND;
     }
 
   if (report_format_predefined (*report_format) == 0
       && report_format_trust (*report_format) != TRUST_YES)
     {
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_UNTRUSTED_REPORT_FORMAT;
+      return MANAGE_EXPORT_AUDIT_REPORT_UNTRUSTED_REPORT_FORMAT;
     }
 
   format_report_type = report_format_report_type (*report_format);
@@ -127,7 +127,7 @@ validate_scan_report_export (const gchar *report_id,
     {
       g_free (format_report_type);
       g_free (usage_type);
-      return MANAGE_EXPORT_SCAN_REPORT_UNSUPPORTED_TYPE;
+      return MANAGE_EXPORT_AUDIT_REPORT_UNSUPPORTED_TYPE;
     }
 
   g_free (format_report_type);
@@ -139,20 +139,20 @@ validate_scan_report_export (const gchar *report_id,
                                                 report_config,
                                                 "get_report_configs");
       if (ret)
-        return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+        return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
       if (*report_config == 0)
-        return MANAGE_EXPORT_SCAN_REPORT_CONFIG_NOT_FOUND;
+        return MANAGE_EXPORT_AUDIT_REPORT_CONFIG_NOT_FOUND;
 
       if (report_config_report_format (*report_config) != *report_format)
-        return MANAGE_EXPORT_SCAN_REPORT_FORMAT_CONFIG_MISMATCH;
+        return MANAGE_EXPORT_AUDIT_REPORT_FORMAT_CONFIG_MISMATCH;
     }
 
-  return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;
+  return MANAGE_EXPORT_AUDIT_REPORT_SUCCESS;
 }
 
 /**
- * @brief Create a queued scan report export.
+ * @brief Create a queued audit report export.
  *
  * @param[in]  report_id          UUID of the report to export.
  * @param[in]  report_format_id   UUID of the report format.
@@ -164,51 +164,53 @@ validate_scan_report_export (const gchar *report_id,
  * @param[in]  overrides_details  Whether override details are included.
  * @param[in]  result_tags        Whether result tags are included.
  * @param[out] report_export      Created report export.
+ * @param[out] status             Status of the report export.
+ * @param[out] created            Whether a new report export was created.
  *
- * @return Result of creating the scan report export.
+ * @return Result of creating the audit report export.
  */
-manage_export_scan_report_response_t
-manage_export_scan_report (const gchar *report_id,
-                           const gchar *report_format_id,
-                           const gchar *report_config_id,
-                           const gchar *filter,
-                           gboolean ignore_pagination,
-                           gboolean lean,
-                           gboolean notes_details,
-                           gboolean overrides_details,
-                           gboolean result_tags,
-                           report_export_t *report_export,
-                           report_export_status_t *status,
-                           gboolean *created)
+manage_export_audit_report_response_t
+manage_export_audit_report (const gchar *report_id,
+                            const gchar *report_format_id,
+                            const gchar *report_config_id,
+                            const gchar *filter,
+                            gboolean ignore_pagination,
+                            gboolean lean,
+                            gboolean notes_details,
+                            gboolean overrides_details,
+                            gboolean result_tags,
+                            report_export_t *report_export,
+                            report_export_status_t *status,
+                            gboolean *created)
 {
   report_t report;
   report_format_t report_format;
   report_config_t report_config;
-  manage_export_scan_report_response_t response;
+  manage_export_audit_report_response_t response;
 
   if (report_export == NULL
       || status == NULL
       || created == NULL)
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
   *report_export = 0;
   *status = REPORT_EXPORT_STATUS_PENDING;
   *created = FALSE;
 
-  response = validate_scan_report_export (report_id,
-                                          &report,
-                                          report_format_id,
-                                          &report_format,
-                                          report_config_id,
-                                          &report_config);
-  if (response != MANAGE_EXPORT_SCAN_REPORT_SUCCESS)
+  response = validate_audit_report_export (report_id,
+                                           &report,
+                                           report_format_id,
+                                           &report_format,
+                                           report_config_id,
+                                           &report_config);
+  if (response != MANAGE_EXPORT_AUDIT_REPORT_SUCCESS)
     return response;
 
   if (manage_create_report_export (report,
                                    0,
                                    report_format,
                                    report_config,
-                                   REPORT_EXPORT_TYPE_SCAN,
+                                   REPORT_EXPORT_TYPE_AUDIT,
                                    "",
                                    "",
                                    filter,
@@ -220,13 +222,13 @@ manage_export_scan_report (const gchar *report_id,
                                    report_export,
                                    status,
                                    created))
-    return MANAGE_EXPORT_SCAN_REPORT_ERROR;
+    return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
-  return MANAGE_EXPORT_SCAN_REPORT_SUCCESS;
+  return MANAGE_EXPORT_AUDIT_REPORT_SUCCESS;
 }
 
 /**
- * @brief Generate the intermediate XML used by a report format.
+ * @brief Generate the intermediate XML used by an audit report format.
  *
  * @param[in] data      Report export data.
  * @param[in] xml_path  Destination XML path.
@@ -234,7 +236,7 @@ manage_export_scan_report (const gchar *report_id,
  * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
  */
 static int
-generate_scan_report_export_xml (
+generate_audit_report_export_xml (
   const report_export_data_t data,
   gchar *xml_path)
 {
@@ -275,14 +277,14 @@ generate_scan_report_export_xml (
 }
 
 /**
- * @brief Process a queued normal scan report export.
+ * @brief Process a queued audit report export.
  *
  * @param[in] report_export  Report export to process.
  *
  * @return 0 on success, 1 if canceled, or -1 on failure.
  */
 int
-manage_process_scan_report_export (report_export_t report_export)
+manage_process_audit_report_export (report_export_t report_export)
 {
   report_export_data_t data;
   report_export_files_t files;
@@ -312,12 +314,12 @@ manage_process_scan_report_export (report_export_t report_export)
       goto cleanup;
     }
 
-  if (data->export_type != REPORT_EXPORT_TYPE_SCAN
+  if (data->export_type != REPORT_EXPORT_TYPE_AUDIT
       || data->delta_report != 0)
     {
       manage_fail_report_export (
         report_export,
-        "Unsupported scan report export type");
+        "Unsupported audit report export type");
       goto cleanup;
     }
 
@@ -380,8 +382,8 @@ manage_process_scan_report_export (report_export_t report_export)
     goto cleanup;
 
   if (manage_set_report_export_progress (
-    report_export,
-    REPORT_EXPORT_PROGRESS_GENERATING))
+        report_export,
+        REPORT_EXPORT_PROGRESS_GENERATING))
     {
       manage_fail_report_export (
         report_export,
@@ -390,7 +392,7 @@ manage_process_scan_report_export (report_export_t report_export)
       goto cleanup;
     }
 
-  ret = generate_scan_report_export_xml (
+  ret = generate_audit_report_export_xml (
     data,
     files.xml_start_path);
 
@@ -400,7 +402,7 @@ manage_process_scan_report_export (report_export_t report_export)
         report_export,
         ret == 2
           ? "Report filter was not found"
-          : "Failed to generate scan report XML");
+          : "Failed to generate audit report XML");
 
       ret = -1;
       goto cleanup;
@@ -474,11 +476,11 @@ manage_process_scan_report_export (report_export_t report_export)
     goto cleanup;
 
   if (manage_complete_report_export (
-    report_export,
-    files.final_path,
-    files.file_size,
-    files.content_type,
-    files.extension))
+        report_export,
+        files.final_path,
+        files.file_size,
+        files.content_type,
+        files.extension))
     {
       manage_fail_report_export (
         report_export,
