@@ -666,7 +666,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
     {
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group",
                               "Permission denied"));
-      create_agent_group_reset ();
+      modify_agent_group_reset ();
       return;
     }
 
@@ -714,7 +714,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX ("modify_agent_group",
           "Missing or empty <scheduler_cron_time>"));
-      create_agent_group_reset ();
+      modify_agent_group_reset ();
       return;
     }
 
