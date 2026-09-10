@@ -86,6 +86,7 @@
 #include "gmp_get.h"
 #include "gmp_configs.h"
 #include "gmp_audit_report.h"
+#include "gmp_audit_report_exports.h"
 #include "gmp_audit_report_hosts.h"
 #include "gmp_scan_report_exports.h"
 #include "gmp_integration_configs.h"
@@ -4646,6 +4647,7 @@ typedef enum
   CLIENT_DESCRIBE_AUTH,
   CLIENT_DOWNLOAD_REPORT_EXPORT,
   CLIENT_EMPTY_TRASHCAN,
+  CLIENT_EXPORT_AUDIT_REPORT,
   CLIENT_EXPORT_SCAN_REPORT,
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
@@ -5544,6 +5546,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+        else if (strcasecmp ("EXPORT_AUDIT_REPORT", element_name) == 0)
+          {
+            export_audit_report_start (gmp_parser,
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_EXPORT_AUDIT_REPORT);
+          }
         else if (strcasecmp ("EXPORT_SCAN_REPORT", element_name) == 0)
           {
             export_scan_report_start (gmp_parser,
@@ -22551,6 +22560,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
     case CLIENT_DOWNLOAD_REPORT_EXPORT:
       download_report_export_element_end (gmp_parser, error, element_name);
+      break;
+
+    case CLIENT_EXPORT_AUDIT_REPORT:
+      export_audit_report_element_end (gmp_parser, error, element_name);
       break;
 
     case CLIENT_EXPORT_SCAN_REPORT:
