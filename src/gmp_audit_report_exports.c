@@ -281,8 +281,13 @@ export_audit_report_run (gmp_parser_t *gmp_parser,
              * A new pending report export was created.
              */
             SENDF_TO_CLIENT_OR_FAIL (
-              XML_OK_CREATED_ID ("export_audit_report"),
-              export_data->uuid);
+              "<export_audit_report_response"
+              " status=\"201\""
+              " status_text=\"OK\""
+              " id=\"%s\""
+              " export_status=\"%s\"/>",
+              export_data->uuid,
+              status_name);
 
             log_event ("report_export",
                        "Report Export",
