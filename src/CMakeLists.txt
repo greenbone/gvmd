@@ -352,6 +352,7 @@ set(
   gmp_scan_report_exports.c
   gmp_get.c
   gmp_audit_report.c
+  gmp_audit_report_exports.c
   gmp_audit_report_hosts.c
   gmp_integration_configs.c
   gmp_license.c

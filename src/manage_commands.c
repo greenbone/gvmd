@@ -96,6 +96,7 @@ command_t gmp_commands[]
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
     {"DOWNLOAD_REPORT_EXPORT", "Download an exported report file with report export id."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
+    {"EXPORT_AUDIT_REPORT", "Create an asynchronous audit report export."},
     {"EXPORT_SCAN_REPORT", "Create an asynchronous scan report export."},
 #if ENABLE_AGENTS
     {"GET_AGENT_GROUPS", "Get all agent groups."},
