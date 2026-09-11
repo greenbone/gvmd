@@ -2224,6 +2224,7 @@ typedef enum {
   CREATE_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
   CREATE_SCANNER_MISSING_TYPE,                ///< Missing type
   CREATE_SCANNER_MISSING_HOST,                ///< Missing host
+  CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS,     ///< Scanner endpoint already exists
   CREATE_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
   CREATE_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
   CREATE_SCANNER_INVALID_TYPE,                ///< Invalid type
@@ -2258,6 +2259,7 @@ typedef enum {
   MODIFY_SCANNER_INVALID_TYPE,                ///< Invalid type
   MODIFY_SCANNER_INVALID_PORT,                ///< Invalid port
   MODIFY_SCANNER_INVALID_HOST,                ///< Invalid host
+  MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS,     ///< Scanner endpoint already exists
   MODIFY_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
   MODIFY_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
   MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
