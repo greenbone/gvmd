@@ -329,6 +329,7 @@ set(
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
   manage_sql_integration_report_exports.c
+  manage_sql_vt_tech_info.c
   manage_sql_web_application_vts.c
 )
 
@@ -734,6 +735,7 @@ add_definitions(-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions(-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
 
 add_definitions(-DGVM_WEB_APPLICATION_VTS_DIR="${GVM_WEB_APPLICATION_VTS_DIR}")
+add_definitions(-DGVM_VT_TECH_INFO_DIR="${GVM_VT_TECH_INFO_DIR}")
 
 if(GVM_SCANNER_CERTIFICATE)
   add_definitions(-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")

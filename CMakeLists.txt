@@ -102,7 +102,7 @@ set(GVMD_SCAP_DATABASE_VERSION 22)
 
 set(GVMD_CERT_DATABASE_VERSION 8)
 
-set(GVMD_VTS_DATABASE_VERSION 1)
+set(GVMD_VTS_DATABASE_VERSION 2)
 
 if(ENABLE_AGENTS OR ENABLE_CONTAINER_SCANNING)
   # Set a to the next GMP version if unstable features are enabled
@@ -236,6 +236,10 @@ endif(NOT GVM_SCAP_DATA_DIR)
 if(NOT GVM_WEB_APPLICATION_VTS_DIR)
   set(GVM_WEB_APPLICATION_VTS_DIR "${GVM_STATE_DIR}/web-application-vts")
 endif(NOT GVM_WEB_APPLICATION_VTS_DIR)
+
+if(NOT GVM_VT_TECH_INFO_DIR)
+  set(GVM_VT_TECH_INFO_DIR "${GVM_STATE_DIR}/vt-tech-info")
+endif(NOT GVM_VT_TECH_INFO_DIR)
 
 # System username to use when dropping privileges
 if(NOT GVM_DEFAULT_DROP_USER)

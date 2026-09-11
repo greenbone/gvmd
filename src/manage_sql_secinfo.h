@@ -223,6 +223,12 @@ void
 drop_web_application_vts_tables ();
 
 void
+create_tables_vt_tech_info ();
+
+int
+update_vt_tech_info (gboolean);
+
+void
 refresh_all_vts_table ();
 
 int

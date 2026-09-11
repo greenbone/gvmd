@@ -22,6 +22,7 @@
 #include "manage_sql_secinfo.h"
 #include "manage_sql_settings.h"
 #include "manage_sql_web_application_vts.h"
+#include "manage_sql_vt_tech_info.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -6231,6 +6232,9 @@ manage_feed_timestamp (const gchar *name)
   else if (strcasecmp (name, "web_application_vts") == 0)
     g_file_get_contents (GVM_WEB_APPLICATION_VTS_DIR "/timestamp",
                          &timestamp, &len, &error);
+  else if (strcasecmp (name, "vt_tech_info") == 0)
+    g_file_get_contents (GVM_VT_TECH_INFO_DIR "/timestamp",
+                         &timestamp, &len, &error);
   else
     return -1;
 
@@ -6293,6 +6297,18 @@ secinfo_feed_version_status (const char *feed_type)
       if (manage_scap_loaded () == 0)
         return 2;
     }
+  else if (strcmp (feed_type, "vt_tech_info") == 0)
+    {
+      is_vts_subtype = TRUE;
+      if (gvm_file_exists (GVM_VT_TECH_INFO_DIR "/feed.xml") == FALSE)
+        {
+          g_info ("vt-tech-info feed.xml not found in %s",
+                  GVM_VT_TECH_INFO_DIR);
+          return 0;
+        }
+      if (manage_vt_tech_info_loaded () == 0)
+        return 2;
+    }
   else if (strcmp (feed_type, "web_application_vts") == 0)
     {
       is_vts_subtype = TRUE;
@@ -6306,6 +6322,7 @@ secinfo_feed_version_status (const char *feed_type)
     }
 
   last_feed_update = manage_feed_timestamp (feed_type);
+
   if (last_feed_update == -1)
     return -1;
 
@@ -6325,6 +6342,7 @@ secinfo_feed_version_status (const char *feed_type)
                    "                 '-3');",
                    feed_type);
     }
+
   if (last_db_update == -3)
     return 3;
   else if (last_db_update < 0)
@@ -7306,7 +7324,7 @@ check_vts_db_version ()
       int ret;
       g_info ("Reinitialization of the VTs database necessary");
 
-      drop_web_application_vts_tables ();
+      sql ("DROP SCHEMA vts CASCADE;");
 
       ret = manage_db_init ("vts");
       if (ret)
@@ -7320,6 +7338,7 @@ check_vts_db_version ()
         update_zap_vt_severities_from_cves ();
 
       update_zap_vt_group_severity_scores ();
+      update_vt_tech_info (FALSE);
     }
   else if (db_version > GVMD_VTS_DATABASE_VERSION)
     {
@@ -7544,6 +7563,219 @@ manage_sync_web_application_vts (sigset_t *sigmask_current)
                        sync_web_application_vts,
                        "Syncing Web Application VTs");
 }
+
+
+
+/* VT Technical Information */
+
+/**
+ * @brief Update timestamp in VT Technical Information db from feed timestamp.
+ */
+static void
+update_vt_tech_info_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_VT_TECH_INFO_DIR "/timestamp",
+                       &timestamp, &len, &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s",
+                     __func__,
+                     error->message);
+          stamp = time(NULL);
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s",
+                     __func__,
+                     timestamp);
+          g_free (timestamp);
+          stamp = time(NULL);
+        }
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
+    }
+
+  g_debug ("%s: setting last_vt_tech_info_update: %lld",
+           __func__, (long long) stamp);
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_vt_tech_info_update', '%lld')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       (long long) stamp);
+}
+
+/**
+ * @brief Abort VT Technical Info update.
+ */
+static void
+abort_vt_tech_info_update ()
+{
+  if (manage_vt_tech_info_loaded ())
+    {
+      update_vt_tech_info_timestamp ();
+    }
+
+  g_info ("%s: Updating VT Technical Info aborted", __func__);
+  setproctitle ("Syncing VT Technical Info: aborted");
+}
+
+/**
+ * @brief Finish VT Technical Info update.
+ */
+static void
+update_vt_tech_info_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  update_vt_tech_info_timestamp ();
+
+  /* Analyze. */
+
+  sql ("ANALYZE vts.vt_tech_info;");
+
+  refresh_all_vts_table ();
+
+  g_info ("%s: Updating VT Technical Info succeeded", __func__);
+  setproctitle ("Syncing VT Technical Info: done");
+}
+
+/**
+ * @brief Update all data in the VT Technical Info DB.
+ *
+ * @param[in]  reset_db  Whether to rebuild regardless of last_update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_vt_tech_info (gboolean reset_db)
+{
+  if (reset_db)
+    g_warning ("%s: Full rebuild requested, resetting VT Technical Info db",
+               __func__);
+  else if (manage_vt_tech_info_loaded () == 0)
+    g_warning ("%s: No VT Technical Info db present,"
+               " rebuilding VT Technical Info db from scratch",
+               __func__);
+  else
+    {
+      int last_vt_tech_info_update;
+
+      last_vt_tech_info_update
+        = sql_int ("SELECT coalesce ((SELECT value"
+                   "                  FROM vts.meta"
+                   "                  WHERE name"
+                   "                    = 'last_vt_tech_info_update'),"
+                   "                 '-3');");
+      if (last_vt_tech_info_update == -3)
+        g_warning ("%s: VTs db missing last_vt_tech_info_update record,"
+                   " resetting VT Technical Info db",
+                   __func__);
+      else if (last_vt_tech_info_update < 0)
+        g_warning ("%s: Inconsistent data, resetting VT Technical Info db",
+                   __func__);
+      else
+        {
+          int last_feed_update;
+
+          last_feed_update = manage_feed_timestamp ("vt_tech_info");
+
+          if (last_feed_update == -1)
+            return -1;
+
+          if (last_vt_tech_info_update == last_feed_update)
+            {
+              setproctitle ("Syncing VT Technical Info: done");
+              return 0;
+            }
+
+          if (last_vt_tech_info_update > last_feed_update)
+            {
+              g_warning ("%s: last VT Technical Info update later than"
+                         " last feed update",
+                         __func__);
+              return -1;
+            }
+        }
+    }
+
+  /* Create a new schema, "vts". */
+
+  if (manage_db_init ("vts"))
+    {
+      g_warning ("%s: could not initialize VTs database schema",
+                 __func__);
+      return -1;
+    }
+
+  /* Update into the new schema. */
+
+  g_debug ("%s: sync", __func__);
+
+  g_info ("%s: Updating data from feed", __func__);
+
+  g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
+
+  g_debug ("%s: update VT technical descriptions", __func__);
+  setproctitle ("Syncing VT Technical Info: Technical Descriptions");
+
+  if (update_vt_tech_info_from_feed_files () == -1)
+    {
+      abort_vt_tech_info_update ();
+      return -1;
+    }
+
+  update_vt_tech_info_end ();
+  return 0;
+}
+
+/**
+ * @brief Sync the VT Technical Info DB.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_vt_tech_info ()
+{
+  return update_vt_tech_info (FALSE);
+}
+
+/**
+ * @brief Sync the VT Technical Information DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the VT Technical Information sync,
+ *         -1 on error.
+ */
+pid_t
+manage_sync_vt_tech_info (sigset_t *sigmask_current)
+{
+  return sync_secinfo (sigmask_current,
+                       sync_vt_tech_info,
+                       "Syncing VT Technical Information");
+}
+
+
+/* All VTs */
 
 /**
  * @brief Refresh the "all VTs" table.

@@ -4187,6 +4187,9 @@ manage_db_init (const gchar *name)
       if (manage_web_application_vts_loaded () == FALSE)
         create_web_application_vts_tables ();
 
+      if (manage_vt_tech_info_loaded () == FALSE)
+        create_tables_vt_tech_info ();
+
       sql ("CREATE TABLE IF NOT EXISTS vts.all_vts ("
            "  oid TEXT PRIMARY KEY,"
            "  uuid TEXT UNIQUE,"
@@ -4271,6 +4274,23 @@ drop_web_application_vts_tables ()
 
   sql ("INSERT INTO vts.meta (name, value)"
        " VALUES ('last_web_application_vts_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+}
+
+/**
+ * @brief Create web VT Technical Info tables.
+ */
+void
+create_tables_vt_tech_info ()
+{
+  sql ("CREATE TABLE IF NOT EXISTS vt_tech_info"
+       " (vt_id TEXT UNIQUE,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER,"
+       "  description_md TEXT);");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_vt_tech_info_update', 0)"
        " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
 }
 
@@ -4493,4 +4513,15 @@ manage_web_application_vts_loaded ()
                     "               AND table_name = 'web_application_vts')"
                     " ::integer;",
                     sql_database ());
+}
+
+/**
+ * @brief Check whether VT Technical Info are available.
+ *
+ * @return 1 if VT Technical Info database is loaded, else 0.
+ */
+int
+manage_vt_tech_info_loaded ()
+{
+  return sql_table_exists ("vts", "vt_tech_info");
 }

@@ -4028,6 +4028,19 @@ feed_sync_required ()
         }
     }
 
+  feed_status_ret = secinfo_feed_version_status ("vt_tech_info");
+  switch (feed_status_ret)
+    {
+    case 1:
+    case 2:
+    case 3:
+      g_debug ("%s: VT Technical Info need to be updated (status %d)",
+                __func__, feed_status_ret);
+      return TRUE;
+    default:
+      break;
+    }
+
   return FALSE;
 }
 
@@ -4128,6 +4141,8 @@ manage_sync (sigset_t *sigmask_current,
             }
 
           update_scap_extra ();
+          if (manage_vt_tech_info_loaded ())
+            update_vt_tech_info (FALSE);
 
           g_info ("SecInfo feed sync finished");
 

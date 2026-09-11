@@ -2757,6 +2757,12 @@ const char *
 web_application_vt_ref_iterator_ref_id (iterator_t *);
 
 
+/* VT Technical Info */
+
+int
+manage_vt_tech_info_loaded ();
+
+
 /* All SecInfo Data */
 
 int
