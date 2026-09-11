@@ -629,4 +629,16 @@ manage_print_report_xml_start (report_t,
                                int,
                                int);
 
+int
+manage_print_delta_report_xml_start (report_t,
+                                     report_t,
+                                     task_t,
+                                     gchar *,
+                                     const get_data_t *,
+                                     int,
+                                     int,
+                                     int,
+                                     int,
+                                     int);
+
 #endif /* not _GVMD_MANAGE_SQL_H */
