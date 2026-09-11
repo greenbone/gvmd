@@ -21313,11 +21313,17 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
               goto create_scanner_leave;
             }
           log_event_fail ("scanner", "Scanner", NULL, "created");
+        goto create_scanner_leave;
+        case 97:
+          SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone an "
+            "Agent Controller/Sensor scanner "));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
         case 98:
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone a "
-                              "CVE scanner "));
+          (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone a "
+            "CVE scanner "));
           log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
         case 99:
@@ -21444,6 +21450,13 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("create_scanner",
                             "Scanner HOST must be a valid hostname,"
                             " IP address or UNIX socket path."));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
+      case CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "An agent-controller scanner with the same host and port "
+          "already exists."));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
@@ -21621,6 +21634,14 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Scanner HOST must be a valid hostname,"
                             " IP address or UNIX socket path."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "An agent-controller scanner with the same host and port"
+          " already exists."));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -29570,6 +29591,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("restore",
                                       "A resource with this UUID exists"
+                                      " already"));
+                  break;
+                case 5:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "A resource with this endpoint exists"
                                       " already"));
                   break;
                 case 99:

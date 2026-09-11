@@ -22949,6 +22949,10 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                  "Scanner host must be a valid hostname,"
                  " IP address or UNIX socket path.\n");
         break;
+      case CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        fprintf (stderr,
+                 "An agent controller scanner with the same host and port already exists.\n");
+        break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
         fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
@@ -23271,7 +23275,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
       case MODIFY_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case CREATE_SCANNER_INVALID_TYPE:
+      case MODIFY_SCANNER_INVALID_TYPE:
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case MODIFY_SCANNER_INVALID_PORT:
@@ -23283,6 +23287,11 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr,
                  "Scanner host must be a valid hostname,"
                  " IP address or UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        fprintf (stderr,
+                 "An agent-controller scanner with the same host and port"
+                 " already exists.\n");
         break;
       case MODIFY_SCANNER_INVALID_RELAY_PORT:
         fprintf (stderr,
@@ -23465,6 +23474,68 @@ insert_scanner (const char* name, const char *comment, const char *host,
 }
 
 /**
+ * @brief Check whether an Agent Controller scanner already uses the endpoint.
+ *
+ * @param[in] host             Scanner host.
+ * @param[in] port             Scanner port.
+ * @param[in] exclude_scanner  Scanner to exclude from the check, or 0.
+ *
+ * @return TRUE if the endpoint is already in use, FALSE otherwise.
+ */
+static gboolean
+agent_scanner_endpoint_exists (const char *host, int port,
+                               scanner_t exclude_scanner)
+{
+  scanner_t scanner = 0;
+
+  sql_int64_ps (
+    &scanner,
+    "SELECT id FROM scanners "
+    "WHERE host = $1 "
+    "AND port = $2 "
+    "AND type IN ($3, $4) "
+    "AND id != $5 "
+    "LIMIT 1;",
+    SQL_STR_PARAM (host),
+    SQL_INT_PARAM (port),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER_SENSOR),
+    SQL_RESOURCE_PARAM (exclude_scanner),
+    NULL);
+
+  return scanner != 0;
+}
+
+/**
+ * @brief Check whether a scanner is an Agent Controller or Sensor.
+ *
+ * @param[in] scanner_uuid UUID of the scanner.
+ *
+ * @return TRUE if the scanner is an Agent Controller or Sensor, FALSE otherwise.
+ */
+static gboolean
+scanner_is_agent_controller_or_sensor (const char *scanner_uuid)
+{
+  scanner_t scanner = 0;
+
+  if (!scanner_uuid)
+    return FALSE;
+
+  sql_int64_ps (
+    &scanner,
+    "SELECT id FROM scanners "
+    "WHERE uuid = $1 "
+    "AND type IN ($2, $3) "
+    "LIMIT 1;",
+    SQL_STR_PARAM (scanner_uuid),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER_SENSOR),
+    NULL);
+
+  return scanner != 0;
+}
+
+/**
  * @brief Create a scanner.
  *
  * @param[in]   name        Name of scanner.
@@ -23583,6 +23654,14 @@ create_scanner (const char* name, const char *comment, const char *host,
         }
     }
 
+  if ((itype == SCANNER_TYPE_AGENT_CONTROLLER
+     || itype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    && agent_scanner_endpoint_exists (host, iport, 0))
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS;
+    }
+
   if (relays_managed_externally ())
     {
       int ret = get_single_relay_from_file (itype,
@@ -23699,6 +23778,7 @@ create_scanner (const char* name, const char *comment, const char *host,
  *
  * @return 0 success, 1 scanner exists already, 2 failed to find existing
  *         scanner, -1 error, 98 not allowed to copy cve scanner,
+ *         97 not allowed Agent controller or Agent controller sensor scanner,
  *         99 permission denied.
  */
 int
@@ -23707,6 +23787,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
 {
   if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0)
     return 98;
+  if (scanner_is_agent_controller_or_sensor (scanner_id))
+    return 97;
 
   return copy_resource ("scanner", name, comment, scanner_id,
                         "host, port, type, ca_pub, credential", 1,
@@ -23891,6 +23973,16 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       g_free (used_host);
       g_free (used_relay_host);
       return MODIFY_SCANNER_INVALID_HOST;
+    }
+
+  if ((itype == SCANNER_TYPE_AGENT_CONTROLLER
+     || itype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    && agent_scanner_endpoint_exists (used_host, iport, scanner))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      g_free (used_relay_host);
+      return MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS;
     }
 
   if (used_relay_host == NULL || strcmp (used_relay_host, "") == 0)
@@ -25367,7 +25459,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
  * @return 0 success, 1 fail because the resource refers to another resource
  *         in the trashcan, 2 failed to find resource in trashcan, 3 fail
  *         because resource with such name exists already, 4 fail because
- *         resource with UUID exists already, 99 permission denied, -1 error.
+ *         resource with UUID exists already, 5 fail because endpoint already
+ *         exists, 99 permission denied, -1 error.
  */
 int
 manage_restore (const char *id)
@@ -26061,6 +26154,35 @@ manage_restore (const char *id)
         {
           sql_rollback ();
           return 1;
+        }
+
+      /* Check Agent Controller endpoint before restoring. */
+      scanner_type_t scanner_type;
+      gchar *scanner_host;
+      int scanner_port;
+
+      scanner_type =
+        sql_int ("SELECT type FROM scanners_trash WHERE id = %llu;", resource);
+
+      if (scanner_type == SCANNER_TYPE_AGENT_CONTROLLER
+          || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+        {
+          scanner_host =
+            sql_string ("SELECT host FROM scanners_trash WHERE id = %llu;",
+                        resource);
+
+          scanner_port =
+            sql_int ("SELECT port FROM scanners_trash WHERE id = %llu;",
+                     resource);
+
+          if (agent_scanner_endpoint_exists (scanner_host, scanner_port, 0))
+            {
+              g_free (scanner_host);
+              sql_rollback ();
+              return 5;  /* Endpoint already exists. */
+            }
+
+          g_free (scanner_host);
         }
 
       sql ("INSERT INTO scanners"
