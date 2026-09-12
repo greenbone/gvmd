@@ -219,6 +219,14 @@ sql_cancel ();
 int
 sql_table_exists (const gchar *, const gchar *);
 
+/* Session variables. */
+
+const char *
+sql_session_uuid ();
+
+void
+sql_session_uuid_set (const char *);
+
 /* Transactions. */
 
 void
