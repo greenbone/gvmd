@@ -144,6 +144,45 @@ target_iterator_ssh_elevate_credential (iterator_t *);
 int
 target_iterator_krb5_credential (iterator_t *);
 
+/* Credential names and UUIDs from the iterator itself, so that get_targets
+ * does not need one statement per target and credential type.  Only valid on
+ * the non-trash iterator - see the note in manage_sql_targets.c. */
+const char *
+target_iterator_ssh_credential_name (iterator_t *);
+
+const char *
+target_iterator_smb_credential_name (iterator_t *);
+
+const char *
+target_iterator_esxi_credential_name (iterator_t *);
+
+const char *
+target_iterator_snmp_credential_name (iterator_t *);
+
+const char *
+target_iterator_ssh_elevate_credential_name (iterator_t *);
+
+const char *
+target_iterator_krb5_credential_name (iterator_t *);
+
+const char *
+target_iterator_ssh_credential_uuid (iterator_t *);
+
+const char *
+target_iterator_smb_credential_uuid (iterator_t *);
+
+const char *
+target_iterator_esxi_credential_uuid (iterator_t *);
+
+const char *
+target_iterator_snmp_credential_uuid (iterator_t *);
+
+const char *
+target_iterator_ssh_elevate_credential_uuid (iterator_t *);
+
+const char *
+target_iterator_krb5_credential_uuid (iterator_t *);
+
 int
 target_iterator_ssh_trash (iterator_t *);
 
