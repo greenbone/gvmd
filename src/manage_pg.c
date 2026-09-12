@@ -3692,6 +3692,12 @@ create_tables ()
   sql ("SELECT create_index ('reports_by_task',"
        "                     'reports', 'task');");
 
+  /* The target iterator looks up the credential of every login type with its
+   * own subquery, so listing targets scans this table once per target and
+   * login type without an index. */
+  sql ("SELECT create_index ('targets_login_data_by_target',"
+       "                     'targets_login_data', 'target, type');");
+
   sql ("SELECT create_index ('tag_resources_by_resource',"
        "                     'tag_resources',"
        "                     'resource_type, resource, resource_location');");
