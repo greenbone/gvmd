@@ -8854,6 +8854,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  skip_cert_refs        If true, exclude CERT refs.
  * @param[in]  skip_tags             If true, exclude tags.
  * @param[in]  lean                  If true, send fewer details.
+ * @param[in]  include_tech_info     If true, send technical information.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
@@ -8862,14 +8863,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 static gboolean
 send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
           const char *timeout, config_t config, int skip_cert_refs,
-          int skip_tags, int lean,
+          int skip_tags, int lean, int include_tech_info,
           int (*write_to_client) (const char *, void*),
           void* write_to_client_data)
 {
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
-                     0, skip_cert_refs, skip_tags, lean);
+                     0, skip_cert_refs, skip_tags, lean, include_tech_info);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -15099,6 +15100,7 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
           if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
+                        get->details, /* include_tech_info */
                         gmp_parser->client_writer,
                         gmp_parser->client_writer_data))
             {
@@ -15458,6 +15460,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                               get_nvts_data->skip_cert_refs,
                               get_nvts_data->skip_tags,
                               get_nvts_data->lean,
+                              0, /* include_tech_info */
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -15473,7 +15476,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
           else
             while (next (&nvts))
               {
-                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0,
+                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0, 0,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
