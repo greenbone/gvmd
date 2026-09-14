@@ -592,21 +592,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <required>1</required>
       </attrib>
       <e>name</e>
-      <e>creation_time</e>
-      <e>modification_time</e>
-      <e>category</e>
-      <e>family</e>
-      <e>cvss_base</e>
-      <e>severities</e>
-      <e>qod</e>
-      <e>refs</e>
-      <e>tags</e>
-      <e>preference_count</e>
-      <e>timeout</e>
-      <e>default_timeout</e>
-      <e>solution</e>
-      <o><e>epss</e></o>
-      <e>preferences</e>
+      <o>
+        <g>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>category</e>
+          <e>family</e>
+          <e>cvss_base</e>
+          <e>severities</e>
+          <e>qod</e>
+          <e>refs</e>
+          <e>tags</e>
+          <e>discovery</e>
+          <o><e>preference_count</e></o>
+          <o><e>timeout</e></o>
+          <o><e>default_timeout</e></o>
+          <e>solution</e>
+          <o><e>epss</e></o>
+          <o><e>preferences</e></o>
+        </g>
+      </o>
     </pattern>
     <ele>
       <name>name</name>
@@ -627,6 +632,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <name>category</name>
       <summary>Category of the vulnerability test</summary>
       <pattern><t>integer</t></pattern>
+      <description>
+        <p>0: init</p>
+        <p>1: scanner</p>
+        <p>2: settings</p>
+        <p>3: infos</p>
+        <p>4: attack</p>
+        <p>5: mixed</p>
+        <p>6: destructive attack</p>
+        <p>7: denial</p>
+        <p>8: kill host</p>
+        <p>9: flood</p>
+        <p>10: end</p>
+        <p>11: unknown</p>
+      </description>
     </ele>
     <ele>
       <name>family</name>
@@ -645,31 +664,74 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </ele>
     <ele>
       <name>qod</name>
-      <summary>Quality of Detection</summary>
+      <summary>The quality of detection (QoD) of the NVT</summary>
       <pattern>
         <e>value</e>
         <e>type</e>
       </pattern>
       <ele>
         <name>value</name>
-        <summary>The value of the QoD</summary>
+        <summary>The numeric QoD value</summary>
         <pattern><t>integer</t></pattern>
       </ele>
       <ele>
         <name>type</name>
-        <summary>The type of the QoD</summary>
-        <pattern><t>name</t></pattern>
+        <summary>The QoD type</summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
       <name>refs</name>
-      <summary>List of references of the vulnerability test</summary>
-      <pattern><any><e>ref</e></any></pattern>
+      <summary>List of references of various types for this vulnerability test</summary>
+      <pattern>
+        <any><e>ref</e></any>
+        <o><e>warning</e></o>
+      </pattern>
+      <ele>
+        <name>ref</name>
+        <summary>A reference</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the reference</summary>
+            <type>text</type>
+          </attrib>
+          <attrib>
+            <name>type</name>
+            <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"</summary>
+            <type>text</type>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>warning</name>
+        <summary>A warning message, e.g. when the CERT database is not available</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>tags</name>
       <summary>Additional information about vulnerability test in pipe-separated syntax</summary>
       <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>discovery</name>
+      <summary>Whether the NVT is marked as a discovery NVT</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>tech_info</name>
+      <summary>Technical information available via GET_INFO with details enabled</summary>
+      <pattern>
+        <e>description_md</e>
+      </pattern>
+      <ele>
+        <name>description_md</name>
+        <summary>A technical description in Markdown format</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>preference_count</name>
@@ -813,7 +875,73 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ele>
       <name>preferences</name>
       <summary>The list of preferences</summary>
-      <pattern><t>text</t></pattern>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>nvt</e>
+          <e>name</e>
+          <o><e>hr_name</e></o>
+          <e>id</e>
+          <e>type</e>
+          <e>value</e>
+          <o><e>default</e></o>
+          <any><e>alt</e></any>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <summary>NVT to which preference applies</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the NVT</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The compact name of the preference as used by the scanner</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>hr_name</name>
+          <summary>The human readable name of the preference</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>id</name>
+          <summary>The ID of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>The value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>default</name>
+          <summary>The default value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>alt</name>
+          <summary>An alternate value for the preference</summary>
+          <pattern>text</pattern>
+        </ele>
     </ele>
   </element>
   <element>
