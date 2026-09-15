@@ -115,12 +115,14 @@ parse_and_update_vt_tech_info_item (gvm_json_pull_parser_t *parser,
   if (oid == NULL)
     {
       g_warning ("%s: List item without 'oid' field", __func__);
+      cJSON_Delete (json);
       return -1;
     }
 
   if (description_md == NULL)
     {
       g_warning ("%s: Missing 'description_md' in item %s", __func__, oid);
+      cJSON_Delete (json);
       return -1;
     }
 
@@ -193,8 +195,6 @@ update_vt_tech_info_from_file (const char *full_path)
       return -1;
     }
 
-  sql ("TRUNCATE vts.vt_tech_info");
-
   db_copy_buffer_init (&copy_buffer,
                        1024 * 1024 * 20,
                        "COPY vts.vt_tech_info"
@@ -240,8 +240,8 @@ update_vt_tech_info_from_file (const char *full_path)
  * @return 0 success, -1 error.
  */
 int
-update_vt_tech_info_from_feed_files () {
-
+update_vt_tech_info_from_feed_files ()
+{
   GError *error = NULL;
   GDir *dir;
   const gchar *file_path;
@@ -257,15 +257,23 @@ update_vt_tech_info_from_feed_files () {
 
   g_info ("Updating VT Technical Information");
 
+  sql ("TRUNCATE vts.vt_tech_info");
+
   while ((file_path = g_dir_read_name (dir)))
     if (g_str_has_suffix (file_path, ".json.gz")
         || g_str_has_suffix (file_path, ".json"))
       {
         gchar *full_path = g_build_filename (GVM_VT_TECH_INFO_DIR,
                                              file_path, NULL);
-        update_vt_tech_info_from_file (full_path);
+        if (update_vt_tech_info_from_file (full_path))
+          {
+            g_free (full_path);
+            g_dir_close (dir);
+            return -1;
+          }
         g_free (full_path);
       }
+  g_dir_close (dir);
 
   return 0;
 }

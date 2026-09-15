@@ -6248,8 +6248,10 @@ manage_feed_timestamp (const gchar *name)
                      __func__,
                      name,
                      error->message);
+          g_error_free (error);
           return -1;
         }
+      g_error_free (error);
     }
   else
     {
@@ -6421,7 +6423,9 @@ update_cert_timestamp ()
                      __func__,
                      error->message);
           stamp = time(NULL);
+          g_error_free (error);
         }
+      g_error_free (error);
     }
   else
     {

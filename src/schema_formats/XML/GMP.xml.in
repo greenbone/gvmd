@@ -942,6 +942,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <summary>An alternate value for the preference</summary>
           <pattern>text</pattern>
         </ele>
+      </ele>
     </ele>
   </element>
   <element>
