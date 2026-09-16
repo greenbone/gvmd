@@ -11,6 +11,7 @@
 #include "manage_report_exports.h"
 
 #include "manage_audit_report_exports.h"
+#include "manage_delta_audit_report_exports.h"
 #include "manage_delta_scan_report_exports.h"
 #include "manage_report_configs.h"
 #include "manage_scan_report_exports.h"
@@ -674,15 +675,7 @@ process_report_export (report_export_t report_export)
       break;
 
     case REPORT_EXPORT_TYPE_DELTA_AUDIT:
-      g_warning ("%s: unsupported report export type %s",
-                 __func__,
-                 report_export_type_name (export_type));
-
-      manage_fail_report_export (
-        report_export,
-        "Unsupported report export type");
-
-      ret = -1;
+      ret = manage_process_delta_audit_report_export (report_export);
       break;
 
     default:
