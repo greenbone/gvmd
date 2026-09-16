@@ -149,7 +149,10 @@ create_override (const char* active, const char* nvt, const char* text,
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
       else
-        return -1;
+        {
+          g_free (quoted_severity);
+          return -1;
+        }
     }
   else
     {
