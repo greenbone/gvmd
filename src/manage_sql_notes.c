@@ -360,7 +360,13 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
               && severity_dbl != SEVERITY_LOG))
-        return 3;
+        {
+          g_free (quoted_text);
+          g_free (quoted_hosts);
+          g_free (quoted_port);
+          g_free (quoted_nvt);
+          return 3;
+        }
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
   else if (threat != NULL && strcmp (threat, ""))
