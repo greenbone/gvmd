@@ -97,6 +97,7 @@ command_t gmp_commands[]
     {"DOWNLOAD_REPORT_EXPORT", "Download an exported report file with report export id."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
     {"EXPORT_AUDIT_REPORT", "Create an asynchronous audit report export."},
+    {"EXPORT_DELTA_AUDIT_REPORT", "Create an asynchronous delta audit report export."},
     {"EXPORT_DELTA_SCAN_REPORT", "Create an asynchronous delta scan report export."},
     {"EXPORT_SCAN_REPORT", "Create an asynchronous scan report export."},
 #if ENABLE_AGENTS

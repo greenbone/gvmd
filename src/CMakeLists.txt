@@ -352,6 +352,7 @@ set(
   gmp_base.c
   gmp_configs.c
   gmp_delete.c
+  gmp_delta_audit_report_exports.c
   gmp_delta_scan_report_exports.c
   gmp_scan_report_exports.c
   gmp_get.c
