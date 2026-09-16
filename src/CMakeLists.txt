@@ -197,6 +197,7 @@ set(
   manage_audit_report_exports.c
   manage_audit_report_hosts.c
   manage_configs.c
+  manage_delta_audit_report_exports.c
   manage_delta_scan_report_exports.c
   manage_events.c
   manage_filter_utils.c
