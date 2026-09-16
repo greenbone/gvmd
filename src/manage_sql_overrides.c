@@ -620,6 +620,11 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
           while (*point && isdigit (*point)) point++;
           if (*point)
             {
+              g_free (quoted_text);
+              g_free (quoted_hosts);
+              g_free (quoted_port);
+              g_free (quoted_severity);
+              g_free (quoted_nvt);
               return 1;
             }
         }
