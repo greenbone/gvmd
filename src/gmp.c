@@ -27628,6 +27628,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_note"));
                 break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in active specification"));
+                log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
+                break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_note",
