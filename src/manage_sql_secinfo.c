@@ -6304,8 +6304,8 @@ secinfo_feed_version_status (const char *feed_type)
       is_vts_subtype = TRUE;
       if (gvm_file_exists (GVM_VT_TECH_INFO_DIR "/feed.xml") == FALSE)
         {
-          g_info ("vt-tech-info feed.xml not found in %s",
-                  GVM_VT_TECH_INFO_DIR);
+          g_debug ("vt-tech-info feed.xml not found in %s",
+                   GVM_VT_TECH_INFO_DIR);
           return 0;
         }
       if (manage_vt_tech_info_loaded () == 0)
