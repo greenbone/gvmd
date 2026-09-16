@@ -31,7 +31,9 @@ int
 init_sentry (void)
 {
   char *sentry_dsn_gvmd = NULL;
-  char version[96];
+  /* GVMD_VERSION embeds the git branch (see GetGit.cmake), which is
+   * unbounded, so keep this generously larger than any branch name. */
+  char version[1024];
 
   snprintf (version, sizeof (version), "gvmd@%s", GVMD_VERSION);
 
