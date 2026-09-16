@@ -67,6 +67,7 @@
 #include "manage_tags.h"
 #include "manage_web_application_targets.h"
 #include "manage_web_application_scanner.h"
+#include "manage_vt_tech_info.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -4028,6 +4029,19 @@ feed_sync_required ()
         }
     }
 
+  feed_status_ret = secinfo_feed_version_status ("vt_tech_info");
+  switch (feed_status_ret)
+    {
+    case 1:
+    case 2:
+    case 3:
+      g_debug ("%s: VT Technical Info need to be updated (status %d)",
+                __func__, feed_status_ret);
+      return TRUE;
+    default:
+      break;
+    }
+
   return FALSE;
 }
 
@@ -4128,6 +4142,8 @@ manage_sync (sigset_t *sigmask_current,
             }
 
           update_scap_extra ();
+          if (manage_vt_tech_info_loaded ())
+            update_vt_tech_info (FALSE);
 
           g_info ("SecInfo feed sync finished");
 
@@ -4896,13 +4912,15 @@ xsl_transform (gchar *stylesheet, gchar *xmlfile, gchar **param_names,
  * @param[in]  skip_cert_refs  Whether to exclude the CERT REFs.
  * @param[in]  skip_tags       Whether to exclude the tags.
  * @param[in]  lean            Whether to send fewer details.
+ * @param[in]  include_tech_info  Whether to include technical information.
  *
  * @return A dynamically allocated string containing the XML description.
  */
 gchar *
 get_nvt_xml (iterator_t *nvts, int details, int pref_count,
              int preferences, const char *timeout, config_t config,
-             int close_tag, int skip_cert_refs, int skip_tags, int lean)
+             int close_tag, int skip_cert_refs, int skip_tags, int lean,
+             int include_tech_info)
 {
   const char* oid = nvt_iterator_oid (nvts);
   const char* name = nvt_iterator_name (nvts);
@@ -5262,6 +5280,19 @@ get_nvt_xml (iterator_t *nvts, int details, int pref_count,
          "<discovery>%d</discovery>",
          nvt_iterator_discovery (nvts));
 
+      if (include_tech_info)
+        {
+          gchar *description_md
+            = vt_tech_info_description_md_by_vt_id (oid);
+
+          xml_string_append (buffer,
+                             "<tech_info>"
+                             "<description_md>%s</description_md>"
+                             "</tech_info>",
+                             description_md ? description_md : "");
+
+          g_free (description_md);
+        }
       xml_string_append (buffer, close_tag ? "</nvt>" : "");
       msg = g_string_free (buffer, FALSE);
     }
@@ -5400,7 +5431,8 @@ manage_read_info (gchar *type, gchar *uid, gchar *name, gchar **result)
                                    1,    /* Close tag. */
                                    0,    /* Skip CERT refs. */
                                    0,    /* Skip tags. */
-                                   0);   /* Lean. */
+                                   0,    /* Lean. */
+                                   0);   /* Include techncal information */
 
           cleanup_iterator (&nvts);
         }

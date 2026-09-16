@@ -1888,7 +1888,8 @@ void
 xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int, int, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int, int,
+             int, int);
 
 char*
 task_preference_value (task_t, const char *);
@@ -2755,6 +2756,12 @@ web_application_vt_ref_iterator_type (iterator_t *);
 
 const char *
 web_application_vt_ref_iterator_ref_id (iterator_t *);
+
+
+/* VT Technical Info */
+
+int
+manage_vt_tech_info_loaded ();
 
 
 /* All SecInfo Data */
