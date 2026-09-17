@@ -421,7 +421,14 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
         {
           while (*point && isdigit (*point)) point++;
           if (*point)
-            return 1;
+            {
+              g_free (quoted_text);
+              g_free (quoted_hosts);
+              g_free (quoted_port);
+              g_free (quoted_severity);
+              g_free (quoted_nvt);
+              return 1;
+            }
         }
       sql ("UPDATE notes SET"
            " end_time = %i,"
