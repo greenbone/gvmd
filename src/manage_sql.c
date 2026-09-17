@@ -1491,6 +1491,13 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                     first_group);
     }
 
+  for (col_index = 0; col_index < select_data_columns->len; col_index++)
+    g_free (g_array_index (select_data_columns, gchar*, col_index));
+  g_array_free (select_data_columns, TRUE);
+  for (col_index = 0; col_index < select_text_columns->len; col_index++)
+    g_free (g_array_index (select_text_columns, gchar*, col_index));
+  g_array_free (select_text_columns, TRUE);
+
   g_string_free (order_clause, TRUE);
   g_free (aggregate_group_by);
   g_string_free (aggregate_select, TRUE);
@@ -28136,6 +28143,9 @@ type_build_select (const char *type, const char *columns_str,
   g_free (extra_with);
   g_free (extra_where);
   g_free (pagination_clauses);
+  g_free (owner_filter);
+  array_free (permissions);
+  g_free (filter_order);
 
   return 0;
 }

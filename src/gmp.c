@@ -12038,7 +12038,6 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   GString *xml;
   gchar *sort_field, *filter;
   int first, sort_order;
-  GString *type_many;
 
   type = get_aggregates_data->type;
   if (type == NULL)
@@ -12188,8 +12187,18 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
+      for (index = 0; index < data_columns->len; index++)
+        g_free (g_array_index (data_columns, gchar*, index));
       g_array_free (data_columns, TRUE);
+      for (index = 0; index < data_column_types->len; index++)
+        g_free (g_array_index (data_column_types, gchar*, index));
       g_array_free (data_column_types, TRUE);
+      for (index = 0; index < text_columns->len; index++)
+        g_free (g_array_index (text_columns, gchar*, index));
+      g_array_free (text_columns, TRUE);
+      for (index = 0; index < text_column_types->len; index++)
+        g_free (g_array_index (text_column_types, gchar*, index));
+      g_array_free (text_column_types, TRUE);
       for (index = 0; index < sort_data->len; index++)
         sort_data_free (g_array_index (sort_data, sort_data_t*, index));
       g_array_free (sort_data, TRUE);
@@ -12235,6 +12244,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = NULL;
 
+  sort_field = NULL;
   manage_filter_controls (filter ? filter : get->filter,
                           &first, NULL, &sort_field, &sort_order);
 
@@ -12259,11 +12269,6 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = manage_clean_filter ("", get->ignore_max_rows_per_page);
 
-  type_many = g_string_new (type);
-
-  if (strcmp (type, "info") != 0)
-    g_string_append (type_many, "s");
-
   buffer_get_filter_xml (xml, type, get, filter, NULL);
 
   g_string_append (xml, "</get_aggregates_response>");
@@ -12274,10 +12279,18 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   for (index = 0; index < data_column_types->len; index++)
     g_free (g_array_index (data_column_types, gchar*, index));
   g_array_free (data_column_types, TRUE);
+  for (index = 0; index < text_columns->len; index++)
+    g_free (g_array_index (text_columns, gchar*, index));
+  g_array_free (text_columns, TRUE);
+  for (index = 0; index < text_column_types->len; index++)
+    g_free (g_array_index (text_column_types, gchar*, index));
+  g_array_free (text_column_types, TRUE);
   for (index = 0; index < sort_data->len; index++)
     sort_data_free (g_array_index (sort_data, sort_data_t*, index));
   g_array_free (sort_data, TRUE);
   g_array_free (c_sums, TRUE);
+  g_free (filter);
+  g_free (sort_field);
 
   SEND_TO_CLIENT_OR_FAIL (xml->str);
 
