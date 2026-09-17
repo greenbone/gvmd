@@ -53,6 +53,7 @@ validate_delta_audit_report_export (
   task_t task;
   task_t delta_task;
   gchar *usage_type;
+  gchar *delta_usage_type;
   gchar *format_report_type;
   int ret;
 
@@ -101,7 +102,7 @@ validate_delta_audit_report_export (
     return MANAGE_EXPORT_AUDIT_REPORT_INVALID_DELTA_REPORT;
 
   /*
-   * Both reports must belong to the same task.
+   * Resolve the tasks of both reports.
    */
   task = 0;
   delta_task = 0;
@@ -115,23 +116,38 @@ validate_delta_audit_report_export (
   if (task == 0 || delta_task == 0)
     return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
-  if (task != delta_task)
-    return MANAGE_EXPORT_AUDIT_REPORT_INVALID_DELTA_REPORT;
-
   /*
-   * Delta audit exports are only supported for audit reports.
+   * Both reports must have the same usage type and must be audit reports.
    */
   usage_type = NULL;
+  delta_usage_type = NULL;
 
   if (task_usage_type (task, &usage_type))
     return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
 
-  if (usage_type == NULL
-      || strcmp (usage_type, "audit") != 0)
+  if (task_usage_type (delta_task, &delta_usage_type))
     {
       g_free (usage_type);
+      return MANAGE_EXPORT_AUDIT_REPORT_ERROR;
+    }
+
+  if (usage_type == NULL
+      || delta_usage_type == NULL
+      || strcmp (usage_type, delta_usage_type) != 0)
+    {
+      g_free (usage_type);
+      g_free (delta_usage_type);
+      return MANAGE_EXPORT_AUDIT_REPORT_INVALID_DELTA_REPORT;
+    }
+
+  if (strcmp (usage_type, "audit") != 0)
+    {
+      g_free (usage_type);
+      g_free (delta_usage_type);
       return MANAGE_EXPORT_AUDIT_REPORT_UNSUPPORTED_TYPE;
     }
+
+  g_free (delta_usage_type);
 
   /*
    * Resolve and validate report format.
