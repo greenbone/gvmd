@@ -2498,6 +2498,16 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define REPORT_EXPORT_CLEANUP_PERIOD (60 * 60) /* every hour */
 
+/**
+ * Maximum time to wait for cooperative report export cancellation.
+ */
+#define REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS 10
+
+/**
+ * Interval for checking cancel-requested report exports.
+ */
+#define REPORT_EXPORT_CANCEL_PERIOD 10
+
 
 void
 manage_auth_allow_all (int);
