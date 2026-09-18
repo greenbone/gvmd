@@ -3866,6 +3866,57 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </response>
     </example>
   </command>
+  <command>
+    <name>cancel_report_export</name>
+    <summary>Cancel a report export</summary>
+    <description>
+      <p>
+        The client uses the cancel_report_export command to request
+        cancellation of a report export.
+      </p>
+      <p>
+        A pending report export is canceled immediately.
+        A running report export is moved to the cancel-requested state and
+        stops when the report export worker processes the cancellation.
+      </p>
+      <p>
+        Report exports that are already canceled are treated as successfully
+        canceled. Completed or failed report exports cannot be canceled.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_export_id</name>
+        <summary>ID of the report export to cancel</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Cancel a report export</summary>
+      <request>
+        <cancel_report_export
+          report_export_id="b553afd9-df88-4428-8623-587d839332d2"/>
+      </request>
+      <response>
+        <cancel_report_export_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
   @IF_ENABLE_AGENTS@
   <command>
     <name>create_agent_group</name>
