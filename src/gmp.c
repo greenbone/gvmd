@@ -4647,6 +4647,7 @@ typedef enum
   CLIENT_DELETE_WEB_APPLICATION_TARGET,
 #endif
   CLIENT_DESCRIBE_AUTH,
+  CLIENT_CANCEL_REPORT_EXPORT,
   CLIENT_DOWNLOAD_REPORT_EXPORT,
   CLIENT_EMPTY_TRASHCAN,
   CLIENT_EXPORT_AUDIT_REPORT,
@@ -5542,6 +5543,12 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
           set_client_state (CLIENT_DESCRIBE_AUTH);
+        else if (strcasecmp ("CANCEL_REPORT_EXPORT", element_name) == 0)
+          {
+            cancel_report_export_start (attribute_names,
+                                        attribute_values);
+            set_client_state (CLIENT_CANCEL_REPORT_EXPORT);
+          }
         else if (strcasecmp ("DOWNLOAD_REPORT_EXPORT", element_name) == 0)
           {
             download_report_export_start (attribute_names,
@@ -22612,6 +22619,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           set_client_state (CLIENT_AUTHENTIC);
           break;
         }
+
+    case CLIENT_CANCEL_REPORT_EXPORT:
+      cancel_report_export_element_end (gmp_parser, error, element_name);
+      break;
 
     case CLIENT_DOWNLOAD_REPORT_EXPORT:
       download_report_export_element_end (gmp_parser, error, element_name);

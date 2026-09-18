@@ -488,4 +488,7 @@ store_report_export_file (const report_export_data_t,
 int
 check_report_export_cancel (report_export_t);
 
+void
+manage_process_cancel_requested_report_exports (time_t);
+
 #endif /* _GVMD_MANAGE_REPORT_EXPORTS_H */

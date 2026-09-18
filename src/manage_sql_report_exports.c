@@ -899,6 +899,44 @@ init_report_export_iterator_stale (iterator_t *iterator,
 }
 
 /**
+ * @brief Initialize an iterator over cancel-requested report exports.
+ *
+ * Only exports whose cancellation request is older than the given threshold
+ * are included.
+ *
+ * @param[out] iterator   Iterator to initialize.
+ * @param[in]  get        GET parameters.
+ * @param[in]  threshold  Modification-time threshold.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+init_report_export_iterator_cancel_requested (iterator_t *iterator,
+                                              get_data_t *get,
+                                              time_t threshold)
+{
+  gchar *where_clause;
+  int ret;
+
+  g_return_val_if_fail (iterator, -1);
+  g_return_val_if_fail (get, -1);
+
+  where_clause = g_strdup_printf (
+    " AND report_exports.status = %d"
+    " AND report_exports.modification_time < %lld",
+    REPORT_EXPORT_STATUS_CANCEL_REQUESTED,
+    (long long) threshold);
+
+  ret = init_report_export_iterator_with_where (iterator,
+                                                get,
+                                                where_clause);
+
+  g_free (where_clause);
+
+  return ret;
+}
+
+/**
  * @brief Load report export data.
  *
  * @param[in]  report_export  Report export to load.

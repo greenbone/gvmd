@@ -2107,6 +2107,101 @@ fork_cleanup_old_report_exports ()
     }
 }
 
+
+/**
+ * @brief Forks a process to handle cancel-requested report exports.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_process_cancel_requested_report_exports ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean in_progress = FALSE;
+
+  if (in_progress)
+    {
+      g_debug (
+        "%s: Processing cancel-requested report exports skipped"
+        " because one is already in progress",
+        __func__);
+      return 1;
+    }
+
+  in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+    case 0:
+      /* Child */
+      init_sentry ();
+      setproctitle ("Processing cancel-requested report exports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+    /*
+     * Processing cancel-requested report exports regarding
+     * REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS
+     */
+      manage_process_cancel_requested_report_exports (
+        REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS);
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return -1;
+
+    default:
+      g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return 0;
+    }
+}
+
 /**
  * @brief Periodic timestamps for background jobs in the main loop.
  */
@@ -2122,6 +2217,9 @@ typedef struct
   time_t last_report_export; ///< Last time the report export was executed.
   time_t last_cleanup_old_report_export; ///< Last time old report exports
                                          ///  cleanup was executed.
+  time_t last_process_cancel_requested_report_export; ///< Last time cancel
+                                                      /// requested report
+                                                      /// exports was executed.
 } periodic_times_t;
 
 /**
@@ -2348,6 +2446,27 @@ run_cleanup_old_report_exports (periodic_times_t *t)
 }
 
 /**
+ * @brief Run to process cancel-requested report exports.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_ on run.
+ */
+static void
+run_process_cancel_requested_report_exports (periodic_times_t *t)
+{
+  int ret;
+  time_t now = time (NULL);
+
+  if (!time_to_run (t->last_process_cancel_requested_report_export,
+                    REPORT_EXPORT_CANCEL_PERIOD, now))
+    return;
+
+  ret = fork_process_cancel_requested_report_exports ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_process_cancel_requested_report_export, time (NULL));
+}
+
+/**
  * @brief Execute all periodic jobs in order.
  *
  * @param[in,out] t   Periodic timestamps for all jobs; updated for jobs that run.
@@ -2362,6 +2481,7 @@ run_periodic_block (periodic_times_t *t)
   run_asset_snapshot_delete_stale (t);
   run_report_exports (t);
   run_cleanup_old_report_exports (t);
+  run_process_cancel_requested_report_exports (t);
 }
 
 /**
