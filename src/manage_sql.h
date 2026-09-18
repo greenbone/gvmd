@@ -385,7 +385,7 @@ init_get_iterator2_with (iterator_t *, const char *, const get_data_t *,
                          column_t *, column_t *, column_t *, column_t *,
                          const char **, int, const char *, const char *,
                          const char *, int, int, const char *, const char *,
-                         int, int);
+                         int, int, const sql_param_t *);
 
 int
 openvasd_get_details_from_iterator (iterator_t *, char **, GSList **);
