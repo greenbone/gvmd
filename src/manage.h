@@ -2508,7 +2508,6 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define REPORT_EXPORT_CANCEL_PERIOD 10
 
-
 void
 manage_auth_allow_all (int);
 
