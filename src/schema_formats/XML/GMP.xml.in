@@ -5059,7 +5059,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </create_note>
       </request>
       <response>
-        <create_note_response status="202"
+        <create_note_response status="201"
                               status_text="OK, resource created"
                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_note_response>
