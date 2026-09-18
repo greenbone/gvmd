@@ -598,3 +598,159 @@ download_report_export_element_end (gmp_parser_t *gmp_parser,
 
   return 0;
 }
+
+// CANCEL_REPORT_EXPORT
+
+/**
+ * @brief Command data for the cancel_report_export command.
+ */
+typedef struct
+{
+  gchar *report_export_id;
+} cancel_report_export_data_t;
+
+/**
+ * @brief Parser callback data for cancel_report_export.
+ */
+static cancel_report_export_data_t cancel_report_export_data;
+
+/**
+ * @brief Reset the internal state of the <cancel_report_export> command.
+ */
+static void
+cancel_report_export_reset ()
+{
+  g_free (cancel_report_export_data.report_export_id);
+
+  memset (&cancel_report_export_data,
+          0,
+          sizeof (cancel_report_export_data));
+}
+
+/**
+ * @brief Initialize the <cancel_report_export> GMP command.
+ *
+ * @param[in] attribute_names   Null-terminated array of attribute names.
+ * @param[in] attribute_values  Null-terminated array of attribute values.
+ */
+void
+cancel_report_export_start (const gchar **attribute_names,
+                            const gchar **attribute_values)
+{
+  int index;
+
+  memset (&cancel_report_export_data,
+          0,
+          sizeof (cancel_report_export_data));
+
+  for (index = 0; attribute_names[index]; index++)
+    {
+      if (strcmp (attribute_names[index], "report_export_id") == 0)
+        cancel_report_export_data.report_export_id =
+          g_strdup (attribute_values[index]);
+    }
+}
+
+/**
+ * @brief Execute the <cancel_report_export> GMP command.
+ *
+ * @param[in] gmp_parser GMP parser handling the current session.
+ * @param[in] error      Location to store error information.
+ */
+void
+cancel_report_export_run (gmp_parser_t *gmp_parser, GError **error)
+{
+  report_export_t report_export;
+  const gchar *report_export_id;
+  int ret;
+
+  report_export_id = cancel_report_export_data.report_export_id;
+
+  if (report_export_id == NULL || is_uuid (report_export_id) == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX (
+          "cancel_report_export",
+          "Missing or invalid report_export_id"));
+
+      cancel_report_export_reset ();
+      return;
+    }
+
+  report_export = 0;
+
+  ret = find_report_export_with_permission (
+    report_export_id,
+    &report_export,
+    "get_report_exports");
+
+  if (ret || report_export == 0)
+    {
+      if (send_find_error_to_client ("cancel_report_export",
+                                     "report_export",
+                                     report_export_id,
+                                     gmp_parser))
+        error_send_to_client (error);
+
+      cancel_report_export_reset ();
+      return;
+    }
+
+  ret = manage_request_report_export_cancel (report_export);
+
+  switch (ret)
+    {
+    case 0:
+      SENDF_TO_CLIENT_OR_FAIL (XML_OK ("cancel_report_export"));
+      log_event ("cancel_report_export",
+                 "Report Export",
+                 report_export_id,
+                 "cancellation requested");
+      cancel_report_export_reset ();
+      return;
+
+    case 1:
+      SEND_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX (
+          "cancel_report_export",
+          "Report export cannot be canceled"));
+      log_event_fail ("cancel_report_export",
+                      "Report Export",
+                      report_export_id,
+                      "cancellation requested");
+      cancel_report_export_reset ();
+      return;
+
+    default:
+      internal_error_send_to_client (error);
+      log_event_fail ("cancel_report_export",
+                      "Report Export",
+                      report_export_id,
+                      "cancellation requested");
+      cancel_report_export_reset ();
+      return;
+    }
+}
+
+/**
+ * @brief Handle the end of the cancel_report_export command.
+ *
+ * @param[in] gmp_parser  Active GMP parser.
+ * @param[in] error       Error location.
+ * @param[in] name        Name of the ending XML element.
+ *
+ * @return 1 when the command has completed, otherwise 0.
+ */
+int
+cancel_report_export_element_end (gmp_parser_t *gmp_parser,
+                                  GError **error,
+                                  const gchar *name)
+{
+  if (strcasecmp (name, "cancel_report_export") == 0)
+    {
+      cancel_report_export_run (gmp_parser, error);
+      return 1;
+    }
+
+  return 0;
+}
