@@ -72,6 +72,30 @@ result_buffer_free (result_buffer_t *result_buffer)
 }
 
 /**
+ * @brief Free an array of port result buffers and its contents.
+ *
+ * @param[in]  ports  Port result buffers.
+ */
+void
+print_report_ports_free (GArray *ports)
+{
+  result_buffer_t *item;
+  int index;
+
+  if (ports == NULL)
+    return;
+
+  for (index = 0; index < ports->len; index++)
+    {
+      item = g_array_index (ports, result_buffer_t*, index);
+      if (item)
+        result_buffer_free (item);
+    }
+
+  g_array_free (ports, TRUE);
+}
+
+/**
  * @brief Compares two textual port representations, sorting descending
  * @brief by severity
  *
@@ -240,7 +264,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                        const gchar *host_filter)
 {
   result_buffer_t *last_item;
-  GArray *ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
+  ctx->ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
 
   init_result_get_iterator (results, get, report, host_filter, NULL);
 
@@ -279,7 +303,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
               cvss = "0.0";
             }
           item = result_buffer_new (host, port, cvss, cvss_double);
-          g_array_append_val (ports, item);
+          g_array_append_val (ctx->ports, item);
           last_item = item;
         }
     }
@@ -294,16 +318,16 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
 
       /* Sort by port then severity. */
 
-      g_array_sort (ports, compare_port_severity);
+      g_array_sort (ctx->ports, compare_port_severity);
 
       /* Remove duplicates. */
 
       last_item = NULL;
-      for (index = 0, length = ports->len; index < length; index++)
+      for (index = 0, length = ctx->ports->len; index < length; index++)
         {
           result_buffer_t *item;
 
-          item = g_array_index (ports, result_buffer_t*, index);
+          item = g_array_index (ctx->ports, result_buffer_t*, index);
           if (last_item
               && (strcmp (item->port, last_item->port) == 0)
               && (strcmp (item->host, last_item->host) == 0))
@@ -316,9 +340,9 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                   item->severity = severity;
                   last_item->severity_double = item->severity_double;
                 }
-              g_array_remove_index (ports, index);
+              g_array_remove_index (ctx->ports, index);
               result_buffer_free (item);
-              length = ports->len;
+              length = ctx->ports->len;
               index--;
             }
           else
@@ -328,9 +352,9 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
       /* Sort by severity. */
 
       if (sort_order)
-        g_array_sort (ports, compare_severity_asc);
+        g_array_sort (ctx->ports, compare_severity_asc);
       else
-        g_array_sort (ports, compare_severity_desc);
+        g_array_sort (ctx->ports, compare_severity_desc);
     }
 
   /* Write to file from the buffer. */
@@ -348,11 +372,11 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
     result_buffer_t *item;
     int index;
 
-    for (index = 0; index < ports->len; index++)
+    for (index = 0; index < ctx->ports->len; index++)
       {
         int port_count;
 
-        item = g_array_index (ports, result_buffer_t*, index);
+        item = g_array_index (ctx->ports, result_buffer_t*, index);
         port_count = GPOINTER_TO_INT (g_hash_table_lookup (ctx->f_host_ports,
           item->host));
 
@@ -374,14 +398,11 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                                   g_strdup (item->host),
                                   GINT_TO_POINTER (port_count + 1));
           }
-        result_buffer_free (item);
       }
 
     /* Set filtered count of the ports if exists */
     if (filtered_count)
-      *filtered_count = ports->len;
-
-    g_array_free (ports, TRUE);
+      *filtered_count = ctx->ports->len;
   }
   PRINT (out, "</ports>");
 

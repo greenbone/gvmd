@@ -15258,6 +15258,7 @@ print_report_context_cleanup (print_report_context_t *ctx)
   g_free (ctx->tz);
   g_free (ctx->zone);
   free (ctx->old_tz_override);
+  print_report_ports_free (ctx->ports);
   // Filtered counts.
   free_f_host (ctx->f_host_false_positives);
   free_f_host (ctx->f_host_holes);
