@@ -19,7 +19,7 @@
  * @brief Filter columns for NVT info iterator.
  */
 #define NVT_INFO_ITERATOR_FILTER_COLUMNS                                    \
- { GET_ITERATOR_FILTER_COLUMNS, "version", "cve",                           \
+ { GET_ITERATOR_FILTER_COLUMNS, "oid", "version", "cve",                    \
    "family", "cvss_base", "severity", "cvss", "script_tags", "qod",         \
    "qod_type", "solution_type", "solution", "summary", "insight",           \
    "affected", "impact", "detection", "solution_method", "epss_score",      \
@@ -68,6 +68,8 @@
    { "max_epss_cve", NULL, KEYWORD_TYPE_STRING },                           \
    { "max_epss_severity", NULL, KEYWORD_TYPE_DOUBLE },                      \
    { "discovery", NULL, KEYWORD_TYPE_INTEGER },                             \
+   /* Column for filters */                                                 \
+   { "uuid", NULL, KEYWORD_TYPE_STRING },                                   \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                     \
  }
 
