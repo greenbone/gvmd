@@ -20,6 +20,9 @@ print_report_port_xml (print_report_context_t *, report_t, FILE *,
                        const get_data_t *, int, int, int, const char *,
                        iterator_t *, int *, const gchar *);
 
+void
+print_report_ports_free (GArray *);
+
 int
 print_report_port_xml_summary_or_details (print_report_context_t *, report_t,
                                           FILE *, const get_data_t *, int, int,

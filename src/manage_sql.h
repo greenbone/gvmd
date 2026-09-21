@@ -205,6 +205,7 @@ struct print_report_context
  char *old_tz_override;      ///< Old TZ.
  report_t report;            ///< Report.
  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+ GArray *ports;              ///< Report port result buffers.
  // Counts.
  int criticals;              ///< Number of criticals.
  int holes;                  ///< Number of holes.
