@@ -16594,6 +16594,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  NULL, NULL))
         {
           g_free (term);
+          g_free (sort_field);
+          g_free (levels);
+          g_free (search_phrase);
+          g_free (min_qod);
+          g_free (delta_states);
+          cleanup_iterator (&results);
+          out = NULL;
           goto fail;
         }
     }
@@ -17120,7 +17127,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
-    fclose (out);
+    if (out)
+      fclose (out);
     return -1;
 }
 
