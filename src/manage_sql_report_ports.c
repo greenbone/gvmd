@@ -254,7 +254,7 @@ report_port_count (report_t report)
  * @param[in] host_filter         Exact host filter to apply to the results,
  *                                or NULL for no filter.
  *
- * @return 0 on success, -1 error.
+ * @return 0 on success, 2 if the filter was not found, -1 error.
  */
 int
 print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
@@ -264,9 +264,17 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
                        const gchar *host_filter)
 {
   result_buffer_t *last_item;
+  int init_ret;
   ctx->ports = g_array_new (TRUE, FALSE, sizeof (gchar *));
 
-  init_result_get_iterator (results, get, report, host_filter, NULL);
+  init_ret = init_result_get_iterator (results, get, report, host_filter, NULL);
+  if (init_ret)
+    {
+      /* Leave the iterator valid and empty, so that the callers can clean
+       * it up even though the init failed before touching it. */
+      init_iterator (results, "SELECT NULL WHERE false;");
+      return init_ret == 2 ? 2 : -1;
+    }
 
   /* Buffer the results, removing duplicates. */
 
@@ -426,7 +434,7 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
  * @param[in] host_filter         Exact host filter to apply to the results,
  *                                or NULL for no filter.
  *
- * @return 0 on success, -1 error.
+ * @return 0 on success, 2 if the filter was not found, -1 error.
  */
 int
 print_report_port_xml_summary_or_details (print_report_context_t *ctx,
