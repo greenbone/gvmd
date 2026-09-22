@@ -422,7 +422,6 @@ print_report_port_xml (print_report_context_t *ctx, report_t report, FILE *out,
  * @param[in]  max_results        The maximum number of results returned.
  * @param[in]  sort_order         Whether to sort ascending or descending.
  * @param[in]  sort_field         Field to sort on.
- * @param[in,out] results         Result iterator.  For caller to reuse.
  * @param[in,out] filtered_count  Filtered port count.
  * @param[in] host_filter         Exact host filter to apply to the results,
  *                                or NULL for no filter.
@@ -436,10 +435,13 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
                                           int first_result, int max_results,
                                           int sort_order,
                                           const char *sort_field,
-                                          iterator_t *results,
                                           int *filtered_count,
                                           const gchar *host_filter)
 {
+  get_data_t get_ignore_pagination;
+  iterator_t results;
+  int ret;
+
   if (details == 0)
     {
       PRINT (out,
@@ -456,14 +458,16 @@ print_report_port_xml_summary_or_details (print_report_context_t *ctx,
       return 0;
     }
   /* Copy the get with ignored pagination for result iterator*/
-  get_data_t get_ignore_pagination;
-
   memcpy (&get_ignore_pagination, get, sizeof (get_ignore_pagination));
   get_ignore_pagination.ignore_pagination = 1;
   get_ignore_pagination.ignore_max_rows_per_page = 1;
 
-  return print_report_port_xml (ctx, report, out, &get_ignore_pagination,
-                                first_result,
-                                max_results, sort_order, sort_field, results,
-                                filtered_count, host_filter);
+  ret = print_report_port_xml (ctx, report, out, &get_ignore_pagination,
+                               first_result, max_results, sort_order,
+                               sort_field, &results, filtered_count,
+                               host_filter);
+
+  cleanup_iterator (&results);
+
+  return ret;
 }

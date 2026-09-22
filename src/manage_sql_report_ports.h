@@ -26,7 +26,7 @@ print_report_ports_free (GArray *);
 int
 print_report_port_xml_summary_or_details (print_report_context_t *, report_t,
                                           FILE *, const get_data_t *, int, int,
-                                          int, int, const char *, iterator_t *,
-                                          int *, const gchar *);
+                                          int, int, const char *, int *,
+                                          const gchar *);
 
 #endif //_GVM_MANAGE_SQL_REPORT_PORTS_H
