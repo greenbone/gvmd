@@ -28145,6 +28145,7 @@ type_build_select (const char *type, const char *columns_str,
               (ordered && filter_order) ? filter_order : "",
               pagination_clauses ? pagination_clauses : "");
 
+  g_free (filter);
   g_free (with);
   g_free (from_table);
   g_free (opts_table);
