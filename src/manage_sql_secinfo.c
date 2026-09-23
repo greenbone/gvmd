@@ -7522,6 +7522,14 @@ update_web_application_vts (gboolean reset_db)
 
   /* Update into the new schema. */
 
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING) == FALSE)
+    {
+      g_debug ("%s: web application scanning disabled,"
+               " skipping metadata sync", __func__);
+      update_web_application_vts_end ();
+      return 0;
+    }
+
   g_debug ("%s: sync", __func__);
 
   g_info ("%s: Updating data from feed", __func__);
