@@ -273,11 +273,11 @@ update_zap_vts_from_feed ()
 
   if (g_stat (full_path, &state))
     {
-      g_warning ("%s: No ZAP VT metadata file found at %s",
+      g_debug ("%s: No ZAP VT metadata file found at %s",
                  __func__,
                  full_path);
       g_free (full_path);
-      return -1;
+      return 0;
     }
 
   if (update_zap_vts_from_json_file (full_path))
