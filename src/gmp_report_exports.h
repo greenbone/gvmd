@@ -34,4 +34,17 @@ download_report_export_run (gmp_parser_t *, GError **);
 int
 download_report_export_element_end (gmp_parser_t *,GError **, const gchar *);
 
+/* CANCEL_REPORT_EXPORT. */
+
+void
+cancel_report_export_start (const gchar **, const gchar **);
+
+void
+cancel_report_export_run (gmp_parser_t *, GError **);
+
+int
+cancel_report_export_element_end (gmp_parser_t *,
+                                  GError **,
+                                  const gchar *);
+
 #endif /* _GVM_GMP_REPORT_EXPORTS_H */

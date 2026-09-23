@@ -31,6 +31,7 @@
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
+    {"CANCEL_REPORT_EXPORT", "Request cancellation of a report export and update its status." },
 #if ENABLE_AGENTS
     {"CREATE_AGENT_GROUP", "Create an agent group."},
 #endif

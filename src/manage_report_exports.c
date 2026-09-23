@@ -1281,3 +1281,87 @@ check_report_export_cancel (report_export_t report_export)
 
   return 1;
 }
+
+/**
+ * @brief Process report exports with a pending cancellation request.
+ *
+ * @param[in] cancel_timeout  Maximum time to wait for cooperative
+ *                            cancellation, in seconds.
+ */
+void
+manage_process_cancel_requested_report_exports (time_t cancel_timeout)
+{
+  iterator_t iterator;
+  get_data_t get = {0};
+  time_t threshold;
+
+  threshold = time (NULL) - cancel_timeout;
+
+  if (init_report_export_iterator_cancel_requested (&iterator,
+                                                    &get,
+                                                    threshold))
+    {
+      g_warning (
+        "%s: failed to initialize cancel-requested report export iterator",
+        __func__);
+      return;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      int worker_pid;
+
+      report_export = get_iterator_resource (&iterator);
+      worker_pid = report_export_iterator_worker_pid (&iterator);
+
+      /*
+       * No worker is associated with the export anymore.
+       */
+      if (worker_pid <= 0)
+        {
+          cancel_report_export (report_export);
+          continue;
+        }
+
+      /*
+       * The worker has already stopped, so cancellation can be finalized.
+       */
+      if (report_export_worker_running (worker_pid) == FALSE)
+        {
+          g_debug ("%s: finalizing cancellation of report export %lld",
+                   __func__,
+                   report_export);
+
+          cancel_report_export (report_export);
+          continue;
+        }
+
+      /*
+       * Cancellation has taken too long. Stop the worker.
+       */
+      if (kill (worker_pid, SIGTERM))
+        {
+          if (errno == ESRCH)
+            {
+              cancel_report_export (report_export);
+              continue;
+            }
+
+          g_warning (
+            "%s: failed to terminate report export worker %d: %s",
+            __func__,
+            worker_pid,
+            strerror (errno));
+
+          continue;
+        }
+
+      g_warning ("%s: terminated worker %d for report export %lld",
+                 __func__,
+                 worker_pid,
+                 report_export);
+    }
+
+  cleanup_iterator (&iterator);
+}
