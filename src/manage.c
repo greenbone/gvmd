@@ -2296,7 +2296,7 @@ start_task (const char *task_id, char **report_id)
  *
  * @param[in]   task  The task.
  *
- * @return 0 on success, else -1.
+ * @return 0 on success, else an other error code.
  */
 static int
 stop_osp_task (task_t task)
@@ -2350,6 +2350,29 @@ end_stop_osp:
   current_scanner_task = previous_task;
   global_current_report = previous_report;
   return ret;
+}
+
+/**
+ * @brief Map the return code of stop_osp_task to an modify
+ * task return code.
+ *
+ * @param[in]   rc  The stop_osp_task (..) return code.
+ *
+ * @return The corresponding modify task return code.
+ */
+static stop_task_return_t
+map_stop_osp_task_rc_to_modify_task_rc (int rc)
+{
+  switch (rc)
+    {
+      case -1: return STOP_TASK_INTERNAL_ERROR;
+      case  0: return STOP_TASK_OK_STOPPED;
+      case  1: return STOP_TASK_SEND_INTERNAL_ERROR;
+      case  2: return STOP_TASK_SEND_TIMEOUT;
+      case  3: return STOP_TASK_RECEIVE_TIMEOUT;
+      case  4: return STOP_TASK_DELETE_FAILED;
+      default: return STOP_TASK_INTERNAL_ERROR;
+    }
 }
 
 /**
@@ -2414,7 +2437,7 @@ stop_task (const char *task_id)
 
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
-    return stop_osp_task (task) * 10;
+    return map_stop_osp_task_rc_to_modify_task_rc (stop_osp_task (task));
 
 #if ENABLE_OPENVASD
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVASD
