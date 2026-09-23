@@ -354,7 +354,7 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
       || (acl_user_has_super (current_credentials.uuid,
                               get_iterator_owner (iterator))
           && (strcmp (type, "user")
-              || strcmp (get_iterator_name (iterator), current_credentials.username)
+              || strcmp (get_iterator_uuid (iterator), current_credentials.uuid)
               || acl_user_is_super_admin (current_credentials.uuid)))
       /* Or the user has Admin rights and the resource is a permission or a
        * report format... */
