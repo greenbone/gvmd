@@ -568,6 +568,9 @@ modify_web_application_target_run (gmp_parser_t *gmp_parser, GError **error)
                                        web_application_target_id,
                                        gmp_parser))
           {
+            web_application_target_data_free (target_data);
+            g_free (error_message);
+            modify_web_application_target_reset ();
             error_send_to_client (error);
             return;
           }
