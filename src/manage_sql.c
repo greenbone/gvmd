@@ -23598,27 +23598,41 @@ scanner_is_agent_controller_or_sensor (const char *scanner_uuid)
 }
 
 /**
- * @brief Validate a scanner port.
+ * @brief Check whether a scanner port is invalid.
  *
- * @param[in,out]  port  Pointer to the port to validate.  If the scanner type
- *                       is SCANNER_TYPE_OPENVASD_SENSOR or
- *                       SCANNER_TYPE_AGENT_CONTROLLER_SENSOR, this will be set
- *                       to 0.
- * @param[in]      type  Type of scanner.
+ * @param[in]  port  Port to validate.
+ * @param[in]  type  Type of scanner.
  *
  * @return TRUE if the port is invalid, FALSE otherwise.
  */
 static gboolean
-scanner_port_is_invalid (int *port, scanner_type_t type)
+scanner_port_is_invalid (int port, scanner_type_t type)
 {
   if (type == SCANNER_TYPE_OPENVASD_SENSOR
       || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
-    {
-      *port = 0;
-      return FALSE;
-    }
+    return port != 0;
 
-  return *port <= 0 || *port > 65535;
+  return port <= 0 || port > 65535;
+}
+
+/**
+ * @brief Set the scanner port value.
+ *
+ * Sensor scanner ports are always set to 0.
+ *
+ * @param[in]   port_value  Port value.
+ * @param[out]  port        Parsed port.
+ * @param[in]   type        Type of scanner.
+ */
+static void
+set_scanner_port_value (const gchar *port_value, int *port,
+                        scanner_type_t type)
+{
+  *port = atoi (port_value ?: "0");
+
+  if (type == SCANNER_TYPE_OPENVASD_SENSOR
+      || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    *port = 0;
 }
 
 /**
@@ -23727,8 +23741,8 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
   else
     {
-      iport = atoi (port ?: "0");
-      if (scanner_port_is_invalid (&iport, (scanner_type_t)itype))
+      set_scanner_port_value (port, &iport, (scanner_type_t) itype);
+      if (scanner_port_is_invalid (iport, (scanner_type_t)itype))
         {
           sql_rollback ();
           return CREATE_SCANNER_INVALID_PORT;
@@ -23977,7 +23991,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
 
   if (port)
-    iport = atoi (port);
+    set_scanner_port_value (port, &iport, (scanner_type_t) itype);
   else
     iport = sql_int ("SELECT port FROM scanners WHERE id = %llu;",
                      scanner);
@@ -24002,7 +24016,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
           return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
         }
     }
-  else if (scanner_port_is_invalid (&iport, (scanner_type_t) itype))
+  else if (scanner_port_is_invalid (iport, (scanner_type_t) itype))
     {
       sql_rollback ();
       g_free (used_host);
