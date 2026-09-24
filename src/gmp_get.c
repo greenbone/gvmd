@@ -349,9 +349,13 @@ send_get_common (const char *type, get_data_t *get, iterator_t *iterator,
        && (strcmp (get_iterator_owner_name (iterator),
                    current_credentials.username)
            == 0))
-      /* Or the user is effectively the owner. */
-      || acl_user_has_super (current_credentials.uuid,
-                             get_iterator_owner (iterator))
+      /* Or the user is effectively the owner and the user is not the user
+       * of the resource if the resource is of type user. */
+      || (acl_user_has_super (current_credentials.uuid,
+                              get_iterator_owner (iterator))
+          && (strcmp (type, "user")
+              || strcmp (get_iterator_uuid (iterator), current_credentials.uuid)
+              || acl_user_is_super_admin (current_credentials.uuid)))
       /* Or the user has Admin rights and the resource is a permission or a
        * report format... */
       || (current_credentials.uuid
