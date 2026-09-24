@@ -172,6 +172,7 @@ create_web_application_target_run (gmp_parser_t *gmp_parser, GError **error)
                                            entity_text (copy),
                                            gmp_parser))
               {
+                create_web_application_target_reset ();
                 error_send_to_client (error);
                 return;
               }
