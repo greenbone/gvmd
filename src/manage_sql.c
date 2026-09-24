@@ -23598,6 +23598,30 @@ scanner_is_agent_controller_or_sensor (const char *scanner_uuid)
 }
 
 /**
+ * @brief Validate a scanner port.
+ *
+ * @param[in,out]  port  Pointer to the port to validate.  If the scanner type
+ *                       is SCANNER_TYPE_OPENVASD_SENSOR or
+ *                       SCANNER_TYPE_AGENT_CONTROLLER_SENSOR, this will be set
+ *                       to 0.
+ * @param[in]      type  Type of scanner.
+ *
+ * @return TRUE if the port is invalid, FALSE otherwise.
+ */
+static gboolean
+scanner_port_is_invalid (int *port, scanner_type_t type)
+{
+  if (type == SCANNER_TYPE_OPENVASD_SENSOR
+      || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    {
+      *port = 0;
+      return FALSE;
+    }
+
+  return *port <= 0 || *port > 65535;
+}
+
+/**
  * @brief Create a scanner.
  *
  * @param[in]   name        Name of scanner.
@@ -23704,7 +23728,7 @@ create_scanner (const char* name, const char *comment, const char *host,
   else
     {
       iport = atoi (port ?: "0");
-      if (iport <= 0 || iport > 65535)
+      if (scanner_port_is_invalid (&iport, (scanner_type_t)itype))
         {
           sql_rollback ();
           return CREATE_SCANNER_INVALID_PORT;
@@ -23965,6 +23989,26 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                             " WHERE id = %llu;",
                             scanner);
 
+  unix_socket = used_host && (*used_host == '/');
+
+  if (unix_socket)
+    {
+      iport = 0;
+
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+    }
+  else if (scanner_port_is_invalid (&iport, (scanner_type_t) itype))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      return MODIFY_SCANNER_INVALID_PORT;
+    }
+
   if (relays_managed_externally ())
     {
       int ret = get_single_relay_from_file (itype,
@@ -23986,7 +24030,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         irelay_port = atoi (relay_port);
       else
         irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
-                              scanner);
+                               scanner);
 
       if (relay_host)
         used_relay_host = g_strdup (relay_host);
@@ -23996,37 +24040,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                                       scanner);
     }
 
-  unix_socket = used_host && (*used_host == '/');
   relay_unix_socket = used_relay_host && (*used_relay_host == '/');
-
-  if (unix_socket)
-    {
-      iport = 0;
-      if (! scanner_type_supports_unix_sockets (itype))
-        {
-          sql_rollback ();
-          g_free (used_host);
-          g_free (used_relay_host);
-          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
-        }
-    }
-  else
-    {
-      if (port)
-        iport = atoi (port);
-      else
-        iport = sql_int ("SELECT port FROM scanners"
-                         " WHERE id = %llu;",
-                         scanner);
-
-      if (iport <= 0 || iport > 65535)
-        {
-          sql_rollback ();
-          g_free (used_host);
-          g_free (used_relay_host);
-          return MODIFY_SCANNER_INVALID_PORT;
-        }
-    }
 
   if (unix_socket == 0
       && (gvm_get_host_type (used_host) == -1))

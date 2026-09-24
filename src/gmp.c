@@ -21596,7 +21596,7 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
       && *modify_scanner_data->host == '/')
     {
       SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous host value."));
+       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous host value."));
       goto modify_scanner_leave;
     }
   switch (modify_scanner
