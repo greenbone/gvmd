@@ -30098,17 +30098,17 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           {
             switch (stop_task (stop_task_data->task_id))
               {
-                case 0:   /* Stopped. */
+                case STOP_TASK_OK_STOPPED:   /* Stopped. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK ("stop_task"));
                   log_event ("task", "Task", stop_task_data->task_id,
                              "stopped");
                   break;
-                case 1:   /* Stop requested. */
+                case STOP_TASK_OK_STOP_REQUESTED:   /* Stop requested. */
                   SEND_TO_CLIENT_OR_FAIL (XML_OK_REQUESTED ("stop_task"));
                   log_event ("task", "Task", stop_task_data->task_id,
                              "requested to stop");
                   break;
-                case 3:   /* Find failed. */
+                case STOP_TASK_NOT_FOUND:   /* Find failed. */
                   if (send_find_error_to_client ("stop_task", "task",
                                                  stop_task_data->task_id,
                                                  gmp_parser))
@@ -30117,7 +30117,45 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                       return;
                     }
                   break;
-                case 99:
+                case STOP_TASK_SEND_INTERNAL_ERROR:   /* Internal error */
+                  g_warning ("Internal error while sending command");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Internal error while sending command"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case STOP_TASK_SEND_TIMEOUT:   /* Sending command timed out */
+                  g_warning ("Sending command timed out");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Sending command timed out"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case STOP_TASK_RECEIVE_TIMEOUT:
+                  /* Reading command response timed out */
+                  g_warning ("Reading command response timed out");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Reading command response timed out"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case STOP_TASK_DELETE_FAILED:
+                  /* Problem deleting scan from scanner */
+                  g_warning ("Problem deleting scan from scanner");
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Problem deleting scan from scanner"));
+                  log_event_fail ("task", "Task",
+                                  stop_task_data->task_id,
+                                  "stopped");
+                  break;
+                case STOP_TASK_PERMISSION_DENIED:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("stop_task",
                                       "Permission denied"));
@@ -30127,7 +30165,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   break;
                 default:  /* Programming error. */
                   assert (0);
-                case -1:
+                case STOP_TASK_INTERNAL_ERROR:
                   /* Some other error occurred. */
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("stop_task",
