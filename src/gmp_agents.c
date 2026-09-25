@@ -774,7 +774,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
           SENDF_TO_CLIENT_OR_FAIL (
             XML_ERROR_SYNTAX ("delete_agent", "Agent UUID '%s' is invalid"),
             uuid);
-          modify_agent_reset ();
+          delete_agent_reset ();
           return;
         }
     }
@@ -784,7 +784,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
       agent_uuid_list_free (agent_uuids);
       SEND_TO_CLIENT_OR_FAIL (
         XML_ERROR_SYNTAX ("delete_agent", "No agent UUIDs provided"));
-      modify_agent_reset ();
+      delete_agent_reset ();
       return;
     }
 
@@ -802,18 +802,18 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agent_reset ();
+          delete_agent_reset ();
           return;
         }
 
       log_event_fail ("agents", "Agents", NULL, "deleted");
       break;
     case AGENT_RESPONSE_AGENT_NOT_FOUND:
-      if (send_find_error_to_client ("modify_agents", "agents", NULL,
+      if (send_find_error_to_client ("delete_agent", "agents", NULL,
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agent_reset ();
+          delete_agent_reset ();
           return;
         }
 
@@ -824,7 +824,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
-          modify_agent_reset ();
+          delete_agent_reset ();
           return;
         }
 
