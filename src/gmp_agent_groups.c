@@ -690,11 +690,9 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
                                      "agent_group",
                                      agent_group_uuid,
                                      gmp_parser))
-      {
         error_send_to_client (error);
-        modify_agent_group_reset ();
-        return;
-      }
+      modify_agent_group_reset ();
+      return;
     }
 
   name = entity_child (root, "name");
