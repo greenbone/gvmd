@@ -802,6 +802,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
+          agent_uuid_list_free (agent_uuids);
           delete_agent_reset ();
           return;
         }
@@ -813,6 +814,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
+          agent_uuid_list_free (agent_uuids);
           delete_agent_reset ();
           return;
         }
@@ -824,6 +826,7 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
                                      gmp_parser))
         {
           error_send_to_client (error);
+          agent_uuid_list_free (agent_uuids);
           delete_agent_reset ();
           return;
         }
