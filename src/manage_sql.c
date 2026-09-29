@@ -11149,6 +11149,18 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
+      "epss_score",                                                           \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.epss_percentile, 0.0)",                       \
+      "epss_percentile",                                                      \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
+      "max_epss_score",                                                       \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
+      "max_epss_percentile",                                                  \
+      KEYWORD_TYPE_DOUBLE },                                                  \
     { "coalesce((regexp_match(hostname,"                                      \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
       "         (regexp_match(hostname,"                                      \
@@ -11891,11 +11903,15 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
                                      dynamic_severity);
   if (dynamic_severity)
     extra_tables = g_strdup_printf (" LEFT OUTER JOIN all_vts"
-                                    " ON results.nvt = all_vts.oid,"
+                                    " ON results.nvt = all_vts.oid"
+                                    " LEFT OUTER JOIN result_vt_epss"
+                                    " ON results.nvt = result_vt_epss.vt_id,"
                                     " LATERAL %s AS lateral_severity%s",
                                     lateral, opts);
   else
-    extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
+                                    "  ON results.nvt = result_vt_epss.vt_id,"
+                                    " LATERAL %s AS lateral_severity%s",
                                     lateral, opts);
   g_free (opts);
 
