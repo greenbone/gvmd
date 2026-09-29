@@ -28174,6 +28174,7 @@ type_build_select (const char *type, const char *columns_str,
               pagination_clauses ? pagination_clauses : "");
 
   g_free (filter);
+  g_free (clause);
   g_free (with);
   g_free (from_table);
   g_free (opts_table);
