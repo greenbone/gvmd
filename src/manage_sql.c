@@ -23608,7 +23608,8 @@ scanner_is_agent_controller_or_sensor (const char *scanner_uuid)
 static gboolean
 scanner_port_is_invalid (int port, scanner_type_t type)
 {
-  if (type == SCANNER_TYPE_OPENVASD_SENSOR
+  if (type == SCANNER_TYPE_OSP_SENSOR
+      || type == SCANNER_TYPE_OPENVASD_SENSOR
       || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     return port != 0;
 
@@ -23628,9 +23629,10 @@ static void
 set_scanner_port_value (const gchar *port_value, int *port,
                         scanner_type_t type)
 {
-  *port = atoi (port_value ?: "0");
+  *port = atoi (port_value ? : "0");
 
-  if (type == SCANNER_TYPE_OPENVASD_SENSOR
+  if (type == SCANNER_TYPE_OSP_SENSOR
+      || type == SCANNER_TYPE_OPENVASD_SENSOR
       || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     *port = 0;
 }
