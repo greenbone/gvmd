@@ -848,6 +848,7 @@ get_web_application_targets_run (gmp_parser_t *gmp_parser, GError **error)
                    get_web_application_targets_data.get.filt_id,
                    gmp_parser))
               {
+                get_web_application_targets_reset ();
                 error_send_to_client (error);
                 return;
               }
