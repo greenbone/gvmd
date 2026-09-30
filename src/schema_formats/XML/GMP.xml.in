@@ -8726,6 +8726,52 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>delete_tls_certificate</name>
+    <summary>Delete a TLS certificate</summary>
+    <description>
+      <p>
+        The client uses the delete_tls_certificate command to delete an existing
+        TLS certificate.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tls_certificate_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a TLS certificate</summary>
+      <request>
+        <delete_tls_certificate tls_certificate_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_tls_certificate>
+      </request>
+      <response>
+        <delete_tls_certificate_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_user</name>
     <summary>Delete a user</summary>
     <description>
