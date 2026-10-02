@@ -205,11 +205,30 @@ parse_report_format_entity (entity_t report_format,
           if (file_name)
             {
               const char *content;
+              const char *executable;
               gchar *combined;
+              gsize file_name_len;
+              gsize content_len;
 
               content = entity_text (file);
-              combined = g_strconcat (file_name, "0", content, NULL);
-              combined[strlen (file_name)] = '\0';
+              executable = entity_attribute (file, "executable");
+
+              if (executable == NULL)
+                executable = "0";
+              file_name_len = strlen (file_name);
+              content_len = strlen (content);
+
+              /// filename\0content\0executable\0
+              combined = g_strconcat (file_name,
+                                      "0",
+                                      content,
+                                      "0",
+                                      executable,
+                                      NULL);
+
+              combined[file_name_len] = '\0';
+              combined[file_name_len + 1 + content_len] = '\0';
+
               array_add (*files, combined);
             }
         }
