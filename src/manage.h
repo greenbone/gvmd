@@ -158,6 +158,18 @@ typedef enum {
 } modify_task_return_t;
 
 
+typedef enum {
+  STOP_TASK_OK_STOPPED = 0,
+  STOP_TASK_OK_STOP_REQUESTED = 1,
+  STOP_TASK_NOT_FOUND = 3,
+  STOP_TASK_SEND_INTERNAL_ERROR = 10,
+  STOP_TASK_SEND_TIMEOUT = 11,
+  STOP_TASK_RECEIVE_TIMEOUT = 12,
+  STOP_TASK_DELETE_FAILED = 13,
+  STOP_TASK_PERMISSION_DENIED = 99,
+  STOP_TASK_INTERNAL_ERROR = -1
+} stop_task_return_t;
+
 /**
  * @brief Name value pair.
  */
