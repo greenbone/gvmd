@@ -142,6 +142,70 @@
    { "max_hosts (hosts, exclude_hosts)",                       \
      "ips",                                                    \
      KEYWORD_TYPE_INTEGER },                                   \
+   /* The credential UUIDs.  Appended after "ips" on purpose: the       \
+    * accessors address these columns by position, so inserting further  \
+    * up would silently shift every index behind it and the iterator      \
+    * would hand out a different credential's name than the target uses.  \
+    *                                                                     \
+    * Deliberately not in TARGET_ITERATOR_TRASH_COLUMNS, which is shorter \
+    * and has no name columns either.  The accessors are therefore only   \
+    * valid on the non-trash iterator; gmp.c branches on get.trash and    \
+    * uses trash_credential_uuid() there.                                 \
+    */                                                                    \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('ssh' AS text)))",            \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('smb' AS text)))",            \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('esxi' AS text)))",           \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('snmp' AS text)))",           \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('elevate' AS text)))",        \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
+   {                                                           \
+     "(SELECT uuid FROM credentials"                           \
+     " WHERE credentials.id"                                   \
+     "       = (SELECT credential FROM targets_login_data"     \
+     "          WHERE target = targets.id"                     \
+     "          AND type = CAST ('krb5' AS text)))",           \
+     NULL,                                                     \
+     KEYWORD_TYPE_STRING                                       \
+   },                                                          \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                        \
  }
 
