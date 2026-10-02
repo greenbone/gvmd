@@ -15764,7 +15764,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CREDENTIAL_STORES@
+@IF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>get_credential_stores</name>
     <summary>Get one or many credential stores</summary>
@@ -39063,6 +39063,130 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>modify_credential_store</name>
+    <summary>Modify an existing credential store</summary>
+    <description>
+      <p>
+        The client uses the modify_credential_store command to update the
+        connection configuration of an existing credential store.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_CREDENTIAL_STORES.  Elements omitted from the request leave
+        their existing values unchanged.
+      </p>
+      <p>
+        A successful response has status 200.  Missing or invalid request
+        data, invalid preference values, and missing permission result in
+        status 400; a credential store that cannot be found results in status
+        404; and an unexpected error results in status 500.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of the credential store to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>active</e></o>
+      <o><e>host</e></o>
+      <o><e>path</e></o>
+      <o><e>port</e></o>
+      <o><e>comment</e></o>
+      <o><e>preferences</e></o>
+    </pattern>
+    <ele>
+      <name>active</name>
+      <summary>Whether the credential store is active</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>host</name>
+      <summary>Host address or hostname of the external service</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>path</name>
+      <summary>Path of the external service</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>
+        Port of the external service.  Use an integer from 1 through 65535,
+        or an empty element to remove the configured port.
+      </summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on the credential store</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>preferences</name>
+      <summary>Preference values to update</summary>
+      <description>
+        Each preference name must exist for the credential store.  Omitting a
+        preference value resets that preference to its default value.
+      </description>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>name</e>
+          <o><e>value</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of an existing credential store preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>New value for the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a credential store comment and preference</summary>
+      <request>
+        <modify_credential_store credential_store_id="a84a4c36-6687-4cd5-baf2-87f79c5897b4">
+          <comment>CyberArk credentials for production systems.</comment>
+          <preferences>
+            <preference>
+              <name>app_id</name>
+              <value>gvmd</value>
+            </preference>
+          </preferences>
+        </modify_credential_store>
+      </request>
+      <response>
+        <modify_credential_store_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>modify_filter</name>
     <summary>Modify an existing filter</summary>
@@ -41796,6 +41920,62 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>verify_credential_store</name>
+    <summary>Verify a credential store</summary>
+    <description>
+      <p>
+        The client uses the verify_credential_store command to validate the
+        configuration of an existing credential store and test its connection
+        to the external service.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_CREDENTIAL_STORES.  In such a build, a disabled credential
+        store runtime feature results in status 400.
+      </p>
+      <p>
+        A successful verification has status 200.  Missing or invalid request
+        data, invalid credential store configuration, missing permission, or a
+        disabled runtime feature result in status 400; a credential store that
+        cannot be found results in status 404; a failed connection results in
+        status 503; and an unexpected error results in status 500.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of the credential store to verify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a credential store</summary>
+      <request>
+        <verify_credential_store credential_store_id="a84a4c36-6687-4cd5-baf2-87f79c5897b4"/>
+      </request>
+      <response>
+        <verify_credential_store_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>verify_report_format</name>
     <summary>Verify a report format</summary>
