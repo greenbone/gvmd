@@ -197,6 +197,7 @@ set(
   manage_audit_report_exports.c
   manage_audit_report_hosts.c
   manage_configs.c
+  manage_credentials.c
   manage_delta_audit_report_exports.c
   manage_delta_scan_report_exports.c
   manage_events.c
@@ -290,6 +291,7 @@ set(
   manage_sql_assets.c
   manage_sql_audit_report.c
   manage_sql_audit_report_hosts.c
+  manage_sql_credentials.c
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
@@ -351,6 +353,7 @@ set(
   gmp.c
   gmp_base.c
   gmp_configs.c
+  gmp_credentials.c
   gmp_delete.c
   gmp_delta_audit_report_exports.c
   gmp_delta_scan_report_exports.c

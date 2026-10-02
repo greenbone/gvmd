@@ -85,6 +85,7 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
+#include "gmp_credentials.h"
 #include "gmp_audit_report.h"
 #include "gmp_audit_report_exports.h"
 #include "gmp_audit_report_hosts.h"
@@ -202,104 +203,6 @@ typedef enum
 } note_or_override_scope_status_t;
 
 /**
- * @brief Check that a string represents a valid x509 Certificate.
- *
- * @param[in]  cert_str     Certificate string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_certificate_x509 (const char *cert_str)
-{
-  gnutls_x509_crt_t crt;
-  gnutls_datum_t data;
-  int ret = 0;
-
-  assert (cert_str);
-  if (gnutls_x509_crt_init (&crt))
-    return 1;
-  data.size = strlen (cert_str);
-  data.data = (void *) g_strdup (cert_str);
-  if (gnutls_x509_crt_import (crt, &data, GNUTLS_X509_FMT_PEM))
-    {
-      gnutls_x509_crt_deinit (crt);
-      g_free (data.data);
-      return 1;
-    }
-
-  if (time (NULL) > gnutls_x509_crt_get_expiration_time (crt))
-    {
-      g_warning ("Certificate expiration time passed");
-      ret = 1;
-    }
-  if (time (NULL) < gnutls_x509_crt_get_activation_time (crt))
-    {
-      g_warning ("Certificate activation time in the future");
-      ret = 1;
-    }
-  g_free (data.data);
-  gnutls_x509_crt_deinit (crt);
-  return ret;
-}
-
-/**
- * @brief Check that a string represents a valid public key or certificate.
- *
- * @param[in]  key_str     Key string.
- * @param[in]  key_types   GArray of the data types to check for.
- * @param[in]  protocol    The GPG protocol to check.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-try_gpgme_import (const char *key_str, GArray *key_types,
-                  gpgme_protocol_t protocol)
-{
-  int ret = 0;
-  gpgme_ctx_t ctx;
-  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
-
-  if (mkdtemp (gpg_temp_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      return -1;
-    }
-
-  gpgme_new (&ctx);
-  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
-  gpgme_set_protocol (ctx, protocol);
-
-  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
-
-  gpgme_release (ctx);
-  gvm_file_remove_recurse (gpg_temp_dir);
-
-  return ret != 0;
-}
-
-/**
- * @brief Check that a string represents a valid S/MIME Certificate.
- *
- * @param[in]  cert_str     Certificate string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_certificate_smime (const char *cert_str)
-{
-  int ret;
-  const gpgme_data_type_t types_ptr[2] = {GPGME_DATA_TYPE_X509_CERT,
-                                          GPGME_DATA_TYPE_CMS_OTHER};
-  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
-
-  g_array_append_vals (key_types, types_ptr, 2);
-  ret = try_gpgme_import (cert_str, key_types, GPGME_PROTOCOL_CMS);
-  g_array_free (key_types, TRUE);
-
-  return ret;
-}
-
-/**
  * @brief Get PGP or S/MIME public key info.
  *
  * @param[in]  key_str      The PEM-encoded key as a string.
@@ -367,47 +270,6 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
   gvm_file_remove_recurse (gpg_temp_dir);
   return ret;
 }
-
-/**
- * @brief Check that a string represents a valid certificate.
- *
- * The type of certificate accepted depends on the credential_type.
- *
- * @param[in]  cert_str         Certificate string.
- * @param[in]  credential_type  The credential type to assume.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_certificate (const char *cert_str, const char *credential_type)
-{
-  if (credential_type && strcmp (credential_type, "smime") == 0)
-    return check_certificate_smime (cert_str);
-  else
-    return check_certificate_x509 (cert_str);
-}
-
-/**
- * @brief Check that a string represents a valid Public Key.
- *
- * @param[in]  key_str  Public Key string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_public_key (const char *key_str)
-{
-  int ret;
-  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
-  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
-
-  g_array_append_vals (key_types, types_ptr, 1);
-  ret = try_gpgme_import (key_str, key_types, GPGME_PROTOCOL_OPENPGP);
-  g_array_free (key_types, TRUE);
-
-  return ret;
-}
-
 
 /**
  * @brief Validate the notes or overrides hosts field.
@@ -591,70 +453,6 @@ create_alert_data_reset (create_alert_data_t *data)
   free (data->part_name);
 
   memset (data, 0, sizeof (create_alert_data_t));
-}
-
-/**
- * @brief Command data for the create_credential command.
- */
-typedef struct
-{
-  char *allow_insecure;    ///< Whether to allow insecure use.
-  char *certificate;       ///< Certificate for client certificate auth.
-  char *comment;           ///< Comment.
-  char *copy;              ///< UUID of resource to copy.
-  char *kdc;               ///< Kerberos KDC (key distribution centers).
-  char *kdcs_kdc;          ///< Current Kerberos KDC (key distribution centers).
-  array_t *kdcs;           ///< List of Kerberos KDC (key distribution centers).
-  int key;                 ///< Whether the command included a key element.
-  char *key_phrase;        ///< Passphrase for key.
-  char *key_private;       ///< Private key from key.
-  char *key_public;        ///< Public key from key.
-  char *login;             ///< Login name.
-  char *name;              ///< Credential name.
-  char *password;          ///< Password associated with login name.
-  char *community;         ///< SNMP Community string.
-  char *auth_algorithm;    ///< SNMP Authentication algorithm.
-  char *privacy_password;  ///< SNMP Privacy password.
-  char *privacy_algorithm; ///< SNMP Privacy algorithm.
-  char *realm;             ///< Kerberos realm.
-  char *credential_store_id;   ///< Credential store UUID.
-  char *vault_id;          ///< Credential store vault ID.
-  char *host_identifier;     ///< Credential store item ID.
-  char *privacy_host_identifier; ///< SNMP Privacy credential store item ID.
-  char *type;              ///< Type of credential.
-} create_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_credential_data_reset (create_credential_data_t *data)
-{
-  free (data->allow_insecure);
-  free (data->certificate);
-  free (data->comment);
-  free (data->copy);
-  free (data->kdc);
-  free (data->key_phrase);
-  free (data->key_private);
-  free (data->key_public);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-  free (data->community);
-  free (data->auth_algorithm);
-  free (data->privacy_password);
-  free (data->privacy_algorithm);
-  free (data->realm);
-  free (data->credential_store_id);
-  free (data->vault_id);
-  free (data->host_identifier);
-  free (data->privacy_host_identifier);
-  free (data->type);
-
-  memset (data, 0, sizeof (create_credential_data_t));
 }
 
 /**
@@ -2734,70 +2532,6 @@ modify_auth_data_reset (modify_auth_data_t * data)
 }
 
 /**
- * @brief Command data for the modify_credential command.
- */
-typedef struct
-{
-  char *allow_insecure;       ///< Whether to allow insecure use.
-  char *auth_algorithm;       ///< SNMP Authentication algorithm.
-  char *certificate;          ///< Certificate.
-  char *comment;              ///< Comment.
-  char *community;            ///< SNMP Community string.
-  char *credential_id;        ///< ID of credential to modify.
-  char *kdc;                  ///< Kerberos KDC (key distribution centers).
-  char *kdcs_kdc;             ///< Current Kerberos KDC (key distribution centers).
-  array_t *kdcs;              ///< List of Kerberos KDC (key distribution centers).
-  int key;                    ///< Whether the command included a key element.
-  char *key_phrase;           ///< Passphrase for key.
-  char *key_private;          ///< Private key from key.
-  char *key_public;           ///< Public key from key.
-  char *login;                ///< Login name.
-  char *name;                 ///< Name.
-  char *password;             ///< Password associated with login name.
-  char *privacy_algorithm;    ///< SNMP Privacy algorithm.
-  char *privacy_password;     ///< SNMP Privacy password.
-  char *realm;                ///< Kerberos realm.
-  char *credential_store_id;  ///< Credential store UUID.
-  char *vault_id;             ///< Credential store vault ID.
-  char *host_identifier;        ///< Credential store item ID.
-  char *privacy_host_identifier;  ///< SNMP Privacy credential store item ID.
-} modify_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_credential_data_reset (modify_credential_data_t *data)
-{
-  free (data->allow_insecure);
-  free (data->auth_algorithm);
-  free (data->certificate);
-  free (data->comment);
-  free (data->community);
-  free (data->credential_id);
-  free (data->kdc);
-  free (data->key_phrase);
-  free (data->key_private);
-  free (data->key_public);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-  free (data->privacy_algorithm);
-  free (data->privacy_password);
-  free (data->realm);
-  free (data->kdcs_kdc);
-  free (data->credential_store_id);
-  free (data->vault_id);
-  free (data->host_identifier);
-  free (data->privacy_host_identifier);
-  array_free (data->kdcs);
-
-  memset (data, 0, sizeof (modify_credential_data_t));
-}
-
-/**
  * @brief Command data for the modify_filter command.
  */
 typedef struct
@@ -3582,7 +3316,6 @@ typedef union
 {
   create_asset_data_t create_asset;                   ///< create_asset
   create_alert_data_t create_alert;                   ///< create_alert
-  create_credential_data_t create_credential;         ///< create_credential
   create_filter_data_t create_filter;                 ///< create_filter
   create_group_data_t create_group;                   ///< create_group
   create_note_data_t create_note;                     ///< create_note
@@ -3653,7 +3386,6 @@ typedef union
   modify_asset_data_t modify_asset;                   ///< modify_asset
   modify_auth_data_t modify_auth;                     ///< modify_auth
   modify_config_data_t modify_config;                 ///< modify_config
-  modify_credential_data_t modify_credential;         ///< modify_credential
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_group_data_t modify_group;                   ///< modify_group
   modify_permission_data_t modify_permission;         ///< modify_permission
@@ -3708,12 +3440,6 @@ static create_asset_data_t *create_asset_data
  */
 static create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
-
-/**
- * @brief Parser callback data for CREATE_CREDENTIAL.
- */
-static create_credential_data_t *create_credential_data
- = (create_credential_data_t*) &(command_data.create_credential);
 
 /**
  * @brief Parser callback data for CREATE_FILTER.
@@ -4130,12 +3856,6 @@ static modify_auth_data_t *modify_auth_data
  = &(command_data.modify_auth);
 
 /**
- * @brief Parser callback data for MODIFY_CREDENTIAL.
- */
-static modify_credential_data_t *modify_credential_data
- = &(command_data.modify_credential);
-
-/**
  * @brief Parser callback data for MODIFY_FILTER.
  */
 static modify_filter_data_t *modify_filter_data
@@ -4346,33 +4066,6 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CREDENTIAL,
-  CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
-  CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
-  CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
-  CLIENT_CREATE_CREDENTIAL_COMMENT,
-  CLIENT_CREATE_CREDENTIAL_COMMUNITY,
-  CLIENT_CREATE_CREDENTIAL_COPY,
-  CLIENT_CREATE_CREDENTIAL_KDC,
-  CLIENT_CREATE_CREDENTIAL_KDCS,
-  CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
-  CLIENT_CREATE_CREDENTIAL_KEY,
-  CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
-  CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
-  CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
-  CLIENT_CREATE_CREDENTIAL_LOGIN,
-  CLIENT_CREATE_CREDENTIAL_NAME,
-  CLIENT_CREATE_CREDENTIAL_PASSWORD,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
-  CLIENT_CREATE_CREDENTIAL_REALM,
-#if ENABLE_CREDENTIAL_STORES
-  CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
-  CLIENT_CREATE_CREDENTIAL_VAULT_ID,
-  CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-#endif /* ENABLE_CREDENTIAL_STORES */
-  CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
@@ -5151,8 +4844,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0)
           {
-            gvm_append_string (&create_credential_data->comment, "");
-            gvm_append_string (&create_credential_data->name, "");
+            create_credential_start (gmp_parser, attribute_names,
+                                     attribute_values);
             set_client_state (CLIENT_CREATE_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_FILTER", element_name) == 0)
@@ -6417,9 +6110,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values,
-                              "credential_id",
-                              &modify_credential_data->credential_id);
+            modify_credential_start (gmp_parser, attribute_names,
+                                     attribute_values);
             set_client_state (CLIENT_MODIFY_CREDENTIAL);
           }
 #if ENABLE_CREDENTIAL_STORES
@@ -6901,136 +6593,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
-        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE);
-        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_NAME);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->comment);
-            gvm_append_string (&modify_credential_data->comment, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMENT);
-          }
-        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->certificate);
-            gvm_append_string (&modify_credential_data->certificate, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
-          }
-        else if (strcasecmp ("COMMUNITY", element_name) == 0)
-          {
-            gvm_append_string (&modify_credential_data->community, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
-          }
-        else if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->kdc);
-            gvm_append_string (&modify_credential_data->kdc, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
-          }
-        else if (strcasecmp ("KDCS", element_name) == 0)
-          {
-            modify_credential_data->kdcs = make_array ();
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
-          }
-        else if (strcasecmp ("KEY", element_name) == 0)
-          {
-            modify_credential_data->key = 1;
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->password);
-            gvm_append_string (&modify_credential_data->password, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PASSWORD);
-          }
-        else if (strcasecmp ("PRIVACY", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
-            gvm_append_string (&modify_credential_data->privacy_algorithm,
-                                   "");
-          }
-        else if (strcasecmp ("REALM", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->realm);
-            gvm_append_string (&modify_credential_data->realm, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
-          }
-#if ENABLE_CREDENTIAL_STORES
-        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID);
-          }
-        else if (strcasecmp ("VAULT_ID", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->vault_id);
-            gvm_append_string (&modify_credential_data->vault_id, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
-          }
-        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->host_identifier);
-            gvm_append_string (&modify_credential_data->host_identifier, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
-          }
-        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->privacy_host_identifier);
-            gvm_append_string (&modify_credential_data->privacy_host_identifier,
-                               "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
-          }
-#endif
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_KDCS:
-        if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->kdcs_kdc);
-            gvm_append_string (&modify_credential_data->kdcs_kdc, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_KEY:
-        if (strcasecmp ("PHRASE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_phrase);
-            gvm_append_string (&modify_credential_data->key_phrase, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE);
-          }
-        else if (strcasecmp ("PRIVATE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_private);
-            gvm_append_string (&modify_credential_data->key_private, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
-          }
-        else if (strcasecmp ("PUBLIC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_public);
-            gvm_append_string (&modify_credential_data->key_public, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
-        if (strcasecmp ("ALGORITHM", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM);
-          }
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->privacy_password);
-            gvm_append_string (&modify_credential_data->privacy_password, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
-          }
-        ELSE_READ_OVER;
+        modify_credential_element_start (gmp_parser, element_name,
+                                        attribute_names,
+                                        attribute_values);
+        break;
 
 #if ENABLE_CREDENTIAL_STORES
       case CLIENT_MODIFY_CREDENTIAL_STORE:
@@ -7714,92 +7280,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL:
-        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE);
-        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM);
-        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_CERTIFICATE);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
-        else if (strcasecmp ("COMMUNITY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
-        else if (strcasecmp ("KDC", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
-        else if (strcasecmp ("KDCS", element_name) == 0)
-          {
-            create_credential_data->kdcs = make_array ();
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
-          }
-        else if (strcasecmp ("KEY", element_name) == 0)
-          {
-            create_credential_data->key = 1;
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COPY);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_append_string (&create_credential_data->password, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_PASSWORD);
-          }
-        else if (strcasecmp ("PRIVACY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
-        else if (strcasecmp ("REALM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
-#if ENABLE_CREDENTIAL_STORES
-        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID);
-          }
-        else if (strcasecmp ("VAULT_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_VAULT_ID);
-          }
-        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER);
-          }
-        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
-          }
-#endif
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_KDCS:
-        if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&create_credential_data->kdcs_kdc);
-            gvm_append_string (&create_credential_data->kdcs_kdc, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS_KDC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_KEY:
-        if (strcasecmp ("PHRASE", element_name) == 0)
-          {
-            gvm_append_string (&create_credential_data->key_phrase, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE);
-          }
-        else if (strcasecmp ("PRIVATE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
-        else if (strcasecmp ("PUBLIC", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_PRIVACY:
-        if (strcasecmp ("ALGORITHM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD);
-        ELSE_READ_OVER;
+        create_credential_element_start (gmp_parser, element_name,
+                                         attribute_names,
+                                         attribute_values);
+        break;
 
       case CLIENT_CREATE_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -23575,328 +23059,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ALERT_METHOD_DATA, NAME);
 
       case CLIENT_CREATE_CREDENTIAL:
-        {
-          credential_t new_credential;
-
-          assert (create_credential_data->name != NULL);
-
-          if (create_credential_data->copy)
-            switch (copy_credential (create_credential_data->name,
-                                     create_credential_data->comment,
-                                     create_credential_data->copy,
-                                     &new_credential))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = credential_uuid (new_credential);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_credential"),
-                                             uuid);
-                    log_event ("credential", "Credential", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_credential",
-                                      "Credential exists already"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_credential",
-                                                 "credential",
-                                                 create_credential_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_credential",
-                                      "Permission denied"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_credential"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-              }
-          else if (strlen (create_credential_data->name) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "Name must be at"
-                                  " least one character long"));
-            }
-          else if (create_credential_data->login
-                   && strlen (create_credential_data->login) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "Login must be at"
-                                  " least one character long"));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL
-                   && create_credential_data->key_public == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "KEY requires a PRIVATE"
-                                  " or PUBLIC key"));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_private
-                   && check_private_key (create_credential_data->key_private,
-                                         create_credential_data->key_phrase))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Private Key."));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_public
-                   && check_public_key (create_credential_data->key_public))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Public Key."));
-            }
-          else if (create_credential_data->certificate
-                   && check_certificate
-                          (create_credential_data->certificate,
-                           create_credential_data->type))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Certificate."));
-            }
-          else switch (create_credential
-                        (create_credential_data->name,
-                         create_credential_data->comment,
-                         create_credential_data->login,
-                         create_credential_data->key_private
-                          ? create_credential_data->key_phrase
-                          : create_credential_data->password,
-                         create_credential_data->key_private,
-                         create_credential_data->key_public,
-                         create_credential_data->certificate,
-                         create_credential_data->community,
-                         create_credential_data->auth_algorithm,
-                         create_credential_data->privacy_password,
-                         create_credential_data->privacy_algorithm,
-                         create_credential_data->kdc,
-                         create_credential_data->kdcs,
-                         create_credential_data->realm,
-                         create_credential_data->credential_store_id,
-                         create_credential_data->vault_id,
-                         create_credential_data->host_identifier,
-                         create_credential_data->privacy_host_identifier,
-                         create_credential_data->type,
-                         create_credential_data->allow_insecure,
-                         &new_credential))
-            {
-              case 0:
-                {
-                  char *uuid = credential_uuid (new_credential);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_credential"), uuid);
-                  log_event ("credential", "Credential", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential exists already"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Login may only contain alphanumeric"
-                                    " characters or the following:"
-                                    " - _ \\ . @"));
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous private key or associated"
-                                    " passphrase"));
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous credential type"));
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a login username"));
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a password"));
-                break;
-              case 7:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a private key"));
-                break;
-              case 8:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a certificate"));
-                break;
-              case 9:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a public key"));
-                break;
-              case 10:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type cannot be generated"
-                                    " automatically"));
-                break;
-              case 11:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a community and/or"
-                                    " username + password"));
-                break;
-              case 12:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires an"
-                                    " auth_algorithm"));
-                break;
-              case 14:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires an"
-                                    " algorithm in the privacy element"
-                                    " if a password is given"));
-                break;
-              case 15:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "auth algorithm must be 'md5' or 'sha1'"));
-                break;
-              case 16:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "privacy algorithm must be 'aes', 'des'"
-                                    " or empty"));
-                break;
-              case 17:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous certificate"));
-                break;
-              case 18:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Cannot determine type for new credential"));
-                break;
-              case 19:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a kdc"));
-                break;
-              case 20:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a realm"));
-                break;
-              case 21:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                  "Invalid kdc value(s)"));
-                break;
-              case 22:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                  "Invalid kerberos realm value"));
-                break;
-#if ENABLE_CREDENTIAL_STORES
-              case 23:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential store ID missing"
-                                    " and no default store available"));
-                break;
-              case 24:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential store cannot be found"));
-                break;
-              case 25:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Vault ID missing"));
-                break;
-              case 26:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Host identifier missing"));
-                break;
-#endif
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_credential"));
-                break;
-            }
-          create_credential_data_reset (create_credential_data);
+        if (create_credential_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_CREDENTIAL, ALLOW_INSECURE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, AUTH_ALGORITHM);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, CERTIFICATE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KDCS);
-      case CLIENT_CREATE_CREDENTIAL_KDCS_KDC:
-        {
-          array_add (create_credential_data->kdcs,
-                     g_strdup (create_credential_data->kdcs_kdc));
-          create_credential_data->kdcs_kdc = NULL;
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PUBLIC);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, REALM);
-#if ENABLE_CREDENTIAL_STORES
-      CLOSE (CLIENT_CREATE_CREDENTIAL, CREDENTIAL_STORE_ID);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, VAULT_ID);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, HOST_IDENTIFIER);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
-#endif
-      CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
+        break;
 
       case CLIENT_CREATE_FILTER:
         {
@@ -27205,230 +26370,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
-        {
-          switch (modify_credential
-                   (modify_credential_data->credential_id,
-                    modify_credential_data->name,
-                    modify_credential_data->comment,
-                    modify_credential_data->login,
-                    (modify_credential_data->key_phrase
-                     || modify_credential_data->key_private)
-                      ? modify_credential_data->key_phrase
-                      : modify_credential_data->password,
-                    modify_credential_data->key_private,
-                    modify_credential_data->key_public,
-                    modify_credential_data->certificate,
-                    modify_credential_data->community,
-                    modify_credential_data->auth_algorithm,
-                    modify_credential_data->privacy_password,
-                    modify_credential_data->privacy_algorithm,
-                    modify_credential_data->kdc,
-                    modify_credential_data->kdcs,
-                    modify_credential_data->realm,
-                    modify_credential_data->credential_store_id,
-                    modify_credential_data->vault_id,
-                    modify_credential_data->host_identifier,
-                    modify_credential_data->privacy_host_identifier,
-                    modify_credential_data->allow_insecure))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_credential"));
-                log_event ("credential", "Credential",
-                           modify_credential_data->credential_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("modify_credential", "credential",
-                      modify_credential_data->credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "credential with new name"
-                                    " exists already"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "A credential_id is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Login name must not be empty and may"
-                                    " contain only alphanumeric characters"
-                                    " or the following: - _ \\ . @"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty certificate"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty auth_algorithm"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 7:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty privacy_algorithm"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 8:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty private key"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 9:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty public key"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 10:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Privacy password must also be empty"
-                                    " if privacy algorithm is empty"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 11:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty kdc value(s)"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 12:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty kerberos realm value"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-#if ENABLE_CREDENTIAL_STORES
-              case 13:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Credential store not found"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 14:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Vault ID is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 15:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Host identifier is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 17:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                    "Value cannot be modified for credential store type"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-#endif
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Permission denied"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_credential"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-            }
-        }
-        modify_credential_data_reset (modify_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
+        if (modify_credential_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, ALLOW_INSECURE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, AUTH_ALGORITHM);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDCS);
-      case CLIENT_MODIFY_CREDENTIAL_KDCS_KDC:
-        {
-          array_add (modify_credential_data->kdcs,
-                     g_strdup (modify_credential_data->kdcs_kdc));
-          modify_credential_data->kdcs_kdc = NULL;
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PUBLIC);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
 
 #if ENABLE_CREDENTIAL_STORES
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, CREDENTIAL_STORE_ID);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, VAULT_ID);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, HOST_IDENTIFIER);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
-
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         if (modify_credential_store_element_end (gmp_parser, error,
                                                  element_name))
@@ -30310,67 +29256,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         modify_config_element_text (text, text_len);
         break;
 
+      case CLIENT_MODIFY_CREDENTIAL:
+        modify_credential_element_text (text, text_len);
+        break;
 
-      APPEND (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
-              &modify_credential_data->allow_insecure);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
-              &modify_credential_data->auth_algorithm);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
-              &modify_credential_data->certificate);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMENT,
-              &modify_credential_data->comment);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
-              &modify_credential_data->community);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
-              &modify_credential_data->kdc);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
-              &modify_credential_data->kdcs_kdc);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
-              &modify_credential_data->key_phrase);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
-              &modify_credential_data->key_private);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
-              &modify_credential_data->key_public);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
-              &modify_credential_data->login);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_NAME,
-              &modify_credential_data->name);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PASSWORD,
-              &modify_credential_data->password);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
-              &modify_credential_data->privacy_algorithm);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
-              &modify_credential_data->privacy_password);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
-              &modify_credential_data->realm);
 #if ENABLE_CREDENTIAL_STORES
-      APPEND (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID,
-              &modify_credential_data->credential_store_id);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_VAULT_ID,
-              &modify_credential_data->vault_id);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
-              &modify_credential_data->host_identifier);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-              &modify_credential_data->privacy_host_identifier);
-
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         modify_credential_store_element_text (text, text_len);
         break;
@@ -30465,74 +29355,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM,
               &create_asset_data->filter_term);
 
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
-              &create_credential_data->allow_insecure);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
-              &create_credential_data->auth_algorithm);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
-              &create_credential_data->certificate);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COMMENT,
-              &create_credential_data->comment);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COMMUNITY,
-              &create_credential_data->community);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
-              &create_credential_data->copy);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
-              &create_credential_data->kdc);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
-              &create_credential_data->kdcs_kdc);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
-              &create_credential_data->key_phrase);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
-              &create_credential_data->key_private);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
-              &create_credential_data->key_public);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_LOGIN,
-              &create_credential_data->login);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_NAME,
-              &create_credential_data->name);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PASSWORD,
-              &create_credential_data->password);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
-              &create_credential_data->privacy_algorithm);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
-              &create_credential_data->privacy_password);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_REALM,
-              &create_credential_data->realm);
-
-#if ENABLE_CREDENTIAL_STORES
-      APPEND (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
-              &create_credential_data->credential_store_id);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_VAULT_ID,
-              &create_credential_data->vault_id);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
-              &create_credential_data->host_identifier);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-              &create_credential_data->privacy_host_identifier);
-#endif
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
-              &create_credential_data->type);
+      case CLIENT_CREATE_CREDENTIAL:
+        create_credential_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_CREATE_ALERT_ACTIVE,
