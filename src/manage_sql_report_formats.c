@@ -594,7 +594,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
   index = 0;
   while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
     {
-      gchar *contents, *file, *full_file_name;
+      gchar *contents, *file, *executable, *full_file_name;
       gsize contents_size;
       GError *error;
       int ret;
@@ -607,6 +607,8 @@ save_report_format_files (const gchar *report_id, array_t *files,
         }
 
       file = file_name + strlen (file_name) + 1;
+      executable = file + strlen (file) + 1;
+
       if (strlen (file))
         contents = (gchar*) g_base64_decode (file, &contents_size);
       else
@@ -642,8 +644,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
           g_free (dir);
           return -1;
         }
-
-      if (strcmp (file_name, "generate") == 0)
+      if (strcmp (executable, "1") == 0 || strcmp (file_name, "generate") == 0)
         ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
       else
         ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
