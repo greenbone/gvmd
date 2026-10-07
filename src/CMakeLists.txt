@@ -618,6 +618,13 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+add_unit_test(manage-sql-port-lists "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-port-lists-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,acl_user_may,-wrap,sql_begin_immediate,-wrap,sql_quote,-wrap,sql_int,-wrap,sql_rollback"
+)
 
 set(
   ALL_OBJECTS

@@ -904,7 +904,7 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
 
   port_list_uuid = port_range_port_list_uuid (uuid);
   if (port_list_uuid == NULL)
-    return TRUE;
+    return FALSE;
 
   if (find_port_list_with_permission (port_list_uuid, &port_list, permission)
       || port_list == 0)
