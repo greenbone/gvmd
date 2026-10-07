@@ -25042,7 +25042,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_TASK, NAME);
 
       case CLIENT_CREATE_REPORT_CONFIG:
-        create_report_config_element_end (gmp_parser, error, element_name);
+        if (create_report_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_CREATE_REPORT_FORMAT:
@@ -28211,7 +28212,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
 
       case CLIENT_MODIFY_REPORT_CONFIG:
-        modify_report_config_element_end (gmp_parser, error, element_name);
+        if (modify_report_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_MODIFY_ROLE:
