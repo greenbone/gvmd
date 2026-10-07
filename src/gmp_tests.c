@@ -49,6 +49,57 @@ Ensure (gmp, modify_report_config_restores_authenticated_state)
   assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
 }
 
+static void
+assert_move_task_error_restores_authenticated_state (
+  const gchar **attribute_names, const gchar **attribute_values)
+{
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = dummy_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+
+  gmp_xml_handle_start_element (NULL, "move_task", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "move_task", &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL,
+                                &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_GET_VERSION_AUTHENTIC));
+}
+
+Ensure (gmp, move_task_without_task_id_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { "slave_id", NULL };
+  const gchar *attribute_values[] = { "slave", NULL };
+
+  assert_move_task_error_restores_authenticated_state (attribute_names,
+                                                        attribute_values);
+}
+
+Ensure (gmp, move_task_without_slave_id_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { "task_id", NULL };
+  const gchar *attribute_values[] = { "task", NULL };
+
+  assert_move_task_error_restores_authenticated_state (attribute_names,
+                                                        attribute_values);
+}
+
+Ensure (gmp, move_task_with_empty_task_id_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { "task_id", "slave_id", NULL };
+  const gchar *attribute_values[] = { "", "slave", NULL };
+
+  assert_move_task_error_restores_authenticated_state (attribute_names,
+                                                        attribute_values);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -61,6 +112,12 @@ main (int argc, char **argv)
     (suite, gmp, create_report_config_restores_authenticated_state);
   add_test_with_context
     (suite, gmp, modify_report_config_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, move_task_without_task_id_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, move_task_without_slave_id_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, move_task_with_empty_task_id_restores_authenticated_state);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
