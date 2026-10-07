@@ -555,6 +555,7 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 
 set(
   ALL_OBJECTS
