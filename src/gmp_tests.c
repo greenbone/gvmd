@@ -17,6 +17,42 @@ dummy_client_writer (const char *message, void *data)
   return 0;
 }
 
+int
+__wrap_acl_user_may (const char *permission)
+{
+  (void) permission;
+  return 0;
+}
+
+static void
+assert_report_export_command_restores_authenticated_state (const char *command)
+{
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = dummy_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+
+  gmp_xml_handle_start_element (NULL, command, NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, command, &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL,
+                                &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_GET_VERSION_AUTHENTIC));
+}
+
+Ensure (gmp, cancel_report_export_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("cancel_report_export");
+}
+
 Ensure (gmp, create_report_config_restores_authenticated_state)
 {
   gmp_parser_t gmp_parser = { 0 };
@@ -31,6 +67,36 @@ Ensure (gmp, create_report_config_restores_authenticated_state)
 
   assert_that (error, is_null);
   assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+}
+
+Ensure (gmp, download_report_export_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("download_report_export");
+}
+
+Ensure (gmp, export_audit_report_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("export_audit_report");
+}
+
+Ensure (gmp, export_delta_audit_report_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("export_delta_audit_report");
+}
+
+Ensure (gmp, export_delta_scan_report_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("export_delta_scan_report");
+}
+
+Ensure (gmp, export_scan_report_restores_authenticated_state)
+{
+  assert_report_export_command_restores_authenticated_state
+    ("export_scan_report");
 }
 
 Ensure (gmp, modify_report_config_restores_authenticated_state)
@@ -109,7 +175,19 @@ main (int argc, char **argv)
   suite = create_test_suite ();
 
   add_test_with_context
+    (suite, gmp, cancel_report_export_restores_authenticated_state);
+  add_test_with_context
     (suite, gmp, create_report_config_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, download_report_export_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, export_audit_report_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, export_delta_audit_report_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, export_delta_scan_report_restores_authenticated_state);
+  add_test_with_context
+    (suite, gmp, export_scan_report_restores_authenticated_state);
   add_test_with_context
     (suite, gmp, modify_report_config_restores_authenticated_state);
   add_test_with_context

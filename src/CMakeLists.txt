@@ -559,6 +559,7 @@ set(
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+set_target_properties(gmp-test PROPERTIES LINK_FLAGS "-Wl,-wrap,acl_user_may")
 
 set(
   ALL_OBJECTS
