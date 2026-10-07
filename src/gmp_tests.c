@@ -27,14 +27,16 @@ __wrap_acl_user_may (const char *permission)
 static void
 assert_report_export_command_restores_authenticated_state (const char *command)
 {
+  const gchar *attribute_names[] = { NULL };
+  const gchar *attribute_values[] = { NULL };
   gmp_parser_t gmp_parser = { 0 };
   GError *error = NULL;
 
   gmp_parser.client_writer = dummy_client_writer;
   client_state = CLIENT_AUTHENTIC;
 
-  gmp_xml_handle_start_element (NULL, command, NULL, NULL, &gmp_parser,
-                                &error);
+  gmp_xml_handle_start_element (NULL, command, attribute_names,
+                                attribute_values, &gmp_parser, &error);
   gmp_xml_handle_end_element (NULL, command, &gmp_parser, &error);
 
   assert_that (error, is_null);
