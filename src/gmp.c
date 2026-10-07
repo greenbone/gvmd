@@ -29458,6 +29458,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               (XML_ERROR_SYNTAX ("move_task",
                                  "A non-empty task_id"
                                  " attribute is required"));
+            move_task_data_reset (move_task_data);
+            set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
@@ -29466,6 +29468,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("move_task",
                                  "A slave_id attribute is required"));
+            move_task_data_reset (move_task_data);
+            set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
