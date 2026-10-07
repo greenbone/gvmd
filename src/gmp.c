@@ -27947,9 +27947,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_permission_data->subject_id))
             {
               case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_permission",
-                                    "Permission exists already"));
+                if (send_find_error_to_client
+                     ("modify_permission", "permission",
+                      modify_permission_data->permission_id, gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
                 log_event_fail ("permission", "Permission",
                                 modify_permission_data->permission_id,
                                 "modified");
