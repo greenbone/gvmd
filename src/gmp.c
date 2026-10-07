@@ -22621,27 +22621,35 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         }
 
     case CLIENT_CANCEL_REPORT_EXPORT:
-      cancel_report_export_element_end (gmp_parser, error, element_name);
+      if (cancel_report_export_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
     case CLIENT_DOWNLOAD_REPORT_EXPORT:
-      download_report_export_element_end (gmp_parser, error, element_name);
+      if (download_report_export_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
     case CLIENT_EXPORT_AUDIT_REPORT:
-      export_audit_report_element_end (gmp_parser, error, element_name);
+      if (export_audit_report_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
     case CLIENT_EXPORT_DELTA_AUDIT_REPORT:
-      export_delta_audit_report_element_end (gmp_parser, error, element_name);
+      if (export_delta_audit_report_element_end (gmp_parser, error,
+                                                  element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
     case CLIENT_EXPORT_DELTA_SCAN_REPORT:
-      export_delta_scan_report_element_end (gmp_parser, error, element_name);
+      if (export_delta_scan_report_element_end (gmp_parser, error,
+                                                 element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
     case CLIENT_EXPORT_SCAN_REPORT:
-      export_scan_report_element_end (gmp_parser, error, element_name);
+      if (export_scan_report_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
       break;
 
 #if ENABLE_AGENTS
