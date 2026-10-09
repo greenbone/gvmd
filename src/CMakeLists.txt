@@ -679,6 +679,23 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-preferences "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+
+add_unit_test(manage-credentials "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+
+set_target_properties(
+  manage-credentials-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private"
+)
+
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(DEBUG_FUNCTION_NAMES)
