@@ -509,6 +509,22 @@ Ensure (manage_credentials, modify_ssh_updates_supplied_key_and_passphrase)
                is_equal_to (CREDENTIAL_OK));
 }
 
+Ensure (manage_credentials, create_ssh_rejects_public_key_without_private_key)
+{
+  credential_data_t data = {
+    .name = "test",
+    .login = "user",
+    .key_public = "public-key",
+  };
+  credential_t credential = 42;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_ssh_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_PRIVATE_KEY_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
 Ensure (manage_credentials, modify_snmp_updates_login_and_auth_algorithm)
 {
   credential_data_t data = {
@@ -796,6 +812,8 @@ main (int argc, char **argv)
                          modify_ssh_updates_login);
   add_test_with_context (suite, manage_credentials,
                          modify_ssh_updates_supplied_key_and_passphrase);
+  add_test_with_context (suite, manage_credentials,
+                         create_ssh_rejects_public_key_without_private_key);
   add_test_with_context (suite, manage_credentials,
                          modify_snmp_updates_login_and_auth_algorithm);
   add_test_with_context (suite, manage_credentials,

@@ -1204,7 +1204,7 @@ create_ssh_credential (const credential_data_t *data,
     }
   else
     {
-      if (data->key_phrase != NULL)
+      if (data->key_phrase != NULL || data->key_public != NULL)
         return CREDENTIAL_PRIVATE_KEY_REQUIRED;
 
       generate_credential_password (generated_passphrase);
