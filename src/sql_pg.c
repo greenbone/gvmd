@@ -21,7 +21,11 @@
 #include <gvm/base/array.h>
 #include <inttypes.h>
 #include <netinet/in.h>
-#include <postgresql/libpq-fe.h>
+#if __has_include(<postgresql/libpq-fe.h>)
+#  include <postgresql/libpq-fe.h>
+#else
+#  include <libpq-fe.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 
