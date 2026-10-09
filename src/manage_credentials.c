@@ -1945,6 +1945,7 @@ clear_credential_private_key (credential_t credential)
  *
  * @param[in]   certificate  The new certificate.
  * @param[in]   credential   Credential row ID.
+ * @param[in]   credential_type  The type of the credential.
  * @param[out]  changed      Indicates if the credential was changed.
  *
  * @return A credential_return_t return code.
@@ -1952,6 +1953,7 @@ clear_credential_private_key (credential_t credential)
 static credential_return_t
 modify_credential_certificate (const gchar *certificate,
                                credential_t credential,
+                               const gchar *credential_type,
                                gboolean *changed)
 {
   gchar *normalized = NULL;
@@ -1962,6 +1964,9 @@ modify_credential_certificate (const gchar *certificate,
 
   if (certificate[0] != '\0')
     {
+      if (check_certificate (certificate, credential_type))
+        return CREDENTIAL_INVALID_CERTIFICATE;
+
       normalized = truncate_certificate (certificate);
       if (normalized == NULL)
         return CREDENTIAL_INVALID_CERTIFICATE;
@@ -1999,6 +2004,7 @@ modify_cc_credential (const credential_data_t *data,
 
   ret = modify_credential_certificate (data->certificate,
                                        credential,
+                                       "cc",
                                        &changed);
   if (ret != CREDENTIAL_OK)
     return ret;
@@ -2028,6 +2034,11 @@ modify_cc_credential (const credential_data_t *data,
       else if (effective_private_key[0] == '\0')
         {
           ret = clear_credential_private_key (credential);
+        }
+      else if (check_private_key (effective_private_key,
+                                  effective_passphrase))
+        {
+          ret = CREDENTIAL_INVALID_PRIVATE_KEY_OR_PASSPHRASE;
         }
       else
         {
@@ -2065,15 +2076,22 @@ static credential_return_t
 modify_pgp_credential (const credential_data_t *data,
                        credential_t credential)
 {
+  const gchar *public_key;
+
   if (data == NULL || credential == 0)
     return CREDENTIAL_INTERNAL_ERROR;
 
-  if (data->key_public == NULL)
+  public_key = data->key_public;
+
+  if (public_key == NULL)
     return CREDENTIAL_OK;
+
+  if (public_key[0] != '\0' && check_public_key (public_key))
+    return CREDENTIAL_INVALID_PUBLIC_KEY;
 
   if (set_credential_data (credential,
                            "public_key",
-                           data->key_public))
+                           public_key[0] ? public_key : NULL))
     return CREDENTIAL_INTERNAL_ERROR;
 
   update_credential_modification_time (credential);
@@ -2100,6 +2118,7 @@ modify_smime_credential (const credential_data_t *data,
 
   ret = modify_credential_certificate (data->certificate,
                                        credential,
+                                       "smime",
                                        &changed);
   if (ret != CREDENTIAL_OK)
     return ret;
