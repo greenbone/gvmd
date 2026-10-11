@@ -59,7 +59,8 @@
  * @param[in]  get          GET parameters.
  * @param[in]  where_clause Optional additional SQL condition.
  *
- * @return 0 on success, -1 on failure.
+ * @return 0 success, 1 failed to find export, 2 failed to find filter,
+ *         -1 error.
  */
 static int
 init_report_export_iterator_with_where (iterator_t *iterator,
@@ -127,7 +128,8 @@ init_report_export_iterator_by_id (iterator_t *iterator,
  * @param[out] iterator  Iterator to initialize.
  * @param[in]  get       GET parameters containing filtering criteria.
  *
- * @return 0 on success, -1 on failure.
+ * @return 0 success, 1 failed to find export, 2 failed to find filter,
+ *         -1 error.
  */
 int
 init_report_export_iterator (iterator_t *iterator, get_data_t *get)
