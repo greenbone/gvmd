@@ -402,6 +402,37 @@ report_export_file_is_valid (const gchar *file_path)
 }
 
 /**
+ * @brief Data retained until a report export response has been delivered.
+ */
+typedef struct
+{
+  report_export_t report_export;
+  gchar *file_path;
+} report_export_delivery_data_t;
+
+/**
+ * @brief Delete a downloaded export after successful response delivery.
+ *
+ * @param[in] success  Whether the response reached the client connection.
+ * @param[in] user_data  Export data retained for the callback.
+ */
+static void
+report_export_delivery_complete (gboolean success, void *user_data)
+{
+  report_export_delivery_data_t *delivery_data = user_data;
+
+  if (success
+      && manage_delete_report_export (delivery_data->report_export,
+                                      delivery_data->file_path))
+    g_warning ("%s: failed to delete downloaded report export %lld",
+               __func__,
+               delivery_data->report_export);
+
+  g_free (delivery_data->file_path);
+  g_free (delivery_data);
+}
+
+/**
  * @brief Execute the <download_report_export> GMP command.
  *
  * @param[in] gmp_parser GMP parser handling the current session.
@@ -417,6 +448,8 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
   gchar *delta_report_uuid_value;
   gchar *report_format_uuid_value;
   gchar *report_config_uuid_value;
+  GString *response_start;
+  report_export_delivery_data_t *delivery_data;
   int ret;
 
   report_export_id = download_report_export_data.report_export_id;
@@ -498,7 +531,9 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
   report_config_uuid_value =
     data->report_config ? report_config_uuid (data->report_config) : NULL;
 
-  SENDF_TO_CLIENT_OR_FAIL (
+  response_start = g_string_new ("");
+  buffer_xml_append_printf (
+    response_start,
     "<download_report_export_response"
     " status=\"200\" status_text=\"OK\">"
     "<report_export id=\"%s\">"
@@ -510,63 +545,80 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
     report_export_status_name (data->status),
     report_export_progress_name (data->progress));
 
-  SENDF_TO_CLIENT_OR_FAIL (
+  buffer_xml_append_printf (
+    response_start,
     "<report id=\"%s\"/>",
     report_uuid_value ? report_uuid_value : "");
 
   if (delta_report_uuid_value)
-    SENDF_TO_CLIENT_OR_FAIL (
+    buffer_xml_append_printf (
+      response_start,
       "<delta_report id=\"%s\"/>",
       delta_report_uuid_value);
 
-  SENDF_TO_CLIENT_OR_FAIL (
+  buffer_xml_append_printf (
+    response_start,
     "<report_format id=\"%s\"/>",
     report_format_uuid_value ? report_format_uuid_value : "");
 
   if (report_config_uuid_value)
-    SENDF_TO_CLIENT_OR_FAIL (
+    buffer_xml_append_printf (
+      response_start,
       "<report_config id=\"%s\"/>",
       report_config_uuid_value);
 
-  SENDF_TO_CLIENT_OR_FAIL (
+  buffer_xml_append_printf (
+    response_start,
     "<file_size>%lld</file_size>"
     "<content_type>%s</content_type>"
-    "<extension>%s</extension>",
+    "<extension>%s</extension>"
+    "<content>",
     data->file_size,
     data->content_type ? data->content_type : "",
     data->extension ? data->extension : "");
 
-  SEND_TO_CLIENT_OR_FAIL ("<content>");
+  if (send_to_client (response_start->str,
+                      gmp_parser->client_writer,
+                      gmp_parser->client_writer_data))
+    {
+      error_send_to_client (error);
+      g_string_free (response_start, TRUE);
+      goto cleanup;
+    }
+
+  g_string_free (response_start, TRUE);
 
   ret = send_report_export_file (gmp_parser, data->file_path);
 
   if (ret)
     {
-      g_free (report_uuid_value);
-      g_free (delta_report_uuid_value);
-      g_free (report_format_uuid_value);
-      g_free (report_config_uuid_value);
-
-      report_export_data_free (data);
-      download_report_export_reset ();
-      return;
+      error_send_to_client (error);
+      goto cleanup;
     }
 
-  SEND_TO_CLIENT_OR_FAIL (
-    "</content>"
-    "</report_export>"
-    "</download_report_export_response>");
-
-  /*
-   * Remove the export only after the complete response has been sent.
-   */
-  if (manage_delete_report_export (data->row_id, data->file_path))
+  if (send_to_client ("</content>"
+                      "</report_export>"
+                      "</download_report_export_response>",
+                      gmp_parser->client_writer,
+                      gmp_parser->client_writer_data))
     {
-      g_warning ("%s: failed to delete downloaded report export %lld",
-                 __func__,
-                 report_export);
+      error_send_to_client (error);
+      goto cleanup;
     }
 
+  delivery_data = g_new (report_export_delivery_data_t, 1);
+  delivery_data->report_export = data->row_id;
+  delivery_data->file_path = g_strdup (data->file_path);
+
+  if (gmp_parser->client_delivery_register)
+    gmp_parser->client_delivery_register (
+      report_export_delivery_complete,
+      delivery_data,
+      gmp_parser->client_delivery_register_data);
+  else
+    report_export_delivery_complete (TRUE, delivery_data);
+
+cleanup:
   g_free (report_uuid_value);
   g_free (delta_report_uuid_value);
   g_free (report_format_uuid_value);
