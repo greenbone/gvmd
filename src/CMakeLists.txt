@@ -560,7 +560,7 @@ set_target_properties(
   gmp-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,acl_user_may,-wrap,find_report_export_with_permission,-wrap,load_report_export_data,-wrap,report_uuid,-wrap,report_format_uuid,-wrap,manage_delete_report_export"
+      "-Wl,-wrap,acl_user_may,-wrap,init_report_export_iterator,-wrap,find_report_export_with_permission,-wrap,load_report_export_data,-wrap,report_uuid,-wrap,report_format_uuid,-wrap,manage_delete_report_export"
 )
 
 set(
