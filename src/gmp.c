@@ -465,12 +465,17 @@ process_gmp (gmp_parser_t *, const gchar *, gchar **);
  * @return A GMP parser.
  */
 static gmp_parser_t *
-gmp_parser_new (int (*write_to_client) (const char*, void*), void* write_to_client_data,
+gmp_parser_new (int (*write_to_client) (const char *, void *),
+                void *write_to_client_data,
+                gmp_client_delivery_register_t client_delivery_register,
+                void *client_delivery_register_data,
                 gchar **disable)
 {
   gmp_parser_t *gmp_parser = (gmp_parser_t*) g_malloc0 (sizeof (gmp_parser_t));
   gmp_parser->client_writer = write_to_client;
   gmp_parser->client_writer_data = write_to_client_data;
+  gmp_parser->client_delivery_register = client_delivery_register;
+  gmp_parser->client_delivery_register_data = client_delivery_register_data;
   gmp_parser->read_over = 0;
   gmp_parser->disabled_commands = g_strdupv (disable);
   return gmp_parser;
@@ -4281,6 +4286,11 @@ static run_wizard_data_t *run_wizard_data
  * @brief Buffer of output to the client.
  */
 char to_client[TO_CLIENT_BUFFER_SIZE];
+
+/**
+ * @brief Effective size of the output buffer.
+ */
+buffer_size_t to_client_buffer_size = TO_CLIENT_BUFFER_SIZE;
 
 /**
  * @brief The start of the data in the \ref to_client buffer.
@@ -31432,8 +31442,11 @@ init_gmp (GSList *log_config, const db_conn_info_t *database,
  */
 void
 init_gmp_process (const db_conn_info_t *database,
-                  int (*write_to_client) (const char*, void*),
-                  void* write_to_client_data, gchar **disable)
+                  int (*write_to_client) (const char *, void *),
+                  void *write_to_client_data,
+                  gmp_client_delivery_register_t client_delivery_register,
+                  void *client_delivery_register_data,
+                  gchar **disable)
 {
   client_state = CLIENT_TOP;
   command_data_init (&command_data);
@@ -31451,7 +31464,10 @@ init_gmp_process (const db_conn_info_t *database,
   xml_context = g_markup_parse_context_new
                  (&xml_parser,
                   0,
-                  gmp_parser_new (write_to_client, write_to_client_data,
+                  gmp_parser_new (write_to_client,
+                                  write_to_client_data,
+                                  client_delivery_register,
+                                  client_delivery_register_data,
                                   disable),
                   (GDestroyNotify) gmp_parser_free);
 }
@@ -31567,6 +31583,8 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   GString *buffer;
   int (*client_writer) (const char*, void*);
   void* client_writer_data;
+  gmp_client_delivery_register_t client_delivery_register;
+  void *client_delivery_register_data;
   GMarkupParseContext *old_xml_context;
   client_state_t old_client_state;
   command_data_t old_command_data;
@@ -31588,14 +31606,20 @@ process_gmp (gmp_parser_t *parser, const gchar *command, gchar **response)
   buffer = g_string_new ("");
   client_writer = parser->client_writer;
   client_writer_data = parser->client_writer_data;
+  client_delivery_register = parser->client_delivery_register;
+  client_delivery_register_data = parser->client_delivery_register_data;
   parser->client_writer = process_gmp_write;
   parser->client_writer_data = buffer;
+  parser->client_delivery_register = NULL;
+  parser->client_delivery_register_data = NULL;
   success = g_markup_parse_context_parse (xml_context,
                                           command,
                                           strlen (command),
                                           &error);
   parser->client_writer = client_writer;
   parser->client_writer_data = client_writer_data;
+  parser->client_delivery_register = client_delivery_register;
+  parser->client_delivery_register_data = client_delivery_register_data;
   xml_context = old_xml_context;
   client_state = old_client_state;
   command_data = old_command_data;

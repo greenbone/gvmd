@@ -11,6 +11,7 @@
 #ifndef _GVMD_GMP_H
 #define _GVMD_GMP_H
 
+#include "gmp_base.h"
 #include "manage.h"
 #include "types.h"
 
@@ -40,13 +41,14 @@ init_gmp (GSList *, const db_conn_info_t *, int, int, int, int, int,
 
 void
 init_gmp_process (const db_conn_info_t *, int (*) (const char *, void *),
-                  void *, gchar **);
+                  void *, gmp_client_delivery_register_t, void *, gchar **);
 
 int
 process_gmp_client_input ();
 
 /** @todo As described in gmp.c, probably should be replaced by gmp_parser_t. */
 extern char to_client[];
+extern buffer_size_t to_client_buffer_size;
 extern buffer_size_t to_client_start;
 extern buffer_size_t to_client_end;
 
