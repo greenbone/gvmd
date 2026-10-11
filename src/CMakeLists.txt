@@ -556,7 +556,21 @@ set(
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
-set_target_properties(gmp-test PROPERTIES LINK_FLAGS "-Wl,-wrap,acl_user_may")
+set_target_properties(
+  gmp-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,acl_user_may,-wrap,find_report_export_with_permission,-wrap,load_report_export_data,-wrap,report_uuid,-wrap,report_format_uuid,-wrap,manage_delete_report_export"
+)
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(gmpd "${ALL_OBJECTS}" "${ALL_MISC_SRC}")
 
 set(
   ALL_OBJECTS
