@@ -64,6 +64,13 @@
 #define ENABLE_SECURITY_INTELLIGENCE_EXPORT 0
 #endif
 
+#ifndef ENABLE_AD_INTEGRATION
+/**
+ * @brief Whether to enable Active Directory integration.
+ */
+#define ENABLE_AD_INTEGRATION 0
+#endif
+
 /**
  * @brief State of a single feature.
  */
@@ -113,6 +120,12 @@ static feature_state_t feature_web_application_scanning =
   {ENABLE_WEB_APPLICATION_SCANNING, 0};
 
 /**
+ * @brief State of a single feature.
+ */
+static feature_state_t feature_ad_integration =
+  {ENABLE_AD_INTEGRATION, 0};
+
+/**
  * @brief Feature flags as read from the configuration file.
  */
 struct conf_feature_flags
@@ -140,6 +153,9 @@ struct conf_feature_flags
 
   int has_web_application_scanning; ///< Whether flag is present.
   int web_application_scanning;     ///< Value of flag.
+
+  int has_ad_integration;           ///< Whether flag is present.
+  int ad_integration;               ///< Value of flag.
 };
 
 /**
@@ -206,6 +222,10 @@ load_conf_file_feature_flags (struct conf_feature_flags *out)
   gvmd_config_get_boolean (kf, "features", "enable_web_application_scanning",
                            &out->has_web_application_scanning,
                            &out->web_application_scanning);
+
+  gvmd_config_get_boolean (kf, "features", "enable_ad_integration",
+                           &out->has_ad_integration,
+                           &out->ad_integration);
 
   return 0;
 }
@@ -317,6 +337,11 @@ runtime_flags_init ()
                    conf_flags.has_web_application_scanning,
                    conf_flags.web_application_scanning);
 
+  resolve_feature (&feature_ad_integration,
+                   "GVMD_ENABLE_AD_INTEGRATION",
+                   conf_flags.has_ad_integration,
+                   conf_flags.ad_integration);
+
   return 0;
 }
 
@@ -352,6 +377,8 @@ feature_enabled (feature_id_t t)
       return feature_jwt_auth.enabled;
     case FEATURE_ID_WEB_APPLICATION_SCANNING:
       return feature_web_application_scanning.enabled;
+    case FEATURE_ID_AD_INTEGRATION:
+      return feature_ad_integration.enabled;
     default:
       return 0;
     }
@@ -385,6 +412,8 @@ feature_compiled_in (feature_id_t t)
       return feature_jwt_auth.compiled_in;
     case FEATURE_ID_WEB_APPLICATION_SCANNING:
       return feature_web_application_scanning.compiled_in;
+    case FEATURE_ID_AD_INTEGRATION:
+      return feature_ad_integration.compiled_in;
     default:
       return 0;
     }
@@ -454,5 +483,11 @@ runtime_append_disabled_commands (GString *buf)
         "delete_web_application_target,"
         "get_web_application_targets,"
         "modify_web_application_target");
+    }
+
+  /* AD_INTEGRATION */
+  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
+    {
+      /* TODO: Append new commands for AD_INTEGRATION when added */
     }
 }

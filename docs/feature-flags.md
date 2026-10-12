@@ -26,6 +26,7 @@ enable_vt_metadata = false
 enable_security_intelligence_export = false
 enable_jwt_auth = false
 enable_web_application_scanning = false
+enable_ad_integration = false
 ```
 
 Each line is optional.
@@ -45,6 +46,8 @@ If a line is missing, gvmd does not apply a value from the config file.
 | Security Intelligence Report Export | `ENABLE_SECURITY_INTELLIGENCE_EXPORT`                     | `GVMD_ENABLE_SECURITY_INTELLIGENCE_EXPORT` | `enable_security_intelligence_export`     |
 | JSON web token authentication       | `ENABLE_JWT_AUTH`                                         | `GVMD_ENABLE_JWT_AUTH`                     | `enable_jwt_auth`                         |
 | Web Application Scanning            | `ENABLE_WEB_APPLICATION_SCANNING`                         | `GVMD_ENABLE_WEB_APPLICATION_SCANNING`     | `enable_web_application_scanning`         |
+| Active Directory Integration        | `ENABLE_AD_INTEGRATION`                                   | 
+`GVMD_ENABLE_AD_INTEGRATION`               | `enable_ad_integration`                   |
 
 ---
 
@@ -162,6 +165,9 @@ Exact example response:
   </feature>
   <feature compiled_in="1" enabled="1">
   <name>ENABLE_WEB_APPLICATION_SCANNING</name>
+  </feature>
+  <feature compiled_in="1" enabled="1">
+  <name>ENABLE_AD_INTEGRATION</name>
   </feature>
 </get_features_response>
 ```

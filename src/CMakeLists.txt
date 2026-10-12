@@ -80,6 +80,21 @@ else(ENABLE_WEB_APPLICATION_SCANNING)
   message(STATUS "ENABLE_WEB_APPLICATION_SCANNING flag is not enabled")
 endif(ENABLE_WEB_APPLICATION_SCANNING)
 
+if(ENABLE_AD_INTEGRATION)
+  pkg_check_modules(
+    LIBGVM_GVM_LDAP
+    REQUIRED
+    libgvm_ldap>=23.11 # update to the correct version
+  )
+  pkg_check_modules(
+    LIBGVM_AD_CONNECTOR
+    REQUIRED
+    libgvm_ad_connector>=23.11  # update to the correct version
+  )
+else(ENABLE_AD_INTEGRATION)
+  message(STATUS "ENABLE_AD_INTEGRATION flag is not enabled")
+endif(ENABLE_AD_INTEGRATION)
+
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)

@@ -2674,6 +2674,10 @@ credential_full_type (const char* abbreviation)
   else if (strcasecmp (abbreviation, "cs_usk") == 0)
     return "Credential store username + SSH key";
 #endif
+#if ENABLE_AD_INTEGRATION
+  else if (strcasecmp (abbreviation, "ldap_ad") == 0)
+    return "LDAP/AD";
+#endif
   else if (strcasecmp (abbreviation, "krb5") == 0)
     return "Kerberos 5";
   else if (strcasecmp (abbreviation, "pw") == 0)
