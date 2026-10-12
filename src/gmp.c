@@ -13661,6 +13661,16 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
     compiled_in, enabled, "ENABLE_WEB_APPLICATION_SCANNING");
 
+  /* AD_INTEGRATION */
+  compiled_in = feature_compiled_in (FEATURE_ID_AD_INTEGRATION) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_AD_INTEGRATION) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_AD_INTEGRATION");
+
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
   set_client_state (CLIENT_AUTHENTIC);
 }

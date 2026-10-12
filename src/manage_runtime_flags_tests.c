@@ -28,6 +28,7 @@ BeforeEach (manage_runtime_flags)
   unsetenv ("GVMD_ENABLE_CREDENTIAL_STORES");
   unsetenv ("GVMD_ENABLE_VT_METADATA");
   unsetenv ("GVMD_ENABLE_WEB_APPLICATION_SCANNING");
+  unsetenv ("GVMD_ENABLE_AD_INTEGRATION");
 }
 
 AfterEach (manage_runtime_flags)
@@ -112,6 +113,18 @@ Ensure (manage_runtime_flags, default_flags_no_config_no_env)
   assert_that (feature_compiled_in (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
                is_equal_to (0));
   assert_that (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT),
+               is_equal_to (0));
+#endif
+
+#if ENABLE_AD_INTEGRATION
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
+#else
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
                is_equal_to (0));
 #endif
 
@@ -327,6 +340,52 @@ Ensure (manage_runtime_flags,
   g_free (path);
 }
 
+Ensure (manage_runtime_flags, config_enables_ad_integration_when_compiled_in)
+{
+  const char *conf =
+    "[features]\n"
+    "enable_ad_integration = true\n";
+
+  char *path = write_test_config (conf);
+
+  load_gvmd_config (path);
+  runtime_flags_init ();
+
+#if ENABLE_AD_INTEGRATION
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
+#else
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+#endif
+
+  remove (path);
+  g_free (path);
+}
+
+Ensure (manage_runtime_flags, config_disables_ad_integration_when_compiled_in)
+{
+  const char *conf =
+    "[features]\n"
+    "enable_ad_integration = false\n";
+
+  char *path = write_test_config (conf);
+
+  load_gvmd_config (path);
+  runtime_flags_init ();
+
+#if ENABLE_AD_INTEGRATION
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+#else
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+#endif
+
+  remove (path);
+  g_free (path);
+}
+
 
 int
 main (int argc, char **argv)
@@ -357,6 +416,10 @@ main (int argc, char **argv)
   add_test_with_context (
     suite, manage_runtime_flags,
     config_enables_web_application_scanning_when_compiled_in);
+  add_test_with_context (suite, manage_runtime_flags,
+                         config_enables_ad_integration_when_compiled_in);
+  add_test_with_context (suite, manage_runtime_flags,
+                         config_disables_ad_integration_when_compiled_in);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
