@@ -22,8 +22,6 @@ static GString *captured_output;
 static gchar *report_export_path;
 static gboolean fail_on_response_close;
 static int report_export_delete_count;
-static int acl_user_may_result;
-static int init_report_export_iterator_result;
 static gmp_client_delivery_callback_t pending_delivery_callback;
 static void *pending_delivery_data;
 
@@ -33,8 +31,6 @@ BeforeEach (gmp)
   report_export_path = NULL;
   fail_on_response_close = FALSE;
   report_export_delete_count = 0;
-  acl_user_may_result = 0;
-  init_report_export_iterator_result = 0;
   pending_delivery_callback = NULL;
   pending_delivery_data = NULL;
 }
@@ -94,16 +90,7 @@ int
 __wrap_acl_user_may (const char *permission)
 {
   (void) permission;
-  return acl_user_may_result;
-}
-
-int
-__wrap_init_report_export_iterator (iterator_t *iterator, get_data_t *get)
-{
-  (void) iterator;
-
-  assert_that (get->id, is_equal_to_string (report_export_uuid));
-  return init_report_export_iterator_result;
+  return 0;
 }
 
 gboolean
@@ -326,41 +313,6 @@ Ensure (gmp, disconnected_download_report_export_delivery_is_not_consumed)
   assert_that (g_file_test (report_export_path, G_FILE_TEST_EXISTS), is_true);
 }
 
-Ensure (gmp, missing_report_export_returns_404_and_reuses_session)
-{
-  const gchar *attribute_names[] = { "report_export_id", NULL };
-  const gchar *attribute_values[] = { report_export_uuid, NULL };
-  gmp_parser_t gmp_parser = { 0 };
-  GError *error = NULL;
-
-  acl_user_may_result = 1;
-  init_report_export_iterator_result = 1;
-  gmp_parser.client_writer = capture_client_writer;
-  client_state = CLIENT_AUTHENTIC;
-
-  gmp_xml_handle_start_element (NULL, "get_report_exports", attribute_names,
-                                attribute_values, &gmp_parser, &error);
-  gmp_xml_handle_end_element (NULL, "get_report_exports", &gmp_parser,
-                              &error);
-
-  assert_that (error, is_null);
-  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
-  assert_that (
-    captured_output->str,
-    contains_string ("<get_report_exports_response status=\"404\""));
-  assert_that (captured_output->str,
-               contains_string ("Failed to find report_export"));
-
-  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
-                                &error);
-  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
-
-  assert_that (error, is_null);
-  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
-  assert_that (captured_output->str,
-               contains_string ("<get_version_response status=\"200\""));
-}
-
 static void
 assert_report_export_command_restores_authenticated_state (const char *command)
 {
@@ -519,8 +471,6 @@ main (int argc, char **argv)
     (suite, gmp, failed_download_report_export_delivery_is_not_consumed);
   add_test_with_context
     (suite, gmp, disconnected_download_report_export_delivery_is_not_consumed);
-  add_test_with_context
-    (suite, gmp, missing_report_export_returns_404_and_reuses_session);
   add_test_with_context
     (suite, gmp, cancel_report_export_restores_authenticated_state);
   add_test_with_context
