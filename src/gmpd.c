@@ -70,59 +70,6 @@ buffer_size_t from_client_end = 0;
 static int close_connection = 0;
 
 /**
- * @brief A callback waiting for queued output to reach the client socket.
- */
-typedef struct
-{
-  gmp_client_delivery_callback_t callback;
-  void *data;
-} pending_client_delivery_t;
-
-/**
- * @brief Callbacks waiting for queued output to reach the client socket.
- */
-static GQueue pending_client_deliveries = G_QUEUE_INIT;
-
-/**
- * @brief Register a callback for completion of queued client output.
- *
- * @param[in] callback       Callback to invoke on completion.
- * @param[in] callback_data  Data passed to the callback.
- * @param[in] register_data  Unused registration context.
- */
-static void
-register_client_delivery (gmp_client_delivery_callback_t callback,
-                          void *callback_data,
-                          void *register_data)
-{
-  pending_client_delivery_t *delivery;
-
-  (void) register_data;
-
-  delivery = g_new (pending_client_delivery_t, 1);
-  delivery->callback = callback;
-  delivery->data = callback_data;
-  g_queue_push_tail (&pending_client_deliveries, delivery);
-}
-
-/**
- * @brief Complete all callbacks waiting for client output delivery.
- *
- * @param[in] success  Whether the queued output reached the client socket.
- */
-static void
-complete_client_deliveries (gboolean success)
-{
-  pending_client_delivery_t *delivery;
-
-  while ((delivery = g_queue_pop_head (&pending_client_deliveries)))
-    {
-      delivery->callback (success, delivery->data);
-      g_free (delivery);
-    }
-}
-
-/**
  * @brief Initialise the GMP library for the GMP daemon.
  *
  * @param[in]  log_config      Log configuration
@@ -164,7 +111,7 @@ init_gmpd_process (const db_conn_info_t *database, gchar **disable)
 {
   from_client_start = 0;
   from_client_end = 0;
-  init_gmp_process (database, NULL, NULL, NULL, NULL, disable);
+  init_gmp_process (database, NULL, NULL, disable);
 }
 
 /**
@@ -408,11 +355,10 @@ write_to_client (gvm_connection_t *client_connection)
 static gboolean
 gmpd_send_to_client (const char* msg, void* write_to_client_data)
 {
-  assert (to_client_buffer_size <= TO_CLIENT_BUFFER_SIZE);
-  assert (to_client_end <= to_client_buffer_size);
+  assert (to_client_end <= TO_CLIENT_BUFFER_SIZE);
   assert (msg);
 
-  while (to_client_buffer_size - to_client_end
+  while (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end
          < strlen (msg))
     {
       buffer_size_t length;
@@ -426,7 +372,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
           case -1:      /* Error. */
             g_debug ("   %s full (%i < %zu); client write failed",
                     __func__,
-                    to_client_buffer_size - to_client_end,
+                    ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                     strlen (msg));
             return TRUE;
           case -2:      /* Wrote as much as client was willing to accept. */
@@ -435,7 +381,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
             assert (0);
         }
 
-      length = to_client_buffer_size - to_client_end;
+      length = ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end;
 
       if (length > strlen (msg))
         break;
@@ -454,7 +400,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
   if (strlen (msg))
     {
       assert (strlen (msg)
-              <= (to_client_buffer_size - to_client_end));
+              <= (((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end));
       memmove (to_client + to_client_end, msg, strlen (msg));
       g_debug ("-> client: %s", msg);
       to_client_end += strlen (msg);
@@ -510,14 +456,11 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
 
   rc = 0;
   close_connection = 0;
-  complete_client_deliveries (FALSE);
 
   /* Initialise the XML parser and the manage library. */
   init_gmp_process (database,
                     (int (*) (const char*, void*)) gmpd_send_to_client,
                     (void*) client_connection,
-                    register_client_delivery,
-                    NULL,
                     disable);
 
   /** @todo Confirm and clarify complications, especially last one. */
@@ -669,7 +612,6 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
           switch (write_to_client (client_connection))
             {
               case  0:      /* Wrote everything in to_client. */
-                complete_client_deliveries (TRUE);
                 if (close_connection)
                   goto client_free;
                 break;
@@ -685,7 +627,6 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
     } /* while (1) */
 
 client_free:
-  complete_client_deliveries (FALSE);
   gvm_connection_free (client_connection);
   return rc;
 }
