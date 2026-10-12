@@ -15932,6 +15932,48 @@ print_report_get_totals (print_report_context_t *ctx)
 }
 
 /**
+ * @brief Print scan config of the task to a file.
+ *
+ * @param[in,out] out File stream to write to.
+ * @param[in] task Task associated with report.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+print_task_scan_config (FILE *out, task_t task)
+{
+  gchar *config_name = NULL;
+  gchar *config_uuid = NULL;
+
+  if (task == 0)
+    return -1;
+
+  config_name = task_config_name (task);
+  config_uuid = task_config_uuid (task);
+
+  if (config_name == NULL || config_uuid == NULL)
+    {
+      /* Some task types (CVE, container, agent) have no scan config. */
+      g_debug ("%s: No scan config for task %llu", __func__, task);
+      g_free (config_name);
+      g_free (config_uuid);
+      return 0;
+    }
+
+  PRINT (out,
+         "<scan_config id=\"%s\">"
+         "<name>%s</name>"
+         "</scan_config>",
+         config_uuid,
+         config_name);
+
+  g_free (config_name);
+  g_free (config_uuid);
+
+  return 0;
+}
+
+/**
  * @brief Print the main XML content for a report to a file.
  *
  * @param[in]  report      The report.
@@ -16519,6 +16561,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
           PRINT (out,
                 "</user_tags>");
         }
+
+      print_task_scan_config (out, task);
 
       PRINT (out,
              "</task>");
