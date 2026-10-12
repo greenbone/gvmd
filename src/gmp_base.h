@@ -9,33 +9,12 @@
 #include <glib.h>
 
 /**
- * @brief Callback invoked when queued client output has been delivered.
- *
- * @param[in] success  Whether the output was delivered successfully.
- * @param[in] data     Callback data.
- */
-typedef void (*gmp_client_delivery_callback_t) (gboolean success, void *data);
-
-/**
- * @brief Register a callback for completion of queued client output.
- *
- * @param[in] callback       Completion callback.
- * @param[in] callback_data  Data passed to the completion callback.
- * @param[in] register_data  Registration context.
- */
-typedef void (*gmp_client_delivery_register_t) (
-  gmp_client_delivery_callback_t callback, void *callback_data,
-  void *register_data);
-
-/**
  * @brief A handle on a GMP parser.
  */
 typedef struct
 {
   int (*client_writer) (const char *, void *); ///< Writes to the client.
   void *client_writer_data;                    ///< Argument to client_writer.
-  gmp_client_delivery_register_t client_delivery_register;
-  void *client_delivery_register_data;
   int importing;             ///< Whether the current op is importing.
   int read_over;             ///< Read over any child elements.
   int parent_state;          ///< Parent state when reading over.
