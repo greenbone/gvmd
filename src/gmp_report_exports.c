@@ -111,32 +111,7 @@ get_report_exports_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
-      switch (ret)
-        {
-        case 1:
-          if (send_find_error_to_client (
-                "get_report_exports",
-                "report_export",
-                get_report_exports_data.get.id,
-                gmp_parser))
-            error_send_to_client (error);
-          break;
-
-        case 2:
-          if (send_find_error_to_client (
-                "get_report_exports",
-                "filter",
-                get_report_exports_data.get.filt_id,
-                gmp_parser))
-            error_send_to_client (error);
-          break;
-
-        default:
-          SEND_TO_CLIENT_OR_FAIL (
-            XML_INTERNAL_ERROR ("get_report_exports"));
-          break;
-        }
-
+      internal_error_send_to_client (error);
       get_report_exports_reset ();
       return;
     }
