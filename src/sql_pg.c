@@ -70,7 +70,9 @@ static PGconn *conn = NULL;
  * Without this every statement is parsed and planned again on each
  * call: PQexecParams sends the statement text every time and PostgreSQL
  * plans it every time.  Only PQprepare plus PQexecPrepared lets the
- * server keep the plan.
+ * server keep the parsed statement, and once PostgreSQL settles on a
+ * generic plan for it (it tries custom plans for the first few
+ * executions), the plan as well.
  *
  * Keyed by the statement text, which is a compile time constant at each
  * of the call sites that pass parameters, so the table stays bounded by
@@ -579,52 +581,58 @@ sql_prepare_ps_internal (int log, const char *sql, va_list args,
  * Prepares it on first use.  Statements without parameters are not cached,
  * see the comment on prepared_statements.
  *
- * A failed PQprepare is not treated as an error: the caller falls back to
- * PQexecParams, which reports the problem in the usual place with the usual
- * message.  Failing here instead would turn every ordinary SQL error into a
- * second, more confusing one.
+ * A failed PQprepare is handed back to the caller as the result of the
+ * statement, so that it goes through the same error handling as a failed
+ * execution.  The statement must not be retried with PQexecParams: the
+ * failure may be a cancellation (57014) or a broken connection, and in a
+ * transaction any further statement would only fail with 25P02.
  *
- * @param[in]  stmt  Statement.
+ * @param[in]   stmt   Statement.
+ * @param[out]  name   Statement name, or NULL if the statement is not
+ *                     prepared.
+ * @param[out]  error  Result of a failed PQprepare, which may be NULL.
  *
- * @return Statement name, or NULL to execute the statement directly.
+ * @return 0 success, -1 PQprepare failed.
  */
-static const char *
-sql_prepared_statement_name (sql_stmt_t *stmt)
+static int
+sql_prepared_statement_name (sql_stmt_t *stmt, const char **name,
+                             PGresult **error)
 {
-  gchar *name;
+  gchar *new_name;
   PGresult *result;
+
+  *name = NULL;
+  *error = NULL;
 
   /* Nothing bound means the values are already in the text.  See the comment
    * on prepared_statements for why caching those would be pointless. */
   if (stmt->param_values->len == 0)
-    return NULL;
+    return 0;
 
   if (prepared_statements == NULL)
     prepared_statements = g_hash_table_new_full (g_str_hash, g_str_equal,
                                                  g_free, g_free);
 
-  name = g_hash_table_lookup (prepared_statements, stmt->sql);
-  if (name)
-    return name;
+  *name = g_hash_table_lookup (prepared_statements, stmt->sql);
+  if (*name)
+    return 0;
 
-  name = g_strdup_printf ("gvmd_ps_%u", prepared_statement_count);
+  new_name = g_strdup_printf ("gvmd_ps_%u", prepared_statement_count);
 
-  result = PQprepare (conn, name, stmt->sql, stmt->param_values->len,
+  result = PQprepare (conn, new_name, stmt->sql, stmt->param_values->len,
                       NULL); /* Default param types. */
   if (PQresultStatus (result) != PGRES_COMMAND_OK)
     {
-      g_debug ("%s: PQprepare failed, running statement directly: %s",
-               __func__, PQresultErrorMessage (result));
-      g_debug ("%s: SQL: %s", __func__, stmt->sql);
-      PQclear (result);
-      g_free (name);
-      return NULL;
+      g_free (new_name);
+      *error = result;
+      return -1;
     }
   PQclear (result);
 
   prepared_statement_count++;
-  g_hash_table_insert (prepared_statements, g_strdup (stmt->sql), name);
-  return name;
+  g_hash_table_insert (prepared_statements, g_strdup (stmt->sql), new_name);
+  *name = new_name;
+  return 0;
 }
 
 /**
@@ -645,10 +653,12 @@ sql_exec_internal (sql_stmt_t *stmt)
   if (stmt->executed == 0)
     {
       const char *statement_name;
+      PGresult *prepare_error;
 
-      statement_name = sql_prepared_statement_name (stmt);
-
-      if (statement_name)
+      if (sql_prepared_statement_name (stmt, &statement_name,
+                                       &prepare_error))
+        result = prepare_error;
+      else if (statement_name)
         result = PQexecPrepared (conn, statement_name,
                                  stmt->param_values->len,
                                  (const char *const *)
