@@ -2714,6 +2714,7 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->ca_certificate != NULL)
     {
+      // Allow clearing the CA certificate
       if (*ad->ca_certificate != '\0'
           && !valid_ad_ca_certificate (ad->ca_certificate))
         return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;

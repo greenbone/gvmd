@@ -16,6 +16,7 @@ static gchar copy_test_user_uuid[] = "test-user";
 static const gchar *copy_rows_name;
 static const gchar *copy_rows_comment;
 static const gchar *copy_rows_credential_id;
+static int ad_test_enabled = TRUE;
 
 /* Mocks */
 credential_return_t
@@ -96,6 +97,13 @@ __wrap_cleanup_iterator (iterator_t *iterator)
   (void) iterator;
 }
 
+int
+__wrap_feature_enabled (feature_id_t feature)
+{
+  return feature == FEATURE_ID_AD_INTEGRATION
+           ? ad_test_enabled : FALSE;
+}
+
 void __wrap_sql_begin_immediate (void) {}
 void __wrap_sql_commit (void) {}
 void __wrap_sql_rollback (void) {}
@@ -107,6 +115,24 @@ expect_no_storage_calls (void)
   never_expect (__wrap_set_credential_data);
   never_expect (__wrap_update_credential_modification_time);
 }
+
+#if ENABLE_AD_INTEGRATION
+
+static credential_data_t
+valid_ad_test_data (void)
+{
+  return (credential_data_t) {
+    .name = "test",
+    .ad_connector = {
+      .host = "dc.example.com",
+      .bind_dn = "user@domain",
+      .base_dn = "DC=example,DC=com",
+      .bind_password = "password",
+      .tls_mode = "ldaps",
+    },
+  };
+}
+#endif
 
 Describe (manage_credentials);
 BeforeEach (manage_credentials)
@@ -764,6 +790,490 @@ Ensure (manage_credentials, modify_pgp_clears_empty_public_key)
                is_equal_to (CREDENTIAL_OK));
 }
 
+#if ENABLE_AD_INTEGRATION
+Ensure (manage_credentials, create_ad_unavailable_when_feature_disabled)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  ad_test_enabled = FALSE;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INTEGRATION_UNAVAILABLE));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_requires_host)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.host = NULL;
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_HOST_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_host)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.host = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_HOST_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_requires_bind_dn)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.bind_dn = NULL;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BIND_DN_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_bind_dn)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.bind_dn = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BIND_DN_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_requires_base_dn)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.base_dn = NULL;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BASE_DN_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_base_dn)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.base_dn = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BASE_DN_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_requires_bind_password)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.bind_password = NULL;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BIND_PASSWORD_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_bind_password)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.bind_password = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BIND_PASSWORD_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_port)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.port = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_zero_port)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.port = "0";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_port_above_maximum)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.port = "65536";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_negative_port)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.port = "-1";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_requires_tls_mode)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.tls_mode = NULL;
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_TLS_MODE_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_tls_mode)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.tls_mode = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_TLS_MODE_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_plain_ldap)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.tls_mode = "ldap";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_TLS_MODE));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_empty_ca_certificate)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.ca_certificate = "";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_CA_CERTIFICATE));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_rejects_invalid_ca_certificate)
+{
+  credential_t credential = 42;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.ca_certificate = "invalid";
+
+  expect_no_storage_calls ();
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_CA_CERTIFICATE));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_stores_valid_data)
+{
+  credential_t credential = 0;
+  credential_data_t data = valid_ad_test_data ();
+  data.ad_connector.port = "636";
+  data.ad_connector.tls_mode = "ldaps";
+  ad_test_enabled = TRUE;
+
+  expect (__wrap_insert_credential_base,
+          when (type, is_equal_to_string ("ad")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_host")),
+          when (value, is_equal_to_string ("dc.example.com")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_bind_dn")),
+          when (value, is_equal_to_string ("user@domain")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_base_dn")),
+          when (value, is_equal_to_string ("DC=example,DC=com")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_port")),
+          when (value, is_equal_to_string ("636")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_tls_mode")),
+          when (value, is_equal_to_string ("ldaps")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("ad_ca_certificate")),
+          when (value, is_null));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("secret")),
+          when (value, is_null));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("password")),
+          when (value, is_equal_to_string ("password")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (123)),
+          when (type, is_equal_to_string ("private_key")),
+          when (value, is_null));
+
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_OK));
+  assert_that (credential, is_equal_to (123));
+}
+
+Ensure (manage_credentials, modify_ad_unavailable_when_feature_disabled)
+{
+  credential_data_t data = { 0 };
+  ad_test_enabled = FALSE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INTEGRATION_UNAVAILABLE));
+}
+
+Ensure (manage_credentials, modify_ad_ignores_absent_fields)
+{
+  credential_data_t data = { 0 };
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_OK));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_empty_host)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.host = "";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_HOST_REQUIRED));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_empty_bind_dn)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.bind_dn = "";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_BIND_DN_REQUIRED));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_empty_base_dn)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.base_dn = "";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_BASE_DN_REQUIRED));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_empty_bind_password)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.bind_password = "";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_BIND_PASSWORD_REQUIRED));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_invalid_port)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.port = "0";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+}
+
+Ensure (manage_credentials, modify_ad_clears_empty_port)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.port = "";
+  ad_test_enabled = TRUE;
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("ad_port")),
+          when (value, is_null));
+  expect (__wrap_update_credential_modification_time,
+          when (credential, is_equal_to (42)));
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_OK));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_invalid_tls_mode)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.tls_mode = "ldap";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_TLS_MODE));
+}
+
+Ensure (manage_credentials, modify_ad_clears_empty_ca_certificate)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.ca_certificate = "";
+  ad_test_enabled = TRUE;
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("ad_ca_certificate")),
+          when (value, is_null));
+  expect (__wrap_update_credential_modification_time,
+          when (credential, is_equal_to (42)));
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_OK));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_invalid_ca_certificate)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.ca_certificate = "invalid";
+  ad_test_enabled = TRUE;
+
+  expect_no_storage_calls ();
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_CA_CERTIFICATE));
+}
+
+Ensure (manage_credentials, modify_ad_updates_host_port_tls_and_password)
+{
+  credential_data_t data = { 0 };
+  data.ad_connector.host = "dc-new.example.com";
+  data.ad_connector.port = "636";
+  data.ad_connector.tls_mode = "ldaps";
+  data.ad_connector.bind_password = "new-password";
+  ad_test_enabled = TRUE;
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("ad_host")),
+          when (value, is_equal_to_string ("dc-new.example.com")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("ad_port")),
+          when (value, is_equal_to_string ("636")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("ad_tls_mode")),
+          when (value, is_equal_to_string ("ldaps")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("secret")),
+          when (value, is_null));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("password")),
+          when (value, is_equal_to_string ("new-password")));
+
+  expect (__wrap_set_credential_data,
+          when (credential, is_equal_to (42)),
+          when (type, is_equal_to_string ("private_key")),
+          when (value, is_null));
+
+  expect (__wrap_update_credential_modification_time,
+          when (credential, is_equal_to (42)));
+
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_OK));
+}
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -842,6 +1352,73 @@ main (int argc, char **argv)
                          modify_pgp_ignores_absent_public_key);
   add_test_with_context (suite, manage_credentials,
                          modify_pgp_clears_empty_public_key);
+
+#if ENABLE_AD_INTEGRATION
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_unavailable_when_feature_disabled);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_requires_host);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_host);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_requires_bind_dn);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_bind_dn);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_requires_base_dn);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_base_dn);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_requires_bind_password);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_bind_password);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_port);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_zero_port);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_port_above_maximum);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_negative_port);
+  add_test_with_context (suite, manage_credentials,
+                        create_ad_requires_tls_mode);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_tls_mode);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_plain_ldap);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_empty_ca_certificate);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_invalid_ca_certificate);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_stores_valid_data);
+
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_unavailable_when_feature_disabled);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_ignores_absent_fields);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_empty_host);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_empty_bind_dn);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_empty_base_dn);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_empty_bind_password);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_invalid_port);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_clears_empty_port);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_invalid_tls_mode);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_clears_empty_ca_certificate);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_invalid_ca_certificate);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_updates_host_port_tls_and_password);
+#endif
+
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
   else

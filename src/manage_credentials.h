@@ -22,7 +22,7 @@ typedef struct
   char *host;
   char *port;
   char *bind_dn;
-  char *bind_password;  // keep this ? Could simplify later splitting
+  char *bind_password;
   char *tls_mode;
   char *base_dn;
   char *ca_certificate;
