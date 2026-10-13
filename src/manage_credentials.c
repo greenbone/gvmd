@@ -27,6 +27,7 @@
 #include <gvm/util/gpgmeutils.h>
 #include <gvm/util/serverutils.h>
 #include <gvm/util/sshutils.h>
+#include <gvm/util/tlsutils.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -50,6 +51,10 @@ typedef enum
   CREDENTIAL_TYPE_SNMP,
   CREDENTIAL_TYPE_KRB5,
 
+#if ENABLE_AD_INTEGRATION
+  CREDENTIAL_TYPE_AD,
+#endif
+
 #if ENABLE_CREDENTIAL_STORES
   CREDENTIAL_TYPE_CS_UP,
   CREDENTIAL_TYPE_CS_PW,
@@ -61,6 +66,34 @@ typedef enum
   CREDENTIAL_TYPE_CS_KRB5
 #endif
 } credential_type_t;
+
+
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Reset the AD connector data structure.
+ *
+ * @param[in,out] ad  Pointer to the AD connector data structure to reset.
+ *
+ * This function frees all dynamically allocated fields within the
+ * credential_ad_connector_data_t structure and sets them to NULL.
+ */
+static void
+credential_ad_connector_data_reset (credential_ad_connector_data_t *ad)
+{
+  if (ad == NULL)
+    return;
+
+  g_free (ad->host);
+  g_free (ad->port);
+  g_free (ad->bind_dn);
+  g_free (ad->bind_password);
+  g_free (ad->base_dn);
+  g_free (ad->tls_mode);
+  g_free (ad->ca_certificate);
+
+  memset (ad, 0, sizeof (*ad));
+}
+#endif
 
 /**
  * @brief Reset the credential data structure.
@@ -102,6 +135,10 @@ credential_data_reset (credential_data_t *data)
   g_free (data->privacy_host_identifier);
 #endif
 
+#if ENABLE_AD_INTEGRATION
+  credential_ad_connector_data_reset (&data->ad_connector);
+#endif
+
   memset (data, 0, sizeof (*data));
 }
 
@@ -141,6 +178,11 @@ credential_type_from_string (const gchar *type,
     *resolved = CREDENTIAL_TYPE_PGP;
   else if (g_str_equal (type, "smime"))
     *resolved = CREDENTIAL_TYPE_SMIME;
+
+#if ENABLE_AD_INTEGRATION
+  else if (g_str_equal (type, "ad"))
+    *resolved = CREDENTIAL_TYPE_AD;
+#endif
 
 #if ENABLE_CREDENTIAL_STORES
   else if (g_str_equal (type, "cs_up"))
@@ -1445,6 +1487,141 @@ fail:
   return ret;
 }
 
+#if ENABLE_AD_INTEGRATION
+
+/**
+ * @brief Validate an Active Directory port.
+ *
+ * @param text The port as a string.
+ *
+ * @return TRUE if the port is valid or NULL, FALSE otherwise.
+ */
+static gboolean
+valid_ad_port (const char *text)
+{
+  char *end;
+  guint64 port;
+
+  if (text == NULL)
+    return TRUE;  /* use the connector default. */
+
+  if (!g_ascii_isdigit ((guchar) text[0]))
+    return FALSE;
+
+  port = g_ascii_strtoull (text, &end, 10);
+  return *end == '\0' && port >= 1 && port <= 65535;
+}
+
+/**
+ * @brief Validate an Active Directory CA certificate.
+ *
+ * @param pem The CA certificate in PEM format.
+ *
+ * @return TRUE if the certificate is valid, FALSE otherwise.
+ */
+static gboolean
+valid_ad_ca_certificate (const char *pem)
+{
+  gnutls_x509_crt_t *certs = NULL;
+  unsigned int count = 0;
+  gnutls_datum_t input;
+  gsize length;
+  gboolean valid;
+  int ret;
+
+  if (pem == NULL || *pem == '\0')
+    return FALSE;
+
+  length = strlen (pem);
+  if (length > G_MAXUINT)
+    return FALSE;
+
+  input.data = (unsigned char *) pem;
+  input.size = (unsigned int) length;
+
+  ret = gnutls_x509_crt_list_import2 (&certs, &count, &input,
+                                      GNUTLS_X509_FMT_PEM, 0);
+
+  valid = (ret == GNUTLS_E_SUCCESS && count > 0);
+  gvm_x509_cert_list_free (certs, count);
+  return valid;
+}
+
+/**
+ * @brief Create an Active Directory credential.
+ *
+ * @param data The credential data.
+ * @param new_credential The newly created credential.
+ *
+ * @return CREDENTIAL_OK on success, or an error code on failure.
+ */
+static credential_return_t
+create_active_directory_credential (const credential_data_t *data,
+                                    credential_t *new_credential)
+{
+  credential_return_t ret;
+  const credential_ad_connector_data_t *ad;
+
+  if (data == NULL || new_credential == NULL)
+    return CREDENTIAL_INTERNAL_ERROR;
+
+  *new_credential = 0;
+
+  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
+    return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+
+  ad = &data->ad_connector;
+
+ if (ad->host == NULL || ad->host[0] == '\0')
+    return CREDENTIAL_AD_HOST_REQUIRED;
+  if (ad->bind_dn == NULL || ad->bind_dn[0] == '\0')
+    return CREDENTIAL_AD_BIND_DN_REQUIRED;
+  if (ad->base_dn == NULL || ad->base_dn[0] == '\0')
+    return CREDENTIAL_AD_BASE_DN_REQUIRED;
+  if (ad->bind_password == NULL || ad->bind_password[0] == '\0')
+    return CREDENTIAL_AD_BIND_PASSWORD_REQUIRED;
+  if (ad->tls_mode == NULL || ad->tls_mode[0] == '\0')
+    return CREDENTIAL_AD_TLS_MODE_REQUIRED;
+
+  if (!valid_ad_port (ad->port))
+    return CREDENTIAL_AD_INVALID_PORT;
+
+  if (!g_str_equal (ad->tls_mode, "ldaps")
+      && !g_str_equal (ad->tls_mode, "starttls"))
+    return CREDENTIAL_AD_INVALID_TLS_MODE;
+
+  if (ad->ca_certificate != NULL
+      && !valid_ad_ca_certificate (ad->ca_certificate))
+    return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;
+
+  ret = insert_credential_base (data, "ad", new_credential);
+  if (ret != CREDENTIAL_OK)
+    return ret;
+
+  if (set_credential_data (*new_credential, "ad_host", ad->host)
+      || set_credential_data (*new_credential, "ad_bind_dn", ad->bind_dn)
+      || set_credential_data (*new_credential, "ad_base_dn", ad->base_dn)
+      || set_credential_data (*new_credential, "ad_port", ad->port)
+      || set_credential_data (*new_credential, "ad_tls_mode", ad->tls_mode)
+      || set_credential_data (*new_credential, "ad_ca_certificate",
+                              ad->ca_certificate))
+    {
+      ret = CREDENTIAL_INTERNAL_ERROR;
+      goto fail;
+    }
+
+  ret = store_credential_password (*new_credential, ad->bind_password);
+  if (ret != CREDENTIAL_OK)
+    goto fail;
+
+  return CREDENTIAL_OK;
+
+fail:
+  *new_credential = 0;
+  return ret;
+}
+#endif /* ENABLE_AD_INTEGRATION */
+
 #if ENABLE_CREDENTIAL_STORES
 /**
  * @brief Validate the fields related to the credential store.
@@ -1684,6 +1861,10 @@ create_credential_for_type (const credential_data_t *data,
         return create_pgp_credential (data, new_credential);
       case CREDENTIAL_TYPE_PW:
         return create_password_credential (data, new_credential);
+#if ENABLE_AD_INTEGRATION
+      case CREDENTIAL_TYPE_AD:
+        return create_active_directory_credential (data, new_credential);
+#endif
 #if ENABLE_CREDENTIAL_STORES
       case CREDENTIAL_TYPE_CS_UP:
       case CREDENTIAL_TYPE_CS_USK:
@@ -2457,6 +2638,109 @@ modify_credential_common_fields (const credential_data_t *data,
   return CREDENTIAL_OK;
 }
 
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Modify an Active Directory credential.
+ *
+ * @param data  The credential data.
+ * @param credential  The credential row ID.
+ *
+ * @return CREDENTIAL_OK on success, or an error code on failure.
+ */
+static credential_return_t
+modify_active_directory_credential (const credential_data_t *data,
+                                    credential_t credential)
+{
+  const credential_ad_connector_data_t *ad;
+  gboolean changed = FALSE;
+  credential_return_t ret;
+
+  if (data == NULL || credential == 0)
+    return CREDENTIAL_INTERNAL_ERROR;
+
+  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
+    return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+
+  ad = &data->ad_connector;
+
+  if (ad->host != NULL)
+    {
+      if (*ad->host == '\0')
+        return CREDENTIAL_AD_HOST_REQUIRED;
+      if (set_credential_data (credential, "ad_host", ad->host))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->bind_dn != NULL)
+    {
+      if (*ad->bind_dn == '\0')
+        return CREDENTIAL_AD_BIND_DN_REQUIRED;
+      if (set_credential_data (credential, "ad_bind_dn", ad->bind_dn))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->base_dn != NULL)
+    {
+      if (*ad->base_dn == '\0')
+        return CREDENTIAL_AD_BASE_DN_REQUIRED;
+      if (set_credential_data (credential, "ad_base_dn", ad->base_dn))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->port != NULL)
+    {
+      // Allow clearing the port
+      if (*ad->port != '\0' && !valid_ad_port (ad->port))
+        return CREDENTIAL_AD_INVALID_PORT;
+
+      if (set_credential_data (credential, "ad_port",
+                               *ad->port ? ad->port : NULL))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->tls_mode != NULL)
+    {
+      if (!g_str_equal (ad->tls_mode, "ldaps")
+          && !g_str_equal (ad->tls_mode, "starttls"))
+        return CREDENTIAL_AD_INVALID_TLS_MODE;
+      if (set_credential_data (credential, "ad_tls_mode", ad->tls_mode))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->ca_certificate != NULL)
+    {
+      if (*ad->ca_certificate != '\0'
+          && !valid_ad_ca_certificate (ad->ca_certificate))
+        return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;
+      if (set_credential_data (credential, "ad_ca_certificate",
+                               *ad->ca_certificate
+                                 ? ad->ca_certificate : NULL))
+        return CREDENTIAL_INTERNAL_ERROR;
+      changed = TRUE;
+    }
+
+  if (ad->bind_password != NULL)
+    {
+      if (*ad->bind_password == '\0')
+        return CREDENTIAL_AD_BIND_PASSWORD_REQUIRED;
+      ret = store_credential_password (credential, ad->bind_password);
+      if (ret != CREDENTIAL_OK)
+        return ret;
+      changed = TRUE;
+    }
+
+  if (changed)
+    update_credential_modification_time (credential);
+
+  return CREDENTIAL_OK;
+}
+#endif /* ENABLE_AD_INTEGRATION */
+
 #if ENABLE_CREDENTIAL_STORES
 /**
  * @brief Check if the credential data has any local secret fields.
@@ -2728,6 +3012,10 @@ modify_credential_for_type (const credential_data_t *data,
         return modify_pgp_credential (data, credential);
       case CREDENTIAL_TYPE_PW:
         return modify_password_credential (data, credential);
+#if ENABLE_AD_INTEGRATION
+      case CREDENTIAL_TYPE_AD:
+        return modify_active_directory_credential (data, credential);
+#endif
 #if ENABLE_CREDENTIAL_STORES
       case CREDENTIAL_TYPE_CS_UP:
       case CREDENTIAL_TYPE_CS_USK:

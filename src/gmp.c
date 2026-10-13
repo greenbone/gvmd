@@ -12845,6 +12845,31 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
         }
 #endif /* ENABLE_CREDENTIAL_STORES */
 
+#if ENABLE_AD_INTEGRATION
+      if (type && strcmp (type, "ad") == 0
+          && feature_enabled (FEATURE_ID_AD_INTEGRATION))
+        {
+          const char *host = credential_iterator_ad_host (&credentials);
+          const char *bind_dn = credential_iterator_ad_bind_dn (&credentials);
+          const char *base_dn = credential_iterator_ad_base_dn (&credentials);
+          const char *port = credential_iterator_ad_port (&credentials);
+          const char *tls_mode = credential_iterator_ad_tls_mode (&credentials);
+          const char *ca = credential_iterator_ad_ca_certificate (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL
+            ("<host>%s</host><bind_dn>%s</bind_dn><base_dn>%s</base_dn>",
+             host ?: "", bind_dn ?: "", base_dn ?: "");
+
+          if (port)
+            SENDF_TO_CLIENT_OR_FAIL ("<port>%s</port>", port);
+          if (tls_mode)
+            SENDF_TO_CLIENT_OR_FAIL ("<tls_mode>%s</tls_mode>", tls_mode);
+          if (ca && get_credentials_data->get.details)
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<ca_certificate>%s</ca_certificate>", ca);
+        }
+#endif
+
       if (type && ((strcmp (type, "krb5") == 0)
                    || (strcmp (type, "cs_krb5") == 0)))
         {

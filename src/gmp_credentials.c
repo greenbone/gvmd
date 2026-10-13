@@ -115,6 +115,26 @@ credential_child_text (entity_t parent, const gchar *name)
   return g_strdup (value ? value : "");
 }
 
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Parse the AD connector data from the given entity.
+ *
+ * @param[in]  root  The root entity containing the AD connector data.
+ * @param[out] ad    The structure to populate with the parsed data.
+ */
+static void
+parse_ad_connector_data (entity_t root, credential_ad_connector_data_t *ad)
+{
+  ad->host = credential_child_text (root, "host");
+  ad->port = credential_child_text (root, "port");
+  ad->bind_dn = credential_child_text (root, "bind_dn");
+  ad->bind_password = credential_child_text (root, "bind_password");
+  ad->base_dn = credential_child_text (root, "base_dn");
+  ad->tls_mode = credential_child_text (root, "tls_mode");
+  ad->ca_certificate = credential_child_text (root, "ca_certificate");
+}
+#endif
+
 /**
  * @brief Parse a credential entry from the given entity.
  *
@@ -177,6 +197,11 @@ parse_credential_entity (entity_t root, credential_data_t *data)
   data->privacy_host_identifier
     = credential_child_text (root, "privacy_host_identifier");
 #endif
+
+#if ENABLE_AD_INTEGRATION
+  parse_ad_connector_data (root, &data->ad_connector);
+#endif
+
 }
 
 /**
@@ -294,6 +319,33 @@ credential_error_status_text (credential_return_t response)
 
       case CREDENTIAL_MIXED_CREDENTIAL_SOURCES:
         return "Value cannot be modified for credential store type";
+
+      case CREDENTIAL_AD_HOST_REQUIRED:
+        return "AD host is required";
+
+      case CREDENTIAL_AD_BASE_DN_REQUIRED:
+        return "AD base DN is required";
+
+      case CREDENTIAL_AD_BIND_DN_REQUIRED:
+        return "AD bind DN is required";
+
+      case CREDENTIAL_AD_BIND_PASSWORD_REQUIRED:
+        return "AD bind password is required";
+
+      case CREDENTIAL_AD_TLS_MODE_REQUIRED:
+        return "AD TLS mode is required";
+
+      case CREDENTIAL_AD_INVALID_TLS_MODE:
+        return "Invalid AD TLS mode";
+
+      case CREDENTIAL_AD_INVALID_PORT:
+        return "Invalid AD port";
+
+      case CREDENTIAL_AD_INVALID_CA_CERTIFICATE:
+        return "Invalid AD CA certificate";
+
+      case CREDENTIAL_AD_INTEGRATION_UNAVAILABLE:
+        return "AD integration feature is disabled";
 
       default:
         return NULL;

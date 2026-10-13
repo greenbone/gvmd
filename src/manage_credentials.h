@@ -17,6 +17,17 @@
 #include "manage_get.h"
 #include "manage_resources_types.h"
 
+typedef struct
+{
+  char *host;
+  char *port;
+  char *bind_dn;
+  char *bind_password;  // keep this ? Could simplify later splitting
+  char *tls_mode;
+  char *base_dn;
+  char *ca_certificate;
+} credential_ad_connector_data_t;
+
 /**
  * @brief Represents a credential.
  */
@@ -45,6 +56,9 @@ struct credential_data
   char *vault_id;
   char *host_identifier;
   char *privacy_host_identifier;
+#endif
+#if ENABLE_AD_INTEGRATION
+  credential_ad_connector_data_t ad_connector;
 #endif
   gboolean key_present;
 } ;
@@ -94,7 +108,17 @@ typedef enum
   CREDENTIAL_CREDENTIAL_STORE_UNAVAILABLE,
   CREDENTIAL_VAULT_ID_REQUIRED,
   CREDENTIAL_HOST_IDENTIFIER_REQUIRED,
-  CREDENTIAL_MIXED_CREDENTIAL_SOURCES
+  CREDENTIAL_MIXED_CREDENTIAL_SOURCES,
+
+  CREDENTIAL_AD_INTEGRATION_UNAVAILABLE,
+  CREDENTIAL_AD_HOST_REQUIRED,
+  CREDENTIAL_AD_BASE_DN_REQUIRED,
+  CREDENTIAL_AD_BIND_DN_REQUIRED,
+  CREDENTIAL_AD_BIND_PASSWORD_REQUIRED,
+  CREDENTIAL_AD_TLS_MODE_REQUIRED,
+  CREDENTIAL_AD_INVALID_TLS_MODE,
+  CREDENTIAL_AD_INVALID_PORT,
+  CREDENTIAL_AD_INVALID_CA_CERTIFICATE
 } credential_return_t;
 
 credential_return_t
