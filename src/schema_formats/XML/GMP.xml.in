@@ -4532,6 +4532,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <o><e>community</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4678,6 +4687,43 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
@@ -4690,6 +4736,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <p>snmp: SNMP</p>
         <p>up: User name + password</p>
         <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+        <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </description>
       <pattern>
         <alts>
@@ -4701,6 +4750,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <alt>snmp</alt>
           <alt>up</alt>
           <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+          <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </alts>
       </pattern>
     </ele>
@@ -4802,6 +4854,30 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </create_credential_response>
       </response>
     </example>
+@IF_ENABLE_AD_INTEGRATION@
+    <example>
+      <summary>Create an Active Directory credential</summary>
+      <request>
+        <create_credential>
+          <name>Active Directory service account</name>
+          <type>ad</type>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response
+            status="201"
+            status_text="OK, resource created"
+            id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_credential_response>
+      </response>
+    </example>
+@ENDIF_ENABLE_AD_INTEGRATION@
   </command>
   <command>
     <name>create_filter</name>
@@ -15162,6 +15238,14 @@ END:VCALENDAR
           <o><e>kdc</e></o>
           <o><e>kdcs</e></o>
           <o><e>realm</e></o>
+@IF_ENABLE_AD_INTEGRATION@
+          <o><e>host</e></o>
+          <o><e>port</e></o>
+          <o><e>bind_dn</e></o>
+          <o><e>base_dn</e></o>
+          <o><e>tls_mode</e></o>
+          <o><e>ca_certificate</e></o>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </pattern>
         <ele>
           <name>owner</name>
@@ -15295,6 +15379,9 @@ END:VCALENDAR
             <p>snmp: SNMP</p>
             <p>up: User name + password</p>
             <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+            <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
           </description>
           <pattern>
             <alts>
@@ -15306,6 +15393,9 @@ END:VCALENDAR
               <alt>snmp</alt>
               <alt>up</alt>
               <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+              <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
             </alts>
           </pattern>
         </ele>
@@ -15542,6 +15632,38 @@ END:VCALENDAR
           <pattern>text</pattern>
           <summary>The Kerberos realm</summary>
         </ele>
+@IF_ENABLE_AD_INTEGRATION@
+        <ele>
+          <name>host</name>
+          <summary>Active Directory server hostname or address</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Connection port, from 1 through 65535</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bind_dn</name>
+          <summary>Distinguished name used for authentication</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>base_dn</name>
+          <summary>Base distinguished name for directory searches</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>tls_mode</name>
+          <summary>TLS connection mode</summary>
+          <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+        </ele>
+        <ele>
+          <name>ca_certificate</name>
+          <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </ele>
       <ele>
         <name>filters</name>
@@ -38898,6 +39020,15 @@ END:VCALENDAR
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </pattern>
     <ele>
       <name>name</name>
@@ -39036,6 +39167,43 @@ END:VCALENDAR
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <response>
       <pattern>
         <attrib>

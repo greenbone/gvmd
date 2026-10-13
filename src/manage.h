@@ -2013,6 +2013,28 @@ credential_iterator_privacy_host_identifier (iterator_t*);
 
 #endif
 
+#if ENABLE_AD_INTEGRATION
+
+const char*
+credential_iterator_ad_host (iterator_t*);
+
+const char*
+credential_iterator_ad_bind_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_base_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_port (iterator_t*);
+
+const char*
+credential_iterator_ad_tls_mode (iterator_t*);
+
+const char*
+credential_iterator_ad_ca_certificate (iterator_t*);
+
+#endif /* ENABLE_AD_INTEGRATION */
+
 const char*
 credential_iterator_private_key (iterator_t*);
 
