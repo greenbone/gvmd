@@ -332,8 +332,10 @@ Ensure (manage_runtime_flags,
   assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING),
                is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (0));
-  assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_WEB_APPLICATION_SCANNING),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING),
+               is_equal_to (0));
 #endif
 
   remove (path);
@@ -352,11 +354,15 @@ Ensure (manage_runtime_flags, config_enables_ad_integration_when_compiled_in)
   runtime_flags_init ();
 
 #if ENABLE_AD_INTEGRATION
-  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
-  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (1));
 #else
-  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
-  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
 #endif
 
   remove (path);
@@ -375,11 +381,15 @@ Ensure (manage_runtime_flags, config_disables_ad_integration_when_compiled_in)
   runtime_flags_init ();
 
 #if ENABLE_AD_INTEGRATION
-  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (1));
-  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (1));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
 #else
-  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
-  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION), is_equal_to (0));
+  assert_that (feature_compiled_in (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AD_INTEGRATION),
+               is_equal_to (0));
 #endif
 
   remove (path);

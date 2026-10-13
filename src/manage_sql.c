@@ -19826,9 +19826,9 @@ delete_credential (const char *credential_id, int ultimate)
     CREDENTIAL_VALUE_COLUMN (table, data_table, "privacy_algorithm",  \
                              NULL),                                   \
     CREDENTIAL_VALUE_COLUMN (table, data_table, "public_key", NULL),  \
-    CREDENTIAL_VALUE_COLUMN (table, data_table, "kdc", "kdc"),         \
-    CREDENTIAL_VALUE_COLUMN (table, data_table, "realm", "realm"),     \
-    CREDENTIAL_VALUE_COLUMN (table, data_table, "secret", "secret"),   \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "kdc", "kdc"),        \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "realm", "realm"),    \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "secret", "secret"),  \
     CREDENTIAL_VALUE_COLUMN (table, data_table, "password",           \
                              "password"),                             \
     CREDENTIAL_VALUE_COLUMN (table, data_table, "private_key",        \
@@ -19853,7 +19853,7 @@ delete_credential (const char *credential_id, int ultimate)
     CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_tls_mode", NULL), \
     CREDENTIAL_VALUE_COLUMN (table, data_table,                       \
                              "ad_ca_certificate", NULL),              \
-    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                             \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                              \
   }
 
 /**
@@ -19906,8 +19906,8 @@ credential_count (const get_data_t *get)
   static column_t columns[]
     = CREDENTIAL_ITERATOR_COLUMNS (credentials, credentials_data);
 
-    G_STATIC_ASSERT (G_N_ELEMENTS (columns)
-                     == GET_ITERATOR_COLUMN_COUNT + CRED_COL_COUNT + 1);
+  G_STATIC_ASSERT (G_N_ELEMENTS (columns)
+                   == GET_ITERATOR_COLUMN_COUNT + CRED_COL_COUNT + 1);
 
   static column_t trash_columns[]
     = CREDENTIAL_ITERATOR_COLUMNS (credentials_trash, credentials_trash_data);

@@ -12857,13 +12857,17 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
           const char *ca = credential_iterator_ad_ca_certificate (&credentials);
 
           SENDF_TO_CLIENT_OR_FAIL
-            ("<host>%s</host><bind_dn>%s</bind_dn><base_dn>%s</base_dn>",
-             host ?: "", bind_dn ?: "", base_dn ?: "");
+            ("<host>%s</host>"
+             "<bind_dn>%s</bind_dn>"
+             "<base_dn>%s</base_dn>"
+             "<tls_mode>%s</tls_mode>",
+             host ?: "",
+             bind_dn ?: "",
+             base_dn ?: "",
+             tls_mode ?: "");
 
           if (port)
             SENDF_TO_CLIENT_OR_FAIL ("<port>%s</port>", port);
-          if (tls_mode)
-            SENDF_TO_CLIENT_OR_FAIL ("<tls_mode>%s</tls_mode>", tls_mode);
           if (ca && get_credentials_data->get.details)
             SENDF_TO_CLIENT_OR_FAIL
               ("<ca_certificate>%s</ca_certificate>", ca);

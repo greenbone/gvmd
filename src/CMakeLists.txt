@@ -81,16 +81,8 @@ else(ENABLE_WEB_APPLICATION_SCANNING)
 endif(ENABLE_WEB_APPLICATION_SCANNING)
 
 if(ENABLE_AD_INTEGRATION)
-  pkg_check_modules(
-    LIBGVM_GVM_LDAP
-    REQUIRED
-    libgvm_ldap>=23.11 # update to the correct version
-  )
-  pkg_check_modules(
-    LIBGVM_AD_CONNECTOR
-    REQUIRED
-    libgvm_ad_connector>=23.11  # update to the correct version
-  )
+  pkg_check_modules(LIBGVM_GVM_LDAP REQUIRED libgvm_ldap>=23.12)
+  pkg_check_modules(LIBGVM_AD_CONNECTOR REQUIRED libgvm_ad_connector>=23.12)
 else(ENABLE_AD_INTEGRATION)
   message(STATUS "ENABLE_AD_INTEGRATION flag is not enabled")
 endif(ENABLE_AD_INTEGRATION)
