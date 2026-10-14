@@ -18,6 +18,7 @@
 
 #include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_credentials.h"
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_integration_configs.h"
@@ -1958,35 +1959,10 @@ gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
-create_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   array_t*,    const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   credential_t*);
-
-int
-copy_credential (const char*, const char*, const char*,
-                 credential_t*);
-
-int
-modify_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, array_t*, const char*, const char*,
-                   const char*, const char*, const char*, const char*);
-
-int
 delete_credential (const char *, int);
 
 int
 credential_count (const get_data_t *);
-
-void
-set_credential_privacy_algorithm (credential_t, const char *);
-
-void
-set_credential_public_key (credential_t, const char *);
 
 void
 init_credential_iterator_one (iterator_t*, credential_t);
