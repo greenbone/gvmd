@@ -568,7 +568,9 @@ add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 set_target_properties(
   gmp-test
-  PROPERTIES LINK_FLAGS "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may"
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export"
 )
 
 set(

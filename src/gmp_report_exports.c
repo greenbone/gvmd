@@ -557,16 +557,6 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
     "</report_export>"
     "</download_report_export_response>");
 
-  /*
-   * Remove the export only after the complete response has been sent.
-   */
-  if (manage_delete_report_export (data->row_id, data->file_path))
-    {
-      g_warning ("%s: failed to delete downloaded report export %lld",
-                 __func__,
-                 report_export);
-    }
-
   g_free (report_uuid_value);
   g_free (delta_report_uuid_value);
   g_free (report_format_uuid_value);
