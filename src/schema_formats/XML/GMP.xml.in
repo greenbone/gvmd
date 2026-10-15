@@ -9087,8 +9087,8 @@ END:VCALENDAR
         generated report file encoded as Base64 content.
       </p>
       <p>
-        After a successful download, the report export and its generated file
-        are removed.
+        A completed report export remains available for repeatable downloads
+        until retention cleanup removes the export and its generated file.
       </p>
     </description>
     <pattern>
