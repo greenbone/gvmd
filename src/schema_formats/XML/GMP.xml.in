@@ -9996,6 +9996,11 @@ END:VCALENDAR
         data included in the bundle. If days is omitted, the agent controller
         default is used.
       </p>
+      <p>
+        The optional encryption and anonymized attributes control whether the
+        support bundle is encrypted and anonymized. By default, the bundle
+        is encrypted (1) and not anonymized (0).
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -10012,7 +10017,13 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>encryption</name>
-        <summary>Whether agent support bundle is encrypted (1) or not (0) (Default 1)</summary>
+        <summary>Whether to encrypt the support bundle (0 or 1, default 1)</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>anonymized</name>
+        <summary>Whether to anonymize the support bundle (0 or 1, default 0)</summary>
         <type>integer</type>
         <required>0</required>
       </attrib>
@@ -10075,7 +10086,8 @@ END:VCALENDAR
         <get_agent_support_bundle
           agent_uuid="31acafd6-5f48-43c5-bac0-dbeeccc526dd"
           days="7"
-          encryption="1"/>
+          encryption="1"
+          anonymized="1"/>
       </request>
       <response>
         <get_agent_support_bundle_response status="200" status_text="OK">
