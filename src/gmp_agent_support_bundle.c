@@ -80,6 +80,10 @@ get_agent_support_bundle_start (const gchar **attribute_names,
   if (find_attribute (attribute_names, attribute_values,
                       "encryption", &attribute))
     get_agent_support_bundle_data.encryption = g_strdup (attribute);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "anonymized", &attribute))
+    get_agent_support_bundle_data.anonymized = g_strdup (attribute);
 }
 
 /**
@@ -270,13 +274,21 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   if (!get_agent_support_bundle_parse_boolean (
-        get_agent_support_bundle_data.encryption, 1, &encryption)
-      || !get_agent_support_bundle_parse_boolean (
-        get_agent_support_bundle_data.anonymized, 0, &anonymized))
+    get_agent_support_bundle_data.encryption, 1, &encryption))
     {
       SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_agent_support_bundle",
         "Invalid encryption value"));
+      get_agent_support_bundle_reset ();
+      return;
+    }
+
+  if (!get_agent_support_bundle_parse_boolean (
+    get_agent_support_bundle_data.anonymized, 0, &anonymized))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_agent_support_bundle",
+        "Invalid anonymized value"));
       get_agent_support_bundle_reset ();
       return;
     }
