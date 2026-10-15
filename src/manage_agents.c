@@ -1124,6 +1124,7 @@ manage_agents_sync_from_scanner (scanner_t scanner)
  * @param[in]  days Number of days of data to include. A value of 0 uses the
  *                  Agent Controller default.
  * @param[in] encryption Encryption for the support bundle (0, 1).
+ * @param[in] anonymized Anonymized for the support bundle (0, 1).
  * @param[out] out_bundle Receives the newly allocated support bundle.
  *
  * @return AGENT_RESPONSE_SUCCESS on success, or a specific AGENT_RESPONSE_*
@@ -1134,6 +1135,7 @@ get_agent_support_bundle (
   const gchar *agent_uuid,
   int days,
   int encryption,
+  int anonymized,
   agent_controller_support_bundle_t *out_bundle)
 {
   gvmd_agent_connector_t connector = NULL;
@@ -1171,18 +1173,11 @@ get_agent_support_bundle (
       return AGENT_RESPONSE_CONNECTOR_CREATION_FAILED;
     }
 
-  if (encryption)
-    {
-      *out_bundle =
-        agent_controller_download_support_bundle (
-          connector->base, agent_id, days);
-    }
-  else
-    {
-      *out_bundle =
-        agent_controller_download_support_bundle_plain (
-          connector->base, agent_id, days);
-    }
+  *out_bundle =
+    agent_controller_download_support_bundle (
+      connector->base, agent_id, days,
+      encryption != 0,
+      anonymized != 0);
 
   gvmd_agent_connector_free (connector);
   g_free (agent_id);

@@ -32,6 +32,7 @@ typedef struct
   gchar *agent_uuid; ///< UUID of the agent.
   gchar *days;       ///< Optional number of days to include.
   gchar *encryption; ///< Whether to get encrypted the support bundle (0 or 1).
+  gchar *anonymized; ///< Whether to get the anonymized support bundle (0 or 1).
 } get_agent_support_bundle_t;
 
 /**
@@ -115,36 +116,36 @@ get_agent_support_bundle_parse_days (int *days)
 }
 
 /**
- * @brief Parse the optional encryption attribute.
+ * @brief Parse an optional boolean attribute (0 or 1).
  *
- * @param[out] encryption Whether the support bundle should be encrypted.
+ * @param[in] value Attribute value as a string.
+ * @param[in] default_value Default when the attribute is missing.
+ * @param[out] result Parsed value.
  *
  * @return TRUE if valid, FALSE otherwise.
  */
 static gboolean
-get_agent_support_bundle_parse_encryption (int *encryption)
+get_agent_support_bundle_parse_boolean (const gchar *value,
+                                        int default_value,
+                                        int *result)
 {
   gchar *end = NULL;
   gint64 parsed;
 
-  if (!encryption)
+  if (!result)
     return FALSE;
 
-  *encryption = 1;
+  *result = default_value;
 
-  if (!get_agent_support_bundle_data.encryption)
+  if (!value)
     return TRUE;
 
-  parsed =
-    g_ascii_strtoll (get_agent_support_bundle_data.encryption, &end, 10);
+  parsed = g_ascii_strtoll (value, &end, 10);
 
-  if (end == get_agent_support_bundle_data.encryption
-      || *end != '\0'
-      || parsed < 0
-      || parsed > 1)
+  if (end == value || *end != '\0' || parsed < 0 || parsed > 1)
     return FALSE;
 
-  *encryption = (int) parsed;
+  *result = (int) parsed;
   return TRUE;
 }
 
@@ -236,6 +237,7 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
   gchar *escaped_filename = NULL;
   int days;
   int encryption;
+  int anonymized;
   int ret;
 
   if (!acl_user_may ("get_agents"))
@@ -267,7 +269,10 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
-  if (!get_agent_support_bundle_parse_encryption (&encryption))
+  if (!get_agent_support_bundle_parse_boolean (
+        get_agent_support_bundle_data.encryption, 1, &encryption)
+      || !get_agent_support_bundle_parse_boolean (
+        get_agent_support_bundle_data.anonymized, 0, &anonymized))
     {
       SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_agent_support_bundle",
@@ -280,6 +285,7 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
     get_agent_support_bundle (get_agent_support_bundle_data.agent_uuid,
                               days,
                               encryption,
+                              anonymized,
                               &bundle);
 
   switch (result)
