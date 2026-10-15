@@ -51,6 +51,7 @@ get_agent_support_bundle_reset (void)
   g_free (get_agent_support_bundle_data.agent_uuid);
   g_free (get_agent_support_bundle_data.days);
   g_free (get_agent_support_bundle_data.encryption);
+  g_free (get_agent_support_bundle_data.anonymized);
 
   memset (&get_agent_support_bundle_data,
           0,
