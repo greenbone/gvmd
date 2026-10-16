@@ -58,13 +58,15 @@
  * @param[out] iterator     Iterator to initialize.
  * @param[in]  get          GET parameters.
  * @param[in]  where_clause Optional additional SQL condition.
+ * @param[in]  owned        Whether to enforce resource permissions.
  *
  * @return 0 on success, -1 on failure.
  */
 static int
 init_report_export_iterator_with_where (iterator_t *iterator,
                                         get_data_t *get,
-                                        const gchar *where_clause)
+                                        const gchar *where_clause,
+                                        int owned)
 {
   static column_t columns[] = REPORT_EXPORT_ITERATOR_COLUMNS;
   static const char *filter_columns[]
@@ -83,7 +85,7 @@ init_report_export_iterator_with_where (iterator_t *iterator,
     0, /* No trashcan. */
     REPORT_EXPORT_ITERATOR_JOIN_CLAUSE,
     where_clause,
-    0);
+    owned);
 }
 
 /**
@@ -114,7 +116,8 @@ init_report_export_iterator_by_id (iterator_t *iterator,
   ret = init_report_export_iterator_with_where (
     iterator,
     &get,
-    where_clause);
+    where_clause,
+    FALSE);
 
   g_free (where_clause);
 
@@ -150,7 +153,8 @@ init_report_export_iterator (iterator_t *iterator, get_data_t *get)
 
   ret = init_report_export_iterator_with_where (iterator,
                                                 get,
-                                                where_clause);
+                                                where_clause,
+                                                TRUE);
 
   g_free (where_clause);
   g_free (quoted);
@@ -856,7 +860,8 @@ init_report_export_iterator_pending (iterator_t *iterator,
 
   ret = init_report_export_iterator_with_where (iterator,
                                                 get,
-                                                where_clause);
+                                                where_clause,
+                                                FALSE);
 
   g_free (where_clause);
 
@@ -891,7 +896,8 @@ init_report_export_iterator_stale (iterator_t *iterator,
 
   ret = init_report_export_iterator_with_where (iterator,
                                                 get,
-                                                where_clause);
+                                                where_clause,
+                                                FALSE);
 
   g_free (where_clause);
 
@@ -929,7 +935,8 @@ init_report_export_iterator_cancel_requested (iterator_t *iterator,
 
   ret = init_report_export_iterator_with_where (iterator,
                                                 get,
-                                                where_clause);
+                                                where_clause,
+                                                FALSE);
 
   g_free (where_clause);
 
