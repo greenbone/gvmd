@@ -532,9 +532,15 @@ buffer_get_filter_xml (GString *msg, const char* type,
       && (find_filter_with_permission (get->filt_id, &filter, "get_filters")
           == 0)
       && filter != 0)
-    buffer_xml_append_printf (msg,
-                              "<name>%s</name>",
-                              filter_name (filter));
+    {
+      gchar *name;
+
+      name = filter_name (filter);
+      buffer_xml_append_printf (msg,
+                                "<name>%s</name>",
+                                name);
+      g_free (name);
+    }
 
   if (extra_xml)
     g_string_append (msg, extra_xml);
