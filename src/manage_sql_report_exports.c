@@ -367,7 +367,6 @@ create_report_export (report_t report,
         case REPORT_EXPORT_STATUS_CANCEL_REQUESTED:
         case REPORT_EXPORT_STATUS_CANCELED:
         case REPORT_EXPORT_STATUS_EXPIRED:
-        case REPORT_EXPORT_STATUS_DONE:
           /*
            * Do not reuse this export. Continue and create a new row.
            */
