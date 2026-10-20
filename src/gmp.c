@@ -15770,6 +15770,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
           if (strcmp(report_type, usage_type) && strcmp(report_type, "all"))
             {
               g_free (usage_type);
+              g_free (report_type);
               get_reports_data_reset (get_reports_data);
               SEND_TO_CLIENT_OR_FAIL
                 (XML_ERROR_SYNTAX ("get_reports",
