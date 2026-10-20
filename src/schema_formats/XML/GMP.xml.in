@@ -42100,6 +42100,125 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AD_INTEGRATION@
+  <command>
+    <name>verify_active_directory_credential</name>
+    <summary>Verify an Active Directory credential</summary>
+    <description>
+      <p>
+        The client uses the verify_active_directory_credential command to test
+        an Active Directory connection and bind credentials.
+      </p>
+      <p>
+        The request must contain either only the credential_id attribute to
+        verify a saved Active Directory credential, or the inline connection
+        fields.  The two forms cannot be combined.  In the inline form, host,
+        bind_dn, bind_password, base_dn, and tls_mode are required; port and
+        ca_certificate are optional.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_AD_INTEGRATION.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of a saved Active Directory credential to verify</summary>
+        <type>uuid</type>
+        <required>0</required>
+      </attrib>
+      <o>
+        <g>
+          <e>host</e>
+          <o><e>port</e></o>
+          <e>bind_dn</e>
+          <e>bind_password</e>
+          <e>base_dn</e>
+          <e>tls_mode</e>
+          <o><e>ca_certificate</e></o>
+        </g>
+      </o>
+    </pattern>
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a saved Active Directory credential</summary>
+      <request>
+        <verify_active_directory_credential
+            credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+    <example>
+      <summary>Verify inline Active Directory connection settings</summary>
+      <request>
+        <verify_active_directory_credential>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </verify_active_directory_credential>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AD_INTEGRATION@
   @IF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>verify_credential_store</name>
