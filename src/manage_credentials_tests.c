@@ -123,7 +123,7 @@ valid_ad_test_data (void)
 {
   return (credential_data_t) {
     .name = "test",
-    .ad_connector = {
+    .ad_credential_data = {
       .host = "dc.example.com",
       .bind_dn = "user@domain",
       .base_dn = "DC=example,DC=com",
@@ -808,7 +808,7 @@ Ensure (manage_credentials, create_ad_requires_host)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.host = NULL;
+  data.ad_credential_data.host = NULL;
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -822,7 +822,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_host)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.host = "";
+  data.ad_credential_data.host = "";
 
   expect_no_storage_calls ();
 
@@ -835,7 +835,7 @@ Ensure (manage_credentials, create_ad_requires_bind_dn)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.bind_dn = NULL;
+  data.ad_credential_data.bind_dn = NULL;
 
   expect_no_storage_calls ();
 
@@ -848,7 +848,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_bind_dn)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.bind_dn = "";
+  data.ad_credential_data.bind_dn = "";
 
   expect_no_storage_calls ();
 
@@ -861,7 +861,7 @@ Ensure (manage_credentials, create_ad_requires_base_dn)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.base_dn = NULL;
+  data.ad_credential_data.base_dn = NULL;
 
   expect_no_storage_calls ();
 
@@ -874,7 +874,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_base_dn)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.base_dn = "";
+  data.ad_credential_data.base_dn = "";
 
   expect_no_storage_calls ();
 
@@ -887,7 +887,7 @@ Ensure (manage_credentials, create_ad_requires_bind_password)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.bind_password = NULL;
+  data.ad_credential_data.bind_password = NULL;
 
   expect_no_storage_calls ();
 
@@ -900,7 +900,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_bind_password)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.bind_password = "";
+  data.ad_credential_data.bind_password = "";
 
   expect_no_storage_calls ();
 
@@ -913,7 +913,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_port)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.port = "";
+  data.ad_credential_data.port = "";
 
   expect_no_storage_calls ();
 
@@ -926,7 +926,7 @@ Ensure (manage_credentials, create_ad_rejects_zero_port)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.port = "0";
+  data.ad_credential_data.port = "0";
 
   expect_no_storage_calls ();
 
@@ -939,7 +939,7 @@ Ensure (manage_credentials, create_ad_rejects_port_above_maximum)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.port = "65536";
+  data.ad_credential_data.port = "65536";
 
   expect_no_storage_calls ();
 
@@ -952,7 +952,7 @@ Ensure (manage_credentials, create_ad_rejects_negative_port)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.port = "-1";
+  data.ad_credential_data.port = "-1";
 
   expect_no_storage_calls ();
 
@@ -965,7 +965,7 @@ Ensure (manage_credentials, create_ad_requires_tls_mode)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.tls_mode = NULL;
+  data.ad_credential_data.tls_mode = NULL;
 
   expect_no_storage_calls ();
 
@@ -978,7 +978,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_tls_mode)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.tls_mode = "";
+  data.ad_credential_data.tls_mode = "";
 
   expect_no_storage_calls ();
 
@@ -991,7 +991,7 @@ Ensure (manage_credentials, create_ad_rejects_plain_ldap)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.tls_mode = "ldap";
+  data.ad_credential_data.tls_mode = "ldap";
 
   expect_no_storage_calls ();
 
@@ -1004,7 +1004,7 @@ Ensure (manage_credentials, create_ad_rejects_empty_ca_certificate)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.ca_certificate = "";
+  data.ad_credential_data.ca_certificate = "";
 
   expect_no_storage_calls ();
 
@@ -1017,7 +1017,7 @@ Ensure (manage_credentials, create_ad_rejects_invalid_ca_certificate)
 {
   credential_t credential = 42;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.ca_certificate = "invalid";
+  data.ad_credential_data.ca_certificate = "invalid";
 
   expect_no_storage_calls ();
 
@@ -1030,8 +1030,8 @@ Ensure (manage_credentials, create_ad_stores_valid_data)
 {
   credential_t credential = 0;
   credential_data_t data = valid_ad_test_data ();
-  data.ad_connector.port = "636";
-  data.ad_connector.tls_mode = "ldaps";
+  data.ad_credential_data.port = "636";
+  data.ad_credential_data.tls_mode = "ldaps";
   ad_test_enabled = TRUE;
 
   expect (__wrap_insert_credential_base,
@@ -1112,7 +1112,7 @@ Ensure (manage_credentials, modify_ad_ignores_absent_fields)
 Ensure (manage_credentials, modify_ad_rejects_empty_host)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.host = "";
+  data.ad_credential_data.host = "";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1124,7 +1124,7 @@ Ensure (manage_credentials, modify_ad_rejects_empty_host)
 Ensure (manage_credentials, modify_ad_rejects_empty_bind_dn)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.bind_dn = "";
+  data.ad_credential_data.bind_dn = "";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1136,7 +1136,7 @@ Ensure (manage_credentials, modify_ad_rejects_empty_bind_dn)
 Ensure (manage_credentials, modify_ad_rejects_empty_base_dn)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.base_dn = "";
+  data.ad_credential_data.base_dn = "";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1148,7 +1148,7 @@ Ensure (manage_credentials, modify_ad_rejects_empty_base_dn)
 Ensure (manage_credentials, modify_ad_rejects_empty_bind_password)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.bind_password = "";
+  data.ad_credential_data.bind_password = "";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1160,7 +1160,7 @@ Ensure (manage_credentials, modify_ad_rejects_empty_bind_password)
 Ensure (manage_credentials, modify_ad_rejects_invalid_port)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.port = "0";
+  data.ad_credential_data.port = "0";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1172,7 +1172,7 @@ Ensure (manage_credentials, modify_ad_rejects_invalid_port)
 Ensure (manage_credentials, modify_ad_clears_empty_port)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.port = "";
+  data.ad_credential_data.port = "";
   ad_test_enabled = TRUE;
 
   expect (__wrap_set_credential_data,
@@ -1189,7 +1189,7 @@ Ensure (manage_credentials, modify_ad_clears_empty_port)
 Ensure (manage_credentials, modify_ad_rejects_invalid_tls_mode)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.tls_mode = "ldap";
+  data.ad_credential_data.tls_mode = "ldap";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1201,7 +1201,7 @@ Ensure (manage_credentials, modify_ad_rejects_invalid_tls_mode)
 Ensure (manage_credentials, modify_ad_clears_empty_ca_certificate)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.ca_certificate = "";
+  data.ad_credential_data.ca_certificate = "";
   ad_test_enabled = TRUE;
 
   expect (__wrap_set_credential_data,
@@ -1218,7 +1218,7 @@ Ensure (manage_credentials, modify_ad_clears_empty_ca_certificate)
 Ensure (manage_credentials, modify_ad_rejects_invalid_ca_certificate)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.ca_certificate = "invalid";
+  data.ad_credential_data.ca_certificate = "invalid";
   ad_test_enabled = TRUE;
 
   expect_no_storage_calls ();
@@ -1230,10 +1230,10 @@ Ensure (manage_credentials, modify_ad_rejects_invalid_ca_certificate)
 Ensure (manage_credentials, modify_ad_updates_host_port_tls_and_password)
 {
   credential_data_t data = { 0 };
-  data.ad_connector.host = "dc-new.example.com";
-  data.ad_connector.port = "636";
-  data.ad_connector.tls_mode = "ldaps";
-  data.ad_connector.bind_password = "new-password";
+  data.ad_credential_data.host = "dc-new.example.com";
+  data.ad_credential_data.port = "636";
+  data.ad_credential_data.tls_mode = "ldaps";
+  data.ad_credential_data.bind_password = "new-password";
   ad_test_enabled = TRUE;
 
   expect (__wrap_set_credential_data,

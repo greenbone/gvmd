@@ -488,6 +488,8 @@ runtime_append_disabled_commands (GString *buf)
   /* AD_INTEGRATION */
   if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
     {
-      /* TODO: Append new commands for AD_INTEGRATION when added */
+      append_commands (
+        buf,
+        "verify_active_directory_credential");
     }
 }

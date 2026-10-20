@@ -18,9 +18,11 @@
 #include "manage_sql_resources.h"
 #include "manage_sql_credentials.h"
 #include "lsc_user.h"
+#if ENABLE_AD_INTEGRATION
+#include "manage_active_directory.h"
+#endif
 
 #include <ctype.h>
-#include <gnutls/x509.h> /* for gnutls_x509_crt_... */
 
 #include <gvm/base/hosts.h>
 #include <gvm/util/fileutils.h>
@@ -67,34 +69,6 @@ typedef enum
 #endif
 } credential_type_t;
 
-
-#if ENABLE_AD_INTEGRATION
-/**
- * @brief Reset the AD connector data structure.
- *
- * @param[in,out] ad  Pointer to the AD connector data structure to reset.
- *
- * This function frees all dynamically allocated fields within the
- * credential_ad_connector_data_t structure and sets them to NULL.
- */
-static void
-credential_ad_connector_data_reset (credential_ad_connector_data_t *ad)
-{
-  if (ad == NULL)
-    return;
-
-  g_free (ad->host);
-  g_free (ad->port);
-  g_free (ad->bind_dn);
-  g_free (ad->bind_password);
-  g_free (ad->base_dn);
-  g_free (ad->tls_mode);
-  g_free (ad->ca_certificate);
-
-  memset (ad, 0, sizeof (*ad));
-}
-#endif
-
 /**
  * @brief Reset the credential data structure.
  *
@@ -136,7 +110,7 @@ credential_data_reset (credential_data_t *data)
 #endif
 
 #if ENABLE_AD_INTEGRATION
-  credential_ad_connector_data_reset (&data->ad_connector);
+  ad_credential_data_reset (&data->ad_credential_data);
 #endif
 
   memset (data, 0, sizeof (*data));
@@ -1489,63 +1463,7 @@ fail:
 
 #if ENABLE_AD_INTEGRATION
 
-/**
- * @brief Validate an Active Directory port.
- *
- * @param text The port as a string.
- *
- * @return TRUE if the port is valid or NULL, FALSE otherwise.
- */
-static gboolean
-valid_ad_port (const char *text)
-{
-  char *end;
-  guint64 port;
 
-  if (text == NULL)
-    return TRUE;  /* use the connector default. */
-
-  if (!g_ascii_isdigit ((guchar) text[0]))
-    return FALSE;
-
-  port = g_ascii_strtoull (text, &end, 10);
-  return *end == '\0' && port >= 1 && port <= 65535;
-}
-
-/**
- * @brief Validate an Active Directory CA certificate.
- *
- * @param pem The CA certificate in PEM format.
- *
- * @return TRUE if the certificate is valid, FALSE otherwise.
- */
-static gboolean
-valid_ad_ca_certificate (const char *pem)
-{
-  gnutls_x509_crt_t *certs = NULL;
-  unsigned int count = 0;
-  gnutls_datum_t input;
-  gsize length;
-  gboolean valid;
-  int ret;
-
-  if (pem == NULL || *pem == '\0')
-    return FALSE;
-
-  length = strlen (pem);
-  if (length > G_MAXUINT)
-    return FALSE;
-
-  input.data = (unsigned char *) pem;
-  input.size = (unsigned int) length;
-
-  ret = gnutls_x509_crt_list_import2 (&certs, &count, &input,
-                                      GNUTLS_X509_FMT_PEM, 0);
-
-  valid = (ret == GNUTLS_E_SUCCESS && count > 0);
-  gvm_x509_cert_list_free (certs, count);
-  return valid;
-}
 
 /**
  * @brief Create an Active Directory credential.
@@ -1560,7 +1478,7 @@ create_active_directory_credential (const credential_data_t *data,
                                     credential_t *new_credential)
 {
   credential_return_t ret;
-  const credential_ad_connector_data_t *ad;
+  const ad_credential_data_t *ad;
 
   if (data == NULL || new_credential == NULL)
     return CREDENTIAL_INTERNAL_ERROR;
@@ -1570,7 +1488,7 @@ create_active_directory_credential (const credential_data_t *data,
   if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
     return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
 
-  ad = &data->ad_connector;
+  ad = &data->ad_credential_data;
 
  if (ad->host == NULL || ad->host[0] == '\0')
     return CREDENTIAL_AD_HOST_REQUIRED;
@@ -2651,7 +2569,7 @@ static credential_return_t
 modify_active_directory_credential (const credential_data_t *data,
                                     credential_t credential)
 {
-  const credential_ad_connector_data_t *ad;
+  const ad_credential_data_t *ad;
   gboolean changed = FALSE;
   credential_return_t ret;
 
@@ -2661,7 +2579,7 @@ modify_active_directory_credential (const credential_data_t *data,
   if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
     return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
 
-  ad = &data->ad_connector;
+  ad = &data->ad_credential_data;
 
   if (ad->host != NULL)
     {
