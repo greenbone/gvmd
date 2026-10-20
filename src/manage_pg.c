@@ -3009,6 +3009,8 @@ create_tables ()
     "  agent_version TEXT,"
     "  operating_system TEXT,"
     "  architecture TEXT,"
+    "  os_cpe TEXT,"
+    "  os_status TEXT,"
     "  update_to_latest INTEGER,"
     "  agent_update_available INTEGER NOT NULL DEFAULT 0,"
     "  updater_update_available INTEGER NOT NULL DEFAULT 0,"
@@ -3028,6 +3030,7 @@ create_tables ()
     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
     "  comment TEXT,"
     "  scheduler_cron_time TEXT,"
+    "  max_delay_seconds INTEGER NOT NULL DEFAULT 0,"
     "  creation_time INTEGER,"
     "  modification_time INTEGER);");
 
@@ -3044,6 +3047,7 @@ create_tables ()
     "  name text UNIQUE NOT NULL,"
     "  comment text,"
     "  scheduler_cron_time TEXT,"
+    "  max_delay_seconds INTEGER NOT NULL DEFAULT 0,"
     "  creation_time integer,"
     "  modification_time integer);");
 
