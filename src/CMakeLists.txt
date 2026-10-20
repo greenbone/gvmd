@@ -415,6 +415,7 @@ set(ALL_SQL_SRC sql.c sql_pg.c)
 
 set(
   ALL_MISC_SRC
+  client_watcher.c
   debug_utils.c
   gvmd.c
   gvmd_config.c
@@ -436,6 +437,8 @@ add_library(all-gmp-obj OBJECT ${ALL_GMP_SRC})
 add_library(all-sql-obj OBJECT ${ALL_SQL_SRC})
 
 add_library(all-misc-obj OBJECT ${ALL_MISC_SRC})
+
+add_library(client-watcher-test-obj OBJECT client_watcher.c)
 
 ## Precommit-like checks
 
@@ -537,6 +540,8 @@ target_link_libraries(
 set_target_properties(gvmd PROPERTIES LINKER_LANGUAGE C)
 
 include(${CMAKE_SOURCE_DIR}/cmake/add_unit_test.cmake)
+
+add_unit_test(client-watcher "$<TARGET_OBJECTS:client-watcher-test-obj>" "")
 
 if(ENABLE_CREDENTIAL_STORES)
   set(

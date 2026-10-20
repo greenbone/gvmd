@@ -89,6 +89,7 @@
 #include <gvm/util/ldaputils.h>
 
 #include "debug_utils.h"
+#include "client_watcher.h"
 #include "ipc.h"
 #include "manage.h"
 #include "manage_secinfo.h"
@@ -444,17 +445,21 @@ watch_client_connection (void* data)
           pthread_mutex_unlock (&(watcher_data->mutex));
           continue;
         }
-      int ret;
-      char buf[1];
-      errno = 0;
+      int socket_errno;
+      client_connection_state_t state;
 
-      ret = recv (client_connection->socket, buf, 1, MSG_PEEK);
+      state = client_connection_probe (client_connection->socket,
+                                       &socket_errno);
 
-      if (ret >= 0)
+      if (state != CLIENT_CONNECTION_LIVE)
         {
           if (watcher_data->connection_closed == 0)
             {
-              g_debug ("%s: Client connection closed", __func__);
+              if (state == CLIENT_CONNECTION_CLOSED)
+                g_debug ("%s: Client connection closed", __func__);
+              else
+                g_warning ("%s: Client connection error: %s",
+                           __func__, strerror (socket_errno));
               manage_cancel ();
               active = 0;
               watcher_data->connection_closed = 1;
