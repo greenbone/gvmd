@@ -2073,7 +2073,10 @@ set_task_preferences (task_t task, array_t *preferences)
                     }
                   else if ((strcmp (pair->name, "in_assets") == 0)
                            && type == SCANNER_TYPE_WEB_APPLICATION)
+                    {
+                      g_free (quoted_name);
                       return 4;
+                    }
                   else if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");
