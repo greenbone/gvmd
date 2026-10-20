@@ -15781,6 +15781,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
             }
         }
       g_free (usage_type);
+      g_free (report_type);
     }
 
   if (!no_report_config)
