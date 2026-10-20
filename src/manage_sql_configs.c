@@ -2067,7 +2067,10 @@ set_task_preferences (task_t task, array_t *preferences)
                     }
                   if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CONTAINER_IMAGE)
+                    {
+                      g_free (quoted_name);
                       return 3;
+                    }
                   else if ((strcmp (pair->name, "in_assets") == 0)
                            && type == SCANNER_TYPE_WEB_APPLICATION)
                       return 4;
