@@ -15780,6 +15780,7 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               return;
             }
         }
+      g_free (usage_type);
     }
 
   if (!no_report_config)
