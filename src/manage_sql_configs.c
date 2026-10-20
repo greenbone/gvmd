@@ -2050,6 +2050,7 @@ set_task_preferences (task_t task, array_t *preferences)
                       && (strcmp (pair->value, "safe"))
                       && type == SCANNER_TYPE_WEB_APPLICATION)
                     {
+                      g_free (quoted_name);
                       return 5;
                     }
                   if ((strcmp (pair->name, "ajax_spider_timeout") == 0)
