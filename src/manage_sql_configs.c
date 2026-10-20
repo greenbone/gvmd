@@ -2029,6 +2029,7 @@ set_task_preferences (task_t task, array_t *preferences)
                       && (strcmp (pair->value, "keep"))
                       && (strcmp (pair->value, "no")))
                     {
+                      g_free (quoted_name);
                       return 1;
                     }
 
