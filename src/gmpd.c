@@ -20,10 +20,12 @@
 
 #include "gmpd.h"
 #include "gmp.h"
+#include "sql.h"
 
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <setjmp.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -68,6 +70,27 @@ buffer_size_t from_client_end = 0;
  * @brief Flag for serve_gmp and gmpd_send_to_client.
  */
 static int close_connection = 0;
+
+/**
+ * @brief Same-thread boundary for canceling a GMP request.
+ */
+typedef struct
+{
+  jmp_buf environment;
+} gmp_cancel_boundary_t;
+
+/**
+ * @brief Unwind a canceled SQL query from the active GMP parser call.
+ *
+ * @param[in]  data  Active cancellation boundary.
+ */
+static void
+unwind_canceled_gmp_request (void *data)
+{
+  gmp_cancel_boundary_t *boundary = data;
+
+  longjmp (boundary->environment, 1);
+}
 
 /**
  * @brief Initialise the GMP library for the GMP daemon.
@@ -444,17 +467,20 @@ get_nfds (int socket)
  * @param[in]  database             Location of manage database.
  * @param[in]  disable              Commands to disable.
  *
- * @return 0 success, -1 error.
+ * @return SERVE_GMP_SUCCESS on success, SERVE_GMP_CANCELED if a query was
+ *         canceled while processing a request, or SERVE_GMP_ERROR on error.
  */
-int
+serve_gmp_result_t
 serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
            gchar **disable)
 {
-  int nfds, rc;
+  int nfds;
+  serve_gmp_result_t rc;
+  gmp_cancel_boundary_t cancel_boundary;
 
   g_debug ("   Serving GMP");
 
-  rc = 0;
+  rc = SERVE_GMP_SUCCESS;
   close_connection = 0;
 
   /* Initialise the XML parser and the manage library. */
@@ -511,7 +537,7 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
       if (to_client_start < to_client_end)
         FD_SET (client_connection->socket, &writefds);
       else if (close_connection)
-        goto client_free;
+        goto serve_done;
 
       /* Select, then handle result.  Due to GNUTLS internal buffering
        * we test for pending records first and emulate a select call
@@ -539,8 +565,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
         {
           g_warning ("%s: child select failed: %s", __func__,
                      strerror (errno));
-          rc = -1;
-          goto client_free;
+          rc = SERVE_GMP_ERROR;
+          goto serve_done;
         }
 
       /* Read any data from the client. */
@@ -554,8 +580,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
               case  0:       /* Read everything. */
                 break;
               case -1:       /* Error. */
-                rc = -1;
-                goto client_free;
+                rc = SERVE_GMP_ERROR;
+                goto serve_done;
               case -2:       /* from_client buffer full. */
                 /* There may be more to read. */
                 break;
@@ -583,7 +609,17 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                         from_client + initial_start);
             }
 
+          if (setjmp (cancel_boundary.environment))
+            {
+              sql_cancel_handler_clear ();
+              g_debug ("   SQL query canceled while serving GMP");
+              rc = SERVE_GMP_CANCELED;
+              goto serve_done;
+            }
+          sql_cancel_handler_set (unwind_canceled_gmp_request,
+                                  &cancel_boundary);
           ret = process_gmp_client_input ();
+          sql_cancel_handler_clear ();
           if (ret == 0)
             /* Processed all input. */
             ;
@@ -593,8 +629,8 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
                * client gets any buffered output and the response to the
                * error. */
               write_to_client (client_connection);
-              rc = -1;
-              goto client_free;
+              rc = SERVE_GMP_ERROR;
+              goto serve_done;
             }
           else
             {
@@ -613,11 +649,11 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
             {
               case  0:      /* Wrote everything in to_client. */
                 if (close_connection)
-                  goto client_free;
+                  goto serve_done;
                 break;
               case -1:      /* Error. */
-                rc = -1;
-                goto client_free;
+                rc = SERVE_GMP_ERROR;
+                goto serve_done;
               case -2:      /* Wrote as much as client was willing to accept. */
                 break;
               default:      /* Programming error. */
@@ -626,7 +662,6 @@ serve_gmp (gvm_connection_t *client_connection, const db_conn_info_t *database,
         }
     } /* while (1) */
 
-client_free:
-  gvm_connection_free (client_connection);
+serve_done:
   return rc;
 }
