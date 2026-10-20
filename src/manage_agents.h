@@ -72,9 +72,11 @@ struct agent_data
   user_t owner;
   scanner_t scanner;
   gchar *updater_version;
-  gchar *agent_version;
-  gchar *operating_system;
-  gchar *architecture;
+  gchar* agent_version;
+  gchar* operating_system;
+  gchar* architecture;
+  gchar* os_cpe;
+  gchar* os_status;
   int update_to_latest;
   int agent_update_available;
   int updater_update_available;
@@ -206,6 +208,12 @@ agent_iterator_operating_system (iterator_t *);
 
 const gchar *
 agent_iterator_architecture (iterator_t *);
+
+const gchar *
+agent_iterator_os_cpe (iterator_t *);
+
+const gchar *
+agent_iterator_os_status (iterator_t *);
 
 int
 agent_iterator_update_to_latest (iterator_t *);
