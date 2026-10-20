@@ -37,6 +37,8 @@
       {"agent_version", NULL, KEYWORD_TYPE_STRING},                         \
       {"operating_system", NULL, KEYWORD_TYPE_STRING},                      \
       {"architecture", NULL, KEYWORD_TYPE_STRING},                          \
+      {"os_cpe", NULL, KEYWORD_TYPE_STRING},                                \
+      {"os_status", NULL, KEYWORD_TYPE_STRING},                             \
       {"update_to_latest", NULL, KEYWORD_TYPE_INTEGER},                     \
       {"agent_update_available", NULL, KEYWORD_TYPE_INTEGER},               \
       {"updater_update_available", NULL, KEYWORD_TYPE_INTEGER},             \
@@ -57,9 +59,10 @@
     "uuid", "agent_id", "name", "hostname", "scanner", "authorized",           \
       "min_interval", "last_update", "last_updater_heartbeat", "comment",      \
       "creation_time", "modification_time", "owner", "id", "updater_version",  \
-      "agent_version", "operating_system", "architecture", "update_to_latest", \
-      "agent_update_available", "updater_update_available",                    \
-      "latest_agent_version", "latest_updater_version", "connection_status",   \
+      "agent_version", "operating_system", "architecture", "os_cpe",           \
+      "os_status" "update_to_latest", "agent_update_available",                \
+      "updater_update_available", "latest_agent_version",                      \
+      "latest_updater_version", "connection_status",                           \
       "scanner_name", "scanner_uuid",                                          \
       NULL                                                                     \
   }

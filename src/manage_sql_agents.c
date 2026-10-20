@@ -37,9 +37,8 @@
 static void
 delete_existing_agent_ips (const gchar *agent_id)
 {
-  gchar *insert_agent_id = sql_insert (agent_id);
-  sql ("DELETE FROM agent_ip_addresses WHERE agent_id = %s;", insert_agent_id);
-  g_free (insert_agent_id);
+  sql_ps ("DELETE FROM agent_ip_addresses WHERE agent_id = $1;", agent_id,
+          NULL);
 }
 
 /**
@@ -86,58 +85,52 @@ update_existing_agent (agent_data_t agent)
   if (!config_string)
     config_string = g_strdup ("");
 
-  gchar *insert_hostname = sql_insert (agent->hostname);
-  gchar *insert_connection_status = sql_insert (agent->connection_status);
-  gchar *insert_config = sql_insert (config_string);
-  gchar *insert_agent_id = sql_insert (agent->agent_id);
-  gchar *insert_updater_version = sql_insert (agent->updater_version);
-  gchar *insert_agent_version = sql_insert (agent->agent_version);
-  gchar *insert_operating_system = sql_insert (agent->operating_system);
-  gchar *insert_architecture = sql_insert (agent->architecture);
-  gchar *insert_latest_agent_version = sql_insert (agent->latest_agent_version);
-  gchar *insert_latest_updater_version = sql_insert (
-    agent->latest_updater_version);
+  sql_ps ("UPDATE agents SET "
+          " hostname = $1,"
+          " authorized = $2,"
+          " connection_status = $3,"
+          " last_update = $4,"
+          " last_updater_heartbeat = $5,"
+          " config = $6,"
+          " owner = $7,"
+          " modification_time = $8,"
+          " scanner = $9,"
+          " updater_version = $10,"
+          " agent_version = $11,"
+          " operating_system = $12,"
+          " architecture = $13,"
+          " os_cpe = $14,"
+          " os_status = $15,"
+          " update_to_latest = $16,"
+          " agent_update_available = $17,"
+          " updater_update_available = $18,"
+          " latest_agent_version = $19,"
+          " latest_updater_version = $20"
+          " WHERE agent_id = $21;",
+          SQL_STR_PARAM (agent->hostname),
+          SQL_INT_PARAM (agent->authorized),
+          SQL_STR_PARAM (agent->connection_status),
+          SQL_RESOURCE_PARAM (agent->last_update_agent_control),
+          SQL_RESOURCE_PARAM (agent->last_updater_heartbeat),
+          SQL_STR_PARAM (config_string),
+          SQL_RESOURCE_PARAM (agent->owner),
+          SQL_RESOURCE_PARAM (agent->modification_time),
+          SQL_RESOURCE_PARAM (agent->scanner),
+          SQL_STR_PARAM (agent->updater_version),
+          SQL_STR_PARAM (agent->agent_version),
+          SQL_STR_PARAM (agent->operating_system),
+          SQL_STR_PARAM (agent->architecture),
+          SQL_STR_PARAM (agent->os_cpe),
+          SQL_STR_PARAM (agent->os_status),
+          SQL_INT_PARAM (agent->update_to_latest ? 1 : 0),
+          SQL_INT_PARAM (agent->agent_update_available),
+          SQL_INT_PARAM (agent->updater_update_available),
+          SQL_STR_PARAM (agent->latest_agent_version),
+          SQL_STR_PARAM (agent->latest_updater_version),
+          SQL_STR_PARAM (agent->agent_id),
+          NULL);
 
-  sql ("UPDATE agents SET "
-       " hostname = %s,"
-       " authorized = %d,"
-       " connection_status = %s,"
-       " last_update = %ld,"
-       " last_updater_heartbeat = %ld,"
-       " config = %s,"
-       " owner = %u,"
-       " modification_time = %ld,"
-       " scanner = %llu,"
-       " updater_version = %s,"
-       " agent_version = %s,"
-       " operating_system = %s,"
-       " architecture = %s,"
-       " update_to_latest = %d,"
-       " agent_update_available = %d,"
-       " updater_update_available = %d,"
-       " latest_agent_version = %s,"
-       " latest_updater_version = %s"
-       " WHERE agent_id = %s;",
-       insert_hostname, agent->authorized, insert_connection_status,
-       agent->last_update_agent_control, agent->last_updater_heartbeat,
-       insert_config, agent->owner, agent->modification_time, agent->scanner,
-       insert_updater_version, insert_agent_version, insert_operating_system,
-       insert_architecture, agent->update_to_latest ? 1 : 0,
-       agent->agent_update_available, agent->updater_update_available,
-       insert_latest_agent_version, insert_latest_updater_version,
-       insert_agent_id);
-
-  g_free (insert_hostname);
-  g_free (insert_connection_status);
-  g_free (insert_config);
-  g_free (insert_agent_id);
-  g_free (insert_updater_version);
-  g_free (insert_agent_version);
-  g_free (insert_operating_system);
-  g_free (insert_architecture);
   g_free (config_string);
-  g_free (insert_latest_agent_version);
-  g_free (insert_latest_updater_version);
 }
 
 /**
@@ -170,6 +163,8 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   gchar *escaped_agent_version = sql_copy_escape (agent->agent_version);
   gchar *escaped_operating_system = sql_copy_escape (agent->operating_system);
   gchar *escaped_architecture = sql_copy_escape (agent->architecture);
+  gchar *escaped_os_cpe = sql_copy_escape (agent->os_cpe);
+  gchar *escaped_os_status = sql_copy_escape (agent->os_status);
   gchar *escaped_latest_agent_version = sql_copy_escape (
     agent->latest_agent_version);
   gchar *escaped_latest_updater_version = sql_copy_escape (
@@ -178,14 +173,15 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   db_copy_buffer_append_printf (
     buffer,
     "%s\t%s\t%s\t%llu\t%s\t%d\t%s\t%ld\t%ld\t%s\t%u\t%s\t%ld\t%ld\t%s\t%s\t%"
-    "s\t%s\t%d\t%d\t%d\t%s\t%s\n",
+    "s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%s\n",
     agent->uuid, agent->name, agent->agent_id, agent->scanner, escaped_hostname,
     agent->authorized, escaped_connection_status,
     agent->last_update_agent_control, agent->last_updater_heartbeat,
     escaped_config, agent->owner, escaped_comment,
-    time (NULL), // creation_time
+    time (NULL),
     agent->modification_time, escaped_updater_version, escaped_agent_version,
     escaped_operating_system, escaped_architecture,
+    escaped_os_cpe, escaped_os_status,
     agent->update_to_latest, agent->agent_update_available,
     agent->updater_update_available,
     escaped_latest_agent_version, escaped_latest_updater_version);
@@ -198,6 +194,8 @@ append_agent_row_to_buffer (db_copy_buffer_t *buffer, agent_data_t agent)
   g_free (escaped_agent_version);
   g_free (escaped_operating_system);
   g_free (escaped_architecture);
+  g_free (escaped_os_cpe);
+  g_free (escaped_os_status);
   g_free (config_string);
   g_free (escaped_latest_agent_version);
   g_free (escaped_latest_updater_version);
@@ -326,6 +324,8 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
                        " agent_version,"
                        " operating_system,"
                        " architecture,"
+                       " os_cpe,"
+                       " os_status,"
                        " update_to_latest,"
                        " agent_update_available,"
                        " updater_update_available,"
@@ -343,7 +343,13 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
     {
       agent_data_t agent = agent_list->agents[i];
 
-      gboolean exists = agent_column_exists ("agent_id", agent->agent_id);
+      int exists = agent_column_exists ("agent_id", agent->agent_id);
+
+      if (exists < 0)
+        {
+          status = -1;
+          break;
+        }
 
       if (exists)
         {
@@ -359,7 +365,7 @@ sync_agents_from_data_list (agent_data_list_t agent_list)
                                 agent->ip_addresses);
     }
 
-  if (db_copy_buffer_commit (&agent_buffer, TRUE))
+  if (status == 0 && db_copy_buffer_commit (&agent_buffer, TRUE))
     {
       g_warning ("%s: COPY for agents failed", __func__);
       status = -1;
@@ -492,12 +498,10 @@ load_agent_ip_addresses (const char *agent_id)
 {
   g_return_val_if_fail (agent_id, NULL);
 
-  gchar *inserted_agent_id = sql_insert (agent_id);
-  gchar *count_query = g_strdup_printf (
-    "SELECT COUNT(*) FROM agent_ip_addresses WHERE agent_id = %s;",
-    inserted_agent_id);
-  int count = sql_int (count_query);
-  g_free (count_query);
+  int count = sql_int_ps (
+    "SELECT COUNT(*) FROM agent_ip_addresses WHERE agent_id = $1;",
+    SQL_STR_PARAM (agent_id),
+    NULL);
 
   if (count <= 0)
     return NULL;
@@ -508,10 +512,11 @@ load_agent_ip_addresses (const char *agent_id)
 
   iterator_t ip_iterator;
 
-  init_iterator (
+  init_ps_iterator (
     &ip_iterator,
-    "SELECT ip_address FROM agent_ip_addresses WHERE agent_id = %s;",
-    inserted_agent_id);
+    "SELECT ip_address FROM agent_ip_addresses WHERE agent_id = $1;",
+    SQL_STR_PARAM (agent_id),
+    NULL);
 
   int index = 0;
   while (next (&ip_iterator) && index < count)
@@ -638,12 +643,30 @@ agent_iterator_architecture (iterator_t *iterator)
 }
 
 /**
+ * @brief Retrieve OS CPE of current agent.
+ */
+const char *
+agent_iterator_os_cpe (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+}
+
+/**
+ * @brief Retrieve OS status of current agent.
+ */
+const char *
+agent_iterator_os_status (iterator_t *iterator)
+{
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+}
+
+/**
  * @brief Retrieve latest update status of current agent.
  */
 int
 agent_iterator_update_to_latest (iterator_t *iterator)
 {
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
 }
 
 /**
@@ -652,7 +675,7 @@ agent_iterator_update_to_latest (iterator_t *iterator)
 int
 agent_iterator_agent_update_available (iterator_t *iterator)
 {
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
 }
 
 /**
@@ -661,7 +684,7 @@ agent_iterator_agent_update_available (iterator_t *iterator)
 int
 agent_iterator_updater_update_available (iterator_t *iterator)
 {
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 14);
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
 }
 
 /**
@@ -670,7 +693,7 @@ agent_iterator_updater_update_available (iterator_t *iterator)
 const gchar *
 agent_iterator_latest_agent_version (iterator_t *iterator)
 {
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 15);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
 }
 
 /**
@@ -679,7 +702,7 @@ agent_iterator_latest_agent_version (iterator_t *iterator)
 const gchar *
 agent_iterator_latest_updater_version (iterator_t *iterator)
 {
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 16);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
 }
 
 /**
@@ -688,7 +711,7 @@ agent_iterator_latest_updater_version (iterator_t *iterator)
 const gchar *
 agent_iterator_scanner_name (iterator_t *iterator)
 {
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 17);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 19);
 }
 
 /**
@@ -697,7 +720,7 @@ agent_iterator_scanner_name (iterator_t *iterator)
 const gchar *
 agent_iterator_scanner_uuid (iterator_t *iterator)
 {
-  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 18);
+  return iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 20);
 }
 
 /**
@@ -889,7 +912,7 @@ agent_id_by_uuid (const gchar *agent_uuid)
   g_return_val_if_fail (agent_uuid != NULL, NULL);
 
   return sql_string_ps ("SELECT agent_id FROM agents WHERE uuid = $1;",
-                     SQL_STR_PARAM (agent_uuid), NULL);
+                        SQL_STR_PARAM (agent_uuid), NULL);
 }
 
 /**
@@ -903,7 +926,7 @@ agent_id_by_uuid (const gchar *agent_uuid)
  */
 gboolean
 find_agent_with_permission (const char *uuid, agent_t *agent,
-                                  const char *permission)
+                            const char *permission)
 {
   return find_resource_with_permission ("agent", uuid, agent,
                                         permission, 0);
