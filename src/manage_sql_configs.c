@@ -2063,6 +2063,7 @@ set_task_preferences (task_t task, array_t *preferences)
                       if (errno == ERANGE || endptr == pair->value
                           || *endptr != '\0' || timeout < 0)
                         {
+                          g_free (quoted_name);
                           return 6;
                         }
                     }
