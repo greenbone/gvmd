@@ -2039,7 +2039,10 @@ set_task_preferences (task_t task, array_t *preferences)
                       keep = atoi (pair->value);
                       if (keep < AUTO_DELETE_KEEP_MIN
                           || keep > AUTO_DELETE_KEEP_MAX)
-                        return 2;
+                        {
+                          g_free (quoted_name);
+                          return 2;
+                        }
                     }
                   int type = scanner_type (task_scanner (task));
                   if ((strcmp (pair->name, "scan_mode") == 0)
