@@ -9790,6 +9790,7 @@ END:VCALENDAR
           <e>in_use</e>
           <e>permissions</e>
           <e>scheduler_cron_time</e>
+          <e>max_delay_seconds</e>
           <e>scanner</e>
           <e>agents</e>
         </pattern>
@@ -9881,6 +9882,7 @@ END:VCALENDAR
               </permission>
             </permissions>
             <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+            <max_delay_seconds>30</max_delay_seconds>
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
             </scanner>
@@ -10210,6 +10212,16 @@ END:VCALENDAR
             <summary>CPU architecture (e.g., amd64)</summary>
           </column>
           <column>
+            <name>os_cpe</name>
+            <type>text</type>
+            <summary>Operating system CPE identifier</summary>
+          </column>
+          <column>
+            <name>os_status</name>
+            <type>text</type>
+            <summary>Operating system support status</summary>
+          </column>
+          <column>
             <name>update_to_latest</name>
             <type>integer</type>
             <summary>Update-to-latest flag (1/0)</summary>
@@ -10314,6 +10326,8 @@ END:VCALENDAR
           <e>agent_version</e>
           <e>operating_system</e>
           <e>architecture</e>
+          <e>os_cpe</e>
+          <e>os_status</e>
           <e>update_to_latest</e>
           <e>agent_update_available</e>
           <e>updater_update_available</e>
@@ -10452,6 +10466,16 @@ END:VCALENDAR
           <pattern><type>text</type></pattern>
         </ele>
         <ele>
+          <name>os_cpe</name>
+          <summary>Operating system CPE identifier</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>os_status</name>
+          <summary>Operating system support status</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
           <name>update_to_latest</name>
           <summary>Flag to update to latest version (1/0)</summary>
           <pattern><type>integer</type></pattern>
@@ -10533,8 +10557,21 @@ END:VCALENDAR
               <pattern><any><e>item</e></any></pattern>
               <ele>
                 <name>item</name>
-                <summary>A cron expression defining execution schedule</summary>
-                <pattern><type>text</type></pattern>
+                <summary>Scheduler cron entry</summary>
+                <pattern>
+                  <e>cron</e>
+                  <e>max_delay_seconds</e>
+                </pattern>
+                <ele>
+                  <name>cron</name>
+                  <summary>Cron expression defining execution schedule</summary>
+                  <pattern><type>text</type></pattern>
+                </ele>
+                <ele>
+                  <name>max_delay_seconds</name>
+                  <summary>Maximum scheduling delay in seconds</summary>
+                  <pattern><type>integer</type></pattern>
+                </ele>
               </ele>
             </ele>
           </ele>
@@ -10688,6 +10725,8 @@ END:VCALENDAR
             <agent_version>0.9.0</agent_version>
             <operating_system>Linux</operating_system>
             <architecture>amd64</architecture>
+            <os_status>supported</os_status>
+            <architecture>amd64</architecture>
             <update_to_latest>0</update_to_latest>
             <agent_update_available>1</agent_update_available>
             <updater_update_available>0</updater_update_available>
@@ -10706,7 +10745,10 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>3</indexer_dir_depth>
                 <scheduler_cron_time>
-                  <item>0 0 * * *</item>
+                  <item>
+                    <cron>0 0 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -38109,8 +38151,21 @@ END:VCALENDAR
             <pattern><any><e>item</e></any></pattern>
             <ele>
               <name>item</name>
-              <summary>Cron expression</summary>
-              <pattern><type>text</type></pattern>
+              <summary>Scheduler cron entry</summary>
+              <pattern>
+                <e>cron</e>
+                <e>max_delay_seconds</e>
+              </pattern>
+              <ele>
+                <name>cron</name>
+                <summary>Cron expression</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+              <ele>
+                <name>max_delay_seconds</name>
+                <summary>Maximum scheduling delay in seconds</summary>
+                <pattern><type>integer</type></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>
@@ -38178,8 +38233,14 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>10</indexer_dir_depth>
                 <scheduler_cron_time is_list="1">
-                  <item>0 23 * * *</item>
-                  <item>0 22 * * *</item>
+                  <item>
+                    <cron>0 23 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
+                  <item>
+                    <cron>0 22 * * *</cron>
+                    <max_delay_seconds>60</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -38216,6 +38277,7 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
     </pattern>
     <ele>
@@ -38234,6 +38296,12 @@ END:VCALENDAR
       <name>scheduler_cron_time</name>
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds</summary>
+      <pattern><type>integer</type></pattern>
       <required>0</required>
     </ele>
     <ele>
@@ -38274,6 +38342,7 @@ END:VCALENDAR
           <name>Updated Group Name</name>
           <comment>Modified via gvm-cli</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
           </agents>
