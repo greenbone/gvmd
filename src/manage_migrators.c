@@ -4238,6 +4238,47 @@ migrate_280_to_281 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 281 to version 282.
+ *
+ * Add OS information to agents and max_delay_seconds to agent groups.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_281_to_282 ()
+{
+  sql_begin_immediate ();
+
+  /* Ensure that the database is currently version 281. */
+  if (manage_db_version () != 281)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  /* Add OS information to agents. */
+  sql ("ALTER TABLE IF EXISTS agents"
+       " ADD COLUMN IF NOT EXISTS os_cpe TEXT;");
+
+  sql ("ALTER TABLE IF EXISTS agents"
+       " ADD COLUMN IF NOT EXISTS os_status TEXT;");
+
+  /* Add max_delay_seconds to agent groups. */
+  sql ("ALTER TABLE IF EXISTS agent_groups"
+       " ADD COLUMN IF NOT EXISTS max_delay_seconds INTEGER NOT NULL DEFAULT 0;");
+
+  sql ("ALTER TABLE IF EXISTS agent_groups_trash"
+       " ADD COLUMN IF NOT EXISTS max_delay_seconds INTEGER NOT NULL DEFAULT 0;");
+
+  /* Set the database version to 282. */
+  set_db_version (282);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4325,6 +4366,7 @@ static migrator_t database_migrators[] = {
   {279, migrate_278_to_279},
   {280, migrate_279_to_280},
   {281, migrate_280_to_281},
+  {282, migrate_281_to_282},
   /* End marker. */
   {-1, NULL}};
 

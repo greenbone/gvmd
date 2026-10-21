@@ -177,6 +177,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         "<agent_version>%s</agent_version>"
         "<operating_system>%s</operating_system>"
         "<architecture>%s</architecture>"
+        "<os_cpe>%s</os_cpe>"
+        "<os_status>%s</os_status>"
         "<update_to_latest>%i</update_to_latest>"
         "<agent_update_available>%i</agent_update_available>"
         "<updater_update_available>%i</updater_update_available>"
@@ -194,6 +196,8 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
         agent_iterator_agent_version (&agents),
         agent_iterator_operating_system (&agents),
         agent_iterator_architecture (&agents),
+        agent_iterator_os_cpe (&agents),
+        agent_iterator_os_status (&agents),
         agent_iterator_update_to_latest (&agents),
         agent_iterator_agent_update_available (&agents),
         agent_iterator_updater_update_available (&agents),
@@ -260,18 +264,34 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
               {
                 GPtrArray *cron =
                   cfg->agent_script_executor.scheduler_cron_time;
+
                 if (cron && cron->len > 0)
                   {
                     SEND_TO_CLIENT_OR_FAIL (
                       "<scheduler_cron_time is_list=\"1\">");
+
                     for (guint k = 0; k < cron->len; ++k)
                       {
-                        const char *item = (const char *) cron->pdata[k];
-                        gchar *esc =
-                          g_markup_escape_text (item ? item : "", -1);
-                        SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                        agent_controller_scheduler_cron_t item =
+                          g_ptr_array_index (cron, k);
+
+                        if (item == NULL)
+                          continue;
+
+                        gchar *esc = g_markup_escape_text (
+                          item->cron ? item->cron : "", -1);
+
+                        SENDF_TO_CLIENT_OR_FAIL (
+                          "<item>"
+                          "<cron>%s</cron>"
+                          "<max_delay_seconds>%d</max_delay_seconds>"
+                          "</item>",
+                          esc,
+                          item->max_delay_seconds);
+
                         g_free (esc);
                       }
+
                     SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
                   }
                 else

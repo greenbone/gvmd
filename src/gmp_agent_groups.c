@@ -133,6 +133,9 @@ get_agent_groups_run (gmp_parser_t *gmp_parser, GError **error)
 
       SENDF_TO_CLIENT_OR_FAIL ("<scheduler_cron_time>%s</scheduler_cron_time>",
                                scheduler_cron_time ? scheduler_cron_time : "");
+      SENDF_TO_CLIENT_OR_FAIL ("<max_delay_seconds>%d</max_delay_seconds>",
+                               agent_group_iterator_max_delay_seconds (&
+                                 agent_groups));
 
       SENDF_TO_CLIENT_OR_FAIL ("<scanner id=\"%s\">"
                                "<name>%s</name>"
@@ -287,7 +290,8 @@ void
 create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
-  entity_t root, copy, name, comment, scheduler_cron_time, agents_elem;
+  entity_t root, copy, name, comment, scheduler_cron_time, max_delay_seconds,
+           agents_elem;
   const char *name_text, *scheduler_cron_time_text;
   agent_group_data_t group_data;
   agent_uuid_list_t agent_uuids = NULL;
@@ -373,6 +377,25 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  max_delay_seconds = entity_child (root, "max_delay_seconds");
+
+  if (max_delay_seconds)
+    {
+      const gchar *text = entity_text (max_delay_seconds);
+      gint64 value;
+
+      if (text == NULL
+          || !g_ascii_string_to_signed (
+               text, 10, 0, G_MAXINT, &value, NULL))
+        {
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("create_agent_group",
+                              "Invalid max_delay_seconds"));
+          create_agent_group_reset ();
+          return;
+        }
+    }
+
   comment = entity_child (root, "comment");
 
   // Allocate and populate group data
@@ -385,6 +408,10 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
                                       ? g_strdup (
                                         entity_text (scheduler_cron_time))
                                       : g_strdup ("");
+  group_data->max_delay_seconds = max_delay_seconds
+                                    ? (int) g_ascii_strtoll (
+                                      entity_text (max_delay_seconds), NULL, 10)
+                                    : 0;
   group_data->creation_time = group_data->modification_time = time (NULL);
 
   // Parse <agents> if provided
@@ -657,7 +684,8 @@ void
 modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
-  entity_t root, name, comment, scheduler_cron_time, agents_elem;
+  entity_t root, name, comment, scheduler_cron_time, agents_elem,
+           max_delay_seconds;
   const char *agent_group_uuid, *name_text, *scheduler_cron_time_text;
   GPtrArray *errs = NULL;
   agent_group_t agent_group;
@@ -665,7 +693,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   if (!acl_user_may ("modify_agent_group"))
     {
       SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_agent_group",
-                              "Permission denied"));
+        "Permission denied"));
       modify_agent_group_reset ();
       return;
     }
@@ -716,6 +744,25 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  max_delay_seconds = entity_child (root, "max_delay_seconds");
+
+  if (max_delay_seconds)
+    {
+      const gchar *text = entity_text (max_delay_seconds);
+      gint64 value;
+
+      if (text == NULL
+          || !g_ascii_string_to_signed (
+               text, 10, 0, G_MAXINT, &value, NULL))
+        {
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("modify_agent_group",
+                              "Invalid max_delay_seconds"));
+          modify_agent_group_reset ();
+          return;
+        }
+    }
+
   comment = entity_child (root, "comment");
 
   // Parse agent UUIDs
@@ -756,7 +803,11 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
   group_data->name = g_strdup (name_text);
   group_data->comment = g_strdup (comment ? entity_text (comment) : "");
   group_data->scheduler_cron_time = g_strdup (
-    scheduler_cron_time ? entity_text (scheduler_cron_time) : "");
+  scheduler_cron_time ? entity_text (scheduler_cron_time) : "");
+  group_data->max_delay_seconds = max_delay_seconds
+                                    ? (int) g_ascii_strtoll (
+                                      entity_text (max_delay_seconds), NULL, 10)
+                                    : 0;
   group_data->modification_time = time (NULL);
 
   agent_group_resp_t response = modify_and_sync_agent_group (
