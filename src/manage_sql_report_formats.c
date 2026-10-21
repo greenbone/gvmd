@@ -4221,6 +4221,7 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
+  g_free (rf_dependencies_string);
   if (close (output_fd))
     {
       g_warning ("%s: close of output_fd failed: %s",
