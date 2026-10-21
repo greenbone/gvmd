@@ -495,6 +495,28 @@ Ensure (manage_sql_targets, preserves_errors_for_unused_target)
   assert_that (model.transaction_open, is_false);
 }
 
+Ensure (manage_sql_targets, rolls_back_conflicting_alive_tests)
+{
+  GPtrArray *alive_tests;
+  int ret;
+
+  alive_tests = g_ptr_array_new ();
+  g_ptr_array_add (alive_tests, "ICMP Ping");
+
+  ret = modify_target ("target-id", "Renamed target", NULL, NULL,
+                       "Updated comment", NULL, NULL, NULL, NULL, NULL, NULL,
+                       NULL, NULL, NULL, NULL, alive_tests, "ICMP Ping", NULL);
+
+  assert_that (ret, is_equal_to (30));
+  assert_that (model.name, is_equal_to_string ("Original target"));
+  assert_that (model.comment, is_equal_to_string ("Original comment"));
+  assert_that (model.rollback_count, is_equal_to (1));
+  assert_that (model.commit_count, is_equal_to (0));
+  assert_that (model.transaction_open, is_false);
+
+  g_ptr_array_free (alive_tests, TRUE);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -514,6 +536,8 @@ main (int argc, char **argv)
                          preserves_updates_for_unused_target);
   add_test_with_context (suite, manage_sql_targets,
                          preserves_errors_for_unused_target);
+  add_test_with_context (suite, manage_sql_targets,
+                         rolls_back_conflicting_alive_tests);
 
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());

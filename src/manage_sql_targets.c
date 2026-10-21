@@ -1422,7 +1422,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (alive_tests && alive_tests->len
       && alive_test_str && strlen (alive_test_str))
-    return 30;
+    {
+      sql_rollback ();
+      return 30;
+    }
   else if (alive_tests && alive_tests->len)
     {
       int alive_test;
