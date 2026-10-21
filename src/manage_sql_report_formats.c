@@ -329,6 +329,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
           g_error_free (error);
           return -1;
         }
+      g_free (signature_filename);
       g_free (signature_basename);
       return 0;
     }
