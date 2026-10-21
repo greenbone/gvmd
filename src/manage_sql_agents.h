@@ -60,7 +60,7 @@
       "min_interval", "last_update", "last_updater_heartbeat", "comment",      \
       "creation_time", "modification_time", "owner", "id", "updater_version",  \
       "agent_version", "operating_system", "architecture", "os_cpe",           \
-      "os_status" "update_to_latest", "agent_update_available",                \
+      "os_status", "update_to_latest", "agent_update_available",                \
       "updater_update_available", "latest_agent_version",                      \
       "latest_updater_version", "connection_status",                           \
       "scanner_name", "scanner_uuid",                                          \
