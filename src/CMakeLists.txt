@@ -690,6 +690,20 @@ set(
 
 add_unit_test(manage-credentials "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
+add_executable(
+  manage-report-severity-test
+  EXCLUDE_FROM_ALL
+  manage_report_severity_tests.c
+)
+target_link_libraries(
+  manage-report-severity-test
+  ${PostgreSQL_LIBRARIES}
+  ${LINKER_HARDENING_FLAGS}
+)
+add_test(manage-report-severity-test manage-report-severity-test)
+set_tests_properties(manage-report-severity-test PROPERTIES SKIP_RETURN_CODE 77)
+list(APPEND TEST_DEPENDENCIES manage-report-severity-test)
+
 set_target_properties(
   manage-credentials-test
   PROPERTIES

@@ -19,6 +19,7 @@
 #include "manage_utils.h"
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
+#include "manage_report_severity_sql.h"
 #include "manage_sql_secinfo.h"
 
 #undef G_LOG_DOMAIN
@@ -123,42 +124,6 @@ manage_cert_db_exists ()
 
 
 /* SQL functions. */
-
-/**
- * @brief Common overrides SQL for SQL functions.
- */
-#define OVERRIDES_SQL(severity_sql)                         \
- " coalesce"                                                \
- "  ((SELECT overrides.new_severity"                        \
- "    FROM overrides"                                       \
- "    WHERE overrides.result_nvt = results.result_nvt"      \
- "    AND ((overrides.owner IS NULL)"                       \
- "         OR (overrides.owner"                             \
- "             = gvmd_user ()))"        \
- "    AND ((overrides.end_time = 0)"                        \
- "         OR (overrides.end_time >= m_now ()))"            \
- "    AND (overrides.task = results.task"                   \
- "         OR overrides.task = 0)"                          \
- "    AND (overrides.result = results.id"                   \
- "         OR overrides.result = 0)"                        \
- "    AND (overrides.hosts is NULL"                         \
- "         OR overrides.hosts = ''"                         \
- "         OR oci_digest_list_contains (overrides.hosts,"   \
- "                                      results.host)"      \
- "         OR hosts_contains (overrides.hosts,"             \
- "                            results.host))"               \
- "    AND (overrides.port is NULL"                          \
- "         OR overrides.port = ''"                          \
- "         OR overrides.port = results.port)"               \
- "    AND severity_matches_ov"                              \
- "         (" severity_sql ", overrides.severity)"          \
- "    ORDER BY overrides.result DESC,"                      \
- "             overrides.task DESC,"                        \
- "             overrides.port DESC,"                        \
- "             overrides.severity ASC,"                     \
- "             overrides.creation_time DESC"                \
- "    LIMIT 1),"                                            \
- "   " severity_sql ")"
 
 /**
  * @brief Create functions.
@@ -1257,72 +1222,9 @@ manage_create_sql_functions ()
          * because coalesce stops at the first non null argument at
          * execution time.  This holds whether or not report_severity
          * itself gets inlined into the calling query. */
-        sql ("CREATE OR REPLACE FUNCTION report_severity_cached"
-             "         (report integer, overrides integer, min_qod integer)"
-             " RETURNS double precision AS $$"
-             /* The cached severity of a report, or NULL if there is none. */
-             "  SELECT max(severity)::double precision"
-             "  FROM report_counts"
-             "  WHERE report = $1"
-             "  AND \"user\" = gvmd_user ()"
-             "  AND override = $2"
-             "  AND min_qod = $3"
-             "  AND (end_time = 0 or end_time >= m_now ());"
-             "$$ LANGUAGE SQL STABLE;");
-
-        sql ("CREATE OR REPLACE FUNCTION report_severity_dynamic"
-             "         (report integer, overrides integer, min_qod integer)"
-             " RETURNS double precision AS $$"
-             /* Severity computed from the results, for reports without a
-              * cached count.  Only called, and therefore only planned, when
-              * report_severity_cached came back NULL. */
-             "  SELECT CASE"
-             "         WHEN dynamic_severity () AND $2::boolean"
-             /*        Dynamic severity, overrides on. */
-             "         THEN (SELECT max"
-             "                       (" OVERRIDES_SQL
-                                         ("current_severity (results.severity,"
-                                          "                  results.nvt)") ")"
-             "               FROM results"
-             "               WHERE results.report = $1"
-             "                 AND results.qod >= $3)"
-             "         WHEN dynamic_severity ()"
-             /*        Dynamic severity, overrides off. */
-             "         THEN (SELECT max (CASE"
-             "                           WHEN results.type IS NULL"
-             "                           THEN 0::real"
-             "                           ELSE current_severity"
-             "                                 (results.severity, results.nvt)"
-             "                           END)"
-             "               FROM results"
-             "               WHERE results.report = $1"
-             "                 AND results.qod >= $3)"
-             "         WHEN $2::boolean"
-             /*        Overrides on. */
-             "         THEN (SELECT max (" OVERRIDES_SQL ("results.severity") ")"
-             "               FROM results"
-             "               WHERE results.report = $1"
-             "                 AND results.qod >= $3)"
-             /*        Overrides off. */
-             "         ELSE (SELECT max (CASE"
-             "                           WHEN results.type IS NULL"
-             "                           THEN 0::real"
-             "                           ELSE results.severity"
-             "                           END)"
-             "               FROM results"
-             "               WHERE results.report = $1"
-             "                 AND results.qod >= $3)"
-             "         END;"
-             "$$ LANGUAGE SQL STABLE;");
-
-        sql ("CREATE OR REPLACE FUNCTION report_severity (report integer,"
-             "                                            overrides integer,"
-             "                                            min_qod integer)"
-             " RETURNS double precision AS $$"
-             /* Calculate the severity of a report. */
-             "  SELECT coalesce (report_severity_cached ($1, $2, $3),"
-             "                   report_severity_dynamic ($1, $2, $3));"
-             "$$ LANGUAGE SQL STABLE;");
+        sql (REPORT_SEVERITY_CACHED_SQL);
+        sql (REPORT_SEVERITY_DYNAMIC_SQL);
+        sql (REPORT_SEVERITY_SQL);
         }
 
       sql ("CREATE OR REPLACE FUNCTION report_host_count (report integer)"
