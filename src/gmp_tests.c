@@ -21,12 +21,14 @@ static const guchar report_export_contents[] = {
 static GString *captured_output;
 static gchar *report_export_path;
 static int report_export_delete_count;
+static int delete_port_range_result;
 
 BeforeEach (gmp)
 {
   captured_output = g_string_new ("");
   report_export_path = NULL;
   report_export_delete_count = 0;
+  delete_port_range_result = 1;
 }
 
 AfterEach (gmp)
@@ -127,6 +129,14 @@ __wrap_manage_delete_report_export (report_export_t report_export,
   (void) file_path;
   report_export_delete_count++;
   return 0;
+}
+
+int
+__wrap_delete_port_range (const char *port_range_id, int dummy)
+{
+  (void) port_range_id;
+  (void) dummy;
+  return delete_port_range_result;
 }
 
 static void
@@ -397,6 +407,30 @@ Ensure (gmp, modify_permission_not_found_returns_not_found_response)
   g_string_free (response, TRUE);
 }
 
+Ensure (gmp, delete_port_range_reports_port_list_in_use)
+{
+  const gchar *attribute_names[] = { "port_range_id", NULL };
+  const gchar *attribute_values[] = { "port-range", NULL };
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+
+  gmp_xml_handle_start_element (NULL, "delete_port_range", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "delete_port_range", &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (captured_output->str,
+               contains_string ("status=\"400\""));
+  assert_that (captured_output->str,
+               contains_string ("Port list is in use"));
+  assert_that (captured_output->str,
+               does_not_contain_string ("Port range is in use"));
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+}
+
 Ensure (gmp, move_task_without_task_id_restores_authenticated_state)
 {
   const gchar *attribute_names[] = { "slave_id", NULL };
@@ -450,6 +484,8 @@ main (int argc, char **argv)
     (suite, gmp, export_scan_report_restores_authenticated_state);
   add_test_with_context
     (suite, gmp, modify_permission_not_found_returns_not_found_response);
+  add_test_with_context
+    (suite, gmp, delete_port_range_reports_port_list_in_use);
   add_test_with_context
     (suite, gmp, modify_report_config_restores_authenticated_state);
   add_test_with_context

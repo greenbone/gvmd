@@ -1754,12 +1754,13 @@ insert_port_range (port_list_t port_list, port_protocol_t type, int start,
  * @param[in]  port_range_id  UUID of port_range.
  * @param[in]  dummy          Dummy arg to match other delete functions.
  *
- * @return 0 success, 2 failed to find port range, 99 permission denied,
- *         -1 error.
+ * @return 0 success, 1 port list in use, 2 failed to find port range,
+ *         99 permission denied, -1 error.
  */
 int
 delete_port_range (const char *port_range_id, int dummy)
 {
+  port_list_t port_list = 0;
   port_range_t port_range = 0;
 
   sql_begin_immediate ();
@@ -1781,6 +1782,20 @@ delete_port_range (const char *port_range_id, int dummy)
     {
       sql_rollback ();
       return 2;
+    }
+
+  if (sql_int64 (&port_list,
+                 "SELECT port_list FROM port_ranges WHERE id = %llu;",
+                 port_range))
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  if (port_list_in_use (port_list))
+    {
+      sql_rollback ();
+      return 1;
     }
 
   sql ("DELETE FROM port_ranges WHERE id = %llu;", port_range);
@@ -2094,7 +2109,7 @@ trash_port_list_in_use (port_list_t port_list)
 int
 port_list_writable (port_list_t port_list)
 {
-  return port_list_in_use (port_list) == 0;
+  return port_list_predefined (port_list) == 0;
 }
 
 /**
