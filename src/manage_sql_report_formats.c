@@ -284,6 +284,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               g_error_free (error);
               error = NULL;
+              g_free (signature_filename);
               signature_filename = g_build_filename (GVMD_STATE_DIR,
                                                      "signatures",
                                                      location,
