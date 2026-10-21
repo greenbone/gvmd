@@ -570,7 +570,7 @@ set_target_properties(
   gmp-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export"
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,delete_port_range"
 )
 
 set(
@@ -641,6 +641,14 @@ set_target_properties(
   PROPERTIES
     LINK_FLAGS
       "-Wl,-wrap,acl_user_may,-wrap,find_resource_with_permission,-wrap,manage_max_hosts,-wrap,resource_with_name_exists,-wrap,sql,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_int,-wrap,sql_int64,-wrap,sql_quote,-wrap,sql_rollback,-wrap,sql_string"
+)
+
+add_unit_test(manage-sql-port-lists "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-port-lists-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,acl_user_may,-wrap,acl_user_owns_uuid,-wrap,find_resource_with_permission,-wrap,resource_with_name_exists,-wrap,sql,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_int,-wrap,sql_int64,-wrap,sql_quote,-wrap,sql_rollback,-wrap,sql_string"
 )
 
 set(

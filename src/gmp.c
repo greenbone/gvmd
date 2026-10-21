@@ -11443,8 +11443,9 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
  * @param[in]  upper    Resource type in uppercase.
  * @param[in]  type     Resource type.
  * @param[in]  capital  Resource type capitalised.
+ * @param[in]  in_use   Resource type named in the in-use error.
  */
-#define CASE_DELETE(upper, type, capital)                                   \
+#define CASE_DELETE_IN_USE(upper, type, capital, in_use)                    \
   case CLIENT_DELETE_ ## upper :                                            \
     if (delete_ ## type ## _data-> type ## _id)                             \
       switch (delete_ ## type (delete_ ## type ## _data-> type ## _id,      \
@@ -11458,7 +11459,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
           case 1:                                                           \
             SEND_TO_CLIENT_OR_FAIL                                          \
              (XML_ERROR_SYNTAX ("delete_" G_STRINGIFY (type),               \
-                                capital " is in use"));                     \
+                                in_use " is in use"));                      \
             log_event_fail (G_STRINGIFY(type), capital,                     \
                             delete_ ## type ## _data-> type ## _id,         \
                             "deleted");                                     \
@@ -11506,6 +11507,9 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
     delete_ ## type ## _data_reset (delete_ ## type ## _data);              \
     set_client_state (CLIENT_AUTHENTIC);                                    \
     break
+
+#define CASE_DELETE(upper, type, capital) \
+  CASE_DELETE_IN_USE (upper, type, capital, capital)
 
 /**
  * @brief Handle end of GET_AGGREGATES element.
@@ -21722,7 +21726,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CASE_DELETE (OVERRIDE, override, "Override");
       CASE_DELETE (PERMISSION, permission, "Permission");
       CASE_DELETE (PORT_LIST, port_list, "Port list");
-      CASE_DELETE (PORT_RANGE, port_range, "Port range");
+      CASE_DELETE_IN_USE (PORT_RANGE, port_range, "Port range", "Port list");
 
       case CLIENT_DELETE_OCI_IMAGE_TARGET:
         delete_run (gmp_parser, error);
