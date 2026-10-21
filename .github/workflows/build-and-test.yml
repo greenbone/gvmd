@@ -93,6 +93,18 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     container: ghcr.io/greenbone/gvm-libs:stable
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      GVMD_TEST_DATABASE_URI: postgresql://postgres:postgres@postgres:5432/postgres
     steps:
       - name: Check out gvmd
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
