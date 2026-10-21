@@ -663,6 +663,20 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-preferences "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+add_executable(
+  manage-task-severity-test
+  EXCLUDE_FROM_ALL
+  manage_task_severity_tests.c
+)
+target_link_libraries(
+  manage-task-severity-test
+  ${PostgreSQL_LIBRARIES}
+  ${LINKER_HARDENING_FLAGS}
+)
+add_test(manage-task-severity-test manage-task-severity-test)
+set_tests_properties(manage-task-severity-test PROPERTIES SKIP_RETURN_CODE 77)
+list(APPEND TEST_DEPENDENCIES manage-task-severity-test)
+
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
 if(DEBUG_FUNCTION_NAMES)

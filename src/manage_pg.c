@@ -19,6 +19,7 @@
 #include "manage_utils.h"
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
+#include "manage_task_severity_sql.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -1439,116 +1440,23 @@ manage_create_sql_functions ()
      /* column web_application_target in table task was added in version 277 */
      if (current_db_version >= 277)
        {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
-               "                                          integer," // overrides
-               "                                          integer)" // min_qod
-               " RETURNS double precision AS $$"
-               /* Calculate the severity of a task. */
-               "  SELECT CASE"
-               "         WHEN (SELECT target = 0 "
-               "               AND agent_group = 0 "
-               "               AND oci_image_target = 0 "
-               "               AND web_application_target = 0 "
-               "               FROM tasks WHERE id = $1)"
-               "         THEN CAST (NULL AS double precision)"
-               "         ELSE"
-               /* Only look up the severity when the task has a report.  Calling
-                * report_severity with NULL returns NULL as well, but it costs a
-                * full evaluation of the severity query for every task that never
-                * ran, which dominates aggregates over many tasks. */
-               "         (SELECT report_severity (last_report.id, $2, $3)"
-               "          FROM (SELECT id FROM reports"
-               "                WHERE task = $1"
-               "                AND scan_run_status = %u"
-               "                ORDER BY creation_time DESC"
-               "                LIMIT 1 OFFSET 0) AS last_report)"
-               "         END;"
-               "$$ LANGUAGE SQL;",
-               TASK_STATUS_DONE);
+          sql (TASK_SEVERITY_SQL_V277, TASK_STATUS_DONE);
        }
       /* column oci_image_target in table task was added in version 261 */
       /* column agent_group in table task was added in version 262 */
       else if (current_db_version >= 262)
         {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
-               "                                          integer," // overrides
-               "                                          integer)" // min_qod
-               " RETURNS double precision AS $$"
-               /* Calculate the severity of a task. */
-               "  SELECT CASE"
-               "         WHEN (SELECT target = 0 "
-               "               AND agent_group = 0 "
-               "               AND oci_image_target = 0 "
-               "               FROM tasks WHERE id = $1)"
-               "         THEN CAST (NULL AS double precision)"
-               "         ELSE"
-               /* Only look up the severity when the task has a report.  Calling
-                * report_severity with NULL returns NULL as well, but it costs a
-                * full evaluation of the severity query for every task that never
-                * ran, which dominates aggregates over many tasks. */
-               "         (SELECT report_severity (last_report.id, $2, $3)"
-               "          FROM (SELECT id FROM reports"
-               "                WHERE task = $1"
-               "                AND scan_run_status = %u"
-               "                ORDER BY creation_time DESC"
-               "                LIMIT 1 OFFSET 0) AS last_report)"
-               "         END;"
-               "$$ LANGUAGE SQL;",
-               TASK_STATUS_DONE);
+          sql (TASK_SEVERITY_SQL_V262, TASK_STATUS_DONE);
         }
       /* column date in table reports was renamed to creation_time in version 245 */
       else if (current_db_version >= 245)
         {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer," // task
-               "                                          integer," // overrides
-               "                                          integer)" // min_qod
-               " RETURNS double precision AS $$"
-               /* Calculate the severity of a task. */
-               "  SELECT CASE"
-               "         WHEN (SELECT target = 0 "
-               "               FROM tasks WHERE id = $1)"
-               "         THEN CAST (NULL AS double precision)"
-               "         ELSE"
-               /* Only look up the severity when the task has a report.  Calling
-                * report_severity with NULL returns NULL as well, but it costs a
-                * full evaluation of the severity query for every task that never
-                * ran, which dominates aggregates over many tasks. */
-               "         (SELECT report_severity (last_report.id, $2, $3)"
-               "          FROM (SELECT id FROM reports"
-               "                WHERE task = $1"
-               "                AND scan_run_status = %u"
-               "                ORDER BY creation_time DESC"
-               "                LIMIT 1 OFFSET 0) AS last_report)"
-               "         END;"
-               "$$ LANGUAGE SQL;",
-               TASK_STATUS_DONE);
+          sql (TASK_SEVERITY_SQL_V245, TASK_STATUS_DONE);
         }
       /* result_nvt column (in OVERRIDES_SQL) was added in version 189. */
       else if (current_db_version >= 189)
         {
-          sql ("CREATE OR REPLACE FUNCTION task_severity (integer,"  // task
-               "                                          integer,"  // overrides
-               "                                          integer)"  // min_qod
-               " RETURNS double precision AS $$"
-               /* Calculate the severity of a task. */
-               "  SELECT CASE"
-               "         WHEN (SELECT target = 0"
-               "               FROM tasks WHERE id = $1)"
-               "         THEN CAST (NULL AS double precision)"
-               "         ELSE"
-               /* Only look up the severity when the task has a report.  Calling
-                * report_severity with NULL returns NULL as well, but it costs a
-                * full evaluation of the severity query for every task that never
-                * ran, which dominates aggregates over many tasks. */
-               "         (SELECT report_severity (last_report.id, $2, $3)"
-               "          FROM (SELECT id FROM reports"
-               "                WHERE task = $1"
-               "                AND scan_run_status = %u"
-               "                ORDER BY date DESC"
-               "                LIMIT 1 OFFSET 0) AS last_report)"
-               "         END;"
-               "$$ LANGUAGE SQL;",
-               TASK_STATUS_DONE);
+          sql (TASK_SEVERITY_SQL_V189, TASK_STATUS_DONE);
         }
 
       sql ("CREATE OR REPLACE FUNCTION task_trend (integer, integer, integer)"
