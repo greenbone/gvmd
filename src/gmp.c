@@ -71,6 +71,9 @@
  */
 
 #include "gmp.h"
+#if ENABLE_AD_INTEGRATION
+#include "gmp_active_directory.h"
+#endif
 #if ENABLE_AGENTS
 #include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_agent_groups.h"
@@ -4633,6 +4636,9 @@ typedef enum
   CLIENT_SYNC_AGENTS,
 #endif
   CLIENT_TEST_ALERT,
+#if ENABLE_AD_INTEGRATION
+  CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL,
+#endif
 #if ENABLE_CREDENTIAL_STORES
   CLIENT_VERIFY_CREDENTIAL_STORE,
 #endif
@@ -6326,6 +6332,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
+#if ENABLE_AD_INTEGRATION
+        else if (strcasecmp ("VERIFY_ACTIVE_DIRECTORY_CREDENTIAL",
+                             element_name) == 0)
+          {
+            verify_active_directory_credential_start (gmp_parser,
+                                                      attribute_names,
+                                                      attribute_values);
+            set_client_state (CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL);
+          }
+#endif
 #if ENABLE_CREDENTIAL_STORES
         else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
           {
@@ -8152,6 +8168,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         else
           set_read_over (gmp_parser);
         break;
+
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        verify_active_directory_credential_element_start (gmp_parser,
+                                                          element_name,
+                                                          attribute_names,
+                                                          attribute_values);
+        break;
+#endif /* ENABLE_AD_INTEGRATION */
 
 #if ENABLE_WEB_APPLICATION_SCANNING
       case CLIENT_CREATE_WEB_APPLICATION_TARGET:
@@ -29154,6 +29179,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif
+
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        {
+          if (verify_active_directory_credential_element_end (gmp_parser,
+                                                              error,
+                                                              element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+#endif
+
 #if ENABLE_CREDENTIAL_STORES
       case CLIENT_VERIFY_CREDENTIAL_STORE:
         {
@@ -30220,6 +30257,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
               &run_wizard_data->param->value);
 
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        verify_active_directory_credential_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AD_INTEGRATION */
 
       default:
         /* Just pass over the text. */

@@ -81,8 +81,8 @@ else(ENABLE_WEB_APPLICATION_SCANNING)
 endif(ENABLE_WEB_APPLICATION_SCANNING)
 
 if(ENABLE_AD_INTEGRATION)
-  pkg_check_modules(LIBGVM_GVM_LDAP REQUIRED libgvm_ldap>=23.12)
-  pkg_check_modules(LIBGVM_AD_CONNECTOR REQUIRED libgvm_ad_connector>=23.12)
+  pkg_check_modules(LIBGVM_GVM_LDAP REQUIRED libgvm_ldap>=23.15)
+  pkg_check_modules(LIBGVM_AD_CONNECTOR REQUIRED libgvm_ad_connector>=23.15)
 else(ENABLE_AD_INTEGRATION)
   message(STATUS "ENABLE_AD_INTEGRATION flag is not enabled")
 endif(ENABLE_AD_INTEGRATION)
@@ -290,6 +290,10 @@ if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
   list(APPEND ALL_MANAGE_SRC manage_integration_report_exports.c)
 endif()
 
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_MANAGE_SRC manage_active_directory.c)
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -411,6 +415,10 @@ if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
 endif()
 
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_GMP_SRC gmp_active_directory.c)
+endif()
+
 set(ALL_SQL_SRC sql.c sql_pg.c)
 
 set(
@@ -517,6 +525,8 @@ target_link_libraries(
   ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBGVM_SECURITY_INTELLIGENCE_LDFLAGS}
   ${LIBGVM_WEB_APPLICATION_SCANNER_LDFLAGS}
+  ${LIBGVM_GVM_LDAP_LDFLAGS}
+  ${LIBGVM_AD_CONNECTOR_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -708,6 +718,23 @@ set_target_properties(
     LINK_FLAGS
       "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private,-wrap,feature_enabled"
 )
+
+if(ENABLE_AD_INTEGRATION)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(manage-active-directory "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+  set_target_properties(
+    manage-active-directory-test
+    PROPERTIES
+      LINK_FLAGS
+        "-Wl,-wrap,feature_enabled,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,credential_value,-wrap,credential_encrypted_value,-wrap,ad_connector_new,-wrap,ad_connector_free,-wrap,ad_connector_builder,-wrap,ad_connector_connect"
+  )
+endif()
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
