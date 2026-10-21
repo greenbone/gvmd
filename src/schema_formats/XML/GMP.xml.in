@@ -3931,6 +3931,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
       <o><e>copy</e></o>
     </pattern>
@@ -3951,6 +3952,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
       <required>1</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds (defaults to 0)</summary>
+      <pattern><type>integer</type></pattern>
+      <required>0</required>
     </ele>
     <ele>
       <name>agents</name>
@@ -4001,6 +4008,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <name>Test Agent Group</name>
           <comment>Created via gvm-cli for testing</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
             <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
