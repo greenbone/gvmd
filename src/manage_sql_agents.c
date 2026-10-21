@@ -37,7 +37,8 @@
 static void
 delete_existing_agent_ips (const gchar *agent_id)
 {
-  sql_ps ("DELETE FROM agent_ip_addresses WHERE agent_id = $1;", agent_id,
+  sql_ps ("DELETE FROM agent_ip_addresses WHERE agent_id = $1;",
+          SQL_STR_PARAM (agent_id),
           NULL);
 }
 
