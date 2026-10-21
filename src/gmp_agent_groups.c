@@ -756,7 +756,7 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
                text, 10, 0, G_MAXINT, &value, NULL))
         {
           SEND_TO_CLIENT_OR_FAIL (
-            XML_ERROR_SYNTAX ("create_agent_group",
+            XML_ERROR_SYNTAX ("modify_agent_group",
                               "Invalid max_delay_seconds"));
           modify_agent_group_reset ();
           return;
