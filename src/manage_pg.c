@@ -43,10 +43,21 @@ check_db_extensions ();
 void
 manage_session_init (const char *uuid)
 {
+  /* Callers often switch to the user the session is already on, so skip
+   * the lookup and the SET SESSION statements in that case.
+   *
+   * The cache lives in sql_pg.c so that it is dropped whenever the
+   * connection or the transaction that carries the session state goes away.
+   * The places in manage_sql.c that write these variables directly forget
+   * it themselves. */
+  if (uuid && sql_session_uuid () && strcmp (sql_session_uuid (), uuid) == 0)
+    return;
+
   sql ("SET SESSION \"gvmd.user.id\" = %llu;",
        sql_int64_0 ("SELECT id FROM users WHERE uuid = '%s';",
                     uuid));
   sql ("SET SESSION \"gvmd.tz_override\" = '';");
+  sql_session_uuid_set (uuid);
 }
 
 /**
@@ -3685,6 +3696,16 @@ create_tables ()
 
   create_indexes_nvt ();
 
+  /* Rebuilding the count cache after an override changes runs two queries
+   * per affected report that select from overrides by NVT: the valid_overrides
+   * clause of the result iterator matches on result_nvt, and the end_time of
+   * the cache row is the earliest expiry among the overrides that touch the
+   * report, matched on nvt. */
+  sql ("SELECT create_index ('overrides_by_nvt',"
+       "                     'overrides', 'nvt');");
+  sql ("SELECT create_index ('overrides_by_result_nvt',"
+       "                     'overrides', 'result_nvt');");
+
   sql ("SELECT create_index ('permissions_by_name',"
        "                     'permissions', 'name');");
   sql ("SELECT create_index ('permissions_by_resource',"
@@ -4456,6 +4477,29 @@ manage_db_init_indexes (const gchar *name)
 }
 
 /**
+ * @brief Check whether a table exists, by way of the system catalogue.
+ *
+ * These three predicates sit in hot paths - init_result_get_iterator_severity
+ * asks for CERT every time it builds a result iterator.
+ *
+ * to_regclass is a syscache lookup, much cheaper to plan than a query on the
+ * information_schema.tables view, which would be planned again on every call
+ * because the names are formatted into the statement text.  It returns
+ * NULL rather than raising when the object is absent, and an unknown schema is
+ * NULL too, so it needs no separate check that the schema exists.
+ *
+ * @param[in]  qualified_name  Schema qualified table name.
+ *
+ * @return 1 if the table exists, else 0.
+ */
+static int
+table_exists_regclass (const char *qualified_name)
+{
+  return !!sql_int ("SELECT (to_regclass ('%s') IS NOT NULL)::integer;",
+                    qualified_name);
+}
+
+/**
  * @brief Check whether CERT is available.
  *
  * @return 1 if CERT database is loaded, else 0.
@@ -4463,12 +4507,7 @@ manage_db_init_indexes (const gchar *name)
 int
 manage_cert_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'cert'"
-                    "               AND table_name = 'dfn_cert_advs')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("cert.dfn_cert_advs");
 }
 
 /**
@@ -4479,12 +4518,7 @@ manage_cert_loaded ()
 int
 manage_scap_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'scap'"
-                    "               AND table_name = 'cves')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("scap.cves");
 }
 
 /**
@@ -4495,12 +4529,7 @@ manage_scap_loaded ()
 int
 manage_nvts_loaded ()
 {
-  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
-                    "               WHERE table_catalog = '%s'"
-                    "               AND table_schema = 'public'"
-                    "               AND table_name = 'nvts')"
-                    " ::integer;",
-                    sql_database ());
+  return table_exists_regclass ("public.nvts");
 }
 
 /**
