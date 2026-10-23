@@ -575,6 +575,20 @@ set_target_properties(
 
 set(
   ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(sql "${ALL_OBJECTS}" "")
+set_target_properties(
+  sql-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_exec_internal"
+)
+
+set(
+  ALL_OBJECTS
   $<TARGET_OBJECTS:all-manage-obj>
   $<TARGET_OBJECTS:all-manage-sql-obj>
   $<TARGET_OBJECTS:all-misc-obj>
