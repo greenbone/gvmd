@@ -17987,14 +17987,29 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                     {
                       SEND_TO_CLIENT_OR_FAIL (
                         "<scheduler_cron_time is_list=\"1\">");
+
                       for (guint i = 0; i < cron->len; ++i)
                         {
-                          const char *item = (const char *) cron->pdata[i];
+                          agent_controller_scheduler_cron_t item =
+                            g_ptr_array_index (cron, i);
+
+                          if (item == NULL)
+                            continue;
+
                           gchar *esc = g_markup_escape_text (
-                            item ? item : "", -1);
-                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                            item->cron ? item->cron : "", -1);
+
+                          SENDF_TO_CLIENT_OR_FAIL (
+                            "<item>"
+                            "<cron>%s</cron>"
+                            "<max_delay_seconds>%d</max_delay_seconds>"
+                            "</item>",
+                            esc,
+                            item->max_delay_seconds);
+
                           g_free (esc);
                         }
+
                       SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
                     }
                   else

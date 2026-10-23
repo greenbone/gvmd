@@ -51,35 +51,34 @@ agent_data_list_new (int count)
 }
 
 /**
- * @brief Deep-copy a GPtrArray of char*.
+ * @brief Deep-copy a GPtrArray of scheduler cron entries.
  *
- * @param[in] src  Source pointer array to duplicate (may be NULL).
+ * @param[in] src Source array to duplicate (may be NULL).
  *
- * @return A newly allocated #GPtrArray on success; NULL if @p src is NULL
- *         or if an allocation fails.
+ * @return A newly allocated array, or NULL if src is NULL.
  */
 static GPtrArray *
-dup_str_ptr_array (const GPtrArray *src)
+dup_scheduler_cron_array (const GPtrArray *src)
 {
   if (!src)
     return NULL;
 
-  GPtrArray *dst = g_ptr_array_sized_new (src->len);
-  if (!dst)
-    return NULL;
-
-  g_ptr_array_set_free_func (dst, g_free);
+  GPtrArray *dst = g_ptr_array_new_with_free_func (
+    (GDestroyNotify) agent_controller_scheduler_cron_free);
 
   for (guint i = 0; i < src->len; ++i)
     {
-      const char *s = g_ptr_array_index ((GPtrArray *) src, i);
-      char *copy = s ? g_strdup (s) : NULL;
+      agent_controller_scheduler_cron_t entry =
+        g_ptr_array_index ((GPtrArray *) src, i);
 
-      if (s && !copy)
-        {
-          g_ptr_array_free (dst, TRUE);
-          return NULL;
-        }
+      if (!entry)
+        continue;
+
+      agent_controller_scheduler_cron_t copy =
+        agent_controller_scheduler_cron_new ();
+
+      copy->cron = g_strdup (entry->cron);
+      copy->max_delay_seconds = entry->max_delay_seconds;
 
       g_ptr_array_add (dst, copy);
     }
@@ -139,6 +138,8 @@ convert_agent_control_list_to_agent_data_list (
       dest->agent_version = g_strdup (src->agent_version);
       dest->operating_system = g_strdup (src->operating_system);
       dest->architecture = g_strdup (src->architecture);
+      dest->os_cpe = g_strdup (src->os_cpe);
+      dest->os_status = g_strdup (src->os_status);
       dest->update_to_latest = src->update_to_latest;
       dest->last_updater_heartbeat = src->last_updater_heartbeat;
       dest->agent_update_available = src->agent_update_available;
@@ -219,6 +220,8 @@ convert_agent_data_list_to_agent_control_list (
       dest->agent_version = g_strdup (src->agent_version);
       dest->operating_system = g_strdup (src->operating_system);
       dest->architecture = g_strdup (src->architecture);
+      dest->os_cpe = g_strdup (src->os_cpe);
+      dest->os_status = g_strdup (src->os_status);
       dest->last_update = src->update_to_latest;
 
       // IP addresses
@@ -399,9 +402,9 @@ copy_agent_controller_scan_agent_config (
   dst->heartbeat.interval_in_seconds = src->heartbeat.interval_in_seconds;
   dst->heartbeat.miss_until_inactive = src->heartbeat.miss_until_inactive;
 
-  /* Deep copy of GPtrArray<char*> */
+  /* Deep copy of scheduler cron entries */
   dst->agent_script_executor.scheduler_cron_time =
-    dup_str_ptr_array (src->agent_script_executor.scheduler_cron_time);
+    dup_scheduler_cron_array (src->agent_script_executor.scheduler_cron_time);
 
   if (src->agent_script_executor.scheduler_cron_time
       && !dst->agent_script_executor.scheduler_cron_time)
@@ -520,6 +523,12 @@ agent_data_free (agent_data_t data)
 
   if (data->architecture)
     g_free (data->architecture);
+
+  if (data->os_cpe)
+    g_free (data->os_cpe);
+
+  if (data->os_status)
+    g_free (data->os_status);
 
   if (data->comment)
     g_free (data->comment);
@@ -677,6 +686,8 @@ get_agents_by_scanner_and_uuids (scanner_t scanner, agent_uuid_list_t uuid_list,
       agent->operating_system =
         g_strdup (agent_iterator_operating_system (&iterator));
       agent->architecture = g_strdup (agent_iterator_architecture (&iterator));
+      agent->os_cpe = g_strdup (agent_iterator_os_cpe (&iterator));
+      agent->os_status = g_strdup (agent_iterator_os_status (&iterator));
       agent->update_to_latest = agent_iterator_update_to_latest (&iterator);
       agent->scanner = scanner;
       agent->owner = get_iterator_owner (&iterator);

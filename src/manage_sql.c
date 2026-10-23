@@ -17558,6 +17558,8 @@ manage_send_report (report_t report, report_t delta_report,
   if (output_file == NULL)
     {
       g_warning ("%s: No file returned for report format", __func__);
+      gvm_file_remove_recurse (xml_dir);
+      return -1;
     }
 
   /* Send the report. */
