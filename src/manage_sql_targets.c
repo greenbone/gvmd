@@ -2075,14 +2075,14 @@ DEF_ACCESS (target_iterator_allow_simultaneous_ips,
 
 /* Credential names and UUIDs straight from the iterator.
  *
- * The name columns (23 to 28) already existed for filtering and sorting,
- * they simply had no accessor.  The UUID columns are 31 to 36; 29 and 30
+ * The name columns (23 to 28) also serve filtering and sorting.  The UUID columns are 31 to 36; 29 and 30
  * are the "hosts" and "ips" filter columns that sit between them.
  *
  * Only valid on the non-trash iterator.  TARGET_ITERATOR_TRASH_COLUMNS
  * ends after index 22, so calling these on a trash iterator would read
- * past the column list.  Callers must branch on get.trash first, as
- * gmp.c does.
+ * past the column list.  This includes trashed targets whose credential
+ * is still live, so callers must branch on get.trash itself, not on the
+ * target_iterator_*_trash() flags.
  */
 
 /**
