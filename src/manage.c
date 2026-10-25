@@ -352,7 +352,7 @@ truncate_certificate (const gchar* certificate)
 gchar *
 truncate_private_key (const gchar* private_key)
 {
-  gchar *key_start, *key_end;
+  const gchar *key_start, *key_end;
   key_end = NULL;
   key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----");
   if (key_start)
