@@ -90,7 +90,7 @@ endif(ENABLE_AD_INTEGRATION)
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
-pkg_check_modules(LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules(LIBICAL REQUIRED libical>=3.0.11)
 pkg_check_modules(GPGME REQUIRED gpgme)
 
 message(STATUS "Looking for PostgreSQL...")
