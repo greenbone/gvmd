@@ -16,7 +16,7 @@ Prerequisites:
 * gpgme
 * [gvm-libs](https://github.com/greenbone/gvm-libs/) >= 23.9 (or 23.14 if ENABLE_AGENTS or 23.15 if ENABLE_AD_INTEGRATION)
 * [gvm-auth-lib](https://github.com/greenbone/gvm-auth-lib/) >= 0.3 (if ENABLE_SECURITY_INTELLIGENCE_EXPORT or ENABLE_JWT_AUTH is enabled)
-* libical >= 1.0.0
+* libical >= 3.0.11
 * libbsd
 * pkg-config
 * PostgreSQL database >= 9.6
