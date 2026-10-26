@@ -511,10 +511,12 @@ static int
 serve_client (int server_socket, gvm_connection_t *client_connection)
 {
   int ret;
+  serve_gmp_result_t serve_result;
   pthread_t watch_thread;
   connection_watcher_data_t *watcher_data;
 
   ret = EXIT_FAILURE;
+  serve_result = SERVE_GMP_ERROR;
 
   if (server_socket > 0)
     {
@@ -578,8 +580,8 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
 
   /* Keep ownership here so the watcher is stopped before the connection is
    * freed. */
-  if (serve_gmp (client_connection, &database, disabled_commands)
-      == SERVE_GMP_ERROR)
+  serve_result = serve_gmp (client_connection, &database, disabled_commands);
+  if (serve_result == SERVE_GMP_ERROR)
     goto cleanup;
 
   ret = EXIT_SUCCESS;
@@ -587,9 +589,16 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
  cleanup:
   if (watcher_data
       && stop_connection_watcher (watch_thread, watcher_data))
-    /* Do not free the connection while a watcher may still reference it. */
-    return EXIT_FAILURE;
-  gvm_connection_free (client_connection);
+    {
+      /* Do not free the connection while a watcher may still reference it. */
+      ret = EXIT_FAILURE;
+    }
+  else
+    gvm_connection_free (client_connection);
+
+  if (serve_result == SERVE_GMP_CANCELED)
+    cleanup_manage_process_canceled ();
+
   return ret;
 }
 

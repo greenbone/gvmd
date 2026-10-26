@@ -648,6 +648,10 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_is_open -Wl,-wrap,sql_close"
+)
 
 set(
   ALL_OBJECTS
