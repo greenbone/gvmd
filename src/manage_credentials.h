@@ -17,16 +17,9 @@
 #include "manage_get.h"
 #include "manage_resources_types.h"
 
-typedef struct
-{
-  char *host;
-  char *port;
-  char *bind_dn;
-  char *bind_password;
-  char *tls_mode;
-  char *base_dn;
-  char *ca_certificate;
-} credential_ad_connector_data_t;
+#if ENABLE_AD_INTEGRATION
+#include "manage_active_directory.h"
+#endif
 
 /**
  * @brief Represents a credential.
@@ -58,7 +51,7 @@ struct credential_data
   char *privacy_host_identifier;
 #endif
 #if ENABLE_AD_INTEGRATION
-  credential_ad_connector_data_t ad_connector;
+  ad_credential_data_t ad_credential_data;
 #endif
   gboolean key_present;
 } ;

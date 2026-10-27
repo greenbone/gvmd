@@ -123,7 +123,7 @@ credential_child_text (entity_t parent, const gchar *name)
  * @param[out] ad    The structure to populate with the parsed data.
  */
 static void
-parse_ad_connector_data (entity_t root, credential_ad_connector_data_t *ad)
+parse_ad_connector_data (entity_t root, ad_credential_data_t *ad)
 {
   ad->host = credential_child_text (root, "host");
   ad->port = credential_child_text (root, "port");
@@ -199,7 +199,7 @@ parse_credential_entity (entity_t root, credential_data_t *data)
 #endif
 
 #if ENABLE_AD_INTEGRATION
-  parse_ad_connector_data (root, &data->ad_connector);
+  parse_ad_connector_data (root, &data->ad_credential_data);
 #endif
 
 }
