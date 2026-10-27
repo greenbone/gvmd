@@ -821,6 +821,122 @@ icalendar_next_time_from_rdates (GPtrArray *rdates, icaltimetype ref_time_ical,
 }
 
 /**
+ * @brief Try to seek a recurrence iterator past historical occurrences.
+ *
+ * @param[in]     recurrence     The recurrence rule to evaluate.
+ * @param[in]     dtstart        The original start time of the recurrence.
+ * @param[in]     reference_time The reference time.
+ * @param[in]     tz             The icaltimezone to use.
+ * @param[in]     exdates        EXDATE dates or datetimes to skip.
+ * @param[in]     periods_offset 0 for next, -1 for previous occurrence.
+ * @param[in,out] recur_time     Original first occurrence; updated on success.
+ *
+ * @return A new iterator positioned after recur_time, or NULL if seeking is
+ *         unsupported or fails.  On failure, recur_time is unchanged.
+ */
+static icalrecur_iterator *
+icalendar_seek_recurrence (struct icalrecurrencetype recurrence,
+                           icaltimetype dtstart, icaltimetype reference_time,
+                           icaltimezone *tz, GPtrArray *exdates,
+                           int periods_offset, icaltimetype *recur_time)
+{
+  /* Plain non-UTC rules require INTERVAL=1: skipping DST transitions
+   * can change the phase of larger intervals.  UTC intervals must repeat
+   * every day.  Keep DTSTART so libical retains its lower time fields. */
+  if (recurrence.count == 0 && recurrence.interval > 0
+      && recurrence.rscale == NULL && !dtstart.is_date
+      && (icaltime_is_utc (dtstart) || recurrence.interval == 1)
+      && (periods_offset == 0 || exdates->len == 0)
+      && recurrence.by_second[0]    == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_minute[0]    == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_hour[0]      == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_day[0]       == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_month_day[0] == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_year_day[0]  == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_week_no[0]   == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_month[0]     == ICAL_RECURRENCE_ARRAY_MAX
+      && recurrence.by_set_pos[0]   == ICAL_RECURRENCE_ARRAY_MAX)
+    {
+      gint64 interval_seconds = 0;
+
+      switch (recurrence.freq)
+        {
+        case ICAL_SECONDLY_RECURRENCE:
+          interval_seconds = recurrence.interval;
+          break;
+        case ICAL_MINUTELY_RECURRENCE:
+          interval_seconds = (gint64) recurrence.interval * 60;
+          break;
+        case ICAL_HOURLY_RECURRENCE:
+          interval_seconds = (gint64) recurrence.interval * 3600;
+          break;
+        default:
+          break;
+        }
+
+      if (interval_seconds > 0 && 86400 % interval_seconds == 0)
+        {
+          icaltimetype anchor = icaltime_convert_to_zone (reference_time, tz);
+          icaltimetype seek_time;
+
+          /* Anchor expired rules at UNTIL to retain their last occurrence. */
+          if (!icaltime_is_null_time (recurrence.until))
+            {
+              icaltimetype until;
+
+              until = icaltime_convert_to_zone (recurrence.until, tz);
+              if (icaltime_compare (until, anchor) < 0)
+                anchor = until;
+            }
+
+          /* Seeking directly to the reference can skip occurrences in
+           * libical 3.x.  Start the preceding day at DTSTART's time to
+           * retain the previous occurrence, including expired rules. */
+          seek_time = dtstart;
+          seek_time.year = anchor.year;
+          seek_time.month = anchor.month;
+          seek_time.day = anchor.day;
+          icaltime_adjust (&seek_time, -1, 0, 0, 0);
+
+          if (icaltime_compare (seek_time, dtstart) > 0)
+            {
+              icalrecur_iterator *seek_iter;
+
+              /* Keep the original iterator intact if seeking fails. */
+              seek_iter = icalrecur_iterator_new (recurrence, dtstart);
+              if (seek_iter)
+                {
+                  icaltimetype candidate = icaltime_null_time ();
+
+                  if (icalrecur_iterator_set_start (seek_iter, seek_time))
+                    candidate = icalrecur_iterator_next (seek_iter);
+
+                  /* Validate the inherited phase and retain enough
+                   * history for the previous occurrence.  A skipped
+                   * local date can otherwise seek past the anchor. */
+                  if (!icaltime_is_null_time (candidate)
+                      && icaltime_compare (candidate, anchor) <= 0
+                      && (recurrence.freq == ICAL_SECONDLY_RECURRENCE
+                          || candidate.second == recur_time->second)
+                      && (recurrence.freq != ICAL_HOURLY_RECURRENCE
+                          || candidate.minute == recur_time->minute))
+                    {
+                      *recur_time = candidate;
+                      return seek_iter;
+                    }
+                  else
+                    {
+                      icalrecur_iterator_free (seek_iter);
+                    }
+                }
+            }
+        }
+    }
+
+  return NULL;
+}
+
+/**
  * @brief Calculate the next time of a recurrence
  *
  * @param[in]  recurrence     The recurrence rule to evaluate.
@@ -864,103 +980,17 @@ icalendar_next_time_from_recurrence (struct icalrecurrencetype recurrence,
     }
   else
     {
-      /* Plain non-UTC rules require INTERVAL=1: skipping DST transitions
-       * can change the phase of larger intervals.  UTC intervals must repeat
-       * every day.  Keep DTSTART so libical retains its lower time fields. */
-      if (recurrence.count == 0
-         && recurrence.interval > 0
-         && recurrence.rscale == NULL
-         && !dtstart.is_date
-         && (icaltime_is_utc (dtstart) || recurrence.interval == 1)
-         && (periods_offset == 0 || exdates->len == 0)
-         && recurrence.by_second[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_minute[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_hour[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_day[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_month_day[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_year_day[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_week_no[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_month[0] == ICAL_RECURRENCE_ARRAY_MAX
-         && recurrence.by_set_pos[0] == ICAL_RECURRENCE_ARRAY_MAX)
+      icalrecur_iterator *seek_iter;
+
+      seek_iter =
+        icalendar_seek_recurrence (recurrence, dtstart, reference_time, tz,
+                                   exdates, periods_offset, &recur_time);
+      if (seek_iter)
         {
-          gint64 interval_seconds = 0;
-
-          switch (recurrence.freq)
-            {
-            case ICAL_SECONDLY_RECURRENCE:
-              interval_seconds = recurrence.interval;
-              break;
-            case ICAL_MINUTELY_RECURRENCE:
-              interval_seconds = (gint64) recurrence.interval * 60;
-              break;
-            case ICAL_HOURLY_RECURRENCE:
-              interval_seconds = (gint64) recurrence.interval * 3600;
-              break;
-            default:
-              break;
-            }
-
-          if (interval_seconds > 0
-              && 86400 % interval_seconds == 0)
-            {
-              icaltimetype anchor =
-                icaltime_convert_to_zone (reference_time, tz);
-              icaltimetype seek_time;
-
-              /* Anchor expired rules at UNTIL to retain their last occurrence. */
-              if (!icaltime_is_null_time (recurrence.until))
-                {
-                  icaltimetype until;
-
-                  until = icaltime_convert_to_zone (recurrence.until, tz);
-                  if (icaltime_compare (until, anchor) < 0)
-                    anchor = until;
-                }
-
-              /* Seeking directly to the reference can skip occurrences in
-               * libical 3.x.  Start the preceding day at DTSTART's time to
-               * retain the previous occurrence, including expired rules. */
-              seek_time = dtstart;
-              seek_time.year = anchor.year;
-              seek_time.month = anchor.month;
-              seek_time.day = anchor.day;
-              icaltime_adjust (&seek_time, -1, 0, 0, 0);
-
-              if (icaltime_compare (seek_time, dtstart) > 0)
-                {
-                  icalrecur_iterator *seek_iter;
-
-                  /* Keep the original iterator intact if seeking fails. */
-                  seek_iter = icalrecur_iterator_new (recurrence, dtstart);
-                  if (seek_iter)
-                    {
-                      icaltimetype candidate = icaltime_null_time ();
-
-                      if (icalrecur_iterator_set_start (seek_iter, seek_time))
-                        candidate = icalrecur_iterator_next (seek_iter);
-
-                      /* Validate the inherited phase and retain enough
-                       * history for the previous occurrence.  A skipped
-                       * local date can otherwise seek past the anchor. */
-                      if (!icaltime_is_null_time (candidate)
-                          && icaltime_compare (candidate, anchor) <= 0
-                          && (recurrence.freq == ICAL_SECONDLY_RECURRENCE
-                              || candidate.second == recur_time.second)
-                          && (recurrence.freq != ICAL_HOURLY_RECURRENCE
-                              || candidate.minute == recur_time.minute))
-                        {
-                          icalrecur_iterator_free (recur_iter);
-                          recur_iter = seek_iter;
-                          recur_time = candidate;
-                        }
-                      else
-                        {
-                          icalrecur_iterator_free (seek_iter);
-                        }
-                    }
-                }
-            }
+          icalrecur_iterator_free (recur_iter);
+          recur_iter = seek_iter;
         }
+
       /* Handle rule-based recurrence times:
        * Get the first rule-based recurrence time, skipping ahead in case
        *  DTSTART is excluded by EXDATEs.  */
