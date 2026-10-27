@@ -280,7 +280,10 @@ verify_active_directory_credential (const gchar *credential_id,
       if (find_credential_with_permission (credential_id,
                                            &credential,
                                            "get_credentials"))
-        goto cleanup;
+        {
+          g_warning ("%s: Failed to find credential", __func__);
+          goto cleanup;
+        }
 
       if (!credential)
         {
