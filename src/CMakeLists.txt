@@ -405,6 +405,7 @@ if(ENABLE_AGENTS)
     gmp_agent_groups.c
     gmp_agents.c
     gmp_agent_installer_instructions.c
+    gmp_agent_inventory_authentication.c
     gmp_agent_support_bundle.c
   )
 endif()

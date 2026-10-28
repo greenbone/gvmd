@@ -39,6 +39,8 @@ BeforeEach (manage_agent_inventory_authentication)
   unsetenv ("AGENT_CONTROL_USER_TOKEN_SECRET");
   unsetenv ("GVMD_AGENT_JWT_ACCESS_DURATION");
   unsetenv ("GVMD_AGENT_JWT_ENCODE_SECRET_PATH");
+  g_setenv ("GVMD_ENABLE_AGENTS", "1", TRUE);
+  assert_that (runtime_flags_init (), is_equal_to (0));
   random_failure = FALSE;
   test_directory = g_dir_make_tmp ("gvmd-agent-inventory-XXXXXX", NULL);
   assert_that (test_directory, is_not_null);
@@ -53,6 +55,7 @@ AfterEach (manage_agent_inventory_authentication)
   unsetenv ("AGENT_CONTROL_USER_TOKEN_SECRET");
   unsetenv ("GVMD_AGENT_JWT_ACCESS_DURATION");
   unsetenv ("GVMD_AGENT_JWT_ENCODE_SECRET_PATH");
+  unsetenv ("GVMD_ENABLE_AGENTS");
   g_remove (config_path);
   g_remove (secret_path);
   g_rmdir (test_directory);
@@ -170,6 +173,25 @@ Ensure (manage_agent_inventory_authentication,
                is_equal_to (AGENT_INVENTORY_TOKEN_OK));
   assert_valid_token (token, TEST_SECRET, 600);
   g_free (token);
+}
+
+Ensure (manage_agent_inventory_authentication, unavailable_when_agents_disabled)
+{
+  gchar *token = (gchar *) "unchanged";
+
+  set_test_config (TEST_CONFIG_SECRET);
+  assert_that (load_agent_inventory_authentication_config (), is_equal_to (0));
+  g_setenv ("GVMD_ENABLE_AGENTS", "0", TRUE);
+  assert_that (runtime_flags_init (), is_equal_to (0));
+  assert_that (feature_enabled (FEATURE_ID_AGENTS), is_equal_to (0));
+
+  /* Disabled generation must return before accessing the random source. */
+  random_failure = TRUE;
+  assert_that (generate_agent_inventory_token (&token),
+               is_equal_to (AGENT_INVENTORY_TOKEN_UNAVAILABLE));
+  assert_that (token, is_null);
+  assert_that (generate_agent_inventory_token (NULL),
+               is_equal_to (AGENT_INVENTORY_TOKEN_ERROR));
 }
 
 Ensure (manage_agent_inventory_authentication, uses_duration_and_unique_nonce)
@@ -399,6 +421,8 @@ main (void)
                          unavailable_without_configuration);
   add_test_with_context (suite, manage_agent_inventory_authentication,
                          generates_token_with_default_duration);
+  add_test_with_context (suite, manage_agent_inventory_authentication,
+                         unavailable_when_agents_disabled);
   add_test_with_context (suite, manage_agent_inventory_authentication,
                          uses_duration_and_unique_nonce);
   add_test_with_context (suite, manage_agent_inventory_authentication,
