@@ -8,10 +8,10 @@
  * @brief Configuration and token generation for agent inventory access.
  */
 
+#include "manage_runtime_flags.h"
 #if ENABLE_AGENTS
-#include "manage_agent_inventory_authentication.h"
-
 #include "gvmd_config.h"
+#include "manage_agent_inventory_authentication.h"
 
 #include <errno.h>
 #include <gnutls/crypto.h>
@@ -208,7 +208,8 @@ generate_payload (const gchar *nonce)
  *                   The caller must free it with g_free.
  *
  * @return AGENT_INVENTORY_TOKEN_OK on success,
- *         AGENT_INVENTORY_TOKEN_UNAVAILABLE if no valid secret is loaded,
+ *         AGENT_INVENTORY_TOKEN_UNAVAILABLE if agents are disabled or no valid
+ *         secret is loaded,
  *         or AGENT_INVENTORY_TOKEN_ERROR on generation failure or NULL output.
  */
 int
@@ -222,6 +223,14 @@ generate_agent_inventory_token (gchar **token)
   if (token == NULL)
     return AGENT_INVENTORY_TOKEN_ERROR;
   *token = NULL;
+
+  if (!feature_enabled (FEATURE_ID_AGENTS))
+    {
+      g_warning ("%s: Agent inventory token generation is unavailable because"
+                 " the agents feature is disabled",
+                 __func__);
+      return AGENT_INVENTORY_TOKEN_UNAVAILABLE;
+    }
 
   if (agent_jwt_encode_secret == NULL)
     return AGENT_INVENTORY_TOKEN_UNAVAILABLE;
