@@ -34,6 +34,7 @@ if(ENABLE_AGENTS)
     REQUIRED
     libgvm_agent_controller>=23.14
   )
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.4)
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
@@ -270,6 +271,7 @@ if(ENABLE_AGENTS)
     manage_agent_groups.c
     manage_agents.c
     manage_agent_installer_instructions.c
+    manage_agent_inventory_authentication.c
     manage_agent_control_scan_config.c
   )
 endif()
@@ -681,6 +683,14 @@ set(
 )
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
+
+if(ENABLE_AGENTS)
+  add_unit_test(
+    manage-agent-inventory-authentication
+    "${ALL_OBJECTS}"
+    "${EXTRA_SRC}"
+  )
+endif()
 
 set(
   ALL_OBJECTS

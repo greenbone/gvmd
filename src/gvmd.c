@@ -4210,6 +4210,12 @@ gvmd (int argc, char** argv, char *env[])
     load_authentication_config ();
 #endif
 
+  /* Setup agent inventory authentication */
+#if ENABLE_AGENTS
+  if (feature_enabled (FEATURE_ID_AGENTS))
+    load_agent_inventory_authentication_config ();
+#endif
+
   /* Handle non-migrate options.
    *
    * These can run concurrently, so they set the shared lock gvm-helping, and
