@@ -26,3 +26,9 @@ stale_threshold = 720
 
 [cve_scan]
 cve_scan_matching_version = 0
+
+[agent_inventory_authentication]
+agent_jwt_access_duration = 600
+
+agent_jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/agent-inventory-secret
+# agent_jwt_encode_secret = <INSERT_SHARED_SECRET_HERE>

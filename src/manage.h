@@ -61,6 +61,7 @@
 #include <gvm/agent_controller/agent_controller.h>
 #include "manage_agent_control_scan_config.h"
 #include "manage_agent_groups.h"
+#include "manage_agent_inventory_authentication.h"
 #include "manage_agents.h"
 #endif
 
