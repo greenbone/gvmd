@@ -9271,7 +9271,15 @@ END:VCALENDAR
     <summary>Empty the trashcan</summary>
     <description>
       <p>
-        The client uses the empty_trashcan command to empty the trashcan.
+        The client uses the empty_trashcan command to empty the trashcan
+        of the current user.
+      </p>
+      <p>
+        Note that if the current user has access to resources in the trashcan
+        owned by other users, e.g. through the &quot;Super&quot; permission,
+        only the resources owned by the current user are deleted while
+        the resources owned by others have to be deleted manually with their
+        respective delete_... commands.
       </p>
     </description>
     <pattern>
