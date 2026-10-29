@@ -50,6 +50,7 @@ get_agent_inventory_token_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
   gchar *token = NULL;
+  gchar *response;
   int ret;
 
   if (!acl_user_may ("get_agents"))
@@ -60,32 +61,47 @@ get_agent_inventory_token_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   ret = generate_agent_inventory_token (&token);
+
   switch (ret)
     {
     case AGENT_INVENTORY_TOKEN_OK:
-      SENDF_TO_CLIENT_OR_FAIL ("<get_agent_inventory_token_response"
-                               " status=\"" STATUS_OK
-                               "\" status_text=\"" STATUS_OK_TEXT "\">"
-                               "<token>%s</token>"
-                               "</get_agent_inventory_token_response>",
-                               token);
+      response = g_markup_printf_escaped (
+        "<get_agent_inventory_token_response"
+        " status=\"" STATUS_OK
+        "\" status_text=\"" STATUS_OK_TEXT "\">"
+        "<token>%s</token>"
+        "</get_agent_inventory_token_response>",
+        token);
       break;
 
     case AGENT_INVENTORY_TOKEN_UNAVAILABLE:
-      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_UNAVAILABLE (
+      response = g_strdup (XML_ERROR_UNAVAILABLE (
         "get_agent_inventory_token",
         "Agent inventory token issuance is unavailable"));
-      return;
+      break;
 
     case AGENT_INVENTORY_TOKEN_ERROR:
     default:
-      SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("get_agent_inventory_token"));
+      response = g_strdup (
+        XML_INTERNAL_ERROR ("get_agent_inventory_token"));
+      break;
+    }
+
+  g_free (token);
+
+  ret = send_to_client (response, gmp_parser->client_writer,
+                        gmp_parser->client_writer_data);
+
+  g_free (response);
+
+  if (ret)
+    {
+      error_send_to_client (error);
       return;
     }
-  g_free (token);
+
 #else
   SEND_TO_CLIENT_OR_FAIL (
     XML_ERROR_UNAVAILABLE ("get_agent_inventory_token", "Command unavailable"));
 #endif
-
 }
