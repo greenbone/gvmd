@@ -91,7 +91,7 @@ create_agent_group
 modify_agent_group
 delete_agent_group
 get_agent_installer_instruction
-get_agent_support_bundle
+get_agent_inventory_token
 get_agent_support_bundle
 sync_agents
 ```
