@@ -10001,6 +10001,61 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_agent_inventory_token</name>
+    <summary>Get an agent inventory token</summary>
+    <description>
+      <p>
+        The client uses the get_agent_inventory_token command to get a
+        short-lived signed token for authenticating requests to the
+        agent-control API using Authorization: Bearer &lt;token&gt;.
+        The authenticated user must have the get_agents permission.
+      </p>
+      <p>
+        The command takes no attributes or child elements. Token issuance
+        requires the agents feature to be enabled and a valid agent inventory
+        authentication configuration. The token lifetime is configured by
+        agent_jwt_access_duration and defaults to 600 seconds.
+      </p>
+      <p>
+        The response status is 200 on success, 400 when permission is denied,
+        503 when token issuance is unavailable, or 500 when token generation
+        fails.
+      </p>
+    </description>
+    <pattern></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>token</e>
+      </pattern>
+      <ele>
+        <name>token</name>
+        <type>text</type>
+        <summary>The signed agent inventory token</summary>
+      </ele>
+    </response>
+    <example>
+      <summary>Get an agent inventory token</summary>
+      <request>
+        <get_agent_inventory_token/>
+      </request>
+      <response>
+        <get_agent_inventory_token_response status="200" status_text="OK">
+          <token>eyJ2IjoxLCJpYXQiOjE3OTMxOTE3MTIsImV4cCI6MTc5MzE5MjMxMiwibm9uY2UiOiJ2aFZXc08tM0tjTXBacUxCRHYzUF9RIn0.T_KCd-tlekiS-tMnLpTaWBsygf7xoWiywid73i1uGbg</token>
+        </get_agent_inventory_token_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agent_support_bundle</name>
     <summary>Get a support bundle for an agent</summary>
     <description>
