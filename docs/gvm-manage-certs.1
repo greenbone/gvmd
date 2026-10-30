@@ -37,20 +37,20 @@ Verify existing GVM certificate infrastructure
 \fB\-C\fR
 Create a certificate authority (CA)
 .TP
+\fB\-I\fR
+Install a CA certificate
+.TP
+\fB\-i\fR
+Install a certificate
+.TP
 \fB\-R\fR
 Create a request for a certificate with the CA basic constraint true
 .TP
 \fB\-r\fR
 Create a certificate request
 .TP
-\fB\-I\fR
-Install a CA certificate
-.TP
 \fB\-c\fR
 Create a certificate request and sign it
-.TP
-\fB\-i\fR
-Install a certificate
 .TP
 \fB\-S\fR
 Sign a certificate request
@@ -73,11 +73,6 @@ This sets the appropriate key usage constraints for a client certificate.
 \fB\-A\fR
 Skip CA generation in automatic mode.
 This automatically (re-)generates server and client certificates, but keeps the CA certificate.
-.SS "Configuration"
-\fB\-e\fR \fIfile\fR
-Read configuration from
-.IR file
-(see below for configuration details)
 .SS "Output control"
 .TP
 \fB\-d\fR
@@ -88,6 +83,11 @@ Print verbose messages
 .TP
 \fB\-q\fR
 Be quiet, only print error messages
+.SS "Configuration"
+\fB\-e\fR \fIfile\fR
+Read configuration from
+.IR file
+(see below for configuration details)
 .SS "Other options"
 .TP
 \fB\-h\fR
