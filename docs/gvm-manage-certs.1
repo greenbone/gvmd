@@ -38,25 +38,31 @@ Verify existing GVM certificate infrastructure
 Create a certificate authority (CA)
 .TP
 \fB\-I\fR
-Install a CA certificate
+Install a CA certificate, use with the GVM_CERT_DIR and
+GVM_CERT_PREFIX environment variables
 .TP
 \fB\-i\fR
-Install a certificate
+Install a certificate, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
 .TP
 \fB\-R\fR
 Create a request for a certificate with the CA basic constraint true
 .TP
 \fB\-r\fR
-Create a certificate request
+Create a certificate request, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
 .TP
 \fB\-c\fR
-Create a certificate request and sign it
+Create a certificate request and sign it, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
 .TP
 \fB\-S\fR
-Sign a certificate request
+Sign a certificate request, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
 .TP
 \fB\-s\fR
-Create a self signed certificate
+Create a self signed certificate, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
 .TP
 \fB\-f\fR
 Force overwriting of existing files
