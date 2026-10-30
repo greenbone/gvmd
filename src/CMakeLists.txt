@@ -648,6 +648,14 @@ set(
 )
 add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 
+add_unit_test(manage-sql-targets "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-targets-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,acl_user_may,-wrap,find_resource_with_permission,-wrap,manage_max_hosts,-wrap,resource_with_name_exists,-wrap,sql,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_int,-wrap,sql_int64,-wrap,sql_quote,-wrap,sql_rollback,-wrap,sql_string"
+)
+
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
