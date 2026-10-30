@@ -138,6 +138,7 @@ print_help ()
   echo "  -c             Create a certificate request and sign it"
   echo "  -i             Install a certificate"
   echo "  -S             Sign a certificate request"
+  echo "  -s             Create a self signed certificate"
   echo "  -f             Force overwriting of existing files"
   echo
   echo "Certificate options:"
