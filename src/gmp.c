@@ -19145,8 +19145,25 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  ssh_name = credential_name (ssh_credential);
-                  ssh_uuid = credential_uuid (ssh_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      /* A trashed target whose credential is still live.
+                       * The trash iterator has no credential name or UUID
+                       * columns. */
+                      ssh_name = credential_name (ssh_credential);
+                      ssh_uuid = credential_uuid (ssh_credential);
+                    }
+                  else
+                    {
+                      /* Copied because the free() calls at the end of the
+                       * loop expect memory they own. */
+                      ssh_name = g_strdup
+                                   (target_iterator_ssh_credential_name
+                                     (&targets));
+                      ssh_uuid = g_strdup
+                                   (target_iterator_ssh_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (ssh_uuid,
                                                        &found,
                                                        "get_credentials"))
@@ -19175,8 +19192,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  smb_name = credential_name (smb_credential);
-                  smb_uuid = credential_uuid (smb_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      smb_name = credential_name (smb_credential);
+                      smb_uuid = credential_uuid (smb_credential);
+                    }
+                  else
+                    {
+                      smb_name = g_strdup
+                                   (target_iterator_smb_credential_name
+                                     (&targets));
+                      smb_uuid = g_strdup
+                                   (target_iterator_smb_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (smb_uuid,
                                                        &found,
                                                        "get_credentials"))
@@ -19207,8 +19236,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  esxi_name = credential_name (esxi_credential);
-                  esxi_uuid = credential_uuid (esxi_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      esxi_name = credential_name (esxi_credential);
+                      esxi_uuid = credential_uuid (esxi_credential);
+                    }
+                  else
+                    {
+                      esxi_name = g_strdup
+                                   (target_iterator_esxi_credential_name
+                                     (&targets));
+                      esxi_uuid = g_strdup
+                                   (target_iterator_esxi_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (esxi_uuid,
                                                        &found,
                                                        "get_credentials"))
@@ -19239,8 +19280,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  snmp_name = credential_name (snmp_credential);
-                  snmp_uuid = credential_uuid (snmp_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      snmp_name = credential_name (snmp_credential);
+                      snmp_uuid = credential_uuid (snmp_credential);
+                    }
+                  else
+                    {
+                      snmp_name = g_strdup
+                                   (target_iterator_snmp_credential_name
+                                     (&targets));
+                      snmp_uuid = g_strdup
+                                   (target_iterator_snmp_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (snmp_uuid,
                                                        &found,
                                                        "get_credentials"))
@@ -19271,8 +19324,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  ssh_elevate_name = credential_name (ssh_elevate_credential);
-                  ssh_elevate_uuid = credential_uuid (ssh_elevate_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      ssh_elevate_name = credential_name (ssh_elevate_credential);
+                      ssh_elevate_uuid = credential_uuid (ssh_elevate_credential);
+                    }
+                  else
+                    {
+                      ssh_elevate_name = g_strdup
+                                   (target_iterator_ssh_elevate_credential_name
+                                     (&targets));
+                      ssh_elevate_uuid = g_strdup
+                                   (target_iterator_ssh_elevate_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (ssh_elevate_uuid,
                                                        &found,
                                                        "get_credentials"))
@@ -19303,8 +19368,20 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
                 {
                   credential_t found;
 
-                  krb5_name = credential_name (krb5_credential);
-                  krb5_uuid = credential_uuid (krb5_credential);
+                  if (get_targets_data->get.trash)
+                    {
+                      krb5_name = credential_name (krb5_credential);
+                      krb5_uuid = credential_uuid (krb5_credential);
+                    }
+                  else
+                    {
+                      krb5_name = g_strdup
+                                   (target_iterator_krb5_credential_name
+                                     (&targets));
+                      krb5_uuid = g_strdup
+                                   (target_iterator_krb5_credential_uuid
+                                     (&targets));
+                    }
                   if (find_credential_with_permission (krb5_uuid,
                                                        &found,
                                                        "get_credentials"))
