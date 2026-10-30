@@ -175,7 +175,8 @@ print_help ()
   echo "  GVM_CERT_PREFIX            Prefix for certificate filename"
   echo "                                 (e.g. \"server\", \"client\")"
   echo
-  echo "For a complete list of options, please refer to the documentation."
+  echo "For a complete list of environment variable, please refer to"
+  echo "the example configuration file included in the documentation."
   echo
 
   exit 0
