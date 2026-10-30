@@ -55,6 +55,9 @@ Install a certificate
 \fB\-S\fR
 Sign a certificate request
 .TP
+\fB\-s\fR
+Create a self signed certificate
+.TP
 \fB\-f\fR
 Force overwriting of existing files
 .SS "Certificate options"
