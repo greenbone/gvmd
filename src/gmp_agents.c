@@ -473,7 +473,34 @@ modify_agent_run (gmp_parser_t *gmp_parser, GError **error)
       const gchar *uuid = entity_attribute (agent_elem, "id");
 
       if (uuid && is_uuid (uuid))
-        agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+        {
+          agent_t agent = 0;
+          int ret = find_agent_with_permission (uuid, &agent, "modify_agent");
+
+          if (ret != 0)
+            {
+              agent_uuid_list_free (agent_uuids);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_agent"));
+              modify_agent_reset ();
+              return;
+            }
+
+          if (!agent)
+            {
+              agent_uuid_list_free (agent_uuids);
+              if (send_find_error_to_client ("modify_agent", "agent", uuid,
+                                             gmp_parser))
+                {
+                  error_send_to_client (error);
+                  modify_agent_reset ();
+                  return;
+                }
+              modify_agent_reset ();
+              return;
+            }
+
+          agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+        }
       else
         {
           agent_uuid_list_free (agent_uuids);
@@ -787,7 +814,34 @@ delete_agent_run (gmp_parser_t *gmp_parser, GError **error)
       const gchar *uuid = entity_attribute (agent_elem, "id");
 
       if (uuid && is_uuid (uuid))
-        agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+        {
+          agent_t agent = 0;
+          int ret = find_agent_with_permission (uuid, &agent, "delete_agent");
+
+          if (ret != 0)
+            {
+              agent_uuid_list_free (agent_uuids);
+              SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("delete_agent"));
+              delete_agent_reset ();
+              return;
+            }
+
+          if (!agent)
+            {
+              agent_uuid_list_free (agent_uuids);
+              if (send_find_error_to_client ("delete_agent", "agent", uuid,
+                                             gmp_parser))
+                {
+                  error_send_to_client (error);
+                  delete_agent_reset ();
+                  return;
+                }
+              delete_agent_reset ();
+              return;
+            }
+
+          agent_uuids->agent_uuids[index++] = g_strdup (uuid);
+        }
       else
         {
           agent_uuid_list_free (agent_uuids);
