@@ -128,16 +128,18 @@ print_help ()
   echo "  $0 [OPTION] - Manage certificate infrastructure for a GVM installation"
   echo
   echo "Options:"
-  echo "  -h             Print help"
   echo "  -a             Automatically set up default infrastructure for GVM"
   echo "  -V             Verify existing GVM certificate infrastructure"
   echo "  -C             Create a certificate authority (CA)"
-  echo "  -I             Install a CA certificate"
-  echo "  -R             Create a certificate request for a CA"
-  echo "  -r             Create a certificate request"
-  echo "  -c             Create a certificate request and sign it"
-  echo "  -i             Install a certificate"
-  echo "  -S             Sign a certificate request"
+  echo "  -I             Install a CA certificate, see manual page"
+  echo "  -i             Install a certificate, see manual page"
+  echo "  -R             Create a request for a certificate with the"
+  echo "                 CA basic constraint true"
+  echo "  -r             Create a certificate request, see manual page"
+  echo "  -c             Create a certificate request and sign it, see"
+  echo "                 manual page"
+  echo "  -S             Sign a certificate request, see manual page"
+  echo "  -s             Create a self signed certificate, see manual page"
   echo "  -f             Force overwriting of existing files"
   echo
   echo "Certificate options:"
@@ -153,6 +155,9 @@ print_help ()
   echo "Configuration:"
   echo "  -e <file>      Read configuration from <file>"
   echo
+  echo "Other options:"
+  echo "  -h             Print help"
+  echo
   echo "All certificate generation options can be set either through the configuration"
   echo "  file or through environment variables like the following:"
   echo
@@ -167,9 +172,11 @@ print_help ()
   echo "  GVM_CERT_DIR               Directory where keys and certificates are stored"
   echo "                                 before installation"
   echo
-  echo "  GVM_CERT_PREFIX            Prefix for certificate filename (e.g. \"server\")"
+  echo "  GVM_CERT_PREFIX            Prefix for certificate filename"
+  echo "                                 (e.g. \"server\", \"client\")"
   echo
-  echo "For a complete list of options, please refer to the documentation."
+  echo "For a complete list of environment variable, please refer to"
+  echo "the example configuration file included in the documentation."
   echo
 
   exit 0

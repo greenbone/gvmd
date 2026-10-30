@@ -37,26 +37,32 @@ Verify existing GVM certificate infrastructure
 \fB\-C\fR
 Create a certificate authority (CA)
 .TP
-\fB\-R\fR
-Create a certificate request for a CA
-.TP
-\fB\-r\fR
-Create a certificate request for a CA and sign it
-.TP
-\fB\-C\fR
-Create a certificate authority (CA)
-.TP
 \fB\-I\fR
-Install a CA certificate
-.TP
-\fB\-c\fR
-Create a certificate request and sign it
+Install a CA certificate, use with the GVM_CERT_DIR and
+GVM_CERT_PREFIX environment variables
 .TP
 \fB\-i\fR
-Install a certificate
+Install a certificate, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
+.TP
+\fB\-R\fR
+Create a request for a certificate with the CA basic constraint true
+.TP
+\fB\-r\fR
+Create a certificate request, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
+.TP
+\fB\-c\fR
+Create a certificate request and sign it, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
 .TP
 \fB\-S\fR
-Sign a certificate request
+Sign a certificate request, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
+.TP
+\fB\-s\fR
+Create a self signed certificate, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
 .TP
 \fB\-f\fR
 Force overwriting of existing files
@@ -73,11 +79,6 @@ This sets the appropriate key usage constraints for a client certificate.
 \fB\-A\fR
 Skip CA generation in automatic mode.
 This automatically (re-)generates server and client certificates, but keeps the CA certificate.
-.SS "Configuration"
-\fB\-e\fR \fIfile\fR
-Read configuration from
-.IR file
-(see below for configuration details)
 .SS "Output control"
 .TP
 \fB\-d\fR
@@ -88,6 +89,11 @@ Print verbose messages
 .TP
 \fB\-q\fR
 Be quiet, only print error messages
+.SS "Configuration"
+\fB\-e\fR \fIfile\fR
+Read configuration from
+.IR file
+(see below for configuration details)
 .SS "Other options"
 .TP
 \fB\-h\fR
@@ -122,10 +128,10 @@ GVM_CERT_DIR
 Directory where keys and certificates are stored before installation
 .TP
 GVM_CERT_PREFIX
-Prefix for certificate filename (e.g. "server")
+Prefix for certificate filename (e.g. "server", "client")
 .PP
-For a complete list of options, please refer to the example configuration file
-included in the documentation.
+For a complete list of environment variables, please refer to the
+example configuration file included in the documentation.
 .SH "SEE ALSO"
 .BR openvas (8),
 .BR gvmd (8),
