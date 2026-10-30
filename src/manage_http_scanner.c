@@ -428,7 +428,7 @@ delete_http_scanner_scan_with_retry (http_scanner_connector_t connector,
                                      const char *scan_id)
 {
   int delete_retry;
-  http_scanner_resp_t response;
+  http_scanner_resp_t response = NULL;
   int ret = 0;
 
   if (connector == NULL)

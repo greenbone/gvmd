@@ -4135,6 +4135,8 @@ manage_sync (sigset_t *sigmask_current,
               web_application_vts_pid
                 = manage_sync_web_application_vts (sigmask_current);
             }
+          else
+              web_application_vts_pid = 0;
 
           wait_for_pid (nvts_pid, "NVTs sync");
           wait_for_pid (scap_pid, "SCAP sync");
