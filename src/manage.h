@@ -198,6 +198,9 @@ void
 cleanup_manage_process (gboolean);
 
 void
+cleanup_manage_process_canceled ();
+
+void
 manage_cleanup_process_error (int);
 
 void

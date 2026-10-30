@@ -6,10 +6,65 @@
 #include "manage_sql.c"
 
 #include <cgreen/cgreen.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 Describe (manage_sql);
-BeforeEach (manage_sql) {}
+static int fake_sql_open;
+static int sql_close_calls;
+
+int
+__wrap_sql_is_open ()
+{
+  return fake_sql_open;
+}
+
+void
+__wrap_sql_close ()
+{
+  fake_sql_open = 0;
+  sql_close_calls++;
+}
+
+BeforeEach (manage_sql)
+{
+  fake_sql_open = 0;
+  sql_close_calls = 0;
+}
 AfterEach (manage_sql) {}
+
+static void
+verify_canceled_worker_exit_cleanup ()
+{
+  cleanup_manage_process (TRUE);
+  if (fake_sql_open || sql_close_calls != 1 || current_scanner_task != 0
+      || global_current_report != 0)
+    _exit (1);
+}
+
+Ensure (manage_sql, canceled_worker_exit_skips_request_task_cleanup)
+{
+  int status;
+  pid_t pid;
+
+  pid = fork ();
+  assert_that (pid, is_not_equal_to (-1));
+  if (pid == 0)
+    {
+      fake_sql_open = 1;
+      current_scanner_task = 23;
+      global_current_report = 42;
+
+      if (atexit (verify_canceled_worker_exit_cleanup))
+        _exit (2);
+      cleanup_manage_process_canceled ();
+      exit (EXIT_SUCCESS);
+    }
+
+  assert_that (waitpid (pid, &status, 0), is_equal_to (pid));
+  assert_that (WIFEXITED (status), is_true);
+  assert_that (WEXITSTATUS (status), is_equal_to (EXIT_SUCCESS));
+}
 
 /* truncate_text */
 
@@ -151,6 +206,8 @@ main (int argc, char **argv)
 
   suite = create_test_suite ();
 
+  add_test_with_context (suite, manage_sql,
+                         canceled_worker_exit_skips_request_task_cleanup);
   add_test_with_context (suite, manage_sql, validate_results_port_validates);
   add_test_with_context (suite, manage_sql,
                          ensure_term_has_qod_and_overrides_adds_defaults);
