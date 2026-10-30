@@ -128,7 +128,6 @@ print_help ()
   echo "  $0 [OPTION] - Manage certificate infrastructure for a GVM installation"
   echo
   echo "Options:"
-  echo "  -h             Print help"
   echo "  -a             Automatically set up default infrastructure for GVM"
   echo "  -V             Verify existing GVM certificate infrastructure"
   echo "  -C             Create a certificate authority (CA)"
@@ -154,6 +153,9 @@ print_help ()
   echo
   echo "Configuration:"
   echo "  -e <file>      Read configuration from <file>"
+  echo
+  echo "Other options:"
+  echo "  -h             Print help"
   echo
   echo "All certificate generation options can be set either through the configuration"
   echo "  file or through environment variables like the following:"
