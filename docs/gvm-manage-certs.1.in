@@ -1,4 +1,4 @@
-.TH GVM-MANAGE-CERTS "1" "2015-09-21" "The OpenVAS Project" "User manual for the Open Vulnerability Assessment System (OpenVAS)"
+.TH gvm-manage-certs "1" "2015-09-21" "The OpenVAS Project" "User manual for the Open Vulnerability Assessment System (OpenVAS)"
 .SH NAME
 gvm-manage-certs \- manage certificate infrastructure for a GVM installation
 .SH SYNOPSIS
