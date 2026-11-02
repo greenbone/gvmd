@@ -108,6 +108,10 @@ target_count (const get_data_t *);
 int
 init_target_iterator (iterator_t *, get_data_t *);
 
+int
+init_target_hostname_candidate_iterator (iterator_t *, const get_data_t *,
+                                         GHashTable *);
+
 const char *
 target_iterator_hosts (iterator_t *);
 
