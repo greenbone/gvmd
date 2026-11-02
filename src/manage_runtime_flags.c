@@ -491,6 +491,7 @@ runtime_append_disabled_commands (GString *buf)
     {
       append_commands (
         buf,
-        "verify_active_directory_credential");
+        "verify_active_directory_credential,"
+        "get_active_directory_objects");
     }
 }
