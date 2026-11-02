@@ -217,6 +217,7 @@ command_t gmp_commands[]
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"TEST_ALERT", "Run an alert."},
 #if ENABLE_AD_INTEGRATION
+    {"GET_ACTIVE_DIRECTORY_OBJECTS", "Get Active Directory objects."},
     {"VERIFY_ACTIVE_DIRECTORY_CREDENTIAL", "Verify an Active Directory credential."},
 #endif /* ENABLE_AD_INTEGRATION */
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
