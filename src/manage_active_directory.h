@@ -18,6 +18,8 @@
 #include "gmp_base.h"
 #include "glib.h"
 
+#include <gvm/ad_connector/ad_connector.h>
+
 typedef struct
 {
   char *host;
@@ -51,6 +53,21 @@ typedef enum
   VERIFY_AD_CREDENTIAL_INTERNAL_ERROR
 } verify_ad_return_t;
 
+typedef enum
+{
+  GET_AD_OBJECTS_OK,
+  GET_AD_OBJECTS_INVALID_INPUT,
+  GET_AD_OBJECTS_PERMISSION_DENIED,
+  GET_AD_OBJECTS_NOT_FOUND,
+  GET_AD_OBJECTS_INVALID_TYPE,
+  GET_AD_OBJECTS_INVALID_STORED_CONFIGURATION,
+  GET_AD_OBJECTS_CONNECTION_FAILED,
+  GET_AD_OBJECTS_BIND_FAILED,
+  GET_AD_OBJECTS_SEARCH_FAILED,
+  GET_AD_OBJECTS_RESULT_FAILED,
+  GET_AD_OBJECTS_FEATURE_DISABLED,
+  GET_AD_OBJECTS_INTERNAL_ERROR
+} get_ad_objects_return_t;
 
 gboolean
 valid_ad_ca_certificate (const char *);
@@ -64,6 +81,95 @@ verify_active_directory_credential (const gchar *,
 
 void
 ad_credential_data_reset (ad_credential_data_t *);
+
+/**
+ * @brief Parameters for a synchronous Active Directory object search.
+ */
+typedef struct
+{
+  const gchar *credential_id;
+  const gchar *base_dn;
+  const gchar *group_dn;
+  ad_connector_search_scope_t scope;
+  ad_object_type_t object_types;
+  guint max_results;
+  gboolean include_disabled_computers;
+  gboolean targets;
+  gboolean tasks;
+  gboolean details;
+} get_ad_objects_params_t;
+
+#define GET_AD_OBJECTS_MAX_RESULTS 1000
+
+typedef struct
+{
+  gchar *uuid;
+  gchar *name;
+} ad_resource_ref_t;
+
+typedef struct
+{
+  ad_resource_ref_t resource;
+  ad_resource_ref_t *config;
+} ad_task_match_t;
+
+typedef struct
+{
+  ad_resource_ref_t resource;
+  GPtrArray *tasks;
+} ad_target_match_t;
+
+/**
+ * @brief Owned directory object.
+ */
+typedef struct
+{
+  ad_object_type_t type;
+  gchar *name;
+  gchar *distinguished_name;
+  gchar *parent_dn;
+  GHashTable *attributes;
+  GPtrArray *target_matches; /**< NULL when matching was not requested;
+                                 empty when no readable targets matched. */
+} ad_directory_object_t;
+
+typedef struct
+{
+  guint ou;
+  guint group;
+  guint computer_total;
+  guint computer_disabled; /**< Disabled computers among the collected objects. */
+} ad_object_counts_t;
+
+/**
+ * @brief Owned directory search results after LDAP filtering.
+ *        Free with get_ad_objects_result_reset(), including on failure.
+ */
+typedef struct
+{
+  GPtrArray *objects;
+  gboolean truncated;
+  ad_object_counts_t counts;
+} get_ad_objects_result_t;
+
+const GPtrArray *
+ad_object_attribute_values (const ad_directory_object_t *object,
+                            const gchar *name);
+
+const gchar *
+ad_object_attribute_value (const ad_directory_object_t *object,
+                           const gchar *name);
+
+void
+ad_directory_object_free (ad_directory_object_t *object);
+
+void
+get_ad_objects_result_reset (get_ad_objects_result_t *result);
+
+get_ad_objects_return_t
+get_active_directory_objects (const get_ad_objects_params_t *params,
+                              get_ad_objects_result_t *result);
+
 
 #endif /* _GVMD_MANAGE_ACTIVE_DIRECTORY_H */
 

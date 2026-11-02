@@ -4368,6 +4368,9 @@ typedef enum
   CLIENT_GET_AUDIT_REPORT_HOSTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
+#if ENABLE_AD_INTEGRATION
+  CLIENT_GET_ACTIVE_DIRECTORY_OBJECTS,
+#endif
 #if ENABLE_CREDENTIAL_STORES
   CLIENT_GET_CREDENTIAL_STORES,
 #endif
@@ -5496,6 +5499,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &get_credentials_data->format);
             set_client_state (CLIENT_GET_CREDENTIALS);
           }
+#if ENABLE_AD_INTEGRATION
+        else if (strcasecmp ("GET_ACTIVE_DIRECTORY_OBJECTS", element_name)
+                 == 0)
+          {
+            get_active_directory_objects_start (gmp_parser,
+                                                attribute_names,
+                                                attribute_values);
+            set_client_state (CLIENT_GET_ACTIVE_DIRECTORY_OBJECTS);
+          }
+#endif /* ENABLE_AD_INTEGRATION */
 #if ENABLE_CREDENTIAL_STORES
         ELSE_GET_START (credential_stores, CREDENTIAL_STORES)
 #endif /* ENABLE_CREDENTIAL_STORES */
@@ -8174,6 +8187,13 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         break;
 
 #if ENABLE_AD_INTEGRATION
+      case CLIENT_GET_ACTIVE_DIRECTORY_OBJECTS:
+        get_active_directory_objects_element_start (gmp_parser,
+                                                    element_name,
+                                                    attribute_names,
+                                                    attribute_values);
+        break;
+
       case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
         verify_active_directory_credential_element_start (gmp_parser,
                                                           element_name,
@@ -29242,6 +29262,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 #endif
 
 #if ENABLE_AD_INTEGRATION
+      case CLIENT_GET_ACTIVE_DIRECTORY_OBJECTS:
+        if (get_active_directory_objects_element_end (gmp_parser, error,
+                                                      element_name))
+          set_client_state (CLIENT_AUTHENTIC);
+        break;
+
       case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
         {
           if (verify_active_directory_credential_element_end (gmp_parser,
@@ -30319,6 +30345,10 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
               &run_wizard_data->param->value);
 
 #if ENABLE_AD_INTEGRATION
+      case CLIENT_GET_ACTIVE_DIRECTORY_OBJECTS:
+        get_active_directory_objects_element_text (text, text_len);
+        break;
+
       case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
         verify_active_directory_credential_element_text (text, text_len);
         break;
