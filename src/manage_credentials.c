@@ -204,7 +204,7 @@ try_gpgme_import (const char *key_str, GArray *key_types,
       g_warning ("%s: mkdtemp failed", __func__);
       return -1;
     }
-
+  gpgme_check_version (NULL);
   gpgme_new (&ctx);
   gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
   gpgme_set_protocol (ctx, protocol);
