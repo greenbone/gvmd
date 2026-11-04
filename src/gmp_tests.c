@@ -382,6 +382,42 @@ Ensure (gmp, modify_web_application_target_restores_authenticated_state)
 }
 #endif
 
+#if ENABLE_CONTAINER_SCANNING
+Ensure (gmp, modify_oci_image_target_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { NULL };
+  const gchar *attribute_values[] = { NULL };
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+  gmp_xml_handle_start_element (NULL, "modify_oci_image_target", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_start_element (NULL, "name", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "name", &gmp_parser, &error);
+  assert_that (client_state, is_equal_to (CLIENT_MODIFY_OCI_IMAGE_TARGET));
+  gmp_xml_handle_end_element (NULL, "modify_oci_image_target", &gmp_parser,
+                              &error);
+
+  assert_that (error, is_null);
+  assert_that (captured_output->str,
+               contains_string ("<modify_oci_image_target_response "
+                                "status=\"400\""));
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+
+  g_string_truncate (captured_output, 0);
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_version_response status=\"200\""));
+}
+#endif
+
 static void
 assert_move_task_error_restores_authenticated_state (
   const gchar **attribute_names, const gchar **attribute_values)
@@ -492,6 +528,10 @@ main (int argc, char **argv)
 #if ENABLE_WEB_APPLICATION_SCANNING
   add_test_with_context
     (suite, gmp, modify_web_application_target_restores_authenticated_state);
+#endif
+#if ENABLE_CONTAINER_SCANNING
+  add_test_with_context
+    (suite, gmp, modify_oci_image_target_restores_authenticated_state);
 #endif
   add_test_with_context
     (suite, gmp, move_task_with_empty_task_id_restores_authenticated_state);
