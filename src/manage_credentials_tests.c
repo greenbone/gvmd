@@ -17,6 +17,7 @@ static const gchar *copy_rows_name;
 static const gchar *copy_rows_comment;
 static const gchar *copy_rows_credential_id;
 static int ad_test_enabled = TRUE;
+static int fail_gpgme_new;
 
 /* Mocks */
 credential_return_t
@@ -102,6 +103,17 @@ __wrap_feature_enabled (feature_id_t feature)
 {
   return feature == FEATURE_ID_AD_INTEGRATION
            ? ad_test_enabled : FALSE;
+}
+
+gpgme_error_t __real_gpgme_new (gpgme_ctx_t *ctx);
+
+gpgme_error_t
+__wrap_gpgme_new (gpgme_ctx_t *ctx)
+{
+  if (fail_gpgme_new)
+    return gpg_err_make (GPG_ERR_SOURCE_ANY, GPG_ERR_NOT_OPERATIONAL);
+
+  return __real_gpgme_new (ctx);
 }
 
 void __wrap_sql_begin_immediate (void) {}
@@ -348,6 +360,38 @@ Ensure (manage_credentials, create_pgp_rejects_invalid_public_key)
                is_equal_to (CREDENTIAL_INVALID_PUBLIC_KEY));
   assert_that (credential,
                is_equal_to (0));
+}
+
+Ensure (manage_credentials, try_gpgme_import_initialises_gpgme)
+{
+  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+  int ret;
+
+  g_array_append_vals (key_types, types_ptr, 1);
+
+  ret = try_gpgme_import ("not a PGP key", key_types, GPGME_PROTOCOL_OPENPGP);
+
+  g_array_free (key_types, TRUE);
+
+  assert_that (ret, is_not_equal_to (-1));
+}
+
+Ensure (manage_credentials, try_gpgme_import_rejects_failed_gpgme_new)
+{
+  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
+  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+  int ret;
+
+  g_array_append_vals (key_types, types_ptr, 1);
+
+  fail_gpgme_new = 1;
+  ret = try_gpgme_import ("not a PGP key", key_types, GPGME_PROTOCOL_OPENPGP);
+  fail_gpgme_new = 0;
+
+  g_array_free (key_types, TRUE);
+
+  assert_that (ret, is_equal_to (-1));
 }
 
 /* Password credential. */
@@ -1304,6 +1348,10 @@ main (int argc, char **argv)
                          create_smime_rejects_invalid_certificate);
   add_test_with_context (suite, manage_credentials,
                          create_pgp_rejects_invalid_public_key);
+  add_test_with_context (suite, manage_credentials,
+                         try_gpgme_import_initialises_gpgme);
+  add_test_with_context (suite, manage_credentials,
+                         try_gpgme_import_rejects_failed_gpgme_new);
   add_test_with_context (suite, manage_credentials,
                          create_password_stores_supplied_password);
 
