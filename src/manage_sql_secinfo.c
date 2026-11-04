@@ -4676,7 +4676,7 @@ get_cve_json_fields (cJSON *vuln_item,
 static int
 handle_json_cve_item_inserts (cJSON *vuln_item)
 {
-  char *cve_id, *vector, *description_value;
+  char *cve_id, *vector, *description_value = NULL;
   time_t published_time, modified_time;
   double score_dbl;
   cJSON *configurations_array, *references_array;
@@ -4693,7 +4693,7 @@ handle_json_cve_item_inserts (cJSON *vuln_item)
                            &references_array))
     return -1;
 
-  char *quoted_description = sql_quote (description_value);
+  char *quoted_description = sql_quote (description_value ?: "");
 
   cve_db_id = sql_int64_0
          ("INSERT INTO scap2.cves"
