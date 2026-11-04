@@ -113,7 +113,10 @@ GVM_CERTIFICATE_LIFETIME
 Days until the certificate will expire
 .TP
 GVM_CERTIFICATE_HOSTNAME
-Name to use for the certificate
+Name to use for the certificate, if not set,
+.B gvm-manage-certs
+will try to guess the hostname and default to "localhost" if it cannot
+be guessed
 .TP
 GVM_CERTIFICATE_SIGNALG
 Hash algorithm to use for signing
