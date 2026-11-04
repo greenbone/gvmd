@@ -111,7 +111,17 @@ get_report_exports_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
-      internal_error_send_to_client (error);
+      if (ret == 1 || ret == 2)
+        {
+          if (send_find_error_to_client (
+                "get_report_exports", ret == 1 ? "report_export" : "filter",
+                ret == 1 ? get_report_exports_data.get.id
+                         : get_report_exports_data.get.filt_id,
+                gmp_parser))
+            error_send_to_client (error);
+        }
+      else
+        internal_error_send_to_client (error);
       get_report_exports_reset ();
       return;
     }
