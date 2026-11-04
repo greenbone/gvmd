@@ -4517,6 +4517,7 @@ get_cve_json_fields (cJSON *vuln_item,
   *published_time = *modified_time = 0;
   *score_dbl = SEVERITY_MISSING;
   *configurations_array = *references_array = NULL;
+  *description_value = NULL;
 
   cve_json = cJSON_GetObjectItemCaseSensitive (vuln_item, "cve");
   if (!cJSON_IsObject (cve_json))
