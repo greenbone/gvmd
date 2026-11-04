@@ -106,8 +106,11 @@ The requested operation was successfully performed.
 .B 1
 An error occurred, the requested operation could not be performed.
 .SH ENVIRONMENT
-All certificate generation options can be set either through the configuration
-file or through environment variables like the following:
+All the below certificate generation options can be set either through
+the configuration file or through environment variables.
+.SS Static variables
+These are variables you are likely to want to set in your profile or
+the configuration file.
 .TP
 GVM_CERTIFICATE_LIFETIME
 Days until the certificate will expire
@@ -126,6 +129,10 @@ Size in bits of the generated key
 .TP
 GVM_CERTIFICATE_SECPARAM
 GnuTLS security level [low|medium|high|ultra]
+.SS Dynamic variables
+These are variables you are likely to want to set for individual
+invocations of
+.BR gvm-manage-certs .
 .TP
 GVM_CERT_DIR
 Directory where keys and certificates are stored before installation,
