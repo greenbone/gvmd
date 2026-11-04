@@ -583,7 +583,7 @@ set_target_properties(
   gmp-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export"
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator"
 )
 
 set(
