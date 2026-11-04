@@ -31,6 +31,16 @@
  */
 #define FROM_BUFFER_SIZE 1048576
 
+/**
+ * @brief Result of serving a GMP connection.
+ */
+typedef enum
+{
+  SERVE_GMP_ERROR = -1,
+  SERVE_GMP_SUCCESS = 0,
+  SERVE_GMP_CANCELED = 1,
+} serve_gmp_result_t;
+
 int
 init_gmpd (GSList *, const db_conn_info_t *, int, int, int, int, int,
            manage_connection_forker_t, int);
@@ -38,7 +48,7 @@ init_gmpd (GSList *, const db_conn_info_t *, int, int, int, int, int,
 void
 init_gmpd_process (const db_conn_info_t *, gchar **);
 
-int
+serve_gmp_result_t
 serve_gmp (gvm_connection_t *, const db_conn_info_t *, gchar **);
 
 #endif /* not _GVMD_GMPD_H */

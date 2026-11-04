@@ -52,14 +52,6 @@ struct sql_stmt
 /* Variables. */
 
 /**
- * @brief Whether to log errors.
- *
- * Used to turn off logging when cancelling statements on exit.  Defined
- * in sql.c.
- */
-extern int log_errors;
-
-/**
  * @brief Handle on the database.
  */
 static PGconn *conn = NULL;
@@ -527,14 +519,36 @@ sql_prepare_ps_internal (int log, const char *sql, va_list args,
 }
 
 /**
+ * @brief Classify a PostgreSQL SQLSTATE as an SQL execution status.
+ *
+ * @param[in]  sqlstate  PostgreSQL SQLSTATE, or NULL.
+ *
+ * @return SQL execution status for the error.
+ */
+sql_exec_status_t
+sql_pg_error_status (const char *sqlstate)
+{
+  if (sqlstate == NULL)
+    return SQL_EXEC_ERROR;
+  if (strcmp (sqlstate, "57014") == 0)
+    return SQL_EXEC_CANCELED;
+  if (strcmp (sqlstate, "55P03") == 0)
+    return SQL_EXEC_LOCK_UNAVAILABLE;
+  if (strcmp (sqlstate, "23505") == 0)
+    return SQL_EXEC_UNIQUE;
+  if (strcmp (sqlstate, "40P01") == 0)
+    return SQL_EXEC_DEADLOCK;
+  return SQL_EXEC_ERROR;
+}
+
+/**
  * @brief Execute a statement.
  *
  * @param[in]  stmt   Statement.
  *
- * @return 0 complete, 1 row available in results, -1 error, -2 gave up,
- *         -3 lock unavailable, -4 unique constraint violation.
+ * @return SQL execution status.
  */
-int
+sql_exec_status_t
 sql_exec_internal (sql_stmt_t *stmt)
 {
   PGresult *result;
@@ -554,46 +568,45 @@ sql_exec_internal (sql_stmt_t *stmt)
       if (status != PGRES_TUPLES_OK && status != PGRES_COMMAND_OK
           && status != PGRES_COPY_IN)
         {
-          char *sqlstate;
+          const char *sqlstate;
+          sql_exec_status_t error_status;
 
           sqlstate = PQresultErrorField (result, PG_DIAG_SQLSTATE);
           g_debug ("%s: sqlstate: %s", __func__, sqlstate);
-          if (sqlstate && (strcmp (sqlstate, "57014") == 0))
+          error_status = sql_pg_error_status (sqlstate);
+          if (error_status == SQL_EXEC_CANCELED)
             {
               /* query_canceled */
-              log_errors = 0;
               g_debug ("%s: canceled SQL: %s", __func__, stmt->sql);
             }
-          else if (sqlstate && (strcmp (sqlstate, "55P03") == 0))
+          else if (error_status == SQL_EXEC_LOCK_UNAVAILABLE)
             {
               /* lock_not_available */
               g_debug ("%s: lock unavailable: %s", __func__,
                        PQresultErrorMessage (result));
-              return -3;
             }
-          else if (sqlstate && (strcmp (sqlstate, "23505") == 0))
+          else if (error_status == SQL_EXEC_UNIQUE)
             {
               /* unique_violation */
               g_warning ("%s: constraint violation: %s", __func__,
                          PQresultErrorMessage (result));
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
-              return -4;
             }
-          else if (sqlstate && (strcmp (sqlstate, "40P01") == 0))
+          else if (error_status == SQL_EXEC_DEADLOCK)
             {
               /* deadlock_detected */
               g_debug ("%s: deadlock: %s", __func__,
                        PQresultErrorMessage (result));
               g_debug ("%s: SQL: %s", __func__, stmt->sql);
-              return -5;
             }
-          if (log_errors)
+          else
             {
               g_warning ("%s: PQexec failed: %s (%i)", __func__,
                          PQresultErrorMessage (result), status);
               g_warning ("%s: SQL: %s", __func__, stmt->sql);
             }
-          return -1;
+          PQclear (result);
+          return error_status;
         }
 
       stmt->result = result;
@@ -603,10 +616,10 @@ sql_exec_internal (sql_stmt_t *stmt)
   if (stmt->current_row < (PQntuples (stmt->result) - 1))
     {
       stmt->current_row++;
-      return 1;
+      return SQL_EXEC_ROW;
     }
 
-  return 0;
+  return SQL_EXEC_COMPLETE;
 }
 
 
@@ -925,7 +938,6 @@ sql_cancel_internal ()
     {
       if (PQcancel (cancel, errbuf, 256))
         {
-          log_errors = 0;
           PQfreeCancel (cancel);
         }
       else

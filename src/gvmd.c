@@ -468,6 +468,36 @@ watch_client_connection (void* data)
 }
 
 /**
+ * @brief Stop and free a connection watcher.
+ *
+ * @param[in]  watch_thread  Watcher thread.
+ * @param[in]  watcher_data  Watcher thread data.
+ *
+ * @return 0 on success, -1 if the watcher could not be joined.
+ */
+static int
+stop_connection_watcher (pthread_t watch_thread,
+                         connection_watcher_data_t *watcher_data)
+{
+  int ret;
+
+  pthread_mutex_lock (&(watcher_data->mutex));
+  watcher_data->connection_closed = 1;
+  pthread_mutex_unlock (&(watcher_data->mutex));
+  pthread_cancel (watch_thread);
+  ret = pthread_join (watch_thread, NULL);
+  if (ret)
+    {
+      g_warning ("%s: failed to join connection watcher: %s",
+                 __func__, strerror (ret));
+      return -1;
+    }
+  pthread_mutex_destroy (&(watcher_data->mutex));
+  g_free (watcher_data);
+  return 0;
+}
+
+/**
  * @brief Serve the client.
  *
  * In all cases, close client_socket before returning.
@@ -480,8 +510,13 @@ watch_client_connection (void* data)
 static int
 serve_client (int server_socket, gvm_connection_t *client_connection)
 {
+  int ret;
+  serve_gmp_result_t serve_result;
   pthread_t watch_thread;
   connection_watcher_data_t *watcher_data;
+
+  ret = EXIT_FAILURE;
+  serve_result = SERVE_GMP_ERROR;
 
   if (server_socket > 0)
     {
@@ -502,9 +537,20 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
 
   if (client_watch_interval)
     {
+      int create_ret;
+
       watcher_data = connection_watcher_data_new (client_connection);
-      pthread_create (&watch_thread, NULL, watch_client_connection,
-                      watcher_data);
+      create_ret = pthread_create (&watch_thread, NULL,
+                                   watch_client_connection, watcher_data);
+      if (create_ret)
+        {
+          g_warning ("%s: failed to create connection watcher: %s",
+                     __func__, strerror (create_ret));
+          pthread_mutex_destroy (&(watcher_data->mutex));
+          g_free (watcher_data);
+          watcher_data = NULL;
+          goto cleanup;
+        }
     }
   else
     {
@@ -517,7 +563,7 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       g_debug ("%s: failed to attach client session to socket %i",
                __func__,
               client_connection->socket);
-      goto fail;
+      goto cleanup;
     }
 
   /* The socket must have O_NONBLOCK set, in case an "asynchronous network
@@ -527,49 +573,33 @@ serve_client (int server_socket, gvm_connection_t *client_connection)
       g_warning ("%s: failed to set real client socket flag: %s",
                  __func__,
                  strerror (errno));
-      goto fail;
+      goto cleanup;
     }
 
   /* Serve GMP. */
 
-  /* It's up to serve_gmp to gvm_server_free client_*. */
-  if (serve_gmp (client_connection, &database, disabled_commands))
-    goto server_fail;
+  /* Keep ownership here so the watcher is stopped before the connection is
+   * freed. */
+  serve_result = serve_gmp (client_connection, &database, disabled_commands);
+  if (serve_result == SERVE_GMP_ERROR)
+    goto cleanup;
 
-  if (watcher_data)
-    {
-      pthread_mutex_lock (&(watcher_data->mutex));
-      watcher_data->connection_closed = 1;
-      pthread_mutex_unlock (&(watcher_data->mutex));
-      pthread_cancel (watch_thread);
-      pthread_join (watch_thread, NULL);
-      g_free (watcher_data);
-    }
-  return EXIT_SUCCESS;
+  ret = EXIT_SUCCESS;
 
- fail:
-  if (watcher_data)
+ cleanup:
+  if (watcher_data
+      && stop_connection_watcher (watch_thread, watcher_data))
     {
-      pthread_mutex_lock (&(watcher_data->mutex));
-      gvm_connection_free (client_connection);
-      watcher_data->connection_closed = 1;
-      pthread_mutex_unlock (&(watcher_data->mutex));
+      /* Do not free the connection while a watcher may still reference it. */
+      ret = EXIT_FAILURE;
     }
   else
-    {
-      gvm_connection_free (client_connection);
-    }
- server_fail:
-  if (watcher_data)
-    {
-      pthread_mutex_lock (&(watcher_data->mutex));
-      watcher_data->connection_closed = 1;
-      pthread_mutex_unlock (&(watcher_data->mutex));
-      pthread_cancel (watch_thread);
-      pthread_join (watch_thread, NULL);
-      g_free (watcher_data);
-    }
-  return EXIT_FAILURE;
+    gvm_connection_free (client_connection);
+
+  if (serve_result == SERVE_GMP_CANCELED)
+    cleanup_manage_process_canceled ();
+
+  return ret;
 }
 
 /**

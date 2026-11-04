@@ -28,6 +28,27 @@ typedef struct
 } db_conn_info_t;
 
 /**
+ * @brief Internal result of executing an SQL statement.
+ */
+typedef enum
+{
+  SQL_EXEC_CANCELED = -6,         ///< Query was canceled.
+  SQL_EXEC_DEADLOCK = -5,         ///< Deadlock detected.
+  SQL_EXEC_UNIQUE = -4,           ///< Unique constraint violation.
+  SQL_EXEC_LOCK_UNAVAILABLE = -3, ///< Lock unavailable.
+  SQL_EXEC_GIVEUP = -2,           ///< Execution gave up.
+  SQL_EXEC_ERROR = -1,            ///< Generic execution error.
+  SQL_EXEC_COMPLETE = 0,          ///< Execution complete.
+  SQL_EXEC_ROW = 1,               ///< A result row is available.
+  SQL_EXEC_RETRY = 2,             ///< Execution should be retried.
+} sql_exec_status_t;
+
+/**
+ * @brief Handler called when an SQL cancellation should unwind its caller.
+ */
+typedef void (*sql_cancel_handler_t) (void *);
+
+/**
  * @brief Enum for defining the type of SQL prepared statement parameters.
  */
 typedef enum
@@ -215,6 +236,15 @@ sql_int64_0_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_cancel ();
+
+void
+sql_cancel_handler_set (sql_cancel_handler_t, void *);
+
+void
+sql_cancel_handler_clear ();
+
+sql_exec_status_t
+sql_pg_error_status (const char *);
 
 int
 sql_table_exists (const gchar *, const gchar *);

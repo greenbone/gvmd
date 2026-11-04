@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -50,7 +51,7 @@ sql_prepare_internal (int, const char *, va_list, sql_stmt_t **);
 void
 sql_prepare_ps_internal (int, const char *, va_list, sql_stmt_t **);
 
-int
+sql_exec_status_t
 sql_exec_internal (sql_stmt_t *);
 
 void
@@ -74,12 +75,36 @@ sql_column_array (sql_stmt_t *, int);
 
 /* Variables. */
 
+typedef struct
+{
+  sql_cancel_handler_t handler;
+  void *data;
+  pid_t pid;
+} sql_cancel_context_t;
+
 /**
- * @brief Whether to log errors.
- *
- * Used to turn off logging when cancelling statements on exit.
+ * @brief Thread-local handler for unwinding an expected query cancellation.
  */
-int log_errors = 1;
+static GPrivate cancel_context = G_PRIVATE_INIT (g_free);
+
+/**
+ * @brief Return the active query cancellation context for this process.
+ *
+ * A PID check prevents a child forked during a GMP request from using the
+ * parent's cancellation boundary.
+ *
+ * @return Active cancellation context, or NULL.
+ */
+static sql_cancel_context_t *
+sql_cancel_context ()
+{
+  sql_cancel_context_t *context;
+
+  context = g_private_get (&cancel_context);
+  if (context && context->pid == getpid ())
+    return context;
+  return NULL;
+}
 
 
 /* Helpers. */
@@ -222,6 +247,7 @@ sqlv (int syntax, const char *sql, va_list args)
   while (1)
     {
       int ret;
+      sql_cancel_context_t *context;
       sql_stmt_t *stmt;
       va_list args_copy;
 
@@ -237,22 +263,34 @@ sqlv (int syntax, const char *sql, va_list args)
 
       /* Run statement. */
 
-      while ((ret = sql_exec_internal (stmt)) == 1)
+      while ((ret = sql_exec_internal (stmt)) == SQL_EXEC_ROW)
         ;
-      if ((ret == -1) && log_errors)
+      context = sql_cancel_context ();
+      if (ret == SQL_EXEC_CANCELED)
+        {
+          if (context)
+            {
+              sql_finalize (stmt);
+              context->handler (context->data);
+              abort ();
+            }
+          sql_finalize (stmt);
+          return -1;
+        }
+      if (ret == SQL_EXEC_ERROR)
         g_warning ("%s: sql_exec_internal failed", __func__);
       sql_finalize (stmt);
-      if (ret == 2)
+      if (ret == SQL_EXEC_RETRY)
         continue;
-      if (ret == -2)
+      if (ret == SQL_EXEC_GIVEUP)
         return 1;
-      if (ret == -3)
+      if (ret == SQL_EXEC_LOCK_UNAVAILABLE)
         return -1;
-      if (ret == -4)
+      if (ret == SQL_EXEC_UNIQUE)
         return 3;
-      if (ret == -5)
+      if (ret == SQL_EXEC_DEADLOCK)
         return 4;
-      assert (ret == -1 || ret == 0);
+      assert (ret == SQL_EXEC_ERROR || ret == SQL_EXEC_COMPLETE);
       return ret;
     }
 }
@@ -347,6 +385,37 @@ sql_cancel ()
 {
   g_debug ("%s: cancelling current SQL statement", __func__);
   return sql_cancel_internal ();
+}
+
+/**
+ * @brief Set a handler for unwinding an expected query cancellation.
+ *
+ * The handler must not return.  It is intended for same-thread non-local
+ * unwinding from a request that will close its connection and terminate.
+ *
+ * @param[in]  handler  Cancellation handler.
+ * @param[in]  data     Data passed to the handler.
+ */
+void
+sql_cancel_handler_set (sql_cancel_handler_t handler, void *data)
+{
+  sql_cancel_context_t *context;
+
+  assert (handler);
+  context = g_new (sql_cancel_context_t, 1);
+  context->handler = handler;
+  context->data = data;
+  context->pid = getpid ();
+  g_private_replace (&cancel_context, context);
+}
+
+/**
+ * @brief Clear the query cancellation handler.
+ */
+void
+sql_cancel_handler_clear ()
+{
+  g_private_replace (&cancel_context, NULL);
 }
 
 /**
@@ -539,6 +608,7 @@ int
 sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
 {
   int ret;
+  sql_cancel_context_t *context;
   unsigned int deadlock_amount = 0;
 
   assert (stmt_return);
@@ -559,22 +629,33 @@ sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
       /* Run statement. */
 
       ret = sql_exec_internal (*stmt_return);
-      if (ret == -1 || ret == -4)
+      if (ret == SQL_EXEC_CANCELED)
         {
-          if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __func__);
+          context = sql_cancel_context ();
+          if (context)
+            {
+              sql_finalize (*stmt_return);
+              context->handler (context->data);
+              abort ();
+            }
           return -1;
         }
-      if (ret == 0)
+      if (ret == SQL_EXEC_ERROR || ret == SQL_EXEC_UNIQUE)
+        {
+          g_warning ("%s: sql_exec_internal failed", __func__);
+          return -1;
+        }
+      if (ret == SQL_EXEC_COMPLETE)
         /* Too few rows. */
         return 1;
-      if (ret == -3 || ret == -2 || ret == 2)
+      if (ret == SQL_EXEC_LOCK_UNAVAILABLE || ret == SQL_EXEC_GIVEUP
+          || ret == SQL_EXEC_RETRY)
         {
           /* Busy or locked, with statement reset.  Or schema changed. */
           sql_finalize (*stmt_return);
           continue;
         }
-      if (ret == -5)
+      if (ret == SQL_EXEC_DEADLOCK)
         {
           if (deadlock_amount++ > DEADLOCK_THRESHOLD)
             {
@@ -586,7 +667,7 @@ sql_x (int syntax, const char *sql, va_list args, sql_stmt_t **stmt_return)
         }
       break;
     }
-  assert (ret == 1);
+  assert (ret == SQL_EXEC_ROW);
   g_debug ("   sql_x end (%s)", sql);
   return 0;
 }
@@ -1250,6 +1331,7 @@ gboolean
 next (iterator_t *iterator)
 {
   int ret;
+  sql_cancel_context_t *context;
 
   if (iterator->done)
     return FALSE;
@@ -1259,18 +1341,28 @@ next (iterator_t *iterator)
   while (1)
     {
       ret = sql_exec_internal (iterator->stmt);
-      if (ret == 0)
+      if (ret == SQL_EXEC_COMPLETE)
         {
           iterator->done = TRUE;
           return FALSE;
         }
-      if (ret == -1 || ret == -4)
+      if (ret == SQL_EXEC_CANCELED)
         {
-          if (log_errors)
-            g_warning ("%s: sql_exec_internal failed", __func__);
+          cleanup_iterator (iterator);
+          context = sql_cancel_context ();
+          if (context)
+            {
+              context->handler (context->data);
+              abort ();
+            }
           abort ();
         }
-      if (ret == -3 || ret == -2)
+      if (ret == SQL_EXEC_ERROR || ret == SQL_EXEC_UNIQUE)
+        {
+          g_warning ("%s: sql_exec_internal failed", __func__);
+          abort ();
+        }
+      if (ret == SQL_EXEC_LOCK_UNAVAILABLE || ret == SQL_EXEC_GIVEUP)
         {
           /* Busy or locked, with statement reset.  Just try step again like
            * we used to do in sql_exec_internal. */
@@ -1279,6 +1371,6 @@ next (iterator_t *iterator)
         }
       break;
     }
-  assert (ret == 1);
+  assert (ret == SQL_EXEC_ROW);
   return TRUE;
 }

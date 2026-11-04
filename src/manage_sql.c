@@ -4978,6 +4978,22 @@ cleanup_manage_process (gboolean cleanup)
 }
 
 /**
+ * @brief Cleanup the manage library after a canceled request.
+ *
+ * Request-owned state may be stale after the cancellation boundary performs
+ * a non-local unwind.  Clear that state and close the database without
+ * issuing task or report updates.
+ */
+void
+cleanup_manage_process_canceled ()
+{
+  global_current_report = 0;
+  current_scanner_task = (task_t) 0;
+  if (sql_is_open ())
+    sql_close ();
+}
+
+/**
  * @brief Cleanup as immediately as possible.
  *
  * Put any running task in the error state and close the database.
