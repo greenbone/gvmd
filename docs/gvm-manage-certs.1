@@ -128,7 +128,10 @@ GVM_CERTIFICATE_SECPARAM
 GnuTLS security level [low|medium|high|ultra]
 .TP
 GVM_CERT_DIR
-Directory where keys and certificates are stored before installation
+Directory where keys and certificates are stored before installation,
+this directory has to exist and be writable; if not set,
+.B gvm-manage-certs
+will use a temporary directory
 .TP
 GVM_CERT_PREFIX
 Prefix for certificate filename (e.g. "server", "client")
