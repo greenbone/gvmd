@@ -196,7 +196,7 @@ try_gpgme_import (const char *key_str, GArray *key_types,
                   gpgme_protocol_t protocol)
 {
   int ret = 0;
-  gpgme_ctx_t ctx;
+  gpgme_ctx_t ctx = NULL;
   char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
 
   if (mkdtemp (gpg_temp_dir) == NULL)
@@ -205,7 +205,11 @@ try_gpgme_import (const char *key_str, GArray *key_types,
       return -1;
     }
   gpgme_check_version (NULL);
-  gpgme_new (&ctx);
+  if (gpgme_new (&ctx))
+    {
+      gvm_file_remove_recurse (gpg_temp_dir);
+      return -1;
+    }
   gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
   gpgme_set_protocol (ctx, protocol);
 
