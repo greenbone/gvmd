@@ -851,29 +851,31 @@ port_list_predefined (port_list_t port_list)
 }
 
 /**
- * @brief Return the UUID of the port list of a port_range.
+ * @brief Get the UUID of the port list of a port range.
  *
- * @param[in]  port_range  Port Range UUID.
+ * @param[in]  port_range  Port range UUID.
+ * @param[out] uuid        Newly allocated UUID, or NULL if not found.
  *
- * @return Newly allocated UUID if available, else NULL.
+ * @return 0 on success, 1 if not found, -1 on error.
  */
-static char*
-port_range_port_list_uuid (const char *port_range)
+static int
+port_range_port_list_uuid (const gchar *port_range, gchar **uuid)
 {
-  gchar *quoted_port_range;
-  char *ret;
+  port_list_t port_list;
+  int ret;
+  *uuid = NULL;
 
-  quoted_port_range = sql_quote (port_range);
-  if (sql_int ("SELECT count (*) FROM port_ranges WHERE uuid = '%s';",
-               quoted_port_range))
-    ret = sql_string ("SELECT uuid FROM port_lists"
-                      " WHERE id = (SELECT port_list FROM port_ranges"
-                      "             WHERE uuid = '%s');",
-                      quoted_port_range);
-  else
-    ret = NULL;
-  g_free (quoted_port_range);
-  return ret;
+  ret = sql_int64_ps (&port_list,
+                      "SELECT port_list FROM port_ranges WHERE uuid = $1;",
+                      SQL_STR_PARAM (port_range), NULL);
+
+  if (ret != 0)
+    return ret;
+
+  *uuid = sql_string_ps ("SELECT uuid FROM port_lists WHERE id = $1;",
+                         SQL_RESOURCE_PARAM (port_list), NULL);
+
+  return *uuid ? 0 : -1;
 }
 
 /**
@@ -882,7 +884,7 @@ port_range_port_list_uuid (const char *port_range)
  * @param[in]   uuid        UUID of port_range.
  * @param[out]  port_range  Port range return, 0 if successfully failed to find
  *                          port range.
- * @param[in]   permission  UUID of port_range.
+ * @param[in]   permission  Permission required to access the port range.
  *
  * @return FALSE on success (including if failed to find port range), TRUE on
  *         error.
@@ -891,9 +893,9 @@ static gboolean
 find_port_range_with_permission (const char *uuid, port_range_t *port_range,
                                  const char *permission)
 {
-  char *port_list_uuid;
-  gchar *quoted_uuid;
+  gchar *port_list_uuid;
   port_list_t port_list;
+  int ret;
 
   assert (current_credentials.uuid);
 
@@ -902,9 +904,13 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
   if (uuid == NULL)
     return TRUE;
 
-  port_list_uuid = port_range_port_list_uuid (uuid);
-  if (port_list_uuid == NULL)
+  ret = port_range_port_list_uuid (uuid, &port_list_uuid);
+
+  if (ret == 1)
     return FALSE;
+
+  if (ret != 0)
+    return TRUE;
 
   if (find_port_list_with_permission (port_list_uuid, &port_list, permission)
       || port_list == 0)
@@ -914,10 +920,9 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
     }
   g_free (port_list_uuid);
 
-  quoted_uuid = sql_quote (uuid);
-  switch (sql_int64 (port_range,
-                     "SELECT id FROM port_ranges WHERE uuid = '%s';",
-                     quoted_uuid))
+  switch (sql_int64_ps (port_range,
+                     "SELECT id FROM port_ranges WHERE uuid = $1;",
+                     SQL_STR_PARAM (uuid), NULL))
     {
       case 0:
         break;
@@ -927,12 +932,10 @@ find_port_range_with_permission (const char *uuid, port_range_t *port_range,
       default:       /* Programming error. */
         assert (0);
       case -1:
-        g_free (quoted_uuid);
         return TRUE;
         break;
     }
 
-  g_free (quoted_uuid);
   return FALSE;
 }
 
