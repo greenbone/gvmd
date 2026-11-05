@@ -456,6 +456,8 @@ create_certificate ()
     echo "tls_www_client" >> $GVM_CERT_TEMPLATE_FILENAME
   fi
 
+  log_write "Generated certtool template in $GVM_CERT_TEMPLATE_FILENAME."
+
   if [ $DEBUG -eq 1 ]
   then
     echo "DEBUG: Using the following template ($GVM_CERT_TEMPLATE_FILENAME):" >> "$CERTTOOL_LOGFILE"
