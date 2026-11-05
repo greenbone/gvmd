@@ -652,7 +652,7 @@ set_target_properties(
   manage-sql-port-lists-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,acl_user_may,-wrap,sql_begin_immediate,-wrap,sql_quote,-wrap,sql_int,-wrap,sql_rollback"
+      "-Wl,-wrap,acl_user_may,-wrap,sql_begin_immediate,-wrap,sql_quote,-wrap,sql_int,-wrap,sql_int64_ps,-wrap,sql_rollback"
 )
 add_unit_test(manage-sql-secinfo "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 set_target_properties(
