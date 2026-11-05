@@ -1,3 +1,4 @@
+
 /* Copyright (C) 2026 Greenbone AG
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
@@ -47,6 +48,13 @@ __wrap_sql_int (const char *sql, ...)
 {
   (void) sql;
   return 0;
+}
+
+int
+__wrap_sql_int64_ps (long long int *ret, const char *sql, ...)
+{
+  (void) ret;
+  return 1;
 }
 
 Ensure (manage_sql_port_lists, delete_port_range_returns_not_found)
