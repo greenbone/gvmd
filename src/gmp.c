@@ -26792,9 +26792,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
 #if ENABLE_CONTAINER_SCANNING
       case CLIENT_MODIFY_OCI_IMAGE_TARGET:
-        modify_oci_image_target_element_end (gmp_parser,
-                                             error,
-                                             element_name);
+        if (modify_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_CONTAINER_SCANNING */
 
@@ -28491,9 +28492,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
 #if ENABLE_WEB_APPLICATION_SCANNING
       case CLIENT_MODIFY_WEB_APPLICATION_TARGET:
-        modify_web_application_target_element_end (gmp_parser,
-                                                   error,
-                                                   element_name);
+        if (modify_web_application_target_element_end (gmp_parser,
+                                                       error,
+                                                       element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
 

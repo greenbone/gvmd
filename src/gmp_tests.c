@@ -21,12 +21,14 @@ static const guchar report_export_contents[] = {
 static GString *captured_output;
 static gchar *report_export_path;
 static int report_export_delete_count;
+static int mock_missing_report_export;
 
 BeforeEach (gmp)
 {
   captured_output = g_string_new ("");
   report_export_path = NULL;
   report_export_delete_count = 0;
+  mock_missing_report_export = 0;
 }
 
 AfterEach (gmp)
@@ -72,6 +74,32 @@ __wrap_acl_user_may (const char *permission)
 {
   (void) permission;
   return 0;
+}
+
+int __real_init_get (gchar *, get_data_t *, const gchar *, int *);
+int __real_init_report_export_iterator (iterator_t *, get_data_t *);
+
+int
+__wrap_init_get (gchar *command, get_data_t *get, const gchar *setting_name,
+                 int *first)
+{
+  if (mock_missing_report_export && !strcmp (command, "get_report_exports"))
+    {
+      *first = 1;
+      return 0;
+    }
+  return __real_init_get (command, get, setting_name, first);
+}
+
+int
+__wrap_init_report_export_iterator (iterator_t *iterator, get_data_t *get)
+{
+  if (mock_missing_report_export)
+    {
+      assert_that (get->id, is_equal_to_string (report_export_uuid));
+      return 1;
+    }
+  return __real_init_report_export_iterator (iterator, get);
 }
 
 gboolean
@@ -252,6 +280,36 @@ Ensure (gmp, completed_download_report_export_is_repeatable)
                contains_string ("<get_version_response status=\"200\""));
 }
 
+Ensure (gmp, missing_report_export_returns_not_found)
+{
+  const gchar *attribute_names[] = { "report_export_id", NULL };
+  const gchar *attribute_values[] = { report_export_uuid, NULL };
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  mock_missing_report_export = 1;
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+  gmp_xml_handle_start_element (NULL, "get_report_exports", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "get_report_exports", &gmp_parser, &error);
+
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_report_exports_response status=\"404\""));
+  assert_that (captured_output->str, contains_string (report_export_uuid));
+
+  g_string_truncate (captured_output, 0);
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_version_response status=\"200\""));
+}
+
 static void
 assert_report_export_command_restores_authenticated_state (const char *command)
 {
@@ -344,6 +402,79 @@ Ensure (gmp, modify_report_config_restores_authenticated_state)
   assert_that (error, is_null);
   assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
 }
+
+#if ENABLE_WEB_APPLICATION_SCANNING
+Ensure (gmp, modify_web_application_target_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { NULL };
+  const gchar *attribute_values[] = { NULL };
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+  gmp_xml_handle_start_element (NULL, "modify_web_application_target",
+                                attribute_names, attribute_values, &gmp_parser,
+                                &error);
+  gmp_xml_handle_start_element (NULL, "name", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "name", &gmp_parser, &error);
+  assert_that (client_state, is_equal_to (CLIENT_MODIFY_WEB_APPLICATION_TARGET));
+  gmp_xml_handle_end_element (NULL, "modify_web_application_target", &gmp_parser,
+                              &error);
+
+  assert_that (error, is_null);
+  assert_that (captured_output->str,
+               contains_string ("<modify_web_application_target_response "
+                                "status=\"400\""));
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+
+  g_string_truncate (captured_output, 0);
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_version_response status=\"200\""));
+}
+#endif
+
+#if ENABLE_CONTAINER_SCANNING
+Ensure (gmp, modify_oci_image_target_restores_authenticated_state)
+{
+  const gchar *attribute_names[] = { NULL };
+  const gchar *attribute_values[] = { NULL };
+  gmp_parser_t gmp_parser = { 0 };
+  GError *error = NULL;
+
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+  gmp_xml_handle_start_element (NULL, "modify_oci_image_target", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_start_element (NULL, "name", attribute_names,
+                                attribute_values, &gmp_parser, &error);
+  gmp_xml_handle_end_element (NULL, "name", &gmp_parser, &error);
+  assert_that (client_state, is_equal_to (CLIENT_MODIFY_OCI_IMAGE_TARGET));
+  gmp_xml_handle_end_element (NULL, "modify_oci_image_target", &gmp_parser,
+                              &error);
+
+  assert_that (error, is_null);
+  assert_that (captured_output->str,
+               contains_string ("<modify_oci_image_target_response "
+                                "status=\"400\""));
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+
+  g_string_truncate (captured_output, 0);
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_version_response status=\"200\""));
+}
+#endif
 
 static void
 assert_move_task_error_restores_authenticated_state (
@@ -449,9 +580,19 @@ main (int argc, char **argv)
   add_test_with_context
     (suite, gmp, export_scan_report_restores_authenticated_state);
   add_test_with_context
+    (suite, gmp, missing_report_export_returns_not_found);
+  add_test_with_context
     (suite, gmp, modify_permission_not_found_returns_not_found_response);
   add_test_with_context
     (suite, gmp, modify_report_config_restores_authenticated_state);
+#if ENABLE_WEB_APPLICATION_SCANNING
+  add_test_with_context
+    (suite, gmp, modify_web_application_target_restores_authenticated_state);
+#endif
+#if ENABLE_CONTAINER_SCANNING
+  add_test_with_context
+    (suite, gmp, modify_oci_image_target_restores_authenticated_state);
+#endif
   add_test_with_context
     (suite, gmp, move_task_with_empty_task_id_restores_authenticated_state);
   add_test_with_context
