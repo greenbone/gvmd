@@ -650,8 +650,7 @@ add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 add_unit_test(manage-sql-secinfo "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 set_target_properties(
   manage-sql-secinfo-test
-  PROPERTIES
-    LINK_FLAGS "-Wl,-wrap,sql_int64_0"
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_int64_0"
 )
 
 set(
