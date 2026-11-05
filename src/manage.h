@@ -18,6 +18,7 @@
 
 #include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_credentials.h"
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_integration_configs.h"
@@ -60,6 +61,7 @@
 #include <gvm/agent_controller/agent_controller.h>
 #include "manage_agent_control_scan_config.h"
 #include "manage_agent_groups.h"
+#include "manage_agent_inventory_authentication.h"
 #include "manage_agents.h"
 #endif
 
@@ -1958,35 +1960,10 @@ gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
-create_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   array_t*,    const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   credential_t*);
-
-int
-copy_credential (const char*, const char*, const char*,
-                 credential_t*);
-
-int
-modify_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, array_t*, const char*, const char*,
-                   const char*, const char*, const char*, const char*);
-
-int
 delete_credential (const char *, int);
 
 int
 credential_count (const get_data_t *);
-
-void
-set_credential_privacy_algorithm (credential_t, const char *);
-
-void
-set_credential_public_key (credential_t, const char *);
 
 void
 init_credential_iterator_one (iterator_t*, credential_t);
@@ -2036,6 +2013,28 @@ const char*
 credential_iterator_privacy_host_identifier (iterator_t*);
 
 #endif
+
+#if ENABLE_AD_INTEGRATION
+
+const char*
+credential_iterator_ad_host (iterator_t*);
+
+const char*
+credential_iterator_ad_bind_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_base_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_port (iterator_t*);
+
+const char*
+credential_iterator_ad_tls_mode (iterator_t*);
+
+const char*
+credential_iterator_ad_ca_certificate (iterator_t*);
+
+#endif /* ENABLE_AD_INTEGRATION */
 
 const char*
 credential_iterator_private_key (iterator_t*);

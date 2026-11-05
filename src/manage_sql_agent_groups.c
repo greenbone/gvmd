@@ -260,19 +260,21 @@ create_agent_group (agent_group_data_t group_data,
   // Insert into agent_groups (scanner added)
   sql_ps ("INSERT INTO agent_groups"
           " (uuid, name, comment, scanner, owner,"
-          "  creation_time, modification_time, scheduler_cron_time) "
-       "VALUES ($1, $2, $3, $4, "
-       "  (SELECT id FROM users WHERE uuid = $5),"
-       "  $6, $7, $8);",
-       SQL_STR_PARAM (group_data->uuid),
-       SQL_STR_PARAM (group_data->name),
-       SQL_STR_PARAM (group_data->comment),
-       SQL_RESOURCE_PARAM (group_data->scanner),
-       SQL_STR_PARAM (current_credentials.uuid),
-       SQL_INT_PARAM (group_data->creation_time),
-       SQL_INT_PARAM (group_data->modification_time),
-       SQL_STR_PARAM (group_data->scheduler_cron_time),
-       NULL);
+          "  creation_time, modification_time, scheduler_cron_time,"
+          "  max_delay_seconds)"
+          " VALUES ($1, $2, $3, $4,"
+          "  (SELECT id FROM users WHERE uuid = $5),"
+          "  $6, $7, $8, $9);",
+          SQL_STR_PARAM (group_data->uuid),
+          SQL_STR_PARAM (group_data->name),
+          SQL_STR_PARAM (group_data->comment),
+          SQL_RESOURCE_PARAM (group_data->scanner),
+          SQL_STR_PARAM (current_credentials.uuid),
+          SQL_INT_PARAM (group_data->creation_time),
+          SQL_INT_PARAM (group_data->modification_time),
+          SQL_STR_PARAM (group_data->scheduler_cron_time),
+          SQL_INT_PARAM (group_data->max_delay_seconds),
+          NULL);
 
   agent_group_t new_agent_group = sql_last_insert_id ();
   if (new_agent_group == 0)
@@ -293,13 +295,15 @@ create_agent_group (agent_group_data_t group_data,
       int result = agent_id_by_uuid_and_scanner (uuid, group_data->scanner, &agent_id);
       if (result != 0)
         {
-           db_copy_buffer_cleanup (&buffer);
-           sql_rollback ();
+          db_copy_buffer_cleanup (&buffer);
+          sql_rollback ();
 
-           if (result == 1)
-             return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
-           else if (result == 2)
-             return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+          if (result == 1)
+            return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
+          else if (result == 2)
+            return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+
+          return AGENT_GROUP_RESP_INTERNAL_ERROR;
         }
       /* Verify that the agent is authorized before adding it to the group. */
       if (!agent_authorized (uuid, group_data->scanner))
@@ -309,12 +313,18 @@ create_agent_group (agent_group_data_t group_data,
           return AGENT_GROUP_RESP_AGENT_UNAUTHORIZED;
         }
 
-      db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", new_agent_group, agent_id);
+      db_copy_buffer_append_printf (&buffer, "%llu\t%llu\n", new_agent_group,
+                                    agent_id);
     }
 
-  db_copy_buffer_commit (&buffer, TRUE);
-  db_copy_buffer_cleanup (&buffer);
+  if (db_copy_buffer_commit (&buffer, TRUE))
+    {
+      db_copy_buffer_cleanup (&buffer);
+      sql_rollback ();
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
 
+  db_copy_buffer_cleanup (&buffer);
   sql_commit ();
 
   return AGENT_GROUP_RESP_SUCCESS;
@@ -344,15 +354,17 @@ modify_agent_group (agent_group_t agent_group,
     }
   sql_begin_immediate ();
 
-  sql_ps ("UPDATE agent_groups SET name = $1, comment = $2, "
-       " modification_time = $3, scheduler_cron_time = $4 "
-       " WHERE id = $5;",
-       SQL_STR_PARAM (group_data->name),
-       SQL_STR_PARAM (group_data->comment),
-       SQL_INT_PARAM (group_data->modification_time),
-       SQL_STR_PARAM (group_data->scheduler_cron_time),
-       SQL_RESOURCE_PARAM (agent_group),
-       NULL);
+  sql_ps ("UPDATE agent_groups SET name = $1, comment = $2,"
+          " modification_time = $3, scheduler_cron_time = $4,"
+          " max_delay_seconds = $5"
+          " WHERE id = $6;",
+          SQL_STR_PARAM (group_data->name),
+          SQL_STR_PARAM (group_data->comment),
+          SQL_INT_PARAM (group_data->modification_time),
+          SQL_STR_PARAM (group_data->scheduler_cron_time),
+          SQL_INT_PARAM (group_data->max_delay_seconds),
+          SQL_RESOURCE_PARAM (agent_group),
+          NULL);
 
   if (!agent_uuids || agent_uuids->count == 0)
     {
@@ -400,6 +412,7 @@ modify_agent_group (agent_group_t agent_group,
             return AGENT_GROUP_RESP_AGENT_NOT_FOUND;
           else if (result == 2)
             return AGENT_GROUP_RESP_AGENT_SCANNER_MISMATCH;
+          return AGENT_GROUP_RESP_INTERNAL_ERROR;
         }
 
       /* Verify that the agent is authorized before adding it to the group. */
@@ -413,9 +426,14 @@ modify_agent_group (agent_group_t agent_group,
                                     agent_id);
     }
 
-  db_copy_buffer_commit (&buffer, TRUE);
-  db_copy_buffer_cleanup (&buffer);
+  if (db_copy_buffer_commit (&buffer, TRUE))
+    {
+      db_copy_buffer_cleanup (&buffer);
+      sql_rollback ();
+      return AGENT_GROUP_RESP_INTERNAL_ERROR;
+    }
 
+  db_copy_buffer_cleanup (&buffer);
   sql_commit ();
 
   return AGENT_GROUP_RESP_SUCCESS;
@@ -442,13 +460,13 @@ get_agent_group (agent_group_t agent_group, agent_group_data_t *group_data)
 
   *group_data = NULL;
 
-  init_iterator (&it,
-                 "SELECT uuid, name, comment, scanner,"
-                 "       creation_time, modification_time,"
-                 "       scheduler_cron_time"
-                 " FROM agent_groups"
-                 " WHERE id = %llu;",
-                 agent_group);
+  init_ps_iterator (&it,
+               "SELECT uuid, name, comment, scanner,"
+               "       creation_time, modification_time,"
+               "       scheduler_cron_time, max_delay_seconds"
+               " FROM agent_groups"
+               " WHERE id = $1;",
+               SQL_RESOURCE_PARAM (agent_group), NULL);
 
   if (!next (&it))
     {
@@ -470,6 +488,7 @@ get_agent_group (agent_group_t agent_group, agent_group_data_t *group_data)
   data->creation_time = iterator_int64 (&it, 4);
   data->modification_time = iterator_int64 (&it, 5);
   data->scheduler_cron_time = g_strdup (iterator_string (&it, 6));
+  data->max_delay_seconds = iterator_int (&it, 7);
 
   cleanup_iterator (&it);
 
@@ -635,10 +654,10 @@ delete_agent_group (const char *agent_group_uuid, int ultimate)
 
       // Move to trash
       sql ("INSERT INTO agent_groups_trash"
-           " (uuid, name, comment, owner, scanner, scheduler_cron_time, "
-           "  creation_time, modification_time)"
+           " (uuid, name, comment, owner, scanner, scheduler_cron_time,"
+           "  max_delay_seconds, creation_time, modification_time)"
            " SELECT uuid, name, comment, owner, scanner, scheduler_cron_time,"
-           "        creation_time, modification_time"
+           "        max_delay_seconds, creation_time, modification_time"
            " FROM agent_groups WHERE id = %llu;",
            agent_group);
 
@@ -720,9 +739,9 @@ restore_agent_group (const char *agent_group_uuid)
   // Restore agent group metadata
   sql ("INSERT INTO agent_groups"
        " (uuid, name, comment, owner, scanner, scheduler_cron_time,"
-       "  creation_time, modification_time)"
+       "  max_delay_seconds, creation_time, modification_time)"
        " SELECT uuid, name, comment, owner, scanner, scheduler_cron_time,"
-       "        creation_time, modification_time"
+       "        max_delay_seconds, creation_time, modification_time"
        " FROM agent_groups_trash WHERE id = %llu;",
        trash_id);
 
@@ -825,6 +844,14 @@ DEF_ACCESS (agent_group_iterator_scanner_id, GET_ITERATOR_COLUMN_COUNT + 2);
 DEF_ACCESS (agent_group_iterator_scheduler_cron_time,
             GET_ITERATOR_COLUMN_COUNT + 3);
 
+/**
+ * @brief Retrieve maximum schedule delay of the current agent group.
+ */
+int
+agent_group_iterator_max_delay_seconds (iterator_t *iterator)
+{
+  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 4);
+}
 
 /**
  * @brief Copy an agent group including its agent assignments.
@@ -851,8 +878,8 @@ copy_agent_group (const char *name,
 
   // Copy core resource fields into new row
   ret = copy_resource_lock ("agent_group", name, comment, group_uuid,
-                            "scanner, scheduler_cron_time", 1, &new_group,
-                            &old_group);
+                            "scanner, scheduler_cron_time, max_delay_seconds",
+                            1, &new_group, &old_group);
   if (ret)
   {
     sql_rollback ();
@@ -1196,17 +1223,17 @@ trash_agent_group_comment (agent_group_t agent_group)
 }
 
 /**
- * @brief Get scheduler cron times for all groups containing an agent.
+ * @brief Get scheduler cron entries for all groups containing an agent.
  *
- * @param[in]  agent_uuid  UUID of the agent.
- * @param[out] schedule_cron_times On success, newly allocated pointer array of cron strings.
- *                                 The caller must free it with g_ptr_array_free.
+ * @param[in]  agent_uuid UUID of the agent.
+ * @param[out] schedule_cron_times Newly allocated array of scheduler cron
+ *                                 entries. Caller must free the array.
  *
  * @return 0 on success, -1 on invalid argument.
  */
 int
-agent_group_schedule_cron_times_for_agent_uuid (const gchar *agent_uuid,
-                                                GPtrArray **schedule_cron_times)
+agent_group_schedule_cron_times_for_agent_uuid (
+  const gchar *agent_uuid, GPtrArray **schedule_cron_times)
 {
   iterator_t it;
 
@@ -1218,41 +1245,47 @@ agent_group_schedule_cron_times_for_agent_uuid (const gchar *agent_uuid,
   if (agent_uuid == NULL || *agent_uuid == '\0')
     return -1;
 
-  *schedule_cron_times = g_ptr_array_new_with_free_func (g_free);
+  *schedule_cron_times = g_ptr_array_new_with_free_func (
+    (GDestroyNotify) agent_controller_scheduler_cron_free);
 
-  init_ps_iterator (&it,
-                    "SELECT ag.scheduler_cron_time"
-                    " FROM agent_groups ag"
-                    " JOIN agent_group_agents aga"
-                    "   ON aga.group_id = ag.id"
-                    " JOIN agents a"
-                    "   ON a.id = aga.agent_id"
-                    " WHERE a.uuid = $1"
-                    "   AND ag.scheduler_cron_time IS NOT NULL"
-                    "   AND ag.scheduler_cron_time <> ''"
-                    " UNION ALL"
-                    " SELECT agt.scheduler_cron_time"
-                    " FROM agent_groups_trash agt"
-                    " JOIN agent_group_agents_trash agat"
-                    "   ON agat.agent_group = agt.id"
-                    " JOIN agents a"
-                    "   ON a.id = agat.agent"
-                    " WHERE a.uuid = $1"
-                    "   AND agt.scheduler_cron_time IS NOT NULL"
-                    "   AND agt.scheduler_cron_time <> '';",
-                    SQL_STR_PARAM (agent_uuid),
-                    NULL);
+  init_ps_iterator (
+    &it,
+    "SELECT ag.scheduler_cron_time, ag.max_delay_seconds"
+    " FROM agent_groups ag"
+    " JOIN agent_group_agents aga"
+    "   ON aga.group_id = ag.id"
+    " JOIN agents a"
+    "   ON a.id = aga.agent_id"
+    " WHERE a.uuid = $1"
+    "   AND ag.scheduler_cron_time IS NOT NULL"
+    "   AND ag.scheduler_cron_time <> ''"
+    " UNION ALL"
+    " SELECT agt.scheduler_cron_time, agt.max_delay_seconds"
+    " FROM agent_groups_trash agt"
+    " JOIN agent_group_agents_trash agat"
+    "   ON agat.agent_group = agt.id"
+    " JOIN agents a"
+    "   ON a.id = agat.agent"
+    " WHERE a.uuid = $1"
+    "   AND agt.scheduler_cron_time IS NOT NULL"
+    "   AND agt.scheduler_cron_time <> '';",
+    SQL_STR_PARAM (agent_uuid),
+    NULL);
 
   while (next (&it))
     {
-      const char *cron;
-
-      cron = iterator_string (&it, 0);
+      const char *cron = iterator_string (&it, 0);
 
       if (cron == NULL || *cron == '\0')
         continue;
 
-      g_ptr_array_add (*schedule_cron_times, g_strdup (cron));
+      agent_controller_scheduler_cron_t entry =
+        agent_controller_scheduler_cron_new ();
+
+      entry->cron = g_strdup (cron);
+      entry->max_delay_seconds = iterator_int (&it, 1);
+
+      g_ptr_array_add (*schedule_cron_times, entry);
     }
 
   cleanup_iterator (&it);

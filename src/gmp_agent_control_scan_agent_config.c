@@ -345,18 +345,38 @@ build_agent_config_from_entity (
       entity_t sct = entity_child (se, "scheduler_cron_time");
       if (sct)
         {
-          GPtrArray *arr = g_ptr_array_new_with_free_func (g_free);
+          GPtrArray *arr = g_ptr_array_new_with_free_func (
+            (GDestroyNotify) agent_controller_scheduler_cron_free);
+
           for (GSList *n = sct->entities; n; n = n->next)
             {
               entity_t it = n->data;
+
               if (it && strcmp (entity_name (it), "item") == 0)
                 {
-                  const gchar *txt = entity_text (it);
-                  g_ptr_array_add (arr, g_strdup (txt ? txt : ""));
+                  entity_t cron_entity = entity_child (it, "cron");
+                  entity_t delay_entity =
+                    entity_child (it, "max_delay_seconds");
+
+                  agent_controller_scheduler_cron_t entry =
+                    agent_controller_scheduler_cron_new ();
+
+                  entry->cron = g_strdup (
+                    cron_entity && entity_text (cron_entity)
+                      ? entity_text (cron_entity)
+                      : "");
+
+                  entry->max_delay_seconds =
+                    delay_entity && entity_text (delay_entity)
+                      ? atoi (entity_text (delay_entity))
+                      : 0;
+
+                  g_ptr_array_add (arr, entry);
                 }
             }
+
           if (arr->len == 0)
-            g_ptr_array_free (arr, TRUE);
+            g_ptr_array_unref (arr);
           else
             out_cfg->agent_script_executor.scheduler_cron_time = arr;
         }

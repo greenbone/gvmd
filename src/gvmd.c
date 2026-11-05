@@ -3826,6 +3826,9 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_WEB_APPLICATION_SCANNING == 1
       printf ("Web application scanning is enabled\n");
 #endif
+#if ENABLE_AD_INTEGRATION == 1
+      printf ("AD integration is enabled\n");
+#endif
       printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
       printf
@@ -4205,6 +4208,12 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_JWT_AUTH
   if (feature_enabled (FEATURE_ID_JWT_AUTH))
     load_authentication_config ();
+#endif
+
+  /* Setup agent inventory authentication */
+#if ENABLE_AGENTS
+  if (feature_enabled (FEATURE_ID_AGENTS))
+    load_agent_inventory_authentication_config ();
 #endif
 
   /* Handle non-migrate options.

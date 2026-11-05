@@ -111,7 +111,17 @@ get_report_exports_run (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
-      internal_error_send_to_client (error);
+      if (ret == 1 || ret == 2)
+        {
+          if (send_find_error_to_client (
+                "get_report_exports", ret == 1 ? "report_export" : "filter",
+                ret == 1 ? get_report_exports_data.get.id
+                         : get_report_exports_data.get.filt_id,
+                gmp_parser))
+            error_send_to_client (error);
+        }
+      else
+        internal_error_send_to_client (error);
       get_report_exports_reset ();
       return;
     }
@@ -556,16 +566,6 @@ download_report_export_run (gmp_parser_t *gmp_parser, GError **error)
     "</content>"
     "</report_export>"
     "</download_report_export_response>");
-
-  /*
-   * Remove the export only after the complete response has been sent.
-   */
-  if (manage_delete_report_export (data->row_id, data->file_path))
-    {
-      g_warning ("%s: failed to delete downloaded report export %lld",
-                 __func__,
-                 report_export);
-    }
 
   g_free (report_uuid_value);
   g_free (delta_report_uuid_value);

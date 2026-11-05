@@ -284,6 +284,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               g_error_free (error);
               error = NULL;
+              g_free (signature_filename);
               signature_filename = g_build_filename (GVMD_STATE_DIR,
                                                      "signatures",
                                                      location,
@@ -328,6 +329,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
           g_error_free (error);
           return -1;
         }
+      g_free (signature_filename);
       g_free (signature_basename);
       return 0;
     }
@@ -4221,6 +4223,7 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
+  g_free (rf_dependencies_string);
   if (close (output_fd))
     {
       g_warning ("%s: close of output_fd failed: %s",

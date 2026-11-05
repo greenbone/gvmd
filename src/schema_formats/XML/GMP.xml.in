@@ -3931,6 +3931,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
       <o><e>copy</e></o>
     </pattern>
@@ -3951,6 +3952,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
       <required>1</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds (defaults to 0)</summary>
+      <pattern><type>integer</type></pattern>
+      <required>0</required>
     </ele>
     <ele>
       <name>agents</name>
@@ -4001,6 +4008,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <name>Test Agent Group</name>
           <comment>Created via gvm-cli for testing</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
             <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
@@ -4532,6 +4540,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <o><e>community</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4678,6 +4695,43 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
@@ -4690,6 +4744,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <p>snmp: SNMP</p>
         <p>up: User name + password</p>
         <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+        <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </description>
       <pattern>
         <alts>
@@ -4701,6 +4758,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <alt>snmp</alt>
           <alt>up</alt>
           <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+          <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </alts>
       </pattern>
     </ele>
@@ -4802,6 +4862,30 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </create_credential_response>
       </response>
     </example>
+@IF_ENABLE_AD_INTEGRATION@
+    <example>
+      <summary>Create an Active Directory credential</summary>
+      <request>
+        <create_credential>
+          <name>Active Directory service account</name>
+          <type>ad</type>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response
+            status="201"
+            status_text="OK, resource created"
+            id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_credential_response>
+      </response>
+    </example>
+@ENDIF_ENABLE_AD_INTEGRATION@
   </command>
   <command>
     <name>create_filter</name>
@@ -9011,8 +9095,8 @@ END:VCALENDAR
         generated report file encoded as Base64 content.
       </p>
       <p>
-        After a successful download, the report export and its generated file
-        are removed.
+        A completed report export remains available for repeatable downloads
+        until retention cleanup removes the export and its generated file.
       </p>
     </description>
     <pattern>
@@ -9187,7 +9271,15 @@ END:VCALENDAR
     <summary>Empty the trashcan</summary>
     <description>
       <p>
-        The client uses the empty_trashcan command to empty the trashcan.
+        The client uses the empty_trashcan command to empty the trashcan
+        of the current user.
+      </p>
+      <p>
+        Note that if the current user has access to resources in the trashcan
+        owned by other users, e.g. through the &quot;Super&quot; permission,
+        only the resources owned by the current user are deleted while
+        the resources owned by others have to be deleted manually with their
+        respective delete_... commands.
       </p>
     </description>
     <pattern>
@@ -9714,6 +9806,7 @@ END:VCALENDAR
           <e>in_use</e>
           <e>permissions</e>
           <e>scheduler_cron_time</e>
+          <e>max_delay_seconds</e>
           <e>scanner</e>
           <e>agents</e>
         </pattern>
@@ -9805,6 +9898,7 @@ END:VCALENDAR
               </permission>
             </permissions>
             <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+            <max_delay_seconds>30</max_delay_seconds>
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
             </scanner>
@@ -9907,6 +10001,61 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_agent_inventory_token</name>
+    <summary>Get an agent inventory token</summary>
+    <description>
+      <p>
+        The client uses the get_agent_inventory_token command to get a
+        short-lived signed token for authenticating requests to the
+        agent-control API using Authorization: Bearer &lt;token&gt;.
+        The authenticated user must have the get_agents permission.
+      </p>
+      <p>
+        The command takes no attributes or child elements. Token issuance
+        requires the agents feature to be enabled and a valid agent inventory
+        authentication configuration. The token lifetime is configured by
+        agent_jwt_access_duration and defaults to 600 seconds.
+      </p>
+      <p>
+        The response status is 200 on success, 400 when permission is denied,
+        503 when token issuance is unavailable, or 500 when token generation
+        fails.
+      </p>
+    </description>
+    <pattern></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>token</e>
+      </pattern>
+      <ele>
+        <name>token</name>
+        <type>text</type>
+        <summary>The signed agent inventory token</summary>
+      </ele>
+    </response>
+    <example>
+      <summary>Get an agent inventory token</summary>
+      <request>
+        <get_agent_inventory_token/>
+      </request>
+      <response>
+        <get_agent_inventory_token_response status="200" status_text="OK">
+          <token>eyJ2IjoxLCJpYXQiOjE3OTMxOTE3MTIsImV4cCI6MTc5MzE5MjMxMiwibm9uY2UiOiJ2aFZXc08tM0tjTXBacUxCRHYzUF9RIn0.T_KCd-tlekiS-tMnLpTaWBsygf7xoWiywid73i1uGbg</token>
+        </get_agent_inventory_token_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agent_support_bundle</name>
     <summary>Get a support bundle for an agent</summary>
     <description>
@@ -9919,6 +10068,11 @@ END:VCALENDAR
         The optional days attribute controls the number of days of diagnostic
         data included in the bundle. If days is omitted, the agent controller
         default is used.
+      </p>
+      <p>
+        The optional encryption and anonymized attributes control whether the
+        support bundle is encrypted and anonymized. By default, the bundle
+        is encrypted (1) and not anonymized (0).
       </p>
     </description>
     <pattern>
@@ -9936,7 +10090,13 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>encryption</name>
-        <summary>Whether agent support bundle is encrypted (1) or not (0) (Default 1)</summary>
+        <summary>Whether to encrypt the support bundle (0 or 1, default 1)</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>anonymized</name>
+        <summary>Whether to anonymize the support bundle (0 or 1, default 0)</summary>
         <type>integer</type>
         <required>0</required>
       </attrib>
@@ -9999,7 +10159,8 @@ END:VCALENDAR
         <get_agent_support_bundle
           agent_uuid="31acafd6-5f48-43c5-bac0-dbeeccc526dd"
           days="7"
-          encryption="1"/>
+          encryption="1"
+          anonymized="1"/>
       </request>
       <response>
         <get_agent_support_bundle_response status="200" status_text="OK">
@@ -10122,6 +10283,16 @@ END:VCALENDAR
             <summary>CPU architecture (e.g., amd64)</summary>
           </column>
           <column>
+            <name>os_cpe</name>
+            <type>text</type>
+            <summary>Operating system CPE identifier</summary>
+          </column>
+          <column>
+            <name>os_status</name>
+            <type>text</type>
+            <summary>Operating system support status</summary>
+          </column>
+          <column>
             <name>update_to_latest</name>
             <type>integer</type>
             <summary>Update-to-latest flag (1/0)</summary>
@@ -10226,6 +10397,8 @@ END:VCALENDAR
           <e>agent_version</e>
           <e>operating_system</e>
           <e>architecture</e>
+          <e>os_cpe</e>
+          <e>os_status</e>
           <e>update_to_latest</e>
           <e>agent_update_available</e>
           <e>updater_update_available</e>
@@ -10364,6 +10537,16 @@ END:VCALENDAR
           <pattern><type>text</type></pattern>
         </ele>
         <ele>
+          <name>os_cpe</name>
+          <summary>Operating system CPE identifier</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>os_status</name>
+          <summary>Operating system support status</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
           <name>update_to_latest</name>
           <summary>Flag to update to latest version (1/0)</summary>
           <pattern><type>integer</type></pattern>
@@ -10445,8 +10628,21 @@ END:VCALENDAR
               <pattern><any><e>item</e></any></pattern>
               <ele>
                 <name>item</name>
-                <summary>A cron expression defining execution schedule</summary>
-                <pattern><type>text</type></pattern>
+                <summary>Scheduler cron entry</summary>
+                <pattern>
+                  <e>cron</e>
+                  <e>max_delay_seconds</e>
+                </pattern>
+                <ele>
+                  <name>cron</name>
+                  <summary>Cron expression defining execution schedule</summary>
+                  <pattern><type>text</type></pattern>
+                </ele>
+                <ele>
+                  <name>max_delay_seconds</name>
+                  <summary>Maximum scheduling delay in seconds</summary>
+                  <pattern><type>integer</type></pattern>
+                </ele>
               </ele>
             </ele>
           </ele>
@@ -10600,6 +10796,8 @@ END:VCALENDAR
             <agent_version>0.9.0</agent_version>
             <operating_system>Linux</operating_system>
             <architecture>amd64</architecture>
+            <os_status>supported</os_status>
+            <architecture>amd64</architecture>
             <update_to_latest>0</update_to_latest>
             <agent_update_available>1</agent_update_available>
             <updater_update_available>0</updater_update_available>
@@ -10618,7 +10816,10 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>3</indexer_dir_depth>
                 <scheduler_cron_time>
-                  <item>0 0 * * *</item>
+                  <item>
+                    <cron>0 0 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -15162,6 +15363,14 @@ END:VCALENDAR
           <o><e>kdc</e></o>
           <o><e>kdcs</e></o>
           <o><e>realm</e></o>
+@IF_ENABLE_AD_INTEGRATION@
+          <o><e>host</e></o>
+          <o><e>port</e></o>
+          <o><e>bind_dn</e></o>
+          <o><e>base_dn</e></o>
+          <o><e>tls_mode</e></o>
+          <o><e>ca_certificate</e></o>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </pattern>
         <ele>
           <name>owner</name>
@@ -15295,6 +15504,9 @@ END:VCALENDAR
             <p>snmp: SNMP</p>
             <p>up: User name + password</p>
             <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+            <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
           </description>
           <pattern>
             <alts>
@@ -15306,6 +15518,9 @@ END:VCALENDAR
               <alt>snmp</alt>
               <alt>up</alt>
               <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+              <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
             </alts>
           </pattern>
         </ele>
@@ -15542,6 +15757,38 @@ END:VCALENDAR
           <pattern>text</pattern>
           <summary>The Kerberos realm</summary>
         </ele>
+@IF_ENABLE_AD_INTEGRATION@
+        <ele>
+          <name>host</name>
+          <summary>Active Directory server hostname or address</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Connection port, from 1 through 65535</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bind_dn</name>
+          <summary>Distinguished name used for authentication</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>base_dn</name>
+          <summary>Base distinguished name for directory searches</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>tls_mode</name>
+          <summary>TLS connection mode</summary>
+          <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+        </ele>
+        <ele>
+          <name>ca_certificate</name>
+          <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </ele>
       <ele>
         <name>filters</name>
@@ -37975,8 +38222,21 @@ END:VCALENDAR
             <pattern><any><e>item</e></any></pattern>
             <ele>
               <name>item</name>
-              <summary>Cron expression</summary>
-              <pattern><type>text</type></pattern>
+              <summary>Scheduler cron entry</summary>
+              <pattern>
+                <e>cron</e>
+                <e>max_delay_seconds</e>
+              </pattern>
+              <ele>
+                <name>cron</name>
+                <summary>Cron expression</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+              <ele>
+                <name>max_delay_seconds</name>
+                <summary>Maximum scheduling delay in seconds</summary>
+                <pattern><type>integer</type></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>
@@ -38044,8 +38304,14 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>10</indexer_dir_depth>
                 <scheduler_cron_time is_list="1">
-                  <item>0 23 * * *</item>
-                  <item>0 22 * * *</item>
+                  <item>
+                    <cron>0 23 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
+                  <item>
+                    <cron>0 22 * * *</cron>
+                    <max_delay_seconds>60</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -38082,6 +38348,7 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
     </pattern>
     <ele>
@@ -38100,6 +38367,12 @@ END:VCALENDAR
       <name>scheduler_cron_time</name>
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds</summary>
+      <pattern><type>integer</type></pattern>
       <required>0</required>
     </ele>
     <ele>
@@ -38140,6 +38413,7 @@ END:VCALENDAR
           <name>Updated Group Name</name>
           <comment>Modified via gvm-cli</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
           </agents>
@@ -38898,6 +39172,15 @@ END:VCALENDAR
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </pattern>
     <ele>
       <name>name</name>
@@ -39036,6 +39319,43 @@ END:VCALENDAR
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <response>
       <pattern>
         <attrib>
@@ -41920,6 +42240,125 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AD_INTEGRATION@
+  <command>
+    <name>verify_active_directory_credential</name>
+    <summary>Verify an Active Directory credential</summary>
+    <description>
+      <p>
+        The client uses the verify_active_directory_credential command to test
+        an Active Directory connection and bind credentials.
+      </p>
+      <p>
+        The request must contain either only the credential_id attribute to
+        verify a saved Active Directory credential, or the inline connection
+        fields.  The two forms cannot be combined.  In the inline form, host,
+        bind_dn, bind_password, base_dn, and tls_mode are required; port and
+        ca_certificate are optional.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_AD_INTEGRATION.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of a saved Active Directory credential to verify</summary>
+        <type>uuid</type>
+        <required>0</required>
+      </attrib>
+      <o>
+        <g>
+          <e>host</e>
+          <o><e>port</e></o>
+          <e>bind_dn</e>
+          <e>bind_password</e>
+          <e>base_dn</e>
+          <e>tls_mode</e>
+          <o><e>ca_certificate</e></o>
+        </g>
+      </o>
+    </pattern>
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a saved Active Directory credential</summary>
+      <request>
+        <verify_active_directory_credential
+            credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+    <example>
+      <summary>Verify inline Active Directory connection settings</summary>
+      <request>
+        <verify_active_directory_credential>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </verify_active_directory_credential>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AD_INTEGRATION@
   @IF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>verify_credential_store</name>

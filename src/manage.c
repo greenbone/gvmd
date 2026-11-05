@@ -352,7 +352,7 @@ truncate_certificate (const gchar* certificate)
 gchar *
 truncate_private_key (const gchar* private_key)
 {
-  gchar *key_start, *key_end;
+  const gchar *key_start, *key_end;
   key_end = NULL;
   key_start = strstr (private_key, "-----BEGIN RSA PRIVATE KEY-----");
   if (key_start)
@@ -2673,6 +2673,10 @@ credential_full_type (const char* abbreviation)
     return "Credential store username + password";
   else if (strcasecmp (abbreviation, "cs_usk") == 0)
     return "Credential store username + SSH key";
+#endif
+#if ENABLE_AD_INTEGRATION
+  else if (strcasecmp (abbreviation, "ad") == 0)
+    return "LDAP/AD";
 #endif
   else if (strcasecmp (abbreviation, "krb5") == 0)
     return "Kerberos 5";

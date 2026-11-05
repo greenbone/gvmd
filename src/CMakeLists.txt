@@ -32,8 +32,9 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.10
+    libgvm_agent_controller>=23.14
   )
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.4)
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
@@ -80,10 +81,17 @@ else(ENABLE_WEB_APPLICATION_SCANNING)
   message(STATUS "ENABLE_WEB_APPLICATION_SCANNING flag is not enabled")
 endif(ENABLE_WEB_APPLICATION_SCANNING)
 
+if(ENABLE_AD_INTEGRATION)
+  pkg_check_modules(LIBGVM_GVM_LDAP REQUIRED libgvm_ldap>=23.15)
+  pkg_check_modules(LIBGVM_AD_CONNECTOR REQUIRED libgvm_ad_connector>=23.15)
+else(ENABLE_AD_INTEGRATION)
+  message(STATUS "ENABLE_AD_INTEGRATION flag is not enabled")
+endif(ENABLE_AD_INTEGRATION)
+
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
-pkg_check_modules(LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules(LIBICAL REQUIRED libical>=3.0.11)
 pkg_check_modules(GPGME REQUIRED gpgme)
 
 message(STATUS "Looking for PostgreSQL...")
@@ -197,6 +205,7 @@ set(
   manage_audit_report_exports.c
   manage_audit_report_hosts.c
   manage_configs.c
+  manage_credentials.c
   manage_delta_audit_report_exports.c
   manage_delta_scan_report_exports.c
   manage_events.c
@@ -262,6 +271,7 @@ if(ENABLE_AGENTS)
     manage_agent_groups.c
     manage_agents.c
     manage_agent_installer_instructions.c
+    manage_agent_inventory_authentication.c
     manage_agent_control_scan_config.c
   )
 endif()
@@ -282,6 +292,10 @@ if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
   list(APPEND ALL_MANAGE_SRC manage_integration_report_exports.c)
 endif()
 
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_MANAGE_SRC manage_active_directory.c)
+endif()
+
 set(
   ALL_MANAGE_SQL_SRC
   manage_sql.c
@@ -290,6 +304,7 @@ set(
   manage_sql_assets.c
   manage_sql_audit_report.c
   manage_sql_audit_report_hosts.c
+  manage_sql_credentials.c
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
@@ -351,6 +366,7 @@ set(
   gmp.c
   gmp_base.c
   gmp_configs.c
+  gmp_credentials.c
   gmp_delete.c
   gmp_delta_audit_report_exports.c
   gmp_delta_scan_report_exports.c
@@ -389,6 +405,7 @@ if(ENABLE_AGENTS)
     gmp_agent_groups.c
     gmp_agents.c
     gmp_agent_installer_instructions.c
+    gmp_agent_inventory_authentication.c
     gmp_agent_support_bundle.c
   )
 endif()
@@ -399,6 +416,10 @@ endif()
 
 if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
+endif()
+
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_GMP_SRC gmp_active_directory.c)
 endif()
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
@@ -507,6 +528,8 @@ target_link_libraries(
   ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBGVM_SECURITY_INTELLIGENCE_LDFLAGS}
   ${LIBGVM_WEB_APPLICATION_SCANNER_LDFLAGS}
+  ${LIBGVM_GVM_LDAP_LDFLAGS}
+  ${LIBGVM_AD_CONNECTOR_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -556,6 +579,12 @@ set(
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+set_target_properties(
+  gmp-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator"
+)
 
 set(
   ALL_OBJECTS
@@ -625,6 +654,11 @@ set_target_properties(
     LINK_FLAGS
       "-Wl,-wrap,acl_user_may,-wrap,sql_begin_immediate,-wrap,sql_quote,-wrap,sql_int,-wrap,sql_rollback"
 )
+add_unit_test(manage-sql-secinfo "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-secinfo-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_int64_0"
+)
 
 set(
   ALL_OBJECTS
@@ -663,6 +697,14 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+if(ENABLE_AGENTS)
+  add_unit_test(
+    manage-agent-inventory-authentication
+    "${ALL_OBJECTS}"
+    "${EXTRA_SRC}"
+  )
+endif()
+
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
@@ -682,6 +724,40 @@ set(
 )
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-preferences "${ALL_OBJECTS}" "${EXTRA_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+
+add_unit_test(manage-credentials "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+
+set_target_properties(
+  manage-credentials-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private,-wrap,feature_enabled,-wrap,gpgme_new"
+)
+
+if(ENABLE_AD_INTEGRATION)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(manage-active-directory "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+  set_target_properties(
+    manage-active-directory-test
+    PROPERTIES
+      LINK_FLAGS
+        "-Wl,-wrap,feature_enabled,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,credential_value,-wrap,credential_encrypted_value,-wrap,ad_connector_new,-wrap,ad_connector_free,-wrap,ad_connector_builder,-wrap,ad_connector_connect"
+  )
+endif()
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 

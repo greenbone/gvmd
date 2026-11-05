@@ -105,6 +105,7 @@ command_t gmp_commands[]
     {"GET_AGENT_GROUPS", "Get all agent groups."},
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGENT_INSTALLER_INSTRUCTION", "Get an agent installer instruction from an agent controller."},
+    {"GET_AGENT_INVENTORY_TOKEN", "Get a valid token for agent inventory."},
     {"GET_AGENT_SUPPORT_BUNDLE", "Get an encrypted agent support bundle package from an agent controller."},
 #endif /* ENABLE_AGENTS */
     {"GET_AGGREGATES", "Get aggregates of resources."},
@@ -215,6 +216,9 @@ command_t gmp_commands[]
 #endif /* ENABLE_AGENTS */
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"TEST_ALERT", "Run an alert."},
+#if ENABLE_AD_INTEGRATION
+    {"VERIFY_ACTIVE_DIRECTORY_CREDENTIAL", "Verify an Active Directory credential."},
+#endif /* ENABLE_AD_INTEGRATION */
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
     {"VERIFY_SCANNER", "Verify a scanner."},
     {NULL, NULL}};

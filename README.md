@@ -91,6 +91,36 @@ command, both the JWT secret type and a decode secret must be given. For it
 to be able to generate JWTs, the secret type and an encode secret must be
 given. The supported secret types are `ECDSA`, `RSA` and `shared`.
 
+#### Agent inventory authentication options
+
+Options for signing agent inventory tokens are configured in the
+`[agent_inventory_authentication]` section. They apply to agent support
+independently of JWT login authentication.
+
+| Config file key              | Environment variable              | Type      | Default value | Description                                       |
+|------------------------------|-----------------------------------|-----------|---------------|---------------------------------------------------|
+| agent_jwt_access_duration    | GVMD_AGENT_JWT_ACCESS_DURATION    | integer   | 600           | Lifetime of agent inventory tokens in seconds     |
+| agent_jwt_encode_secret      | AGENT_CONTROL_USER_TOKEN_SECRET   | string    |               | Shared secret used to sign agent inventory tokens |
+| agent_jwt_encode_secret_path | GVMD_AGENT_JWT_ENCODE_SECRET_PATH | file path |               | Path to a file containing the shared secret       |
+
+For example, the configuration template contains:
+
+```ini
+[agent_inventory_authentication]
+agent_jwt_access_duration = 600
+agent_jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/agent-inventory-secret
+# agent_jwt_encode_secret = <shared-secret>
+```
+
+The build replaces `@GVMD_STATE_DIR@` with the configured gvmd state directory.
+Environment variables take precedence over their corresponding configuration
+keys. The secret is selected in this order:
+
+1. `AGENT_CONTROL_USER_TOKEN_SECRET`.
+2. `agent_jwt_encode_secret` in the configuration file.
+3. File contents from `GVMD_AGENT_JWT_ENCODE_SECRET_PATH`, or from
+   `agent_jwt_encode_secret_path` if that environment variable is unset.
+
 #### Feature flags
 
 The `[features]` section of the configuration file and the corresponding
@@ -119,7 +149,7 @@ Options for CVE scan matching can be found in the `[cve_scan]` section of the
 configuration file.
 
 | Config file key           | Environment variable           | Type    | Default value | Description                                                                                                                                                                                                                                                                     |
-| ------------------------- | ------------------------------ | ------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|---------------------------|--------------------------------|---------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | cve_scan_matching_version | GVMD_CVE_SCAN_MATCHING_VERSION | integer | 0             | Selects the CPE-to-CVE matching implementation. Version `0` matches detected CPEs against CVE affected-product lists. Version `1` evaluates CVE match criteria from the SCAP data. If version `1` is configured but the required SCAP data is unavailable, version `0` is used. |
 
 ## Support

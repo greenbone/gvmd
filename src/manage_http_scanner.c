@@ -460,6 +460,7 @@ delete_http_scanner_scan_with_retry (http_scanner_connector_t connector,
                              __func__, scan_id, stop_response->code);
                 }
               http_scanner_response_cleanup (stop_response);
+              http_scanner_response_cleanup (response);
               gvm_sleep (3);
 
               delete_retry--;

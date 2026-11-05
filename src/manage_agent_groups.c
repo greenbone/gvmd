@@ -64,12 +64,11 @@ agent_response_to_agent_group_resp (agent_response_t response)
 }
 
 /**
- * @brief Create a deep copy of scheduler cron-time strings.
+ * @brief Create a deep copy of scheduler cron entries.
  *
- * @param[in] source Source array of strings.
+ * @param[in] source Source array of scheduler cron entries.
  *
- * @return A newly allocated array containing duplicated strings,
- *         or NULL on failure.
+ * @return A newly allocated array, or NULL on failure.
  */
 static GPtrArray *
 copy_scheduler_cron_times (const GPtrArray *source)
@@ -79,29 +78,27 @@ copy_scheduler_cron_times (const GPtrArray *source)
   if (source == NULL)
     return NULL;
 
-  copy = g_ptr_array_new_with_free_func (g_free);
-  if (copy == NULL)
-    return NULL;
+  copy = g_ptr_array_new_with_free_func (
+    (GDestroyNotify) agent_controller_scheduler_cron_free);
 
   for (guint i = 0; i < source->len; ++i)
     {
-      const gchar *cron_time = g_ptr_array_index (source, i);
-      gchar *cron_time_copy;
+      agent_controller_scheduler_cron_t cron =
+        g_ptr_array_index (source, i);
 
-      if (cron_time == NULL)
+      if (cron == NULL)
         {
           g_ptr_array_unref (copy);
           return NULL;
         }
 
-      cron_time_copy = g_strdup (cron_time);
-      if (cron_time_copy == NULL)
-        {
-          g_ptr_array_unref (copy);
-          return NULL;
-        }
+      agent_controller_scheduler_cron_t cron_copy =
+        agent_controller_scheduler_cron_new ();
 
-      g_ptr_array_add (copy, cron_time_copy);
+      cron_copy->cron = g_strdup (cron->cron);
+      cron_copy->max_delay_seconds = cron->max_delay_seconds;
+
+      g_ptr_array_add (copy, cron_copy);
     }
 
   return copy;
