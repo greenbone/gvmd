@@ -20,7 +20,7 @@
 /**
  * @brief GLib log domain used for messages from this module.
  */
-#define G_LOG_DOMAIN "md   manage"
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @brief Path to the relay mappings JSON file, NULL to disable relays.

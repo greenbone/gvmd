@@ -162,7 +162,7 @@
 /**
  * @brief Delta results columns offset for result iterator.
  */
-#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 51
+#define RESULT_ITERATOR_DELTA_COLUMN_OFFSET GET_ITERATOR_COLUMN_COUNT + 53
 
 /**
  * @brief Struct to be sent as user data to the GFunc for adding results
@@ -205,6 +205,7 @@ struct print_report_context
  char *old_tz_override;      ///< Old TZ.
  report_t report;            ///< Report.
  gchar *tsk_usage_type;      ///< Usage type of task, like "audit"
+ GArray *ports;              ///< Report port result buffers.
  // Counts.
  int criticals;              ///< Number of criticals.
  int holes;                  ///< Number of holes.
@@ -596,6 +597,19 @@ report_compliance_from_counts (const int *,
                                const int *,
                                const int *);
 
+int
+report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
+                       double *, const get_data_t*, const char* ,
+                       int *, int *, int *, int *, int *, int *, double *);
+
+int
+report_compliance_f_counts (report_t, const get_data_t*, int*, int*, int*,
+                            int*);
+
+int
+report_compliance_counts (report_t, const get_data_t*, int* , int*, int* ,
+                          int*);
+
 gboolean
 nvt_exists (const char *);
 
@@ -604,5 +618,28 @@ validate_results_port (const char *);
 
 void
 result_nvt_notice (const gchar *);
+
+int
+manage_print_report_xml_start (report_t,
+                               task_t,
+                               gchar *,
+                               const get_data_t *,
+                               int,
+                               int,
+                               int,
+                               int,
+                               int);
+
+int
+manage_print_delta_report_xml_start (report_t,
+                                     report_t,
+                                     task_t,
+                                     gchar *,
+                                     const get_data_t *,
+                                     int,
+                                     int,
+                                     int,
+                                     int,
+                                     int);
 
 #endif /* not _GVMD_MANAGE_SQL_H */

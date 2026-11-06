@@ -125,7 +125,7 @@ gvmd_agent_connector_new_from_scanner (scanner_t scanner)
 
   gboolean is_socket_path = host && *host != '\0' && g_path_is_absolute (host);
 
-  if (!host || *host == '\0' || (!is_socket_path && port <= 0))
+  if (!host || *host == '\0' || (!is_socket_path && port < 0))
     {
       g_warning ("%s: Invalid scanner host or port", __func__);
       g_free (host);

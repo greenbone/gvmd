@@ -11,6 +11,7 @@
 #include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 
+#include <assert.h>
 #include <ctype.h>
 
 #undef G_LOG_DOMAIN
@@ -148,7 +149,10 @@ create_override (const char* active, const char* nvt, const char* text,
       else if (strcmp (new_threat, "Log") == 0)
         new_severity_dbl = SEVERITY_LOG;
       else
-        return -1;
+        {
+          g_free (quoted_severity);
+          return -1;
+        }
     }
   else
     {
@@ -616,6 +620,11 @@ modify_override (const gchar *override_id, const char *active, const char *nvt,
           while (*point && isdigit (*point)) point++;
           if (*point)
             {
+              g_free (quoted_text);
+              g_free (quoted_hosts);
+              g_free (quoted_port);
+              g_free (quoted_severity);
+              g_free (quoted_nvt);
               return 1;
             }
         }
@@ -773,6 +782,9 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -784,6 +796,7 @@ override_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,
@@ -912,6 +925,9 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -923,6 +939,7 @@ init_override_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,

@@ -12,12 +12,20 @@
 #include "manage_sql_tickets.h"
 #include "sql.h"
 
+#include <assert.h>
+
 /**
  * @file
  * @brief GVM management layer: Tags SQL
  *
  * The Tags SQL for the GVM management layer.
  */
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
 
 /**
  * @brief Return the UUID of a tag.

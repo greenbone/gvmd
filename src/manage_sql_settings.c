@@ -7,11 +7,13 @@
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql_configs.h"
+#include "manage_sql_filters.h"
 #include "manage_sql_port_lists.h"
 #include "manage_sql_report_formats.h"
 #include "manage_sql_users.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <ctype.h>
 
 #undef G_LOG_DOMAIN
@@ -266,7 +268,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
 {
   static const char *filter_columns[] = SETTING_ITERATOR_FILTER_COLUMNS;
   static column_t select_columns[] = SETTING_ITERATOR_COLUMNS;
-  gchar *clause, *columns, *quoted_uuid;
+  gchar *clause, *columns, *quoted_uuid, *sort_column;
 
   assert (current_credentials.uuid);
 
@@ -280,6 +282,11 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
 
   quoted_uuid = uuid ? sql_quote (uuid) : NULL;
   columns = columns_build_select (select_columns);
+
+  if (sort_field && vector_find_filter (filter_columns, sort_field))
+    sort_column = columns_select_column (select_columns, NULL, sort_field);
+  else
+    sort_column = NULL;
 
   if (quoted_uuid)
     init_iterator (iterator,
@@ -315,7 +322,7 @@ init_setting_iterator (iterator_t *iterator, const char *uuid,
                    current_credentials.uuid,
                    clause ? " AND " : "",
                    clause ? clause : "",
-                   sort_field ? sort_field : "id",
+                   sort_column ? sort_column : "id",
                    ascending ? "ASC" : "DESC",
                    sql_select_limit (max),
                    first);
@@ -861,6 +868,8 @@ modify_setting (const gchar *uuid, const gchar *name,
         setting_name = g_strdup ("CERT-Bund Filter");
       else if (strcmp (uuid, "312350ed-bc06-44f3-8b3f-ab9eb828b80b") == 0)
         setting_name = g_strdup ("DFN-CERT Filter");
+      else if (strcmp (uuid, "dbce4fcf-679f-4692-b925-a41617bb4851") == 0)
+        setting_name = g_strdup ("Web Application VT Filter");
       else if (strcmp (uuid, "32b3d606-461b-4770-b3e1-b9ea3cf0f84c") == 0)
         setting_name = g_strdup ("Notes Filter");
       else if (strcmp (uuid, "956d13bd-3baa-4404-a138-5e7eb8f9630e") == 0)

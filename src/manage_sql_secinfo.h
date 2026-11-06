@@ -165,9 +165,35 @@ typedef enum {
  }
 
 /**
+ * @brief Filter columns for WEB_APPLICATION_VT iterator.
+ */
+#define WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS          \
+ { GET_ITERATOR_FILTER_COLUMNS, "type", "description",           \
+   "solution", "severity", NULL }
+
+/**
+ * @brief WEB_APPLICATION_VT iterator columns.
+ */
+#define WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS                 \
+ {                                                               \
+   GET_ITERATOR_COLUMNS_PREFIX (""),                             \
+   { "''", "_owner", KEYWORD_TYPE_STRING },                      \
+   { "0", NULL, KEYWORD_TYPE_INTEGER },                          \
+   { "type", NULL, KEYWORD_TYPE_STRING },                        \
+   { "description", NULL, KEYWORD_TYPE_STRING },                 \
+   { "solution", NULL, KEYWORD_TYPE_INTEGER },                   \
+   { "severity", NULL, KEYWORD_TYPE_DOUBLE },                    \
+   { "type_metadata", NULL, KEYWORD_TYPE_STRING },               \
+   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                          \
+ }
+
+/**
  * @brief Default for secinfo_update_strategy.
  */
 #define SECINFO_UPDATE_STRATEGY_DEFAULT SECINFO_UPDATE_STRATEGY_KEEP_SCHEMA
+
+int
+manage_db_init (const gchar *);
 
 int
 secinfo_feed_version_status (const char *);
@@ -178,11 +204,32 @@ manage_sync_scap (sigset_t *);
 pid_t
 manage_sync_cert (sigset_t *);
 
+pid_t
+manage_sync_web_application_vts (sigset_t *);
+
 int
 check_scap_db_version ();
 
 int
 check_cert_db_version ();
+
+int
+check_vts_db_version ();
+
+void
+create_web_application_vts_tables ();
+
+void
+drop_web_application_vts_tables ();
+
+void
+create_tables_vt_tech_info ();
+
+int
+update_vt_tech_info (gboolean);
+
+void
+refresh_all_vts_table ();
 
 int
 get_secinfo_commit_size ();

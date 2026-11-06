@@ -592,21 +592,26 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <required>1</required>
       </attrib>
       <e>name</e>
-      <e>creation_time</e>
-      <e>modification_time</e>
-      <e>category</e>
-      <e>family</e>
-      <e>cvss_base</e>
-      <e>severities</e>
-      <e>qod</e>
-      <e>refs</e>
-      <e>tags</e>
-      <e>preference_count</e>
-      <e>timeout</e>
-      <e>default_timeout</e>
-      <e>solution</e>
-      <o><e>epss</e></o>
-      <e>preferences</e>
+      <o>
+        <g>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>category</e>
+          <e>family</e>
+          <e>cvss_base</e>
+          <e>severities</e>
+          <e>qod</e>
+          <e>refs</e>
+          <e>tags</e>
+          <e>discovery</e>
+          <o><e>preference_count</e></o>
+          <o><e>timeout</e></o>
+          <o><e>default_timeout</e></o>
+          <e>solution</e>
+          <o><e>epss</e></o>
+          <o><e>preferences</e></o>
+        </g>
+      </o>
     </pattern>
     <ele>
       <name>name</name>
@@ -627,6 +632,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <name>category</name>
       <summary>Category of the vulnerability test</summary>
       <pattern><t>integer</t></pattern>
+      <description>
+        <p>0: init</p>
+        <p>1: scanner</p>
+        <p>2: settings</p>
+        <p>3: infos</p>
+        <p>4: attack</p>
+        <p>5: mixed</p>
+        <p>6: destructive attack</p>
+        <p>7: denial</p>
+        <p>8: kill host</p>
+        <p>9: flood</p>
+        <p>10: end</p>
+        <p>11: unknown</p>
+      </description>
     </ele>
     <ele>
       <name>family</name>
@@ -645,31 +664,74 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     </ele>
     <ele>
       <name>qod</name>
-      <summary>Quality of Detection</summary>
+      <summary>The quality of detection (QoD) of the NVT</summary>
       <pattern>
         <e>value</e>
         <e>type</e>
       </pattern>
       <ele>
         <name>value</name>
-        <summary>The value of the QoD</summary>
+        <summary>The numeric QoD value</summary>
         <pattern><t>integer</t></pattern>
       </ele>
       <ele>
         <name>type</name>
-        <summary>The type of the QoD</summary>
-        <pattern><t>name</t></pattern>
+        <summary>The QoD type</summary>
+        <pattern>text</pattern>
       </ele>
     </ele>
     <ele>
       <name>refs</name>
-      <summary>List of references of the vulnerability test</summary>
-      <pattern><any><e>ref</e></any></pattern>
+      <summary>List of references of various types for this vulnerability test</summary>
+      <pattern>
+        <any><e>ref</e></any>
+        <o><e>warning</e></o>
+      </pattern>
+      <ele>
+        <name>ref</name>
+        <summary>A reference</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the reference</summary>
+            <type>text</type>
+          </attrib>
+          <attrib>
+            <name>type</name>
+            <summary>Type of the reference, for example "cve", "dfn-cert", "cert-bund"</summary>
+            <type>text</type>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>warning</name>
+        <summary>A warning message, e.g. when the CERT database is not available</summary>
+        <pattern>
+          text
+        </pattern>
+      </ele>
     </ele>
     <ele>
       <name>tags</name>
       <summary>Additional information about vulnerability test in pipe-separated syntax</summary>
       <pattern><t>text</t></pattern>
+    </ele>
+    <ele>
+      <name>discovery</name>
+      <summary>Whether the NVT is marked as a discovery NVT</summary>
+      <pattern><t>integer</t></pattern>
+    </ele>
+    <ele>
+      <name>tech_info</name>
+      <summary>Technical information available via GET_INFO with details enabled</summary>
+      <pattern>
+        <e>description_md</e>
+      </pattern>
+      <ele>
+        <name>description_md</name>
+        <summary>A technical description in Markdown format</summary>
+        <pattern>text</pattern>
+      </ele>
     </ele>
     <ele>
       <name>preference_count</name>
@@ -813,7 +875,74 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <ele>
       <name>preferences</name>
       <summary>The list of preferences</summary>
-      <pattern><t>text</t></pattern>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>nvt</e>
+          <e>name</e>
+          <o><e>hr_name</e></o>
+          <e>id</e>
+          <e>type</e>
+          <e>value</e>
+          <o><e>default</e></o>
+          <any><e>alt</e></any>
+        </pattern>
+        <ele>
+          <name>nvt</name>
+          <summary>NVT to which preference applies</summary>
+          <pattern>
+            <attrib>
+              <name>oid</name>
+              <type>oid</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>The name of the NVT</summary>
+            <pattern><t>name</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>The compact name of the preference as used by the scanner</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>hr_name</name>
+          <summary>The human readable name of the preference</summary>
+          <pattern><t>name</t></pattern>
+        </ele>
+        <ele>
+          <name>id</name>
+          <summary>The ID of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>The type of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>The value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>default</name>
+          <summary>The default value of the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>alt</name>
+          <summary>An alternate value for the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
     </ele>
   </element>
   <element>
@@ -1537,6 +1666,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <e>severities</e>
         <e>cpe</e>
         <e>tags</e>
+        <o><e>type_metadata</e></o>
         <o><e>epss</e></o>
         <e>refs</e>
       </pattern>
@@ -1574,6 +1704,11 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <name>tags</name>
         <summary>Tags associated with the NVT</summary>
         <pattern>text</pattern>
+      </ele>
+      <ele>
+        <name>type_metadata</name>
+        <summary>Additional, type specific information about vulnerability test as JSON</summary>
+        <pattern><t>text</t></pattern>
       </ele>
       <ele>
         <name>epss</name>
@@ -3731,6 +3866,57 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </response>
     </example>
   </command>
+  <command>
+    <name>cancel_report_export</name>
+    <summary>Cancel a report export</summary>
+    <description>
+      <p>
+        The client uses the cancel_report_export command to request
+        cancellation of a report export.
+      </p>
+      <p>
+        A pending report export is canceled immediately.
+        A running report export is moved to the cancel-requested state and
+        stops when the report export worker processes the cancellation.
+      </p>
+      <p>
+        Report exports that are already canceled are treated as successfully
+        canceled. Completed or failed report exports cannot be canceled.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_export_id</name>
+        <summary>ID of the report export to cancel</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Cancel a report export</summary>
+      <request>
+        <cancel_report_export
+          report_export_id="b553afd9-df88-4428-8623-587d839332d2"/>
+      </request>
+      <response>
+        <cancel_report_export_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
   @IF_ENABLE_AGENTS@
   <command>
     <name>create_agent_group</name>
@@ -3745,6 +3931,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <e>name</e>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
       <o><e>copy</e></o>
     </pattern>
@@ -3765,6 +3952,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
       <required>1</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds (defaults to 0)</summary>
+      <pattern><type>integer</type></pattern>
+      <required>0</required>
     </ele>
     <ele>
       <name>agents</name>
@@ -3815,6 +4008,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <name>Test Agent Group</name>
           <comment>Created via gvm-cli for testing</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
             <agent id="c947ffac-a562-4ac9-9bb5-361b597c67be"/>
@@ -4346,6 +4540,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <o><e>community</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
       <o><e>type</e></o>
     </pattern>
     <ele>
@@ -4492,6 +4695,43 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <ele>
       <name>type</name>
       <summary>The type of credential to create</summary>
@@ -4504,6 +4744,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <p>snmp: SNMP</p>
         <p>up: User name + password</p>
         <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+        <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </description>
       <pattern>
         <alts>
@@ -4515,6 +4758,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
           <alt>snmp</alt>
           <alt>up</alt>
           <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+          <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </alts>
       </pattern>
     </ele>
@@ -4616,6 +4862,30 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </create_credential_response>
       </response>
     </example>
+@IF_ENABLE_AD_INTEGRATION@
+    <example>
+      <summary>Create an Active Directory credential</summary>
+      <request>
+        <create_credential>
+          <name>Active Directory service account</name>
+          <type>ad</type>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </create_credential>
+      </request>
+      <response>
+        <create_credential_response
+            status="201"
+            status_text="OK, resource created"
+            id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
+        </create_credential_response>
+      </response>
+    </example>
+@ENDIF_ENABLE_AD_INTEGRATION@
   </command>
   <command>
     <name>create_filter</name>
@@ -4924,14 +5194,14 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </create_note>
       </request>
       <response>
-        <create_note_response status="202"
+        <create_note_response status="201"
                               status_text="OK, resource created"
                               id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_note_response>
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>create_oci_image_target</name>
     <summary>Create an OCI image target</summary>
@@ -5038,7 +5308,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>create_override</name>
     <summary>Create an override</summary>
@@ -6516,9 +6786,9 @@ END:VCALENDAR
       @IF_ENABLE_AGENTS@
       <e>agent_group</e>
       @ENDIF_ENABLE_AGENTS@
-      @IF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_CONTAINER_SCANNING@
       <e>oci_image_target</e>
-      @ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @ENDIF_ENABLE_CONTAINER_SCANNING@
       @IF_ENABLE_WEB_APPLICATION_SCANNING@
       <e>web_application_target</e>
       @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
@@ -6599,7 +6869,7 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <ele>
       <name>oci_image_target</name>
       <summary>The OCI images scanned by the task</summary>
@@ -6611,7 +6881,7 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>web_application_target</name>
@@ -6782,7 +7052,7 @@ END:VCALENDAR
       </response>
     </example>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <example>
       <summary>Create an OCI image task</summary>
       <request>
@@ -6801,7 +7071,7 @@ END:VCALENDAR
         </create_task_response>
       </response>
     </example>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <example>
       <summary>Create a web application task</summary>
@@ -7777,7 +8047,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>delete_oci_image_target</name>
     <summary>Delete an OCI image target</summary>
@@ -7830,7 +8100,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>delete_override</name>
     <summary>Delete an override</summary>
@@ -8540,6 +8810,52 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>delete_tls_certificate</name>
+    <summary>Delete a TLS certificate</summary>
+    <description>
+      <p>
+        The client uses the delete_tls_certificate command to delete an existing
+        TLS certificate.
+      </p>
+      <p>
+        Since this is a destructive command, the client is advised to ask
+        for confirmation from the user before sending this command to the
+        Manager.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>tls_certificate_id</name>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Delete a TLS certificate</summary>
+      <request>
+        <delete_tls_certificate tls_certificate_id="267a3405-e84a-47da-97b2-5fa0d2e8995e">
+        </delete_tls_certificate>
+      </request>
+      <response>
+        <delete_tls_certificate_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>delete_user</name>
     <summary>Delete a user</summary>
     <description>
@@ -8763,11 +9079,207 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>download_report_export</name>
+    <summary>Download a report export</summary>
+    <description>
+      <p>
+        The client uses the download_report_export command to download the
+        generated file of a completed report export.
+      </p>
+      <p>
+        The report export must have completed successfully before it can be
+        downloaded.
+      </p>
+      <p>
+        The response contains information about the report export and the
+        generated report file encoded as Base64 content.
+      </p>
+      <p>
+        A completed report export remains available for repeatable downloads
+        until retention cleanup removes the export and its generated file.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_export_id</name>
+        <summary>ID of the report export to download</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>report_export</e>
+      </pattern>
+      <ele>
+        <name>report_export</name>
+        <summary>The downloaded report export</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the report export</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>type</e>
+          <e>status</e>
+          <e>progress</e>
+          <e>report</e>
+          <o><e>delta_report</e></o>
+          <e>report_format</e>
+          <o><e>report_config</e></o>
+          <e>file_size</e>
+          <e>content_type</e>
+          <e>extension</e>
+          <e>content</e>
+        </pattern>
+        <ele>
+          <name>type</name>
+          <summary>Type of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt>delta_scan</alt>
+              <alt>delta_audit</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>status</name>
+          <summary>Processing status of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>done</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>progress</name>
+          <summary>Processing progress of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>completed</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report</name>
+          <summary>Report used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>delta_report</name>
+          <summary>Delta report used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the delta report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_format</name>
+          <summary>Report format used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report format</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_config</name>
+          <summary>Report configuration used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report configuration</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>file_size</name>
+          <summary>Size of the generated report export file in bytes</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <summary>Content type of the generated report export file</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>extension</name>
+          <summary>File extension of the generated report export</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>content</name>
+          <summary>Base64 encoded content of the generated report export file</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Download a completed report export</summary>
+      <request>
+        <download_report_export
+          report_export_id="b553afd9-df88-4428-8623-587d839332d2"/>
+      </request>
+      <response>
+        <download_report_export_response status="200" status_text="OK">
+          <report_export id="b553afd9-df88-4428-8623-587d839332d2">
+            <type>scan</type>
+            <status>done</status>
+            <progress>completed</progress>
+            <report id="c2cba4ff-2145-47f1-abe1-33b0c3859d65"/>
+            <report_format id="c402cc3e-b531-11e1-9163-406186ea4fc5"/>
+            <file_size>150298</file_size>
+            <content_type>application/pdf</content_type>
+            <extension>pdf</extension>
+            <content>JVBERi0xLjUK...</content>
+          </report_export>
+        </download_report_export_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>empty_trashcan</name>
     <summary>Empty the trashcan</summary>
     <description>
       <p>
-        The client uses the empty_trashcan command to empty the trashcan.
+        The client uses the empty_trashcan command to empty the trashcan
+        of the current user.
+      </p>
+      <p>
+        Note that if the current user has access to resources in the trashcan
+        owned by other users, e.g. through the &quot;Super&quot; permission,
+        only the resources owned by the current user are deleted while
+        the resources owned by others have to be deleted manually with their
+        respective delete_... commands.
       </p>
     </description>
     <pattern>
@@ -8794,6 +9306,436 @@ END:VCALENDAR
       </request>
       <response>
         <empty_trashcan_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>export_audit_report</name>
+    <summary>Create an asynchronous audit report export</summary>
+    <description>
+      <p>The client uses the export_audit_report command to create an asynchronous export request for an audit report.</p>
+      <p>The command validates the report, report format and optional report configuration, and then queues the report export for asynchronous processing.</p>
+      <p>The response contains the UUID and current status of the report export. The generated report file can be retrieved after the export reaches the done status.</p>
+      <p>When a matching report export already exists with a reusable status, the command returns the existing export instead of creating a duplicate.</p>
+      <p>Only audit reports are supported by this command. Delta reports are not supported.</p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>UUID of the audit report to export</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>UUID of the report format to apply</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>UUID of an optional report configuration</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply while generating the report</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>Whether pagination settings in the filter are ignored</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether lean report data is generated</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>notes_details</name>
+        <summary>Whether note details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>overrides_details</name>
+        <summary>Whether override details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether result tags are included</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <summary>UUID of the created or existing report export</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>export_status</name>
+          <summary>Current processing status of the report export</summary>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asynchronous audit report export</summary>
+      <request>
+        <export_audit_report
+          report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
+          format_id="a994b278-1f62-11e1-96ac-406186ea4fc5"
+          filter="compliance_levels=yniu"
+          ignore_pagination="1"
+          lean="0"
+          notes_details="1"
+          overrides_details="1"
+          result_tags="1"/>
+      </request>
+      <response>
+        <export_audit_report_response
+          status="200"
+          status_text="OK"
+          id="e6e2f6e1-daa9-411d-aa5a-1321c9894ab9"
+          export_status="pending"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>export_delta_audit_report</name>
+    <summary>Create an asynchronous delta audit report export</summary>
+    <description>
+      <p>The client uses the export_delta_audit_report command to create an asynchronous export request for a delta audit report.</p>
+      <p>The command validates the report, delta report, report format and optional report configuration, and then queues the report export for asynchronous processing.</p>
+      <p>The response contains the UUID and current status of the report export. The generated report file can be retrieved after the export reaches the done status.</p>
+      <p>When a matching report export already exists with a reusable status, the command returns the existing export instead of creating a duplicate.</p>
+      <p>Both reports must be audit reports and the delta report must be valid for the report being exported.</p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>UUID of the audit report to export</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>delta_report_id</name>
+        <summary>UUID of the report used for delta comparison</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>UUID of the report format to apply</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>UUID of an optional report configuration</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply while generating the report</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>Whether pagination settings in the filter are ignored</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether lean report data is generated</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>notes_details</name>
+        <summary>Whether note details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>overrides_details</name>
+        <summary>Whether override details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether result tags are included</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <summary>UUID of the created or existing report export</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>export_status</name>
+          <summary>Current processing status of the report export</summary>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asynchronous delta audit report export</summary>
+      <request>
+        <export_delta_audit_report
+          report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
+          delta_report_id="6587438c-4787-41e6-a0a7-765193dcd44f"
+          format_id="a994b278-1f62-11e1-96ac-406186ea4fc5"
+          filter="compliance_levels=yniu rows=-1 first=1"
+          ignore_pagination="1"
+          lean="0"
+          notes_details="1"
+          overrides_details="1"
+          result_tags="1"/>
+      </request>
+      <response>
+        <export_delta_audit_report_response
+          status="200"
+          status_text="OK"
+          id="e6e2f6e1-daa9-411d-aa5a-1321c9894ab9"
+          export_status="pending"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>export_delta_scan_report</name>
+    <summary>Create an asynchronous delta scan report export</summary>
+    <description>
+      <p>The client uses the export_delta_scan_report command to create an asynchronous export request for a delta scan report.</p>
+      <p>The command validates the report, delta report, report format and optional report configuration, and then queues the report export for asynchronous processing.</p>
+      <p>The response contains the UUID and current status of the report export. The generated report file can be retrieved after the export reaches the done status.</p>
+      <p>When a matching report export already exists with a reusable status, the command returns the existing export instead of creating a duplicate.</p>
+      <p>Both reports must be scan reports and the delta report must be valid for the report being exported.</p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>UUID of the scan report to export</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>delta_report_id</name>
+        <summary>UUID of the report used for delta comparison</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>UUID of the report format to apply</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>UUID of an optional report configuration</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply while generating the report</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>Whether pagination settings in the filter are ignored</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether lean report data is generated</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>notes_details</name>
+        <summary>Whether note details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>overrides_details</name>
+        <summary>Whether override details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether result tags are included</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <summary>UUID of the created or existing report export</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>export_status</name>
+          <summary>Current processing status of the report export</summary>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asynchronous delta scan report export</summary>
+      <request>
+        <export_delta_scan_report
+          report_id="c2cba4ff-2145-47f1-abe1-33b0c3859d65"
+          delta_report_id="6587438c-4787-41e6-a0a7-765193dcd44f"
+          format_id="c402cc3e-b531-11e1-9163-406186ea4fc5"
+          filter="apply_overrides=0 levels=chml rows=-1 min_qod=70 first=1 sort-reverse=severity result_hosts_only=0 overrides=1"
+          ignore_pagination="1"
+          lean="0"
+          notes_details="1"
+          overrides_details="1"
+          result_tags="1"/>
+      </request>
+      <response>
+        <export_delta_scan_report_response
+          status="200"
+          status_text="OK"
+          id="e6e2f6e1-daa9-411d-aa5a-1321c9894ab9"
+          export_status="pending"/>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>export_scan_report</name>
+    <summary>Create an asynchronous scan report export</summary>
+    <description>
+      <p>The client uses the export_scan_report command to create an asynchronous export request for a scan report.</p>
+      <p>The command validates the report, report format and optional report configuration, and then queues the report export for asynchronous processing.</p>
+      <p>The response contains the UUID and current status of the report export. The generated report file can be retrieved after the export reaches the done status.</p>
+      <p>When a matching report export already exists with a reusable status, the command returns the existing export instead of creating a duplicate.</p>
+      <p>Audit reports and delta reports are not supported by this command.</p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>UUID of the scan report to export</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>format_id</name>
+        <summary>UUID of the report format to apply</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>config_id</name>
+        <summary>UUID of an optional report configuration</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply while generating the report</summary>
+        <type>text</type>
+      </attrib>
+      <attrib>
+        <name>ignore_pagination</name>
+        <summary>Whether pagination settings in the filter are ignored</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether lean report data is generated</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>notes_details</name>
+        <summary>Whether note details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>overrides_details</name>
+        <summary>Whether override details are included</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>result_tags</name>
+        <summary>Whether result tags are included</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>id</name>
+          <summary>UUID of the created or existing report export</summary>
+          <type>uuid</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>export_status</name>
+          <summary>Current processing status of the report export</summary>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Create an asynchronous scan report export</summary>
+      <request>
+        <export_scan_report report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0" format_id="a994b278-1f62-11e1-96ac-406186ea4fc5" filter="levels=hml apply_overrides=1" ignore_pagination="1" lean="0" notes_details="1" overrides_details="1" result_tags="1"/>
+      </request>
+      <response>
+        <export_scan_report_response status="200" status_text="OK" id="e6e2f6e1-daa9-411d-aa5a-1321c9894ab9" export_status="pending"/>
       </response>
     </example>
   </command>
@@ -8864,6 +9806,7 @@ END:VCALENDAR
           <e>in_use</e>
           <e>permissions</e>
           <e>scheduler_cron_time</e>
+          <e>max_delay_seconds</e>
           <e>scanner</e>
           <e>agents</e>
         </pattern>
@@ -8955,6 +9898,7 @@ END:VCALENDAR
               </permission>
             </permissions>
             <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+            <max_delay_seconds>30</max_delay_seconds>
             <scanner id="3b4be213-281f-49ee-b457-5a5f34f71510">
               <name>Agent Controller</name>
             </scanner>
@@ -9057,6 +10001,61 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_agent_inventory_token</name>
+    <summary>Get an agent inventory token</summary>
+    <description>
+      <p>
+        The client uses the get_agent_inventory_token command to get a
+        short-lived signed token for authenticating requests to the
+        agent-control API using Authorization: Bearer &lt;token&gt;.
+        The authenticated user must have the get_agents permission.
+      </p>
+      <p>
+        The command takes no attributes or child elements. Token issuance
+        requires the agents feature to be enabled and a valid agent inventory
+        authentication configuration. The token lifetime is configured by
+        agent_jwt_access_duration and defaults to 600 seconds.
+      </p>
+      <p>
+        The response status is 200 on success, 400 when permission is denied,
+        503 when token issuance is unavailable, or 500 when token generation
+        fails.
+      </p>
+    </description>
+    <pattern></pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <e>token</e>
+      </pattern>
+      <ele>
+        <name>token</name>
+        <type>text</type>
+        <summary>The signed agent inventory token</summary>
+      </ele>
+    </response>
+    <example>
+      <summary>Get an agent inventory token</summary>
+      <request>
+        <get_agent_inventory_token/>
+      </request>
+      <response>
+        <get_agent_inventory_token_response status="200" status_text="OK">
+          <token>eyJ2IjoxLCJpYXQiOjE3OTMxOTE3MTIsImV4cCI6MTc5MzE5MjMxMiwibm9uY2UiOiJ2aFZXc08tM0tjTXBacUxCRHYzUF9RIn0.T_KCd-tlekiS-tMnLpTaWBsygf7xoWiywid73i1uGbg</token>
+        </get_agent_inventory_token_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_agent_support_bundle</name>
     <summary>Get a support bundle for an agent</summary>
     <description>
@@ -9070,6 +10069,11 @@ END:VCALENDAR
         data included in the bundle. If days is omitted, the agent controller
         default is used.
       </p>
+      <p>
+        The optional encryption and anonymized attributes control whether the
+        support bundle is encrypted and anonymized. By default, the bundle
+        is encrypted (1) and not anonymized (0).
+      </p>
     </description>
     <pattern>
       <attrib>
@@ -9081,6 +10085,18 @@ END:VCALENDAR
       <attrib>
         <name>days</name>
         <summary>Number of days of diagnostic data to include</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>encryption</name>
+        <summary>Whether to encrypt the support bundle (0 or 1, default 1)</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>anonymized</name>
+        <summary>Whether to anonymize the support bundle (0 or 1, default 0)</summary>
         <type>integer</type>
         <required>0</required>
       </attrib>
@@ -9142,7 +10158,9 @@ END:VCALENDAR
       <request>
         <get_agent_support_bundle
           agent_uuid="31acafd6-5f48-43c5-bac0-dbeeccc526dd"
-          days="7"/>
+          days="7"
+          encryption="1"
+          anonymized="1"/>
       </request>
       <response>
         <get_agent_support_bundle_response status="200" status_text="OK">
@@ -9265,6 +10283,16 @@ END:VCALENDAR
             <summary>CPU architecture (e.g., amd64)</summary>
           </column>
           <column>
+            <name>os_cpe</name>
+            <type>text</type>
+            <summary>Operating system CPE identifier</summary>
+          </column>
+          <column>
+            <name>os_status</name>
+            <type>text</type>
+            <summary>Operating system support status</summary>
+          </column>
+          <column>
             <name>update_to_latest</name>
             <type>integer</type>
             <summary>Update-to-latest flag (1/0)</summary>
@@ -9369,6 +10397,8 @@ END:VCALENDAR
           <e>agent_version</e>
           <e>operating_system</e>
           <e>architecture</e>
+          <e>os_cpe</e>
+          <e>os_status</e>
           <e>update_to_latest</e>
           <e>agent_update_available</e>
           <e>updater_update_available</e>
@@ -9507,6 +10537,16 @@ END:VCALENDAR
           <pattern><type>text</type></pattern>
         </ele>
         <ele>
+          <name>os_cpe</name>
+          <summary>Operating system CPE identifier</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
+          <name>os_status</name>
+          <summary>Operating system support status</summary>
+          <pattern><type>text</type></pattern>
+        </ele>
+        <ele>
           <name>update_to_latest</name>
           <summary>Flag to update to latest version (1/0)</summary>
           <pattern><type>integer</type></pattern>
@@ -9588,8 +10628,21 @@ END:VCALENDAR
               <pattern><any><e>item</e></any></pattern>
               <ele>
                 <name>item</name>
-                <summary>A cron expression defining execution schedule</summary>
-                <pattern><type>text</type></pattern>
+                <summary>Scheduler cron entry</summary>
+                <pattern>
+                  <e>cron</e>
+                  <e>max_delay_seconds</e>
+                </pattern>
+                <ele>
+                  <name>cron</name>
+                  <summary>Cron expression defining execution schedule</summary>
+                  <pattern><type>text</type></pattern>
+                </ele>
+                <ele>
+                  <name>max_delay_seconds</name>
+                  <summary>Maximum scheduling delay in seconds</summary>
+                  <pattern><type>integer</type></pattern>
+                </ele>
               </ele>
             </ele>
           </ele>
@@ -9743,6 +10796,8 @@ END:VCALENDAR
             <agent_version>0.9.0</agent_version>
             <operating_system>Linux</operating_system>
             <architecture>amd64</architecture>
+            <os_status>supported</os_status>
+            <architecture>amd64</architecture>
             <update_to_latest>0</update_to_latest>
             <agent_update_available>1</agent_update_available>
             <updater_update_available>0</updater_update_available>
@@ -9761,7 +10816,10 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>250</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>3</indexer_dir_depth>
                 <scheduler_cron_time>
-                  <item>0 0 * * *</item>
+                  <item>
+                    <cron>0 0 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -11915,6 +12973,1350 @@ END:VCALENDAR
     </example>
   </command>
   <command>
+    <name>get_audit_report</name>
+    <summary>Get a structured audit report</summary>
+    <description>
+      <p>
+          The client uses the get_audit_report command to retrieve a single
+          structured audit report.
+      </p>
+      <p>
+          The response includes report metadata, task and target information, scan
+          status, scan times, resource counts, compliance counts, compliance values
+          and task progress.
+      </p>
+      <p>
+          Result filters affect the filtered compliance counts and filtered
+          compliance value returned by the command. Full compliance counts remain
+          unchanged.
+      </p>
+      <p>
+          Normal vulnerability reports are not supported by this command and must
+          be retrieved using the get_scan_report command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>audit_report_id</name>
+        <summary>ID of the audit report to retrieve</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply to the audit report summary</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+                Index of the first result, starting at 1
+              </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Maximum number of results</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Result column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Result column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>compliance_levels</name>
+            <type>text</type>
+            <summary>
+                Compliance levels included in the filtered compliance summary
+              </summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum quality of detection</summary>
+          </option>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether result overrides are applied</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+                Whether only hosts containing matching results are considered
+              </summary>
+          </option>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of a saved filter to apply</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o>
+          <e>report</e>
+        </o>
+        <o>
+          <e>filters</e>
+        </o>
+        <o>
+          <e>sort</e>
+        </o>
+        <o>
+          <e>audit_report</e>
+        </o>
+        <o>
+          <e>audit_report_count</e>
+        </o>
+      </pattern>
+      <ele>
+        <name>report</name>
+        <summary>Structured audit report</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the report</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>scan_run_status</e>
+          <e>hosts</e>
+          <e>closed_cves</e>
+          <e>cves</e>
+          <e>vulns</e>
+          <e>os</e>
+          <e>apps</e>
+          <e>ssl_certs</e>
+          <e>ports</e>
+          <e>errors</e>
+          <e>task</e>
+          <e>timestamp</e>
+          <e>scan_start</e>
+          <e>timezone</e>
+          <e>timezone_abbrev</e>
+          <e>compliance_count</e>
+          <e>compliance</e>
+          <e>scan_end</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the report owner</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last modification time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report is writable by the current user</summary>
+          <pattern>
+            <t>boolean</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the report is currently in use</summary>
+          <pattern>
+            <t>boolean</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>scan_run_status</name>
+          <summary>Run status of the audit scan associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>Host count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of hosts in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>closed_cves</name>
+          <summary>Closed CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of closed CVEs in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>cves</name>
+          <summary>CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of CVEs in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>vulns</name>
+          <summary>Vulnerability count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of vulnerabilities in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>os</name>
+          <summary>Operating system count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of operating systems in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>apps</name>
+          <summary>Application count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of applications in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ssl_certs</name>
+          <summary>TLS certificate count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of TLS certificates in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ports</name>
+          <summary>Port count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of ports in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>errors</name>
+          <summary>Scan error count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of scan errors in the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Audit task associated with the report</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>UUID of the task</summary>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+            <e>comment</e>
+            <o>
+              <e>target</e>
+            </o>
+            <e>progress</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>comment</name>
+            <summary>Comment associated with the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>target</name>
+            <summary>Target associated with the task</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>UUID of the target</summary>
+                <type>uuid</type>
+              </attrib>
+              <e>trash</e>
+              <e>name</e>
+              <e>comment</e>
+              <e>target_type</e>
+            </pattern>
+            <ele>
+              <name>trash</name>
+              <summary>Whether the target is in the trash</summary>
+              <pattern>
+                <t>boolean</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment associated with the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>target_type</name>
+              <summary>Type of the target associated with the task</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>progress</name>
+            <summary>Progress of the task associated with the report</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>timestamp</name>
+          <summary>Timestamp identifying the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>scan_start</name>
+          <summary>Start time of the audit scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>timezone</name>
+          <summary>Timezone used for report timestamps</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>timezone_abbrev</name>
+          <summary>Abbreviation of the report timezone</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>compliance_count</name>
+          <summary>Full and filtered result counts by compliance status</summary>
+          <pattern>
+                text
+            <e>full</e>
+            <e>filtered</e>
+            <e>yes</e>
+            <e>no</e>
+            <e>incomplete</e>
+            <e>undefined</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of unfiltered compliance results</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Total number of filtered compliance results</summary>
+            <pattern>
+              <t>integer</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>yes</name>
+            <summary>Compliant result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+            <ele>
+              <name>full</name>
+              <summary>Number of unfiltered compliant results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>filtered</name>
+              <summary>Number of filtered compliant results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>no</name>
+            <summary>Non-compliant result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+            <ele>
+              <name>full</name>
+              <summary>Number of unfiltered non-compliant results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>filtered</name>
+              <summary>Number of filtered non-compliant results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>incomplete</name>
+            <summary>Incomplete compliance result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+            <ele>
+              <name>full</name>
+              <summary>Number of unfiltered incomplete results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>filtered</name>
+              <summary>Number of filtered incomplete results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>undefined</name>
+            <summary>Undefined compliance result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+            <ele>
+              <name>full</name>
+              <summary>Number of unfiltered undefined results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+            <ele>
+              <name>filtered</name>
+              <summary>Number of filtered undefined results</summary>
+              <pattern>
+                <t>integer</t>
+              </pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>compliance</name>
+          <summary>Full and filtered overall compliance values</summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Overall compliance without result filtering</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Overall compliance after applying the result filter</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>scan_end</name>
+          <summary>End time of the audit scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the filter, or empty if no saved filter was used</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Resolved filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern>
+            <any>
+              <e>keyword</e>
+            </any>
+          </pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Filter column</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Filter relation</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+              text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+                text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>audit_report</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First returned audit report</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of audit reports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>audit_report_count</name>
+        <pattern>
+              text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of matching audit reports</summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>
+                Number of additional audit reports on the current page
+              </summary>
+          <pattern>
+            <t>integer</t>
+          </pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get a structured audit report</summary>
+      <request>
+        <get_audit_report audit_report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0" filter="compliance_levels=yniu min_qod=70">
+            </get_audit_report>
+      </request>
+      <response>
+        <get_audit_report_response status="200" status_text="OK">
+          <report id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0">
+            <owner>
+              <name>moezgen</name>
+            </owner>
+            <name>2026-06-15T11:24:38Z</name>
+            <comment/>
+            <creation_time>2026-06-15T11:24:38Z</creation_time>
+            <modification_time>2026-06-15T12:30:23Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <scan_run_status>Done</scan_run_status>
+            <hosts>
+              <count>1</count>
+            </hosts>
+            <closed_cves>
+              <count>0</count>
+            </closed_cves>
+            <cves>
+              <count>0</count>
+            </cves>
+            <vulns>
+              <count>10</count>
+            </vulns>
+            <os>
+              <count>1</count>
+            </os>
+            <apps>
+              <count>4</count>
+            </apps>
+            <ssl_certs>
+              <count>1</count>
+            </ssl_certs>
+            <ports>
+              <count>6</count>
+            </ports>
+            <errors>
+              <count>0</count>
+            </errors>
+            <task id="7cda9ee9-63d5-4802-9a31-5dacc8f19b5b">
+              <name>test-audit</name>
+              <comment/>
+              <target id="4809d998-2d2d-4a65-9148-f99f04799b09">
+                <trash>0</trash>
+                <name>test-target</name>
+                <comment/>
+                <target_type>target</target_type>
+              </target>
+              <progress>100</progress>
+            </task>
+            <timestamp>2026-06-15T11:24:38Z</timestamp>
+            <scan_start>2026-06-15T11:24:41Z</scan_start>
+            <timezone>UTC</timezone>
+            <timezone_abbrev>UTC</timezone_abbrev>
+            <compliance_count>
+              10
+              <full>10</full>
+              <filtered>8</filtered>
+              <yes>
+                <full>5</full>
+                <filtered>5</filtered>
+              </yes>
+              <no>
+                <full>3</full>
+                <filtered>3</filtered>
+              </no>
+              <incomplete>
+                <full>1</full>
+                <filtered>0</filtered>
+              </incomplete>
+              <undefined>
+                <full>1</full>
+                <filtered>0</filtered>
+              </undefined>
+            </compliance_count>
+            <compliance>
+              <full>No</full>
+              <filtered>No</filtered>
+            </compliance>
+            <scan_end>2026-06-15T12:30:23Z</scan_end>
+          </report>
+          <filters id="">
+            <term>compliance_levels=yniu min_qod=70</term>
+            <keywords>
+              <keyword>
+                <column>compliance_levels</column>
+                <relation>=</relation>
+                <value>yniu</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>
+              type
+              <order>descending</order>
+            </field>
+          </sort>
+          <audit_report start="1" max="1"/>
+          <audit_report_count>
+                1
+            <filtered>1</filtered>
+            <page>0</page>
+          </audit_report_count>
+        </get_audit_report_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_audit_report_hosts</name>
+    <summary>Get hosts from an audit report</summary>
+    <description>
+      <p>
+        The client uses the get_audit_report_hosts command to get host information
+        from a single audit report.
+      </p>
+      <p>
+        If the "details" attribute is set, the response includes host entries.
+        Otherwise only filter, sort and count information is returned.
+      </p>
+      <p>
+        Host entries include compliance information derived from matching audit
+        results, including counts for compliant, non-compliant, incomplete and
+        undefined results, as well as the overall compliance status of each host.
+      </p>
+      <p>
+        Currently "lean" omits selected optional or redundant XML elements from the
+        audit report hosts output to reduce response size.
+      </p>
+      <p>
+        The filter affects the selection of matching audit results and the derived
+        host information returned by the command. When "result_hosts_only" is set,
+        only hosts with matching results are included.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_id</name>
+        <summary>ID of the audit report to get hosts from</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for audit report host retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first item returned, starting at 1 (e.g. first=5
+              starts at the 5th item)
+            </summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>levels</type>
+            <summary>Compliance levels to select</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether to limit the response to hosts having audit results matching
+              the filter
+            </summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID</summary>
+          </column>
+          <column>
+            <name>ip</name>
+            <type>text</type>
+            <summary>IP address of the host</summary>
+          </column>
+          <column>
+            <name>asset_id</name>
+            <type>uuid</type>
+            <summary>UUID of the associated asset</summary>
+          </column>
+          <column>
+            <name>start</name>
+            <type>iso_time</type>
+            <summary>Host scan start time</summary>
+          </column>
+          <column>
+            <name>end</name>
+            <type>iso_time</type>
+            <summary>Host scan end time</summary>
+          </column>
+          <column>
+            <name>severity</name>
+            <type>severity</type>
+            <summary>Highest severity of matching audit results for the host</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter audit report hosts</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>lean</name>
+        <summary>Whether to return a streamlined response</summary>
+        <type>boolean</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include host details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>host</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>audit_report_hosts</e></o>
+        <o><e>audit_report_host_count</e></o>
+      </pattern>
+      <ele>
+        <name>host</name>
+        <summary>A host from the selected audit report</summary>
+        <pattern>
+          <e>ip</e>
+          <o><e>asset</e></o>
+          <o><e>asset_snapshot</e></o>
+          <o><e>start</e></o>
+          <o><e>end</e></o>
+          <o><e>port_count</e></o>
+          <o><e>compliance_count</e></o>
+          <o><e>host_compliance</e></o>
+          <o><e>app_count</e></o>
+          <o><e>hostname</e></o>
+          <any><e>detail</e></any>
+        </pattern>
+        <ele>
+          <name>ip</name>
+          <summary>IP address of the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>asset</name>
+          <summary>Asset associated with the host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_id</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>asset_snapshot</name>
+          <summary>Asset snapshot associated with the host</summary>
+          <pattern>
+            <attrib>
+              <name>asset_key</name>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>start</name>
+          <summary>Host scan start time</summary>
+          <pattern>iso_time</pattern>
+        </ele>
+        <ele>
+          <name>end</name>
+          <summary>Host scan end time</summary>
+          <pattern>iso_time</pattern>
+        </ele>
+        <ele>
+          <name>port_count</name>
+          <summary>Count of ports on the current page</summary>
+          <pattern>
+            <e>page</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of ports on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>compliance_count</name>
+          <summary>Counts of audit results for the host by compliance status</summary>
+          <pattern>
+            <e>page</e>
+            <e>yes</e>
+            <e>no</e>
+            <e>incomplete</e>
+            <e>undefined</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of audit results on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>yes</name>
+            <summary>Count of compliant audit results</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>no</name>
+            <summary>Count of non-compliant audit results</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>incomplete</name>
+            <summary>Count of incomplete audit results</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>undefined</name>
+            <summary>Count of audit results with undefined compliance</summary>
+            <pattern>
+              <e>page</e>
+            </pattern>
+            <ele>
+              <name>page</name>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>host_compliance</name>
+          <summary>Overall compliance status of the host</summary>
+          <pattern>
+            <alts>
+              <alt>yes</alt>
+              <alt>no</alt>
+              <alt>incomplete</alt>
+              <alt>undefined</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>app_count</name>
+          <summary>Count of applications for the host on the current page</summary>
+          <pattern>
+            <e>page</e>
+          </pattern>
+          <ele>
+            <name>page</name>
+            <summary>Number of applications on the current page</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>hostname</name>
+          <summary>Hostname of the host</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>detail</name>
+          <summary>A detail of the host</summary>
+          <pattern>
+            <e>name</e>
+            <e>value</e>
+            <o><e>source</e></o>
+            <o><e>extra</e></o>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the host detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>value</name>
+            <summary>Value of the host detail</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>source</name>
+            <summary>Source of the host detail</summary>
+            <pattern>
+              <o><e>type</e></o>
+              <e>name</e>
+              <o><e>description</e></o>
+            </pattern>
+            <ele>
+              <name>type</name>
+              <summary>Type of source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of source</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>description</name>
+              <summary>Description of source</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>extra</name>
+            <summary>Extra information for the detail</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, else empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern><any><e>keyword</e></any></pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>The filter text</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>audit_report_hosts</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First audit report host</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of audit report hosts</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>audit_report_host_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of audit report hosts after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of audit report hosts on current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get hosts of an audit report with details</summary>
+      <request>
+        <get_audit_report_hosts report_id="6587438c-4787-41e6-a0a7-765193dcd44f"
+                                details="1"
+                                filter="levels=yniu rows=10 min_qod=70 first=1 sort-reverse=severity">
+        </get_audit_report_hosts>
+      </request>
+      <response>
+        <get_audit_report_hosts_response status="200" status_text="OK">
+          <host>
+            <ip>127.0.0.1</ip>
+            <asset asset_id="9fd3aff1-4550-42cb-8339-1b6776f555d0"/>
+            <asset_snapshot asset_key="3ee92e06-cead-4a77-af12-4df8bb60871b"/>
+            <start>2026-05-29T08:40:24Z</start>
+            <end>2026-05-29T08:51:01Z</end>
+            <port_count>
+              <page>0</page>
+            </port_count>
+            <compliance_count>
+              <page>183</page>
+              <yes>
+                <page>5</page>
+              </yes>
+              <no>
+                <page>2</page>
+              </no>
+              <incomplete>
+                <page>145</page>
+              </incomplete>
+              <undefined>
+                <page>31</page>
+              </undefined>
+            </compliance_count>
+            <host_compliance>no</host_compliance>
+            <app_count>
+              <page>5</page>
+            </app_count>
+            <hostname>localhost</hostname>
+            <detail>
+              <name>App</name>
+              <value>cpe:/a:postgresql:postgresql</value>
+              <source>
+                <name>1.3.6.1.4.1.25623.1.0.128025</name>
+              </source>
+            </detail>
+          </host>
+          <filters id="">
+            <term>apply_overrides=0 levels=yniu rows=10 min_qod=70 first=1 sort-reverse=severity</term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>yniu</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>sort-reverse</column>
+                <relation>=</relation>
+                <value>severity</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <audit_report_hosts start="1" max="10"/>
+          <audit_report_host_count>1<filtered>1</filtered><page>0</page></audit_report_host_count>
+        </get_audit_report_hosts_response>
+      </response>
+    </example>
+  </command>
+  <command>
     <name>get_configs</name>
     <summary>Get one or many configs</summary>
     <description>
@@ -12881,13 +15283,13 @@ END:VCALENDAR
         <summary>Whether to include a list of targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-      @IF_ENABLE_CONTAINER_SCANNNING@
+      @IF_ENABLE_CONTAINER_SCANNING@
       <attrib>
         <name>oci_image_targets</name>
         <summary>Whether to include a list of OCI image targets using the credentials</summary>
         <type>boolean</type>
       </attrib>
-      @ENDIF_ENABLE_CONTAINER_SCANNNING@
+      @ENDIF_ENABLE_CONTAINER_SCANNING@
       <attrib>
         <name>format</name>
         <type>
@@ -12948,9 +15350,9 @@ END:VCALENDAR
           <o><e>public_key_info</e></o>
           <o><e>scanners</e></o>
           <o><e>targets</e></o>
-          @IF_ENABLE_CONTAINER_SCANNNING@
+          @IF_ENABLE_CONTAINER_SCANNING@
           <o><e>oci_image_targets</e></o>
-          @ENDIF_ENABLE_CONTAINER_SCANNNING@
+          @ENDIF_ENABLE_CONTAINER_SCANNING@
           <o>
             <or>
               <e>public_key</e>
@@ -12961,6 +15363,14 @@ END:VCALENDAR
           <o><e>kdc</e></o>
           <o><e>kdcs</e></o>
           <o><e>realm</e></o>
+@IF_ENABLE_AD_INTEGRATION@
+          <o><e>host</e></o>
+          <o><e>port</e></o>
+          <o><e>bind_dn</e></o>
+          <o><e>base_dn</e></o>
+          <o><e>tls_mode</e></o>
+          <o><e>ca_certificate</e></o>
+@ENDIF_ENABLE_AD_INTEGRATION@
         </pattern>
         <ele>
           <name>owner</name>
@@ -13094,6 +15504,9 @@ END:VCALENDAR
             <p>snmp: SNMP</p>
             <p>up: User name + password</p>
             <p>usk: User name + SSH key</p>
+@IF_ENABLE_AD_INTEGRATION@
+            <p>ad: Active Directory</p>
+@ENDIF_ENABLE_AD_INTEGRATION@
           </description>
           <pattern>
             <alts>
@@ -13105,6 +15518,9 @@ END:VCALENDAR
               <alt>snmp</alt>
               <alt>up</alt>
               <alt>usk</alt>
+@IF_ENABLE_AD_INTEGRATION@
+              <alt>ad</alt>
+@ENDIF_ENABLE_AD_INTEGRATION@
             </alts>
           </pattern>
         </ele>
@@ -13260,7 +15676,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>oci_image_targets</name>
           <summary>All OCI image targets using this credential</summary>
@@ -13290,7 +15706,7 @@ END:VCALENDAR
             </ele>
           </ele>
         </ele>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>public_key</name>
           <pattern>text</pattern>
@@ -13341,6 +15757,38 @@ END:VCALENDAR
           <pattern>text</pattern>
           <summary>The Kerberos realm</summary>
         </ele>
+@IF_ENABLE_AD_INTEGRATION@
+        <ele>
+          <name>host</name>
+          <summary>Active Directory server hostname or address</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>port</name>
+          <summary>Connection port, from 1 through 65535</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>bind_dn</name>
+          <summary>Distinguished name used for authentication</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>base_dn</name>
+          <summary>Base distinguished name for directory searches</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>tls_mode</name>
+          <summary>TLS connection mode</summary>
+          <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+        </ele>
+        <ele>
+          <name>ca_certificate</name>
+          <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+          <pattern>text</pattern>
+        </ele>
+@ENDIF_ENABLE_AD_INTEGRATION@
       </ele>
       <ele>
         <name>filters</name>
@@ -13563,7 +16011,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-@ENDIF_ENABLE_CREDENTIAL_STORES@
+@IF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>get_credential_stores</name>
     <summary>Get one or many credential stores</summary>
@@ -15495,6 +17943,24 @@ END:VCALENDAR
             <summary>Number of CVEs referenced by the CERT advisory</summary>
           </column>
         </filter_keywords>
+        <filter_keywords>
+          <condition>type is "web_application_vt"</condition>
+          <column>
+            <name>description</name>
+            <type>text</type>
+            <summary>Description text of the Web Application VT</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>Type of the Web Application VT</summary>
+          </column>
+          <column>
+            <name>solution</name>
+            <type>text</type>
+            <summary>Solution text of the Web Application VT</summary>
+          </column>
+        </filter_keywords>
       </attrib>
       <attrib>
         <name>filt_id</name>
@@ -15547,6 +18013,7 @@ END:VCALENDAR
             <e>cve</e>
             <e>dfn_cert_adv</e>
             <e>nvt</e>
+            <e>web_application_vt</e>
           </or>
         </pattern>
         <ele>
@@ -16152,6 +18619,78 @@ END:VCALENDAR
             <summary>Source representation of the information. Only when details were requested</summary>
             <pattern>
               text
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>web_application_vt</name>
+          <pattern>
+            <e>type</e>
+            <e>description</e>
+            <e>solution</e>
+            <e>severity</e>
+            <e>type_metadata</e>
+            <e>refs</e>
+          </pattern>
+          <summary>A Web Application VT info element</summary>
+          <ele>
+            <name>type</name>
+            <summary>Type of the vulnerability test</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the vulnerability test</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>solution</name>
+            <summary>A suggested solution for mitigating the vulnerability</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>severity</name>
+            <summary>Highest CVSS severity score of CVEs referenced by VT or an approximation based type-specific ratings</summary>
+            <pattern>
+              <t>severity</t>
+            </pattern>
+          </ele>
+          <ele>
+            <name>type_metadata</name>
+            <summary>Type-specific metadata as a JSON object</summary>
+            <pattern>
+              text
+            </pattern>
+          </ele>
+          <ele>
+            <name>refs</name>
+            <summary>References of the Web Application VT</summary>
+            <pattern>
+              <any><e>ref</e></any>
+            </pattern>
+            <ele>
+              <name>ref</name>
+              <summary>A reference of the Web Application VT</summary>
+            </ele>
+            <pattern>
+              <attrib>
+                <name>type</name>
+                <summary>The type of the reference</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
+              <attrib>
+                <name>ref_id</name>
+                <summary>The identifier of the reference</summary>
+                <type>text</type>
+                <required>1</required>
+              </attrib>
             </pattern>
           </ele>
         </ele>
@@ -17938,7 +20477,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>get_oci_image_targets</name>
     <summary>Get one or many OCI image targets</summary>
@@ -18456,7 +20995,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>get_overrides</name>
     <summary>Get one or many overrides</summary>
@@ -20072,6 +22611,789 @@ END:VCALENDAR
             <default>5</default>
           </preference>
         </get_preferences>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_scan_report</name>
+    <summary>Get a structured vulnerability report</summary>
+    <description>
+      <p>
+        The client uses the get_scan_report command to retrieve a single structured
+        vulnerability report.
+      </p>
+      <p>
+        The response includes report metadata, task and target information, scan
+        status, scan times, resource counts, result counts, severity information
+        and task progress.
+      </p>
+      <p>
+        Result filters affect the filtered result counts and filtered severity
+        returned by the command. Full result counts remain unchanged.
+      </p>
+      <p>
+        Audit and compliance reports are not supported by this command and must
+        be retrieved using a separate command.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>scan_report_id</name>
+        <summary>ID of the report to retrieve</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to apply to the report result summary</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first result, starting at 1
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Maximum number of results</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Result column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Result column to sort by in descending order</summary>
+          </option>
+          <option>
+            <name>levels</name>
+            <type>text</type>
+            <summary>
+              Severity levels included in the filtered result summary
+            </summary>
+          </option>
+          <option>
+            <name>min_qod</name>
+            <type>integer</type>
+            <summary>Minimum quality of detection</summary>
+          </option>
+          <option>
+            <name>apply_overrides</name>
+            <type>boolean</type>
+            <summary>Whether result overrides are applied</summary>
+          </option>
+          <option>
+            <name>result_hosts_only</name>
+            <type>boolean</type>
+            <summary>
+              Whether only hosts containing matching results are considered
+            </summary>
+          </option>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of a saved filter to apply</summary>
+        <type>uuid</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+
+        <o><e>report</e></o>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>scan_report</e></o>
+        <o><e>scan_report_count</e></o>
+      </pattern>
+      <ele>
+        <name>report</name>
+        <summary>Structured vulnerability report</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the report</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>scan_run_status</e>
+          <e>hosts</e>
+          <e>closed_cves</e>
+          <e>cves</e>
+          <e>vulns</e>
+          <e>os</e>
+          <e>apps</e>
+          <e>ssl_certs</e>
+          <e>ports</e>
+          <e>errors</e>
+          <e>task</e>
+          <e>timestamp</e>
+          <e>scan_start</e>
+          <e>timezone</e>
+          <e>timezone_abbrev</e>
+          <e>result_count</e>
+          <e>severity</e>
+          <e>scan_end</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the report owner</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Creation time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Last modification time of the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>writable</name>
+          <summary>Whether the report is writable by the current user</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>in_use</name>
+          <summary>Whether the report is currently in use</summary>
+          <pattern><t>boolean</t></pattern>
+        </ele>
+        <ele>
+          <name>scan_run_status</name>
+          <summary>Run status of the scan associated with the report</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>hosts</name>
+          <summary>Host count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of hosts in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>closed_cves</name>
+          <summary>Closed CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of closed CVEs in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>cves</name>
+          <summary>CVE count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of CVEs in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>vulns</name>
+          <summary>Vulnerability count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of vulnerabilities in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>os</name>
+          <summary>Operating system count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of operating systems in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>apps</name>
+          <summary>Application count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of applications in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ssl_certs</name>
+          <summary>TLS certificate count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of TLS certificates in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>ports</name>
+          <summary>Port count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of ports in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>errors</name>
+          <summary>Scan error count information</summary>
+          <pattern>
+            <e>count</e>
+          </pattern>
+          <ele>
+            <name>count</name>
+            <summary>Number of scan errors in the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>task</name>
+          <summary>Task associated with the report</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>UUID of the task</summary>
+              <type>uuid</type>
+            </attrib>
+            <e>name</e>
+            <e>comment</e>
+            <o><e>target</e></o>
+            <e>progress</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>comment</name>
+            <summary>Comment associated with the task</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>target</name>
+            <summary>Target associated with the task</summary>
+            <pattern>
+              <attrib>
+                <name>id</name>
+                <summary>UUID of the target</summary>
+                <type>uuid</type>
+              </attrib>
+
+              <e>trash</e>
+              <e>name</e>
+              <e>comment</e>
+              <e>target_type</e>
+            </pattern>
+            <ele>
+              <name>trash</name>
+              <summary>Whether the target is in the trash</summary>
+              <pattern><t>boolean</t></pattern>
+            </ele>
+            <ele>
+              <name>name</name>
+              <summary>Name of the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>comment</name>
+              <summary>Comment associated with the target</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>target_type</name>
+              <summary>Type of the target associated with the task</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>progress</name>
+            <summary>Progress of the task associated with the report</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>timestamp</name>
+          <summary>Timestamp identifying the report</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>scan_start</name>
+          <summary>Start time of the scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+        <ele>
+          <name>timezone</name>
+          <summary>Timezone used for report timestamps</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>timezone_abbrev</name>
+          <summary>Abbreviation of the report timezone</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>result_count</name>
+          <summary>Full and filtered result counts by severity</summary>
+          <pattern>
+            text
+            <e>full</e>
+            <e>filtered</e>
+            <e>critical</e>
+            <e>hole</e>
+            <e>high</e>
+            <e>info</e>
+            <e>low</e>
+            <e>log</e>
+            <e>warning</e>
+            <e>medium</e>
+            <e>false_positive</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Total number of unfiltered results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Total number of filtered results</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>critical</name>
+            <summary>Critical result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>hole</name>
+            <summary>Deprecated alias for high result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>high</name>
+            <summary>High result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>info</name>
+            <summary>Deprecated alias for low result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>low</name>
+            <summary>Low result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>log</name>
+            <summary>Log result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>warning</name>
+            <summary>Deprecated alias for medium result counts</summary>
+            <pattern>
+              <attrib>
+                <name>deprecated</name>
+                <type>boolean</type>
+              </attrib>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>medium</name>
+            <summary>Medium result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+          <ele>
+            <name>false_positive</name>
+            <summary>False-positive result counts</summary>
+            <pattern>
+              <e>full</e>
+              <e>filtered</e>
+            </pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>severity</name>
+          <summary>Full and filtered report severity</summary>
+          <pattern>
+            <e>full</e>
+            <e>filtered</e>
+          </pattern>
+          <ele>
+            <name>full</name>
+            <summary>Severity without result filtering</summary>
+            <pattern>real</pattern>
+          </ele>
+          <ele>
+            <name>filtered</name>
+            <summary>Severity after applying the result filter</summary>
+            <pattern>real</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>scan_end</name>
+          <summary>End time of the scan</summary>
+          <pattern>ctime</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of the filter, or empty if no saved filter was used</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Resolved filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern>
+            <any><e>keyword</e></any>
+          </pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Filter column</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Filter relation</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>scan_report</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First returned report</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of reports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>scan_report_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of matching reports</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of additional reports on the current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get a structured vulnerability report</summary>
+      <request>
+        <get_scan_report
+          scan_report_id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0"
+          filter="apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1">
+        </get_scan_report>
+      </request>
+      <response>
+        <get_scan_report_response status="200" status_text="OK">
+          <report id="c00e2b2b-6b3a-4be9-a6df-337f76262fe0">
+            <owner>
+              <name>moezgen</name>
+            </owner>
+            <name>2026-06-15T11:24:38Z</name>
+            <comment></comment>
+            <creation_time>2026-06-15T11:24:38Z</creation_time>
+            <modification_time>2026-06-15T12:30:23Z</modification_time>
+            <writable>0</writable>
+            <in_use>0</in_use>
+            <scan_run_status>Done</scan_run_status>
+            <hosts>
+              <count>1</count>
+            </hosts>
+            <closed_cves>
+              <count>0</count>
+            </closed_cves>
+            <cves>
+              <count>3</count>
+            </cves>
+            <vulns>
+              <count>32</count>
+            </vulns>
+            <os>
+              <count>1</count>
+            </os>
+            <apps>
+              <count>4</count>
+            </apps>
+            <ssl_certs>
+              <count>1</count>
+            </ssl_certs>
+            <ports>
+              <count>6</count>
+            </ports>
+            <errors>
+              <count>0</count>
+            </errors>
+            <task id="7cda9ee9-63d5-4802-9a31-5dacc8f19b5b">
+              <name>test-full-fast</name>
+              <comment></comment>
+              <target id="4809d998-2d2d-4a65-9148-f99f04799b09">
+                <trash>0</trash>
+                <name>test-target</name>
+                <comment></comment>
+                <target_type>target</target_type>
+              </target>
+              <progress>100</progress>
+            </task>
+            <timestamp>2026-06-15T11:24:38Z</timestamp>
+            <scan_start>2026-06-15T11:24:41Z</scan_start>
+            <timezone>UTC</timezone>
+            <timezone_abbrev>UTC</timezone_abbrev>
+            <result_count>56
+              <full>56</full>
+              <filtered>3</filtered>
+              <critical>
+                <full>0</full>
+                <filtered>0</filtered>
+              </critical>
+              <hole deprecated="1">
+                <full>0</full>
+                <filtered>0</filtered>
+              </hole>
+              <high>
+                <full>0</full>
+                <filtered>0</filtered>
+              </high>
+              <info deprecated="1">
+                <full>2</full>
+                <filtered>2</filtered>
+              </info>
+              <low>
+                <full>2</full>
+                <filtered>2</filtered>
+              </low>
+              <log>
+                <full>53</full>
+                <filtered>0</filtered>
+              </log>
+              <warning deprecated="1">
+                <full>1</full>
+                <filtered>1</filtered>
+              </warning>
+              <medium>
+                <full>1</full>
+                <filtered>1</filtered>
+              </medium>
+              <false_positive>
+                <full>0</full>
+                <filtered>0</filtered>
+              </false_positive>
+            </result_count>
+            <severity>
+              <full>5.0</full>
+              <filtered>5.0</filtered>
+            </severity>
+            <scan_end>2026-06-15T12:30:23Z</scan_end>
+          </report>
+          <filters id="">
+            <term>
+              apply_overrides=0 levels=chml min_qod=70 result_hosts_only=1
+            </term>
+            <keywords>
+              <keyword>
+                <column>apply_overrides</column>
+                <relation>=</relation>
+                <value>0</value>
+              </keyword>
+              <keyword>
+                <column>levels</column>
+                <relation>=</relation>
+                <value>chml</value>
+              </keyword>
+              <keyword>
+                <column>min_qod</column>
+                <relation>=</relation>
+                <value>70</value>
+              </keyword>
+              <keyword>
+                <column>result_hosts_only</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>severity<order>descending</order></field>
+          </sort>
+          <scan_report start="1" max="1"/>
+          <scan_report_count>
+            1
+            <filtered>1</filtered>
+            <page>0</page>
+          </scan_report_count>
+        </get_scan_report_response>
       </response>
     </example>
   </command>
@@ -22103,6 +25425,538 @@ END:VCALENDAR
           <report_errors start="1" max="100"/>
           <report_error_count>1<filtered>1</filtered><page>0</page></report_error_count>
         </get_report_errors_response>
+      </response>
+    </example>
+  </command>
+  <command>
+    <name>get_report_exports</name>
+    <summary>Get report exports</summary>
+    <description>
+      <p>
+        The client uses the get_report_exports command to retrieve report
+        export information.
+      </p>
+      <p>
+        The command can return a list of report exports or a single report
+        export when the "report_export_id" attribute is specified.
+      </p>
+      <p>
+        Report export information includes the export type, processing status,
+        progress, associated report and report format, generated file metadata,
+        and error information.
+      </p>
+      <p>
+        The command can be used by clients to poll the state of asynchronous
+        report exports until processing has completed.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>report_export_id</name>
+        <summary>ID of a report export to get</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>filter</name>
+        <summary>Filter term to use for report export retrieval</summary>
+        <type>text</type>
+        <filter_keywords>
+          <option>
+            <name>first</name>
+            <type>integer</type>
+            <summary>
+              Index of the first report export returned, starting at 1
+            </summary>
+          </option>
+          <option>
+            <name>rows</name>
+            <type>integer</type>
+            <summary>Maximum number of report exports to return</summary>
+          </option>
+          <option>
+            <name>sort</name>
+            <type>text</type>
+            <summary>Column to sort by in ascending order</summary>
+          </option>
+          <option>
+            <name>sort-reverse</name>
+            <type>text</type>
+            <summary>Column to sort by in descending order</summary>
+          </option>
+          <column>
+            <name>uuid</name>
+            <type>uuid</type>
+            <summary>Unique ID of the report export</summary>
+          </column>
+          <column>
+            <name>name</name>
+            <type>text</type>
+            <summary>Name of the report export</summary>
+          </column>
+          <column>
+            <name>type</name>
+            <type>text</type>
+            <summary>Type of the report export</summary>
+          </column>
+          <column>
+            <name>status</name>
+            <type>text</type>
+            <summary>Processing status of the report export</summary>
+          </column>
+          <column>
+            <name>progress</name>
+            <type>text</type>
+            <summary>Processing progress of the report export</summary>
+          </column>
+        </filter_keywords>
+      </attrib>
+      <attrib>
+        <name>filt_id</name>
+        <summary>ID of filter to use to filter report exports</summary>
+        <type>uuid</type>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Whether to include report export details</summary>
+        <type>boolean</type>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <any><e>report_export</e></any>
+        <o><e>filters</e></o>
+        <o><e>sort</e></o>
+        <o><e>report_exports</e></o>
+        <o><e>report_export_count</e></o>
+      </pattern>
+      <ele>
+        <name>report_export</name>
+        <summary>A report export</summary>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>ID of the report export</summary>
+            <type>uuid</type>
+            <required>1</required>
+          </attrib>
+          <e>owner</e>
+          <e>name</e>
+          <e>comment</e>
+          <e>creation_time</e>
+          <e>modification_time</e>
+          <e>writable</e>
+          <e>in_use</e>
+          <e>permissions</e>
+          <e>type</e>
+          <e>status</e>
+          <e>progress</e>
+          <e>report</e>
+          <o><e>delta_report</e></o>
+          <e>report_format</e>
+          <o><e>report_config</e></o>
+          <e>file_size</e>
+          <e>content_type</e>
+          <e>extension</e>
+          <e>error_message</e>
+          <e>attempt_count</e>
+          <e>start_time</e>
+          <e>end_time</e>
+        </pattern>
+        <ele>
+          <name>owner</name>
+          <summary>Owner of the report export</summary>
+          <pattern>
+            <e>name</e>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Name of the owner</summary>
+            <pattern>text</pattern>
+          </ele>
+        </ele>
+        <ele>
+          <name>name</name>
+          <summary>Name of the report export</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>comment</name>
+          <summary>Comment of the report export</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>creation_time</name>
+          <summary>Time the report export was created</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>modification_time</name>
+          <summary>Time the report export was last modified</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>type</name>
+          <summary>Type of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>scan</alt>
+              <alt>audit</alt>
+              <alt>delta_scan</alt>
+              <alt>delta_audit</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>status</name>
+          <summary>Processing status of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>pending</alt>
+              <alt>running</alt>
+              <alt>done</alt>
+              <alt>error</alt>
+              <alt>cancel_requested</alt>
+              <alt>canceled</alt>
+              <alt>expired</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>progress</name>
+          <summary>Processing progress of the report export</summary>
+          <pattern>
+            <alts>
+              <alt>queued</alt>
+              <alt>preparing</alt>
+              <alt>generating</alt>
+              <alt>completed</alt>
+            </alts>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report</name>
+          <summary>Report being exported</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>delta_report</name>
+          <summary>Delta report used by the report export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the delta report</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_format</name>
+          <summary>Report format used to generate the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report format</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>report_config</name>
+          <summary>Report configuration used by the export</summary>
+          <pattern>
+            <attrib>
+              <name>id</name>
+              <summary>ID of the report configuration</summary>
+              <type>uuid</type>
+              <required>1</required>
+            </attrib>
+          </pattern>
+        </ele>
+        <ele>
+          <name>file_size</name>
+          <summary>Size of the generated report export file in bytes</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>content_type</name>
+          <summary>Content type of the generated report export file</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>extension</name>
+          <summary>File extension of the generated report export</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>error_message</name>
+          <summary>Error message if report export processing failed</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>attempt_count</name>
+          <summary>Number of processing attempts for the report export</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>start_time</name>
+          <summary>Time processing of the report export started</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>end_time</name>
+          <summary>Time processing of the report export finished</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+      <ele>
+        <name>filters</name>
+        <pattern>
+          <attrib>
+            <name>id</name>
+            <summary>UUID of filter if any, otherwise empty or 0</summary>
+            <type>uuid</type>
+          </attrib>
+          <e>term</e>
+          <e>keywords</e>
+        </pattern>
+        <ele>
+          <name>term</name>
+          <summary>Filter term</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>keywords</name>
+          <summary>Filter broken down into keywords</summary>
+          <pattern>
+            <any><e>keyword</e></any>
+          </pattern>
+          <ele>
+            <name>keyword</name>
+            <pattern>
+              <e>column</e>
+              <e>relation</e>
+              <e>value</e>
+            </pattern>
+            <ele>
+              <name>column</name>
+              <summary>Column prefix</summary>
+              <pattern>text</pattern>
+            </ele>
+            <ele>
+              <name>relation</name>
+              <summary>Relation operator</summary>
+              <pattern>
+                <alts>
+                  <alt>=</alt>
+                  <alt>:</alt>
+                  <alt>~</alt>
+                  <alt>&gt;</alt>
+                  <alt>&lt;</alt>
+                </alts>
+              </pattern>
+            </ele>
+            <ele>
+              <name>value</name>
+              <summary>Filter value</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>sort</name>
+        <pattern>
+          text
+          <e>field</e>
+        </pattern>
+        <ele>
+          <name>field</name>
+          <pattern>
+            text
+            <e>order</e>
+          </pattern>
+          <ele>
+            <name>order</name>
+            <pattern>
+              <alts>
+                <alt>ascending</alt>
+                <alt>descending</alt>
+              </alts>
+            </pattern>
+          </ele>
+        </ele>
+      </ele>
+      <ele>
+        <name>report_exports</name>
+        <pattern>
+          <attrib>
+            <name>start</name>
+            <summary>First report export</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+          <attrib>
+            <name>max</name>
+            <summary>Maximum number of report exports</summary>
+            <type>integer</type>
+            <required>1</required>
+          </attrib>
+        </pattern>
+      </ele>
+      <ele>
+        <name>report_export_count</name>
+        <pattern>
+          text
+          <e>filtered</e>
+          <e>page</e>
+        </pattern>
+        <ele>
+          <name>filtered</name>
+          <summary>Number of report exports after filtering</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+        <ele>
+          <name>page</name>
+          <summary>Number of report exports on the current page</summary>
+          <pattern><t>integer</t></pattern>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Get report exports</summary>
+      <request>
+        <get_report_exports/>
+      </request>
+      <response>
+        <get_report_exports_response status="200" status_text="OK">
+          <report_export id="08a382cd-98e8-4983-9650-e16099bb39e6">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Report Export</name>
+            <comment/>
+            <creation_time>2026-09-01T08:40:50Z</creation_time>
+            <modification_time>2026-09-01T08:40:51Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <type>scan</type>
+            <status>done</status>
+            <progress>completed</progress>
+            <report id="c2cba4ff-2145-47f1-abe1-33b0c3859d65"/>
+            <report_format id="a994b278-1f62-11e1-96ac-406186ea4fc5"/>
+            <file_size>66341</file_size>
+            <content_type>text/xml</content_type>
+            <extension>xml</extension>
+            <error_message/>
+            <attempt_count>1</attempt_count>
+            <start_time>2026-09-01T08:40:50Z</start_time>
+            <end_time>2026-09-01T08:40:50Z</end_time>
+          </report_export>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+            <keywords>
+              <keyword>
+                <column>first</column>
+                <relation>=</relation>
+                <value>1</value>
+              </keyword>
+              <keyword>
+                <column>rows</column>
+                <relation>=</relation>
+                <value>10</value>
+              </keyword>
+              <keyword>
+                <column>sort</column>
+                <relation>=</relation>
+                <value>name</value>
+              </keyword>
+            </keywords>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <report_exports start="1" max="1000"/>
+          <report_export_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </report_export_count>
+        </get_report_exports_response>
+      </response>
+    </example>
+    <example>
+      <summary>Get a single report export</summary>
+      <request>
+        <get_report_exports
+          report_export_id="08a382cd-98e8-4983-9650-e16099bb39e6"/>
+      </request>
+      <response>
+        <get_report_exports_response status="200" status_text="OK">
+          <report_export id="08a382cd-98e8-4983-9650-e16099bb39e6">
+            <owner>
+              <name>admin</name>
+            </owner>
+            <name>Report Export</name>
+            <comment/>
+            <creation_time>2026-09-01T08:40:50Z</creation_time>
+            <modification_time>2026-09-01T08:40:51Z</modification_time>
+            <writable>1</writable>
+            <in_use>0</in_use>
+            <permissions>
+              <permission>
+                <name>Everything</name>
+              </permission>
+            </permissions>
+            <type>scan</type>
+            <status>done</status>
+            <progress>completed</progress>
+            <report id="c2cba4ff-2145-47f1-abe1-33b0c3859d65"/>
+            <report_format id="a994b278-1f62-11e1-96ac-406186ea4fc5"/>
+            <file_size>66341</file_size>
+            <content_type>text/xml</content_type>
+            <extension>xml</extension>
+            <error_message/>
+            <attempt_count>1</attempt_count>
+            <start_time>2026-09-01T08:40:50Z</start_time>
+            <end_time>2026-09-01T08:40:50Z</end_time>
+          </report_export>
+          <filters id="">
+            <term>first=1 rows=10 sort=name</term>
+          </filters>
+          <sort>
+            <field>name<order>ascending</order></field>
+          </sort>
+          <report_exports start="1" max="1000"/>
+          <report_export_count>
+            1
+            <filtered>1</filtered>
+            <page>1</page>
+          </report_export_count>
+        </get_report_exports_response>
       </response>
     </example>
   </command>
@@ -30137,9 +33991,9 @@ END:VCALENDAR
               <e>usage_type</e>
               <e>config</e>
               <e>target</e>
-              @IF_ENABLE_CONTAINER_SCANNNING@
+              @IF_ENABLE_CONTAINER_SCANNING@
               <o><e>oci_image_target</e></o>
-              @ENDIF_ENABLE_CONTAINER_SCANNNING@
+              @ENDIF_ENABLE_CONTAINER_SCANNING@
               @IF_ENABLE_AGENTS@
               <o><e>agent_group</e></o>
               @ENDIF_ENABLE_AGENTS@
@@ -30360,7 +34214,7 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <ele>
           <name>oci_image_target</name>
           <summary>The OCI images scanned by the task</summary>
@@ -30391,7 +34245,7 @@ END:VCALENDAR
             <pattern><t>boolean</t></pattern>
           </ele>
         </ele>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         @IF_ENABLE_AGENTS@
         <ele>
           <name>agent_group</name>
@@ -34368,8 +38222,21 @@ END:VCALENDAR
             <pattern><any><e>item</e></any></pattern>
             <ele>
               <name>item</name>
-              <summary>Cron expression</summary>
-              <pattern><type>text</type></pattern>
+              <summary>Scheduler cron entry</summary>
+              <pattern>
+                <e>cron</e>
+                <e>max_delay_seconds</e>
+              </pattern>
+              <ele>
+                <name>cron</name>
+                <summary>Cron expression</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
+              <ele>
+                <name>max_delay_seconds</name>
+                <summary>Maximum scheduling delay in seconds</summary>
+                <pattern><type>integer</type></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>
@@ -34437,8 +38304,14 @@ END:VCALENDAR
                 <bulk_throttle_time_in_ms>100</bulk_throttle_time_in_ms>
                 <indexer_dir_depth>10</indexer_dir_depth>
                 <scheduler_cron_time is_list="1">
-                  <item>0 23 * * *</item>
-                  <item>0 22 * * *</item>
+                  <item>
+                    <cron>0 23 * * *</cron>
+                    <max_delay_seconds>30</max_delay_seconds>
+                  </item>
+                  <item>
+                    <cron>0 22 * * *</cron>
+                    <max_delay_seconds>60</max_delay_seconds>
+                  </item>
                 </scheduler_cron_time>
               </agent_script_executor>
               <heartbeat>
@@ -34475,6 +38348,7 @@ END:VCALENDAR
       <o><e>name</e></o>
       <o><e>comment</e></o>
       <o><e>scheduler_cron_time</e></o>
+      <o><e>max_delay_seconds</e></o>
       <o><e>agents</e></o>
     </pattern>
     <ele>
@@ -34493,6 +38367,12 @@ END:VCALENDAR
       <name>scheduler_cron_time</name>
       <summary>Scheduler cron time for the agent group</summary>
       <pattern><type>text</type></pattern>
+      <required>0</required>
+    </ele>
+    <ele>
+      <name>max_delay_seconds</name>
+      <summary>Maximum scheduling delay in seconds</summary>
+      <pattern><type>integer</type></pattern>
       <required>0</required>
     </ele>
     <ele>
@@ -34533,6 +38413,7 @@ END:VCALENDAR
           <name>Updated Group Name</name>
           <comment>Modified via gvm-cli</comment>
           <scheduler_cron_time>0 */1 * * *</scheduler_cron_time>
+          <max_delay_seconds>30</max_delay_seconds>
           <agents>
             <agent id="48c1b767-b699-45a4-a8bb-3325f2865913"/>
           </agents>
@@ -35291,6 +39172,15 @@ END:VCALENDAR
       <o><e>auth_algorithm</e></o>
       <o><e>privacy</e></o>
       <o><e>realm</e></o>
+      @IF_ENABLE_AD_INTEGRATION@
+      <o><e>host</e></o>
+      <o><e>port</e></o>
+      <o><e>bind_dn</e></o>
+      <o><e>bind_password</e></o>
+      <o><e>base_dn</e></o>
+      <o><e>tls_mode</e></o>
+      <o><e>ca_certificate</e></o>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </pattern>
     <ele>
       <name>name</name>
@@ -35429,6 +39319,43 @@ END:VCALENDAR
       <pattern>text</pattern>
       <summary>The Kerberos realm</summary>
     </ele>
+    @IF_ENABLE_AD_INTEGRATION@
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    @ENDIF_ENABLE_AD_INTEGRATION@
     <response>
       <pattern>
         <attrib>
@@ -35456,6 +39383,130 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>modify_credential_store</name>
+    <summary>Modify an existing credential store</summary>
+    <description>
+      <p>
+        The client uses the modify_credential_store command to update the
+        connection configuration of an existing credential store.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_CREDENTIAL_STORES.  Elements omitted from the request leave
+        their existing values unchanged.
+      </p>
+      <p>
+        A successful response has status 200.  Missing or invalid request
+        data, invalid preference values, and missing permission result in
+        status 400; a credential store that cannot be found results in status
+        404; and an unexpected error results in status 500.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of the credential store to modify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <o><e>active</e></o>
+      <o><e>host</e></o>
+      <o><e>path</e></o>
+      <o><e>port</e></o>
+      <o><e>comment</e></o>
+      <o><e>preferences</e></o>
+    </pattern>
+    <ele>
+      <name>active</name>
+      <summary>Whether the credential store is active</summary>
+      <pattern><t>boolean</t></pattern>
+    </ele>
+    <ele>
+      <name>host</name>
+      <summary>Host address or hostname of the external service</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>path</name>
+      <summary>Path of the external service</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>
+        Port of the external service.  Use an integer from 1 through 65535,
+        or an empty element to remove the configured port.
+      </summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>comment</name>
+      <summary>Comment on the credential store</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>preferences</name>
+      <summary>Preference values to update</summary>
+      <description>
+        Each preference name must exist for the credential store.  Omitting a
+        preference value resets that preference to its default value.
+      </description>
+      <pattern>
+        <any><e>preference</e></any>
+      </pattern>
+      <ele>
+        <name>preference</name>
+        <pattern>
+          <e>name</e>
+          <o><e>value</e></o>
+        </pattern>
+        <ele>
+          <name>name</name>
+          <summary>Name of an existing credential store preference</summary>
+          <pattern>text</pattern>
+        </ele>
+        <ele>
+          <name>value</name>
+          <summary>New value for the preference</summary>
+          <pattern>text</pattern>
+        </ele>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Modify a credential store comment and preference</summary>
+      <request>
+        <modify_credential_store credential_store_id="a84a4c36-6687-4cd5-baf2-87f79c5897b4">
+          <comment>CyberArk credentials for production systems.</comment>
+          <preferences>
+            <preference>
+              <name>app_id</name>
+              <value>gvmd</value>
+            </preference>
+          </preferences>
+        </modify_credential_store>
+      </request>
+      <response>
+        <modify_credential_store_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>modify_filter</name>
     <summary>Modify an existing filter</summary>
@@ -35872,7 +39923,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @IF_ENABLE_CONTAINER_SCANNNING@
+  @IF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>modify_oci_image_target</name>
     <summary>Modify an existing OCI image target</summary>
@@ -35955,7 +40006,7 @@ END:VCALENDAR
       </response>
     </example>
   </command>
-  @ENDIF_ENABLE_CONTAINER_SCANNNING@
+  @ENDIF_ENABLE_CONTAINER_SCANNING@
   <command>
     <name>modify_override</name>
     <summary>Modify an existing override</summary>
@@ -37123,9 +41174,9 @@ END:VCALENDAR
         @IF_ENABLE_AGENTS@
         <e>agent_group</e>
         @ENDIF_ENABLE_AGENTS@
-        @IF_ENABLE_CONTAINER_SCANNNING@
+        @IF_ENABLE_CONTAINER_SCANNING@
         <e>oci_image_target</e>
-        @ENDIF_ENABLE_CONTAINER_SCANNNING@
+        @ENDIF_ENABLE_CONTAINER_SCANNING@
         @IF_ENABLE_WEB_APPLICATION_SCANNING@
         <e>web_application_target</e>
         @ENDIF_ENABLE_WEB_APPLICATION_SCANNING@
@@ -37248,7 +41299,7 @@ END:VCALENDAR
       </pattern>
     </ele>
     @ENDIF_ENABLE_AGENTS@
-    @IF_ENABLE_CONTAINER_SCANNNING@
+    @IF_ENABLE_CONTAINER_SCANNING@
     <ele>
       <name>oci_image_target</name>
       <summary>The OCI images scanned by the task</summary>
@@ -37260,7 +41311,7 @@ END:VCALENDAR
         </attrib>
       </pattern>
     </ele>
-    @ENDIF_ENABLE_CONTAINER_SCANNNING@
+    @ENDIF_ENABLE_CONTAINER_SCANNING@
     @IF_ENABLE_WEB_APPLICATION_SCANNING@
     <ele>
       <name>web_application_target</name>
@@ -38189,6 +42240,181 @@ END:VCALENDAR
       </response>
     </example>
   </command>
+  @IF_ENABLE_AD_INTEGRATION@
+  <command>
+    <name>verify_active_directory_credential</name>
+    <summary>Verify an Active Directory credential</summary>
+    <description>
+      <p>
+        The client uses the verify_active_directory_credential command to test
+        an Active Directory connection and bind credentials.
+      </p>
+      <p>
+        The request must contain either only the credential_id attribute to
+        verify a saved Active Directory credential, or the inline connection
+        fields.  The two forms cannot be combined.  In the inline form, host,
+        bind_dn, bind_password, base_dn, and tls_mode are required; port and
+        ca_certificate are optional.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_AD_INTEGRATION.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of a saved Active Directory credential to verify</summary>
+        <type>uuid</type>
+        <required>0</required>
+      </attrib>
+      <o>
+        <g>
+          <e>host</e>
+          <o><e>port</e></o>
+          <e>bind_dn</e>
+          <e>bind_password</e>
+          <e>base_dn</e>
+          <e>tls_mode</e>
+          <o><e>ca_certificate</e></o>
+        </g>
+      </o>
+    </pattern>
+    <ele>
+      <name>host</name>
+      <summary>Active Directory server hostname or address</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>port</name>
+      <summary>Connection port, from 1 through 65535</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_dn</name>
+      <summary>Distinguished name used for authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>bind_password</name>
+      <summary>Password used for bind authentication</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>base_dn</name>
+      <summary>Base distinguished name for directory searches</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>tls_mode</name>
+      <summary>TLS connection mode</summary>
+      <pattern><alts><alt>ldaps</alt><alt>starttls</alt></alts></pattern>
+    </ele>
+    <ele>
+      <name>ca_certificate</name>
+      <summary>CA certificates in PEM format used to verify the Active Directory server's TLS certificate</summary>
+      <pattern>text</pattern>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a saved Active Directory credential</summary>
+      <request>
+        <verify_active_directory_credential
+            credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"/>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+    <example>
+      <summary>Verify inline Active Directory connection settings</summary>
+      <request>
+        <verify_active_directory_credential>
+          <host>dc.example.com</host>
+          <port>636</port>
+          <bind_dn>CN=svc-gvm,OU=Service Accounts,DC=example,DC=com</bind_dn>
+          <bind_password>example-password</bind_password>
+          <base_dn>DC=example,DC=com</base_dn>
+          <tls_mode>ldaps</tls_mode>
+        </verify_active_directory_credential>
+      </request>
+      <response>
+        <verify_active_directory_credential_response
+            status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AD_INTEGRATION@
+  @IF_ENABLE_CREDENTIAL_STORES@
+  <command>
+    <name>verify_credential_store</name>
+    <summary>Verify a credential store</summary>
+    <description>
+      <p>
+        The client uses the verify_credential_store command to validate the
+        configuration of an existing credential store and test its connection
+        to the external service.
+      </p>
+      <p>
+        This command is only available when gvmd is built with
+        ENABLE_CREDENTIAL_STORES.  In such a build, a disabled credential
+        store runtime feature results in status 400.
+      </p>
+      <p>
+        A successful verification has status 200.  Missing or invalid request
+        data, invalid credential store configuration, missing permission, or a
+        disabled runtime feature result in status 400; a credential store that
+        cannot be found results in status 404; a failed connection results in
+        status 503; and an unexpected error results in status 500.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_store_id</name>
+        <summary>ID of the credential store to verify</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+    </pattern>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+      </pattern>
+    </response>
+    <example>
+      <summary>Verify a credential store</summary>
+      <request>
+        <verify_credential_store credential_store_id="a84a4c36-6687-4cd5-baf2-87f79c5897b4"/>
+      </request>
+      <response>
+        <verify_credential_store_response status="200" status_text="OK"/>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_CREDENTIAL_STORES@
   <command>
     <name>verify_report_format</name>
     <summary>Verify a report format</summary>

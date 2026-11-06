@@ -16,10 +16,13 @@
 #define _GNU_SOURCE
 
 #include "debug_utils.h"
+#include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
 #include "manage_sql_settings.h"
+#include "manage_sql_web_application_vts.h"
+#include "manage_sql_vt_tech_info.h"
 #include "sql.h"
 #include "utils.h"
 
@@ -94,9 +97,6 @@ void
 manage_db_remove (const gchar *);
 
 int
-manage_db_init (const gchar *);
-
-int
 manage_db_init_indexes (const gchar *);
 
 int
@@ -107,6 +107,9 @@ sync_cert ();
 
 static int
 update_scap (gboolean);
+
+static int
+update_web_application_vts (gboolean);
 
 
 /* Helpers. */
@@ -1389,6 +1392,217 @@ init_nvt_dfn_cert_adv_iterator (iterator_t *iterator, const char *oid)
 DEF_ACCESS (nvt_dfn_cert_adv_iterator_name, 0);
 
 
+/* Web Application VT data. */
+
+/**
+ * @brief Gets the SELECT columns for Web Application VT iterators and counts.
+ *
+ * @return The SELECT columns.
+ */
+static const column_t*
+web_application_vt_info_select_columns ()
+{
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  return columns;
+}
+
+/**
+ * @brief Gets the filter columns for Web Application VT iterators and counts.
+ *
+ * @return The filter columns.
+ */
+static const char **
+web_application_vt_info_filter_columns ()
+{
+  static const char *filter_columns[]
+    = WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  return filter_columns;
+}
+
+/**
+ * @brief Initialise an Web Application VT info iterator.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ * @param[in]  name            Name of the info
+ *
+ * @return 0 success, 1 failed to find VT, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_web_application_vt_info_iterator (iterator_t* iterator, get_data_t *get,
+                                       const char *name)
+{
+  static const char *filter_columns[] =
+      WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  gchar *clause = NULL;
+  int ret;
+
+  if (get->id)
+    {
+      gchar *quoted = sql_quote (get->id);
+      clause = g_strdup_printf (" AND uuid = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by ID, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  else if (name)
+    {
+      gchar *quoted = sql_quote (name);
+      clause = g_strdup_printf (" AND name = '%s'", quoted);
+      g_free (quoted);
+      /* The entry is specified by name, so filtering just gets in the way. */
+      g_free (get->filter);
+      get->filter = NULL;
+    }
+  ret = init_get_iterator (iterator,
+                           "web_application_vt",
+                           get,
+                           columns,
+                           NULL,
+                           filter_columns,
+                           0,
+                           NULL,
+                           clause,
+                           FALSE);
+  g_free (clause);
+  return ret;
+}
+
+/**
+ * @brief Initialise a Web Application VT info iterator not limited to a name.
+ *
+ * @param[in]  iterator        Iterator.
+ * @param[in]  get             GET data.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_web_application_vt_info_iterator_all (iterator_t* iterator, get_data_t *get)
+{
+  return init_web_application_vt_info_iterator (iterator, get, NULL);
+}
+
+/**
+ * @brief Count number of Web Application VTs.
+ *
+ * @param[in]  get  GET params.
+ *
+ * @return Total number of Web Application VTs in filtered set.
+ */
+int
+web_application_vt_info_count (const get_data_t *get)
+{
+  static const char *filter_columns[] =
+                      WEB_APPLICATION_VT_INFO_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = WEB_APPLICATION_VT_INFO_ITERATOR_COLUMNS;
+  return count ("web_application_vt", get, columns, NULL, filter_columns,
+                0, 0, 0, FALSE);
+}
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_type,
+            GET_ITERATOR_COLUMN_COUNT);
+
+/**
+ * @brief Get the description from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The description of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_description,
+            GET_ITERATOR_COLUMN_COUNT + 1);
+
+/**
+ * @brief Get the solution from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The solution of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_solution,
+            GET_ITERATOR_COLUMN_COUNT + 2);
+
+/**
+ * @brief Get the severity from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The severity of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_severity,
+            GET_ITERATOR_COLUMN_COUNT + 3);
+
+/**
+ * @brief Get the type-specific metadata from an WEB_APPLICATION_VT iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type-specific metadata of the Web Application VT,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_info_iterator_type_metadata,
+            GET_ITERATOR_COLUMN_COUNT + 4);
+
+/**
+ * @brief Initialize a Web Application VT reference iterator.
+ *
+ * @param[in]  iter   The iterator to initialize.
+ * @param[in]  vt_id  The ID of the VT to get the references of.
+ */
+void
+init_web_application_vt_ref_iterator (iterator_t *iter, const char *vt_id)
+{
+  init_ps_iterator (iter,
+                    "SELECT type, ref_id"
+                    " FROM web_application_vt_refs"
+                    " WHERE vt_id = $1",
+                    SQL_STR_PARAM (vt_id),
+                    NULL);
+}
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT refs iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The type of the Web Application VT reference,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_ref_iterator_type, 0);
+
+/**
+ * @brief Get the type from an WEB_APPLICATION_VT refs iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return The reference id of the Web Application VT reference,
+ *         or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (web_application_vt_ref_iterator_ref_id, 1);
+
+
 /* All SecInfo data. */
 
 /**
@@ -1431,6 +1645,11 @@ secinfo_count_after (const get_data_t *get,
     {
       columns = dfn_cert_adv_info_select_columns ();
       filter_columns = dfn_cert_adv_info_filter_columns ();
+    }
+  else if (strcmp (type, "web_application_vt") == 0)
+    {
+      columns = web_application_vt_info_select_columns ();
+      filter_columns = web_application_vt_info_filter_columns ();
     }
   else
     {
@@ -2615,6 +2834,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       g_warning ("%s: Failed to open CPE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       return -1;
     }
 
@@ -2750,6 +2970,7 @@ update_scap_cpes_from_json_file (const gchar *path, gboolean use_copy)
       g_warning ("%s: Failed to open CPE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       return -1;
     }
   gvm_json_pull_parser_init (&parser, cpe_file);
@@ -4296,6 +4517,7 @@ get_cve_json_fields (cJSON *vuln_item,
   *published_time = *modified_time = 0;
   *score_dbl = SEVERITY_MISSING;
   *configurations_array = *references_array = NULL;
+  *description_value = NULL;
 
   cve_json = cJSON_GetObjectItemCaseSensitive (vuln_item, "cve");
   if (!cJSON_IsObject (cve_json))
@@ -4455,7 +4677,7 @@ get_cve_json_fields (cJSON *vuln_item,
 static int
 handle_json_cve_item_inserts (cJSON *vuln_item)
 {
-  char *cve_id, *vector, *description_value;
+  char *cve_id, *vector, *description_value = NULL;
   time_t published_time, modified_time;
   double score_dbl;
   cJSON *configurations_array, *references_array;
@@ -4472,7 +4694,7 @@ handle_json_cve_item_inserts (cJSON *vuln_item)
                            &references_array))
     return -1;
 
-  char *quoted_description = sql_quote (description_value);
+  char *quoted_description = sql_quote (description_value ?: "");
 
   cve_db_id = sql_int64_0
          ("INSERT INTO scap2.cves"
@@ -4753,6 +4975,7 @@ update_cve_json (const gchar *cve_path,
       g_warning ("%s: Failed to open CVE file: %s",
                  __func__,
                  strerror (errno));
+      close (fd);
       g_free (full_path);
       return -1;
     }
@@ -6004,9 +6227,18 @@ manage_feed_timestamp (const gchar *name)
   if (strcasecmp (name, "scap") == 0)
     g_file_get_contents (GVM_SCAP_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
-  else
+  else if (strcasecmp (name, "cert") == 0)
     g_file_get_contents (GVM_CERT_DATA_DIR "/timestamp", &timestamp, &len,
                          &error);
+  else if (strcasecmp (name, "web_application_vts") == 0)
+    g_file_get_contents (GVM_WEB_APPLICATION_VTS_DIR "/timestamp",
+                         &timestamp, &len, &error);
+  else if (strcasecmp (name, "vt_tech_info") == 0)
+    g_file_get_contents (GVM_VT_TECH_INFO_DIR "/timestamp",
+                         &timestamp, &len, &error);
+  else
+    return -1;
+
   if (error)
     {
       if (error->code == G_FILE_ERROR_NOENT)
@@ -6017,8 +6249,10 @@ manage_feed_timestamp (const gchar *name)
                      __func__,
                      name,
                      error->message);
+          g_error_free (error);
           return -1;
         }
+      g_error_free (error);
     }
   else
     {
@@ -6053,6 +6287,7 @@ manage_feed_timestamp (const gchar *name)
 int
 secinfo_feed_version_status (const char *feed_type)
 {
+  gboolean is_vts_subtype = FALSE;
   int last_feed_update, last_db_update;
 
   if (strcmp (feed_type, "cert") == 0)
@@ -6065,6 +6300,24 @@ secinfo_feed_version_status (const char *feed_type)
       if (manage_scap_loaded () == 0)
         return 2;
     }
+  else if (strcmp (feed_type, "vt_tech_info") == 0)
+    {
+      is_vts_subtype = TRUE;
+      if (gvm_file_exists (GVM_VT_TECH_INFO_DIR "/feed.xml") == FALSE)
+        {
+          g_debug ("vt-tech-info feed.xml not found in %s",
+                   GVM_VT_TECH_INFO_DIR);
+          return 0;
+        }
+      if (manage_vt_tech_info_loaded () == 0)
+        return 2;
+    }
+  else if (strcmp (feed_type, "web_application_vts") == 0)
+    {
+      is_vts_subtype = TRUE;
+      if (manage_web_application_vts_loaded () == 0)
+        return 2;
+    }
   else
     {
       g_warning ("%s: Unexpected feed type: %s", __func__, feed_type);
@@ -6072,13 +6325,27 @@ secinfo_feed_version_status (const char *feed_type)
     }
 
   last_feed_update = manage_feed_timestamp (feed_type);
+
   if (last_feed_update == -1)
     return -1;
 
-  last_db_update = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
-                            "                  WHERE name = 'last_update'),"
-                            "                 '-3');",
-                            feed_type);
+  if (is_vts_subtype)
+    {
+      last_db_update
+        = sql_int ("SELECT coalesce ((SELECT value FROM vts.meta"
+                   "                  WHERE name = 'last_%s_update'),"
+                   "                 '-3');",
+                   feed_type);
+    }
+  else
+    {
+      last_db_update
+        = sql_int ("SELECT coalesce ((SELECT value FROM %s.meta"
+                   "                  WHERE name = 'last_update'),"
+                   "                 '-3');",
+                   feed_type);
+    }
+
   if (last_db_update == -3)
     return 3;
   else if (last_db_update < 0)
@@ -6157,7 +6424,9 @@ update_cert_timestamp ()
                      __func__,
                      error->message);
           stamp = time(NULL);
+          g_error_free (error);
         }
+      g_error_free (error);
     }
   else
     {
@@ -6939,6 +7208,12 @@ update_scap_extra ()
   setproctitle ("Syncing SCAP: Updating VT extra data");
 
   update_vt_scap_extra_data ();
+
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING))
+    {
+      update_zap_vt_severities_from_cves ();
+      update_zap_vt_group_severity_scores ();
+    }
 }
 
 /**
@@ -7035,6 +7310,531 @@ fail:
   manage_option_cleanup ();
   return -1;
 }
+
+
+/* Web Application VTs. */
+
+/**
+ * @brief Ensure VTs db is at the right version.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+check_vts_db_version ()
+{
+  int db_version = manage_vts_db_version ();
+
+  if (db_version < GVMD_VTS_DATABASE_VERSION)
+    {
+      int ret;
+      g_info ("Reinitialization of the VTs database necessary");
+
+      sql ("DROP SCHEMA vts CASCADE;");
+
+      ret = manage_db_init ("vts");
+      if (ret)
+        return ret;
+
+      ret = update_web_application_vts (TRUE);
+      if (ret)
+        return ret;
+
+      if (manage_scap_loaded ())
+        update_zap_vt_severities_from_cves ();
+
+      update_zap_vt_group_severity_scores ();
+      update_vt_tech_info (FALSE);
+    }
+  else if (db_version > GVMD_VTS_DATABASE_VERSION)
+    {
+      g_warning ("%s: VTs database version %d is newer than"
+                 " supported version %d",
+                 __func__, db_version,
+                 GVMD_VTS_DATABASE_VERSION);
+    }
+  return 0;
+}
+
+/**
+ * @brief Update timestamp in web application VTs db from feed timestamp.
+ */
+static void
+update_web_application_vts_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_WEB_APPLICATION_VTS_DIR "/timestamp",
+                       &timestamp, &len, &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s",
+                     __func__,
+                     error->message);
+          stamp = time(NULL);
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s",
+                     __func__,
+                     timestamp);
+          g_free (timestamp);
+          stamp = time(NULL);
+        }
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
+    }
+
+  g_debug ("%s: setting last_web_application_vts_update: %lld",
+           __func__, (long long) stamp);
+  sql ("UPDATE vts.meta SET value = '%lld'"
+       " WHERE name = 'last_web_application_vts_update';",
+       (long long) stamp);
+}
+
+/**
+ * @brief Abort Web Application VTs update.
+ */
+static void
+abort_web_application_vts_update ()
+{
+  if (manage_web_application_vts_loaded ())
+    {
+      update_web_application_vts_timestamp ();
+    }
+
+  g_info ("%s: Updating Web Application VTs aborted", __func__);
+  setproctitle ("Syncing Web Application VTs: aborted");
+}
+
+/**
+ * @brief Finish Web Application VTs update.
+ */
+static void
+update_web_application_vts_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  update_web_application_vts_timestamp ();
+
+  /* Analyze. */
+
+  sql ("ANALYZE vts.web_application_vts;");
+
+  refresh_all_vts_table ();
+
+  g_info ("%s: Updating Web Application VTs succeeded", __func__);
+  setproctitle ("Syncing Web Application VTs: done");
+}
+
+/**
+ * @brief Update all data in the Web Application VTs DB.
+ *
+ * @param[in]  reset_db  Whether to rebuild regardless of last_update.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+update_web_application_vts (gboolean reset_db)
+{
+  if (reset_db)
+    g_warning ("%s: Full rebuild requested, resetting Web Application VTs db",
+               __func__);
+  else if (manage_web_application_vts_loaded () == 0)
+    g_warning ("%s: No Web Application VTs db present,"
+               " rebuilding Web Application VTs db from scratch",
+               __func__);
+  else
+    {
+      int last_web_application_vts_update;
+
+      last_web_application_vts_update
+        = sql_int ("SELECT coalesce ((SELECT value"
+                   "                  FROM vts.meta"
+                   "                  WHERE name"
+                   "                    = 'last_web_application_vts_update'),"
+                   "                 '-3');");
+      if (last_web_application_vts_update == -3)
+        g_warning ("%s: VTs db missing last_web_application_vts_update record,"
+                   " resetting Web Application VTs db",
+                   __func__);
+      else if (last_web_application_vts_update < 0)
+        g_warning ("%s: Inconsistent data, resetting Web Application VTs db",
+                   __func__);
+      else
+        {
+          int last_feed_update;
+
+          last_feed_update = manage_feed_timestamp ("web_application_vts");
+
+          if (last_feed_update == -1)
+            return -1;
+
+          if (last_web_application_vts_update == last_feed_update)
+            {
+              setproctitle ("Syncing Web Application VTs: done");
+              return 0;
+            }
+
+          if (last_web_application_vts_update > last_feed_update)
+            {
+              g_warning ("%s: last Web Application VTs update later than"
+                         " last feed update",
+                         __func__);
+              return -1;
+            }
+        }
+    }
+
+  /* Drop old schema if that is part of the update strategy */
+  if (secinfo_update_strategy == SECINFO_UPDATE_STRATEGY_DROP_SCHEMA)
+    {
+      g_info ("%s: Removing old Web Application VTs database tables...",
+              __func__);
+      sql ("DROP TABLE IF EXISTS vts.web_application_vts;");
+      sql ("DROP TABLE IF EXISTS vts.web_application_vt_refs;");
+    }
+
+  /* Create a new schema, "web_application_vts". */
+
+  if (manage_db_init ("vts"))
+    {
+      g_warning ("%s: could not initialize VTs database schema",
+                 __func__);
+      return -1;
+    }
+
+  /* Update into the new schema. */
+
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING) == FALSE)
+    {
+      g_debug ("%s: web application scanning disabled,"
+               " skipping metadata sync", __func__);
+      update_web_application_vts_end ();
+      return 0;
+    }
+
+  g_debug ("%s: sync", __func__);
+
+  g_info ("%s: Updating data from feed", __func__);
+
+  g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
+
+  g_debug ("%s: update ZAP vts", __func__);
+  setproctitle ("Syncing Web Application VTs: Updating ZAP VTs");
+
+  if (update_zap_vts_from_feed () == -1)
+    {
+      abort_web_application_vts_update ();
+      return -1;
+    }
+
+  update_web_application_vts_end ();
+  return 0;
+}
+
+/**
+ * @brief Sync the Web Application VTs DB.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_web_application_vts ()
+{
+  return update_web_application_vts (FALSE);
+}
+
+/**
+ * @brief Sync the Web Application VTs DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the Web Application VTs sync,
+ *         -1 on error.
+ */
+pid_t
+manage_sync_web_application_vts (sigset_t *sigmask_current)
+{
+  return sync_secinfo (sigmask_current,
+                       sync_web_application_vts,
+                       "Syncing Web Application VTs");
+}
+
+
+
+/* VT Technical Information */
+
+/**
+ * @brief Update timestamp in VT Technical Information db from feed timestamp.
+ */
+static void
+update_vt_tech_info_timestamp ()
+{
+  GError *error;
+  gchar *timestamp;
+  gsize len;
+  time_t stamp;
+
+  error = NULL;
+  g_file_get_contents (GVM_VT_TECH_INFO_DIR "/timestamp",
+                       &timestamp, &len, &error);
+  if (error)
+    {
+      if (error->code == G_FILE_ERROR_NOENT)
+        stamp = 0;
+      else
+        {
+          g_warning ("%s: Failed to get timestamp: %s",
+                     __func__,
+                     error->message);
+          stamp = time(NULL);
+        }
+    }
+  else
+    {
+      if (strlen (timestamp) < 8)
+        {
+          g_warning ("%s: Feed timestamp too short: %s",
+                     __func__,
+                     timestamp);
+          g_free (timestamp);
+          stamp = time(NULL);
+        }
+      else
+        {
+          timestamp[8] = '\0';
+          g_debug ("%s: parsing: %s", __func__, timestamp);
+          stamp = parse_feed_timestamp (timestamp);
+          g_free (timestamp);
+          if (stamp == 0)
+            stamp = time(NULL);
+        }
+    }
+
+  g_debug ("%s: setting last_vt_tech_info_update: %lld",
+           __func__, (long long) stamp);
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_vt_tech_info_update', '%lld')"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       (long long) stamp);
+}
+
+/**
+ * @brief Abort VT Technical Info update.
+ */
+static void
+abort_vt_tech_info_update ()
+{
+  if (manage_vt_tech_info_loaded ())
+    {
+      update_vt_tech_info_timestamp ();
+    }
+
+  g_info ("%s: Updating VT Technical Info aborted", __func__);
+  setproctitle ("Syncing VT Technical Info: aborted");
+}
+
+/**
+ * @brief Finish VT Technical Info update.
+ */
+static void
+update_vt_tech_info_end ()
+{
+  g_debug ("%s: update timestamp", __func__);
+
+  update_vt_tech_info_timestamp ();
+
+  /* Analyze. */
+
+  sql ("ANALYZE vts.vt_tech_info;");
+
+  refresh_all_vts_table ();
+
+  g_info ("%s: Updating VT Technical Info succeeded", __func__);
+  setproctitle ("Syncing VT Technical Info: done");
+}
+
+/**
+ * @brief Update all data in the VT Technical Info DB.
+ *
+ * @param[in]  reset_db  Whether to rebuild regardless of last_update.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+update_vt_tech_info (gboolean reset_db)
+{
+  if (reset_db)
+    g_warning ("%s: Full rebuild requested, resetting VT Technical Info db",
+               __func__);
+  else if (manage_vt_tech_info_loaded () == 0)
+    g_warning ("%s: No VT Technical Info db present,"
+               " rebuilding VT Technical Info db from scratch",
+               __func__);
+  else
+    {
+      int last_vt_tech_info_update;
+
+      last_vt_tech_info_update
+        = sql_int ("SELECT coalesce ((SELECT value"
+                   "                  FROM vts.meta"
+                   "                  WHERE name"
+                   "                    = 'last_vt_tech_info_update'),"
+                   "                 '-3');");
+      if (last_vt_tech_info_update == -3)
+        g_warning ("%s: VTs db missing last_vt_tech_info_update record,"
+                   " resetting VT Technical Info db",
+                   __func__);
+      else if (last_vt_tech_info_update < 0)
+        g_warning ("%s: Inconsistent data, resetting VT Technical Info db",
+                   __func__);
+      else
+        {
+          int last_feed_update;
+
+          last_feed_update = manage_feed_timestamp ("vt_tech_info");
+
+          if (last_feed_update == -1)
+            return -1;
+
+          if (last_vt_tech_info_update == last_feed_update)
+            {
+              setproctitle ("Syncing VT Technical Info: done");
+              return 0;
+            }
+
+          if (last_vt_tech_info_update > last_feed_update)
+            {
+              g_warning ("%s: last VT Technical Info update later than"
+                         " last feed update",
+                         __func__);
+              return -1;
+            }
+        }
+    }
+
+  /* Create a new schema, "vts". */
+
+  if (manage_db_init ("vts"))
+    {
+      g_warning ("%s: could not initialize VTs database schema",
+                 __func__);
+      return -1;
+    }
+
+  /* Update into the new schema. */
+
+  g_debug ("%s: sync", __func__);
+
+  g_info ("%s: Updating data from feed", __func__);
+
+  g_debug ("%s: secinfo_fast_init = %d", __func__, secinfo_fast_init);
+
+  g_debug ("%s: update VT technical descriptions", __func__);
+  setproctitle ("Syncing VT Technical Info: Technical Descriptions");
+
+  if (update_vt_tech_info_from_feed_files () == -1)
+    {
+      abort_vt_tech_info_update ();
+      return -1;
+    }
+
+  update_vt_tech_info_end ();
+  return 0;
+}
+
+/**
+ * @brief Sync the VT Technical Info DB.
+ *
+ * @return 0 success, -1 error.
+ */
+static int
+sync_vt_tech_info ()
+{
+  return update_vt_tech_info (FALSE);
+}
+
+/**
+ * @brief Sync the VT Technical Information DB.
+ *
+ * @param[in]  sigmask_current  Sigmask to restore in child.
+ *
+ * @return PID of the forked process handling the VT Technical Information sync,
+ *         -1 on error.
+ */
+pid_t
+manage_sync_vt_tech_info (sigset_t *sigmask_current)
+{
+  return sync_secinfo (sigmask_current,
+                       sync_vt_tech_info,
+                       "Syncing VT Technical Information");
+}
+
+
+/* All VTs */
+
+/**
+ * @brief Refresh the "all VTs" table.
+ */
+void
+refresh_all_vts_table ()
+{
+  g_info ("Refreshing all_vts table...");
+
+  sql_begin_immediate ();
+
+  sql ("TRUNCATE vts.all_vts;");
+
+  sql ("INSERT INTO vts.all_vts ("
+       "  oid, uuid, name, family, cvss_base, cve,"
+       "  summary, impact, solution_type, solution, detection,"
+       "  insight, affected, tag, type, type_metadata"
+       " )"
+       " SELECT"
+       "  oid, uuid, name, family, cvss_base, cve,"
+       "  summary, impact, solution_type, solution, detection,"
+       "  insight, affected, tag, 'nvt', ''"
+       " FROM nvts;");
+
+  if (manage_web_application_vts_loaded ())
+    {
+      sql ("INSERT INTO vts.all_vts ("
+           "  oid, uuid, name, family, cvss_base, cve,"
+           "  summary, impact, solution_type, solution, detection,"
+           "  insight, affected, tag, type, type_metadata"
+           " )"
+           " SELECT"
+           "  uuid, uuid, name, '', severity, '',"
+           "  description, '', '', solution, '',"
+           "  '', '', '', type, type_metadata"
+           " FROM vts.web_application_vts;");
+    }
+
+  sql_commit ();
+
+  g_info ("Finished all_vts table refresh");
+}
+
+
+
+/* Command line options. */
 
 /**
  * @brief Set the affected products query size.

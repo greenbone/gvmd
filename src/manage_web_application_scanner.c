@@ -14,10 +14,11 @@
 #include "debug_utils.h"
 #include "manage_assets.h"
 #include "manage_web_application_scanner.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "manage_runtime_flags.h"
 #include "manage_sql.h"
 #include "manage_sql_web_application_targets.h"
+#include "manage_sql_web_application_vts.h"
 #include "manage_openvas.h"
 #include "manage_osp.h"
 #include <sys/types.h>
@@ -33,7 +34,7 @@
  */
 #define G_LOG_DOMAIN "md manage"
 
-#define WEB_APPLICATION_SCAN_PREFIX "api/v1"
+#define WEB_APPLICATION_PATH_PREFIX "api/v1"
 
 /**
  * @brief Create a new connection to a web application scanner.
@@ -53,8 +54,8 @@ web_application_scanner_connect (scanner_t scanner, const char *scan_id)
 
   if (connection)
     http_scanner_connector_builder (connection,
-                                    HTTP_SCANNER_SCAN_PREFIX,
-                                    WEB_APPLICATION_SCAN_PREFIX);
+                                    HTTP_SCANNER_PATH_PREFIX,
+                                    WEB_APPLICATION_PATH_PREFIX);
   else
     g_warning ("%s: Could not connect to web application scanner", __func__);
 
@@ -62,19 +63,24 @@ web_application_scanner_connect (scanner_t scanner, const char *scan_id)
 }
 
 /**
- * @brief Get a severity string from result type.
+ * @brief Get a severity string from result type and VT id.
  *
  * @param[in]  type     Result type.
+ * @param[in]  vt_id    VT id to look up severity score for "Alarm" results.
  *
  * @return A severity string, NULL if unknown type.
  */
 char *
-web_application_nvt_severity (const char *type)
+web_application_nvt_severity (const char *type, const char *vt_id)
 {
   char *severity = NULL;
 
   if ((strcasecmp (type, "alarm") == 0 || strcasecmp (type, "Alarm") == 0))
-    severity = g_strdup (G_STRINGIFY (SEVERITY_MAX));
+    {
+      severity = web_application_vt_severity_by_id (vt_id);
+      if (severity == NULL)
+        severity = g_strdup (G_STRINGIFY (SEVERITY_MAX));
+    }
   else if (strcasecmp (type, "Log Message") == 0
            || strcasecmp (type, "log") == 0)
     severity = g_strdup (G_STRINGIFY (SEVERITY_LOG));
@@ -196,7 +202,7 @@ check_web_application_scanner_result_exists (report_t report,
           hostname = res->hostname ?: "";
           type = convert_http_scanner_type_to_osp_type(res->type ?: "");
           desc = res->message ?: "";
-          severity = web_application_nvt_severity (type);
+          severity = web_application_nvt_severity (type, res->oid);
           port = res->port ?: "";
 
           if (!severity)
@@ -315,7 +321,7 @@ add_web_application_scan_result (http_scanner_result_t res,
 
       nvt_id = g_strdup (test_id);
       result_type = convert_http_scanner_type_to_osp_type (type);
-      severity_str = web_application_nvt_severity (result_type);
+      severity_str = web_application_nvt_severity (result_type, res->oid);
       qod_int = QOD_DEFAULT;
 
       if (!check_web_application_scanner_result_exists (rep_aux->report,
@@ -846,7 +852,7 @@ handle_web_application_scan_end (task_t task, int handle_progress_rc)
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
         {
-          queue_report_for_export (global_current_report);
+          queue_integration_report_for_export (global_current_report);
         }
     }
   else if (handle_progress_rc == -1 || handle_progress_rc == -2)
@@ -1092,6 +1098,64 @@ end_stop_task:
   current_scanner_task = previous_task;
   global_current_report = previous_report;
 
+  return ret;
+}
+
+/**
+ * @brief Verify the connection to the web application scanner.
+ *
+ * @param[in]  scanner  The scanner to verify the connection to.
+ *
+ * @return 0 if the connection is verified, 1 otherwise.
+ */
+int
+verify_web_application_scanner_connection (scanner_t scanner)
+{
+  http_scanner_connector_t connector;
+  http_scanner_resp_t response = NULL;
+  int ret;
+
+  connector = web_application_scanner_connect (scanner, NULL);
+  if (!connector)
+    {
+      g_warning ("%s: Failed to build web application scanner connector",
+                 __func__);
+      return 1;
+    }
+  response = http_scanner_get_health_ready (connector);
+  http_scanner_connector_free (connector);
+
+  if (!response)
+    {
+      g_warning ("%s: Failed to get web application scanner health status",
+                 __func__);
+      return 1;
+    }
+
+  if (response->code == 200)
+    {
+      ret = 0;
+    }
+  else if (response->code == -1)
+    {
+      gboolean has_relay = scanner_has_relay (scanner);
+      char *host = scanner_host (scanner, has_relay);
+      g_warning ("%s: failed to connect to %s:%d",
+                 __func__,
+                 host,
+                 scanner_port (scanner, has_relay));
+      g_free (host);
+      ret = 1;
+    }
+  else
+    {
+      g_warning ("%s: web application scanner could not be verified,"
+                  " HTTP status code: %ld",
+                 __func__, response->code);
+      ret = 1;
+    }
+
+  http_scanner_response_cleanup (response);
   return ret;
 }
 

@@ -2029,6 +2029,7 @@ set_task_preferences (task_t task, array_t *preferences)
                       && (strcmp (pair->value, "keep"))
                       && (strcmp (pair->value, "no")))
                     {
+                      g_free (quoted_name);
                       return 1;
                     }
 
@@ -2038,7 +2039,10 @@ set_task_preferences (task_t task, array_t *preferences)
                       keep = atoi (pair->value);
                       if (keep < AUTO_DELETE_KEEP_MIN
                           || keep > AUTO_DELETE_KEEP_MAX)
-                        return 2;
+                        {
+                          g_free (quoted_name);
+                          return 2;
+                        }
                     }
                   int type = scanner_type (task_scanner (task));
                   if ((strcmp (pair->name, "scan_mode") == 0)
@@ -2046,6 +2050,7 @@ set_task_preferences (task_t task, array_t *preferences)
                       && (strcmp (pair->value, "safe"))
                       && type == SCANNER_TYPE_WEB_APPLICATION)
                     {
+                      g_free (quoted_name);
                       return 5;
                     }
                   if ((strcmp (pair->name, "ajax_spider_timeout") == 0)
@@ -2058,15 +2063,22 @@ set_task_preferences (task_t task, array_t *preferences)
                       if (errno == ERANGE || endptr == pair->value
                           || *endptr != '\0' || timeout < 0)
                         {
+                          g_free (quoted_name);
                           return 6;
                         }
                     }
                   if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CONTAINER_IMAGE)
+                    {
+                      g_free (quoted_name);
                       return 3;
+                    }
                   else if ((strcmp (pair->name, "in_assets") == 0)
                            && type == SCANNER_TYPE_WEB_APPLICATION)
+                    {
+                      g_free (quoted_name);
                       return 4;
+                    }
                   else if ((strcmp (pair->name, "in_assets") == 0)
                       && type == SCANNER_TYPE_CVE)
                     quoted_value = g_strdup ("no");

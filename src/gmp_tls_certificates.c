@@ -14,6 +14,7 @@
 #include "gmp_tls_certificates.h"
 #include "gmp_base.h"
 #include "gmp_get.h"
+#include "manage_acl.h"
 #include "manage_tls_certificates.h"
 
 #include <glib.h>
@@ -423,6 +424,14 @@ create_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   int trust_int;
   tls_certificate_t new_tls_certificate;
 
+  if (!acl_user_may ("create_tls_certificate"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("create_tls_certificate",
+                              "Permission denied"));
+      create_tls_certificate_reset ();
+      return;
+    }
+
   entity = (entity_t) create_tls_certificate_data.context->first->data;
 
   copy = entity_child (entity, "copy");
@@ -704,6 +713,14 @@ modify_tls_certificate_run (gmp_parser_t *gmp_parser, GError **error)
   entity_t entity, comment, name, trust;
   const char *tls_certificate_id;
   int trust_int;
+
+  if (!acl_user_may ("modify_tls_certificate"))
+    {
+      SEND_TO_CLIENT_OR_FAIL (XML_ERROR_SYNTAX ("modify_tls_certificate",
+                              "Permission denied"));
+      modify_tls_certificate_reset ();
+      return;
+    }
 
   entity = (entity_t) modify_tls_certificate_data.context->first->data;
 

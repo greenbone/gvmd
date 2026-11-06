@@ -22,6 +22,7 @@
 #include "sql.h"
 #include "utils.h"
 
+#include <assert.h>
 #include <cjson/cJSON.h>
 #include <errno.h>
 #include <glib.h>
@@ -283,6 +284,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
 
               g_error_free (error);
               error = NULL;
+              g_free (signature_filename);
               signature_filename = g_build_filename (GVMD_STATE_DIR,
                                                      "signatures",
                                                      location,
@@ -327,6 +329,7 @@ find_signature (const gchar *location, const gchar *installer_filename,
           g_error_free (error);
           return -1;
         }
+      g_free (signature_filename);
       g_free (signature_basename);
       return 0;
     }
@@ -593,7 +596,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
   index = 0;
   while ((file_name = (gchar*) g_ptr_array_index (files, index++)))
     {
-      gchar *contents, *file, *full_file_name;
+      gchar *contents, *file, *executable, *full_file_name;
       gsize contents_size;
       GError *error;
       int ret;
@@ -606,6 +609,8 @@ save_report_format_files (const gchar *report_id, array_t *files,
         }
 
       file = file_name + strlen (file_name) + 1;
+      executable = file + strlen (file) + 1;
+
       if (strlen (file))
         contents = (gchar*) g_base64_decode (file, &contents_size);
       else
@@ -641,8 +646,7 @@ save_report_format_files (const gchar *report_id, array_t *files,
           g_free (dir);
           return -1;
         }
-
-      if (strcmp (file_name, "generate") == 0)
+      if (strcmp (executable, "1") == 0 || strcmp (file_name, "generate") == 0)
         ret = chmod (full_file_name, 0755 /* rwxr-xr-x */);
       else
         ret = chmod (full_file_name, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
@@ -3596,6 +3600,16 @@ run_report_format_script (gchar *report_format_id,
 
   report_format = get_iterator_resource (&formats);
 
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1))
+    {
+      g_warning ("%s: Report format '%s' is not trusted,"
+                 " skipping script execution",
+                 __func__, report_format_id);
+      cleanup_iterator (&formats);
+      return -1;
+    }
+
   owner = sql_string ("SELECT uuid FROM users"
                       " WHERE id = (SELECT owner FROM"
                       "             report_formats WHERE id = %llu);",
@@ -3655,14 +3669,23 @@ run_report_format_script (gchar *report_format_id,
   g_free (script_dir);
 
   /* Call the script. */
-
-  command = g_strdup_printf ("%s %s '%s' > %s"
-                             " 2> /dev/null",
-                             script,
-                             xml_file,
-                             report_format_extra,
-                             output_file);
+  gchar *clean_script = g_shell_quote (script);
   g_free (script);
+
+  gchar *clean_xml_file = g_shell_quote (xml_file);
+  gchar *clean_report_format_extra = g_shell_quote (report_format_extra);
+  gchar *clean_output_file = g_shell_quote (output_file);
+
+  command = g_strdup_printf ("%s %s %s > %s"
+                             " 2> /dev/null",
+                             clean_script,
+                             clean_xml_file,
+                             clean_report_format_extra,
+                             clean_output_file);
+  g_free (clean_script);
+  g_free (clean_xml_file);
+  g_free (clean_report_format_extra);
+  g_free (clean_output_file);
 
   g_debug ("   command: %s", command);
 
@@ -4009,6 +4032,15 @@ apply_report_format (gchar *report_format_id,
       return NULL;
     }
 
+  /* Check if report format is trusted. */
+  if ((report_format_predefined (report_format) == 0)
+      && (report_format_trust (report_format) > 1))
+    {
+      g_warning ("%s: Report format '%s' is not trusted",
+                 __func__, report_format_id);
+      return NULL;
+    }
+
   /* Get subreports. */
   temp_dirs = NULL;
   temp_files = NULL;
@@ -4164,8 +4196,15 @@ apply_report_format (gchar *report_format_id,
       goto cleanup;
     }
 
-  run_report_format_script (report_format_id,
-                            xml_file, xml_dir, files_xml, output_file);
+  if (run_report_format_script (report_format_id,
+                                xml_file, xml_dir,
+                                files_xml,
+                                output_file))
+    {
+      g_free (output_file);
+      output_file = NULL;
+      goto cleanup;
+    }
 
   /* Clean up and return filename. */
  cleanup:
@@ -4184,6 +4223,7 @@ apply_report_format (gchar *report_format_id,
     }
   g_free (files_xml);
   g_hash_table_destroy (subreports);
+  g_free (rf_dependencies_string);
   if (close (output_fd))
     {
       g_warning ("%s: close of output_fd failed: %s",

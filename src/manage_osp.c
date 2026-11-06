@@ -12,12 +12,14 @@
 
 #include "ipc.h"
 #include "manage_assets.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "manage_runtime_flags.h"
 #include "manage_scan_queue.h"
 #include "manage_sql.h"
 #include "manage_sql_nvts.h"
 #include "manage_sql_targets.h"
+
+#include <assert.h>
 
 #undef G_LOG_DOMAIN
 /**
@@ -654,6 +656,7 @@ launch_osp_openvas_task (task_t task, target_t target, const char *scan_id,
     g_slist_free_full (osp_targets, (GDestroyNotify) osp_target_free);
     // Credentials are freed with target
     g_slist_free_full (vts, (GDestroyNotify) osp_vt_single_free);
+    g_hash_table_destroy (vts_hash_table);
     return -1;
   }
 
@@ -819,6 +822,9 @@ run_osp_scan_get_report (task_t task, int from, char **report_id)
 
       /* Ensure the report is marked as requested. */
       set_report_scan_run_status (resume_report, TASK_STATUS_REQUESTED);
+
+      /* Flag the report as manually started */
+      set_report_scheduled (resume_report);
 
       /* Clear the end times of the task and partial report. */
       set_task_start_time_epoch (task,
@@ -1262,7 +1268,7 @@ handle_osp_scan_end (task_t task, int handle_progress_rc, gboolean discovery)
       set_report_scan_run_status (global_current_report, TASK_STATUS_DONE);
       if (feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
         {
-          queue_report_for_export (global_current_report);
+          queue_integration_report_for_export (global_current_report);
         }
     }
   else if (handle_progress_rc == -1 || handle_progress_rc == -2)

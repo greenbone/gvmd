@@ -24,6 +24,7 @@
 #include "manage_tickets.h"
 #include "manage_users.h"
 
+#include <assert.h>
 #include <bsd/unistd.h>
 #include <glib/gstdio.h>
 #include <grp.h>
@@ -985,7 +986,7 @@ email (const char *to_address, const char *from_address, const char *subject,
     }
 
   command = g_strdup_printf ("read FROM TO < %s;"
-                             " /usr/sbin/sendmail -f \"$FROM\" \"$TO\" < %s"
+                             " /usr/sbin/sendmail -f \"$FROM\" -i \"$TO\" < %s"
                              " > /dev/null 2>&1",
                              args_file_name,
                              content_file_name);

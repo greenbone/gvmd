@@ -13,6 +13,8 @@
 #include "manage_sql_tags.h"
 #include "sql.h"
 
+#include <assert.h>
+
 #undef G_LOG_DOMAIN
 /**
  * @brief GLib log domain.

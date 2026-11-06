@@ -25,6 +25,7 @@
   "scanner_name",                           \
   "scanner_id",                             \
   "scheduler_cron_time",                    \
+  "max_delay_seconds",                      \
   NULL                                      \
 }
 
@@ -35,6 +36,7 @@
   { "scanner_name", "scanner_name", KEYWORD_TYPE_STRING },    \
   { "scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },      \
   { "scheduler_cron_time", NULL, KEYWORD_TYPE_STRING },       \
+  { "max_delay_seconds", NULL, KEYWORD_TYPE_INTEGER },        \
   { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }                   \
 }
 
@@ -45,6 +47,7 @@
   { "scanner_name", "scanner_name", KEYWORD_TYPE_STRING },    \
   { "scanner_uuid", "scanner_id", KEYWORD_TYPE_STRING },      \
   { "scheduler_cron_time", NULL, KEYWORD_TYPE_STRING },       \
+  { "max_delay_seconds", NULL, KEYWORD_TYPE_INTEGER },        \
   { NULL,      NULL, KEYWORD_TYPE_UNKNOWN }                   \
 }
 

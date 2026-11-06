@@ -1,0 +1,266 @@
+/* Copyright (C) 2026 Greenbone AG
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+#include "gvmd_config.h"
+#include "manage_integration_report_exports.h"
+#include "manage_settings.h"
+#include "manage_sql.h"
+
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
+
+/**
+ * @brief Checks if the automatic export to security intelligence is enabled
+ *        by the owner of the given report
+ *
+ * @param  report  The report to check
+ *
+ * @return TRUE if enabled, FALSE otherwise
+ */
+gboolean
+export_enabled_for_report_owner (report_t report)
+{
+  return !!sql_int_ps (
+    "SELECT COALESCE ((SELECT s.value FROM settings s"
+    "                  WHERE s.uuid = $1 AND s.owner = r.owner),"
+    "                 (SELECT s.value FROM settings s"
+    "                  WHERE s.uuid = $1 AND s.owner IS NULL),"
+    "                 '0')"
+    " FROM reports r WHERE r.id = $2",
+    SQL_STR_PARAM (SETTING_UUID_SECURITY_INTELLIGENCE_EXPORT),
+    SQL_INT_PARAM (report), NULL);
+}
+
+/**
+ * @brief Queue the given report for automatic export to security intelligence
+ *
+ * @param  report  The report to queue
+ *
+ * @return 0 on success, -1 on failure
+ */
+int
+queue_integration_report_for_export (const report_t report)
+{
+  if (!export_enabled_for_report_owner (report))
+    return -1;
+
+  sql_ps (
+    "INSERT INTO integration_report_exports (report_id, status, retry_count,"
+    "                            reason, next_retry_time,"
+    "                            creation_time, modification_time)"
+    " VALUES ($1, '"REPORT_EXPORT_STATUS_REQUESTED"', 0, 'Queued',"
+    "         m_now(), m_now(), m_now())",
+    SQL_INT_PARAM (report), NULL);
+
+  return 0;
+}
+
+/**
+ * @brief Update integration report export status with a reason
+ *
+ * @param  report   The report ID that is in export queue
+ * @param  status   The new status
+ * @param  reason   The reason for the status
+ */
+void
+set_integration_report_export_status_and_reason (
+  report_t report, const gchar *status,
+  const gchar *reason)
+{
+  sql_ps ("UPDATE integration_report_exports"
+          "   SET status = $1, reason = $2, modification_time = m_now()"
+          " WHERE report_id = $3",
+          SQL_STR_PARAM (status), SQL_STR_PARAM (reason),
+          SQL_INT_PARAM (report), NULL);
+}
+
+/**
+ * @brief Update integration report export next retry time
+ *
+ * @param  report           The report ID that is in export queue
+ * @param  next_retry_time  The new next retry time
+ */
+void
+set_integration_report_export_next_retry_time (report_t report,
+                                               time_t next_retry_time)
+{
+  sql_ps ("UPDATE integration_report_exports"
+          "   SET next_retry_time = $1, modification_time = m_now()"
+          " WHERE report_id = $2",
+          SQL_INT_PARAM (next_retry_time), SQL_INT_PARAM (report), NULL);
+}
+
+/**
+ * @brief Update integration report export retry count
+ *
+ * @param  report           The report ID that is in export queue
+ * @param  retry_count      The new retry count
+ */
+void
+set_integration_report_export_retry_count (report_t report, int retry_count)
+{
+  sql_ps ("UPDATE integration_report_exports"
+          "   SET retry_count = $1, modification_time = m_now()"
+          " WHERE report_id = $2",
+          SQL_INT_PARAM (retry_count), SQL_INT_PARAM (report), NULL);
+}
+
+/**
+ * @brief Initialize integration report export iterator to fetch
+ *        all exports that are due now
+ *
+ * @param[out] iterator    iterator to initialize
+ * @param[in]  max_retries if retry_count is equal to or bigger than
+ *                         this, it will be excluded from the iterator
+ *
+ * @return 0 on success
+ */
+int
+init_integration_report_export_iterator_due_exports (
+  iterator_t *iterator, int max_retries)
+{
+  init_ps_iterator (iterator,
+                    "SELECT id, report_id, status, reason,"
+                    "    retry_count, next_retry_time,"
+                    "    creation_time, modification_time"
+                    " FROM integration_report_exports"
+                    " WHERE   next_retry_time < m_now()"
+                    " AND     retry_count < $1"
+                    " AND     status IN ('"REPORT_EXPORT_STATUS_REQUESTED"',"
+                    "                    '"REPORT_EXPORT_STATUS_FAILED"')",
+                    SQL_INT_PARAM (max_retries), NULL);
+
+  return 0;
+}
+
+/**
+ * @brief  Initialize integration report export iterator to fetch stale exports
+ *
+ * @param[out]  iterator    iterator to initialize
+ * @param[in]   threshold   only fetch exports where modification_time
+ *                          is older than threshold timestamp
+ *
+ * @return 0 on success
+ */
+int
+init_integration_report_export_iterator_stale_exports (
+  iterator_t *iterator,
+  time_t threshold)
+{
+  init_ps_iterator (iterator,
+                    "SELECT id, report_id, status, reason,"
+                    "    retry_count, next_retry_time,"
+                    "    creation_time, modification_time"
+                    " FROM integration_report_exports"
+                    " WHERE   status = '"REPORT_EXPORT_STATUS_STARTED"'"
+                    " AND     modification_time < $1",
+                    SQL_INT_PARAM (threshold), NULL);
+
+  return 0;
+}
+
+/**
+ * @brief Get the report id from an integration report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Report id, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+report_t
+integration_report_export_iterator_report_id (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int64 (iterator, 1);
+}
+
+/**
+ * @brief Get the status from an integration report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Status, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (integration_report_export_iterator_status, 2);
+
+/**
+ * @brief Get the reason from an integration report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Reason, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+DEF_ACCESS (integration_report_export_iterator_reason, 3);
+
+/**
+ * @brief Get the retry count from an integration report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Retry count, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+int
+integration_report_export_iterator_retry_count (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int (iterator, 4);
+}
+
+/**
+ * @brief Get the next retry time from an integration  report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Next retry time, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+time_t
+integration_report_export_iterator_next_retry_time (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int64 (iterator, 5);
+}
+
+/**
+ * @brief Get the creation time from an integration  report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Creation time, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+time_t
+integration_report_export_iterator_creation_time (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int64 (iterator, 6);
+}
+
+/**
+ * @brief Get the modification time from an integration report export iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Modification time, or 0 if iteration is complete. Freed by
+ *         cleanup_iterator.
+ */
+time_t
+integration_report_export_iterator_modification_time (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int64 (iterator, 7);
+}

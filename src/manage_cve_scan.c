@@ -14,6 +14,8 @@
 #include "manage_sql.h"
 #include "manage_sql_assets.h"
 
+#include <assert.h>
+
 #include <util/cpeutils.h>
 #include <util/versionutils.h>
 

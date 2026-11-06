@@ -20,11 +20,11 @@ pkg_check_modules(LIBGVM_OSP REQUIRED libgvm_osp>=23.00)
 pkg_check_modules(LIBGVM_GMP REQUIRED libgvm_gmp>=22.30)
 
 if(ENABLE_HTTP_SCANNER)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(LIBGVM_HTTP_SCANNER REQUIRED libgvm_http_scanner>=22.41)
 endif(ENABLE_HTTP_SCANNER)
 if(ENABLE_OPENVASD)
-  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=23.3)
+  pkg_check_modules(LIBGVM_OPENVASD REQUIRED libgvm_openvasd>=23.9)
 else(ENABLE_OPENVASD)
   message(STATUS "ENABLE_OPENVASD flag is not enabled")
 endif(ENABLE_OPENVASD)
@@ -32,8 +32,9 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.6
+    libgvm_agent_controller>=23.14
   )
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.4)
 else(ENABLE_AGENTS)
   message(STATUS "ENABLE_AGENTS flag is not enabled")
 endif(ENABLE_AGENTS)
@@ -53,14 +54,14 @@ else(ENABLE_CONTAINER_SCANNING)
 endif(ENABLE_CONTAINER_SCANNING)
 
 if(ENABLE_JWT_AUTH)
-  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.2)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
 else(ENABLE_JWT_AUTH)
   message(STATUS "ENABLE_JWT_AUTH flag is not enabled")
 endif(ENABLE_JWT_AUTH)
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
-  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.2)
-  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=22.37)
+  pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.3)
+  pkg_check_modules(LIBGVM_HTTP REQUIRED libgvm_http>=23.9)
   pkg_check_modules(
     LIBGVM_SECURITY_INTELLIGENCE
     REQUIRED
@@ -74,16 +75,23 @@ if(ENABLE_WEB_APPLICATION_SCANNING)
   pkg_check_modules(
     LIBGVM_WEB_APPLICATION_SCANNER
     REQUIRED
-    libgvm_web_application_scanner>=23.4
+    libgvm_web_application_scanner>=23.8
   )
 else(ENABLE_WEB_APPLICATION_SCANNING)
   message(STATUS "ENABLE_WEB_APPLICATION_SCANNING flag is not enabled")
 endif(ENABLE_WEB_APPLICATION_SCANNING)
 
+if(ENABLE_AD_INTEGRATION)
+  pkg_check_modules(LIBGVM_GVM_LDAP REQUIRED libgvm_ldap>=23.15)
+  pkg_check_modules(LIBGVM_AD_CONNECTOR REQUIRED libgvm_ad_connector>=23.15)
+else(ENABLE_AD_INTEGRATION)
+  message(STATUS "ENABLE_AD_INTEGRATION flag is not enabled")
+endif(ENABLE_AD_INTEGRATION)
+
 pkg_check_modules(GNUTLS REQUIRED gnutls>=3.2.15)
 pkg_check_modules(GLIB REQUIRED glib-2.0>=2.42)
 pkg_check_modules(LIBBSD REQUIRED libbsd)
-pkg_check_modules(LIBICAL REQUIRED libical>=1.00)
+pkg_check_modules(LIBICAL REQUIRED libical>=3.0.11)
 pkg_check_modules(GPGME REQUIRED gpgme)
 
 message(STATUS "Looking for PostgreSQL...")
@@ -193,7 +201,13 @@ set(
   manage_acl.c
   manage_alerts.c
   manage_asset_keys.c
+  manage_audit_report.c
+  manage_audit_report_exports.c
+  manage_audit_report_hosts.c
   manage_configs.c
+  manage_credentials.c
+  manage_delta_audit_report_exports.c
+  manage_delta_scan_report_exports.c
   manage_events.c
   manage_filter_utils.c
   manage_commands.c
@@ -212,11 +226,15 @@ set(
   manage_port_lists.c
   manage_preferences.c
   manage_resources.c
+  manage_report_common.c
+  manage_scan_report.c
+  manage_scan_report_exports.c
   manage_report_applications.c
   manage_report_closed_cves.c
   manage_report_configs.c
   manage_report_cves.c
   manage_report_errors.c
+  manage_report_exports.c
   manage_report_formats.c
   manage_report_hosts.c
   manage_report_operating_systems.c
@@ -241,8 +259,9 @@ set(
   manage_tags.c
   manage_targets.c
   manage_users.c
-  manage_report_export_scheduler.c
+  manage_integration_report_export_scheduler.c
   manage_web_application_scanner.c
+  manage_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -252,6 +271,7 @@ if(ENABLE_AGENTS)
     manage_agent_groups.c
     manage_agents.c
     manage_agent_installer_instructions.c
+    manage_agent_inventory_authentication.c
     manage_agent_control_scan_config.c
   )
 endif()
@@ -269,7 +289,11 @@ if(ENABLE_WEB_APPLICATION_SCANNING)
 endif()
 
 if(ENABLE_SECURITY_INTELLIGENCE_EXPORT)
-  list(APPEND ALL_MANAGE_SRC manage_report_exports.c)
+  list(APPEND ALL_MANAGE_SRC manage_integration_report_exports.c)
+endif()
+
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_MANAGE_SRC manage_active_directory.c)
 endif()
 
 set(
@@ -278,6 +302,9 @@ set(
   manage_sql_copy.c
   manage_sql_alerts.c
   manage_sql_assets.c
+  manage_sql_audit_report.c
+  manage_sql_audit_report_hosts.c
+  manage_sql_credentials.c
   manage_sql_events.c
   manage_sql_filters.c
   manage_sql_groups.c
@@ -290,10 +317,13 @@ set(
   manage_sql_permissions_cache.c
   manage_sql_port_lists.c
   manage_sql_configs.c
+  manage_sql_scan_report.c
   manage_sql_report_applications.c
   manage_sql_report_closed_cves.c
+  manage_sql_report_common.c
   manage_sql_report_configs.c
   manage_sql_report_errors.c
+  manage_sql_report_exports.c
   manage_sql_report_formats.c
   manage_sql_resources.c
   manage_sql_report_hosts.c
@@ -314,7 +344,9 @@ set(
   manage_sql_nvts_common.c
   manage_sql_scan_queue.c
   manage_sql_oci_image_targets.c
-  manage_sql_report_exports.c
+  manage_sql_integration_report_exports.c
+  manage_sql_vt_tech_info.c
+  manage_sql_web_application_vts.c
 )
 
 if(ENABLE_AGENTS)
@@ -334,18 +366,28 @@ set(
   gmp.c
   gmp_base.c
   gmp_configs.c
+  gmp_credentials.c
   gmp_delete.c
+  gmp_delta_audit_report_exports.c
+  gmp_delta_scan_report_exports.c
+  gmp_scan_report_exports.c
   gmp_get.c
+  gmp_audit_report.c
+  gmp_audit_report_exports.c
+  gmp_audit_report_hosts.c
   gmp_integration_configs.c
   gmp_license.c
   gmp_logout.c
   gmp_oci_image_targets.c
   gmp_port_lists.c
+  gmp_scan_report.c
   gmp_report_applications.c
   gmp_report_closed_cves.c
+  gmp_report_common.c
   gmp_report_configs.c
   gmp_report_cves.c
   gmp_report_errors.c
+  gmp_report_exports.c
   gmp_report_formats.c
   gmp_report_hosts.c
   gmp_report_operating_systems.c
@@ -363,6 +405,7 @@ if(ENABLE_AGENTS)
     gmp_agent_groups.c
     gmp_agents.c
     gmp_agent_installer_instructions.c
+    gmp_agent_inventory_authentication.c
     gmp_agent_support_bundle.c
   )
 endif()
@@ -373,6 +416,10 @@ endif()
 
 if(ENABLE_CREDENTIAL_STORES)
   list(APPEND ALL_GMP_SRC gmp_credential_stores.c)
+endif()
+
+if(ENABLE_AD_INTEGRATION)
+  list(APPEND ALL_GMP_SRC gmp_active_directory.c)
 endif()
 
 set(ALL_SQL_SRC sql.c sql_pg.c)
@@ -481,6 +528,8 @@ target_link_libraries(
   ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBGVM_SECURITY_INTELLIGENCE_LDFLAGS}
   ${LIBGVM_WEB_APPLICATION_SCANNER_LDFLAGS}
+  ${LIBGVM_GVM_LDAP_LDFLAGS}
+  ${LIBGVM_AD_CONNECTOR_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
   ${OPT_THEIA_TGT}
@@ -529,6 +578,13 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+set_target_properties(
+  gmp-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator"
+)
 
 set(
   ALL_OBJECTS
@@ -591,6 +647,18 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+add_unit_test(manage-sql-port-lists "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-port-lists-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,acl_user_may,-wrap,sql_begin_immediate,-wrap,sql_quote,-wrap,sql_int,-wrap,sql_int64_ps,-wrap,sql_rollback"
+)
+add_unit_test(manage-sql-secinfo "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+set_target_properties(
+  manage-sql-secinfo-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_int64_0"
+)
 
 set(
   ALL_OBJECTS
@@ -629,6 +697,14 @@ set(
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
+if(ENABLE_AGENTS)
+  add_unit_test(
+    manage-agent-inventory-authentication
+    "${ALL_OBJECTS}"
+    "${EXTRA_SRC}"
+  )
+endif()
+
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-gmp-obj>
@@ -648,6 +724,40 @@ set(
 )
 set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-preferences "${ALL_OBJECTS}" "${EXTRA_SRC}")
+
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+
+add_unit_test(manage-credentials "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+
+set_target_properties(
+  manage-credentials-test
+  PROPERTIES
+    LINK_FLAGS
+      "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private,-wrap,feature_enabled,-wrap,gpgme_new"
+)
+
+if(ENABLE_AD_INTEGRATION)
+  set(
+    ALL_OBJECTS
+    $<TARGET_OBJECTS:all-gmp-obj>
+    $<TARGET_OBJECTS:all-manage-sql-obj>
+    $<TARGET_OBJECTS:all-misc-obj>
+    $<TARGET_OBJECTS:all-sql-obj>
+  )
+  add_unit_test(manage-active-directory "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+  set_target_properties(
+    manage-active-directory-test
+    PROPERTIES
+      LINK_FLAGS
+        "-Wl,-wrap,feature_enabled,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,credential_value,-wrap,credential_encrypted_value,-wrap,ad_connector_new,-wrap,ad_connector_free,-wrap,ad_connector_builder,-wrap,ad_connector_connect"
+  )
+endif()
 
 add_custom_target(tests DEPENDS ${TEST_DEPENDENCIES})
 
@@ -697,6 +807,7 @@ endif(GMP_VERSION)
 add_definitions(-DGVMD_DATABASE_VERSION=${GVMD_DATABASE_VERSION})
 add_definitions(-DGVMD_SCAP_DATABASE_VERSION=${GVMD_SCAP_DATABASE_VERSION})
 add_definitions(-DGVMD_CERT_DATABASE_VERSION=${GVMD_CERT_DATABASE_VERSION})
+add_definitions(-DGVMD_VTS_DATABASE_VERSION=${GVMD_VTS_DATABASE_VERSION})
 add_definitions(-DGVM_OS_NAME="${CMAKE_SYSTEM}")
 add_definitions(-DPREFIX="${CMAKE_INSTALL_PREFIX}")
 
@@ -708,6 +819,9 @@ add_definitions(
 
 add_definitions(-DGVM_CERT_RES_DIR="${GVM_CERT_RES_DIR}")
 add_definitions(-DGVM_CERT_DATA_DIR="${GVM_CERT_DATA_DIR}")
+
+add_definitions(-DGVM_WEB_APPLICATION_VTS_DIR="${GVM_WEB_APPLICATION_VTS_DIR}")
+add_definitions(-DGVM_VT_TECH_INFO_DIR="${GVM_VT_TECH_INFO_DIR}")
 
 if(GVM_SCANNER_CERTIFICATE)
   add_definitions(-DSCANNERCERT="${GVM_SCANNER_CERTIFICATE}")

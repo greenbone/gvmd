@@ -169,49 +169,49 @@ void
 sql (const char *sql, ...);
 
 void
-sql_ps (const char *sql, ...);
+sql_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_error (const char *sql, ...);
 
 int
-sql_error_ps (const char *sql, ...);
+sql_error_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_giveup (const char *sql, ...);
 
 int
-sql_giveup_ps (const char *sql, ...);
+sql_giveup_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 double
 sql_double (const char *sql, ...);
 
 double
-sql_double_ps (const char *sql, ...);
+sql_double_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_int (const char *, ...);
 
 int
-sql_int_ps (const char *, ...);
+sql_int_ps (const char *, ...) G_GNUC_NULL_TERMINATED;
 
 char *
 sql_string (const char *, ...);
 
 char *
-sql_string_ps (const char *, ...);
+sql_string_ps (const char *, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_int64 (long long int *ret, const char *, ...);
 
 int
-sql_int64_ps (long long int *ret, const char *, ...);
+sql_int64_ps (long long int *ret, const char *, ...) G_GNUC_NULL_TERMINATED;
 
 long long int
 sql_int64_0 (const char *sql, ...);
 
 long long int
-sql_int64_0_ps (const char *sql, ...);
+sql_int64_0_ps (const char *sql, ...) G_GNUC_NULL_TERMINATED;
 
 int
 sql_cancel ();

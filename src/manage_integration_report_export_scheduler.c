@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#include "manage_report_export_scheduler.h"
+#include "manage_integration_report_export_scheduler.h"
 
 #include "gvmd_config.h"
 #include "manage_integration_configs.h"
-#include "manage_report_exports.h"
+#include "manage_integration_report_exports.h"
 #include "sql.h"
 
 #include <math.h>
@@ -19,11 +19,11 @@
 #define G_LOG_DOMAIN "md manage"
 
 
-static int export_max_retries = 10; /* in seconds */
-static int retry_base_delay = 10;   /* in seconds */
-static int retry_multiplier = 2;    /* in seconds */
-static int retry_max_delay = 600;   /* in seconds */
-static int export_stale_threshold = 720;  /* in minutes */
+static int export_max_retries = 10;      /* in seconds */
+static int retry_base_delay = 10;        /* in seconds */
+static int retry_multiplier = 2;         /* in seconds */
+static int retry_max_delay = 600;        /* in seconds */
+static int export_stale_threshold = 720; /* in minutes */
 
 
 /**
@@ -150,16 +150,19 @@ reset_stale_report_exports ()
   const time_t threshold_timestamp = time (NULL) - (stale_threshold * 60);
 
   iterator_t report_exports;
-  init_report_export_iterator_stale_exports (&report_exports,
-                                             threshold_timestamp);
+  init_integration_report_export_iterator_stale_exports (
+    &report_exports,
+    threshold_timestamp);
 
   sql_begin_immediate ();
 
   while (next (&report_exports))
     {
-      report_t id = report_export_iterator_report_id (&report_exports);
-      set_report_export_status_and_reason (id, REPORT_EXPORT_STATUS_FAILED,
-                                           "Stale threshold has been exceeded");
+      report_t id = integration_report_export_iterator_report_id (
+        &report_exports);
+      set_integration_report_export_status_and_reason (
+        id, REPORT_EXPORT_STATUS_FAILED,
+        "Stale threshold has been exceeded");
 
       g_debug ("%s: found stale report export, report_id: %lld", __func__, id);
     }
@@ -195,6 +198,48 @@ calculate_next_retry_time (const int retry_count)
 }
 
 /**
+ * @brief Converts a GPtrArray of error strings into a single string,
+ *        with each error separated by "; ".
+ *
+ * @param[in] errors A GPtrArray containing error strings.
+ *
+ * @return Newly allocated string containing all errors concatenated,
+ *         or NULL if the array is empty or NULL.
+ *         The caller is responsible for freeing the returned string.
+ */
+static gchar *
+errors_to_string (GPtrArray *errors)
+{
+  GString *result;
+
+  if (!errors || errors->len == 0)
+    return NULL;
+
+  result = g_string_new (NULL);
+
+  for (guint i = 0; i < errors->len; ++i)
+    {
+      const gchar *error = g_ptr_array_index (errors, i);
+
+      if (!error || !*error)
+        continue;
+
+      if (result->len > 0)
+        g_string_append (result, "; ");
+
+      g_string_append (result, error);
+    }
+
+  if (result->len == 0)
+    {
+      g_string_free (result, TRUE);
+      return NULL;
+    }
+
+  return g_string_free (result, FALSE);
+}
+
+/**
  * @brief  Process a single report, which is due for export.
  *         Used to separate iterating over all reports from the handling
  *         of the export.
@@ -208,14 +253,16 @@ static void
 process_report_export (report_t report, int retry_count,
                        integration_config_data_t config)
 {
-  set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_STARTED,
-                                       NULL);
+  set_integration_report_export_status_and_reason (
+    report, REPORT_EXPORT_STATUS_STARTED,
+    NULL);
 
   export_report_result_t result = EXPORT_REPORT_RESULT_SUCCESS;
+  GPtrArray *errors = NULL;
 # if ENABLE_SECURITY_INTELLIGENCE_EXPORT
   /* Run the export */
   result =
-    export_report_security_intelligence (report, config);
+    export_report_security_intelligence (report, config, &errors);
 #endif
   gchar *reason = NULL;
 
@@ -223,23 +270,28 @@ process_report_export (report_t report, int retry_count,
 
   if (result == EXPORT_REPORT_RESULT_SUCCESS)
     {
-      set_report_export_status_and_reason (report,
-                                           REPORT_EXPORT_STATUS_FINISHED, NULL);
+      set_integration_report_export_status_and_reason (report,
+        REPORT_EXPORT_STATUS_FINISHED, NULL);
 
       g_debug ("%s: report export finished, report: %lld", __func__, report);
     }
   else
     {
       if (result == EXPORT_REPORT_RESULT_TIMEOUT)
-          reason = g_strdup ("The request has timed out");
+        reason = g_strdup ("The request has timed out");
       else if (result == EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED)
         reason = g_strdup ("Could not generate access_token");
+      else if (errors && errors->len > 0)
+        {
+          reason = errors_to_string (errors);
+        }
 
-      set_report_export_status_and_reason (report, REPORT_EXPORT_STATUS_FAILED,
-                                           reason);
-      set_report_export_next_retry_time (
+      set_integration_report_export_status_and_reason (
+        report, REPORT_EXPORT_STATUS_FAILED,
+        reason);
+      set_integration_report_export_next_retry_time (
         report, calculate_next_retry_time (retry_count));
-      set_report_export_retry_count (report, retry_count + 1);
+      set_integration_report_export_retry_count (report, retry_count + 1);
 
       g_debug ("%s: report export failed, report: %lld, reason: %s", __func__,
                report, reason);
@@ -250,6 +302,8 @@ process_report_export (report_t report, int retry_count,
       g_free (reason);
       reason = NULL;
     }
+  if (errors)
+    g_ptr_array_free (errors, TRUE);
 
   sql_commit ();
 }
@@ -275,16 +329,16 @@ run_due_exports ()
       return;
     }
 
-
   g_debug ("%s: iterating over due exports", __func__);
 
   iterator_t report_exports;
-  init_report_export_iterator_due_exports (&report_exports, max_retry_count);
+  init_integration_report_export_iterator_due_exports (
+    &report_exports, max_retry_count);
   while (next (&report_exports))
     {
       process_report_export (
-        report_export_iterator_report_id (&report_exports),
-        report_export_iterator_retry_count (&report_exports),
+        integration_report_export_iterator_report_id (&report_exports),
+        integration_report_export_iterator_retry_count (&report_exports),
         integration_config);
     }
 
@@ -293,13 +347,14 @@ run_due_exports ()
 }
 
 /**
- * @brief  Run report export scheduler, which fetches all due exports
+ * @brief  Run integration report export scheduler,
+ *         which fetches all due exports
  *         and tries to export them accordingly
  *
  * @return 0 on success, -1 on failure
  */
 int
-manage_report_export_scheduler ()
+manage_integration_report_export_scheduler ()
 {
   init_report_export_from_config ();
 

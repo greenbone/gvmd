@@ -116,6 +116,9 @@ gboolean
 task_schedule_iterator_timed_out (iterator_t *);
 
 gboolean
+task_schedule_timed_out_uuid (const gchar *);
+
+gboolean
 task_schedule_iterator_start_due (iterator_t *);
 
 gboolean
@@ -123,5 +126,8 @@ task_schedule_iterator_stop_due (iterator_t *);
 
 time_t
 task_schedule_iterator_initial_offset (iterator_t *);
+
+void
+set_task_report_scheduled (const gchar *, int);
 
 #endif /* not _GVMD_MANAGE_SCHEDULES_H */

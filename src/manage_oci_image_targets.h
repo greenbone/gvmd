@@ -10,7 +10,6 @@
  * General management headers of OCI Image Targets.
  */
 
-#if ENABLE_CONTAINER_SCANNING
 
 #ifndef _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
 #define _GVMD_MANAGE_OCI_IMAGE_TARGETS_H
@@ -18,6 +17,26 @@
 #include "iterator.h"
 #include "manage_get.h"
 
+/**
+ * @brief Default maximum number of images per OCI image target.
+ */
+#define MANAGE_MAX_OCI_IMAGES 1024
+
+/**
+ * @brief Absolute maximum number of OCI Images per target.
+ *        This limit is set by analogy to the absolute maximum
+ *        number of IPs per target.
+ */
+#define MANAGE_ABSOLUTE_MAX_OCI_IMAGES 65536
+
+int
+get_oci_target_max_images ();
+
+void
+set_oci_target_max_images (int);
+
+
+#if ENABLE_CONTAINER_SCANNING
 typedef enum {
   CREATE_OCI_IMAGE_TARGET_OK = 0,
   CREATE_OCI_IMAGE_TARGET_EXISTS_ALREADY = 1,
@@ -26,6 +45,7 @@ typedef enum {
   CREATE_OCI_IMAGE_TARGET_CREDENTIAL_NOT_FOUND = 4,
   CREATE_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 5,
   CREATE_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 6,
+  CREATE_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS = 7,
   CREATE_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
   CREATE_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
 } create_oci_image_target_return_t;
@@ -40,6 +60,7 @@ typedef enum {
   MODIFY_OCI_IMAGE_TARGET_INVALID_CREDENTIAL_TYPE = 6,
   MODIFY_OCI_IMAGE_TARGET_INVALID_IMAGE_URLS = 7,
   MODIFY_OCI_IMAGE_TARGET_INVALID_EXCLUDE_IMAGES = 8,
+  MODIFY_OCI_IMAGE_TARGET_TOO_MANY_IMAGE_URLS = 9,
   MODIFY_OCI_IMAGE_TARGET_PERMISSION_DENIED = 99,
   MODIFY_OCI_IMAGE_TARGET_INTERNAL_ERROR = -1
 } modify_oci_image_target_return_t;
@@ -143,6 +164,12 @@ oci_image_target_task_iterator_readable (iterator_t*);
 gchar*
 clean_images (const char *);
 
-#endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */
+int
+manage_count_oci_image_digests (const gchar *);
+
+int
+count_effective_oci_image_references (const char*, const char*);
 
 #endif /* ENABLE_CONTAINER_SCANNING */
+
+#endif /* not _GVMD_MANAGE_OCI_IMAGE_TARGETS_H */

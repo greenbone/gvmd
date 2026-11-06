@@ -18,18 +18,21 @@
 
 #include "manage_alerts.h"
 #include "manage_configs.h"
+#include "manage_credentials.h"
 #include "manage_events.h"
 #include "manage_get.h"
 #include "manage_integration_configs.h"
 #include "manage_report_applications.h"
 #include "manage_report_closed_cves.h"
 #include "manage_report_cves.h"
-#include "manage_report_vulns.h"
 #include "manage_report_errors.h"
+#include "manage_report_exports.h"
+#include "manage_report_vulns.h"
 #include "manage_report_hosts.h"
 #include "manage_report_operating_systems.h"
 #include "manage_report_ports.h"
 #include "manage_report_tls_certificates.h"
+#include "manage_secinfo.h"
 #include "manage_tasks.h"
 #include "sql.h"
 #include "utils.h"
@@ -58,6 +61,7 @@
 #include <gvm/agent_controller/agent_controller.h>
 #include "manage_agent_control_scan_config.h"
 #include "manage_agent_groups.h"
+#include "manage_agent_inventory_authentication.h"
 #include "manage_agents.h"
 #endif
 
@@ -187,17 +191,20 @@ void
 init_manage_funcs ();
 
 int
-init_manage (GSList*, const db_conn_info_t *, int, int, int, int,
+init_manage (GSList*, const db_conn_info_t *, int, int, int, int, int,
              manage_connection_forker_t, int);
 
 int
-init_manage_helper (GSList *, const db_conn_info_t *, int, int);
+init_manage_helper (GSList *, const db_conn_info_t *, int, int, int);
 
 void
 init_manage_process (const db_conn_info_t*);
 
 void
 reinit_manage_process ();
+
+int
+reinit_manage_process_no_abort ();
 
 void
 cleanup_manage_process (gboolean);
@@ -293,6 +300,12 @@ manage_cert_db_supported_version ();
 
 int
 manage_cert_db_version ();
+
+int
+manage_vts_db_supported_version ();
+
+int
+manage_vts_db_version ();
 
 void
 set_db_version (int version);
@@ -1004,6 +1017,7 @@ move_task (const char*, const char*);
   " 'Mac OS X Local Security Checks',"             \
   " 'Mageia Linux Local Security Checks',"         \
   " 'Mandrake Local Security Checks',"             \
+  " 'Microsoft Office Local Security Checks',"     \
   " 'openEuler Local Security Checks',"            \
   " 'openSUSE Local Security Checks',"             \
   " 'Oracle Linux Local Security Checks',"         \
@@ -1036,6 +1050,7 @@ move_task (const char*, const char*);
     "Huawei EulerOS Local Security Checks",        \
     "Mageia Linux Local Security Checks",          \
     "Mandrake Local Security Checks",              \
+    "Microsoft Office Local Security Checks",      \
     "openEuler Local Security Checks",             \
     "openSUSE Local Security Checks",              \
     "Oracle Linux Local Security Checks",          \
@@ -1413,6 +1428,12 @@ result_iterator_max_epss_cve (iterator_t*);
 
 double
 result_iterator_max_epss_severity (iterator_t*);
+
+const char *
+result_iterator_vt_type (iterator_t *);
+
+const char *
+result_iterator_vt_type_metadata (iterator_t *);
 
 gchar **
 result_iterator_cert_bunds (iterator_t*);
@@ -1881,7 +1902,8 @@ void
 xml_append_nvt_refs (GString *, const char *, int *);
 
 gchar*
-get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int, int, int);
+get_nvt_xml (iterator_t*, int, int, int, const char*, config_t, int, int, int,
+             int, int);
 
 char*
 task_preference_value (task_t, const char *);
@@ -1950,35 +1972,10 @@ gboolean
 find_credential_with_permission (const char*, credential_t*, const char*);
 
 int
-create_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   array_t*,    const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   credential_t*);
-
-int
-copy_credential (const char*, const char*, const char*,
-                 credential_t*);
-
-int
-modify_credential (const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, const char*, const char*, const char*,
-                   const char*, array_t*, const char*, const char*,
-                   const char*, const char*, const char*, const char*);
-
-int
 delete_credential (const char *, int);
 
 int
 credential_count (const get_data_t *);
-
-void
-set_credential_privacy_algorithm (credential_t, const char *);
-
-void
-set_credential_public_key (credential_t, const char *);
 
 void
 init_credential_iterator_one (iterator_t*, credential_t);
@@ -2028,6 +2025,28 @@ const char*
 credential_iterator_privacy_host_identifier (iterator_t*);
 
 #endif
+
+#if ENABLE_AD_INTEGRATION
+
+const char*
+credential_iterator_ad_host (iterator_t*);
+
+const char*
+credential_iterator_ad_bind_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_base_dn (iterator_t*);
+
+const char*
+credential_iterator_ad_port (iterator_t*);
+
+const char*
+credential_iterator_ad_tls_mode (iterator_t*);
+
+const char*
+credential_iterator_ad_ca_certificate (iterator_t*);
+
+#endif /* ENABLE_AD_INTEGRATION */
 
 const char*
 credential_iterator_private_key (iterator_t*);
@@ -2217,6 +2236,7 @@ typedef enum {
   CREATE_SCANNER_ALREADY_EXISTS,              ///< Scanner already exists
   CREATE_SCANNER_MISSING_TYPE,                ///< Missing type
   CREATE_SCANNER_MISSING_HOST,                ///< Missing host
+  CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS,     ///< Scanner endpoint already exists
   CREATE_SCANNER_CREDENTIAL_NOT_FOUND,        ///< Credential not found
   CREATE_SCANNER_CREDENTIAL_NOT_CC,           ///< Credential must have type "cc"
   CREATE_SCANNER_INVALID_TYPE,                ///< Invalid type
@@ -2251,6 +2271,7 @@ typedef enum {
   MODIFY_SCANNER_INVALID_TYPE,                ///< Invalid type
   MODIFY_SCANNER_INVALID_PORT,                ///< Invalid port
   MODIFY_SCANNER_INVALID_HOST,                ///< Invalid host
+  MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS,     ///< Scanner endpoint already exists
   MODIFY_SCANNER_INVALID_RELAY_PORT,          ///< Invalid relay port
   MODIFY_SCANNER_INVALID_RELAY_HOST,          ///< Invalid relay host
   MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED,     ///< Type doesn't support UNIX sockets
@@ -2433,7 +2454,7 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
 /**
  * @brief Seconds between calls to fork_report_export
  */
-#define REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
+#define INTEGRATION_REPORT_EXPORT_PERIOD 600 /* every 10 minutes */
 
 /**
  * @brief Minimum schedule timeout seconds.
@@ -2458,6 +2479,46 @@ slave_relay_connection (gvm_connection_t *, gvm_connection_t *);
  */
 #define ASSET_SNAPSHOT_STALE_DELETE_PERIOD 3600 /* every hour */
 
+/**
+ * @brief Seconds between calls to run_pending_report_exports.
+ */
+#define REPORT_EXPORT_PERIOD 2 /* every 2 seconds */
+
+/**
+ * @brief Seconds between calls to manage_report_export_stale.
+ */
+#define REPORT_EXPORT_STALE_TIMEOUT_SECONDS (3 * 24 * 60 * 60) /* 3 days */
+
+/**
+ * @brief Maximum number of retries for report export.
+ */
+#define REPORT_EXPORT_MAX_RETRIES 10
+
+/**
+ * @brief Maximum number of concurrent workers for report export.
+ */
+#define REPORT_EXPORT_MAX_WORKERS 3
+
+/**
+ * @brief Retention period for report export clean up.
+ */
+#define REPORT_EXPORT_RETENTION_SECONDS (30 * 24 * 60 * 60) /* 30 days */
+
+/**
+ * @brief Seconds between calls to manage_cleanup_old_report_exports.
+ */
+#define REPORT_EXPORT_CLEANUP_PERIOD (60 * 60) /* every hour */
+
+/**
+ * Maximum time to wait for cooperative report export cancellation.
+ */
+#define REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS 10
+
+/**
+ * Interval for checking cancel-requested report exports.
+ */
+#define REPORT_EXPORT_CANCEL_PERIOD 10
+
 void
 manage_auth_allow_all (int);
 
@@ -2477,8 +2538,7 @@ manage_rebuild_gvmd_data_from_feed (const char *,
                                     gchar **);
 
 int
-manage_schedule (manage_connection_forker_t,
-                 gboolean,
+manage_schedule (gboolean,
                  sigset_t *);
 
 int
@@ -2518,6 +2578,9 @@ manage_scap_loaded ();
 
 int
 manage_nvts_loaded ();
+
+int
+manage_web_application_vts_loaded ();
 
 const char *
 manage_scap_update_time ();
@@ -2677,6 +2740,50 @@ init_nvt_dfn_cert_adv_iterator (iterator_t*, const char*);
 const char*
 nvt_dfn_cert_adv_iterator_name (iterator_t*);
 
+
+/* Web Application VT data */
+
+int
+init_web_application_vt_info_iterator (iterator_t*, get_data_t *,
+                                       const char *);
+
+int
+init_web_application_vt_info_iterator_all (iterator_t*, get_data_t *);
+
+int
+web_application_vt_info_count (const get_data_t *);
+
+const char *
+web_application_vt_info_iterator_type (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_description (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_solution (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_severity (iterator_t *);
+
+const char *
+web_application_vt_info_iterator_type_metadata (iterator_t *);
+
+void
+init_web_application_vt_ref_iterator (iterator_t *, const char *);
+
+const char *
+web_application_vt_ref_iterator_type (iterator_t *);
+
+const char *
+web_application_vt_ref_iterator_ref_id (iterator_t *);
+
+
+/* VT Technical Info */
+
+int
+manage_vt_tech_info_loaded ();
+
+
 /* All SecInfo Data */
 
 int
@@ -2781,6 +2888,7 @@ aggregate_iterator_subgroup_value (iterator_t*);
 #define SCAP_FEED 2
 #define CERT_FEED 3
 #define GVMD_DATA_FEED 4
+#define WEB_APPLICATION_VTS_FEED 5
 
 gboolean
 manage_gvmd_data_feed_dir_exists (const char *);
@@ -2864,7 +2972,7 @@ int
 feed_lockfile_unlock (lockfile_t *);
 
 int
-gvm_migrate_secinfo (int);
+gvm_migrate_secinfo (secinfo_schema_t);
 
 int
 nvts_feed_info (gchar **, gchar **, gchar **, gchar **);

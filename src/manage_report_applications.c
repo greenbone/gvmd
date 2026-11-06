@@ -139,6 +139,16 @@ get_report_applications (report_t report,
   fill_report_applications_severities (get, report, &results, &app_severities,
                                        host_filter);
 
+  /**
+   * Fill the application severities from vulnerable products
+   * which may not have been included in the results iterator.
+   * Vulnerable products are host details for agent results.
+   */
+  fill_report_app_vulnerable_product_severities (
+    report,
+    app_severities,
+    host_filter);
+
   init_report_app_iterator (&report_apps, report, host_filter);
 
   while (next (&report_apps))

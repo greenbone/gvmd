@@ -35,6 +35,7 @@
 #include "manage_roles.h"
 #include "manage_runtime_flags.h"
 #include "manage_scanner_relays.h"
+#include "manage_sql_credentials.h"
 #include "manage_sql_credential_stores.h"
 #include "manage_sql_copy.h"
 #include "manage_sql_secinfo.h"
@@ -119,12 +120,20 @@
 #include "manage_report_configs.h"
 #include "manage_sql_agents.h"
 #include "manage_sql_agent_groups.h"
+#include "manage_sql_report_common.h"
 #include "manage_sql_report_hosts.h"
 #include "manage_sql_report_ports.h"
 #include "manage_sql_report_tls_certificates.h"
 #if ENABLE_WEB_APPLICATION_SCANNING
 #include "manage_web_application_targets.h"
+#include "manage_web_application_scanner.h"
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
+#if ENABLE_OPENVASD
+#include "manage_openvasd.h"
+#endif /* ENABLE_OPENVASD */
+#if ENABLE_CONTAINER_SCANNING
+#include "manage_container_image_scanner.h"
+#endif /* ENABLE_CONTAINER_SCANNING */
 
 #undef G_LOG_DOMAIN
 /**
@@ -221,11 +230,6 @@ task_owner_uuid (task_t);
 static int
 user_ensure_in_db (const gchar *, const gchar *);
 
-static int
-report_counts_id_full (report_t, int *, int *, int *, int *, int *, int *,
-                       double *, const get_data_t*, const char* ,
-                       int *, int *, int *, int *, int *, int *, double *);
-
 static gboolean
 find_trash_task (const char*, task_t*);
 
@@ -235,33 +239,6 @@ find_trash_report_with_permission (const char *, report_t *, const char *);
 static int
 cleanup_schedule_times ();
 
-static int
-set_credential_data (credential_t, const char*, const char*);
-
-static void
-set_credential_name (credential_t, const char *);
-
-static void
-set_credential_comment (credential_t, const char *);
-
-static void
-set_credential_login (credential_t, const char *);
-
-static void
-set_credential_certificate (credential_t, const char *);
-
-static void
-set_credential_auth_algorithm (credential_t, const char *);
-
-static void
-set_credential_private_key (credential_t, const char *, const char *);
-
-static void
-set_credential_password (credential_t, const char *);
-
-static void
-set_credential_snmp_secret (credential_t, const char *, const char *,
-                            const char *);
 
 
 /* Variables. */
@@ -585,6 +562,7 @@ manage_option_setup (GSList *log_config, const db_conn_info_t *database,
 
   ret = init_manage_helper (log_config, database,
                             MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
+                            MANAGE_ABSOLUTE_MAX_OCI_IMAGES,
                             avoid_db_check_inserts);
   assert (ret != -4);
   switch (ret)
@@ -1487,6 +1465,13 @@ init_aggregate_iterator (iterator_t* iterator, const char *type,
                     first_group);
     }
 
+  for (col_index = 0; col_index < select_data_columns->len; col_index++)
+    g_free (g_array_index (select_data_columns, gchar*, col_index));
+  g_array_free (select_data_columns, TRUE);
+  for (col_index = 0; col_index < select_text_columns->len; col_index++)
+    g_free (g_array_index (select_text_columns, gchar*, col_index));
+  g_array_free (select_text_columns, TRUE);
+
   g_string_free (order_clause, TRUE);
   g_free (aggregate_group_by);
   g_string_free (aggregate_select, TRUE);
@@ -1931,6 +1916,42 @@ manage_cert_db_version ()
   int number;
   char *version = sql_string ("SELECT value FROM cert.meta"
                               " WHERE name = 'database_version' LIMIT 1;");
+  if (version)
+    {
+      number = atoi (version);
+      free (version);
+      return number;
+    }
+  return -1;
+}
+
+/**
+ * @brief Return the database version supported by this manager.
+ *
+ * @return Database version supported by this manager.
+ */
+int
+manage_vts_db_supported_version ()
+{
+  return GVMD_VTS_DATABASE_VERSION;
+}
+
+/**
+ * @brief Return the database version of the actual database.
+ *
+ * @return Database version read from database if possible, else -1.
+ */
+int
+manage_vts_db_version ()
+{
+  if (sql_table_exists ("vts", "meta") == 0)
+    return -1;
+
+  int number;
+  char *version
+    = sql_string ("SELECT value FROM vts.meta"
+                  " WHERE name = 'vts_database_version'"
+                  " LIMIT 1;");
   if (version)
     {
       number = atoi (version);
@@ -3204,10 +3225,10 @@ task_average_scan_duration (task_t task)
  *
  * @param[in]  database          Location of manage database.
  *
- * @return 1 if open already, else 0.
+ * @return 0 on success, 1 if open already, -1 on error.
  */
 static int
-init_manage_open_db (const db_conn_info_t *database)
+init_manage_open_db_no_abort (const db_conn_info_t *database)
 {
   if (sql_is_open ())
     return 1;
@@ -3216,7 +3237,7 @@ init_manage_open_db (const db_conn_info_t *database)
   if (sql_open (database))
     {
       g_warning ("%s: sql_open failed", __func__);
-      abort ();
+      return -1;
     }
 
   /* Ensure the user session variables always exists. */
@@ -3227,6 +3248,24 @@ init_manage_open_db (const db_conn_info_t *database)
   manage_attach_databases ();
 
   return 0;
+}
+
+/**
+ * @brief Initialize the manage library: open db.
+ *
+ * @param[in] database  Location of manage database.
+ *
+ * @return 0 on success, 1 if open already, aborts on error.
+ */
+static int
+init_manage_open_db (const db_conn_info_t *database)
+{
+  int ret;
+
+  ret = init_manage_open_db_no_abort (database);
+  if (ret < 0)
+    abort ();
+  return ret;
 }
 
 /**
@@ -3278,6 +3317,29 @@ reinit_manage_process ()
 {
   cleanup_manage_process (FALSE);
   init_manage_process (&gvmd_db_conn_info);
+}
+
+/**
+ * @brief Reinitialize the manage library for a process.
+ *
+ * This is mandatory after a fork, to not carry open databases around (refer
+ * to database documentation).
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+reinit_manage_process_no_abort ()
+{
+  cleanup_manage_process (FALSE);
+
+  if (reinit_semaphore_set())
+    return -1;
+
+  if (init_manage_open_db_no_abort (&gvmd_db_conn_info) < 0)
+    return -1;
+
+  init_manage_create_functions ();
+  return 0;
 }
 
 /**
@@ -3800,6 +3862,42 @@ add_role_permission_resource (const gchar *role_id, const gchar *permission,
 }
 
 /**
+ * @brief Ensure that one of the databases is the right versions.
+ *
+ * @param[in]  type                      Type of the database
+ * @param[in]  get_current_db_version    Function to get current DB version.
+ * @param[in]  get_supported_db_version  Function to get supported DB version.
+ *
+ * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
+ */
+static int
+check_secinfo_db_version (const char *type,
+                          int get_current_db_version(),
+                          int get_supported_db_version())
+{
+  int db_version;
+  db_version = get_current_db_version ();
+  if (db_version == -1)
+    g_message ("No %s database found", type);
+  else
+    {
+      int supported;
+
+      supported = get_supported_db_version ();
+      if (db_version != supported)
+        {
+          g_message ("%s: database version of %s database: %i",
+                     __func__, type, db_version);
+          g_message ("%s: %s database version supported by manager: %d",
+                     __func__, type, supported);
+
+          return supported > db_version ? -2 : -5;
+        }
+    }
+  return 0;
+}
+
+/**
  * @brief Ensure that the databases are the right versions.
  *
  * @return 0 success, -1 error, -2 database is too old, -5 database is too new.
@@ -3808,7 +3906,7 @@ static int
 check_db_versions ()
 {
   char *database_version;
-  int scap_db_version, cert_db_version;
+  int ret;
 
   database_version = sql_string ("SELECT value FROM %s.meta"
                                  " WHERE name = 'database_version';",
@@ -3839,49 +3937,28 @@ check_db_versions ()
 
   /* Check SCAP database version. */
 
-  scap_db_version = manage_scap_db_version ();
-  if (scap_db_version == -1)
-    g_message ("No SCAP database found");
-  else
-    {
-      int supported;
-
-      supported = manage_scap_db_supported_version ();
-      if (scap_db_version != supported)
-        {
-          g_message ("%s: database version of SCAP database: %i",
-                     __func__,
-                     scap_db_version);
-          g_message ("%s: SCAP database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_SCAP_DATABASE_VERSION));
-
-          return supported > scap_db_version ? -2 : -5;
-        }
-    }
+  ret = check_secinfo_db_version ("SCAP",
+                                  manage_scap_db_version,
+                                  manage_scap_db_supported_version);
+  if (ret)
+    return ret;
 
   /* Check CERT database version. */
 
-  cert_db_version = manage_cert_db_version ();
-  if (cert_db_version == -1)
-    g_message ("No CERT database found");
-  else
-    {
-      int supported;
+  ret = check_secinfo_db_version ("CERT",
+                                  manage_cert_db_version,
+                                  manage_cert_db_supported_version);
+  if (ret)
+    return ret;
 
-      supported = manage_cert_db_supported_version ();
-      if (cert_db_version != supported)
-        {
-          g_message ("%s: database version of CERT database: %i",
-                     __func__,
-                     cert_db_version);
-          g_message ("%s: CERT database version supported by manager: %s",
-                     __func__,
-                     G_STRINGIFY (GVMD_CERT_DATABASE_VERSION));
+  /* Check VT database versions. */
 
-          return supported > cert_db_version ? -2 : -5;
-        }
-    }
+  ret = check_secinfo_db_version ("VTs",
+                                  manage_vts_db_version,
+                                  manage_vts_db_supported_version);
+  if (ret)
+    return ret;
+
   return 0;
 }
 
@@ -4144,6 +4221,7 @@ check_db_permissions ()
     {
       if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
           && strcmp (command[0].name, "GET_VERSION")
+          && strcmp (command[0].name, "MODIFY_AUTH")
           && strcmp (command[0].name, "MODIFY_LICENSE")
           && strstr (command[0].name, "GROUP") == NULL
           && strstr (command[0].name, "ROLE") == NULL
@@ -4185,6 +4263,10 @@ check_db_permissions ()
   add_permissions_on_globals (ROLE_UUID_GUEST);
   add_permissions_on_globals (ROLE_UUID_OBSERVER);
   add_permissions_on_globals (ROLE_UUID_USER);
+
+  // Delete revoked permissions for built-in roles
+  sql ("DELETE FROM permissions"
+       " WHERE name = 'modify_auth' AND owner IS NULL;");
 }
 
 /**
@@ -4404,6 +4486,14 @@ check_db (int check_encryption_key, int avoid_db_check_inserts)
   if (check_db_extensions ())
     goto fail;
   create_tables ();
+  if (! sql_table_exists("vts", "meta")
+      || sql_int ("SELECT EXISTS ("
+                  " SELECT value FROM vts.meta"
+                  " WHERE name = 'vts_database_version');") == 0)
+    {
+      manage_db_init ("vts");
+      refresh_all_vts_table ();
+    }
   check_db_sequences ();
   set_db_version (GVMD_DATABASE_VERSION);
   if (avoid_db_check_inserts == 0)
@@ -4590,6 +4680,7 @@ cleanup_tables ()
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  stop_tasks          Stop any active tasks.
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
@@ -4600,11 +4691,13 @@ cleanup_tables ()
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
+ *         -6 max_images_per_oci_target out of range.
  */
 static int
 init_manage_internal (GSList *log_config,
                       const db_conn_info_t *database,
                       int max_ips_per_target,
+                      int max_images_per_oci_target,
                       int max_email_attachment_size,
                       int max_email_include_size,
                       int max_email_message_size,
@@ -4658,6 +4751,13 @@ init_manage_internal (GSList *log_config,
     return -4;
 
   manage_set_max_hosts (max_ips_per_target);
+
+  if ((max_images_per_oci_target <= 0)
+      || (max_images_per_oci_target > MANAGE_ABSOLUTE_MAX_OCI_IMAGES))
+    return -6;
+
+  set_oci_target_max_images (max_images_per_oci_target);
+
   if (max_email_attachment_size)
     set_max_email_attachment_size (max_email_attachment_size);
   if (max_email_include_size)
@@ -4766,6 +4866,7 @@ init_manage_funcs () {
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  fork_connection     Function to fork a connection that will
  *                                 accept GMP requests.  Used to start tasks
  *                                 with GMP when an alert occurs.
@@ -4773,18 +4874,20 @@ init_manage_funcs () {
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
- *         -5 database is too new.
+ *         -5 database is too new. -6 max_images_per_oci_target out of range.
  */
 int
 init_manage (GSList *log_config, const db_conn_info_t *database,
              int max_ips_per_target, int max_email_attachment_size,
              int max_email_include_size, int max_email_message_size,
+             int max_images_per_oci_target,
              manage_connection_forker_t fork_connection,
              int skip_db_check)
 {
   return init_manage_internal (log_config,
                                database,
                                max_ips_per_target,
+                               max_images_per_oci_target,
                                max_email_attachment_size,
                                max_email_include_size,
                                max_email_message_size,
@@ -4805,19 +4908,22 @@ init_manage (GSList *log_config, const db_conn_info_t *database,
  * @param[in]  log_config      Log configuration.
  * @param[in]  database        Location of database.
  * @param[in]  max_ips_per_target   Max number of IPs per target.
+ * @param[in]  max_images_per_oci_target   Max number of images per OCI target.
  * @param[in]  avoid_db_check_inserts  Whether to avoid inserts in DB check.
  *
  * @return 0 success, -1 error, -2 database is too old, -3 database needs
  *         to be initialised from server, -4 max_ips_per_target out of range,
- *         -5 database is too new.
+ *         -5 database is too new, -6 max_images_per_oci_target out of range.
  */
 int
 init_manage_helper (GSList *log_config, const db_conn_info_t *database,
-                    int max_ips_per_target, int avoid_db_check_inserts)
+                    int max_ips_per_target, int max_images_per_oci_target,
+                    int avoid_db_check_inserts)
 {
   return init_manage_internal (log_config,
                                database,
                                max_ips_per_target,
+                               max_images_per_oci_target,
                                0,   /* Default max_email_attachment_size. */
                                0,   /* Default max_email_include_size. */
                                0,   /* Default max_email_message_size */
@@ -5192,6 +5298,12 @@ authenticate_any_method (const gchar *username, const gchar *password,
   int ret;
   gchar *hash;
   gboolean use_cache = TRUE;
+
+  if (password == NULL || *password == '\0')
+    {
+      g_debug ("%s: Empty password rejected", __func__);
+      return 1;
+    }
 
   sql_begin_immediate ();
 
@@ -10019,6 +10131,8 @@ report_add_result_for_buffer (report_t report, result_t result)
                           "      OR overrides.result = 0)"
                           " AND (overrides.hosts is NULL"
                           "      OR overrides.hosts = ''"
+                          "      OR oci_digest_list_contains (overrides.hosts,"
+                          "                                   results.host)"
                           "      OR hosts_contains (overrides.hosts,"
                           "                         results.host))"
                           " AND (overrides.port is NULL"
@@ -10897,7 +11011,7 @@ where_qod (int min_qod)
 #define BASE_RESULT_ITERATOR_COLUMNS_SEVERITY_FILTERABLE                      \
     { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "(SELECT name FROM all_vts WHERE all_vts.oid =  nvt)",                  \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -10924,19 +11038,19 @@ where_qod (int min_qod)
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "(SELECT cvss_base FROM nvts WHERE nvts.oid =  nvt)",                   \
+    { "(SELECT cvss_base FROM all_vts WHERE all_vts.oid =  nvt)",             \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
     { "severity", "original_severity", KEYWORD_TYPE_DOUBLE },                 \
-    { "(SELECT name FROM nvts WHERE nvts.oid =  nvt)",                        \
+    { "(SELECT name FROM all_vts WHERE all_vts.oid =  nvt)",                  \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT solution_type FROM nvts WHERE nvts.oid = nvt)",                \
+    { "(SELECT solution_type FROM all_vts WHERE all_vts.oid = nvt)",          \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "qod", NULL, KEYWORD_TYPE_INTEGER },                                    \
@@ -10956,7 +11070,9 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "(SELECT cve FROM nvts WHERE oid = nvt)", "cve", KEYWORD_TYPE_STRING }, \
+    { "(SELECT cve FROM all_vts WHERE oid = nvt)",                            \
+      "cve",                                                                  \
+      KEYWORD_TYPE_STRING },                                                  \
     { "path",                                                                 \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
@@ -11007,6 +11123,18 @@ where_qod (int min_qod)
       KEYWORD_TYPE_STRING },                                                  \
     { "hostname", "oci_image_name", KEYWORD_TYPE_STRING },                    \
     { "host", "oci_image_digest", KEYWORD_TYPE_STRING },                      \
+    { "coalesce (result_vt_epss.epss_score, 0.0)",                            \
+      "epss_score",                                                           \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.epss_percentile, 0.0)",                       \
+      "epss_percentile",                                                      \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.max_epss_score, 0.0)",                        \
+      "max_epss_score",                                                       \
+      KEYWORD_TYPE_DOUBLE },                                                  \
+    { "coalesce (result_vt_epss.max_epss_percentile, 0.0)",                   \
+      "max_epss_percentile",                                                  \
+      KEYWORD_TYPE_DOUBLE },                                                  \
     { "coalesce((regexp_match(hostname,"                                      \
       " '^oci:\\/\\/([^\\/]+)\\/([^.]+)\\/([^\\/]+)$'))[1],"                  \
       "         (regexp_match(hostname,"                                      \
@@ -11071,7 +11199,7 @@ where_qod (int min_qod)
     { "results.id", "id", KEYWORD_TYPE_INTEGER },                             \
     /* ^ 0 */                                                                 \
     { "results.uuid", "uuid", KEYWORD_TYPE_STRING },                          \
-    { "nvts.name",                                                            \
+    { "all_vts.name",                                                            \
       "name",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
     { "''", "comment", KEYWORD_TYPE_STRING },                                 \
@@ -11102,7 +11230,7 @@ where_qod (int min_qod)
     { "description", NULL, KEYWORD_TYPE_STRING },                             \
     { "task", NULL, KEYWORD_TYPE_INTEGER },                                   \
     { "report", "report_rowid", KEYWORD_TYPE_INTEGER },                       \
-    { "nvts.cvss_base",                                                       \
+    { "all_vts.cvss_base",                                                       \
       "cvss_base",                                                            \
       KEYWORD_TYPE_DOUBLE },                                                  \
     { "nvt_version", NULL, KEYWORD_TYPE_STRING },                             \
@@ -11111,14 +11239,14 @@ where_qod (int min_qod)
     { new_severity_sql,                                                       \
       "severity",                                                             \
       KEYWORD_TYPE_DOUBLE },                                                  \
-    { "nvts.name",                                                            \
+    { "all_vts.name",                                                            \
       "vulnerability",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "date" , NULL, KEYWORD_TYPE_INTEGER },                                  \
     { "(SELECT uuid FROM reports WHERE id = report)",                         \
       "report_id",                                                            \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.solution_type",                                                   \
+    { "all_vts.solution_type",                                                   \
       "solution_type",                                                        \
       KEYWORD_TYPE_STRING },                                                  \
     { "results.qod", "qod", KEYWORD_TYPE_INTEGER },                           \
@@ -11129,7 +11257,7 @@ where_qod (int min_qod)
     { "(SELECT uuid FROM tasks WHERE id = task)",                             \
       "task_id",                                                              \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.cve", "cve", KEYWORD_TYPE_STRING },                               \
+    { "all_vts.cve", "cve", KEYWORD_TYPE_STRING },                               \
     /* ^ 30 = 20 */                                                           \
     { "path",                                                                 \
       NULL,                                                                   \
@@ -11176,29 +11304,29 @@ where_qod (int min_qod)
     { "(SELECT name FROM tasks WHERE tasks.id = task)",                       \
       "task",                                                                 \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.summary",                                                         \
+    { "all_vts.summary",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.insight",                                                         \
+    { "all_vts.insight",                                                         \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.affected",                                                        \
+    { "all_vts.affected",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.impact",                                                          \
+    { "all_vts.impact",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     /* ^ 40 = 30 */                                                           \
-    { "nvts.solution",                                                        \
+    { "all_vts.solution",                                                        \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.detection",                                                       \
+    { "all_vts.detection",                                                       \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.family",                                                          \
+    { "all_vts.family",                                                          \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
-    { "nvts.tag",                                                             \
+    { "all_vts.tag",                                                             \
       NULL,                                                                   \
       KEYWORD_TYPE_STRING },                                                  \
     { "coalesce(lower(substring(description, '^Compliant:[\\s]*([A-Z_]*)'))," \
@@ -11250,7 +11378,12 @@ where_qod (int min_qod)
     { "coalesce (result_vt_epss.max_epss_severity, 0.0)",                     \
       "max_epss_severity",                                                    \
       KEYWORD_TYPE_DOUBLE },                                                  \
-
+    { "all_vts.type",                                                         \
+      "vt_type",                                                              \
+      KEYWORD_TYPE_STRING },                                                  \
+    { "all_vts.type_metadata",                                                \
+      "type_metadata",                                                        \
+      KEYWORD_TYPE_STRING },                                                  \
 /**
  * @brief Result iterator columns.
  */
@@ -11549,6 +11682,7 @@ results_extra_where (int trash, report_t report, const gchar* host,
 
   compliance_levels_clause = where_compliance_levels (compliance_levels);
 
+  g_free (compliance_levels);
   g_free (levels);
   g_free (new_severity_sql);
 
@@ -11561,7 +11695,10 @@ results_extra_where (int trash, report_t report, const gchar* host,
                                 compliance_levels_clause ?: "");
 
   g_free (min_qod_clause);
-  g_string_free (levels_clause, TRUE);
+
+  if (levels_clause)
+    g_string_free (levels_clause, TRUE);
+
   g_free (report_clause);
   g_free (host_clause);
   g_free (compliance_levels_clause);
@@ -11655,6 +11792,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   = results.id)"
             "           AND (valid_overrides.hosts is NULL"
             "                OR valid_overrides.hosts = ''"
+            "                OR oci_digest_list_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host)"
             "                OR hosts_contains"
             "                    (valid_overrides.hosts,"
             "                     results.host))"
@@ -11667,7 +11807,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                  ((CASE WHEN results.severity"
             "                              > " G_STRINGIFY
                                                              (SEVERITY_LOG)
-            "                    THEN CAST (nvts.cvss_base"
+            "                    THEN CAST (all_vts.cvss_base"
             "                               AS double precision)"
             "                    ELSE results.severity"
             "                    END),"
@@ -11677,7 +11817,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "          coalesce ((CASE WHEN results.severity"
             "                               > " G_STRINGIFY
                                                               (SEVERITY_LOG)
-            "                     THEN CAST (nvts.cvss_base"
+            "                     THEN CAST (all_vts.cvss_base"
             "                                AS double precision)"
             "                     ELSE results.severity"
             "                     END),"
@@ -11686,7 +11826,7 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
         lateral
           = "coalesce ((CASE WHEN results.severity"
             "                     > " G_STRINGIFY (SEVERITY_LOG)
-            "                THEN CAST (nvts.cvss_base"
+            "                THEN CAST (all_vts.cvss_base"
             "                           AS double precision)"
             "                ELSE results.severity"
             "                END),"
@@ -11704,6 +11844,9 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
             "                   = results.id)"
             "           AND (valid_overrides.hosts is NULL"
             "                OR valid_overrides.hosts = ''"
+            "                OR oci_digest_list_contains"
+            "                    (valid_overrides.hosts,"
+            "                     results.host)"
             "                OR hosts_contains"
             "                    (valid_overrides.hosts,"
             "                     results.host))"
@@ -11733,12 +11876,16 @@ init_result_get_iterator_severity (iterator_t* iterator, const get_data_t *get,
   opts = result_iterator_opts_table (apply_overrides,
                                      dynamic_severity);
   if (dynamic_severity)
-    extra_tables = g_strdup_printf (" LEFT OUTER JOIN nvts"
-                                    " ON results.nvt = nvts.oid,"
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN all_vts"
+                                    " ON results.nvt = all_vts.oid"
+                                    " LEFT OUTER JOIN result_vt_epss"
+                                    " ON results.nvt = result_vt_epss.vt_id,"
                                     " LATERAL %s AS lateral_severity%s",
                                     lateral, opts);
   else
-    extra_tables = g_strdup_printf (", LATERAL %s AS lateral_severity%s",
+    extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
+                                    "  ON results.nvt = result_vt_epss.vt_id,"
+                                    " LATERAL %s AS lateral_severity%s",
                                     lateral, opts);
   g_free (opts);
 
@@ -11954,12 +12101,12 @@ init_result_get_iterator (iterator_t* iterator, const get_data_t *get,
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
@@ -12060,12 +12207,12 @@ result_count (const get_data_t *get, report_t report, const char* host)
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
@@ -12696,6 +12843,24 @@ result_iterator_max_epss_severity (iterator_t* iterator)
 }
 
 /**
+ * @brief Get the VT type from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return VT type of the result.
+ */
+DEF_ACCESS (result_iterator_vt_type, GET_ITERATOR_COLUMN_COUNT + 49)
+
+/**
+ * @brief Get the VT type specific metadata from a result iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return VT type specific metadata of the result.
+ */
+DEF_ACCESS (result_iterator_vt_type_metadata, GET_ITERATOR_COLUMN_COUNT + 50)
+
+/**
  * @brief Get CERT-BUNDs from a result iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -12706,7 +12871,7 @@ gchar **
 result_iterator_cert_bunds (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 49);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 51);
 }
 
 /**
@@ -12720,7 +12885,7 @@ gchar **
 result_iterator_dfn_certs (iterator_t* iterator)
 {
   if (iterator->done) return 0;
-  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 50);
+  return iterator_array (iterator, GET_ITERATOR_COLUMN_COUNT + 52);
 }
 
 /**
@@ -13322,22 +13487,6 @@ set_task_end_time_epoch (task_t task, time_t time)
 }
 
 /**
- * @brief Get the start time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return Start time of scan, in a newly allocated string.
- */
-static char*
-scan_start_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (start_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
-}
-
-/**
  * @brief Get the start time of a scan, in seconds since the epoch.
  *
  * @param[in]  report  The report associated with the scan.
@@ -13394,22 +13543,6 @@ set_scan_start_time_ctime (report_t report, const char* timestamp)
   sql ("UPDATE reports SET start_time = %i WHERE id = %llu;",
        parse_utc_ctime (timestamp),
        report);
-}
-
-/**
- * @brief Get the end time of a scan.
- *
- * @param[in]  report  The report associated with the scan.
- *
- * @return End time of scan, in a newly allocated string.
- */
-static char*
-scan_end_time (report_t report)
-{
-  char *time = sql_string ("SELECT iso_time (end_time)"
-                           " FROM reports WHERE id = %llu;",
-                           report);
-  return time ? time : g_strdup ("");
 }
 
 /**
@@ -13614,23 +13747,6 @@ report_end_time (report_t report)
                      " FROM reports"
                      " WHERE id = %llu",
                      report);
-}
-
-/**
- * @brief Return the run status of the scan associated with a report.
- *
- * @param[in]   report  Report.
- * @param[out]  status  Scan run status.
- *
- * @return 0 on success, -1 on error.
- */
-static int
-report_scan_run_status (report_t report, task_status_t* status)
-{
-  *status = sql_int ("SELECT scan_run_status FROM reports"
-                     " WHERE reports.id = %llu;",
-                     report);
-  return 0;
 }
 
 /**
@@ -13984,7 +14100,7 @@ cache_report_counts (report_t report, int override, int min_qod,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_counts_id_full (report_t report,
                        int* criticals,
                        int* holes,
@@ -14182,7 +14298,7 @@ report_compliance_from_counts (const int* yes_count,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_compliance_f_counts (report_t report,
                             const get_data_t* get,
                             int* f_compliance_yes,
@@ -14259,7 +14375,7 @@ report_compliance_f_counts (report_t report,
  *
  * @return 0 on success, -1 on error.
  */
-static int
+int
 report_compliance_counts (report_t report,
                           const get_data_t* get,
                           int* compliance_yes,
@@ -15031,22 +15147,6 @@ report_host_count (report_t report)
 }
 
 /**
- * @brief Count a report's total number of vulnerabilities.
- *
- * @param[in]  report  Report.
- *
- * @return Vulnerabilities count.
- */
-static int
-report_vuln_count (report_t report)
-{
-  return sql_int ("SELECT count (DISTINCT nvt) FROM results"
-                  " WHERE report = %llu"
-                  " AND severity != " G_STRINGIFY (SEVERITY_ERROR) ";",
-                  report);
-}
-
-/**
  * @brief Count a report's total number of detected Operating Systems.
  *
  * @param[in]  report  Report.
@@ -15148,6 +15248,7 @@ print_report_context_cleanup (print_report_context_t *ctx)
   g_free (ctx->tz);
   g_free (ctx->zone);
   free (ctx->old_tz_override);
+  print_report_ports_free (ctx->ports);
   // Filtered counts.
   free_f_host (ctx->f_host_false_positives);
   free_f_host (ctx->f_host_holes);
@@ -15317,15 +15418,15 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
   lateral_clause = result_iterator_lateral (apply_overrides,
                                             dynamic_severity,
                                             "results",
-                                            "nvts");
+                                            "all_vts");
 
   extra_tables = g_strdup_printf (" JOIN comparison "
                                   " ON results.id = COALESCE (result1_id,"
                                   "                           result2_id)"
                                   " LEFT OUTER JOIN result_vt_epss"
                                   " ON results.nvt = result_vt_epss.vt_id"
-                                  " LEFT OUTER JOIN nvts"
-                                  " ON results.nvt = nvts.oid %s,"
+                                  " LEFT OUTER JOIN all_vts"
+                                  " ON results.nvt = all_vts.oid %s,"
                                   " LATERAL %s AS lateral_new_severity",
                                   opts_tables,
                                   lateral_clause);
@@ -15355,7 +15456,7 @@ init_delta_iterator (report_t report, iterator_t *results, report_t delta,
     "              severity, nvt, results.qod, results.uuid, hostname,"
     "              path, r1_lateral.new_severity as new_severity "
     "       FROM results "
-    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM nvts)"
+    "       LEFT JOIN (SELECT cvss_base, oid AS nvts_oid FROM all_vts)"
     "       AS nvts_cols"
     "       ON nvts_cols.nvts_oid = results.nvt"
     "       %s, LATERAL %s AS r1_lateral"
@@ -15828,6 +15929,48 @@ print_report_get_totals (print_report_context_t *ctx)
 
         }
     }
+}
+
+/**
+ * @brief Print scan config of the task to a file.
+ *
+ * @param[in,out] out File stream to write to.
+ * @param[in] task Task associated with report.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+print_task_scan_config (FILE *out, task_t task)
+{
+  gchar *config_name = NULL;
+  gchar *config_uuid = NULL;
+
+  if (task == 0)
+    return -1;
+
+  config_name = task_config_name (task);
+  config_uuid = task_config_uuid (task);
+
+  if (config_name == NULL || config_uuid == NULL)
+    {
+      /* Some task types (CVE, container, agent) have no scan config. */
+      g_debug ("%s: No scan config for task %llu", __func__, task);
+      g_free (config_name);
+      g_free (config_uuid);
+      return 0;
+    }
+
+  PRINT (out,
+         "<scan_config id=\"%s\">"
+         "<name>%s</name>"
+         "</scan_config>",
+         config_uuid,
+         config_name);
+
+  g_free (config_name);
+  g_free (config_uuid);
+
+  return 0;
 }
 
 /**
@@ -16419,6 +16562,8 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                 "</user_tags>");
         }
 
+      print_task_scan_config (out, task);
+
       PRINT (out,
              "</task>");
 
@@ -16483,7 +16628,13 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
                                  NULL, NULL))
         {
           g_free (term);
-          g_hash_table_destroy (ctx.f_host_ports);
+          g_free (sort_field);
+          g_free (levels);
+          g_free (search_phrase);
+          g_free (min_qod);
+          g_free (delta_states);
+          cleanup_iterator (&results);
+          out = NULL;
           goto fail;
         }
     }
@@ -17010,8 +17161,99 @@ print_report_xml_start (report_t report, report_t delta, task_t task,
   fail:
     tz_revert (ctx.zone, ctx.tz, ctx.old_tz_override);
     print_report_context_cleanup (&ctx);
-    fclose (out);
+    if (out)
+      fclose (out);
     return -1;
+}
+
+/**
+ * @brief Generate the XML input for a normal scan report export.
+ *
+ * This wrapper preserves the existing report XML generation behavior while
+ * excluding delta report generation.
+ *
+ * @param[in] report             Report to export.
+ * @param[in] task               Task associated with the report.
+ * @param[in] xml_start          Destination XML path.
+ * @param[in] get                Result filter data.
+ * @param[in] notes_details      Whether to include note details.
+ * @param[in] overrides_details  Whether to include override details.
+ * @param[in] result_tags        Whether to include result tags.
+ * @param[in] ignore_pagination  Whether to ignore result pagination.
+ * @param[in] lean               Whether to generate a lean report.
+ *
+ * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
+ */
+int
+manage_print_report_xml_start (report_t report,
+                               task_t task,
+                               gchar *xml_start,
+                               const get_data_t *get,
+                               int notes_details,
+                               int overrides_details,
+                               int result_tags,
+                               int ignore_pagination,
+                               int lean)
+{
+  return print_report_xml_start (report,
+                                 0,
+                                 task,
+                                 xml_start,
+                                 get,
+                                 notes_details,
+                                 overrides_details,
+                                 result_tags,
+                                 ignore_pagination,
+                                 lean,
+                                 NULL,
+                                 NULL,
+                                 NULL);
+}
+
+/**
+ * @brief Generate the XML input for a delta report export.
+ *
+ * This wrapper preserves the existing report XML generation behavior while
+ * excluding delta report generation.
+ *
+ * @param[in] report             Report to export.
+ * @param[in] delta_report       Report to compare with the report.
+ * @param[in] task               Task associated with the report.
+ * @param[in] xml_start          Destination XML path.
+ * @param[in] get                Result filter data.
+ * @param[in] notes_details      Whether to include note details.
+ * @param[in] overrides_details  Whether to include override details.
+ * @param[in] result_tags        Whether to include result tags.
+ * @param[in] ignore_pagination  Whether to ignore result pagination.
+ * @param[in] lean               Whether to generate a lean report.
+ *
+ * @return 0 on success, 2 if the filter cannot be resolved, or -1 on error.
+ */
+int
+manage_print_delta_report_xml_start (report_t report,
+                                     report_t delta_report,
+                                     task_t task,
+                                     gchar *xml_start,
+                                     const get_data_t *get,
+                                     int notes_details,
+                                     int overrides_details,
+                                     int result_tags,
+                                     int ignore_pagination,
+                                     int lean)
+{
+  return print_report_xml_start (report,
+                                 delta_report,
+                                 task,
+                                 xml_start,
+                                 get,
+                                 notes_details,
+                                 overrides_details,
+                                 result_tags,
+                                 ignore_pagination,
+                                 lean,
+                                 NULL,
+                                 NULL,
+                                 NULL);
 }
 
 /**
@@ -17316,6 +17558,8 @@ manage_send_report (report_t report, report_t delta_report,
   if (output_file == NULL)
     {
       g_warning ("%s: No file returned for report format", __func__);
+      gvm_file_remove_recurse (xml_dir);
+      return -1;
     }
 
   /* Send the report. */
@@ -19203,8 +19447,12 @@ modify_task (const gchar *task_id, const gchar *name,
     {
       oci_image_target_t oci_image_target = 0;
 
-      if ((task_run_status (task) != TASK_STATUS_NEW)
-          && (task_alterable (task) == 0))
+      if (strcmp (oci_image_target_id, "0") == 0)
+        {
+          /* Leave it as is. */
+        }
+      else if ((task_run_status (task) != TASK_STATUS_NEW)
+               && (task_alterable (task) == 0))
         return MODIFY_TASK_TARGET_STATUS_MUST_BE_NEW;
       else if (find_oci_image_target_with_permission (oci_image_target_id,
                                                       &oci_image_target,
@@ -19354,94 +19602,6 @@ find_credential_with_permission (const char* uuid,
 }
 
 /**
- * @brief Set data for a credential.
- *
- * @param[in]  credential     The credential.
- * @param[in]  type           The data type (e.g. "username" or "secret").
- * @param[in]  value          The value to set or NULL to remove data entry.
- *
- * @return  0 on success, -1 on error, 1 credential not found, 99 permission
- *          denied.
- */
-static int
-set_credential_data (credential_t credential,
-                     const char* type,
-                     const char* value)
-{
-  gchar *quoted_type;
-
-  if (current_credentials.uuid
-      && (acl_user_may ("modify_credential") == 0))
-    return 99;
-
-  if (type == NULL)
-    return -1;
-
-  if (credential == 0)
-    return 1;
-
-  quoted_type = sql_quote (type);
-
-  if (sql_int ("SELECT count (*) FROM credentials_data"
-               " WHERE credential = '%llu' AND type = '%s';",
-               credential, quoted_type))
-    {
-      if (value == NULL)
-        {
-          sql ("DELETE FROM credentials_data"
-               " WHERE credential = '%llu' AND type = '%s';",
-               credential, quoted_type);
-        }
-      else
-        {
-          gchar *quoted_value;
-          quoted_value = sql_quote (value);
-          sql ("UPDATE credentials_data SET value = '%s'"
-              " WHERE credential = %llu AND type = '%s';",
-                quoted_value, credential, quoted_type);
-          g_free (quoted_value);
-        }
-    }
-  else if (value != NULL)
-    {
-      gchar *quoted_value;
-      quoted_value = sql_quote (value);
-      sql ("INSERT INTO credentials_data (credential, type, value)"
-            " VALUES (%llu, '%s', '%s')",
-            credential, quoted_type, quoted_value);
-      g_free (quoted_value);
-    }
-
-  g_free (quoted_type);
-  return 0;
-}
-
-/**
- * @brief Test if a username is valid to use in a credential.
- *
- * Valid usernames may only contain alphanumeric characters and a few
- *  special ones to avoid problems with installer package generation.
- *
- * @param[in]  username  The username string to test.
- *
- * @return Whether the username is valid.
- */
-static int
-validate_credential_username (const gchar *username)
-{
-  const char *s;
-  s = username;
-  while (*s)
-    if (isalnum (*s)
-        || strchr ("-_\\.@", *s))
-      s++;
-    else
-      return 0;
-
-  return 1;
-}
-
-/**
  * @brief Test if a username is valid for a credential export format.
  *
  * @param[in]  username  The username string to test.
@@ -19489,1280 +19649,9 @@ validate_credential_username_for_format (const gchar *username,
 }
 
 /**
- * @brief Validate the format and resolvability of a Kerberos KDC input string.
- *
- * @param[in] kdc_input  A comma or newline-separated list of KDC hostnames or IPs.
- *
- * @return TRUE if all KDC entries are valid hosts, FALSE otherwise.
- */
-static gboolean
-validate_credential_kdc_format (const char *kdc_input)
-{
-  if (!kdc_input || !*kdc_input)
-    return FALSE;
-
-  gchar *input_copy = g_strdup (kdc_input);
-  for (gchar *p = input_copy; *p; ++p)
-    {
-      if (*p == '\n')
-        *p = ',';
-    }
-
-  gchar **parts = g_strsplit (input_copy, ",", 0);
-  g_free (input_copy);
-
-  for (gchar **ptr = parts; *ptr != NULL; ptr++)
-    {
-      const gchar *entry = *ptr;
-
-      // reject empty strings
-      if (!*entry)
-        {
-          g_strfreev (parts);
-          return FALSE;
-        }
-
-      // validate whitespace in the KDC entry
-      for (const gchar *c = entry; *c; ++c)
-        {
-          if (g_ascii_isspace (*c))
-            {
-              g_strfreev (parts);
-              return FALSE;
-            }
-        }
-
-      // validate host or IP
-      if (gvm_get_host_type (entry) == -1)
-        {
-          g_strfreev (parts);
-          return FALSE;
-        }
-    }
-
-  g_strfreev (parts);
-  return TRUE;
-}
-
-/**
- * @brief Validate the format and resolvability of a list of Kerberos KDCs.
- *
- * This function checks that each entry in the provided kdcs array:
- * - does not contain any whitespace,
- * - can be resolved via gvm_get_host_type(),
- * and if all entries are valid, it joins them into a single comma-separated string.
- *
- * @param[in]  kdcs        A pointer to an array of KDC strings (hostnames or IPs).
- * @param[out] joined_out  A location to store the resulting joined string
- *                         if validation succeeds.
- *                         The caller is responsible for freeing
- *                         the returned string using g_free().
- *
- * @return TRUE if all KDC entries are valid and @p joined_out is set; FALSE otherwise.
- */
-static gboolean
-validate_credential_kdcs_format (array_t *kdcs, gchar **joined_out)
-{
-  if (!kdcs || kdcs->len == 0 || !joined_out)
-    return FALSE;
-
-  GString *joined = g_string_new ("");
-
-  for (size_t i = 0; i < kdcs->len; ++i)
-    {
-      const char *kdc_val = g_ptr_array_index (kdcs, i);
-
-      // reject whitespace
-      for (const char *c = kdc_val; *c; ++c)
-        {
-          if (g_ascii_isspace (*c))
-            {
-              g_string_free (joined, TRUE);
-              return FALSE;
-            }
-        }
-
-      // reject unresolvable host
-      if (gvm_get_host_type (kdc_val) == -1)
-        {
-          g_string_free (joined, TRUE);
-          return FALSE;
-        }
-
-      if (i > 0)
-        g_string_append_c (joined, ',');
-
-      g_string_append (joined, kdc_val);
-    }
-
-  *joined_out = g_string_free (joined, FALSE);
-  return TRUE;
-}
-
-/**
- * @brief Validate the format of a Kerberos realm string.
- *
- * This function checks whether the given @p realm is non-empty and does not
- * contain any whitespace characters.
- *
- * @param[in] realm  A string representing the Kerberos realm.
- *
- * @return TRUE if the realm is valid; FALSE otherwise.
- */
-gboolean
-validate_credential_realm_format (const char *realm)
-{
-  if (!realm || !*realm)
-    return FALSE;
-
-  for (const char *c = realm; *c; ++c)
-    {
-      if (g_ascii_isspace (*c))
-        return FALSE;
-    }
-
-  return TRUE;
-}
-
-/**
  * @brief Length of password generated in create_credential.
  */
 #define PASSWORD_LENGTH 10
-
-/**
- * @brief Create a Credential.
- *
- * @param[in]  name            Name of LSC credential.  Must be at least one
- *                             character long.
- * @param[in]  comment         Comment on LSC credential.
- * @param[in]  login           Name of LSC credential user.  Must be at least
- *                             one character long.
- * @param[in]  given_password  Password for password-only credential, NULL to
- *                             generate credentials.
- * @param[in]  key_private     Private key, or NULL.
- * @param[in]  key_public      Public key, or NULL.
- * @param[in]  certificate     Certificate, or NULL.
- * @param[in]  community          SNMP community string, or NULL.
- * @param[in]  auth_algorithm     SNMP authentication algorithm, or NULL.
- * @param[in]  privacy_password   SNMP privacy password.
- * @param[in]  privacy_algorithm  SNMP privacy algorithm.
- * @param[in]  kdc             Kerberos KDC (key distribution centers).
- * @param[in]  kdcs            List of Kerberos KDCs.
- * @param[in]  realm           Kerberos realm.
- * @param[in]  credential_store_id Credential store ID, or NULL
- *                                 (if ENABLE_CREDENTIAL_STORES).
- * @param[in]  vault_id         Vault ID, or NULL.
- *                              (if ENABLE_CREDENTIAL_STORES).
- * @param[in]  host_identifier  Host identifier, or NULL.
- *                              (if ENABLE_CREDENTIAL_STORES).
- * @param[in]  privacy_host_identifier  SNMP Privacy host identifier, or NULL.
- *                              (if ENABLE_CREDENTIAL_STORES).
- * @param[in]  given_type      Credential type or NULL.
- * @param[in]  allow_insecure  Whether to allow insecure uses.
- * @param[out] credential      Created Credential.
- *
- * @return 0 success, 1 LSC credential exists already, 2 invalid username,
- *         3 Failed to create public key from private key/password,
- *         4 Invalid credential type, 5 login username missing,
- *         6 password missing, 7 private key missing, 8 certificate missing,
- *         9 public key missing, 10 autogenerate not supported,
- *         11 community missing, 12 auth algorithm missing,
- *         14 privacy algorithm missing,
- *         15 invalid auth algorithm, 16 invalid privacy algorithm,
- *         17 invalid certificate, 18 cannot determine type,
- *         19 key distribution center missing, 20 realm missing,
- *         21 invalid key distribution center,
- *         22 invalid kerberos realm,
- *         23 credential store ID missing and no default store available,
- *            (if ENABLE_CREDENTIAL_STORES),
- *         24 credential store cannot be found (if ENABLE_CREDENTIAL_STORES),
- *         25 vault ID missing (if ENABLE_CREDENTIAL_STORES),
- *         26 host identifier missing (if ENABLE_CREDENTIAL_STORES),
- *         99 permission denied, -1 error.
- */
-int
-create_credential (const char* name, const char* comment, const char* login,
-                   const char* given_password,
-                   const char* key_private, const char* key_public,
-                   const char* certificate, const char* community,
-                   const char* auth_algorithm, const char* privacy_password,
-                   const char* privacy_algorithm,
-                   const char* kdc, array_t* kdcs, const char *realm,
-                   const char* credential_store_id, const char* vault_id,
-                   const char* host_identifier,
-                   const char* privacy_host_identifier,
-                   const char* given_type, const char* allow_insecure,
-                   credential_t *credential)
-{
-  gchar *quoted_name, *quoted_comment, *quoted_type;
-  int i;
-  GRand *rand;
-  gchar generated_password[PASSWORD_LENGTH];
-  gchar *generated_private_key;
-  credential_t new_credential;
-  int auto_generate, allow_insecure_int;
-  int using_snmp_v3;
-  int ret;
-  gchar *kdc_value = NULL;
-
-  assert (name && strlen (name) > 0);
-  assert (current_credentials.uuid);
-  assert (comment);
-
-  sql_begin_immediate ();
-
-  if (acl_user_may ("create_credential") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  if (resource_with_name_exists (name, "credential", 0))
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  if (allow_insecure
-      && strcmp (allow_insecure, "")
-      && strcmp (allow_insecure, "0"))
-    allow_insecure_int = 1;
-  else
-    allow_insecure_int = 0;
-
-  if (given_type && strcmp (given_type, ""))
-    {
-      if (strcmp (given_type, "cc")
-          && strcmp (given_type, "pgp")
-          && strcmp (given_type, "pw")
-          && strcmp (given_type, "snmp")
-          && strcmp (given_type, "smime")
-          && strcmp (given_type, "up")
-          && strcmp (given_type, "usk")
-          && strcmp (given_type, "krb5")
-          && strcmp (given_type, "cs_pgp")
-          && strcmp (given_type, "cs_pw")
-          && strcmp (given_type, "cs_snmp")
-          && strcmp (given_type, "cs_smime")
-          && strcmp (given_type, "cs_up")
-          && strcmp (given_type, "cs_usk")
-          && strcmp (given_type, "cs_krb5")
-      )
-        {
-          sql_rollback ();
-          return 4;
-        }
-      else
-        quoted_type = g_strdup (given_type);
-    }
-  else if (community
-           || (login && given_password && auth_algorithm))
-    quoted_type = g_strdup ("snmp");
-  else if (certificate && key_private)
-    quoted_type = g_strdup ("cc");
-  else if (login && key_private)
-    quoted_type = g_strdup ("usk");
-  else if (login && given_password && (realm || kdc))
-    quoted_type = g_strdup ("krb5");
-  else if (login && given_password)
-    quoted_type = g_strdup ("up");
-  else if (login && key_private == NULL && given_password == NULL)
-    quoted_type = g_strdup ("usk"); /* auto-generate */
-  else
-    {
-      g_warning ("%s: Cannot determine type of new credential", __func__);
-      sql_rollback ();
-      return 18;
-    }
-
-  /* Validate credential data */
-  auto_generate = ((given_password == NULL) && (key_private == NULL)
-                   && (key_public == NULL) && (certificate == NULL)
-                   && (community == NULL)
-                   && !g_str_has_prefix (quoted_type, "cs_"));
-  ret = 0;
-
-  if (auto_generate
-      && (strcmp (quoted_type, "cc") == 0
-          || strcmp (quoted_type, "pgp") == 0
-          || strcmp (quoted_type, "smime") == 0
-          || strcmp (quoted_type, "snmp") == 0
-          || strcmp (quoted_type, "krb5") == 0))
-    ret = 10; // Type does not support autogenerate
-
-  using_snmp_v3 = 0;
-
-  if (login == NULL
-      && strcmp (quoted_type, "cc")
-      && strcmp (quoted_type, "pgp")
-      && strcmp (quoted_type, "pw")
-      && strcmp (quoted_type, "smime")
-      && strcmp (quoted_type, "snmp")
-      && g_str_has_prefix (quoted_type, "cs_") == 0
-    )
-    ret = 5;
-  else if (given_password == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "up") == 0
-               || strcmp (quoted_type, "pw") == 0
-               || strcmp (quoted_type, "krb5") == 0))
-      // (username) password requires a password
-    ret = 6;
-  else if (key_private == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "cc") == 0
-               || strcmp (quoted_type, "usk") == 0))
-    ret = 7;
-  else if (certificate == NULL && auto_generate == 0
-           && (strcmp (quoted_type, "cc") == 0
-               || strcmp (quoted_type, "smime") == 0))
-    ret = 8;
-  else if (key_public == NULL && auto_generate == 0
-           && strcmp (quoted_type, "pgp") == 0)
-    ret = 9;
-  else if ((strcmp (quoted_type, "krb5") == 0)
-           || (feature_enabled (FEATURE_ID_CREDENTIAL_STORES)
-               && strcmp (quoted_type, "cs_krb5") == 0))
-    {
-      if (kdcs && kdcs->len > 0)
-        {
-          if (!validate_credential_kdcs_format (kdcs, &kdc_value))
-            {
-              ret = 21;
-            }
-        }
-      else if (kdc)
-        {
-          if (!validate_credential_kdc_format (kdc))
-            {
-              ret = 21;
-            }
-          else
-            {
-              kdc_value = g_strdup (kdc);
-            }
-        }
-      else
-        {
-          // both kdcs and kdc missing
-          ret = 19;
-        }
-      if (ret == 0)
-        {
-          if (realm == NULL && auto_generate == 0)
-            ret = 20;
-          else if (!validate_credential_realm_format (realm))
-            ret = 22;
-        }
-    }
-  else if (strcmp (quoted_type, "snmp") == 0)
-    {
-      if (login || given_password || auth_algorithm
-          || privacy_password || privacy_algorithm)
-        using_snmp_v3 = 1;
-
-      if (community == NULL)
-        {
-          if (login == NULL || given_password == NULL)
-            ret = 11;
-        }
-      else if (auth_algorithm == NULL && using_snmp_v3)
-        ret = 12;
-      else if ((privacy_algorithm == NULL
-                || strcmp (privacy_algorithm, "") == 0)
-               && privacy_password
-               && strcmp (privacy_password, ""))
-        ret = 14;
-      else if (auth_algorithm
-               && strcmp (auth_algorithm, "md5")
-               && strcmp (auth_algorithm, "sha1"))
-        ret = 15;
-      else if (privacy_algorithm
-               && strcmp (privacy_algorithm, "")
-               && strcmp (privacy_algorithm, "aes")
-               && strcmp (privacy_algorithm, "des"))
-        ret = 16;
-    }
-  else if (strcmp (quoted_type, "cs_snmp") == 0
-           && feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
-    {
-      if (auth_algorithm == NULL)
-        ret = 12;
-      else if ((privacy_algorithm == NULL
-                || strcmp (privacy_algorithm, "") == 0)
-               && privacy_host_identifier
-               && strcmp (privacy_host_identifier, ""))
-        ret = 14;
-      else if (auth_algorithm
-               && strcmp (auth_algorithm, "md5")
-               && strcmp (auth_algorithm, "sha1"))
-        ret = 15;
-      else if (privacy_algorithm
-               && strcmp (privacy_algorithm, "")
-               && strcmp (privacy_algorithm, "aes")
-               && strcmp (privacy_algorithm, "des"))
-        ret = 16;
-    }
-
-  if (g_str_has_prefix (quoted_type, "cs_") && ret == 0)
-    {
-#if ENABLE_CREDENTIAL_STORES
-      credential_store_t store;
-      if (!feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
-        ret = 4;
-      else if (credential_store_id == NULL
-               && get_default_credential_store_id () == NULL)
-        ret = 23;
-      else if (credential_store_id
-               && (find_credential_store_no_acl (credential_store_id, &store)
-                   || store == 0))
-        ret = 24;
-      else if (vault_id == NULL)
-        ret = 25;
-      else if (host_identifier == NULL)
-        ret = 26;
-#else
-      ret = 4;
-#endif
-    }
-
-  if (ret)
-    {
-      g_free (quoted_type);
-      sql_rollback ();
-      return ret;
-    }
-
-  /* Create base credential */
-  quoted_name = sql_quote (name);
-  quoted_comment = sql_quote (comment ? comment : "");
-
-  sql ("INSERT INTO credentials"
-       " (uuid, name, owner, comment, creation_time, modification_time,"
-       "  type, allow_insecure)"
-       " VALUES"
-       " (make_uuid (), '%s',"
-       "  (SELECT id FROM users WHERE users.uuid = '%s'),"
-       "   '%s', m_now (), m_now (), '%s', %d);",
-       quoted_name,
-       current_credentials.uuid,
-       quoted_comment,
-       quoted_type,
-       allow_insecure_int);
-
-  g_free (quoted_name);
-  g_free (quoted_comment);
-
-  new_credential = sql_last_insert_id ();
-
-  /* Add non-secret data */
-  if (login)
-    {
-      /*
-       * Ensure the login does not contain characters that cause problems
-       *  with package generation.
-       */
-      if (validate_credential_username (login) == 0)
-        {
-          sql_rollback ();
-          return 2;
-        }
-
-      set_credential_data (new_credential,
-                           "username", login);
-    }
-
-  if (kdc_value)
-    {
-      set_credential_data (new_credential, "kdc", kdc_value);
-      g_free (kdc_value);
-    }
-  if (key_public)
-    set_credential_data (new_credential, "public_key", key_public);
-  if (certificate)
-    {
-      gchar *certificate_truncated;
-      certificate_truncated = truncate_certificate (certificate);
-      if (certificate_truncated)
-        set_credential_data (new_credential,
-                             "certificate", certificate_truncated);
-      else
-        {
-          sql_rollback();
-          return 17;
-        }
-      g_free (certificate_truncated);
-    }
-  if (auth_algorithm)
-    set_credential_data (new_credential,
-                         "auth_algorithm", auth_algorithm);
-  if (privacy_algorithm)
-    set_credential_data (new_credential,
-                         "privacy_algorithm", privacy_algorithm);
-  if (realm)
-    set_credential_data (new_credential, "realm", realm);
-
-#if ENABLE_CREDENTIAL_STORES
-  if (g_str_has_prefix (quoted_type, "cs_"))
-    {
-      if (credential_store_id)
-        set_credential_data (new_credential,
-                             "credential_store_id", credential_store_id);
-      else
-        set_credential_data (new_credential,
-                             "credential_store_id", get_default_credential_store_id ());
-      if (vault_id)
-        set_credential_data (new_credential,
-                             "vault_id", vault_id);
-      if (host_identifier)
-        set_credential_data (new_credential,
-                             "host_identifier", host_identifier);
-      if (privacy_host_identifier)
-        set_credential_data (new_credential,
-                             "privacy_host_identifier", privacy_host_identifier);
-      if (credential)
-        *credential = new_credential;
-
-      g_free (quoted_type);
-      sql_commit ();
-      return 0;
-    }
-#endif
-
-  g_free (quoted_type);
-
-  /* Add secret data like passwords and private keys */
-  /* Private key with optional passphrase */
-  if (key_private)
-    {
-      lsc_crypt_ctx_t crypt_ctx;
-      gchar *key_private_truncated, *generated_key_public;
-
-      /* Try truncate the private key, but if that fails try get the public
-       * key anyway, in case it's a key type that truncate_private_key does
-       * not understand. */
-
-      if (key_private)
-        key_private_truncated = truncate_private_key (key_private);
-      else
-        {
-          sql_rollback ();
-          return 3;
-        }
-
-      generated_key_public = gvm_ssh_public_from_private
-                                (key_private_truncated
-                                    ? key_private_truncated
-                                    : key_private,
-                                 given_password);
-      if (generated_key_public == NULL)
-        {
-          g_free (key_private_truncated);
-          sql_rollback ();
-          return 3;
-        }
-      g_free (generated_key_public);
-
-      /* Encrypt password and private key.  Note that we do not need
-         to call sql_quote because the result of the encryption is
-         base64 encoded and does not contain apostrophes.  */
-      if (!disable_encrypted_credentials)
-        {
-          gchar *secret;
-          char *encryption_key_uid = current_encryption_key_uid (TRUE);
-          crypt_ctx = lsc_crypt_new (encryption_key_uid);
-          free (encryption_key_uid);
-          secret = lsc_crypt_encrypt (crypt_ctx,
-                                      "password", given_password,
-                                      "private_key", key_private, NULL);
-          if (!secret)
-            {
-              lsc_crypt_release (crypt_ctx);
-              sql_rollback ();
-              return -1;
-            }
-          set_credential_data (new_credential, "secret", secret);
-          g_free (secret);
-        }
-      else
-        {
-          crypt_ctx = NULL;
-          set_credential_data (new_credential, "password", given_password);
-          set_credential_data (new_credential, "private_key", key_private);
-        }
-      lsc_crypt_release (crypt_ctx);
-
-      if (credential)
-        *credential = new_credential;
-
-      sql_commit ();
-      return 0;
-    }
-
-  /* SNMP passwords */
-  if (community || using_snmp_v3)
-    {
-      lsc_crypt_ctx_t crypt_ctx;
-
-      /* Encrypt passwords.  Note that we do not need
-         to call sql_quote because the result of the encryption is
-         base64 encoded and does not contain apostrophes.  */
-      if (!disable_encrypted_credentials)
-        {
-          gchar *secret;
-          char *encryption_key_uid = current_encryption_key_uid (TRUE);
-          crypt_ctx = lsc_crypt_new (encryption_key_uid);
-          free (encryption_key_uid);
-          secret = lsc_crypt_encrypt (crypt_ctx,
-                                      "community", community,
-                                      "password", given_password,
-                                      "privacy_password",
-                                      privacy_password ? privacy_password : "",
-                                      NULL);
-          if (!secret)
-            {
-              lsc_crypt_release (crypt_ctx);
-              sql_rollback ();
-              return -1;
-            }
-          set_credential_data (new_credential, "secret", secret);
-          g_free (secret);
-        }
-      else
-        {
-          crypt_ctx = NULL;
-          set_credential_data (new_credential, "community", community);
-          set_credential_data (new_credential, "password", given_password);
-          set_credential_data (new_credential, "privacy_password",
-                               privacy_password ? privacy_password : "");
-        }
-      lsc_crypt_release (crypt_ctx);
-
-      if (credential)
-        *credential = new_credential;
-
-      sql_commit ();
-      return 0;
-    }
-
-  /* Password only */
-  if (given_password)
-    {
-      lsc_crypt_ctx_t crypt_ctx;
-
-      /* Password-only credential. */
-
-      if (!disable_encrypted_credentials)
-        {
-          char *encryption_key_uid = current_encryption_key_uid (TRUE);
-          crypt_ctx = lsc_crypt_new (encryption_key_uid);
-          free (encryption_key_uid);
-          gchar *secret = lsc_crypt_encrypt (crypt_ctx,
-                                             "password", given_password,
-                                             NULL);
-          if (!secret)
-            {
-              lsc_crypt_release (crypt_ctx);
-              sql_rollback ();
-              return -1;
-            }
-          set_credential_data (new_credential, "secret", secret);
-          g_free (secret);
-        }
-      else
-        {
-          crypt_ctx = NULL;
-          set_credential_data (new_credential, "password", given_password);
-        }
-
-      if (credential)
-        *credential = new_credential;
-
-      sql_commit ();
-      return 0;
-    }
-
-  /*
-   * Auto-generate credential
-   */
-
-  /* Create the keys and packages. */
-
-  rand = g_rand_new ();
-  for (i = 0; i < PASSWORD_LENGTH - 1; i++)
-    {
-      generated_password[i] = (gchar) g_rand_int_range (rand, '0', 'z');
-      if (generated_password[i] == '\\')
-        generated_password[i] = '{';
-    }
-  generated_password[PASSWORD_LENGTH - 1] = '\0';
-  g_rand_free (rand);
-
-  if (given_type == NULL || strcmp (given_type, "usk") == 0)
-    {
-      if (lsc_user_keys_create (generated_password, &generated_private_key))
-        {
-          sql_rollback ();
-          return -1;
-        }
-    }
-  else
-    generated_private_key = NULL;
-
-  {
-    lsc_crypt_ctx_t crypt_ctx;
-
-    /* Generated key credential. */
-
-    if (!disable_encrypted_credentials)
-      {
-        gchar *secret;
-        char *encryption_key_uid = current_encryption_key_uid (TRUE);
-        crypt_ctx = lsc_crypt_new (encryption_key_uid);
-        free (encryption_key_uid);
-        if (generated_private_key)
-          secret = lsc_crypt_encrypt (crypt_ctx,
-                                      "password", generated_password,
-                                      "private_key", generated_private_key,
-                                      NULL);
-        else
-          secret = lsc_crypt_encrypt (crypt_ctx,
-                                      "password", generated_password,
-                                      NULL);
-
-        if (!secret)
-          {
-            lsc_crypt_release (crypt_ctx);
-            sql_rollback ();
-            return -1;
-          }
-        set_credential_data (new_credential, "secret", secret);
-        g_free (secret);
-      }
-    else
-      {
-        set_credential_data (new_credential, "password", generated_password);
-        if (generated_private_key)
-          set_credential_data (new_credential,
-                               "private_key", generated_private_key);
-        crypt_ctx = NULL;
-      }
-    lsc_crypt_release (crypt_ctx);
-    g_free (generated_private_key);
-  }
-
-  if (credential)
-    *credential = new_credential;
-
-  sql_commit ();
-
-  return 0;
-}
-
-/**
- * @brief Create an LSC Credential from an existing one.
- *
- * @param[in]  name                 Name of new Credential. NULL to copy
- *                                  from existing.
- * @param[in]  comment              Comment on new Credential. NULL to copy
- *                                  from existing.
- * @param[in]  credential_id        UUID of existing Credential.
- * @param[out] new_credential       New Credential.
- *
- * @return 0 success, 1 Credential exists already, 2 failed to find
- *         existing Credential, -1 error.
- */
-int
-copy_credential (const char* name, const char* comment,
-                 const char *credential_id,
-                 credential_t* new_credential)
-{
-  int ret;
-  credential_t credential;
-
-  assert (new_credential);
-
-  ret = copy_resource ("credential", name, comment, credential_id,
-                       "type", 1, new_credential, &credential);
-  if (ret)
-    return ret;
-
-  sql ("INSERT INTO credentials_data (credential, type, value)"
-       " SELECT %llu, type, value FROM credentials_data"
-       " WHERE credential = %llu;",
-       *new_credential, credential);
-
-  return 0;
-}
-
-/**
- * @brief Modify a Credential.
- *
- * @param[in]   credential_id       UUID of Credential.
- * @param[in]   name                Name of Credential.
- * @param[in]   comment             Comment on Credential.
- * @param[in]   login               Login of Credential.
- * @param[in]   password            Password or passphrase of Credential.
- * @param[in]   key_private         Private key of Credential.
- * @param[in]   key_public          Public key of Credential.
- * @param[in]   certificate         Certificate of Credential.
- * @param[in]   community           SNMP Community of Credential.
- * @param[in]   auth_algorithm      Authentication algorithm of Credential.
- * @param[in]   privacy_password    Privacy password of Credential.
- * @param[in]   privacy_algorithm   Privacy algorithm of Credential.
- * @param[in]   kdc                 Kerberos KDC (key distribution centers).
- * @param[in]   kdcs                List of Kerberos KDCs.
- * @param[in]   realm               Kerberos realm.
- * @param[in]   credential_store_id Credential store ID, or NULL
- *                                   (if ENABLE_CREDENTIAL_STORES).
- * @param[in]   vault_id            Vault ID, or NULL.
- *                                  (if ENABLE_CREDENTIAL_STORES).
- * @param[in]   host_identifier     Host identifier, or NULL.
- *                                  (if ENABLE_CREDENTIAL_STORES).
- * @param[in]   privacy_host_identifier  SNMP Privacy host identifier, or NULL.
- *                                  (if ENABLE_CREDENTIAL_STORES).
- * @param[in]   allow_insecure      Whether to allow insecure use.
- *
- * @return 0 success, 1 failed to find credential, 2 credential with new name
- *         exists, 3 credential_id required, 4 invalid login name,
- *         5 invalid certificate, 6 invalid auth_algorithm,
- *         7 invalid privacy_algorithm, 8 invalid private key,
- *         9 invalid public key,
- *         10 privacy password must be empty if algorithm is empty
- *         11 invalid or empty key distribution center,
- *         12 invalid or empty kerberos realm,
- *         13 credential store cannot be found,
- *            (if ENABLE_CREDENTIAL_STORES),
- *         14 vault ID is required (if ENABLE_CREDENTIAL_STORES),
- *         15 host identifier is required (if ENABLE_CREDENTIAL_STORES),
-  *         17 value cannot be modified for credential store type,
- *         99 permission denied,
- *         -1 internal error.
- */
-int
-modify_credential (const char *credential_id,
-                   const char *name, const char *comment,
-                   const char *login, const char* password,
-                   const char* key_private, const char* key_public,
-                   const char* certificate,
-                   const char* community, const char* auth_algorithm,
-                   const char* privacy_password, const char* privacy_algorithm,
-                   const char* kdc, array_t* kdcs,
-                   const char* realm,
-                   const char* credential_store_id, const char* vault_id,
-                   const char* host_identifier,
-                   const char* privacy_host_identifier,
-                   const char* allow_insecure)
-{
-  credential_t credential;
-  iterator_t iterator;
-  int ret;
-
-  if (credential_id == NULL)
-    return 3;
-
-  sql_begin_immediate ();
-
-  assert (current_credentials.uuid);
-
-  if (acl_user_may ("modify_credential") == 0)
-    {
-      sql_rollback ();
-      return 99;
-    }
-
-  credential = 0;
-  if (find_credential_with_permission (credential_id, &credential,
-                                       "modify_credential"))
-    {
-      sql_rollback ();
-      return -1;
-    }
-
-  if (credential == 0)
-    {
-      sql_rollback ();
-      return 1;
-    }
-
-  /* Check whether a credential with the same name exists already. */
-  if (name)
-    {
-      if (resource_with_name_exists (name, "credential", credential))
-        {
-          sql_rollback ();
-          return 2;
-        }
-    }
-
-  /* Update values */
-
-  if (name)
-    set_credential_name (credential, name);
-
-  if (comment)
-    set_credential_comment (credential, comment);
-
-  if (allow_insecure)
-    {
-      if (strcmp (allow_insecure, "") && strcmp (allow_insecure, "0"))
-        sql ("UPDATE credentials SET allow_insecure = 1 WHERE id = %llu;",
-             credential);
-      else
-        sql ("UPDATE credentials SET allow_insecure = 0 WHERE id = %llu;",
-             credential);
-    }
-
-  ret = 0;
-
-  if ((credential_store_id || vault_id || host_identifier
-      || privacy_host_identifier)
-      && (login || password || privacy_password || key_private
-          || key_public ||certificate || community))
-    {
-      sql_rollback ();
-      return 17;
-    }
-
-  if (login && ret == 0)
-    {
-      /*
-       * Ensure the login is not empty and does not contain characters that
-       *  cause problems with package generation.
-       */
-      if (strcmp (login, "") == 0
-          || validate_credential_username (login) == 0)
-        ret = 4;
-
-      if (ret == 0)
-        set_credential_login (credential, login);
-    }
-
-  if (certificate && ret == 0)
-    {
-      if (g_str_equal (certificate, ""))
-        {
-          set_credential_certificate (credential, NULL);
-        }
-      else
-        {
-          // Truncate certificate which also validates it.
-          gchar *certificate_truncated;
-          certificate_truncated = truncate_certificate (certificate);
-          if (certificate_truncated)
-            {
-              set_credential_certificate (credential, certificate_truncated);
-              g_free (certificate_truncated);
-            }
-          else
-            ret = 5;
-        }
-    }
-
-  if (auth_algorithm && ret == 0)
-    {
-      if (strcmp (auth_algorithm, "md5")
-          && strcmp (auth_algorithm, "sha1"))
-        ret = 6;
-      else
-        set_credential_auth_algorithm (credential, auth_algorithm);
-    }
-
-  if (privacy_algorithm && ret == 0)
-    {
-      if (strcmp (privacy_algorithm, "aes")
-          && strcmp (privacy_algorithm, "des")
-          && strcmp (privacy_algorithm, ""))
-        ret = 7;
-      else
-        {
-          iterator_t credential_iterator;
-          const char *used_password;
-
-          init_credential_iterator_one (&credential_iterator, credential);
-
-          if (privacy_password)
-            used_password = privacy_password;
-          else
-            {
-              next (&credential_iterator);
-              used_password
-                = credential_iterator_privacy_password (&credential_iterator);
-              if (used_password == NULL)
-                used_password = "";
-            }
-
-          // Privacy password must be empty if algorithm is empty
-          if (strcmp (privacy_algorithm, "") == 0
-              && strcmp (used_password, ""))
-            ret = 10;
-          else
-            set_credential_privacy_algorithm (credential, privacy_algorithm);
-
-          cleanup_iterator (&credential_iterator);
-        }
-    }
-
-  if (key_public && ret == 0)
-    {
-      set_credential_public_key (credential, key_public);
-    }
-
-  if (ret)
-    {
-      sql_rollback ();
-      return ret;
-    }
-
-  init_credential_iterator_one (&iterator, credential);
-  if (next (&iterator))
-    {
-      gchar *key_private_truncated = NULL;
-      const char *key_private_to_use;
-      const char *type = credential_iterator_type (&iterator);
-
-      if (strcmp (type, "cc") && strcmp (type, "up")
-          && strcmp (type, "pw") && strcmp (type, "usk")
-          && strcmp (type, "snmp") && strcmp (type, "pgp")
-          && strcmp (type, "smime") && strcmp (type, "krb5")
-          && !g_str_has_prefix (type, "cs_"))
-        {
-          g_warning ("%s: Unknown credential type: %s", __func__, type);
-          sql_rollback ();
-          cleanup_iterator (&iterator);
-          return -1;
-        }
-
-      if (g_str_has_prefix (type, "cs_")
-          && !feature_enabled (FEATURE_ID_CREDENTIAL_STORES))
-        {
-          sql_rollback ();
-          cleanup_iterator (&iterator);
-          g_debug ("%s: Credential stores feature not enabled",
-                    __func__);
-          return -1;
-        }
-
-      if (key_private)
-        {
-          if (!g_str_equal (key_private, ""))
-            {
-              char *generated_key_public = NULL;
-              /* Try truncate the private key, but if that fails try get the
-               * public key anyway, in case it's a key type that
-               * truncate_private_key does not understand. */
-              key_private_truncated = truncate_private_key (key_private);
-              key_private_to_use =
-                key_private_truncated ? key_private_truncated : key_private;
-
-              generated_key_public = gvm_ssh_public_from_private (
-                key_private_to_use,
-                password ? password : credential_iterator_password (&iterator));
-
-              if (generated_key_public == NULL)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  g_free (generated_key_public);
-                  return 8;
-                }
-              g_free (generated_key_public);
-            }
-          else
-            key_private_to_use = key_private;
-        }
-      else
-        key_private_to_use = NULL;
-
-      if (strcmp (type, "up") == 0
-               || strcmp (type, "pw") == 0)
-        {
-          if (password)
-            set_credential_password (credential, password);
-        }
-      else if (g_str_equal (type, "usk") || g_str_equal (type, "cc"))
-        {
-          if (key_private_to_use || password)
-            {
-              if (g_str_equal (type, "usk"))
-                {
-                  if (check_private_key (
-                        key_private_to_use
-                          ? key_private_to_use
-                          : credential_iterator_private_key (&iterator),
-                        password ? password
-                                 : credential_iterator_password (&iterator)))
-                    {
-                      sql_rollback ();
-                      cleanup_iterator (&iterator);
-                      return 8;
-                    }
-                }
-
-              set_credential_private_key (
-                credential,
-                key_private_to_use
-                  ? key_private_to_use
-                  : credential_iterator_private_key (&iterator),
-                password ? password : credential_iterator_password (&iterator));
-            }
-        }
-      else if ((strcmp (type, "snmp") == 0)
-               || (strcmp (type, "cs_snmp") == 0))
-        {
-          if (privacy_password || privacy_host_identifier)
-            {
-              const char *used_algorithm;
-
-              // Privacy_algorithm should be set above if given
-              used_algorithm
-                = credential_iterator_privacy_algorithm (&iterator);
-              if (used_algorithm == NULL)
-                used_algorithm = "";
-
-              /* privacy password and host identifier
-               * must be empty if algorithm is empty */
-              if (strcmp (used_algorithm, "") == 0
-                  && (strcmp (privacy_password, "")
-                      || strcmp (privacy_host_identifier, "")))
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 10;
-                }
-            }
-
-          if (strcmp (type, "snmp") == 0
-              && (community || password || privacy_password))
-            {
-              set_credential_snmp_secret
-                (credential,
-                 community
-                  ? community
-                  : credential_iterator_community (&iterator),
-                 password
-                  ? password
-                  : credential_iterator_password (&iterator),
-                 privacy_password
-                  ? privacy_password
-                  : credential_iterator_privacy_password (&iterator));
-            }
-        }
-      else if (strcmp (type, "pgp") == 0
-               || strcmp (type, "smime") == 0)
-        {
-          set_credential_data (credential, "secret", "");
-        }
-      else if ((strcmp (type, "krb5") == 0)
-               || (strcmp (type, "cs_krb5") == 0))
-        {
-          if (password && strcmp (type, "krb5") == 0)
-            set_credential_password (credential, password);
-          if (kdcs)
-            {
-              gchar *joined_kdcs = NULL;
-
-              if (!validate_credential_kdcs_format (kdcs, &joined_kdcs))
-                {
-                  sql_rollback ();
-                  return 11;
-                }
-
-              set_credential_data (credential, "kdc", joined_kdcs);
-              g_free (joined_kdcs);
-            }
-          else if (kdc)
-            {
-              if (!validate_credential_kdc_format (kdc))
-                {
-                  sql_rollback ();
-                  return 11;
-                }
-
-              set_credential_data (credential, "kdc", kdc);
-            }
-
-          if (realm)
-            {
-              if (!validate_credential_realm_format (realm))
-                {
-                  sql_rollback ();
-                  return 12;
-                }
-
-              set_credential_data (credential, "realm", realm);
-            }
-        }
-
-      if (g_str_has_prefix (type, "cs_"))
-        {
-#if ENABLE_CREDENTIAL_STORES
-          if (credential_store_id)
-            {
-              credential_store_t store;
-              if (find_credential_store_no_acl (credential_store_id, &store)
-                  || store == 0)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 13;
-                }
-
-              set_credential_data (credential,
-                                   "credential_store_id",
-                                   credential_store_id);
-            }
-          if (vault_id)
-            {
-              if (!*vault_id)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 14;
-                }
-              set_credential_data (credential,
-                                   "vault_id",
-                                   vault_id);
-            }
-          if (host_identifier)
-            {
-              if (!*host_identifier)
-                {
-                  sql_rollback ();
-                  cleanup_iterator (&iterator);
-                  return 15;
-                }
-              set_credential_data (credential,
-                                   "host_identifier",
-                                   host_identifier);
-            }
-          if (privacy_host_identifier)
-            {
-              if (g_str_equal (privacy_host_identifier, ""))
-                set_credential_data (credential,
-                                    "privacy_host_identifier",
-                                    NULL);
-              else
-                set_credential_data (credential,
-                                    "privacy_host_identifier",
-                                    privacy_host_identifier);
-            }
-#endif
-        }
-      g_free (key_private_truncated);
-    }
-  else
-    {
-      g_warning ("%s: credential iterator next() failed", __func__);
-      sql_rollback ();
-      cleanup_iterator (&iterator);
-      return -1;
-    }
-
-  cleanup_iterator (&iterator);
-
-  sql_commit ();
-
-  return 0;
-}
 
 /**
  * @brief Delete a Credential.
@@ -20920,204 +19809,90 @@ delete_credential (const char *credential_id, int ultimate)
 #define CREDENTIAL_ITERATOR_FILTER_COLUMNS                                    \
  { GET_ITERATOR_FILTER_COLUMNS, "login", "type", "allow_insecure", NULL }
 
-/**
- * @brief LSC Credential iterator columns.
- */
-#if ENABLE_CREDENTIAL_STORES
-#define CREDENTIAL_ITERATOR_COLUMNS                                           \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials),                                        \
-   /* public generic data */                                                  \
-   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
-   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
-   /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'username')",             \
-     "login",                                                                 \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'certificate')",          \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
-     "kdc",                                                                   \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'realm')",                \
-     "realm",                                                                 \
-     KEYWORD_TYPE_STRING },                                                   \
-   /* private data */                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'secret')",               \
-     "secret",                                                                \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'password')",             \
-     "password",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'private_key')",          \
-     "private_key",                                                           \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'community')",            \
-     "community",                                                             \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_password')",     \
-     "privacy_password",                                                      \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'credential_store_id')",  \
-     "credential_store_id",                                                   \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'vault_id')",             \
-     "vault_id",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'host_identifier')",      \
-     "host_identifier",                                                       \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id"                                     \
-     " AND type = 'privacy_host_identifier')",                                \
-     "privacy_host_identifier",                                               \
-     KEYWORD_TYPE_STRING },                                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-#else
-#define CREDENTIAL_ITERATOR_COLUMNS                                           \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials),                                        \
-   /* public generic data */                                                  \
-   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
-   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
-   /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'username')",             \
-     "login",                                                                 \
-     KEYWORD_TYPE_STRING                                                      \
-   },                                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'certificate')",          \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'auth_algorithm')",       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_algorithm')",    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'public_key')",           \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'kdc')"       ,           \
-     "kdc",                                                                   \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'realm')",                \
-     "realm",                                                                 \
-     KEYWORD_TYPE_STRING },                                                   \
-   /* private data */                                                         \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'secret')",               \
-     "secret",                                                                \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'password')",             \
-     "password",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'private_key')",          \
-     "private_key",                                                           \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'community')",            \
-     "community",                                                             \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials.id AND type = 'privacy_password')",     \
-     "privacy_password",                                                      \
-     KEYWORD_TYPE_STRING },                                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
-#endif
+
+#define CREDENTIAL_VALUE_COLUMN(table, data_table, key, filter)       \
+  { "(SELECT value FROM " G_STRINGIFY (data_table)                    \
+    " WHERE credential = " G_STRINGIFY (table) ".id"                  \
+    " AND type = '" key "')", filter, KEYWORD_TYPE_STRING }
+
+#define CREDENTIAL_ITERATOR_COLUMNS(table, data_table)                \
+  {                                                                   \
+    GET_ITERATOR_COLUMNS (table),                                     \
+    { "type", NULL, KEYWORD_TYPE_STRING },                            \
+    { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                 \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "username",           \
+                             "login"),                                \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "certificate", NULL), \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "auth_algorithm",     \
+                             NULL),                                   \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "privacy_algorithm",  \
+                             NULL),                                   \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "public_key", NULL),  \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "kdc", "kdc"),        \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "realm", "realm"),    \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "secret", "secret"),  \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "password",           \
+                             "password"),                             \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "private_key",        \
+                             "private_key"),                          \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "community",          \
+                             "community"),                            \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "privacy_password",   \
+                             "privacy_password"),                     \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "credential_store_id",\
+                             "credential_store_id"),                  \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "vault_id",           \
+                             "vault_id"),                             \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "host_identifier",    \
+                             "host_identifier"),                      \
+    CREDENTIAL_VALUE_COLUMN (table, data_table,                       \
+                             "privacy_host_identifier",               \
+                             "privacy_host_identifier"),              \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_host", NULL),     \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_bind_dn", NULL),  \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_base_dn", NULL),  \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_port", NULL),     \
+    CREDENTIAL_VALUE_COLUMN (table, data_table, "ad_tls_mode", NULL), \
+    CREDENTIAL_VALUE_COLUMN (table, data_table,                       \
+                             "ad_ca_certificate", NULL),              \
+    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                              \
+  }
 
 /**
- * @brief LSC Credential iterator columns for trash case.
+ * @brief Active and trash credential iterator columns.
+ *
+ *  This enumeration defines the column indices for the active
+ *  and trash credential iterators. Its order must match the entries
+ *  above.
  */
-#define CREDENTIAL_ITERATOR_TRASH_COLUMNS                                     \
- {                                                                            \
-   GET_ITERATOR_COLUMNS (credentials_trash),                                  \
-   /* public generic data */                                                  \
-   { "type", NULL, KEYWORD_TYPE_STRING },                                     \
-   { "allow_insecure", NULL, KEYWORD_TYPE_INTEGER },                          \
-   /* public type specific data */                                            \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'username')",       \
-     "login",                                                                 \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'certificate')",    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'auth_algorithm')",                                       \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     "   AND type = 'privacy_algorithm')",                                    \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_data"                                    \
-     " WHERE credential = credentials_trash.id AND type = 'public_key')",     \
-     NULL,                                                                    \
-     KEYWORD_TYPE_STRING },                                                   \
-   /* private data */                                                         \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'secret')",         \
-     "secret",                                                                \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'password')",       \
-     "password",                                                              \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'private_key')",    \
-     "private_key",                                                           \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id AND type = 'community')",      \
-     "community",                                                             \
-     KEYWORD_TYPE_STRING },                                                   \
-   { "(SELECT value FROM credentials_trash_data"                              \
-     " WHERE credential = credentials_trash.id"                               \
-     " AND type = 'privacy_password')",                                       \
-     "privacy_password",                                                      \
-     KEYWORD_TYPE_STRING },                                                   \
-   { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                       \
- }
+enum
+{
+  CRED_COL_TYPE = 0,
+  CRED_COL_ALLOW_INSECURE,
+  CRED_COL_LOGIN,
+  CRED_COL_CERTIFICATE,
+  CRED_COL_AUTH_ALGORITHM,
+  CRED_COL_PRIVACY_ALGORITHM,
+  CRED_COL_PUBLIC_KEY,
+  CRED_COL_KDC,
+  CRED_COL_REALM,
+  CRED_COL_SECRET,
+  CRED_COL_PASSWORD,
+  CRED_COL_PRIVATE_KEY,
+  CRED_COL_COMMUNITY,
+  CRED_COL_PRIVACY_PASSWORD,
+  CRED_COL_STORE_ID,
+  CRED_COL_VAULT_ID,
+  CRED_COL_HOST_IDENTIFIER,
+  CRED_COL_PRIVACY_HOST_IDENTIFIER,
+  CRED_COL_AD_HOST,
+  CRED_COL_AD_BIND_DN,
+  CRED_COL_AD_BASE_DN,
+  CRED_COL_AD_PORT,
+  CRED_COL_AD_TLS_MODE,
+  CRED_COL_AD_CA_CERTIFICATE,
+  CRED_COL_COUNT
+};
 
 /**
  * @brief Count number of LSC Credentials.
@@ -21130,8 +19905,18 @@ int
 credential_count (const get_data_t *get)
 {
   static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  static column_t columns[]
+    = CREDENTIAL_ITERATOR_COLUMNS (credentials, credentials_data);
+
+  G_STATIC_ASSERT (G_N_ELEMENTS (columns)
+                   == GET_ITERATOR_COLUMN_COUNT + CRED_COL_COUNT + 1);
+
+  static column_t trash_columns[]
+    = CREDENTIAL_ITERATOR_COLUMNS (credentials_trash, credentials_trash_data);
+
+  G_STATIC_ASSERT (G_N_ELEMENTS (trash_columns)
+                   == GET_ITERATOR_COLUMN_COUNT + CRED_COL_COUNT + 1);
+
   return count ("credential", get, columns, trash_columns, filter_columns,
                 0, 0, 0, TRUE);
 }
@@ -21311,273 +20096,6 @@ credential_encrypted_value (credential_t credential, const char* value_name)
 }
 
 /**
- * @brief Set the name of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  name            Name.
- */
-static void
-set_credential_name (credential_t credential, const char *name)
-{
-  gchar *quoted_name = sql_quote (name);
-  sql ("UPDATE credentials SET name = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_name,
-       credential);
-  g_free (quoted_name);
-}
-
-/**
- * @brief Set the comment of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  comment         Comment.
- */
-static void
-set_credential_comment (credential_t credential,
-                        const char *comment)
-{
-  gchar *quoted_comment = sql_quote (comment);
-  sql ("UPDATE credentials SET comment = '%s', modification_time = m_now ()"
-       " WHERE id = %llu;",
-       quoted_comment,
-       credential);
-  g_free (quoted_comment);
-}
-
-/**
- * @brief Set the login of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  login           Login.
- */
-static void
-set_credential_login (credential_t credential, const char *login)
-{
-  set_credential_data (credential, "username", login);
-  sql ("UPDATE credentials SET"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the certificate of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  certificate     Certificate.
- */
-static void
-set_credential_certificate (credential_t credential, const char *certificate)
-{
-  set_credential_data (credential, "certificate", certificate);
-  sql ("UPDATE credentials SET"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the auth_algorithm of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  algorithm       Authentication algorithm.
- */
-static void
-set_credential_auth_algorithm (credential_t credential, const char *algorithm)
-{
-  set_credential_data (credential, "auth_algorithm", algorithm);
-  sql ("UPDATE credentials SET"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the privacy_algorithm of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  algorithm       Privacy algorithm.
- */
-void
-set_credential_privacy_algorithm (credential_t credential,
-                                  const char *algorithm)
-{
-  set_credential_data (credential, "privacy_algorithm", algorithm);
-  sql ("UPDATE credentials SET"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the password of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  password        Password.
- */
-static void
-set_credential_password (credential_t credential, const char *password)
-{
-  lsc_crypt_ctx_t crypt_ctx;
-
-  if (!disable_encrypted_credentials)
-    {
-      gchar *encrypted_blob;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
-                                          "password", password, NULL);
-      if (!encrypted_blob)
-        {
-          g_critical ("%s: encryption failed", G_STRFUNC);
-          lsc_crypt_release (crypt_ctx);
-          return;
-        }
-      set_credential_data (credential, "secret", encrypted_blob);
-      set_credential_data (credential, "password", NULL);
-      set_credential_data (credential, "private_key", NULL);
-      g_free (encrypted_blob);
-    }
-  else
-    {
-      crypt_ctx = NULL;
-      set_credential_data (credential, "secret", NULL);
-      set_credential_data (credential, "password", password);
-      set_credential_data (credential, "private_key", NULL);
-    }
-
-  sql ("UPDATE credentials SET modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-  lsc_crypt_release (crypt_ctx);
-}
-
-/**
- * @brief Set the private key and passphrase of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  private_key     Private key.
- * @param[in]  passphrase      Passphrase.
- */
-static void
-set_credential_private_key (credential_t credential, const char *private_key,
-                            const char *passphrase)
-{
-  lsc_crypt_ctx_t crypt_ctx;
-
-  if (!disable_encrypted_credentials)
-    {
-      if (!g_str_equal (private_key, ""))
-        {
-          gchar *encrypted_blob;
-          char *encryption_key_uid = current_encryption_key_uid (TRUE);
-          crypt_ctx = lsc_crypt_new (encryption_key_uid);
-          free (encryption_key_uid);
-          encrypted_blob = lsc_crypt_encrypt (crypt_ctx, "password", passphrase,
-                                              "private_key", private_key, NULL);
-          if (!encrypted_blob)
-            {
-              g_critical ("%s: encryption failed", G_STRFUNC);
-              lsc_crypt_release (crypt_ctx);
-              return;
-            }
-          set_credential_data (credential, "secret", encrypted_blob);
-
-          g_free (encrypted_blob);
-          lsc_crypt_release (crypt_ctx);
-        }
-      else
-        {
-          set_credential_data (credential, "secret", NULL);
-        }
-
-      set_credential_data (credential, "password", NULL);
-      set_credential_data (credential, "private_key", NULL);
-    }
-  else
-    {
-      crypt_ctx = NULL;
-      set_credential_data (credential, "secret", NULL);
-      set_credential_data (credential, "password", passphrase);
-      set_credential_data (credential, "private_key", private_key);
-    }
-
-  sql ("UPDATE credentials SET modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the public key of a Credential.
- *
- * @param[in]  credential      The Credential.
- * @param[in]  public_key      Public key.
- */
-void
-set_credential_public_key (credential_t credential, const char *public_key)
-{
-  set_credential_data (credential, "public_key", public_key);
-  sql ("UPDATE credentials SET"
-       " modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-}
-
-/**
- * @brief Set the community, password and privacy password of a Credential.
- *
- * @param[in]  credential         The Credential.
- * @param[in]  community          SNMP community.
- * @param[in]  password           Authentication password.
- * @param[in]  privacy_password   Privacy password.
- */
-static void
-set_credential_snmp_secret (credential_t credential, const char* community,
-                            const char *password, const char *privacy_password)
-{
-  lsc_crypt_ctx_t crypt_ctx;
-
-  if (!disable_encrypted_credentials)
-    {
-      gchar *encrypted_blob;
-      char *encryption_key_uid = current_encryption_key_uid (TRUE);
-      crypt_ctx = lsc_crypt_new (encryption_key_uid);
-      free (encryption_key_uid);
-      encrypted_blob = lsc_crypt_encrypt (crypt_ctx,
-                                          "community", community,
-                                          "password", password,
-                                          "privacy_password", privacy_password,
-                                          NULL);
-      if (!encrypted_blob)
-        {
-          g_critical ("%s: encryption failed", G_STRFUNC);
-          lsc_crypt_release (crypt_ctx);
-          return;
-        }
-      set_credential_data (credential, "secret", encrypted_blob);
-      set_credential_data (credential, "community", NULL);
-      set_credential_data (credential, "password", NULL);
-      set_credential_data (credential, "privacy_password", NULL);
-      g_free (encrypted_blob);
-    }
-  else
-    {
-      crypt_ctx = NULL;
-      set_credential_data (credential, "secret", NULL);
-      set_credential_data (credential, "community", community);
-      set_credential_data (credential, "password", password);
-      set_credential_data (credential, "privacy_password", privacy_password);
-    }
-
-  sql ("UPDATE credentials SET modification_time = m_now ()"
-       " WHERE id = %llu;",
-       credential);
-  lsc_crypt_release (crypt_ctx);
-}
-
-/**
  * @brief Initialise a Credential iterator, given a single Credential.
  *
  * @param[in]  iterator        Iterator.
@@ -21613,9 +20131,12 @@ init_credential_iterator_one (iterator_t* iterator,
 int
 init_credential_iterator (iterator_t* iterator, get_data_t *get)
 {
-  static const char *filter_columns[] = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
-  static column_t columns[] = CREDENTIAL_ITERATOR_COLUMNS;
-  static column_t trash_columns[] = CREDENTIAL_ITERATOR_TRASH_COLUMNS;
+  static const char *filter_columns[]
+    = CREDENTIAL_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[]
+    = CREDENTIAL_ITERATOR_COLUMNS (credentials, credentials_data);
+  static column_t trash_columns[]
+    = CREDENTIAL_ITERATOR_COLUMNS (credentials_trash, credentials_trash_data);
 
   return init_get_iterator (iterator,
                             "credential",
@@ -21644,20 +20165,29 @@ credential_iterator_encrypted_data (iterator_t* iterator, const char* type)
 
   if (iterator->done)
     return NULL;
-  secret = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 9);
+  secret = iterator_string (iterator,
+                            GET_ITERATOR_COLUMN_COUNT + CRED_COL_SECRET);
   if (type == NULL)
     {
       g_warning ("%s: NULL data type given", __func__);
       return NULL;
     }
   else if (strcmp (type, "password") == 0)
-    unencrypted = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 10);
+    unencrypted
+     = iterator_string (iterator,
+                        GET_ITERATOR_COLUMN_COUNT + CRED_COL_PASSWORD);
   else if (strcmp (type, "private_key") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 11);
+    unencrypted
+      = iterator_string (iterator,
+                         GET_ITERATOR_COLUMN_COUNT + CRED_COL_PRIVATE_KEY);
   else if (strcmp (type, "community") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 12);
+    unencrypted
+      = iterator_string (iterator,
+                         GET_ITERATOR_COLUMN_COUNT + CRED_COL_COMMUNITY);
   else if (strcmp (type, "privacy_password") == 0)
-    unencrypted  = iterator_string (iterator, GET_ITERATOR_COLUMN_COUNT + 13);
+    unencrypted
+      = iterator_string (iterator,
+                         GET_ITERATOR_COLUMN_COUNT + CRED_COL_PRIVACY_PASSWORD);
   else
     {
       g_warning ("%s: unknown data type \"%s\"", __func__, type);
@@ -21703,7 +20233,8 @@ DEF_ACCESS (credential_iterator_type, GET_ITERATOR_COLUMN_COUNT);
  */
 int credential_iterator_allow_insecure (iterator_t* iterator)
 {
-  return iterator_int (iterator, GET_ITERATOR_COLUMN_COUNT + 1);
+  return iterator_int (iterator,
+                       GET_ITERATOR_COLUMN_COUNT + CRED_COL_ALLOW_INSECURE);
 }
 
 /**
@@ -21714,7 +20245,8 @@ int credential_iterator_allow_insecure (iterator_t* iterator)
  * @return Credential type, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
+DEF_ACCESS (credential_iterator_login,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_LOGIN);
 
 /**
  * @brief Get the certificate from a Credential iterator.
@@ -21724,7 +20256,8 @@ DEF_ACCESS (credential_iterator_login, GET_ITERATOR_COLUMN_COUNT + 2);
  * @return Certificate, or NULL if iteration is complete. Freed by
  *          cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_certificate, GET_ITERATOR_COLUMN_COUNT + 3);
+DEF_ACCESS (credential_iterator_certificate,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_CERTIFICATE);
 
 /**
  * @brief Get the authentication algorithm from an LSC credential iterator.
@@ -21734,7 +20267,8 @@ DEF_ACCESS (credential_iterator_certificate, GET_ITERATOR_COLUMN_COUNT + 3);
  * @return Auth algorithm, or NULL if iteration is complete.  Freed by
  *         cleanup_iterator.
  */
-DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 4);
+DEF_ACCESS (credential_iterator_auth_algorithm,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AUTH_ALGORITHM);
 
 /**
  * @brief Get the authentication algorithm from an LSC credential iterator.
@@ -21745,7 +20279,7 @@ DEF_ACCESS (credential_iterator_auth_algorithm, GET_ITERATOR_COLUMN_COUNT + 4);
  *         cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_privacy_algorithm,
-            GET_ITERATOR_COLUMN_COUNT + 5);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_PRIVACY_ALGORITHM);
 
 /**
  * @brief Get the public key from an LSC credential iterator.
@@ -21756,7 +20290,7 @@ DEF_ACCESS (credential_iterator_privacy_algorithm,
  *         cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_public_key,
-            GET_ITERATOR_COLUMN_COUNT + 6);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_PUBLIC_KEY);
 
 /**
  * @brief Get the key distribution center from an LSC credential iterator.
@@ -21767,7 +20301,7 @@ DEF_ACCESS (credential_iterator_public_key,
  *         cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_kdc,
-            GET_ITERATOR_COLUMN_COUNT + 7);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_KDC);
 
 /**
  * @brief Get the realm from an LSC credential iterator.
@@ -21777,10 +20311,9 @@ DEF_ACCESS (credential_iterator_kdc,
  * @return Realm, or NULL if iteration is complete.  Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_realm,
-            GET_ITERATOR_COLUMN_COUNT + 8);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_REALM);
 
 #if ENABLE_CREDENTIAL_STORES
-
 /**
  * @brief Get the credential store UUID from an LSC credential iterator.
  *
@@ -21790,7 +20323,7 @@ DEF_ACCESS (credential_iterator_realm,
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_credential_store_uuid,
-            GET_ITERATOR_COLUMN_COUNT + 14);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_STORE_ID);
 
 /**
  * @brief Get the credential store vault ID from an LSC credential iterator.
@@ -21801,7 +20334,7 @@ DEF_ACCESS (credential_iterator_credential_store_uuid,
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_vault_id,
-            GET_ITERATOR_COLUMN_COUNT + 15);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_VAULT_ID);
 
 /**
  * @brief Get the host identifier from an LSC credential iterator.
@@ -21812,7 +20345,7 @@ DEF_ACCESS (credential_iterator_vault_id,
  *         Freed by cleanup_iterator.
  */
 DEF_ACCESS (credential_iterator_host_identifier,
-            GET_ITERATOR_COLUMN_COUNT + 16);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_HOST_IDENTIFIER);
 
 /**
  * @brief Get the SNMP privacy host identifier from an LSC credential iterator.
@@ -21824,8 +20357,76 @@ DEF_ACCESS (credential_iterator_host_identifier,
  */
 
 DEF_ACCESS (credential_iterator_privacy_host_identifier,
-            GET_ITERATOR_COLUMN_COUNT + 17);
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_PRIVACY_HOST_IDENTIFIER);
 
+#endif
+
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Get the Active Directory host from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD host, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_host,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_HOST);
+
+/**
+ * @brief Get the Active Directory bind DN from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD bind DN, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_bind_dn,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_BIND_DN);
+
+/**
+ * @brief Get the Active Directory base DN from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD base DN, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_base_dn,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_BASE_DN);
+
+/**
+ * @brief Get the Active Directory port from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD port, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_port,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_PORT);
+
+/**
+ * @brief Get the Active Directory TLS mode from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD TLS mode, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_tls_mode,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_TLS_MODE);
+
+/**
+ * @brief Get the Active Directory CA certificate from a credential iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return AD CA certificate, or NULL if iteration is complete.
+ *         Freed by cleanup_iterator.
+ */
+DEF_ACCESS (credential_iterator_ad_ca_certificate,
+            GET_ITERATOR_COLUMN_COUNT + CRED_COL_AD_CA_CERTIFICATE);
 #endif
 
 /**
@@ -22799,6 +21400,10 @@ manage_create_scanner (GSList *log_config, const db_conn_info_t *database,
                  "Scanner host must be a valid hostname,"
                  " IP address or UNIX socket path.\n");
         break;
+      case CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        fprintf (stderr,
+                 "An agent controller scanner with the same host and port already exists.\n");
+        break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
         fprintf (stderr,
                  "Scanner relay port must be a valid port number (1 - 65535)"
@@ -23121,7 +21726,7 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
       case MODIFY_SCANNER_CREDENTIAL_NOT_CC:
         fprintf (stderr, "Credential should be 'cc'.\n");
         break;
-      case CREATE_SCANNER_INVALID_TYPE:
+      case MODIFY_SCANNER_INVALID_TYPE:
         fprintf (stderr, "Invalid scanner type.\n");
         break;
       case MODIFY_SCANNER_INVALID_PORT:
@@ -23133,6 +21738,11 @@ manage_modify_scanner (GSList *log_config, const db_conn_info_t *database,
         fprintf (stderr,
                  "Scanner host must be a valid hostname,"
                  " IP address or UNIX socket path.\n");
+        break;
+      case MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        fprintf (stderr,
+                 "An agent-controller scanner with the same host and port"
+                 " already exists.\n");
         break;
       case MODIFY_SCANNER_INVALID_RELAY_PORT:
         fprintf (stderr,
@@ -23190,7 +21800,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
                        const gchar *uuid)
 {
   int ret;
-  char *version;
+  char *version = NULL;
 
   assert (uuid);
 
@@ -23205,18 +21815,13 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   switch ((ret = verify_scanner (uuid, &version)))
     {
       case 0:
-        printf ("Scanner version: %s.\n", version);
-        g_free (version);
+        printf ("Scanner version: %s.\n", version ?: "N/A");
         break;
       case 1:
         fprintf (stderr, "Failed to find scanner.\n");
         break;
       case 2:
         fprintf (stderr, "Failed to verify scanner.\n");
-        break;
-      case 3:
-        fprintf (stderr, "Failed to authenticate. Scanner version: %s\n",
-                 version);
         break;
       default:
         fprintf (stderr, "Internal Error.\n");
@@ -23225,6 +21830,7 @@ manage_verify_scanner (GSList *log_config, const db_conn_info_t *database,
   current_credentials.uuid = NULL;
 
   manage_option_cleanup ();
+  g_free (version);
   return ret ? -1 : 0;
 }
 
@@ -23316,6 +21922,108 @@ insert_scanner (const char* name, const char *comment, const char *host,
 
   if (new_scanner)
     *new_scanner = sql_last_insert_id ();
+}
+
+/**
+ * @brief Check whether an Agent Controller scanner already uses the endpoint.
+ *
+ * @param[in] host             Scanner host.
+ * @param[in] port             Scanner port.
+ * @param[in] exclude_scanner  Scanner to exclude from the check, or 0.
+ *
+ * @return TRUE if the endpoint is already in use, FALSE otherwise.
+ */
+static gboolean
+agent_scanner_endpoint_exists (const char *host, int port,
+                               scanner_t exclude_scanner)
+{
+  scanner_t scanner = 0;
+
+  sql_int64_ps (
+    &scanner,
+    "SELECT id FROM scanners "
+    "WHERE host = $1 "
+    "AND port = $2 "
+    "AND type IN ($3, $4) "
+    "AND id != $5 "
+    "LIMIT 1;",
+    SQL_STR_PARAM (host),
+    SQL_INT_PARAM (port),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER_SENSOR),
+    SQL_RESOURCE_PARAM (exclude_scanner),
+    NULL);
+
+  return scanner != 0;
+}
+
+/**
+ * @brief Check whether a scanner is an Agent Controller or Sensor.
+ *
+ * @param[in] scanner_uuid UUID of the scanner.
+ *
+ * @return TRUE if the scanner is an Agent Controller or Sensor, FALSE otherwise.
+ */
+static gboolean
+scanner_is_agent_controller_or_sensor (const char *scanner_uuid)
+{
+  scanner_t scanner = 0;
+
+  if (!scanner_uuid)
+    return FALSE;
+
+  sql_int64_ps (
+    &scanner,
+    "SELECT id FROM scanners "
+    "WHERE uuid = $1 "
+    "AND type IN ($2, $3) "
+    "LIMIT 1;",
+    SQL_STR_PARAM (scanner_uuid),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER),
+    SQL_INT_PARAM (SCANNER_TYPE_AGENT_CONTROLLER_SENSOR),
+    NULL);
+
+  return scanner != 0;
+}
+
+/**
+ * @brief Check whether a scanner port is invalid.
+ *
+ * @param[in]  port  Port to validate.
+ * @param[in]  type  Type of scanner.
+ *
+ * @return TRUE if the port is invalid, FALSE otherwise.
+ */
+static gboolean
+scanner_port_is_invalid (int port, scanner_type_t type)
+{
+  if (type == SCANNER_TYPE_OSP_SENSOR
+      || type == SCANNER_TYPE_OPENVASD_SENSOR
+      || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    return port != 0;
+
+  return port <= 0 || port > 65535;
+}
+
+/**
+ * @brief Set the scanner port value.
+ *
+ * Sensor scanner ports are always set to 0.
+ *
+ * @param[in]   port_value  Port value.
+ * @param[out]  port        Parsed port.
+ * @param[in]   type        Type of scanner.
+ */
+static void
+set_scanner_port_value (const gchar *port_value, int *port,
+                        scanner_type_t type)
+{
+  *port = atoi (port_value ? : "0");
+
+  if (type == SCANNER_TYPE_OSP_SENSOR
+      || type == SCANNER_TYPE_OPENVASD_SENSOR
+      || type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    *port = 0;
 }
 
 /**
@@ -23424,8 +22132,8 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
   else
     {
-      iport = atoi (port ?: "0");
-      if (iport <= 0 || iport > 65535)
+      set_scanner_port_value (port, &iport, (scanner_type_t) itype);
+      if (scanner_port_is_invalid (iport, (scanner_type_t)itype))
         {
           sql_rollback ();
           return CREATE_SCANNER_INVALID_PORT;
@@ -23435,6 +22143,14 @@ create_scanner (const char* name, const char *comment, const char *host,
           sql_rollback ();
           return CREATE_SCANNER_INVALID_HOST;
         }
+    }
+
+  if ((itype == SCANNER_TYPE_AGENT_CONTROLLER
+     || itype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    && agent_scanner_endpoint_exists (host, iport, 0))
+    {
+      sql_rollback ();
+      return CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS;
     }
 
   if (relays_managed_externally ())
@@ -23534,6 +22250,11 @@ create_scanner (const char* name, const char *comment, const char *host,
     }
 
   sql_commit ();
+
+#if ENABLE_AGENTS
+  manage_agents_sync_from_scanner (*new_scanner);
+#endif
+
   return CREATE_SCANNER_SUCCESS;
 }
 
@@ -23548,6 +22269,7 @@ create_scanner (const char* name, const char *comment, const char *host,
  *
  * @return 0 success, 1 scanner exists already, 2 failed to find existing
  *         scanner, -1 error, 98 not allowed to copy cve scanner,
+ *         97 not allowed Agent controller or Agent controller sensor scanner,
  *         99 permission denied.
  */
 int
@@ -23556,6 +22278,8 @@ copy_scanner (const char* name, const char* comment, const char *scanner_id,
 {
   if (strcmp (scanner_id, SCANNER_UUID_CVE) == 0)
     return 98;
+  if (scanner_is_agent_controller_or_sensor (scanner_id))
+    return 97;
 
   return copy_resource ("scanner", name, comment, scanner_id,
                         "host, port, type, ca_pub, credential", 1,
@@ -23658,7 +22382,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
 
   if (port)
-    iport = atoi (port);
+    set_scanner_port_value (port, &iport, (scanner_type_t) itype);
   else
     iport = sql_int ("SELECT port FROM scanners WHERE id = %llu;",
                      scanner);
@@ -23669,6 +22393,26 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     used_host = sql_string ("SELECT host FROM scanners"
                             " WHERE id = %llu;",
                             scanner);
+
+  unix_socket = used_host && (*used_host == '/');
+
+  if (unix_socket)
+    {
+      iport = 0;
+
+      if (! scanner_type_supports_unix_sockets (itype))
+        {
+          sql_rollback ();
+          g_free (used_host);
+          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
+        }
+    }
+  else if (scanner_port_is_invalid (iport, (scanner_type_t) itype))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      return MODIFY_SCANNER_INVALID_PORT;
+    }
 
   if (relays_managed_externally ())
     {
@@ -23691,7 +22435,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
         irelay_port = atoi (relay_port);
       else
         irelay_port = sql_int ("SELECT relay_port FROM scanners WHERE id = %llu;",
-                              scanner);
+                               scanner);
 
       if (relay_host)
         used_relay_host = g_strdup (relay_host);
@@ -23701,37 +22445,7 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
                                       scanner);
     }
 
-  unix_socket = used_host && (*used_host == '/');
   relay_unix_socket = used_relay_host && (*used_relay_host == '/');
-
-  if (unix_socket)
-    {
-      iport = 0;
-      if (! scanner_type_supports_unix_sockets (itype))
-        {
-          sql_rollback ();
-          g_free (used_host);
-          g_free (used_relay_host);
-          return MODIFY_SCANNER_UNIX_SOCKET_UNSUPPORTED;
-        }
-    }
-  else
-    {
-      if (port)
-        iport = atoi (port);
-      else
-        iport = sql_int ("SELECT port FROM scanners"
-                         " WHERE id = %llu;",
-                         scanner);
-
-      if (iport <= 0 || iport > 65535)
-        {
-          sql_rollback ();
-          g_free (used_host);
-          g_free (used_relay_host);
-          return MODIFY_SCANNER_INVALID_PORT;
-        }
-    }
 
   if (unix_socket == 0
       && (gvm_get_host_type (used_host) == -1))
@@ -23740,6 +22454,16 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
       g_free (used_host);
       g_free (used_relay_host);
       return MODIFY_SCANNER_INVALID_HOST;
+    }
+
+  if ((itype == SCANNER_TYPE_AGENT_CONTROLLER
+     || itype == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+    && agent_scanner_endpoint_exists (used_host, iport, scanner))
+    {
+      sql_rollback ();
+      g_free (used_host);
+      g_free (used_relay_host);
+      return MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS;
     }
 
   if (used_relay_host == NULL || strcmp (used_relay_host, "") == 0)
@@ -23891,6 +22615,11 @@ modify_scanner (const char *scanner_id, const char *name, const char *comment,
     }
 
   sql_commit ();
+
+#if ENABLE_AGENTS
+  manage_agents_sync_from_scanner (scanner);
+#endif
+
   return MODIFY_SCANNER_SUCCESS;
 }
 
@@ -24806,8 +23535,8 @@ openvasd_get_details_from_iterator (iterator_t *iterator, char **desc,
  * @param[in]   scanner_id  Scanner UUID.
  * @param[out]  version     Version returned by the scanner.
  *
- * @return 0 success, 1 failed to find scanner, 2 failed to get version,
- *         3 authentication failed, 99 if permission denied, -1 error.
+ * @return 0 success, 1 failed to find scanner, 2 failed to verify scanner,
+ *         99 if permission denied, -1 error.
  */
 int
 verify_scanner (const char *scanner_id, char **version)
@@ -24835,21 +23564,28 @@ verify_scanner (const char *scanner_id, char **version)
         return 2;
       return 0;
     }
+#if ENABLE_OPENVASD
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD
-      || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
+           || scanner_iterator_type (&scanner) == SCANNER_TYPE_OPENVASD_SENSOR)
     {
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
       cleanup_iterator (&scanner);
+
+      int res = verify_openvasd_scanner_connection (scanner_row_id);
+      if (res)
+        return 2;
       return 0;
     }
+#endif
 #if ENABLE_AGENTS
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_AGENT_CONTROLLER
            || scanner_iterator_type (&scanner)
                 == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
     {
       scanner_t scanner_row_id = get_iterator_resource (&scanner);
-      int res = verify_agent_controller_connection (scanner_row_id);
       cleanup_iterator (&scanner);
 
+      int res = verify_agent_controller_connection (scanner_row_id);
       if (res == 1)
         return 2;
 
@@ -24859,23 +23595,24 @@ verify_scanner (const char *scanner_id, char **version)
 #if ENABLE_CONTAINER_SCANNING
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_CONTAINER_IMAGE)
     {
-      // Once container scanner is availabe and has version endpoint, replace
-      // this
-      if (version)
-        *version = g_strdup ("TestVersion");
-
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
       cleanup_iterator (&scanner);
+
+      int res = verify_container_image_scanner_connection (scanner_row_id);
+      if (res)
+        return 2;
       return 0;
     }
 #endif
 #if ENABLE_WEB_APPLICATION_SCANNING
   else if (scanner_iterator_type (&scanner) == SCANNER_TYPE_WEB_APPLICATION)
     {
-      // TODO: replace with actual version from the scanner
-      if (version)
-        *version = g_strdup ("TestVersion");
-
+      scanner_t scanner_row_id = get_iterator_resource (&scanner);
       cleanup_iterator (&scanner);
+
+      int res = verify_web_application_scanner_connection (scanner_row_id);
+      if (res)
+        return 2;
       return 0;
     }
 #endif
@@ -25203,7 +23940,8 @@ manage_schema (gchar *format, gchar **output_return, gsize *output_length,
  * @return 0 success, 1 fail because the resource refers to another resource
  *         in the trashcan, 2 failed to find resource in trashcan, 3 fail
  *         because resource with such name exists already, 4 fail because
- *         resource with UUID exists already, 99 permission denied, -1 error.
+ *         resource with UUID exists already, 5 fail because endpoint already
+ *         exists, 99 permission denied, -1 error.
  */
 int
 manage_restore (const char *id)
@@ -25899,6 +24637,35 @@ manage_restore (const char *id)
           return 1;
         }
 
+      /* Check Agent Controller endpoint before restoring. */
+      scanner_type_t scanner_type;
+      gchar *scanner_host;
+      int scanner_port;
+
+      scanner_type =
+        sql_int ("SELECT type FROM scanners_trash WHERE id = %llu;", resource);
+
+      if (scanner_type == SCANNER_TYPE_AGENT_CONTROLLER
+          || scanner_type == SCANNER_TYPE_AGENT_CONTROLLER_SENSOR)
+        {
+          scanner_host =
+            sql_string ("SELECT host FROM scanners_trash WHERE id = %llu;",
+                        resource);
+
+          scanner_port =
+            sql_int ("SELECT port FROM scanners_trash WHERE id = %llu;",
+                     resource);
+
+          if (agent_scanner_endpoint_exists (scanner_host, scanner_port, 0))
+            {
+              g_free (scanner_host);
+              sql_rollback ();
+              return 5;  /* Endpoint already exists. */
+            }
+
+          g_free (scanner_host);
+        }
+
       sql ("INSERT INTO scanners"
            " (uuid, owner, name, comment, host, port, type, ca_pub,"
            "  credential, creation_time, modification_time)"
@@ -25924,6 +24691,10 @@ manage_restore (const char *id)
 
       sql ("DELETE FROM scanners_trash WHERE id = %llu;", resource);
       sql_commit ();
+
+#if ENABLE_AGENTS
+      manage_agents_sync_from_scanner (scanner);
+#endif
       return 0;
     }
 
@@ -27157,7 +25928,8 @@ type_select_columns (const char *type)
   static column_t cert_bund_adv_columns[] = CERT_BUND_ADV_INFO_ITERATOR_COLUMNS;
   static column_t config_columns[] = CONFIG_ITERATOR_COLUMNS;
   static column_t cpe_columns[] = CPE_INFO_ITERATOR_COLUMNS;
-  static column_t credential_columns[] = CREDENTIAL_ITERATOR_COLUMNS;
+  static column_t credential_columns[]
+    = CREDENTIAL_ITERATOR_COLUMNS (credentials, credentials_data);
   static column_t cve_columns[] = CVE_INFO_ITERATOR_COLUMNS;
   static column_t dfn_cert_adv_columns[] = DFN_CERT_ADV_INFO_ITERATOR_COLUMNS;
   static column_t filter_columns[] = FILTER_ITERATOR_COLUMNS;
@@ -27706,7 +26478,7 @@ type_build_select (const char *type, const char *columns_str,
       lateral_clause = result_iterator_lateral (overrides,
                                                 dynamic,
                                                 "results",
-                                                "nvts");
+                                                "all_vts");
 
       opts_table = g_strdup_printf (" LEFT OUTER JOIN result_vt_epss"
                                     " ON results.nvt = result_vt_epss.vt_id"
@@ -27793,6 +26565,8 @@ type_build_select (const char *type, const char *columns_str,
               (ordered && filter_order) ? filter_order : "",
               pagination_clauses ? pagination_clauses : "");
 
+  g_free (filter);
+  g_free (clause);
   g_free (with);
   g_free (from_table);
   g_free (opts_table);
@@ -27800,6 +26574,9 @@ type_build_select (const char *type, const char *columns_str,
   g_free (extra_with);
   g_free (extra_where);
   g_free (pagination_clauses);
+  g_free (owner_filter);
+  array_free (permissions);
+  g_free (filter_order);
 
   return 0;
 }

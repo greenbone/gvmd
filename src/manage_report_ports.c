@@ -59,7 +59,6 @@ manage_send_report_ports (report_t report,
   char chunk[MANAGE_SEND_REPORT_CHUNK_SIZE + 1];
   FILE *stream;
   int ret;
-  iterator_t results;
   int first_result;
   int max_results;
   int sort_order;
@@ -138,7 +137,6 @@ manage_send_report_ports (report_t report,
                                                   max_results,
                                                   sort_order,
                                                   sort_field,
-                                                  &results,
                                                   filtered_count,
                                                   host_filter);
 

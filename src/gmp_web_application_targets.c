@@ -172,6 +172,7 @@ create_web_application_target_run (gmp_parser_t *gmp_parser, GError **error)
                                            entity_text (copy),
                                            gmp_parser))
               {
+                create_web_application_target_reset ();
                 error_send_to_client (error);
                 return;
               }
@@ -567,6 +568,9 @@ modify_web_application_target_run (gmp_parser_t *gmp_parser, GError **error)
                                        web_application_target_id,
                                        gmp_parser))
           {
+            web_application_target_data_free (target_data);
+            g_free (error_message);
+            modify_web_application_target_reset ();
             error_send_to_client (error);
             return;
           }
@@ -831,6 +835,7 @@ get_web_application_targets_run (gmp_parser_t *gmp_parser, GError **error)
                    get_web_application_targets_data.get.id,
                    gmp_parser))
               {
+                get_web_application_targets_reset ();
                 error_send_to_client (error);
                 return;
               }
@@ -843,6 +848,7 @@ get_web_application_targets_run (gmp_parser_t *gmp_parser, GError **error)
                    get_web_application_targets_data.get.filt_id,
                    gmp_parser))
               {
+                get_web_application_targets_reset ();
                 error_send_to_client (error);
                 return;
               }

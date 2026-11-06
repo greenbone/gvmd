@@ -166,4 +166,7 @@ void
 asset_snapshots_container_image (report_t report, task_t task);
 #endif
 
+gchar *
+asset_key_for_report_host (report_t, report_host_t, const gchar *);
+
 #endif /* not _GVMD_MANAGE_ASSETS_H */

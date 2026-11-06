@@ -71,11 +71,15 @@
  */
 
 #include "gmp.h"
+#if ENABLE_AD_INTEGRATION
+#include "gmp_active_directory.h"
+#endif
 #if ENABLE_AGENTS
 #include "gmp_agent_control_scan_agent_config.h"
 #include "gmp_agent_groups.h"
 #include "gmp_agents.h"
 #include "gmp_agent_installer_instructions.h"
+#include "gmp_agent_inventory_authentication.h"
 #include "gmp_agent_support_bundle.h"
 #endif
 #include "gmp_base.h"
@@ -85,16 +89,25 @@
 #include "gmp_delete.h"
 #include "gmp_get.h"
 #include "gmp_configs.h"
+#include "gmp_credentials.h"
+#include "gmp_audit_report.h"
+#include "gmp_audit_report_exports.h"
+#include "gmp_audit_report_hosts.h"
+#include "gmp_delta_audit_report_exports.h"
+#include "gmp_delta_scan_report_exports.h"
+#include "gmp_scan_report_exports.h"
 #include "gmp_integration_configs.h"
 #include "gmp_license.h"
 #include "gmp_logout.h"
 #include "gmp_oci_image_targets.h"
 #include "gmp_port_lists.h"
+#include "gmp_scan_report.h"
 #include "gmp_report_applications.h"
 #include "gmp_report_closed_cves.h"
 #include "gmp_report_configs.h"
 #include "gmp_report_cves.h"
 #include "gmp_report_errors.h"
+#include "gmp_report_exports.h"
 #include "gmp_report_formats.h"
 #include "gmp_report_hosts.h"
 #include "gmp_report_operating_systems.h"
@@ -184,102 +197,14 @@ typedef struct
 } auth_conf_setting_t;
 
 /**
- * @brief Check that a string represents a valid x509 Certificate.
- *
- * @param[in]  cert_str     Certificate string.
- *
- * @return 0 if valid, 1 otherwise.
+ * @brief Status codes for note or override hosts validation.
  */
-static int
-check_certificate_x509 (const char *cert_str)
+typedef enum
 {
-  gnutls_x509_crt_t crt;
-  gnutls_datum_t data;
-  int ret = 0;
-
-  assert (cert_str);
-  if (gnutls_x509_crt_init (&crt))
-    return 1;
-  data.size = strlen (cert_str);
-  data.data = (void *) g_strdup (cert_str);
-  if (gnutls_x509_crt_import (crt, &data, GNUTLS_X509_FMT_PEM))
-    {
-      gnutls_x509_crt_deinit (crt);
-      g_free (data.data);
-      return 1;
-    }
-
-  if (time (NULL) > gnutls_x509_crt_get_expiration_time (crt))
-    {
-      g_warning ("Certificate expiration time passed");
-      ret = 1;
-    }
-  if (time (NULL) < gnutls_x509_crt_get_activation_time (crt))
-    {
-      g_warning ("Certificate activation time in the future");
-      ret = 1;
-    }
-  g_free (data.data);
-  gnutls_x509_crt_deinit (crt);
-  return ret;
-}
-
-/**
- * @brief Check that a string represents a valid public key or certificate.
- *
- * @param[in]  key_str     Key string.
- * @param[in]  key_types   GArray of the data types to check for.
- * @param[in]  protocol    The GPG protocol to check.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-try_gpgme_import (const char *key_str, GArray *key_types,
-                  gpgme_protocol_t protocol)
-{
-  int ret = 0;
-  gpgme_ctx_t ctx;
-  char gpg_temp_dir[] = "/tmp/gvmd-gpg-XXXXXX";
-
-  if (mkdtemp (gpg_temp_dir) == NULL)
-    {
-      g_warning ("%s: mkdtemp failed", __func__);
-      return -1;
-    }
-
-  gpgme_new (&ctx);
-  gpgme_ctx_set_engine_info (ctx, protocol, NULL, gpg_temp_dir);
-  gpgme_set_protocol (ctx, protocol);
-
-  ret = gvm_gpg_import_many_types_from_string (ctx, key_str, -1, key_types);
-
-  gpgme_release (ctx);
-  gvm_file_remove_recurse (gpg_temp_dir);
-
-  return ret != 0;
-}
-
-/**
- * @brief Check that a string represents a valid S/MIME Certificate.
- *
- * @param[in]  cert_str     Certificate string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_certificate_smime (const char *cert_str)
-{
-  int ret;
-  const gpgme_data_type_t types_ptr[2] = {GPGME_DATA_TYPE_X509_CERT,
-                                          GPGME_DATA_TYPE_CMS_OTHER};
-  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
-
-  g_array_append_vals (key_types, types_ptr, 2);
-  ret = try_gpgme_import (cert_str, key_types, GPGME_PROTOCOL_CMS);
-  g_array_free (key_types, TRUE);
-
-  return ret;
-}
+  NOTE_OR_OVERRIDE_SCOPE_OK = 0,
+  NOTE_OR_OVERRIDE_SCOPE_INVALID = -1,
+  NOTE_OR_OVERRIDE_SCOPE_TOO_MANY = -2
+} note_or_override_scope_status_t;
 
 /**
  * @brief Get PGP or S/MIME public key info.
@@ -351,43 +276,42 @@ get_pgp_public_key_info (const char *key_str, gpgme_protocol_t protocol,
 }
 
 /**
- * @brief Check that a string represents a valid certificate.
+ * @brief Validate the notes or overrides hosts field.
  *
- * The type of certificate accepted depends on the credential_type.
+ * Checks whether the value contains OCI image digests or
+ *   hosts and validates accordingly.
  *
- * @param[in]  cert_str         Certificate string.
- * @param[in]  credential_type  The credential type to assume.
+ * @param[in]  value  Free-form comma-separated value.
  *
- * @return 0 if valid, 1 otherwise.
+ * @return note_or_override_scope_status_t indicating
+ *         the result of the validation.
  */
-static int
-check_certificate (const char *cert_str, const char *credential_type)
+static note_or_override_scope_status_t
+validate_notes_or_overrides_scope (const gchar *value)
 {
-  if (credential_type && strcmp (credential_type, "smime") == 0)
-    return check_certificate_smime (cert_str);
-  else
-    return check_certificate_x509 (cert_str);
-}
+  int n = 0;
 
-/**
- * @brief Check that a string represents a valid Public Key.
- *
- * @param[in]  key_str  Public Key string.
- *
- * @return 0 if valid, 1 otherwise.
- */
-static int
-check_public_key (const char *key_str)
-{
-  int ret;
-  const gpgme_data_type_t types_ptr[1] = {GPGME_DATA_TYPE_PGP_KEY};
-  GArray *key_types = g_array_new (FALSE, FALSE, sizeof (gpgme_data_type_t));
+  if (value == NULL || *value == '\0')
+    return NOTE_OR_OVERRIDE_SCOPE_OK;
 
-  g_array_append_vals (key_types, types_ptr, 1);
-  ret = try_gpgme_import (key_str, key_types, GPGME_PROTOCOL_OPENPGP);
-  g_array_free (key_types, TRUE);
+#if ENABLE_CONTAINER_SCANNING
+  /* Try digests first and fallback to hosts otherwise */
+  n = manage_count_oci_image_digests (value);
+  if (n > 0)
+    {
+      if (n > get_oci_target_max_images ())
+        return NOTE_OR_OVERRIDE_SCOPE_TOO_MANY;
+      return NOTE_OR_OVERRIDE_SCOPE_OK;
+    }
+#endif
 
-  return ret;
+  n = manage_count_hosts (value, NULL);
+  if (n == -1)
+    return NOTE_OR_OVERRIDE_SCOPE_INVALID;
+  if (n > manage_max_hosts ())
+    return NOTE_OR_OVERRIDE_SCOPE_TOO_MANY;
+
+  return NOTE_OR_OVERRIDE_SCOPE_OK;
 }
 
 
@@ -533,70 +457,6 @@ create_alert_data_reset (create_alert_data_t *data)
   free (data->part_name);
 
   memset (data, 0, sizeof (create_alert_data_t));
-}
-
-/**
- * @brief Command data for the create_credential command.
- */
-typedef struct
-{
-  char *allow_insecure;    ///< Whether to allow insecure use.
-  char *certificate;       ///< Certificate for client certificate auth.
-  char *comment;           ///< Comment.
-  char *copy;              ///< UUID of resource to copy.
-  char *kdc;               ///< Kerberos KDC (key distribution centers).
-  char *kdcs_kdc;          ///< Current Kerberos KDC (key distribution centers).
-  array_t *kdcs;           ///< List of Kerberos KDC (key distribution centers).
-  int key;                 ///< Whether the command included a key element.
-  char *key_phrase;        ///< Passphrase for key.
-  char *key_private;       ///< Private key from key.
-  char *key_public;        ///< Public key from key.
-  char *login;             ///< Login name.
-  char *name;              ///< Credential name.
-  char *password;          ///< Password associated with login name.
-  char *community;         ///< SNMP Community string.
-  char *auth_algorithm;    ///< SNMP Authentication algorithm.
-  char *privacy_password;  ///< SNMP Privacy password.
-  char *privacy_algorithm; ///< SNMP Privacy algorithm.
-  char *realm;             ///< Kerberos realm.
-  char *credential_store_id;   ///< Credential store UUID.
-  char *vault_id;          ///< Credential store vault ID.
-  char *host_identifier;     ///< Credential store item ID.
-  char *privacy_host_identifier; ///< SNMP Privacy credential store item ID.
-  char *type;              ///< Type of credential.
-} create_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-create_credential_data_reset (create_credential_data_t *data)
-{
-  free (data->allow_insecure);
-  free (data->certificate);
-  free (data->comment);
-  free (data->copy);
-  free (data->kdc);
-  free (data->key_phrase);
-  free (data->key_private);
-  free (data->key_public);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-  free (data->community);
-  free (data->auth_algorithm);
-  free (data->privacy_password);
-  free (data->privacy_algorithm);
-  free (data->realm);
-  free (data->credential_store_id);
-  free (data->vault_id);
-  free (data->host_identifier);
-  free (data->privacy_host_identifier);
-  free (data->type);
-
-  memset (data, 0, sizeof (create_credential_data_t));
 }
 
 /**
@@ -957,6 +817,7 @@ create_report_data_reset (create_report_data_t *data)
               free (result->qod_type);
               free (result->scan_nvt_version);
               free (result->severity);
+              free (result->threat);
             }
         }
       array_free (data->results);
@@ -966,6 +827,22 @@ create_report_data_reset (create_report_data_t *data)
   free (data->scan_start);
   free (data->task_id);
   free (data->type);
+  free (data->detail_name);
+  free (data->detail_value);
+  free (data->detail_source_desc);
+  free (data->detail_source_name);
+  free (data->detail_source_type);
+  free (data->result_detection_name);
+  free (data->result_detection_product);
+  free (data->result_detection_location);
+  free (data->result_detection_source_oid);
+  free (data->result_detection_source_name);
+  free (data->result_qod_type);
+  free (data->result_qod);
+  free (data->result_scan_nvt_version);
+  free (data->result_severity);
+  free (data->host_end_host);
+  free (data->host_start_host);
 
   memset (data, 0, sizeof (create_report_data_t));
 }
@@ -2659,70 +2536,6 @@ modify_auth_data_reset (modify_auth_data_t * data)
 }
 
 /**
- * @brief Command data for the modify_credential command.
- */
-typedef struct
-{
-  char *allow_insecure;       ///< Whether to allow insecure use.
-  char *auth_algorithm;       ///< SNMP Authentication algorithm.
-  char *certificate;          ///< Certificate.
-  char *comment;              ///< Comment.
-  char *community;            ///< SNMP Community string.
-  char *credential_id;        ///< ID of credential to modify.
-  char *kdc;                  ///< Kerberos KDC (key distribution centers).
-  char *kdcs_kdc;             ///< Current Kerberos KDC (key distribution centers).
-  array_t *kdcs;              ///< List of Kerberos KDC (key distribution centers).
-  int key;                    ///< Whether the command included a key element.
-  char *key_phrase;           ///< Passphrase for key.
-  char *key_private;          ///< Private key from key.
-  char *key_public;           ///< Public key from key.
-  char *login;                ///< Login name.
-  char *name;                 ///< Name.
-  char *password;             ///< Password associated with login name.
-  char *privacy_algorithm;    ///< SNMP Privacy algorithm.
-  char *privacy_password;     ///< SNMP Privacy password.
-  char *realm;                ///< Kerberos realm.
-  char *credential_store_id;  ///< Credential store UUID.
-  char *vault_id;             ///< Credential store vault ID.
-  char *host_identifier;        ///< Credential store item ID.
-  char *privacy_host_identifier;  ///< SNMP Privacy credential store item ID.
-} modify_credential_data_t;
-
-/**
- * @brief Reset command data.
- *
- * @param[in]  data  Command data.
- */
-static void
-modify_credential_data_reset (modify_credential_data_t *data)
-{
-  free (data->allow_insecure);
-  free (data->auth_algorithm);
-  free (data->certificate);
-  free (data->comment);
-  free (data->community);
-  free (data->credential_id);
-  free (data->kdc);
-  free (data->key_phrase);
-  free (data->key_private);
-  free (data->key_public);
-  free (data->login);
-  free (data->name);
-  free (data->password);
-  free (data->privacy_algorithm);
-  free (data->privacy_password);
-  free (data->realm);
-  free (data->kdcs_kdc);
-  free (data->credential_store_id);
-  free (data->vault_id);
-  free (data->host_identifier);
-  free (data->privacy_host_identifier);
-  array_free (data->kdcs);
-
-  memset (data, 0, sizeof (modify_credential_data_t));
-}
-
-/**
  * @brief Command data for the modify_filter command.
  */
 typedef struct
@@ -3507,7 +3320,6 @@ typedef union
 {
   create_asset_data_t create_asset;                   ///< create_asset
   create_alert_data_t create_alert;                   ///< create_alert
-  create_credential_data_t create_credential;         ///< create_credential
   create_filter_data_t create_filter;                 ///< create_filter
   create_group_data_t create_group;                   ///< create_group
   create_note_data_t create_note;                     ///< create_note
@@ -3578,7 +3390,6 @@ typedef union
   modify_asset_data_t modify_asset;                   ///< modify_asset
   modify_auth_data_t modify_auth;                     ///< modify_auth
   modify_config_data_t modify_config;                 ///< modify_config
-  modify_credential_data_t modify_credential;         ///< modify_credential
   modify_filter_data_t modify_filter;                 ///< modify_filter
   modify_group_data_t modify_group;                   ///< modify_group
   modify_permission_data_t modify_permission;         ///< modify_permission
@@ -3633,12 +3444,6 @@ static create_asset_data_t *create_asset_data
  */
 static create_alert_data_t *create_alert_data
  = (create_alert_data_t*) &(command_data.create_alert);
-
-/**
- * @brief Parser callback data for CREATE_CREDENTIAL.
- */
-static create_credential_data_t *create_credential_data
- = (create_credential_data_t*) &(command_data.create_credential);
 
 /**
  * @brief Parser callback data for CREATE_FILTER.
@@ -4055,12 +3860,6 @@ static modify_auth_data_t *modify_auth_data
  = &(command_data.modify_auth);
 
 /**
- * @brief Parser callback data for MODIFY_CREDENTIAL.
- */
-static modify_credential_data_t *modify_credential_data
- = &(command_data.modify_credential);
-
-/**
  * @brief Parser callback data for MODIFY_FILTER.
  */
 static modify_filter_data_t *modify_filter_data
@@ -4271,33 +4070,6 @@ typedef enum
   CLIENT_CREATE_ASSET_ASSET_TYPE,
   CLIENT_CREATE_CONFIG,
   CLIENT_CREATE_CREDENTIAL,
-  CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
-  CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
-  CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
-  CLIENT_CREATE_CREDENTIAL_COMMENT,
-  CLIENT_CREATE_CREDENTIAL_COMMUNITY,
-  CLIENT_CREATE_CREDENTIAL_COPY,
-  CLIENT_CREATE_CREDENTIAL_KDC,
-  CLIENT_CREATE_CREDENTIAL_KDCS,
-  CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
-  CLIENT_CREATE_CREDENTIAL_KEY,
-  CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
-  CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
-  CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
-  CLIENT_CREATE_CREDENTIAL_LOGIN,
-  CLIENT_CREATE_CREDENTIAL_NAME,
-  CLIENT_CREATE_CREDENTIAL_PASSWORD,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
-  CLIENT_CREATE_CREDENTIAL_REALM,
-#if ENABLE_CREDENTIAL_STORES
-  CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
-  CLIENT_CREATE_CREDENTIAL_VAULT_ID,
-  CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
-  CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-#endif /* ENABLE_CREDENTIAL_STORES */
-  CLIENT_CREATE_CREDENTIAL_TYPE,
   CLIENT_CREATE_FILTER,
   CLIENT_CREATE_FILTER_COMMENT,
   CLIENT_CREATE_FILTER_COPY,
@@ -4572,10 +4344,17 @@ typedef enum
   CLIENT_DELETE_WEB_APPLICATION_TARGET,
 #endif
   CLIENT_DESCRIBE_AUTH,
+  CLIENT_CANCEL_REPORT_EXPORT,
+  CLIENT_DOWNLOAD_REPORT_EXPORT,
   CLIENT_EMPTY_TRASHCAN,
+  CLIENT_EXPORT_AUDIT_REPORT,
+  CLIENT_EXPORT_DELTA_AUDIT_REPORT,
+  CLIENT_EXPORT_DELTA_SCAN_REPORT,
+  CLIENT_EXPORT_SCAN_REPORT,
 #if ENABLE_AGENTS
   CLIENT_GET_AGENT_GROUPS,
   CLIENT_GET_AGENT_INSTALLER_INSTRUCTION,
+  CLIENT_GET_AGENT_INVENTORY_TOKEN,
   CLIENT_GET_AGENT_SUPPORT_BUNDLE,
   CLIENT_GET_AGENTS,
 #endif /* ENABLE_AGENTS */
@@ -4585,6 +4364,8 @@ typedef enum
   CLIENT_GET_AGGREGATES_TEXT_COLUMN,
   CLIENT_GET_ALERTS,
   CLIENT_GET_ASSETS,
+  CLIENT_GET_AUDIT_REPORT,
+  CLIENT_GET_AUDIT_REPORT_HOSTS,
   CLIENT_GET_CONFIGS,
   CLIENT_GET_CREDENTIALS,
 #if ENABLE_CREDENTIAL_STORES
@@ -4606,11 +4387,13 @@ typedef enum
   CLIENT_GET_PORT_LISTS,
   CLIENT_GET_PREFERENCES,
   CLIENT_GET_REPORTS,
+  CLIENT_GET_SCAN_REPORT,
   CLIENT_GET_REPORT_APPLICATIONS,
   CLIENT_GET_REPORT_CLOSED_CVES,
   CLIENT_GET_REPORT_CONFIGS,
   CLIENT_GET_REPORT_CVES,
   CLIENT_GET_REPORT_ERRORS,
+  CLIENT_GET_REPORT_EXPORTS,
   CLIENT_GET_REPORT_FORMATS,
   CLIENT_GET_REPORT_HOSTS,
   CLIENT_GET_REPORT_OPERATING_SYSTEMS,
@@ -4855,6 +4638,9 @@ typedef enum
   CLIENT_SYNC_AGENTS,
 #endif
   CLIENT_TEST_ALERT,
+#if ENABLE_AD_INTEGRATION
+  CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL,
+#endif
 #if ENABLE_CREDENTIAL_STORES
   CLIENT_VERIFY_CREDENTIAL_STORE,
 #endif
@@ -5066,8 +4852,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("CREATE_CREDENTIAL", element_name) == 0)
           {
-            gvm_append_string (&create_credential_data->comment, "");
-            gvm_append_string (&create_credential_data->name, "");
+            create_credential_start (gmp_parser, attribute_names,
+                                     attribute_values);
             set_client_state (CLIENT_CREATE_CREDENTIAL);
           }
         else if (strcasecmp ("CREATE_FILTER", element_name) == 0)
@@ -5458,13 +5244,55 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
         else if (strcasecmp ("DESCRIBE_AUTH", element_name) == 0)
           set_client_state (CLIENT_DESCRIBE_AUTH);
+        else if (strcasecmp ("CANCEL_REPORT_EXPORT", element_name) == 0)
+          {
+            cancel_report_export_start (attribute_names,
+                                        attribute_values);
+            set_client_state (CLIENT_CANCEL_REPORT_EXPORT);
+          }
+        else if (strcasecmp ("DOWNLOAD_REPORT_EXPORT", element_name) == 0)
+          {
+            download_report_export_start (attribute_names,
+                                          attribute_values);
+            set_client_state (CLIENT_DOWNLOAD_REPORT_EXPORT);
+          }
         else if (strcasecmp ("EMPTY_TRASHCAN", element_name) == 0)
           set_client_state (CLIENT_EMPTY_TRASHCAN);
+        else if (strcasecmp ("EXPORT_AUDIT_REPORT", element_name) == 0)
+          {
+            export_audit_report_start (gmp_parser,
+                                       attribute_names,
+                                       attribute_values);
+            set_client_state (CLIENT_EXPORT_AUDIT_REPORT);
+          }
+        else if (strcasecmp ("EXPORT_DELTA_AUDIT_REPORT", element_name) == 0)
+          {
+            export_delta_audit_report_start (gmp_parser,
+                                            attribute_names,
+                                            attribute_values);
+            set_client_state (CLIENT_EXPORT_DELTA_AUDIT_REPORT);
+          }
+        else if (strcasecmp ("EXPORT_DELTA_SCAN_REPORT", element_name) == 0)
+          {
+            export_delta_scan_report_start (gmp_parser,
+                                            attribute_names,
+                                            attribute_values);
+            set_client_state (CLIENT_EXPORT_DELTA_SCAN_REPORT);
+          }
+        else if (strcasecmp ("EXPORT_SCAN_REPORT", element_name) == 0)
+          {
+            export_scan_report_start (gmp_parser,
+                                      attribute_names,
+                                      attribute_values);
+            set_client_state (CLIENT_EXPORT_SCAN_REPORT);
+          }
 
 #if ENABLE_AGENTS
         ELSE_GET_START (agent_groups, AGENT_GROUPS)
 
         ELSE_GET_START (agent_installer_instruction, AGENT_INSTALLER_INSTRUCTION)
+
+        ELSE_GET_START (agent_inventory_token, AGENT_INVENTORY_TOKEN)
 
         ELSE_GET_START (agent_support_bundle, AGENT_SUPPORT_BUNDLE)
 
@@ -5520,6 +5348,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                   = g_list_append (get_aggregates_data->sort_data,
                                   sort_data);
               }
+            else
+              sort_data_free (sort_data);
 
             append_attribute (attribute_names, attribute_values, "mode",
                               &get_aggregates_data->mode);
@@ -5586,6 +5416,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               get_assets_data->type = g_ascii_strdown (typebuf, -1);
             set_client_state (CLIENT_GET_ASSETS);
           }
+
+        ELSE_GET_START (audit_report, AUDIT_REPORT)
+
+        ELSE_GET_START (audit_report_hosts, AUDIT_REPORT_HOSTS)
+
         else if (strcasecmp ("GET_CONFIGS", element_name) == 0)
           {
             const gchar* attribute;
@@ -5950,6 +5785,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 
         ELSE_GET_START (report_errors, REPORT_ERRORS)
 
+        ELSE_GET_START (report_exports, REPORT_EXPORTS)
+
         else if (strcasecmp ("GET_REPORT_FORMATS", element_name) == 0)
           {
             const gchar* attribute;
@@ -6044,6 +5881,9 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                                        attribute_names, attribute_values);
             set_client_state (CLIENT_GET_SCANNERS);
           }
+
+        ELSE_GET_START (scan_report, SCAN_REPORT)
+
         else if (strcasecmp ("GET_SCHEDULES", element_name) == 0)
           {
             const gchar *attribute;
@@ -6280,9 +6120,8 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           }
         else if (strcasecmp ("MODIFY_CREDENTIAL", element_name) == 0)
           {
-            append_attribute (attribute_names, attribute_values,
-                              "credential_id",
-                              &modify_credential_data->credential_id);
+            modify_credential_start (gmp_parser, attribute_names,
+                                     attribute_values);
             set_client_state (CLIENT_MODIFY_CREDENTIAL);
           }
 #if ENABLE_CREDENTIAL_STORES
@@ -6497,6 +6336,16 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
                               &test_alert_data->alert_id);
             set_client_state (CLIENT_TEST_ALERT);
           }
+#if ENABLE_AD_INTEGRATION
+        else if (strcasecmp ("VERIFY_ACTIVE_DIRECTORY_CREDENTIAL",
+                             element_name) == 0)
+          {
+            verify_active_directory_credential_start (gmp_parser,
+                                                      attribute_names,
+                                                      attribute_values);
+            set_client_state (CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL);
+          }
+#endif
 #if ENABLE_CREDENTIAL_STORES
         else if (strcasecmp ("VERIFY_CREDENTIAL_STORE", element_name) == 0)
           {
@@ -6764,136 +6613,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
-        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE);
-        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM);
-          }
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_NAME);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->comment);
-            gvm_append_string (&modify_credential_data->comment, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMENT);
-          }
-        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->certificate);
-            gvm_append_string (&modify_credential_data->certificate, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE);
-          }
-        else if (strcasecmp ("COMMUNITY", element_name) == 0)
-          {
-            gvm_append_string (&modify_credential_data->community, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_COMMUNITY);
-          }
-        else if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->kdc);
-            gvm_append_string (&modify_credential_data->kdc, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDC);
-          }
-        else if (strcasecmp ("KDCS", element_name) == 0)
-          {
-            modify_credential_data->kdcs = make_array ();
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
-          }
-        else if (strcasecmp ("KEY", element_name) == 0)
-          {
-            modify_credential_data->key = 1;
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->password);
-            gvm_append_string (&modify_credential_data->password, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PASSWORD);
-          }
-        else if (strcasecmp ("PRIVACY", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY);
-            gvm_append_string (&modify_credential_data->privacy_algorithm,
-                                   "");
-          }
-        else if (strcasecmp ("REALM", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->realm);
-            gvm_append_string (&modify_credential_data->realm, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_REALM);
-          }
-#if ENABLE_CREDENTIAL_STORES
-        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID);
-          }
-        else if (strcasecmp ("VAULT_ID", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->vault_id);
-            gvm_append_string (&modify_credential_data->vault_id, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_VAULT_ID);
-          }
-        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->host_identifier);
-            gvm_append_string (&modify_credential_data->host_identifier, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER);
-          }
-        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->privacy_host_identifier);
-            gvm_append_string (&modify_credential_data->privacy_host_identifier,
-                               "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
-          }
-#endif
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_KDCS:
-        if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->kdcs_kdc);
-            gvm_append_string (&modify_credential_data->kdcs_kdc, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_KEY:
-        if (strcasecmp ("PHRASE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_phrase);
-            gvm_append_string (&modify_credential_data->key_phrase, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE);
-          }
-        else if (strcasecmp ("PRIVATE", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_private);
-            gvm_append_string (&modify_credential_data->key_private, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE);
-          }
-        else if (strcasecmp ("PUBLIC", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->key_public);
-            gvm_append_string (&modify_credential_data->key_public, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_MODIFY_CREDENTIAL_PRIVACY:
-        if (strcasecmp ("ALGORITHM", element_name) == 0)
-          {
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM);
-          }
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_free_string_var (&modify_credential_data->privacy_password);
-            gvm_append_string (&modify_credential_data->privacy_password, "");
-            set_client_state (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD);
-          }
-        ELSE_READ_OVER;
+        modify_credential_element_start (gmp_parser, element_name,
+                                        attribute_names,
+                                        attribute_values);
+        break;
 
 #if ENABLE_CREDENTIAL_STORES
       case CLIENT_MODIFY_CREDENTIAL_STORE:
@@ -7577,92 +7300,10 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_CREDENTIAL:
-        if (strcasecmp ("ALLOW_INSECURE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE);
-        else if (strcasecmp ("AUTH_ALGORITHM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM);
-        else if (strcasecmp ("CERTIFICATE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_CERTIFICATE);
-        else if (strcasecmp ("COMMENT", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMENT);
-        else if (strcasecmp ("COMMUNITY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COMMUNITY);
-        else if (strcasecmp ("KDC", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KDC);
-        else if (strcasecmp ("KDCS", element_name) == 0)
-          {
-            create_credential_data->kdcs = make_array ();
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
-          }
-        else if (strcasecmp ("KEY", element_name) == 0)
-          {
-            create_credential_data->key = 1;
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY);
-          }
-        else if (strcasecmp ("LOGIN", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_LOGIN);
-        else if (strcasecmp ("COPY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_COPY);
-        else if (strcasecmp ("NAME", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_NAME);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          {
-            gvm_append_string (&create_credential_data->password, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_PASSWORD);
-          }
-        else if (strcasecmp ("PRIVACY", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY);
-        else if (strcasecmp ("REALM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_REALM);
-        else if (strcasecmp ("TYPE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_TYPE);
-#if ENABLE_CREDENTIAL_STORES
-        else if (strcasecmp ("CREDENTIAL_STORE_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID);
-          }
-        else if (strcasecmp ("VAULT_ID", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_VAULT_ID);
-          }
-        else if (strcasecmp ("HOST_IDENTIFIER", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER);
-          }
-        else if (strcasecmp ("PRIVACY_HOST_IDENTIFIER", element_name) == 0)
-          {
-            set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER);
-          }
-#endif
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_KDCS:
-        if (strcasecmp ("KDC", element_name) == 0)
-          {
-            gvm_free_string_var (&create_credential_data->kdcs_kdc);
-            gvm_append_string (&create_credential_data->kdcs_kdc, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS_KDC);
-          }
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_KEY:
-        if (strcasecmp ("PHRASE", element_name) == 0)
-          {
-            gvm_append_string (&create_credential_data->key_phrase, "");
-            set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE);
-          }
-        else if (strcasecmp ("PRIVATE", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE);
-        else if (strcasecmp ("PUBLIC", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC);
-        ELSE_READ_OVER;
-
-      case CLIENT_CREATE_CREDENTIAL_PRIVACY:
-        if (strcasecmp ("ALGORITHM", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM);
-        else if (strcasecmp ("PASSWORD", element_name) == 0)
-          set_client_state (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD);
-        ELSE_READ_OVER;
+        create_credential_element_start (gmp_parser, element_name,
+                                         attribute_names,
+                                         attribute_values);
+        break;
 
       case CLIENT_CREATE_FILTER:
         if (strcasecmp ("COMMENT", element_name) == 0)
@@ -8532,6 +8173,15 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           set_read_over (gmp_parser);
         break;
 
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        verify_active_directory_credential_element_start (gmp_parser,
+                                                          element_name,
+                                                          attribute_names,
+                                                          attribute_values);
+        break;
+#endif /* ENABLE_AD_INTEGRATION */
+
 #if ENABLE_WEB_APPLICATION_SCANNING
       case CLIENT_CREATE_WEB_APPLICATION_TARGET:
         create_web_application_target_element_start (
@@ -8733,6 +8383,7 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
  * @param[in]  skip_cert_refs        If true, exclude CERT refs.
  * @param[in]  skip_tags             If true, exclude tags.
  * @param[in]  lean                  If true, send fewer details.
+ * @param[in]  include_tech_info     If true, send technical information.
  * @param[in]  write_to_client       Function to write to client.
  * @param[in]  write_to_client_data  Argument to \p write_to_client.
  *
@@ -8741,14 +8392,14 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
 static gboolean
 send_nvt (iterator_t *nvts, int details, int preferences, int pref_count,
           const char *timeout, config_t config, int skip_cert_refs,
-          int skip_tags, int lean,
+          int skip_tags, int lean, int include_tech_info,
           int (*write_to_client) (const char *, void*),
           void* write_to_client_data)
 {
   gchar *msg;
 
   msg = get_nvt_xml (nvts, details, pref_count, preferences, timeout, config,
-                     0, skip_cert_refs, skip_tags, lean);
+                     0, skip_cert_refs, skip_tags, lean, include_tech_info);
   if (send_to_client (msg, write_to_client, write_to_client_data))
     {
       g_free (msg);
@@ -9947,6 +9598,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
   if (oid)
     {
+      const char *vt_type = result_iterator_vt_type (results);
+
       if (g_str_has_prefix (oid, "CVE-"))
         {
           gchar *severity;
@@ -9979,6 +9632,8 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
       {
         const char *cvss_base = result_iterator_nvt_cvss_base (results);
+        const char *vt_type_metadata
+          = result_iterator_vt_type_metadata (results);
         GString *tags = g_string_new (result_iterator_nvt_tag (results));
         int first;
         iterator_t severities;
@@ -10056,12 +9711,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
 
         buffer_xml_append_printf (buffer,
                                   "<nvt oid=\"%s\">"
-                                  "<type>nvt</type>"
+                                  "<type>%s</type>"
                                   "<name>%s</name>"
                                   "<family>%s</family>"
                                   "<cvss_base>%s</cvss_base>"
                                   "<severities score=\"%s\">",
                                   oid,
+                                  vt_type ?: "",
                                   result_iterator_nvt_name (results) ?: oid,
                                   result_iterator_nvt_family (results) ?: "",
                                   cvss_base ?: "",
@@ -10090,6 +9746,13 @@ results_xml_append_nvt (iterator_t *results, GString *buffer, int cert_loaded)
                                   "</severities>"
                                   "<tags>%s</tags>",
                                   tags->str ?: "");
+
+        if (! str_blank (vt_type_metadata))
+          {
+            buffer_xml_append_printf (buffer,
+                                      "<type_metadata>%s</type_metadata>",
+                                      vt_type_metadata);
+          }
 
         if (result_iterator_nvt_solution (results)
             || result_iterator_nvt_solution_type (results)
@@ -11320,7 +10983,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                       GArray *text_columns, GArray *text_column_types,
                       GArray *c_sums)
 {
-  int index;
+  int index, first_group;
   long c_count, previous_c_count;
   gchar *previous_group_value;
   long int aggregate_group_count;
@@ -11363,6 +11026,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                             subgroup_column);
 
   previous_group_value = NULL;
+  first_group = 1;
   aggregate_group_count = 0L;
   c_count = 0L;
   previous_c_count = 0L;
@@ -11375,6 +11039,11 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
       group_sums = g_array_new (TRUE, TRUE, sizeof (double));
 
       group_c_sums = g_array_new (TRUE, TRUE, sizeof (GTree*));
+      g_array_set_size (group_mins, data_columns->len);
+      g_array_set_size (group_maxs, data_columns->len);
+      g_array_set_size (group_mean_sums, data_columns->len);
+      g_array_set_size (group_sums, data_columns->len);
+      g_array_set_size (group_c_sums, data_columns->len);
       for (index = 0; index < data_columns->len; index++)
         g_array_index (group_c_sums, GTree*, index)
           = g_tree_new_full ((GCompareDataFunc) g_strcmp0, NULL,
@@ -11463,15 +11132,15 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
               *subgroup_c_count += aggregate_iterator_count (aggregate);
 
               // Output of group elements
-              if (previous_group_value == NULL)
+              if (first_group)
                 {
                   // Output start of first group
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
-              else if (strcmp (previous_group_value, value))
+              else if (g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of a new group:
                   //  output collected data of previous group and close it, ...
@@ -11540,12 +11209,12 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
                   g_string_append_printf (xml,
                                           "<group>"
                                           "<value>%s</value>",
-                                          value_escaped);
+                                          value_escaped ? value_escaped : "");
                 }
 
               // Update group statistics using current subgroup after output
-              if (previous_group_value == NULL
-                  || strcmp (previous_group_value, value))
+              if (first_group
+                  || g_strcmp0 (previous_group_value, value))
                 {
                   // First subgroup of any group:
                   //  Reset group statistics using current subgroup data
@@ -11587,6 +11256,7 @@ buffer_aggregate_xml (GString *xml, iterator_t* aggregate, const gchar* type,
 
               g_free (previous_group_value);
               previous_group_value = g_strdup (value);
+              first_group = 0;
 
               // Add subgroup values
               g_string_append_printf (xml,
@@ -11888,7 +11558,6 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   GString *xml;
   gchar *sort_field, *filter;
   int first, sort_order;
-  GString *type_many;
 
   type = get_aggregates_data->type;
   if (type == NULL)
@@ -11896,6 +11565,8 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
       SEND_TO_CLIENT_OR_FAIL
           (XML_ERROR_SYNTAX ("get_aggregates",
                              "A 'type' attribute is required"));
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
       return;
     }
 
@@ -11925,6 +11596,17 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
 
   group_column = get_aggregates_data->group_column;
   subgroup_column = get_aggregates_data->subgroup_column;
+
+  if (subgroup_column && group_column == NULL)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("get_aggregates",
+                           "A 'group_column' attribute is required when"
+                           " 'subgroup_column' is given"));
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
 
   init_aggregate_lists (group_column,
                         subgroup_column,
@@ -12025,12 +11707,24 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
 
   if (ret)
     {
+      for (index = 0; index < data_columns->len; index++)
+        g_free (g_array_index (data_columns, gchar*, index));
       g_array_free (data_columns, TRUE);
+      for (index = 0; index < data_column_types->len; index++)
+        g_free (g_array_index (data_column_types, gchar*, index));
       g_array_free (data_column_types, TRUE);
+      for (index = 0; index < text_columns->len; index++)
+        g_free (g_array_index (text_columns, gchar*, index));
+      g_array_free (text_columns, TRUE);
+      for (index = 0; index < text_column_types->len; index++)
+        g_free (g_array_index (text_column_types, gchar*, index));
+      g_array_free (text_column_types, TRUE);
       for (index = 0; index < sort_data->len; index++)
         sort_data_free (g_array_index (sort_data, sort_data_t*, index));
       g_array_free (sort_data, TRUE);
       g_array_free (c_sums, TRUE);
+      get_aggregates_data_reset (get_aggregates_data);
+      set_client_state (CLIENT_AUTHENTIC);
       return;
     }
 
@@ -12070,6 +11764,7 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = NULL;
 
+  sort_field = NULL;
   manage_filter_controls (filter ? filter : get->filter,
                           &first, NULL, &sort_field, &sort_order);
 
@@ -12094,11 +11789,6 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   else
     filter = manage_clean_filter ("", get->ignore_max_rows_per_page);
 
-  type_many = g_string_new (type);
-
-  if (strcmp (type, "info") != 0)
-    g_string_append (type_many, "s");
-
   buffer_get_filter_xml (xml, type, get, filter, NULL);
 
   g_string_append (xml, "</get_aggregates_response>");
@@ -12109,10 +11799,18 @@ handle_get_aggregates (gmp_parser_t *gmp_parser, GError **error)
   for (index = 0; index < data_column_types->len; index++)
     g_free (g_array_index (data_column_types, gchar*, index));
   g_array_free (data_column_types, TRUE);
+  for (index = 0; index < text_columns->len; index++)
+    g_free (g_array_index (text_columns, gchar*, index));
+  g_array_free (text_columns, TRUE);
+  for (index = 0; index < text_column_types->len; index++)
+    g_free (g_array_index (text_column_types, gchar*, index));
+  g_array_free (text_column_types, TRUE);
   for (index = 0; index < sort_data->len; index++)
     sort_data_free (g_array_index (sort_data, sort_data_t*, index));
   g_array_free (sort_data, TRUE);
   g_array_free (c_sums, TRUE);
+  g_free (filter);
+  g_free (sort_field);
 
   SEND_TO_CLIENT_OR_FAIL (xml->str);
 
@@ -13176,6 +12874,35 @@ handle_get_credentials (gmp_parser_t *gmp_parser, GError **error)
         }
 #endif /* ENABLE_CREDENTIAL_STORES */
 
+#if ENABLE_AD_INTEGRATION
+      if (type && strcmp (type, "ad") == 0
+          && feature_enabled (FEATURE_ID_AD_INTEGRATION))
+        {
+          const char *host = credential_iterator_ad_host (&credentials);
+          const char *bind_dn = credential_iterator_ad_bind_dn (&credentials);
+          const char *base_dn = credential_iterator_ad_base_dn (&credentials);
+          const char *port = credential_iterator_ad_port (&credentials);
+          const char *tls_mode = credential_iterator_ad_tls_mode (&credentials);
+          const char *ca = credential_iterator_ad_ca_certificate (&credentials);
+
+          SENDF_TO_CLIENT_OR_FAIL
+            ("<host>%s</host>"
+             "<bind_dn>%s</bind_dn>"
+             "<base_dn>%s</base_dn>"
+             "<tls_mode>%s</tls_mode>",
+             host ?: "",
+             bind_dn ?: "",
+             base_dn ?: "",
+             tls_mode ?: "");
+
+          if (port)
+            SENDF_TO_CLIENT_OR_FAIL ("<port>%s</port>", port);
+          if (ca && get_credentials_data->get.details)
+            SENDF_TO_CLIENT_OR_FAIL
+              ("<ca_certificate>%s</ca_certificate>", ca);
+        }
+#endif
+
       if (type && ((strcmp (type, "krb5") == 0)
                    || (strcmp (type, "cs_krb5") == 0)))
         {
@@ -13485,6 +13212,8 @@ feed_type_name (int feed_type)
         return "SCAP";
       case GVMD_DATA_FEED:
         return "GVMD_DATA";
+      case WEB_APPLICATION_VTS_FEED:
+        return "WEB_APPLICATION_VTS";
       default:
         return "Error";
     }
@@ -13989,6 +13718,16 @@ handle_get_features (gmp_parser_t *gmp_parser, GError **error)
   SENDF_TO_CLIENT_OR_FAIL (
     "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
     compiled_in, enabled, "ENABLE_WEB_APPLICATION_SCANNING");
+
+  /* AD_INTEGRATION */
+  compiled_in = feature_compiled_in (FEATURE_ID_AD_INTEGRATION) ? 1 : 0;
+  if (compiled_in)
+    enabled = feature_enabled (FEATURE_ID_AD_INTEGRATION) ? 1 : 0;
+  else
+    enabled = 0;
+  SENDF_TO_CLIENT_OR_FAIL (
+    "<feature compiled_in=\"%d\" enabled=\"%d\"><name>%s</name></feature>",
+    compiled_in, enabled, "ENABLE_AD_INTEGRATION");
 
   SEND_TO_CLIENT_OR_FAIL ("</get_features_response>");
   set_client_state (CLIENT_AUTHENTIC);
@@ -14521,6 +14260,17 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       set_client_state (CLIENT_AUTHENTIC);
       return;
     }
+  if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING)
+      && g_strcmp0 (get_info_data->type, "web_application_vt") == 0
+      && manage_web_application_vts_loaded () == 0)
+    {
+      SEND_TO_CLIENT_OR_FAIL
+       (XML_ERROR_SYNTAX ("get_info",
+                          "The Web Application VTs database is required"));
+      get_info_data_reset (get_info_data);
+      set_client_state (CLIENT_AUTHENTIC);
+      return;
+    }
 
   if (get_info_data->name && get_info_data->get.id)
     {
@@ -14558,6 +14308,8 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
         name = g_strdup ("DFN-CERT");
       else if (strcmp (get_info_data->type, "nvt") == 0)
         name = g_strdup ("NVT");
+      else if (strcmp (get_info_data->type, "web_application_vt") == 0)
+        name = g_strdup ("Web Application VT");
       else
         {
           if (send_find_error_to_client ("get_info", "type",
@@ -14614,6 +14366,13 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
       init_info_iterator = init_dfn_cert_adv_info_iterator;
       info_count = dfn_cert_adv_info_count;
       get_info_data->get.subtype = g_strdup ("dfn_cert_adv");
+    }
+  else if (feature_enabled (FEATURE_ID_WEB_APPLICATION_SCANNING)
+           && g_strcmp0 ("web_application_vt", get_info_data->type) == 0)
+    {
+      init_info_iterator = init_web_application_vt_info_iterator;
+      info_count = web_application_vt_info_count;
+      get_info_data->get.subtype = g_strdup ("web_application_vt");
     }
   else
     {
@@ -14886,9 +14645,43 @@ handle_get_info (gmp_parser_t *gmp_parser, GError **error)
                             ? dfn_cert_adv_info_iterator_severity(&info)
                             : "",
                            dfn_cert_adv_info_iterator_cve_refs (&info));
+      else if (g_strcmp0 ("web_application_vt", get_info_data->type) == 0)
+        {
+          iterator_t refs;
+
+          xml_string_append (
+              result,
+              "<web_application_vt>"
+              "<type>%s</type>"
+              "<description>%s</description>"
+              "<solution>%s</solution>"
+              "<severity>%s</severity>"
+              "<type_metadata>%s</type_metadata>"
+              "<refs>",
+              web_application_vt_info_iterator_type (&info),
+              web_application_vt_info_iterator_description (&info),
+              web_application_vt_info_iterator_solution (&info),
+              web_application_vt_info_iterator_severity (&info),
+              web_application_vt_info_iterator_type_metadata (&info));
+
+          init_web_application_vt_ref_iterator (&refs,
+                                                get_iterator_uuid (&info));
+          while (next (&refs))
+            {
+              xml_string_append (
+                  result,
+                  "<ref type=\"%s\" id=\"%s\"/>",
+                  web_application_vt_ref_iterator_type (&refs),
+                  web_application_vt_ref_iterator_ref_id (&refs));
+            }
+          cleanup_iterator (&refs);
+
+          xml_string_append (result, "</refs>");
+        }
       else if (g_strcmp0 ("nvt", get_info_data->type) == 0)
         {
           if (send_nvt (&info, 1, 1, -1, NULL, 0, 0, 0, 0,
+                        get->details, /* include_tech_info */
                         gmp_parser->client_writer,
                         gmp_parser->client_writer_data))
             {
@@ -15248,6 +15041,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
                               get_nvts_data->skip_cert_refs,
                               get_nvts_data->skip_tags,
                               get_nvts_data->lean,
+                              0, /* include_tech_info */
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -15263,7 +15057,7 @@ handle_get_nvts (gmp_parser_t *gmp_parser, GError **error)
           else
             while (next (&nvts))
               {
-                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0,
+                if (send_nvt (&nvts, 0, 0, -1, NULL, 0, 0, 0, 0, 0,
                               gmp_parser->client_writer,
                               gmp_parser->client_writer_data))
                   {
@@ -16004,6 +15798,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
         {
           if (strcmp(report_type, usage_type) && strcmp(report_type, "all"))
             {
+              g_free (usage_type);
+              g_free (report_type);
               get_reports_data_reset (get_reports_data);
               SEND_TO_CLIENT_OR_FAIL
                 (XML_ERROR_SYNTAX ("get_reports",
@@ -16013,6 +15809,8 @@ handle_get_reports (gmp_parser_t *gmp_parser, GError **error)
               return;
             }
         }
+      g_free (usage_type);
+      g_free (report_type);
     }
 
   if (!no_report_config)
@@ -18218,14 +18016,29 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                     {
                       SEND_TO_CLIENT_OR_FAIL (
                         "<scheduler_cron_time is_list=\"1\">");
+
                       for (guint i = 0; i < cron->len; ++i)
                         {
-                          const char *item = (const char *) cron->pdata[i];
+                          agent_controller_scheduler_cron_t item =
+                            g_ptr_array_index (cron, i);
+
+                          if (item == NULL)
+                            continue;
+
                           gchar *esc = g_markup_escape_text (
-                            item ? item : "", -1);
-                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                            item->cron ? item->cron : "", -1);
+
+                          SENDF_TO_CLIENT_OR_FAIL (
+                            "<item>"
+                            "<cron>%s</cron>"
+                            "<max_delay_seconds>%d</max_delay_seconds>"
+                            "</item>",
+                            esc,
+                            item->max_delay_seconds);
+
                           g_free (esc);
                         }
+
                       SEND_TO_CLIENT_OR_FAIL ("</scheduler_cron_time>");
                     }
                   else
@@ -20548,7 +20361,6 @@ handle_get_tasks (gmp_parser_t *gmp_parser, GError **error)
               g_free (web_application_target_xml);
               cleanup_iterator (&tasks);
               error_send_to_client (error);
-              cleanup_iterator (&tasks);
               return;
             }
           g_free (response);
@@ -21113,11 +20925,17 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
               goto create_scanner_leave;
             }
           log_event_fail ("scanner", "Scanner", NULL, "created");
+        goto create_scanner_leave;
+        case 97:
+          SEND_TO_CLIENT_OR_FAIL
+          (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone an "
+            "Agent Controller/Sensor scanner "));
+          log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
         case 98:
           SEND_TO_CLIENT_OR_FAIL
-           (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone a "
-                              "CVE scanner "));
+          (XML_ERROR_SYNTAX ("create_scanner", "It is not possible to clone a "
+            "CVE scanner "));
           log_event_fail ("scanner", "Scanner", NULL, "created");
           goto create_scanner_leave;
         case 99:
@@ -21246,6 +21064,13 @@ handle_create_scanner (gmp_parser_t *gmp_parser, GError **error)
                             " IP address or UNIX socket path."));
         log_event_fail ("scanner", "Scanner", NULL, "created");
         break;
+      case CREATE_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("create_scanner",
+          "An agent-controller scanner with the same host and port "
+          "already exists."));
+        log_event_fail ("scanner", "Scanner", NULL, "created");
+        break;
       case CREATE_SCANNER_INVALID_RELAY_PORT:
         SEND_TO_CLIENT_OR_FAIL
          (XML_ERROR_SYNTAX ("create_scanner",
@@ -21342,7 +21167,7 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
       && *modify_scanner_data->host == '/')
     {
       SEND_TO_CLIENT_OR_FAIL
-       (XML_ERROR_SYNTAX ("create_scanner", "Erroneous host value."));
+       (XML_ERROR_SYNTAX ("modify_scanner", "Erroneous host value."));
       goto modify_scanner_leave;
     }
   switch (modify_scanner
@@ -21421,6 +21246,14 @@ handle_modify_scanner (gmp_parser_t *gmp_parser, GError **error)
          (XML_ERROR_SYNTAX ("modify_scanner",
                             "Scanner HOST must be a valid hostname,"
                             " IP address or UNIX socket path."));
+        log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
+                        "modified");
+        break;
+      case MODIFY_SCANNER_ENDPOINT_ALREADY_EXISTS:
+        SEND_TO_CLIENT_OR_FAIL
+        (XML_ERROR_SYNTAX ("modify_scanner",
+          "An agent-controller scanner with the same host and port"
+          " already exists."));
         log_event_fail ("scanner", "Scanner", modify_scanner_data->scanner_id,
                         "modified");
         break;
@@ -21572,6 +21405,19 @@ gmp_xml_handle_result ()
       else
         {
           create_report_data->result_severity = strdup ("");
+        }
+    }
+
+  if (create_report_data->result_severity
+      && strlen (create_report_data->result_severity))
+    {
+      double s;
+
+      s = atof (create_report_data->result_severity);
+      if (s > 10.0)
+        {
+          g_free (create_report_data->result_severity);
+          create_report_data->result_severity = g_strdup ("10.0");
         }
     }
 
@@ -21881,14 +21727,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 "deleted");
                 break;
               case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("delete_asset",
-                                    "Attempt to delete a predefined asset"));
-                log_event_fail ("asset", "Asset",
-                                delete_asset_data->asset_id,
-                                "deleted");
-                break;
-              case 4:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("delete_asset",
                                     "An asset_id or a"
@@ -22353,10 +22191,44 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           break;
         }
 
+    case CLIENT_CANCEL_REPORT_EXPORT:
+      if (cancel_report_export_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
+    case CLIENT_DOWNLOAD_REPORT_EXPORT:
+      if (download_report_export_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
+    case CLIENT_EXPORT_AUDIT_REPORT:
+      if (export_audit_report_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
+    case CLIENT_EXPORT_DELTA_AUDIT_REPORT:
+      if (export_delta_audit_report_element_end (gmp_parser, error,
+                                                  element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
+    case CLIENT_EXPORT_DELTA_SCAN_REPORT:
+      if (export_delta_scan_report_element_end (gmp_parser, error,
+                                                 element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
+    case CLIENT_EXPORT_SCAN_REPORT:
+      if (export_scan_report_element_end (gmp_parser, error, element_name))
+        set_client_state (CLIENT_AUTHENTIC);
+      break;
+
 #if ENABLE_AGENTS
       CASE_GET_END (AGENT_GROUPS, agent_groups);
 
       CASE_GET_END (AGENT_INSTALLER_INSTRUCTION, agent_installer_instruction);
+
+      CASE_GET_END (AGENT_INVENTORY_TOKEN, agent_inventory_token);
 
       CASE_GET_END (AGENT_SUPPORT_BUNDLE, agent_support_bundle);
 
@@ -22378,6 +22250,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_ASSETS:
         handle_get_assets (gmp_parser, error);
         break;
+
+      CASE_GET_END (AUDIT_REPORT, audit_report)
+
+      CASE_GET_END (AUDIT_REPORT_HOSTS, audit_report_hosts)
 
       case CLIENT_GET_CONFIGS:
         handle_get_configs (gmp_parser, error);
@@ -22470,6 +22346,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       CASE_GET_END (REPORT_ERRORS, report_errors);
 
+      CASE_GET_END (REPORT_EXPORTS, report_exports);
+
       case CLIENT_GET_REPORT_FORMATS:
         handle_get_report_formats (gmp_parser, error);
         break;
@@ -22499,6 +22377,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_GET_SCANNERS:
         handle_get_scanners (gmp_parser, error);
         break;
+
+      CASE_GET_END (SCAN_REPORT, scan_report);
 
       case CLIENT_GET_SCHEDULES:
         handle_get_schedules (gmp_parser, error);
@@ -23276,328 +23156,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_ALERT_METHOD_DATA, NAME);
 
       case CLIENT_CREATE_CREDENTIAL:
-        {
-          credential_t new_credential;
-
-          assert (create_credential_data->name != NULL);
-
-          if (create_credential_data->copy)
-            switch (copy_credential (create_credential_data->name,
-                                     create_credential_data->comment,
-                                     create_credential_data->copy,
-                                     &new_credential))
-              {
-                case 0:
-                  {
-                    char *uuid;
-                    uuid = credential_uuid (new_credential);
-                    SENDF_TO_CLIENT_OR_FAIL (XML_OK_CREATED_ID ("create_credential"),
-                                             uuid);
-                    log_event ("credential", "Credential", uuid, "created");
-                    free (uuid);
-                    break;
-                  }
-                case 1:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_credential",
-                                      "Credential exists already"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case 2:
-                  if (send_find_error_to_client ("create_credential",
-                                                 "credential",
-                                                 create_credential_data->copy,
-                                                 gmp_parser))
-                    {
-                      error_send_to_client (error);
-                      return;
-                    }
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case 99:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_ERROR_SYNTAX ("create_credential",
-                                      "Permission denied"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-                case -1:
-                default:
-                  SEND_TO_CLIENT_OR_FAIL
-                   (XML_INTERNAL_ERROR ("create_credential"));
-                  log_event_fail ("credential", "Credential", NULL, "created");
-                  break;
-              }
-          else if (strlen (create_credential_data->name) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "Name must be at"
-                                  " least one character long"));
-            }
-          else if (create_credential_data->login
-                   && strlen (create_credential_data->login) == 0)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "Login must be at"
-                                  " least one character long"));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_private == NULL
-                   && create_credential_data->key_public == NULL)
-            {
-              SEND_TO_CLIENT_OR_FAIL
-               (XML_ERROR_SYNTAX ("create_credential",
-                                  "KEY requires a PRIVATE"
-                                  " or PUBLIC key"));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_private
-                   && check_private_key (create_credential_data->key_private,
-                                         create_credential_data->key_phrase))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Private Key."));
-            }
-          else if (create_credential_data->key
-                   && create_credential_data->key_public
-                   && check_public_key (create_credential_data->key_public))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Public Key."));
-            }
-          else if (create_credential_data->certificate
-                   && check_certificate
-                          (create_credential_data->certificate,
-                           create_credential_data->type))
-            {
-              SEND_TO_CLIENT_OR_FAIL
-              (XML_ERROR_SYNTAX ("create_credential",
-                                 "Erroneous Certificate."));
-            }
-          else switch (create_credential
-                        (create_credential_data->name,
-                         create_credential_data->comment,
-                         create_credential_data->login,
-                         create_credential_data->key_private
-                          ? create_credential_data->key_phrase
-                          : create_credential_data->password,
-                         create_credential_data->key_private,
-                         create_credential_data->key_public,
-                         create_credential_data->certificate,
-                         create_credential_data->community,
-                         create_credential_data->auth_algorithm,
-                         create_credential_data->privacy_password,
-                         create_credential_data->privacy_algorithm,
-                         create_credential_data->kdc,
-                         create_credential_data->kdcs,
-                         create_credential_data->realm,
-                         create_credential_data->credential_store_id,
-                         create_credential_data->vault_id,
-                         create_credential_data->host_identifier,
-                         create_credential_data->privacy_host_identifier,
-                         create_credential_data->type,
-                         create_credential_data->allow_insecure,
-                         &new_credential))
-            {
-              case 0:
-                {
-                  char *uuid = credential_uuid (new_credential);
-                  SENDF_TO_CLIENT_OR_FAIL
-                   (XML_OK_CREATED_ID ("create_credential"), uuid);
-                  log_event ("credential", "Credential", uuid, "created");
-                  free (uuid);
-                  break;
-                }
-              case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential exists already"));
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Login may only contain alphanumeric"
-                                    " characters or the following:"
-                                    " - _ \\ . @"));
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous private key or associated"
-                                    " passphrase"));
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous credential type"));
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a login username"));
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a password"));
-                break;
-              case 7:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a private key"));
-                break;
-              case 8:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a certificate"));
-                break;
-              case 9:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a public key"));
-                break;
-              case 10:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type cannot be generated"
-                                    " automatically"));
-                break;
-              case 11:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a community and/or"
-                                    " username + password"));
-                break;
-              case 12:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires an"
-                                    " auth_algorithm"));
-                break;
-              case 14:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires an"
-                                    " algorithm in the privacy element"
-                                    " if a password is given"));
-                break;
-              case 15:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "auth algorithm must be 'md5' or 'sha1'"));
-                break;
-              case 16:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "privacy algorithm must be 'aes', 'des'"
-                                    " or empty"));
-                break;
-              case 17:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Erroneous certificate"));
-                break;
-              case 18:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Cannot determine type for new credential"));
-                break;
-              case 19:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a kdc"));
-                break;
-              case 20:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Selected type requires a realm"));
-                break;
-              case 21:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                  "Invalid kdc value(s)"));
-                break;
-              case 22:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                  "Invalid kerberos realm value"));
-                break;
-#if ENABLE_CREDENTIAL_STORES
-              case 23:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential store ID missing"
-                                    " and no default store available"));
-                break;
-              case 24:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Credential store cannot be found"));
-                break;
-              case 25:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Vault ID missing"));
-                break;
-              case 26:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Host identifier missing"));
-                break;
-#endif
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("create_credential",
-                                    "Permission denied"));
-                break;
-              default:
-                assert (0);
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_INTERNAL_ERROR ("create_credential"));
-                break;
-            }
-          create_credential_data_reset (create_credential_data);
+        if (create_credential_element_end (gmp_parser, error, element_name))
           set_client_state (CLIENT_AUTHENTIC);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_CREDENTIAL, ALLOW_INSECURE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, AUTH_ALGORITHM);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, CERTIFICATE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COMMUNITY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, COPY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KDC);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KDCS);
-      case CLIENT_CREATE_CREDENTIAL_KDCS_KDC:
-        {
-          array_add (create_credential_data->kdcs,
-                     g_strdup (create_credential_data->kdcs_kdc));
-          create_credential_data->kdcs_kdc = NULL;
-          set_client_state (CLIENT_CREATE_CREDENTIAL_KDCS);
-          break;
-        }
-      CLOSE (CLIENT_CREATE_CREDENTIAL, KEY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PHRASE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_KEY, PUBLIC);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, NAME);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PASSWORD);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, ALGORITHM);
-      CLOSE (CLIENT_CREATE_CREDENTIAL_PRIVACY, PASSWORD);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, REALM);
-#if ENABLE_CREDENTIAL_STORES
-      CLOSE (CLIENT_CREATE_CREDENTIAL, CREDENTIAL_STORE_ID);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, VAULT_ID);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, HOST_IDENTIFIER);
-      CLOSE (CLIENT_CREATE_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
-#endif
-      CLOSE (CLIENT_CREATE_CREDENTIAL, TYPE);
+        break;
 
       case CLIENT_CREATE_FILTER:
         {
@@ -23839,7 +23400,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           note_t new_note;
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (create_note_data->copy)
             switch (copy_note (create_note_data->copy, &new_note))
@@ -23892,16 +23453,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_note",
                                 "A TEXT entity is required"));
           else if (create_note_data->hosts
-                   && ((max = manage_count_hosts (create_note_data->hosts, NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Error in host specification"));
-          else if (create_note_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_note",
-                                "Host specification exceeds maximum number of"
-                                " hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      create_note_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_note",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("create_note",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+            }
           else if (create_note_data->task_id
                    && find_task_with_permission (create_note_data->task_id,
                                                  &task,
@@ -23968,6 +23533,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     "Error in port specification"));
                 log_event_fail ("note", "Note", NULL, "created");
                 break;
+              case 3:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_note",
+                                    "Error in severity specification"));
+                log_event_fail ("note", "Note", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_note",
@@ -24012,7 +23583,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           task_t task = 0;
           result_t result = 0;
           override_t new_override;
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (create_override_data->copy)
             switch (copy_override (create_override_data->copy, &new_override))
@@ -24065,17 +23636,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("create_override",
                                 "A TEXT entity is required"));
           else if (create_override_data->hosts
-                   && ((max = manage_count_hosts (create_override_data->hosts,
-                                                  NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Error in host specification"));
-          else if (create_override_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("create_override",
-                                "Host specification exceeds maximum number"
-                                " of hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      create_override_data->hosts
+                                    ))!= NOTE_OR_OVERRIDE_SCOPE_OK))
+           {
+             if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+               SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Error in host specification"));
+             else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+               SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_override",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+           }
           else if (create_override_data->new_threat == NULL
                    && create_override_data->new_severity == NULL)
             SEND_TO_CLIENT_OR_FAIL
@@ -24619,7 +24193,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_start;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_starts, result);
 
@@ -24632,7 +24206,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
               result = g_malloc (sizeof (create_report_result_t));
               result->description = create_report_data->host_end;
-              result->host = strdup (create_report_data->ip);
+              result->host = g_strdup (create_report_data->ip);
 
               array_add (create_report_data->host_ends, result);
 
@@ -24730,7 +24304,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_REPORT_TASK, NAME);
 
       case CLIENT_CREATE_REPORT_CONFIG:
-        create_report_config_element_end (gmp_parser, error, element_name);
+        if (create_report_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_CREATE_REPORT_FORMAT:
@@ -26892,230 +26467,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         break;
 
       case CLIENT_MODIFY_CREDENTIAL:
-        {
-          switch (modify_credential
-                   (modify_credential_data->credential_id,
-                    modify_credential_data->name,
-                    modify_credential_data->comment,
-                    modify_credential_data->login,
-                    (modify_credential_data->key_phrase
-                     || modify_credential_data->key_private)
-                      ? modify_credential_data->key_phrase
-                      : modify_credential_data->password,
-                    modify_credential_data->key_private,
-                    modify_credential_data->key_public,
-                    modify_credential_data->certificate,
-                    modify_credential_data->community,
-                    modify_credential_data->auth_algorithm,
-                    modify_credential_data->privacy_password,
-                    modify_credential_data->privacy_algorithm,
-                    modify_credential_data->kdc,
-                    modify_credential_data->kdcs,
-                    modify_credential_data->realm,
-                    modify_credential_data->credential_store_id,
-                    modify_credential_data->vault_id,
-                    modify_credential_data->host_identifier,
-                    modify_credential_data->privacy_host_identifier,
-                    modify_credential_data->allow_insecure))
-            {
-              case 0:
-                SENDF_TO_CLIENT_OR_FAIL (XML_OK ("modify_credential"));
-                log_event ("credential", "Credential",
-                           modify_credential_data->credential_id,
-                           "modified");
-                break;
-              case 1:
-                if (send_find_error_to_client
-                     ("modify_credential", "credential",
-                      modify_credential_data->credential_id,
-                      gmp_parser))
-                  {
-                    error_send_to_client (error);
-                    return;
-                  }
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 2:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "credential with new name"
-                                    " exists already"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 3:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "A credential_id is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 4:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Login name must not be empty and may"
-                                    " contain only alphanumeric characters"
-                                    " or the following: - _ \\ . @"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 5:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty certificate"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 6:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty auth_algorithm"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 7:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty privacy_algorithm"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 8:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty private key"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 9:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty public key"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 10:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Privacy password must also be empty"
-                                    " if privacy algorithm is empty"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 11:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty kdc value(s)"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 12:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Invalid or empty kerberos realm value"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-#if ENABLE_CREDENTIAL_STORES
-              case 13:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Credential store not found"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 14:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Vault ID is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 15:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Host identifier is required"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              case 17:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                    "Value cannot be modified for credential store type"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-#endif
-              case 99:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_credential",
-                                    "Permission denied"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-              default:
-              case -1:
-                SEND_TO_CLIENT_OR_FAIL (XML_INTERNAL_ERROR ("modify_credential"));
-                log_event_fail ("credential", "Credential",
-                                modify_credential_data->credential_id,
-                                "modified");
-                break;
-            }
-        }
-        modify_credential_data_reset (modify_credential_data);
-        set_client_state (CLIENT_AUTHENTIC);
+        if (modify_credential_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, ALLOW_INSECURE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, AUTH_ALGORITHM);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, CERTIFICATE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMENT);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, COMMUNITY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDC);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KDCS);
-      case CLIENT_MODIFY_CREDENTIAL_KDCS_KDC:
-        {
-          array_add (modify_credential_data->kdcs,
-                     g_strdup (modify_credential_data->kdcs_kdc));
-          modify_credential_data->kdcs_kdc = NULL;
-          set_client_state (CLIENT_MODIFY_CREDENTIAL_KDCS);
-          break;
-        }
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, KEY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PHRASE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PRIVATE);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_KEY, PUBLIC);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, LOGIN);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, NAME);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PASSWORD);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, ALGORITHM);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL_PRIVACY, PASSWORD);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, REALM);
 
 #if ENABLE_CREDENTIAL_STORES
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, CREDENTIAL_STORE_ID);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, VAULT_ID);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, HOST_IDENTIFIER);
-      CLOSE (CLIENT_MODIFY_CREDENTIAL, PRIVACY_HOST_IDENTIFIER);
-
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         if (modify_credential_store_element_end (gmp_parser, error,
                                                  element_name))
@@ -27301,6 +26657,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
       case CLIENT_MODIFY_NOTE:
         {
+          note_or_override_scope_status_t scope_ret;
           if (acl_user_may ("modify_note") == 0)
             {
               SEND_TO_CLIENT_OR_FAIL
@@ -27319,6 +26676,21 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
              (XML_ERROR_SYNTAX ("modify_note",
                                 "A TEXT entity is required"));
+          else if (modify_note_data->hosts
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      modify_note_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Host specification exceeds maximum number of"
+                                    " hosts"));
+            }
           else switch (modify_note (modify_note_data->note_id,
                                     modify_note_data->active,
                                     modify_note_data->nvt_oid,
@@ -27336,6 +26708,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               case -1:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_INTERNAL_ERROR ("modify_note"));
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_note",
+                                    "Error in active specification"));
+                log_event_fail ("note", "Note", modify_note_data->note_id,
+                                "modified");
                 break;
               case 2:
                 SEND_TO_CLIENT_OR_FAIL
@@ -27413,15 +26792,16 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
 #if ENABLE_CONTAINER_SCANNING
       case CLIENT_MODIFY_OCI_IMAGE_TARGET:
-        modify_oci_image_target_element_end (gmp_parser,
-                                             error,
-                                             element_name);
+        if (modify_oci_image_target_element_end (gmp_parser,
+                                                 error,
+                                                 element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_CONTAINER_SCANNING */
 
       case CLIENT_MODIFY_OVERRIDE:
         {
-          int max;
+          note_or_override_scope_status_t scope_ret;
 
           if (acl_user_may ("modify_override") == 0)
             {
@@ -27442,17 +26822,20 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
              (XML_ERROR_SYNTAX ("modify_override",
                                 "A TEXT entity is required"));
           else if (modify_override_data->hosts
-                   && ((max = manage_count_hosts (modify_override_data->hosts,
-                                                  NULL))
-                       == -1))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_override",
-                                "Error in host specification"));
-          else if (modify_override_data->hosts && (max > manage_max_hosts ()))
-            SEND_TO_CLIENT_OR_FAIL
-             (XML_ERROR_SYNTAX ("modify_override",
-                                "Host specification exceeds maximum number"
-                                " of hosts"));
+                   && ((scope_ret = validate_notes_or_overrides_scope (
+                                      modify_override_data->hosts
+                                    )) != NOTE_OR_OVERRIDE_SCOPE_OK))
+            {
+              if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_INVALID)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Error in host specification"));
+              else if (scope_ret == NOTE_OR_OVERRIDE_SCOPE_TOO_MANY)
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("modify_override",
+                                    "Host specification exceeds maximum number"
+                                    " of hosts"));
+            }
           else switch (modify_override (modify_override_data->override_id,
                                         modify_override_data->active,
                                         modify_override_data->nvt_oid,
@@ -27608,9 +26991,13 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_permission_data->subject_id))
             {
               case 1:
-                SEND_TO_CLIENT_OR_FAIL
-                 (XML_ERROR_SYNTAX ("modify_permission",
-                                    "Permission exists already"));
+                if (send_find_error_to_client
+                     ("modify_permission", "permission",
+                      modify_permission_data->permission_id, gmp_parser))
+                  {
+                    error_send_to_client (error);
+                    return;
+                  }
                 log_event_fail ("permission", "Permission",
                                 modify_permission_data->permission_id,
                                 "modified");
@@ -27873,7 +27260,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_REPORT_FORMAT_PARAM, VALUE);
 
       case CLIENT_MODIFY_REPORT_CONFIG:
-        modify_report_config_element_end (gmp_parser, error, element_name);
+        if (modify_report_config_element_end (gmp_parser, error, element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 
       case CLIENT_MODIFY_ROLE:
@@ -29104,9 +28492,10 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
 
 #if ENABLE_WEB_APPLICATION_SCANNING
       case CLIENT_MODIFY_WEB_APPLICATION_TARGET:
-        modify_web_application_target_element_end (gmp_parser,
-                                                   error,
-                                                   element_name);
+        if (modify_web_application_target_element_end (gmp_parser,
+                                                       error,
+                                                       element_name))
+          set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
 
@@ -29118,6 +28507,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
               (XML_ERROR_SYNTAX ("move_task",
                                  "A non-empty task_id"
                                  " attribute is required"));
+            move_task_data_reset (move_task_data);
+            set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
@@ -29126,6 +28517,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
             SEND_TO_CLIENT_OR_FAIL
               (XML_ERROR_SYNTAX ("move_task",
                                  "A slave_id attribute is required"));
+            move_task_data_reset (move_task_data);
+            set_client_state (CLIENT_AUTHENTIC);
             break;
           }
 
@@ -29319,6 +28712,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("restore",
                                       "A resource with this UUID exists"
+                                      " already"));
+                  break;
+                case 5:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("restore",
+                                      "A resource with this endpoint exists"
                                       " already"));
                   break;
                 case 99:
@@ -29823,8 +29222,9 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   assert (0);
                 case STOP_TASK_INTERNAL_ERROR:
                   /* Some other error occurred. */
-                  /** @todo Should respond with internal error. */
-                  abort ();
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("stop_task",
+                                      "Internal error stopping task"));
               }
           }
         else
@@ -29840,6 +29240,18 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         set_client_state (CLIENT_AUTHENTIC);
         break;
 #endif
+
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        {
+          if (verify_active_directory_credential_element_end (gmp_parser,
+                                                              error,
+                                                              element_name))
+            set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+#endif
+
 #if ENABLE_CREDENTIAL_STORES
       case CLIENT_VERIFY_CREDENTIAL_STORE:
         {
@@ -29898,7 +29310,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    ("<verify_scanner_response status=\"" STATUS_OK "\""
                     " status_text=\"" STATUS_OK_TEXT "\">"
                     "<version>%s</version>"
-                    "</verify_scanner_response>", version);
+                    "</verify_scanner_response>", version ?: "");
                   break;
                 case 1:
                   if (send_find_error_to_client
@@ -29914,15 +29326,6 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                    (XML_ERROR_UNAVAILABLE ("verify_scanner",
                                            "Service unavailable"));
                   break;
-                case 3:
-                  SENDF_TO_CLIENT_OR_FAIL
-                   ("<verify_scanner_response status=\"%s\""
-                    " status_text=\"Failed to authenticate\">"
-                    "<version>%s</version>"
-                    "</verify_scanner_response>",
-                    STATUS_SERVICE_UNAVAILABLE,
-                    version);
-                  break;
                 case 99:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("verify_scanner", "Permission denied"));
@@ -29932,6 +29335,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                            ("verify_scanner"));
                   break;
               }
+            g_free (version);
           }
         else
           SEND_TO_CLIENT_OR_FAIL
@@ -30005,67 +29409,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
         modify_config_element_text (text, text_len);
         break;
 
+      case CLIENT_MODIFY_CREDENTIAL:
+        modify_credential_element_text (text, text_len);
+        break;
 
-      APPEND (CLIENT_MODIFY_CREDENTIAL_ALLOW_INSECURE,
-              &modify_credential_data->allow_insecure);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_AUTH_ALGORITHM,
-              &modify_credential_data->auth_algorithm);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_CERTIFICATE,
-              &modify_credential_data->certificate);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMENT,
-              &modify_credential_data->comment);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_COMMUNITY,
-              &modify_credential_data->community);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KDC,
-              &modify_credential_data->kdc);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KDCS_KDC,
-              &modify_credential_data->kdcs_kdc);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PHRASE,
-              &modify_credential_data->key_phrase);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PRIVATE,
-              &modify_credential_data->key_private);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_KEY_PUBLIC,
-              &modify_credential_data->key_public);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_LOGIN,
-              &modify_credential_data->login);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_NAME,
-              &modify_credential_data->name);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PASSWORD,
-              &modify_credential_data->password);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_ALGORITHM,
-              &modify_credential_data->privacy_algorithm);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_PASSWORD,
-              &modify_credential_data->privacy_password);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_REALM,
-              &modify_credential_data->realm);
 #if ENABLE_CREDENTIAL_STORES
-      APPEND (CLIENT_MODIFY_CREDENTIAL_CREDENTIAL_STORE_ID,
-              &modify_credential_data->credential_store_id);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_VAULT_ID,
-              &modify_credential_data->vault_id);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_HOST_IDENTIFIER,
-              &modify_credential_data->host_identifier);
-
-      APPEND (CLIENT_MODIFY_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-              &modify_credential_data->privacy_host_identifier);
-
       case CLIENT_MODIFY_CREDENTIAL_STORE:
         modify_credential_store_element_text (text, text_len);
         break;
@@ -30160,74 +29508,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_ASSET_REPORT_FILTER_TERM,
               &create_asset_data->filter_term);
 
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_ALLOW_INSECURE,
-              &create_credential_data->allow_insecure);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_AUTH_ALGORITHM,
-              &create_credential_data->auth_algorithm);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_CERTIFICATE,
-              &create_credential_data->certificate);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COMMENT,
-              &create_credential_data->comment);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COMMUNITY,
-              &create_credential_data->community);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_COPY,
-              &create_credential_data->copy);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KDC,
-              &create_credential_data->kdc);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KDCS_KDC,
-              &create_credential_data->kdcs_kdc);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PHRASE,
-              &create_credential_data->key_phrase);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PRIVATE,
-              &create_credential_data->key_private);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_KEY_PUBLIC,
-              &create_credential_data->key_public);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_LOGIN,
-              &create_credential_data->login);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_NAME,
-              &create_credential_data->name);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PASSWORD,
-              &create_credential_data->password);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_ALGORITHM,
-              &create_credential_data->privacy_algorithm);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_PASSWORD,
-              &create_credential_data->privacy_password);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_REALM,
-              &create_credential_data->realm);
-
-#if ENABLE_CREDENTIAL_STORES
-      APPEND (CLIENT_CREATE_CREDENTIAL_CREDENTIAL_STORE_ID,
-              &create_credential_data->credential_store_id);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_VAULT_ID,
-              &create_credential_data->vault_id);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_HOST_IDENTIFIER,
-              &create_credential_data->host_identifier);
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_PRIVACY_HOST_IDENTIFIER,
-              &create_credential_data->privacy_host_identifier);
-#endif
-
-      APPEND (CLIENT_CREATE_CREDENTIAL_TYPE,
-              &create_credential_data->type);
+      case CLIENT_CREATE_CREDENTIAL:
+        create_credential_element_text (text, text_len);
+        break;
 
 
       APPEND (CLIENT_CREATE_ALERT_ACTIVE,
@@ -31035,6 +30318,11 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_RUN_WIZARD_PARAMS_PARAM_VALUE,
               &run_wizard_data->param->value);
 
+#if ENABLE_AD_INTEGRATION
+      case CLIENT_VERIFY_ACTIVE_DIRECTORY_CREDENTIAL:
+        verify_active_directory_credential_element_text (text, text_len);
+        break;
+#endif /* ENABLE_AD_INTEGRATION */
 
       default:
         /* Just pass over the text. */
@@ -31079,17 +30367,20 @@ extern buffer_size_t from_client_end;
  * @param[in]  max_email_attachment_size  Max size of email attachments.
  * @param[in]  max_email_include_size     Max size of email inclusions.
  * @param[in]  max_email_message_size     Max size of email user message text.
+ * @param[in]  max_images_per_oci_target  Max number of images per OCI target.
  * @param[in]  fork_connection  Function to fork a connection to the GMP
  *                              daemon layer, or NULL.
  * @param[in]  skip_db_check    Skip DB check.
  *
  * @return 0 success, -1 error, -2 database is too old,
  *         -4 max_ips_per_target out of range, -5 database is too new.
+ *         -6 max_images_per_oci_target out of range.
  */
 int
 init_gmp (GSList *log_config, const db_conn_info_t *database,
           int max_ips_per_target, int max_email_attachment_size,
           int max_email_include_size, int max_email_message_size,
+          int max_images_per_oci_target,
           manage_connection_forker_t fork_connection, int skip_db_check)
 {
   g_log_set_handler (G_LOG_DOMAIN,
@@ -31099,7 +30390,7 @@ init_gmp (GSList *log_config, const db_conn_info_t *database,
   command_data_init (&command_data);
   return init_manage (log_config, database, max_ips_per_target,
                       max_email_attachment_size, max_email_include_size,
-                      max_email_message_size,
+                      max_email_message_size, max_images_per_oci_target,
                       fork_connection, skip_db_check);
 }
 

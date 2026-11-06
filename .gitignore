@@ -3,3 +3,5 @@ tags
 .ccls
 .vscode
 .venv
+.idea
+*.kdev4

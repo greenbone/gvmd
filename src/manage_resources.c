@@ -41,6 +41,7 @@ valid_type (const char* type)
 
   return (strcasecmp (type, "alert") == 0)
          || (strcasecmp (type, "asset") == 0)
+         || (strcasecmp (type, "audit_report") == 0)
          || (strcasecmp (type, "config") == 0)
          || (strcasecmp (type, "credential") == 0)
          || (strcasecmp (type, "filter") == 0)
@@ -57,6 +58,7 @@ valid_type (const char* type)
          || (strcasecmp (type, "port_list") == 0)
          || (strcasecmp (type, "report") == 0)
          || (strcasecmp (type, "report_config") == 0)
+         || (strcasecmp (type, "report_export") == 0)
          || (strcasecmp (type, "report_format") == 0)
          || (strcasecmp (type, "result") == 0)
          || (strcasecmp (type, "role") == 0)
@@ -71,6 +73,7 @@ valid_type (const char* type)
 #if ENABLE_WEB_APPLICATION_SCANNING
          || (strcasecmp (type, "web_application_target") == 0)
 #endif
+         || (strcasecmp (type, "scan_report") == 0)
          || (strcasecmp (type, "vuln") == 0);
 }
 
@@ -138,6 +141,8 @@ type_db_name (const char* type)
     return "report";
   if (strcasecmp (type, "Report Config") == 0)
     return "report_config";
+  if (strcasecmp (type, "Report Export") == 0)
+    return "report_export";
   if (strcasecmp (type, "Report Format") == 0)
     return "report_format";
   if (strcasecmp (type, "Result") == 0)
@@ -315,6 +320,7 @@ type_owned (const char* type)
 {
   return strcasecmp (type, "info")
          && type_is_info_subtype (type) == 0
+         && strcasecmp (type, "audit_report_host")
          && strcasecmp (type, "vuln")
          && strcasecmp (type, "report_application")
          && strcasecmp (type, "report_closed_cve")

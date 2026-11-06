@@ -1375,6 +1375,7 @@ manage_rebuild (GSList *log_config, const db_conn_info_t *database)
     {
       update_scap_extra ();
       manage_discovery_nvts ();
+      refresh_all_vts_table ();
     }
 
   feed_lockfile_unlock (&lockfile);
@@ -1673,6 +1674,7 @@ update_nvts_from_json_file (const gchar *full_path,
       g_warning ("%s: Failed to open NVT file: %s",
                 __func__,
                 strerror (errno));
+      close (fd);
       return -1;
     }
 

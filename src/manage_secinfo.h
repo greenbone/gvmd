@@ -12,6 +12,16 @@
 #define _GVMD_MANAGE_SECINFO_H
 
 /**
+ * @brief Database schemas for SecInfo
+ */
+typedef enum {
+  SECINFO_SCHEMA_UNKOWN = 0,
+  SECINFO_SCHEMA_SCAP,
+  SECINFO_SCHEMA_CERT,
+  SECINFO_SCHEMA_VTS
+} secinfo_schema_t;
+
+/**
  * @brief Default for affected_products_query_size.
  */
 #define AFFECTED_PRODUCTS_QUERY_SIZE_DEFAULT 20000

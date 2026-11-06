@@ -18,6 +18,12 @@
 #include "manage_acl.h"
 
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md    gmp"
+
 /**
  * @brief Structure for storing data related to the `<get_integration_configs>` GMP command.
  *

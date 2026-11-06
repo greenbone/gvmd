@@ -52,6 +52,12 @@
 # SSL/TLS verification
 # ca-certificates
 
+# Pheme Report
+# curl
+
+# Topology SVG Report
+# graphviz
+
 ca-certificates
 dpkg
 fakeroot
@@ -83,3 +89,5 @@ wget
 xmlstarlet
 xsltproc
 zip
+curl
+graphviz

@@ -37,6 +37,7 @@ typedef resource_t port_list_t;
 typedef resource_t port_range_t;
 typedef resource_t report_config_param_t;
 typedef resource_t report_config_t;
+typedef resource_t report_export_t;
 typedef resource_t report_format_param_t;
 typedef resource_t report_format_t;
 typedef resource_t report_host_t;
@@ -53,5 +54,6 @@ typedef resource_t ticket_t;
 typedef resource_t tls_certificate_t;
 typedef resource_t user_t;
 typedef resource_t web_application_target_t;
+typedef resource_t zap_vt_t;
 
 #endif /* not _GVMD_MANAGE_RESOURCES_TYPES_H */

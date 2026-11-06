@@ -17,6 +17,8 @@
 #include "manage_sql_configs.h"
 #include "sql.h"
 
+#include <assert.h>
+
 #include <gvm/base/cvss.h>
 #include <gvm/osp/osp.h>
 

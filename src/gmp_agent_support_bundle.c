@@ -31,6 +31,8 @@ typedef struct
 {
   gchar *agent_uuid; ///< UUID of the agent.
   gchar *days;       ///< Optional number of days to include.
+  gchar *encryption; ///< Whether to get encrypted the support bundle (0 or 1).
+  gchar *anonymized; ///< Whether to get the anonymized support bundle (0 or 1).
 } get_agent_support_bundle_t;
 
 /**
@@ -48,6 +50,8 @@ get_agent_support_bundle_reset (void)
 {
   g_free (get_agent_support_bundle_data.agent_uuid);
   g_free (get_agent_support_bundle_data.days);
+  g_free (get_agent_support_bundle_data.encryption);
+  g_free (get_agent_support_bundle_data.anonymized);
 
   memset (&get_agent_support_bundle_data,
           0,
@@ -73,6 +77,14 @@ get_agent_support_bundle_start (const gchar **attribute_names,
   if (find_attribute (attribute_names, attribute_values,
                       "days", &attribute))
     get_agent_support_bundle_data.days = g_strdup (attribute);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "encryption", &attribute))
+    get_agent_support_bundle_data.encryption = g_strdup (attribute);
+
+  if (find_attribute (attribute_names, attribute_values,
+                      "anonymized", &attribute))
+    get_agent_support_bundle_data.anonymized = g_strdup (attribute);
 }
 
 /**
@@ -105,6 +117,40 @@ get_agent_support_bundle_parse_days (int *days)
     return FALSE;
 
   *days = (int) parsed;
+  return TRUE;
+}
+
+/**
+ * @brief Parse an optional boolean attribute (0 or 1).
+ *
+ * @param[in] value Attribute value as a string.
+ * @param[in] default_value Default when the attribute is missing.
+ * @param[out] result Parsed value.
+ *
+ * @return TRUE if valid, FALSE otherwise.
+ */
+static gboolean
+get_agent_support_bundle_parse_boolean (const gchar *value,
+                                        int default_value,
+                                        int *result)
+{
+  gchar *end = NULL;
+  gint64 parsed;
+
+  if (!result)
+    return FALSE;
+
+  *result = default_value;
+
+  if (!value)
+    return TRUE;
+
+  parsed = g_ascii_strtoll (value, &end, 10);
+
+  if (end == value || *end != '\0' || parsed < 0 || parsed > 1)
+    return FALSE;
+
+  *result = (int) parsed;
   return TRUE;
 }
 
@@ -195,6 +241,8 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
   agent_response_t result;
   gchar *escaped_filename = NULL;
   int days;
+  int encryption;
+  int anonymized;
   int ret;
 
   if (!acl_user_may ("get_agents"))
@@ -207,7 +255,8 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
     }
 
   if (!get_agent_support_bundle_data.agent_uuid
-      || *get_agent_support_bundle_data.agent_uuid == '\0')
+      || *get_agent_support_bundle_data.agent_uuid == '\0'
+      || !is_uuid (get_agent_support_bundle_data.agent_uuid))
     {
       SEND_TO_CLIENT_OR_FAIL
       (XML_ERROR_SYNTAX ("get_agent_support_bundle",
@@ -225,9 +274,31 @@ get_agent_support_bundle_run (gmp_parser_t *gmp_parser, GError **error)
       return;
     }
 
+  if (!get_agent_support_bundle_parse_boolean (
+    get_agent_support_bundle_data.encryption, 1, &encryption))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_agent_support_bundle",
+        "Invalid encryption value"));
+      get_agent_support_bundle_reset ();
+      return;
+    }
+
+  if (!get_agent_support_bundle_parse_boolean (
+    get_agent_support_bundle_data.anonymized, 0, &anonymized))
+    {
+      SEND_TO_CLIENT_OR_FAIL
+      (XML_ERROR_SYNTAX ("get_agent_support_bundle",
+        "Invalid anonymized value"));
+      get_agent_support_bundle_reset ();
+      return;
+    }
+
   result =
     get_agent_support_bundle (get_agent_support_bundle_data.agent_uuid,
                               days,
+                              encryption,
+                              anonymized,
                               &bundle);
 
   switch (result)

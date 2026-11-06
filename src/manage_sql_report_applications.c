@@ -71,33 +71,61 @@ init_report_app_iterator (iterator_t *iterator, report_t report,
 {
   if (host_filter && *host_filter)
     {
-      init_ps_iterator (iterator,
-                        "SELECT value AS app, count(*) AS hosts,"
-                        " (SELECT  count(*) FROM report_host_details r"
-                        " WHERE r.name = app_details.value AND r.report_host IN"
-                        " (SELECT id FROM report_hosts WHERE report = $1)) AS occurrences"
-                        " FROM report_host_details app_details"
-                        " WHERE report_host IN"
-                        " (SELECT id FROM report_hosts WHERE report = $1 AND host = $2)"
-                        " AND name = 'App' GROUP BY value;",
-                        SQL_RESOURCE_PARAM (report),
-                        SQL_STR_PARAM (host_filter),
-                        NULL);
-
+      init_ps_iterator (
+        iterator,
+        "SELECT value AS app, count(*) AS hosts,"
+        " COALESCE("
+        "   NULLIF(("
+        "     SELECT count(*) FROM report_host_details r"
+        "     WHERE r.name = app_details.value"
+        "       AND r.report_host IN"
+        "         (SELECT id FROM report_hosts WHERE report = $1)"
+        "   ), 0),"
+        "   ("
+        "     SELECT count(*) FROM report_host_details r"
+        "     WHERE r.name = 'App'"
+        "       AND r.value = app_details.value"
+        "       AND r.report_host IN"
+        "         (SELECT id FROM report_hosts WHERE report = $1)"
+        "   )"
+        " ) AS occurrences"
+        " FROM report_host_details app_details"
+        " WHERE report_host IN"
+        "   (SELECT id FROM report_hosts"
+        "    WHERE report = $1 AND host = $2)"
+        " AND name = 'App'"
+        " GROUP BY value;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (host_filter),
+        NULL);
     }
   else
     {
-      init_ps_iterator (iterator,
-                        "SELECT value AS app, count(*) AS hosts,"
-                        " (SELECT  count(*) FROM report_host_details r"
-                        " WHERE r.name = app_details.value AND r.report_host IN"
-                        " (SELECT id FROM report_hosts WHERE report = $1)) AS occurrences"
-                        " FROM report_host_details app_details"
-                        " WHERE report_host IN"
-                        " (SELECT id FROM report_hosts WHERE report = $1)"
-                        " AND name = 'App'  GROUP BY value;",
-                        SQL_RESOURCE_PARAM (report),
-                        NULL);
+      init_ps_iterator (
+        iterator,
+        "SELECT value AS app, count(*) AS hosts,"
+        " COALESCE("
+        "   NULLIF(("
+        "     SELECT count(*) FROM report_host_details r"
+        "     WHERE r.name = app_details.value"
+        "       AND r.report_host IN"
+        "         (SELECT id FROM report_hosts WHERE report = $1)"
+        "   ), 0),"
+        "   ("
+        "     SELECT count(*) FROM report_host_details r"
+        "     WHERE r.name = 'App'"
+        "       AND r.value = app_details.value"
+        "       AND r.report_host IN"
+        "         (SELECT id FROM report_hosts WHERE report = $1)"
+        "   )"
+        " ) AS occurrences"
+        " FROM report_host_details app_details"
+        " WHERE report_host IN"
+        "   (SELECT id FROM report_hosts WHERE report = $1)"
+        " AND name = 'App'"
+        " GROUP BY value;",
+        SQL_RESOURCE_PARAM (report),
+        NULL);
     }
 }
 
@@ -209,4 +237,110 @@ report_applications_count (report_t report)
     " WHERE report_host IN (SELECT id FROM report_hosts WHERE report = %llu)"
     "   AND name = 'App';",
     report);
+}
+
+/**
+ * @brief Initialise a vulnerable product iterator.
+ *
+ * @param[in, out]  iterator     Iterator.
+ * @param[in]       report       Report whose vulnerable products the iterator loops over.
+ * @param[in]       host_filter  Optional host filter; NULL for no filter.
+ */
+void
+init_report_app_vulnerable_product_iterator (iterator_t *iterator,
+                                             report_t report,
+                                             const gchar *host_filter)
+{
+  if (host_filter && *host_filter)
+    {
+      init_ps_iterator (
+        iterator,
+        "SELECT app_details.value AS app,"
+        " MAX(results.severity) AS severity"
+        " FROM report_host_details AS app_details"
+        " JOIN report_hosts AS rh"
+        "   ON rh.id = app_details.report_host"
+        " JOIN results"
+        "   ON results.host = rh.host"
+        "  AND results.nvt = app_details.source_name"
+        " WHERE rh.report = $1"
+        "   AND rh.host = $2"
+        "   AND app_details.name LIKE 'vulnerable_product@%'"
+        " GROUP BY app_details.value;",
+        SQL_RESOURCE_PARAM (report),
+        SQL_STR_PARAM (host_filter),
+        NULL);
+    }
+  else
+    {
+      init_ps_iterator (
+        iterator,
+        "SELECT app_details.value AS app,"
+        " MAX(results.severity) AS severity"
+        " FROM report_host_details AS app_details"
+        " JOIN report_hosts AS rh"
+        "   ON rh.id = app_details.report_host"
+        " JOIN results"
+        "   ON results.host = rh.host"
+        "  AND results.nvt = app_details.source_name"
+        " WHERE rh.report = $1"
+        "   AND app_details.name LIKE 'vulnerable_product@%'"
+        " GROUP BY app_details.value;",
+        SQL_RESOURCE_PARAM (report),
+        NULL);
+    }
+}
+
+/**
+ * @brief Add vulnerable product severities to the application severity map.
+ *
+ * Uses vulnerable_product host details to map application CPEs to matching
+ * report results and updates the severity map with the maximum severity for
+ * each application.
+ *
+ * @param[in]      report           Report to inspect.
+ * @param[in, out] apps_severities  Hash table of CPE string to double* severity.
+ * @param[in]      host_filter      Optional host filter; NULL for no filter.
+ *
+ * @return 0 on success, -1 on error.
+ */
+int
+fill_report_app_vulnerable_product_severities (
+  report_t report,
+  GHashTable *apps_severities,
+  const gchar *host_filter)
+{
+  iterator_t apps;
+
+  if (apps_severities == NULL)
+    return -1;
+
+  init_report_app_vulnerable_product_iterator (&apps,
+                                               report,
+                                               host_filter);
+
+  while (next (&apps))
+    {
+      const gchar *application;
+      double severity;
+      gchar *key_copy;
+      double *new_severity;
+
+      application = iterator_string (&apps, 0);
+
+      severity = iterator_double (&apps, 1);
+
+      key_copy = g_strdup (application);
+
+      new_severity = g_malloc (sizeof (*new_severity));
+      *new_severity = severity;
+
+      g_hash_table_insert (apps_severities,
+                           key_copy,
+                           new_severity);
+    }
+
+  cleanup_iterator (&apps);
+
+  return 0;
 }

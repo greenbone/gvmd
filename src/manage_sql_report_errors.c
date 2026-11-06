@@ -14,6 +14,12 @@
 
 #include "manage_sql_assets.h"
 
+#undef G_LOG_DOMAIN
+/**
+ * @brief GLib log domain.
+ */
+#define G_LOG_DOMAIN "md manage"
+
 /**
  * @brief Initialise a report errors iterator.
  *

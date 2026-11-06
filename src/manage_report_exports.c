@@ -5,251 +5,955 @@
 
 /**
  * @file
- * @brief GVM management layer: Report export to OSI.
- *
- * Implements report export from the GVM management layer to OSI.
+ * @brief GVM management layer: Report exports.
  */
-
-# if ENABLE_SECURITY_INTELLIGENCE_EXPORT
 
 #include "manage_report_exports.h"
 
-#include "gmp_base.h"
-#include "manage.h"
-#include "manage_filters.h"
-#include "manage_settings.h"
+#include "manage_audit_report_exports.h"
+#include "manage_delta_audit_report_exports.h"
+#include "manage_delta_scan_report_exports.h"
+#include "manage_report_configs.h"
+#include "manage_scan_report_exports.h"
+#include "manage_sql_report_exports.h"
+#include "manage_sql_report_formats.h"
+#include "manage_sql_resources.h"
+#include "manage_users.h"
 
-#include <auth/gvm_auth.h>
 #include <glib/gstdio.h>
-#include <gvm/security_intelligence/security_intelligence.h>
-#include <unistd.h>
+#include <util/fileutils.h>
 
 #undef G_LOG_DOMAIN
+
 /**
  * @brief GLib log domain.
  */
 #define G_LOG_DOMAIN "md manage"
 
 /**
- * @brief Generate an OAuth2 access token.
+ * @brief Get the directory for persistent report export files.
  *
- * @param[in] config Integration config for report export.
- *
- * @return Raw access token without the "Bearer" prefix.
- *         Must be freed by the caller.
+ * @return Report export directory.
  */
-static gchar *
-generate_access_token (integration_config_data_t config)
+static const gchar *
+report_export_dir (void)
 {
-  gvm_oauth2_new_err_t new_err = GVM_OAUTH2_NEW_ERR_INTERNAL_ERROR;
-  gvm_oauth2_get_token_err_t token_err =
-    GVM_OAUTH2_GET_TOKEN_ERR_INTERNAL_ERROR;
-  gvm_oauth2_token_provider_t token_provider;
-  char *access_token;
-  gchar *token;
+  static gchar *path = NULL;
 
-  token_provider =
-    gvm_oauth2_token_provider_new (
-      config->oidc_url,
-      config->oidc_client_id,
-      config->oidc_client_secret,
-      "",
-      30,
-      &new_err);
+  if (path == NULL)
+    path = g_build_filename (GVMD_STATE_DIR,
+                             "report-exports",
+                             NULL);
 
-  if (!token_provider)
-    {
-      g_debug ("%s: failed to initialize token provider, error: %d",
-               __func__,
-               new_err);
-      return NULL;
-    }
-
-  access_token =
-    gvm_oauth2_get_token (token_provider, &token_err);
-
-  if (!access_token)
-    {
-      g_debug ("%s: failed to retrieve access token, error: %d",
-               __func__,
-               token_err);
-      gvm_oauth2_token_provider_free (token_provider);
-      return NULL;
-    }
-
-  token = g_strdup (access_token);
-
-  gvm_auth_str_free (access_token);
-  gvm_oauth2_token_provider_free (token_provider);
-
-  return token;
+  return path;
 }
 
 /**
- * @brief Generate and assign an OAuth2 access token to a connector.
+ * @brief Allocate an empty report export model.
  *
- * @param[in,out] conn   Security Intelligence connector.
- * @param[in]     config Integration config for report export.
- *
- * @return TRUE on success, FALSE on failure.
+ * @return Newly allocated report export model.
  */
-static gboolean
-refresh_connector_access_token (security_intelligence_connector_t conn,
-                                integration_config_data_t config)
+report_export_data_t
+report_export_data_new (void)
 {
-  gchar *bearer_token;
-
-  bearer_token = generate_access_token (config);
-  if (!bearer_token)
-    return FALSE;
-
-  if (security_intelligence_connector_builder (
-        conn,
-        SECURITY_INTELLIGENCE_BEARER_TOKEN,
-        bearer_token)
-      != SECURITY_INTELLIGENCE_OK)
-    {
-      g_free (bearer_token);
-      return FALSE;
-    }
-
-  g_free (bearer_token);
-  return TRUE;
+  return g_malloc0 (sizeof (struct report_export_data));
 }
 
 /**
- * @brief Initialize GET data for report result generation.
+ * @brief Free a report export model.
  *
- * @param[out] get          GET data to initialize.
- * @param[in] first_result  Zero-based result offset.
- * @param[in] max_results   Maximum number of results, or -1 for all results.
- *
- * @return 0 on success, -1 on invalid input or allocation failure.
+ * @param[in] data  Model to free.
  */
-static int
-init_report_export_get_data (get_data_t *get,
-                             int first_result,
-                             int max_results)
+void
+report_export_data_free (report_export_data_t data)
 {
-  if (!get || first_result < 0 || max_results == 0)
-    return -1;
-
-  memset (get, 0, sizeof (*get));
-
-  get->details = 1;
-  get->ignore_max_rows_per_page = 1;
-
-  if (max_results < 0)
-    {
-      get->filter = g_strdup (
-        "first=1 rows=-1 levels=chmlgf min_qod=0 "
-        "sort=host apply_overrides=1");
-    }
-  else
-    {
-      get->filter = g_strdup_printf (
-        "first=%d rows=%d levels=chmlgf min_qod=0 "
-        "sort=host apply_overrides=1",
-        first_result + 1,
-        max_results);
-    }
-
-  return get->filter ? 0 : -1;
-}
-
-/**
- * @brief Initialize GET data for the outer GET_REPORTS response.
- *
- * This filter describes the outer report resource response. It is separate
- * from the result filter used inside the generated scan report.
- *
- * @param[out] get GET data to initialize.
- *
- * @return 0 on success, -1 on invalid input or allocation failure.
- */
-static int
-init_report_response_get_data (get_data_t *get)
-{
-  if (!get)
-    return -1;
-
-  memset (get, 0, sizeof (*get));
-
-  get->details = 1;
-  get->ignore_max_rows_per_page = 1;
-  get->filter = g_strdup (
-    "first=1 rows=1 sort=name apply_overrides=1 min_qod=0");
-
-  return get->filter ? 0 : -1;
-}
-
-/**
- * @brief Cleanup GET data initialized by an export helper.
- *
- * @param[in,out] get GET data to clean up.
- */
-static void
-cleanup_report_export_get_data (get_data_t *get)
-{
-  if (!get)
+  if (data == NULL)
     return;
 
-  g_free (get->id);
-  get->id = NULL;
+  g_free (data->uuid);
+  g_free (data->name);
+  g_free (data->comment);
+  g_free (data->filter);
+  g_free (data->file_path);
+  g_free (data->content_type);
+  g_free (data->extension);
+  g_free (data->error_message);
 
-  g_free (get->filter);
-  get->filter = NULL;
-
-  g_free (get->filter_replacement);
-  get->filter_replacement = NULL;
-
-  g_free (get->filt_id);
-  get->filt_id = NULL;
+  g_free (data);
 }
 
 /**
- * @brief Get the owner UUID and username for a report.
+ * @brief Check whether a report export type is valid.
  *
- * @param[in]  report          Report.
- * @param[out] owner_uuid      Owner UUID. Must be freed by the caller.
- * @param[out] owner_username  Owner username. Must be freed by the caller.
+ * @param[in] type  Report export type.
  *
- * @return 0 on success, -1 if the owner cannot be resolved.
+ * @return TRUE if valid, FALSE otherwise.
  */
-static int
-report_export_owner (report_t report,
-                     gchar **owner_uuid,
-                     gchar **owner_username)
+gboolean
+report_export_type_valid (report_export_type_t type)
 {
-  if (report == 0 || owner_uuid == NULL || owner_username == NULL)
-    return -1;
+  return type >= REPORT_EXPORT_TYPE_SCAN
+         && type <= REPORT_EXPORT_TYPE_DELTA_AUDIT;
+}
 
-  *owner_uuid = NULL;
-  *owner_username = NULL;
+/**
+ * @brief Check whether a report export status is valid.
+ *
+ * @param[in] status  Report export status.
+ *
+ * @return TRUE if valid, FALSE otherwise.
+ */
+gboolean
+report_export_status_valid (report_export_status_t status)
+{
+  return status >= REPORT_EXPORT_STATUS_PENDING
+         && status <= REPORT_EXPORT_STATUS_EXPIRED;
+}
 
-  *owner_uuid = sql_string_ps (
-    "SELECT users.uuid"
-    " FROM reports"
-    " JOIN users ON users.id = reports.owner"
-    " WHERE reports.id = $1",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
+/**
+ * @brief Check whether a report export progress stage is valid.
+ *
+ * @param[in] progress  Report export progress stage.
+ *
+ * @return TRUE if valid, FALSE otherwise.
+ */
+gboolean
+report_export_progress_valid (report_export_progress_t progress)
+{
+  return progress >= REPORT_EXPORT_PROGRESS_QUEUED
+         && progress <= REPORT_EXPORT_PROGRESS_COMPLETED;
+}
 
-  if (*owner_uuid == NULL)
-    return -1;
+/**
+ * @brief Check whether a report export status is terminal.
+ *
+ * @param[in] status  Report export status.
+ *
+ * @return TRUE if terminal, FALSE otherwise.
+ */
+gboolean
+report_export_status_terminal (report_export_status_t status)
+{
+  return status == REPORT_EXPORT_STATUS_DONE
+         || status == REPORT_EXPORT_STATUS_ERROR
+         || status == REPORT_EXPORT_STATUS_CANCELED
+         || status == REPORT_EXPORT_STATUS_EXPIRED;
+}
 
-  *owner_username = sql_string_ps (
-    "SELECT users.name"
-    " FROM reports"
-    " JOIN users ON users.id = reports.owner"
-    " WHERE reports.id = $1",
-    SQL_RESOURCE_PARAM (report),
-    NULL);
-
-  if (*owner_username == NULL)
+/**
+ * @brief Return the textual representation of a report export type.
+ *
+ * @param[in] type  Report export type.
+ *
+ * @return Static string representation.
+ */
+const gchar *
+report_export_type_name (report_export_type_t type)
+{
+  switch (type)
     {
-      g_free (*owner_uuid);
-      *owner_uuid = NULL;
+    case REPORT_EXPORT_TYPE_SCAN:
+      return "scan";
+
+    case REPORT_EXPORT_TYPE_AUDIT:
+      return "audit";
+
+    case REPORT_EXPORT_TYPE_DELTA_SCAN:
+      return "delta_scan";
+
+    case REPORT_EXPORT_TYPE_DELTA_AUDIT:
+      return "delta_audit";
+
+    default:
+      return "unknown";
+    }
+}
+
+/**
+ * @brief Return the textual representation of a report export status.
+ *
+ * @param[in] status  Report export status.
+ *
+ * @return Static string representation.
+ */
+const gchar *
+report_export_status_name (report_export_status_t status)
+{
+  switch (status)
+    {
+    case REPORT_EXPORT_STATUS_PENDING:
+      return "pending";
+
+    case REPORT_EXPORT_STATUS_RUNNING:
+      return "running";
+
+    case REPORT_EXPORT_STATUS_DONE:
+      return "done";
+
+    case REPORT_EXPORT_STATUS_ERROR:
+      return "error";
+
+    case REPORT_EXPORT_STATUS_CANCEL_REQUESTED:
+      return "cancel_requested";
+
+    case REPORT_EXPORT_STATUS_CANCELED:
+      return "canceled";
+
+    case REPORT_EXPORT_STATUS_EXPIRED:
+      return "expired";
+
+    default:
+      return "unknown";
+    }
+}
+
+/**
+ * @brief Return the textual representation of a report export progress stage.
+ *
+ * @param[in] progress  Report export progress stage.
+ *
+ * @return Static string representation.
+ */
+const gchar *
+report_export_progress_name (report_export_progress_t progress)
+{
+  switch (progress)
+    {
+    case REPORT_EXPORT_PROGRESS_QUEUED:
+      return "queued";
+
+    case REPORT_EXPORT_PROGRESS_PREPARING:
+      return "preparing";
+
+    case REPORT_EXPORT_PROGRESS_GENERATING:
+      return "generating";
+
+    case REPORT_EXPORT_PROGRESS_COMPLETED:
+      return "completed";
+
+    default:
+      return "unknown";
+    }
+}
+
+/**
+ * @brief Create or reuse a report export request.
+ *
+ * @param[in]  report              Report to export.
+ * @param[in]  delta_report        Optional report used for a delta export.
+ * @param[in]  report_format       Report format to use.
+ * @param[in]  report_config       Optional report configuration.
+ * @param[in]  export_type         Report export type.
+ * @param[in]  name                Report export name.
+ * @param[in]  comment             Optional report export comment.
+ * @param[in]  filter              Optional report filter.
+ * @param[in]  ignore_pagination   Whether pagination should be ignored.
+ * @param[in]  lean                Whether lean report data should be used.
+ * @param[in]  notes_details       Whether note details should be included.
+ * @param[in]  overrides_details   Whether override details should be included.
+ * @param[in]  result_tags         Whether result tags should be included.
+ * @param[out] report_export       Existing or newly created report export.
+ * @param[out] status              Current status of the returned export.
+ * @param[out] created             TRUE if a new export was created.
+ *
+ * @return 0 on success, -1 on invalid arguments or failure.
+ */
+int
+manage_create_report_export (report_t report,
+                             report_t delta_report,
+                             report_format_t report_format,
+                             report_config_t report_config,
+                             report_export_type_t export_type,
+                             const gchar *name,
+                             const gchar *comment,
+                             const gchar *filter,
+                             gboolean ignore_pagination,
+                             gboolean lean,
+                             gboolean notes_details,
+                             gboolean overrides_details,
+                             gboolean result_tags,
+                             report_export_t *report_export,
+                             report_export_status_t *status,
+                             gboolean *created)
+{
+  gboolean delta_export;
+
+  if (report == 0
+      || report_format == 0
+      || name == NULL
+      || report_export == NULL
+      || status == NULL
+      || created == NULL
+      || report_export_type_valid (export_type) == FALSE)
+    return -1;
+
+  *report_export = 0;
+  *status = REPORT_EXPORT_STATUS_PENDING;
+  *created = FALSE;
+
+  delta_export = export_type == REPORT_EXPORT_TYPE_DELTA_SCAN
+                 || export_type == REPORT_EXPORT_TYPE_DELTA_AUDIT;
+
+  if (delta_export)
+    {
+      if (delta_report == 0 || delta_report == report)
+        return -1;
+    }
+  else if (delta_report != 0)
+    {
+      return -1;
+    }
+
+  return create_report_export (report,
+                               delta_report,
+                               report_format,
+                               report_config,
+                               export_type,
+                               name,
+                               comment,
+                               filter,
+                               ignore_pagination,
+                               lean,
+                               notes_details,
+                               overrides_details,
+                               result_tags,
+                               report_export,
+                               status,
+                               created);
+}
+
+/**
+ * @brief Mark a report export as running.
+ *
+ * @param[in] report_export  Report export.
+ * @param [in] worker_pid      PID of the worker process handling the export.
+ *
+ * @return 0 on success, 1 if the transition is not allowed, -1 on failure.
+ */
+int
+manage_start_report_export (report_export_t report_export, int worker_pid)
+{
+  report_export_status_t status;
+
+  if (report_export == 0)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  if (status != REPORT_EXPORT_STATUS_PENDING)
+    return 1;
+
+  start_report_export (report_export, worker_pid);
+
+  return 0;
+}
+
+/**
+ * @brief Update the processing progress of a report export.
+ *
+ * @param[in] report_export  Report export.
+ * @param[in] progress       New progress stage.
+ *
+ * @return 0 on success, 1 if the transition is not allowed, -1 on failure.
+ */
+int
+manage_set_report_export_progress (
+  report_export_t report_export,
+  report_export_progress_t progress)
+{
+  report_export_status_t status;
+  report_export_progress_t current_progress;
+
+  if (report_export == 0
+      || report_export_progress_valid (progress) == FALSE)
+    return -1;
+
+  if (get_report_export_status_and_progress (report_export,
+                                             &status,
+                                             &current_progress))
+    return -1;
+
+  if (status != REPORT_EXPORT_STATUS_RUNNING)
+    return 1;
+
+  /*
+   * QUEUED is assigned when the request is created
+   * COMPLETED is assigned when the generated file is stored.
+   */
+  if (progress == REPORT_EXPORT_PROGRESS_QUEUED
+      || progress == REPORT_EXPORT_PROGRESS_COMPLETED)
+    return 1;
+
+  /*
+   * Do not allow progress to move backwards.
+   */
+  if (progress < current_progress)
+    return 1;
+
+  if (progress == current_progress)
+    return 0;
+
+  set_report_export_progress (report_export, progress);
+
+  return 0;
+}
+
+/**
+ * @brief Mark a report export as completed.
+ *
+ * @param[in] report_export  Report export.
+ * @param[in] file_path      Generated file path.
+ * @param[in] file_size      Generated file size.
+ * @param[in] content_type   Generated file content type.
+ * @param[in] extension      Generated file extension.
+ *
+ * @return 0 on success, 1 if the transition is not allowed, -1 on failure.
+ */
+int
+manage_complete_report_export (report_export_t report_export,
+                               const gchar *file_path,
+                               long long file_size,
+                               const gchar *content_type,
+                               const gchar *extension)
+{
+  report_export_status_t status;
+
+  if (report_export == 0
+      || file_path == NULL
+      || content_type == NULL
+      || extension == NULL
+      || file_size < 0)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  if (status != REPORT_EXPORT_STATUS_RUNNING)
+    return 1;
+
+  complete_report_export (report_export,
+                          file_path,
+                          file_size,
+                          content_type,
+                          extension);
+
+  return 0;
+}
+
+/**
+ * @brief Mark a report export as failed.
+ *
+ * @param[in] report_export  Report export.
+ * @param[in] error_message  Error description.
+ *
+ * @return 0 on success, 1 if the transition is not allowed, -1 on failure.
+ */
+int
+manage_fail_report_export (report_export_t report_export,
+                           const gchar *error_message)
+{
+  report_export_status_t status;
+
+  if (report_export == 0 || error_message == NULL)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  if (report_export_status_terminal (status))
+    return 1;
+
+  fail_report_export (report_export, error_message);
+  return 0;
+}
+
+/**
+ * @brief Request cancellation of a report export.
+ *
+ * A pending report export is canceled immediately. A running report export
+ * is moved to the cancel-requested state.
+ *
+ * @param[in] report_export  Report export.
+ *
+ * @return 0 on success, 1 if cancellation is not allowed, -1 on failure.
+ */
+int
+manage_request_report_export_cancel (report_export_t report_export)
+{
+  report_export_status_t status;
+
+  if (report_export == 0)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  switch (status)
+    {
+    case REPORT_EXPORT_STATUS_PENDING:
+      cancel_report_export (report_export);
+      return 0;
+
+    case REPORT_EXPORT_STATUS_RUNNING:
+      request_report_export_cancel (report_export);
+      return 0;
+
+    case REPORT_EXPORT_STATUS_CANCEL_REQUESTED:
+    case REPORT_EXPORT_STATUS_CANCELED:
+      return 0;
+
+    default:
+      return 1;
+    }
+}
+
+/**
+ * @brief Finish cancellation of a report export.
+ *
+ * @param[in] report_export  Report export.
+ *
+ * @return 0 on success, 1 if cancellation was not requested, -1 on failure.
+ */
+int
+manage_finish_report_export_cancel (report_export_t report_export)
+{
+  report_export_status_t status;
+
+  if (report_export == 0)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  if (status == REPORT_EXPORT_STATUS_CANCELED)
+    return 0;
+
+  if (status != REPORT_EXPORT_STATUS_CANCEL_REQUESTED)
+    return 1;
+
+  cancel_report_export (report_export);
+  return 0;
+}
+
+/**
+ * @brief Check whether cancellation was requested for a report export.
+ *
+ * @param[in] report_export  Report export.
+ *
+ * @return 1 if cancellation was requested, 0 otherwise, -1 on failure.
+ */
+int
+manage_report_export_cancel_requested (report_export_t report_export)
+{
+  report_export_status_t status;
+
+  if (report_export == 0)
+    return -1;
+
+  if (get_report_export_status (report_export, &status))
+    return -1;
+
+  return status == REPORT_EXPORT_STATUS_CANCEL_REQUESTED;
+}
+
+/**
+ * @brief Check whether a report export worker process is still running.
+ *
+ * @param[in] worker_pid  PID of the worker process.
+ *
+ * @return TRUE if the worker is running, FALSE otherwise.
+ */
+static gboolean
+report_export_worker_running (int worker_pid)
+{
+  if (worker_pid <= 0)
+    return FALSE;
+
+  if (kill (worker_pid, 0) == 0)
+    return TRUE;
+
+  return errno == EPERM;
+}
+
+/**
+ * @brief Reset stale report exports.
+ *
+ * A running report export is considered stale when it has not been updated
+ * for the configured timeout and its worker process is no longer running.
+ *
+ * Stale exports are reset to pending while processing attempts remain.
+ * Otherwise they are marked as failed.
+ *
+ * @param[in] max_attempts  Maximum number of processing attempts.
+ * @param[in] stale_timeout Maximum inactivity time in seconds.
+ */
+void
+reset_stale_report_exports (int max_attempts,
+                            time_t stale_timeout)
+{
+  iterator_t iterator;
+  get_data_t get = {0};
+  time_t threshold;
+
+  threshold = time (NULL) - stale_timeout;
+
+  if (init_report_export_iterator_stale (&iterator,
+                                         &get,
+                                         threshold))
+    {
+      g_warning ("%s: failed to initialize stale report export iterator",
+                 __func__);
+      return;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      int worker_pid;
+      int attempt_count;
+
+      report_export = get_iterator_resource (&iterator);
+      worker_pid = report_export_iterator_worker_pid (&iterator);
+      attempt_count = report_export_iterator_attempt_count (&iterator);
+
+      /*
+       * A worker still exists, so the export is not stale.
+       */
+      if (report_export_worker_running (worker_pid))
+        continue;
+
+      g_warning ("%s: report export %lld has stale worker %d",
+                 __func__,
+                 report_export,
+                 worker_pid);
+
+      if (attempt_count < max_attempts)
+        reset_report_export (report_export);
+      else
+        fail_report_export (
+          report_export,
+          "Report export worker terminated unexpectedly");
+    }
+
+  cleanup_iterator (&iterator);
+}
+
+/**
+ * @brief Process a report export according to its export type.
+ *
+ * @param[in] report_export  Report export to process.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+process_report_export (report_export_t report_export)
+{
+  report_export_type_t export_type;
+  int ret;
+
+  if (get_report_export_type (report_export, &export_type))
+    {
+      g_warning ("%s: failed to get report export type for %lld",
+                 __func__,
+                 report_export);
+      return -1;
+    }
+
+  switch (export_type)
+    {
+    case REPORT_EXPORT_TYPE_SCAN:
+      ret = manage_process_scan_report_export (report_export);
+      break;
+
+    case REPORT_EXPORT_TYPE_AUDIT:
+      ret = manage_process_audit_report_export (report_export);
+      break;
+
+    case REPORT_EXPORT_TYPE_DELTA_SCAN:
+      ret = manage_process_delta_scan_report_export (report_export);
+      break;
+
+    case REPORT_EXPORT_TYPE_DELTA_AUDIT:
+      ret = manage_process_delta_audit_report_export (report_export);
+      break;
+
+    default:
+      g_warning ("%s: invalid report export type %d",
+                 __func__,
+                 export_type);
+
+      manage_fail_report_export (
+        report_export,
+        "Invalid report export type");
+
+      ret = -1;
+      break;
+    }
+
+  return ret;
+}
+
+/**
+ * @brief Check if a report export is writable.
+ *
+ * @param report_export Resource identifier.
+ * @return Always returns 1 (writable).
+ */
+int
+report_export_writable (report_export_t report_export)
+{
+  (void) report_export;
+  return 1;
+}
+
+/**
+ * @brief Check if a report export is in-use.
+ *
+ * @param report_export Resource identifier.
+ * @return Always returns 1 (writable).
+ */
+int
+report_export_in_use (report_export_t report_export)
+{
+  (void) report_export;
+  return 0;
+}
+
+/**
+ * @brief Recover report exports left active by a previous gvmd instance.
+ *
+ * Running exports are requeued if retries remain. Exports with cancellation
+ * requested are marked as canceled.
+ *
+ * @param[in] max_attempts  Maximum allowed processing attempts.
+ */
+void
+recover_report_exports (int max_attempts)
+{
+  iterator_t iterator;
+
+  if (init_report_export_iterator_active (&iterator))
+    {
+      g_warning ("%s: failed to initialize active report export iterator",
+                 __func__);
+      return;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      report_export_status_t status;
+      int attempt_count;
+
+      report_export = get_iterator_resource (&iterator);
+      status = iterator_int (&iterator, 1);
+      attempt_count = iterator_int (&iterator, 2);
+
+      if (status == REPORT_EXPORT_STATUS_CANCEL_REQUESTED)
+        {
+          g_debug ("%s: canceling report export %lld after restart",
+                   __func__,
+                   report_export);
+
+          cancel_report_export (report_export);
+          continue;
+        }
+
+      if (attempt_count < max_attempts)
+        {
+          g_debug ("%s: requeueing report export %lld after restart",
+                   __func__,
+                   report_export);
+
+          reset_report_export (report_export);
+        }
+      else
+        {
+          g_warning ("%s: report export %lld exceeded retry limit",
+                     __func__,
+                     report_export);
+
+          fail_report_export (
+            report_export,
+            "Report export worker terminated unexpectedly");
+        }
+    }
+
+  cleanup_iterator (&iterator);
+}
+
+/**
+ * @brief Delete a completed report export and its generated file.
+ *
+ * @param[in] report_export  Report export row id  to delete.
+ * @param [in]file_path Path to the generated report export file to delete.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+int
+manage_delete_report_export (report_export_t report_export,
+                             const gchar *file_path)
+{
+  if (report_export == 0)
+    return -1;
+
+  if (file_path
+      && g_unlink (file_path)
+      && errno != ENOENT)
+    {
+      g_warning ("%s: failed to remove report export file %s: %s",
+                 __func__,
+                 file_path,
+                 strerror (errno));
+      return -1;
+    }
+
+  delete_report_export (report_export);
+
+  return 0;
+}
+
+/**
+ * @brief Find a report export for a specific permission, given a UUID.
+ *
+ * @param[in]   uuid        UUID of report export.
+ * @param[out]  report_export Report Export return,
+ *                            0 if successfully failed to find target.
+ * @param[in]   permission  Permission.
+ *
+ * @return FALSE on success (including if failed to find target), TRUE on error.
+ */
+gboolean
+find_report_export_with_permission (const char *uuid,
+                                    report_export_t *report_export,
+                                    const char *permission)
+{
+  return find_resource_with_permission ("report_export", uuid, report_export,
+                                        permission, 0);
+}
+
+/**
+ * @brief Remove old terminal report exports and their generated files.
+ *
+ * @param[in] retention_seconds Maximum age of report exports in seconds.
+ */
+void
+manage_cleanup_old_report_exports (time_t retention_seconds)
+{
+  iterator_t iterator;
+  time_t threshold;
+
+  threshold = time (NULL) - retention_seconds;
+  init_report_export_iterator_cleanup (&iterator, threshold);
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+      const gchar *file_path;
+
+      report_export =
+        (report_export_t) iterator_int64 (&iterator, 0);
+
+      file_path = iterator_string (&iterator, 1);
+
+      if (manage_delete_report_export (report_export, file_path))
+        {
+          g_warning ("%s: failed to clean up report export %lld",
+                     __func__,
+                     report_export);
+        }
+    }
+
+  cleanup_iterator (&iterator);
+}
+
+
+/**
+ * @brief Clean up scan report export file information.
+ *
+ * @param[in] files  File information to clean up.
+ */
+void
+report_export_files_cleanup (report_export_files_t *files)
+{
+  if (files == NULL)
+    return;
+
+  if (files->work_dir)
+    gvm_file_remove_recurse (files->work_dir);
+
+  g_free (files->work_dir);
+  g_free (files->xml_start_path);
+  g_free (files->xml_target_path);
+  g_free (files->formatted_path);
+  g_free (files->final_path);
+  g_free (files->content_type);
+  g_free (files->extension);
+
+  memset (files, 0, sizeof (*files));
+}
+
+/**
+ * @brief Remove the completed file belonging to an export.
+ *
+ * @param[in] files  Report export file information.
+ */
+void
+report_export_remove_final_file (
+  const report_export_files_t *files)
+{
+  if (files && files->final_path)
+    g_unlink (files->final_path);
+}
+
+/**
+ * @brief Initialize temporary paths used for report generation.
+ *
+ * @param[out] files  File information to initialize.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+int
+init_report_export_files (report_export_files_t *files)
+{
+  GError *error;
+
+  if (files == NULL)
+    return -1;
+
+  memset (files, 0, sizeof (*files));
+
+  error = NULL;
+
+  files->work_dir = g_dir_make_tmp (
+    "gvmd-report-export-XXXXXX",
+    &error);
+
+  if (files->work_dir == NULL)
+    {
+      g_warning ("%s: failed to create temporary directory: %s",
+                 __func__,
+                 error ? error->message : "Unknown error");
+
+      g_clear_error (&error);
+      return -1;
+    }
+
+  files->xml_start_path = g_build_filename (
+    files->work_dir,
+    "report-start.xml",
+    NULL);
+
+  files->xml_target_path = g_build_filename (
+    files->work_dir,
+    "report.xml",
+    NULL);
+
+  if (files->xml_start_path == NULL
+      || files->xml_target_path == NULL)
+    {
+      report_export_files_cleanup (files);
       return -1;
     }
 
@@ -257,877 +961,407 @@ report_export_owner (report_t report,
 }
 
 /**
- * @brief Build the opening GET_REPORTS response and outer report metadata.
+ * @brief Switch report generation to the export owner's user context.
  *
- * It does not close the outer report or the response element.
+ * @param[out] context  User context to initialize.
+ * @param[in]  owner    Owner of the report export.
  *
- * @param[in] report      Report.
- * @param[in] report_uuid Report UUID.
- *
- * @return Newly allocated XML buffer, or NULL on error.
+ * @return 0 on success or -1 on failure.
  */
-static GString *
-build_get_reports_prefix_xml (report_t report,
-                              const gchar *report_uuid)
+int
+init_report_export_user_context (
+  report_export_user_context_t *context,
+  user_t owner)
 {
-  get_data_t report_get;
-  iterator_t reports;
-  report_t iterated_report = 0;
-  GString *prefix = NULL;
-  task_t task = 0;
-  int iterator_initialized = 0;
-  int ret;
+  if (context == NULL || owner == 0)
+    return -1;
 
-  if (report == 0 || report_uuid == NULL)
-    return NULL;
+  memset (context, 0, sizeof (*context));
 
-  memset (&report_get, 0, sizeof (report_get));
+  context->previous_user_uuid = current_credentials.uuid;
+  context->export_user_uuid = user_uuid (owner);
 
-  report_get.id = g_strdup (report_uuid);
-  report_get.details = 1;
-  report_get.ignore_max_rows_per_page = 1;
+  if (context->export_user_uuid == NULL)
+    return -1;
 
-  if (!report_get.id)
-    goto cleanup;
+  current_credentials.uuid = context->export_user_uuid;
+  manage_session_init (current_credentials.uuid);
 
-  ret = init_report_iterator (&reports, &report_get);
-  if (ret)
-    {
-      g_warning ("%s: Failed to initialize report iterator for %s: %d",
-                 __func__,
-                 report_uuid,
-                 ret);
-      goto cleanup;
-    }
+  context->active = TRUE;
 
-  iterator_initialized = 1;
-
-  if (!next_report (&reports, &iterated_report)
-      || iterated_report != report)
-    {
-      g_warning ("%s: Failed to iterate report %s",
-                 __func__,
-                 report_uuid);
-      goto cleanup;
-    }
-
-  prefix = g_string_new ("");
-  if (!prefix)
-    goto cleanup;
-
-  buffer_xml_append_printf (
-    prefix,
-    "<get_reports_response status=\"200\" status_text=\"OK\">"
-    "<report"
-    " id=\"%s\""
-    " format_id=\"\""
-    " config_id=\"\""
-    " extension=\"\""
-    " content_type=\"application/xml\">",
-    report_iterator_uuid (&reports)
-      ? report_iterator_uuid (&reports)
-      : report_uuid);
-
-  /*
-   * Standard resource elements. This should remain aligned with
-   * handle_get_reports().
-   */
-  buffer_xml_append_printf (
-    prefix,
-    "<owner><name>%s</name></owner>"
-    "<name>%s</name>"
-    "<comment>%s</comment>",
-    get_iterator_owner_name (&reports)
-      ? get_iterator_owner_name (&reports)
-      : "",
-    get_iterator_name (&reports)
-      ? get_iterator_name (&reports)
-      : "",
-    get_iterator_comment (&reports)
-      ? get_iterator_comment (&reports)
-      : "");
-
-  buffer_xml_append_printf (
-    prefix,
-    "<creation_time>%s</creation_time>",
-    iso_if_time (get_iterator_creation_time (&reports)));
-
-  buffer_xml_append_printf (
-    prefix,
-    "<modification_time>%s</modification_time>"
-    "<writable>0</writable>"
-    "<in_use>0</in_use>",
-    iso_if_time (get_iterator_modification_time (&reports)));
-
-  if (report_task (report, &task) == 0 && task)
-    {
-      gchar *task_uuid_value = NULL;
-      gchar *task_name_value = NULL;
-
-      task_uuid (task, &task_uuid_value);
-      task_name_value = task_name (task);
-
-      buffer_xml_append_printf (
-        prefix,
-        "<task id=\"%s\">"
-        "<name>%s</name>"
-        "</task>",
-        task_uuid_value ? task_uuid_value : "",
-        task_name_value ? task_name_value : "");
-
-      g_free (task_uuid_value);
-      g_free (task_name_value);
-    }
-
-cleanup:
-  if (iterator_initialized)
-    cleanup_iterator (&reports);
-
-  cleanup_report_export_get_data (&report_get);
-  return prefix;
+  return 0;
 }
 
 /**
- * @brief Add a default filter keyword when it is missing.
+ * @brief Restore the user context active before report generation.
  *
- * @param[in] filter        Existing cleaned filter.
- * @param[in] keyword       Keyword name.
- * @param[in] default_value Default keyword value.
+ * @param[in] context  User context to restore.
+ */
+void
+cleanup_report_export_user_context (
+  report_export_user_context_t *context)
+{
+  if (context == NULL)
+    return;
+
+  if (context->active)
+    {
+      current_credentials.uuid = context->previous_user_uuid;
+      manage_session_init (current_credentials.uuid);
+    }
+
+  g_free (context->export_user_uuid);
+
+  memset (context, 0, sizeof (*context));
+}
+
+/**
+ * @brief Initialize GET data used by the existing XML report generator.
  *
- * @return Newly allocated filter. The input filter is always freed.
+ * @param[in]  data  Stored report export data.
+ * @param[out] get   GET data to initialize.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+int
+init_report_export_get_data (
+  const report_export_data_t data,
+  get_data_t *get)
+{
+  if (data == NULL || get == NULL)
+    return -1;
+
+  memset (get, 0, sizeof (*get));
+
+  get->type = g_strdup ("result");
+  get->filter = g_strdup (data->filter ? data->filter : "");
+  get->details = 1;
+  get->ignore_pagination = data->ignore_pagination;
+  get->ignore_max_rows_per_page = data->ignore_pagination;
+
+  if (get->type == NULL || get->filter == NULL)
+    {
+      g_free (get->type);
+      g_free (get->filter);
+      memset (get, 0, sizeof (*get));
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Clean up GET data initialized for report generation.
+ *
+ * @param[in] get  GET data to clean up.
+ */
+void
+cleanup_report_export_get_data (get_data_t *get)
+{
+  if (get == NULL)
+    return;
+
+  g_free (get->type);
+  g_free (get->filter);
+
+  memset (get, 0, sizeof (*get));
+}
+
+/**
+ * @brief Apply the selected report format to generated scan report XML.
+ *
+ * @param[in]  data   Report export data.
+ * @param[out] files  Report export file information.
+ *
+ * @return 0 on success or -1 on failure.
+ */
+int
+format_report_export (
+  const report_export_data_t data,
+  report_export_files_t *files)
+{
+  gchar *format_uuid;
+  GList *used_report_formats;
+
+  if (data == NULL
+      || files == NULL
+      || files->work_dir == NULL
+      || files->xml_start_path == NULL
+      || files->xml_target_path == NULL
+      || data->report_format == 0)
+    return -1;
+
+  if (report_format_active (data->report_format) == 0)
+    {
+      g_warning ("%s: report format is not active", __func__);
+      return -1;
+    }
+
+  if (report_format_predefined (data->report_format) == 0
+      && report_format_trust (data->report_format) != TRUST_YES)
+    {
+      g_warning ("%s: report format is not trusted", __func__);
+      return -1;
+    }
+
+  if (data->report_config
+      && report_config_report_format (data->report_config)
+      != data->report_format)
+    {
+      g_warning ("%s: report config is not compatible with report format",
+                 __func__);
+      return -1;
+    }
+
+  format_uuid = report_format_uuid (data->report_format);
+  if (format_uuid == NULL)
+    return -1;
+
+  used_report_formats = NULL;
+
+  files->formatted_path = apply_report_format (
+    format_uuid,
+    data->report_config,
+    files->xml_start_path,
+    files->xml_target_path,
+    files->work_dir,
+    &used_report_formats);
+
+  g_list_free (used_report_formats);
+  g_free (format_uuid);
+
+  if (files->formatted_path == NULL)
+    {
+      g_warning ("%s: report format returned no output file",
+                 __func__);
+      return -1;
+    }
+
+  return 0;
+}
+
+/**
+ * @brief Build the final destination path of an exported report.
+ *
+ * @param[in] export_uuid  UUID of the report export.
+ * @param[in] extension    File extension.
+ *
+ * @return Newly allocated path or NULL on failure.
  */
 static gchar *
-report_filter_add_default (gchar *filter,
-                           const gchar *keyword,
-                           int default_value)
+build_report_export_path (const gchar *export_uuid,
+                               const gchar *extension)
 {
-  gchar *value;
-  gchar *new_filter;
+  gchar *filename;
+  gchar *path;
 
-  if (!filter || !keyword)
+  if (str_blank (export_uuid) || extension == NULL)
+    return NULL;
+
+  if (g_mkdir_with_parents (report_export_dir (), 0700))
     {
-      g_free (filter);
+      g_warning ("%s: failed to create %s: %s",
+                 __func__,
+                 report_export_dir (),
+                 strerror (errno));
       return NULL;
     }
 
-  value = filter_term_value (filter, keyword);
-  if (value)
-    {
-      g_free (value);
-      return filter;
-    }
-
-  new_filter = g_strdup_printf (
-    "%s=%d %s",
-    keyword,
-    default_value,
-    filter);
-
-  g_free (filter);
-  return new_filter;
-}
-
-/**
- * @brief Build the GET_REPORTS response footer.
- *
- * @param[in] get       Outer report GET data.
- * @param[in] count     Number of reports in this response.
- * @param[in] filtered  Number of matching reports.
- * @param[in] full      Full report count represented by the response.
- *
- * @return Newly allocated XML buffer, or NULL on error.
- */
-static GString *
-build_get_reports_footer_xml (get_data_t *get,
-                              int count,
-                              int filtered,
-                              int full)
-{
-  gchar *source_filter = NULL;
-  gchar *clean_filter = NULL;
-  gchar *sort_field = NULL;
-  GString *footer = NULL;
-  int first = 1;
-  int max = 1;
-  int sort_order = 1;
-
-  if (!get)
-    return NULL;
-
-  if (get->filt_id
-      && strcmp (get->filt_id, FILT_ID_NONE))
-    {
-      if (get->filter_replacement)
-        source_filter = g_strdup (get->filter_replacement);
-      else
-        source_filter = filter_term (get->filt_id);
-
-      if (!source_filter)
-        return NULL;
-    }
+  if (extension[0])
+    filename = g_strdup_printf ("%s.%s",
+                                export_uuid,
+                                extension);
   else
-    {
-      source_filter = g_strdup (get->filter ? get->filter : "");
-    }
+    filename = g_strdup (export_uuid);
 
-  if (!source_filter)
+  if (filename == NULL)
     return NULL;
 
-  manage_filter_controls (
-    source_filter,
-    &first,
-    &max,
-    &sort_field,
-    &sort_order);
+  path = g_build_filename (report_export_dir (),
+                           filename,
+                           NULL);
 
-  max = manage_max_rows (
-    max,
-    get->ignore_max_rows_per_page);
+  g_free (filename);
 
-  clean_filter = manage_clean_filter (
-    source_filter,
-    get->ignore_max_rows_per_page);
-
-  g_free (source_filter);
-  source_filter = NULL;
-
-  if (!clean_filter)
-    goto cleanup;
-
-  clean_filter = report_filter_add_default (
-    clean_filter,
-    "min_qod",
-    0);
-
-  if (!clean_filter)
-    goto cleanup;
-
-  clean_filter = report_filter_add_default (
-    clean_filter,
-    "apply_overrides",
-    1);
-
-  if (!clean_filter)
-    goto cleanup;
-
-  footer = g_string_new ("");
-  if (!footer)
-    goto cleanup;
-
-  buffer_get_filter_xml (
-    footer,
-    "report",
-    get,
-    clean_filter,
-    NULL);
-
-  buffer_xml_append_printf (
-    footer,
-    "<sort>"
-    "<field>%s<order>%s</order></field>"
-    "</sort>"
-    "<reports start=\"%i\" max=\"%i\"/>",
-    sort_field ? sort_field : "",
-    sort_order ? "ascending" : "descending",
-    first,
-    max);
-
-  buffer_xml_append_printf (
-    footer,
-    "<report_count>"
-    "%i"
-    "<filtered>%i</filtered>"
-    "<page>%i</page>"
-    "</report_count>",
-    full,
-    filtered,
-    count);
-
-  g_string_append (
-    footer,
-    "</get_reports_response>");
-
-cleanup:
-  g_free (source_filter);
-  g_free (clean_filter);
-  g_free (sort_field);
-
-  return footer;
+  return path;
 }
 
 /**
- * @brief Get the next report page index.
+ * @brief Store a generated report in its persistent location.
  *
- * @param[in] pages Existing remote report pages.
+ * @param[in]  data   Report export data.
+ * @param[out] files  Report export file information.
  *
- * @return Next zero-based page index.
+ * @return 0 on success or -1 on failure.
  */
-static int
-next_report_page_index (
-  security_intelligence_managed_report_page_list_t pages)
+int
+store_report_export_file (
+  const report_export_data_t data,
+  report_export_files_t *files)
 {
-  int max_index = -1;
+  GStatBuf stat_buffer;
 
-  if (!pages)
+  if (data == NULL
+      || files == NULL
+      || data->uuid == NULL
+      || files->formatted_path == NULL)
+    return -1;
+
+  files->extension = report_format_extension (data->report_format);
+  files->content_type = report_format_content_type (data->report_format);
+
+  if (files->extension == NULL || files->content_type == NULL)
+    {
+      g_warning ("%s: report format metadata is incomplete",
+                 __func__);
+      return -1;
+    }
+
+  files->final_path = build_report_export_path (
+    data->uuid,
+    files->extension);
+
+  if (files->final_path == NULL)
+    return -1;
+
+  /*
+   * Set the permissions before moving the file. The permissions are preserved
+   */
+  if (g_chmod (files->formatted_path, 0600))
+    {
+      g_warning ("%s: failed to set permissions on %s: %s",
+                 __func__,
+                 files->formatted_path,
+                 strerror (errno));
+      return -1;
+    }
+
+  if (gvm_file_move (files->formatted_path, files->final_path) == FALSE)
+    return -1;
+
+  if (g_stat (files->final_path, &stat_buffer))
+    {
+      g_warning ("%s: failed to stat %s: %s",
+                 __func__,
+                 files->final_path,
+                 strerror (errno));
+
+      g_unlink (files->final_path);
+      return -1;
+    }
+
+  files->file_size = (long long) stat_buffer.st_size;
+
+  return 0;
+}
+
+/**
+ * @brief Check whether cancellation was requested.
+ *
+ * When cancellation is requested, the export is marked as canceled.
+ *
+ * @param[in] report_export  Report export.
+ *
+ * @return 0 to continue, 1 if canceled, or -1 on failure.
+ */
+int
+check_report_export_cancel (report_export_t report_export)
+{
+  int ret;
+
+  ret = manage_report_export_cancel_requested (report_export);
+  if (ret < 0)
+    return -1;
+
+  if (ret == 0)
     return 0;
 
-  for (int i = 0; i < pages->count; ++i)
-    {
-      if (pages->pages[i]
-          && pages->pages[i]->index > max_index)
-        {
-          max_index = pages->pages[i]->index;
-        }
-    }
+  if (manage_finish_report_export_cancel (report_export))
+    return -1;
 
-  return max_index + 1;
+  return 1;
 }
 
 /**
- * @brief Generate and upload one report page.
+ * @brief Process report exports with a pending cancellation request.
  *
- * @param[in]  conn         Security Intelligence connector.
- * @param[in]  report       Local report.
- * @param[in]  report_uuid  Report UUID.
- * @param[in]  page_index   Zero-based page index.
- * @param[out] errors       Optional Security Intelligence errors.
- *
- * @return TRUE on success, FALSE on failure.
+ * @param[in] cancel_timeout  Maximum time to wait for cooperative
+ *                            cancellation, in seconds.
  */
-static gboolean
-upload_report_page (security_intelligence_connector_t conn,
-                    report_t report,
-                    const gchar *report_uuid,
-                    int page_index,
-                    GPtrArray **errors)
+void
+manage_process_cancel_requested_report_exports (time_t cancel_timeout)
 {
-  get_data_t result_get;
-  get_data_t response_get;
-  GError *error = NULL;
-  gchar *xml_path = NULL;
-  gchar *report_xml = NULL;
-  GString *prefix_xml = NULL;
-  GString *footer_xml = NULL;
-  GString *response_xml = NULL;
-  gsize report_xml_len = 0;
-  int fd = -1;
-  int first_result;
-  gboolean result_get_initialized = FALSE;
-  gboolean response_get_initialized = FALSE;
-  gboolean success = FALSE;
+  iterator_t iterator;
+  get_data_t get = {0};
+  time_t threshold;
 
-  memset (&result_get, 0, sizeof (result_get));
-  memset (&response_get, 0, sizeof (response_get));
+  threshold = time (NULL) - cancel_timeout;
 
-  first_result =
-    page_index * SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE;
-
-  if (init_report_export_get_data (
-    &result_get,
-    first_result,
-    SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE))
-    {
-      g_warning ("%s: Failed to initialize result GET data for page %d",
-                 __func__,
-                 page_index);
-      goto cleanup;
-    }
-
-  result_get_initialized = TRUE;
-
-  if (init_report_response_get_data (&response_get))
-    {
-      g_warning ("%s: Failed to initialize response GET data for page %d",
-                 __func__,
-                 page_index);
-      goto cleanup;
-    }
-
-  response_get_initialized = TRUE;
-
-  fd = g_file_open_tmp (
-    "gvmd-report-export-XXXXXX.xml",
-    &xml_path,
-    &error);
-
-  if (fd == -1)
-    {
-      g_warning ("%s: Failed to create temporary file: %s",
-                 __func__,
-                 error ? error->message : "unknown error");
-      g_clear_error (&error);
-      goto cleanup;
-    }
-
-  close (fd);
-  fd = -1;
-
-  if (manage_report_xml_page (
-    report,
-    &result_get,
-    xml_path))
-    {
-      g_warning ("%s: Failed to generate XML for report %lld, page %d",
-                 __func__,
-                 report,
-                 page_index);
-      goto cleanup;
-    }
-
-  if (!g_file_get_contents (
-    xml_path,
-    &report_xml,
-    &report_xml_len,
-    &error))
-    {
-      g_warning ("%s: Failed to read generated XML for report %s,"
-                 " page %d: %s",
-                 __func__,
-                 report_uuid,
-                 page_index,
-                 error ? error->message : "unknown error");
-      g_clear_error (&error);
-      goto cleanup;
-    }
-
-  prefix_xml = build_get_reports_prefix_xml (
-    report,
-    report_uuid);
-
-  if (!prefix_xml)
-    {
-      g_warning ("%s: Failed to build GET_REPORTS prefix for report %s,"
-                 " page %d",
-                 __func__,
-                 report_uuid,
-                 page_index);
-      goto cleanup;
-    }
-
-  /*
-   * Each uploaded page represents one outer report resource.
-   */
-  footer_xml = build_get_reports_footer_xml (
-    &response_get,
-    1,
-    1,
-    1);
-
-  if (!footer_xml)
-    {
-      g_warning ("%s: Failed to build GET_REPORTS footer for report %s,"
-                 " page %d",
-                 __func__,
-                 report_uuid,
-                 page_index);
-      goto cleanup;
-    }
-
-  response_xml = g_string_sized_new (
-    prefix_xml->len
-    + report_xml_len
-    + strlen ("</report></report>")
-    + footer_xml->len);
-
-  /*
-   * Outer response and outer report metadata
-   */
-  g_string_append_len (
-    response_xml,
-    prefix_xml->str,
-    prefix_xml->len);
-
-  /*
-   * Inner scan report generated by manage_report_xml_page()
-   */
-  g_string_append_len (
-    response_xml,
-    report_xml,
-    report_xml_len);
-
-  /*
-   * Close the inner scan report and then the outer report resource.
-   */
-  g_string_append (
-    response_xml,
-    "</report></report>");
-
-  /*
-   * Append filters, sorting, report counts, and close
-   * get_reports_response.
-   */
-  g_string_append_len (
-    response_xml,
-    footer_xml->str,
-    footer_xml->len);
-
-  if (security_intelligence_add_report_page (
-        conn,
-        report_uuid,
-        page_index,
-        (const guint8 *) response_xml->str,
-        response_xml->len,
-        errors)
-      != SECURITY_INTELLIGENCE_RESP_OK)
-    {
-      g_warning ("%s: Failed to upload report %s page %d",
-                 __func__,
-                 report_uuid,
-                 page_index);
-      goto cleanup;
-    }
-
-  success = TRUE;
-
-cleanup:
-  if (fd != -1)
-    close (fd);
-
-  if (xml_path)
-    {
-      g_unlink (xml_path);
-      g_free (xml_path);
-    }
-
-  if (response_xml)
-    g_string_free (response_xml, TRUE);
-
-  if (footer_xml)
-    g_string_free (footer_xml, TRUE);
-
-  if (prefix_xml)
-    g_string_free (prefix_xml, TRUE);
-
-  g_free (report_xml);
-
-  if (response_get_initialized)
-    cleanup_report_export_get_data (&response_get);
-
-  if (result_get_initialized)
-    cleanup_report_export_get_data (&result_get);
-
-  return success;
-}
-
-/**
- * @brief Export a single report to Security Intelligence.
- *
- * Handles both new exports and retries. Existing remote pages are preserved,
- * and uploading continues from the next page index.
- *
- * @param[in] report Local report.
- * @param[in] config Security Intelligence integration configuration.
- *
- * @return EXPORT_REPORT_RESULT_SUCCESS on success,
- *         EXPORT_REPORT_RESULT_TIMEOUT when a request times out,
- *         EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED when an access token
- *         cannot be generated,
- *         EXPORT_REPORT_RESULT_FAILURE on any other failure.
- */
-export_report_result_t
-export_report_security_intelligence (report_t report,
-                                     integration_config_data_t config)
-{
-  export_report_result_t result = EXPORT_REPORT_RESULT_FAILURE;
-  security_intelligence_connector_t conn = NULL;
-  security_intelligence_managed_report_t remote_report = NULL;
-  security_intelligence_managed_report_page_list_t remote_pages = NULL;
-  GPtrArray *errors = NULL;
-  get_data_t count_get;
-  gboolean count_get_initialized = FALSE;
-  gchar *report_id = NULL;
-  gchar *owner_uuid = NULL;
-  gchar *owner_username = NULL;
-  int result_count = 0;
-  int total_pages;
-  int next_page;
-
-  memset (&count_get, 0, sizeof (count_get));
-
-  g_debug ("%s: Exporting report %lld",
-           __func__,
-           report);
-
-  report_id = report_uuid (report);
-  if (!report_id)
-    {
-      g_warning ("%s: Failed to get UUID for report %lld",
-                 __func__,
-                 report);
-      goto cleanup;
-    }
-
-  if (report_export_owner (
-    report,
-    &owner_uuid,
-    &owner_username))
-    {
-      g_warning ("%s: Failed to resolve owner for report %s",
-                 __func__,
-                 report_id);
-      goto cleanup;
-    }
-
-  /*
-   * This function runs in a dedicated forked export process. Therefore,
-   * restoration of a previous user context is not required.
-   */
-  current_credentials.uuid = owner_uuid;
-  current_credentials.username = owner_username;
-
-  manage_session_init (current_credentials.uuid);
-
-  g_debug ("%s: Exporting report %s as user %s",
-           __func__,
-           report_id,
-           owner_username);
-
-  conn = security_intelligence_connector_new ();
-  if (!conn)
-    {
-      g_warning ("%s: Failed to create Security Intelligence connector",
-                 __func__);
-      goto cleanup;
-    }
-
-  if (security_intelligence_connector_builder (
-        conn,
-        SECURITY_INTELLIGENCE_URL,
-        config->service_url)
-      != SECURITY_INTELLIGENCE_OK)
-    {
-      g_warning ("%s: Failed to configure Security Intelligence URL",
-                 __func__);
-      goto cleanup;
-    }
-
-  if (config->service_cacert
-      && security_intelligence_connector_builder (
-        conn,
-        SECURITY_INTELLIGENCE_CA_CERT,
-        config->service_cacert)
-      != SECURITY_INTELLIGENCE_OK)
-    {
-      g_warning ("%s: Failed to configure Security Intelligence CA",
-                 __func__);
-      goto cleanup;
-    }
-
-  if (!refresh_connector_access_token (conn, config))
-    {
-      result = EXPORT_REPORT_RESULT_TOKEN_GENERATION_FAILED;
-      goto cleanup;
-    }
-
-  remote_report =
-    security_intelligence_get_report (
-      conn,
-      report_id,
-      &errors);
-
-  if (!remote_report)
-    {
-      if (errors)
-        {
-          g_ptr_array_free (errors, TRUE);
-          errors = NULL;
-        }
-
-      g_debug ("%s: Remote report %s not found, creating it",
-               __func__,
-               report_id);
-
-      if (security_intelligence_create_report (
-            conn,
-            report_id,
-            &remote_report,
-            &errors)
-          != SECURITY_INTELLIGENCE_RESP_OK)
-        {
-          g_warning ("%s: Failed to create remote report %s",
-                     __func__,
-                     report_id);
-          goto cleanup;
-        }
-    }
-
-  if (!remote_report)
-    {
-      g_warning ("%s: Missing remote report after creation",
-                 __func__);
-      goto cleanup;
-    }
-
-  if (remote_report->upload_status
-      == SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_COMPLETED)
-    {
-      g_debug ("%s: Report %s is already completed",
-               __func__,
-               report_id);
-      result = EXPORT_REPORT_RESULT_SUCCESS;
-      goto cleanup;
-    }
-
-  if (remote_report->upload_status
-      != SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_STARTED)
-    {
-      if (security_intelligence_update_report_status (
-            conn,
-            report_id,
-            SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_STARTED,
-            &errors)
-          != SECURITY_INTELLIGENCE_RESP_OK)
-        {
-          g_warning ("%s: Failed to mark report %s as started",
-                     __func__,
-                     report_id);
-          goto cleanup;
-        }
-    }
-
-  /*
-   * Use the same result filter for counting and page generation.
-   */
-  if (init_report_export_get_data (
-    &count_get,
-    0,
-    -1))
-    {
-      g_warning ("%s: Failed to initialize report count GET data",
-                 __func__);
-      goto cleanup;
-    }
-
-  count_get_initialized = TRUE;
-
-  if (manage_report_result_count (
-    report,
-    &count_get,
-    &result_count))
-    {
-      g_warning ("%s: Failed to count results for report %s",
-                 __func__,
-                 report_id);
-      goto cleanup;
-    }
-
-  cleanup_report_export_get_data (&count_get);
-  count_get_initialized = FALSE;
-
-  /*
-   * Generate one page for an empty report so that report-level metadata is
-   * still uploaded.
-   */
-  total_pages =
-    result_count > 0
-      ? (result_count
-         + SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE
-         - 1)
-        / SECURITY_INTELLIGENCE_REPORT_PAGE_SIZE
-      : 1;
-
-  remote_pages =
-    security_intelligence_get_report_pages (
-      conn,
-      report_id,
-      &errors);
-
-  if (!remote_pages)
-    {
-      g_warning ("%s: Failed to get pages for report %s",
-                 __func__,
-                 report_id);
-      goto cleanup;
-    }
-
-  next_page = next_report_page_index (remote_pages);
-
-  if (next_page > total_pages)
+  if (init_report_export_iterator_cancel_requested (&iterator,
+                                                    &get,
+                                                    threshold))
     {
       g_warning (
-        "%s: Remote report %s has %d pages, but only %d are expected",
-        __func__,
-        report_id,
-        next_page,
-        total_pages);
-      goto cleanup;
+        "%s: failed to initialize cancel-requested report export iterator",
+        __func__);
+      return;
     }
 
-  g_debug (
-    "%s: Report %s has %d results and %d pages;"
-    " continuing from page %d",
-    __func__,
-    report_id,
-    result_count,
-    total_pages,
-    next_page);
-
-  for (int page_index = next_page;
-       page_index < total_pages;
-       ++page_index)
+  while (next (&iterator))
     {
-      g_debug ("%s: Uploading report %s page %d of %d",
-               __func__,
-               report_id,
-               page_index + 1,
-               total_pages);
+      report_export_t report_export;
+      int worker_pid;
 
-      if (!upload_report_page (
-        conn,
-        report,
-        report_id,
-        page_index,
-        &errors))
+      report_export = get_iterator_resource (&iterator);
+      worker_pid = report_export_iterator_worker_pid (&iterator);
+
+      /*
+       * No worker is associated with the export anymore.
+       */
+      if (worker_pid <= 0)
         {
-          goto cleanup;
+          cancel_report_export (report_export);
+          continue;
         }
-    }
 
-  if (security_intelligence_update_report_status (
-        conn,
-        report_id,
-        SECURITY_INTELLIGENCE_REPORT_UPLOAD_STATUS_COMPLETED,
-        &errors)
-      != SECURITY_INTELLIGENCE_RESP_OK)
-    {
-      g_warning ("%s: Failed to complete remote report %s",
+      /*
+       * The worker has already stopped, so cancellation can be finalized.
+       */
+      if (report_export_worker_running (worker_pid) == FALSE)
+        {
+          g_debug ("%s: finalizing cancellation of report export %lld",
+                   __func__,
+                   report_export);
+
+          cancel_report_export (report_export);
+          continue;
+        }
+
+      /*
+       * Cancellation has taken too long. Stop the worker.
+       */
+      if (kill (worker_pid, SIGTERM))
+        {
+          if (errno == ESRCH)
+            {
+              cancel_report_export (report_export);
+              continue;
+            }
+
+          g_warning (
+            "%s: failed to terminate report export worker %d: %s",
+            __func__,
+            worker_pid,
+            strerror (errno));
+
+          continue;
+        }
+
+      g_warning ("%s: terminated worker %d for report export %lld",
                  __func__,
-                 report_id);
-      goto cleanup;
+                 worker_pid,
+                 report_export);
     }
 
-  result = EXPORT_REPORT_RESULT_SUCCESS;
-
-cleanup:
-  if (result != EXPORT_REPORT_RESULT_SUCCESS && errors)
-    {
-      for (guint i = 0; i < errors->len; ++i)
-        {
-          const gchar *message;
-
-          message = g_ptr_array_index (errors, i);
-
-          g_warning ("%s: Security Intelligence error: %s",
-                     __func__,
-                     message ? message : "unknown error");
-        }
-    }
-
-  if (count_get_initialized)
-    cleanup_report_export_get_data (&count_get);
-
-  if (errors)
-    g_ptr_array_free (errors, TRUE);
-
-  security_intelligence_managed_report_page_list_free (remote_pages);
-  security_intelligence_managed_report_free (remote_report);
-  security_intelligence_connector_free (conn);
-
-  g_free (owner_uuid);
-  g_free (owner_username);
-  g_free (report_id);
-
-  return result;
+  cleanup_iterator (&iterator);
 }
-
-#endif /* ENABLE_SECURITY_INTELLIGENCE_EXPORT */

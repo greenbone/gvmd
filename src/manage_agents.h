@@ -72,9 +72,11 @@ struct agent_data
   user_t owner;
   scanner_t scanner;
   gchar *updater_version;
-  gchar *agent_version;
-  gchar *operating_system;
-  gchar *architecture;
+  gchar* agent_version;
+  gchar* operating_system;
+  gchar* architecture;
+  gchar* os_cpe;
+  gchar* os_status;
   int update_to_latest;
   int agent_update_available;
   int updater_update_available;
@@ -130,6 +132,9 @@ agent_data_list_free (agent_data_list_t);
 agent_response_t
 sync_agents_from_agent_controller (gvmd_agent_connector_t);
 
+void
+manage_agents_sync_from_scanner (scanner_t scanner);
+
 agent_response_t
 get_agents_by_scanner_and_uuids (scanner_t, agent_uuid_list_t,
                                  agent_data_list_t);
@@ -155,7 +160,7 @@ int
 manage_agents_sync_from_agent_controllers (gboolean *);
 
 agent_response_t
-get_agent_support_bundle (const gchar *, int,
+get_agent_support_bundle (const gchar *, int, int, int,
                           agent_controller_support_bundle_t *);
 
 int
@@ -203,6 +208,12 @@ agent_iterator_operating_system (iterator_t *);
 
 const gchar *
 agent_iterator_architecture (iterator_t *);
+
+const gchar *
+agent_iterator_os_cpe (iterator_t *);
+
+const gchar *
+agent_iterator_os_status (iterator_t *);
 
 int
 agent_iterator_update_to_latest (iterator_t *);

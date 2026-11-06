@@ -12,6 +12,7 @@
 #include "manage_sql_tags.h"
 #include "sql.h"
 
+#include <assert.h>
 #include <ctype.h>
 
 #undef G_LOG_DOMAIN
@@ -87,7 +88,12 @@ create_note (const char* active, const char* nvt, const char* text,
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
               && severity_dbl != SEVERITY_LOG))
-        return 3;
+        {
+          g_free (quoted_text);
+          g_free (quoted_hosts);
+          g_free (quoted_port);
+          return 3;
+        }
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
   else if (threat != NULL && strcmp (threat, ""))
@@ -354,7 +360,13 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
       if (sscanf (severity, "%lf", &severity_dbl) != 1
           || ((severity_dbl < 0.0 || severity_dbl > 10.0)
               && severity_dbl != SEVERITY_LOG))
-        return 3;
+        {
+          g_free (quoted_text);
+          g_free (quoted_hosts);
+          g_free (quoted_port);
+          g_free (quoted_nvt);
+          return 3;
+        }
       quoted_severity = g_strdup_printf ("'%1.1f'", severity_dbl);
     }
   else if (threat != NULL && strcmp (threat, ""))
@@ -409,7 +421,14 @@ modify_note (const gchar *note_id, const char *active, const char *nvt,
         {
           while (*point && isdigit (*point)) point++;
           if (*point)
-            return 1;
+            {
+              g_free (quoted_text);
+              g_free (quoted_hosts);
+              g_free (quoted_port);
+              g_free (quoted_severity);
+              g_free (quoted_nvt);
+              return 1;
+            }
         }
       sql ("UPDATE notes SET"
            " end_time = %i,"
@@ -518,6 +537,9 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -529,6 +551,7 @@ note_count (const get_data_t *get, nvt_t nvt, result_t result, task_t task)
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,
@@ -656,6 +679,9 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        "       WHERE results.id = %llu)))"
                                        " AND (hosts is NULL"
                                        "      OR hosts = ''"
+                                       "      OR oci_digest_list_contains (hosts,"
+                                       "      (SELECT results.host FROM results"
+                                       "       WHERE results.id = %llu))"
                                        "      OR hosts_contains (hosts,"
                                        "      (SELECT results.host FROM results"
                                        "       WHERE results.id = %llu)))"
@@ -667,6 +693,7 @@ init_note_iterator (iterator_t* iterator, const get_data_t *get, nvt_t nvt,
                                        " AND (severity_matches_ov (%s,"
                                        "                           severity))"
                                        " AND (task = 0 OR task = %llu)",
+                                       result,
                                        result,
                                        result,
                                        result,

@@ -32,6 +32,7 @@ struct agent_group_data
   gchar *name;
   gchar *comment;
   gchar *scheduler_cron_time;
+  int max_delay_seconds;
   user_t owner;
   scanner_t scanner;
   time_t creation_time;
@@ -90,6 +91,9 @@ agent_group_iterator_scanner_id (iterator_t *);
 
 const char*
 agent_group_iterator_scheduler_cron_time (iterator_t *);
+
+int
+agent_group_iterator_max_delay_seconds (iterator_t *);
 
 int
 copy_agent_group (const char *,

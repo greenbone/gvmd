@@ -19,6 +19,7 @@
 #include "manage_utils.h"
 #include "manage_acl.h"
 #include "manage_runtime_flags.h"
+#include "manage_sql_secinfo.h"
 
 #undef G_LOG_DOMAIN
 /**
@@ -142,6 +143,8 @@ manage_cert_db_exists ()
  "         OR overrides.result = 0)"                        \
  "    AND (overrides.hosts is NULL"                         \
  "         OR overrides.hosts = ''"                         \
+ "         OR oci_digest_list_contains (overrides.hosts,"   \
+ "                                      results.host)"      \
  "         OR hosts_contains (overrides.hosts,"             \
  "                            results.host))"               \
  "    AND (overrides.port is NULL"                          \
@@ -1030,6 +1033,18 @@ manage_create_sql_functions ()
           "    END CASE;"
           " END;"
           " $$ LANGUAGE plpgsql"
+          " IMMUTABLE;");
+
+     sql ("CREATE OR REPLACE FUNCTION oci_digest_list_contains (digests text,"
+          "                                                     item text)"
+          " RETURNS boolean AS $$"
+          "  SELECT $2 ~ '^[[:alnum:]_-]+:[[:xdigit:]]+$'"
+          "     AND EXISTS ("
+          "       SELECT 1"
+          "       FROM unnest (string_to_array ($1, ',')) AS digest_list (item)"
+          "       WHERE trim (item) = $2"
+          "  );"
+          "$$ LANGUAGE SQL"
           " IMMUTABLE;");
 
  /* Functions in SQL. */
@@ -2994,6 +3009,8 @@ create_tables ()
     "  agent_version TEXT,"
     "  operating_system TEXT,"
     "  architecture TEXT,"
+    "  os_cpe TEXT,"
+    "  os_status TEXT,"
     "  update_to_latest INTEGER,"
     "  agent_update_available INTEGER NOT NULL DEFAULT 0,"
     "  updater_update_available INTEGER NOT NULL DEFAULT 0,"
@@ -3013,6 +3030,7 @@ create_tables ()
     "  owner INTEGER REFERENCES users (id) ON DELETE RESTRICT,"
     "  comment TEXT,"
     "  scheduler_cron_time TEXT,"
+    "  max_delay_seconds INTEGER NOT NULL DEFAULT 0,"
     "  creation_time INTEGER,"
     "  modification_time INTEGER);");
 
@@ -3029,6 +3047,7 @@ create_tables ()
     "  name text UNIQUE NOT NULL,"
     "  comment text,"
     "  scheduler_cron_time TEXT,"
+    "  max_delay_seconds INTEGER NOT NULL DEFAULT 0,"
     "  creation_time integer,"
     "  modification_time integer);");
 
@@ -3214,7 +3233,7 @@ create_tables ()
        "  value text,"
        "  UNIQUE (report_config, name));");
 
-  sql ("CREATE TABLE IF NOT EXISTS report_exports"
+  sql ("CREATE TABLE IF NOT EXISTS integration_report_exports"
        " (id SERIAL PRIMARY KEY,"
        "  report_id integer NOT NULL,"
        "  status text,"
@@ -3503,6 +3522,39 @@ create_tables ()
        "  creation_time integer,"
        "  modification_time integer);");
 
+  sql ("CREATE TABLE IF NOT EXISTS report_exports"
+     " (id SERIAL PRIMARY KEY,"
+     "  uuid text UNIQUE NOT NULL,"
+     "  owner integer REFERENCES users (id) ON DELETE RESTRICT,"
+     "  name text,"
+     "  comment text,"
+     "  report integer NOT NULL REFERENCES reports (id) ON DELETE CASCADE,"
+     "  delta_report integer REFERENCES reports (id) ON DELETE CASCADE,"
+     "  report_format integer REFERENCES report_formats (id)"
+     "    ON DELETE RESTRICT,"
+     "  report_config integer REFERENCES report_configs (id)"
+     "    ON DELETE SET NULL,"
+     "  export_type integer NOT NULL,"
+     "  status integer NOT NULL,"
+     "  progress integer NOT NULL,"
+     "  filter text,"
+     "  ignore_pagination integer NOT NULL DEFAULT 1,"
+     "  lean integer NOT NULL DEFAULT 0,"
+     "  worker_pid integer,"
+     "  notes_details integer NOT NULL DEFAULT 0,"
+     "  overrides_details integer NOT NULL DEFAULT 0,"
+     "  result_tags integer NOT NULL DEFAULT 0,"
+     "  file_path text,"
+     "  file_size bigint,"
+     "  content_type text,"
+     "  extension text,"
+     "  error_message text,"
+     "  attempt_count integer NOT NULL DEFAULT 0,"
+     "  creation_time integer,"
+     "  start_time integer,"
+     "  end_time integer,"
+     "  modification_time integer);");
+
   /* Create result views. */
 
   /* Create functions, so that current_severity is created for
@@ -3531,6 +3583,7 @@ create_tables ()
        "      OR overrides.result = 0)"
        " AND (overrides.hosts is NULL"
        "      OR overrides.hosts = ''"
+       "      OR oci_digest_list_contains (overrides.hosts, results.host)"
        "      OR hosts_contains (overrides.hosts, results.host))"
        " AND (overrides.port is NULL"
        "      OR overrides.port = ''"
@@ -3663,14 +3716,34 @@ create_tables ()
        "                     'origin_id, origin_type')");
 
   sql ("SELECT create_index"
-       "    ('report_exports_by_report_id',"
-       "     'report_exports',"
+       "    ('integration_report_exports_by_report_id',"
+       "     'integration_report_exports',"
        "     'report_id');");
 
   sql ("SELECT create_index"
-       "    ('report_exports_by_status_retry_count_retry_time',"
-       "     'report_exports',"
+       "    ('integration_report_exports_by_status_retry_count_retry_time',"
+       "     'integration_report_exports',"
        "     'status, retry_count, next_retry_time');");
+
+  sql ("SELECT create_index"
+     "    ('report_exports_by_report',"
+     "     'report_exports',"
+     "     'report');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_owner',"
+       "     'report_exports',"
+       "     'owner');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_status_creation_time',"
+       "     'report_exports',"
+       "     'status, creation_time');");
+
+  sql ("SELECT create_index"
+       "    ('report_exports_by_delta_report',"
+       "     'report_exports',"
+       "     'delta_report');");
 
   /* Previously this included the value column but that can be bigger than 8191,
    * the maximum size that Postgres can handle.  For example, this can happen
@@ -3846,6 +3919,11 @@ manage_attach_databases ()
   if (manage_cert_loaded ())
     sql ("SELECT set_config ('search_path',"
          "                   current_setting ('search_path') || ',cert',"
+         "                   false);");
+
+  if (manage_web_application_vts_loaded ())
+    sql ("SELECT set_config ('search_path',"
+         "                   current_setting ('search_path') || ',vts',"
          "                   false);");
 }
 
@@ -4096,6 +4174,50 @@ manage_db_init (const gchar *name)
       sql ("INSERT INTO scap2.meta (name, value)"
            " VALUES ('last_update', '0');");
     }
+  else if (strcasecmp (name, "vts") == 0)
+    {
+      /* Ensure basic schema and meta table exist */
+      sql ("CREATE SCHEMA IF NOT EXISTS vts;");
+
+      sql ("CREATE TABLE IF NOT EXISTS vts.meta"
+           " (id SERIAL PRIMARY KEY,"
+           "  name text UNIQUE,"
+           "  value text);");
+
+      sql ("SELECT set_config ('search_path',"
+           "                   'vts,' || current_setting ('search_path'),"
+           "                   false);");
+
+      if (manage_web_application_vts_loaded () == FALSE)
+        create_web_application_vts_tables ();
+
+      if (manage_vt_tech_info_loaded () == FALSE)
+        create_tables_vt_tech_info ();
+
+      sql ("CREATE TABLE IF NOT EXISTS vts.all_vts ("
+           "  oid TEXT PRIMARY KEY,"
+           "  uuid TEXT UNIQUE,"
+           "  name TEXT,"
+           "  family TEXT,"
+           "  cvss_base TEXT,"
+           "  cve TEXT,"
+           "  summary TEXT,"
+           "  impact TEXT,"
+           "  solution_type TEXT,"
+           "  solution TEXT,"
+           "  detection TEXT,"
+           "  insight TEXT,"
+           "  affected TEXT,"
+           "  tag TEXT,"
+           "  type TEXT,"
+           "  type_metadata TEXT"
+           ")");
+
+      sql ("INSERT INTO vts.meta (name, value)"
+           " VALUES ('vts_database_version', %d)"
+           " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+           GVMD_VTS_DATABASE_VERSION);
+    }
   else
     {
       assert (0);
@@ -4103,6 +4225,77 @@ manage_db_init (const gchar *name)
     }
 
   return 0;
+}
+
+/**
+ * @brief Create web application VT tables for a rebuild.
+ */
+void
+create_web_application_vts_tables ()
+{
+  g_info ("Initializing new web application VT database tables");
+
+  sql ("CREATE TABLE vts.web_application_vts"
+       " (id SERIAL PRIMARY KEY,"
+       "  uuid text UNIQUE NOT NULL,"
+       "  name text NOT NULL,"
+       "  comment text,"
+       "  creation_time integer,"
+       "  modification_time integer,"
+       "  type text,"
+       "  description text,"
+       "  solution text,"
+       "  severity DOUBLE PRECISION DEFAULT 0,"
+       "  type_metadata text);");
+
+  sql ("CREATE TABLE vts.web_application_vt_refs"
+       " (id SERIAL PRIMARY KEY,"
+       "  vt_id text NOT NULL,"
+       "  type text NOT NULL,"
+       "  ref_id text NOT NULL,"
+       "  ref_text text);");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_web_application_vts_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('vts_database_version', %d)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;",
+       GVMD_VTS_DATABASE_VERSION);
+}
+
+/**
+ * @brief Drop old web application VT tables.
+ */
+void
+drop_web_application_vts_tables ()
+{
+  g_info ("Dropping old web application VT database tables");
+
+  sql ("DROP TABLE IF EXISTS vts.web_application_vt_refs");
+  sql ("DROP TABLE IF EXISTS vts.web_application_vts");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_web_application_vts_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
+}
+
+/**
+ * @brief Create web VT Technical Info tables.
+ */
+void
+create_tables_vt_tech_info ()
+{
+  sql ("CREATE TABLE IF NOT EXISTS vt_tech_info"
+       " (vt_id TEXT UNIQUE,"
+       "  creation_time INTEGER,"
+       "  modification_time INTEGER,"
+       "  description_md TEXT);");
+
+  sql ("INSERT INTO vts.meta (name, value)"
+       " VALUES ('last_vt_tech_info_update', 0)"
+       " ON CONFLICT (name) DO UPDATE SET value = EXCLUDED.value;");
 }
 
 /**
@@ -4308,4 +4501,31 @@ manage_nvts_loaded ()
                     "               AND table_name = 'nvts')"
                     " ::integer;",
                     sql_database ());
+}
+
+/**
+ * @brief Check whether Web Application VTs are available.
+ *
+ * @return 1 if Web Application VTs database is loaded, else 0.
+ */
+int
+manage_web_application_vts_loaded ()
+{
+  return !!sql_int ("SELECT EXISTS (SELECT * FROM information_schema.tables"
+                    "               WHERE table_catalog = '%s'"
+                    "               AND table_schema = 'vts'"
+                    "               AND table_name = 'web_application_vts')"
+                    " ::integer;",
+                    sql_database ());
+}
+
+/**
+ * @brief Check whether VT Technical Info are available.
+ *
+ * @return 1 if VT Technical Info database is loaded, else 0.
+ */
+int
+manage_vt_tech_info_loaded ()
+{
+  return sql_table_exists ("vts", "vt_tech_info");
 }

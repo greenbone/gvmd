@@ -31,6 +31,7 @@
  */
 command_t gmp_commands[]
  = {{"AUTHENTICATE", "Authenticate with the manager." },
+    {"CANCEL_REPORT_EXPORT", "Request cancellation of a report export and update its status." },
 #if ENABLE_AGENTS
     {"CREATE_AGENT_GROUP", "Create an agent group."},
 #endif
@@ -94,16 +95,24 @@ command_t gmp_commands[]
     {"DELETE_WEB_APPLICATION_TARGET", "Delete a web application target."},
 #endif /* ENABLE_WEB_APPLICATION_SCANNING */
     {"DESCRIBE_AUTH", "Get details about the used authentication methods."},
+    {"DOWNLOAD_REPORT_EXPORT", "Download an exported report file with report export id."},
     {"EMPTY_TRASHCAN", "Empty the trashcan."},
+    {"EXPORT_AUDIT_REPORT", "Create an asynchronous audit report export."},
+    {"EXPORT_DELTA_AUDIT_REPORT", "Create an asynchronous delta audit report export."},
+    {"EXPORT_DELTA_SCAN_REPORT", "Create an asynchronous delta scan report export."},
+    {"EXPORT_SCAN_REPORT", "Create an asynchronous scan report export."},
 #if ENABLE_AGENTS
     {"GET_AGENT_GROUPS", "Get all agent groups."},
     {"GET_AGENTS", "Get all agents."},
     {"GET_AGENT_INSTALLER_INSTRUCTION", "Get an agent installer instruction from an agent controller."},
+    {"GET_AGENT_INVENTORY_TOKEN", "Get a valid token for agent inventory."},
     {"GET_AGENT_SUPPORT_BUNDLE", "Get an encrypted agent support bundle package from an agent controller."},
 #endif /* ENABLE_AGENTS */
     {"GET_AGGREGATES", "Get aggregates of resources."},
     {"GET_ALERTS", "Get all alerts."},
     {"GET_ASSETS", "Get all assets."},
+    {"GET_AUDIT_REPORT", "Get specific audit report summary."},
+    {"GET_AUDIT_REPORT_HOSTS", "Get specific audit report host details."},
     {"GET_CONFIGS", "Get all configs."},
     {"GET_CREDENTIALS", "Get all credentials."},
 #if ENABLE_CREDENTIAL_STORES
@@ -127,10 +136,12 @@ command_t gmp_commands[]
     {"GET_PREFERENCES", "Get preferences for all available NVTs."},
     {"GET_REPORTS", "Get all reports."},
     {"GET_REPORT_CONFIGS", "Get all report configs."},
+    {"GET_SCAN_REPORT", "Get specific vulnerability scan report summary."},
     {"GET_REPORT_APPLICATIONS", "Get all applications for specific report."},
     {"GET_REPORT_CLOSED_CVES", "Get all closed CVEs for specific report."},
     {"GET_REPORT_CVES", "Get all CVEs for specific report."},
     {"GET_REPORT_ERRORS", "Get all report errors for specific report."},
+    {"GET_REPORT_EXPORTS", "Get all report exports."},
     {"GET_REPORT_FORMATS", "Get all report formats."},
     {"GET_REPORT_HOSTS", "Get all report hosts for specific report."},
     {"GET_REPORT_OPERATING_SYSTEMS", "Get all report operating systems for specific report."},
@@ -205,6 +216,9 @@ command_t gmp_commands[]
 #endif /* ENABLE_AGENTS */
     {"SYNC_CONFIG", "Synchronize a config with a scanner."},
     {"TEST_ALERT", "Run an alert."},
+#if ENABLE_AD_INTEGRATION
+    {"VERIFY_ACTIVE_DIRECTORY_CREDENTIAL", "Verify an Active Directory credential."},
+#endif /* ENABLE_AD_INTEGRATION */
     {"VERIFY_REPORT_FORMAT", "Verify a report format."},
     {"VERIFY_SCANNER", "Verify a scanner."},
     {NULL, NULL}};

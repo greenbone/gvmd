@@ -36,5 +36,8 @@ create_host_key (const gchar *, const gchar *, const gchar *);
 int
 parse_host_key (const char *, const char *, char **, char **);
 
+int
+verify_container_image_scanner_connection (scanner_t);
+
 #endif // ENABLE_CONTAINER_SCANNING
 #endif // not _GVMD_MANAGE_CONTAINER_IMAGE_SCANNER_H

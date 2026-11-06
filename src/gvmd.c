@@ -94,12 +94,14 @@
 #include "manage_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_nvts.h"
-#include "manage_report_export_scheduler.h"
+#include "manage_integration_report_export_scheduler.h"
+#include "manage_oci_image_targets.h"
 #include "manage_runtime_flags.h"
 #include "manage_roles.h"
 #include "manage_scan_queue.h"
 #include "manage_scanner_relays.h"
 #include "manage_settings.h"
+#include "manage_sql_secinfo.h"
 #include "manage_targets.h"
 #include "manage_users.h"
 #include "gmpd.h"
@@ -301,6 +303,27 @@ static int update_in_progress = 0;
  * @brief Whether a feed version check is in progress.
  */
 static int feed_version_check_in_progress = 0;
+
+/**
+ * @brief PID of the dedicated periodic worker, or -1.
+ */
+
+static pid_t periodic_job_runner_pid = -1;
+
+/**
+ * @brief PID of the dedicated scheduler, or -1.
+ */
+static pid_t scheduler_pid = -1;
+
+/**
+ * @brief Set when the periodic worker terminates.
+ */
+static volatile sig_atomic_t periodic_job_runner_terminated = 0;
+
+/**
+ * @brief Set when the scheduler terminates.
+ */
+static volatile sig_atomic_t scheduler_terminated = 0;
 
 /**
  * @brief Logging parameters, as passed to setup_log_handlers.
@@ -898,21 +921,6 @@ fork_connection_internal (gvm_connection_t *client_connection,
 /**
  * @brief Fork a child connected to the Manager.
  *
- * @param[in]  client_connection   Client connection.
- * @param[in]  uuid                UUID of schedule user.
- *
- * @return PID parent on success, 0 child on success, -1 error.
- */
-static int
-fork_connection_for_scheduler (gvm_connection_t *client_connection,
-                               const gchar* uuid)
-{
-  return fork_connection_internal (client_connection, uuid, 1);
-}
-
-/**
- * @brief Fork a child connected to the Manager.
- *
  * @param[in]  client_connection  Client connection.
  * @param[in]  uuid               UUID of user.
  *
@@ -1082,10 +1090,19 @@ handle_sigchld (/* unused */ int given_signal, siginfo_t *info, void *ucontext)
       if (feed_version_check_in_progress == pid)
         /* This was a version check child, so allow version checks again */
         feed_version_check_in_progress = 0;
+
+      if (periodic_job_runner_pid == pid)
+        {
+          periodic_job_runner_pid = -1;
+          periodic_job_runner_terminated = 1;
+        }
+      else if (scheduler_pid == pid)
+        {
+          scheduler_pid = -1;
+          scheduler_terminated = 1;
+        }
     }
 }
-
-
 
 /**
  * @brief Handle a SIGABRT signal.
@@ -1248,11 +1265,13 @@ fork_update_nvt_cache (pid_t *child_pid_out)
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      update_in_progress = 0;
       return -1;
     }
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      update_in_progress = 0;
       return -1;
     }
 
@@ -1311,6 +1330,7 @@ fork_update_nvt_cache (pid_t *child_pid_out)
         reinit_manage_process ();
         manage_session_init (current_credentials.uuid);
         manage_discovery_nvts ();
+        refresh_all_vts_table ();
 
         /* Exit. */
 
@@ -1531,12 +1551,12 @@ fork_queued_task_actions ()
 }
 
 /**
- * @brief  Fork process for handling the report export scheduling
+ * @brief  Fork process for handling the  integration report export scheduling
  *
  * @return 0 on success, -1 on error
  */
-int
-fork_report_export_scheduler ()
+static int
+fork_integration_report_export_scheduler ()
 {
   int pid;
   sigset_t sigmask_all, sigmask_current;
@@ -1559,7 +1579,7 @@ fork_report_export_scheduler ()
     case 0:
       /* Child */
       init_sentry ();
-      setproctitle ("Exporting reports");
+      setproctitle ("Exporting integration reports");
 
       if (sigmask_normal)
         pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
@@ -1582,8 +1602,8 @@ fork_report_export_scheduler ()
           manager_socket_2 = -1;
         }
 
-      /* Run report export scheduler */
-      manage_report_export_scheduler ();
+      /* Run integration report export scheduler */
+      manage_integration_report_export_scheduler ();
 
       cleanup_manage_process (FALSE);
       gvm_close_sentry ();
@@ -1603,6 +1623,134 @@ fork_report_export_scheduler ()
     }
 }
 
+/**
+ * @brief Fork a worker process for a report export.
+ *
+ * @param[in] report_export  Report export to process.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+fork_report_export_worker (report_export_t report_export)
+{
+  int pid;
+
+  pid = fork_with_handlers ();
+
+  switch (pid)
+    {
+    case 0:
+      {
+        int ret;
+
+        /* Child */
+        init_sentry ();
+        setproctitle ("Exporting report");
+
+        cleanup_manage_process (FALSE);
+        init_manage_process (&database);
+
+        if (manager_socket > -1)
+          {
+            close (manager_socket);
+            manager_socket = -1;
+          }
+
+        if (manager_socket_2 > -1)
+          {
+            close (manager_socket_2);
+            manager_socket_2 = -1;
+          }
+
+        if (manage_start_report_export (report_export, getpid ()))
+          ret = -1;
+        else
+          ret = process_report_export (report_export);
+
+        cleanup_manage_process (FALSE);
+        gvm_close_sentry ();
+
+        exit (ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+      }
+
+    case -1:
+      g_warning ("%s: fork: %s",
+                 __func__,
+                 strerror (errno));
+      return -1;
+
+    default:
+      g_debug ("%s: forked report export worker %i for export %lld",
+               __func__,
+               pid,
+               report_export);
+      return 0;
+    }
+}
+
+/**
+ * @brief Start workers for pending report exports.
+ *
+ * @return 0 on success, -1 on failure.
+ */
+static int
+run_pending_report_exports (void)
+{
+  iterator_t iterator;
+  get_data_t get = {0};
+  int worker_count;
+
+  cleanup_manage_process (FALSE);
+  init_manage_process (&database);
+
+  reset_stale_report_exports (REPORT_EXPORT_MAX_RETRIES,
+                              REPORT_EXPORT_STALE_TIMEOUT_SECONDS);
+
+  worker_count = report_export_worker_pid_count ();
+
+  if (worker_count >= REPORT_EXPORT_MAX_WORKERS)
+    {
+      g_debug ("%s: report export worker limit reached (%d/%d)",
+               __func__,
+               worker_count,
+               REPORT_EXPORT_MAX_WORKERS);
+      return 0;
+    }
+
+  if (init_report_export_iterator_pending (&iterator,
+                                           &get,
+                                           REPORT_EXPORT_MAX_RETRIES))
+    {
+      g_warning ("%s: failed to initialize pending report export iterator",
+                 __func__);
+      return -1;
+    }
+
+  while (next (&iterator))
+    {
+      report_export_t report_export;
+
+      if (worker_count >= REPORT_EXPORT_MAX_WORKERS)
+        break;
+
+      report_export = get_iterator_resource (&iterator);
+
+      if (fork_report_export_worker (report_export))
+        {
+          g_warning ("%s: failed to start worker for report export %lld",
+                     __func__,
+                     report_export);
+        }
+      else
+        {
+          worker_count++;
+        }
+    }
+
+  cleanup_iterator (&iterator);
+
+  return 0;
+}
 
 #if ENABLE_AGENTS
 /**
@@ -1629,12 +1777,14 @@ fork_agents_sync ()
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      agent_sync_in_progress = FALSE;
       return -1;
     }
 
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      agent_sync_in_progress = FALSE;
       return -1;
     }
 
@@ -1731,12 +1881,14 @@ fork_asset_snapshot_delete_stale ()
   if (sigemptyset (&sigmask_all))
     {
       g_critical ("%s: Error emptying signal set", __func__);
+      asset_snapshot_delete_in_progress = FALSE;
       return -1;
     }
 
   if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
     {
       g_critical ("%s: Error setting signal mask", __func__);
+      asset_snapshot_delete_in_progress = FALSE;
       return -1;
     }
 
@@ -1793,17 +1945,281 @@ fork_asset_snapshot_delete_stale ()
 }
 
 /**
+ * @brief Forks a process for handling the scheduling of report exports.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_report_export_scheduler ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+
+  switch (pid)
+    {
+    case 0:
+      init_sentry ();
+      setproctitle ("Scheduling report exports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+      run_pending_report_exports ();
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+
+      return -1;
+
+    default:
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+
+      return 0;
+    }
+}
+
+/**
+ * @brief Forks a process to cleanup old report exports.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_cleanup_old_report_exports ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean in_progress = FALSE;
+
+  if (in_progress)
+    {
+      g_debug (
+        "%s: Cleaning old report exports skipped"
+        " because one is already in progress",
+        __func__);
+      return 1;
+    }
+
+  in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+    case 0:
+      /* Child */
+      init_sentry ();
+      setproctitle ("Cleaning up old report exports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+    /* Cleaning old report exports regarding REPORT_EXPORT_RETENTION_SECONDS */
+      manage_cleanup_old_report_exports (REPORT_EXPORT_RETENTION_SECONDS);
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return -1;
+
+    default:
+      g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return 0;
+    }
+}
+
+
+/**
+ * @brief Forks a process to handle cancel-requested report exports.
+ *
+ * @return 0 on success, 1 if already in progress, -1 on error.
+ */
+static int
+fork_process_cancel_requested_report_exports ()
+{
+  int pid;
+  sigset_t sigmask_all, sigmask_current;
+
+  static gboolean in_progress = FALSE;
+
+  if (in_progress)
+    {
+      g_debug (
+        "%s: Processing cancel-requested report exports skipped"
+        " because one is already in progress",
+        __func__);
+      return 1;
+    }
+
+  in_progress = TRUE;
+
+  if (sigemptyset (&sigmask_all))
+    {
+      g_critical ("%s: Error emptying signal set", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  if (pthread_sigmask (SIG_BLOCK, &sigmask_all, &sigmask_current))
+    {
+      g_critical ("%s: Error setting signal mask", __func__);
+      in_progress = FALSE;
+      return -1;
+    }
+
+  pid = fork_with_handlers ();
+  switch (pid)
+    {
+    case 0:
+      /* Child */
+      init_sentry ();
+      setproctitle ("Processing cancel-requested report exports");
+
+      if (sigmask_normal)
+        pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+      else
+        pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL);
+
+      cleanup_manage_process (FALSE);
+
+      init_manage_process (&database);
+
+      if (manager_socket > -1)
+        {
+          close (manager_socket);
+          manager_socket = -1;
+        }
+
+      if (manager_socket_2 > -1)
+        {
+          close (manager_socket_2);
+          manager_socket_2 = -1;
+        }
+
+    /*
+     * Processing cancel-requested report exports regarding
+     * REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS
+     */
+      manage_process_cancel_requested_report_exports (
+        REPORT_EXPORT_CANCEL_TIMEOUT_SECONDS);
+
+      cleanup_manage_process (FALSE);
+      gvm_close_sentry ();
+      exit (EXIT_SUCCESS);
+
+    case -1:
+      g_warning ("%s: fork: %s", __func__, strerror (errno));
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return -1;
+
+    default:
+      g_debug ("%s: %i forked %i", __func__, getpid (), pid);
+      in_progress = FALSE;
+      if (pthread_sigmask (SIG_SETMASK, &sigmask_current, NULL))
+        g_warning ("%s: Error resetting signal mask", __func__);
+      return 0;
+    }
+}
+
+/**
  * @brief Periodic timestamps for background jobs in the main loop.
  */
 typedef struct
 {
-  time_t last_schedule;    ///< Last time the scheduler management was executed.
   time_t last_feed_sync;   ///< Last time the feed sync was executed.
   time_t last_queue;       ///< Last time queued task actions were executed.
-  time_t last_report_export; ///< Last time report export was executed
+  time_t last_integration_report_export; ///< Last time integration report export
+                                         ///  was executed
   time_t last_agents_sync; ///< Last time the agents sync was executed.
   time_t last_asset_snapshot_stale_delete; ///< Last time the delete
                                            ///  asset snapshots was executed.
+  time_t last_report_export; ///< Last time the report export was executed.
+  time_t last_cleanup_old_report_export; ///< Last time old report exports
+                                         ///  cleanup was executed.
+  time_t last_process_cancel_requested_report_export; ///< Last time cancel
+                                                      /// requested report
+                                                      /// exports was executed.
 } periodic_times_t;
 
 /**
@@ -1838,25 +2254,24 @@ set_last_run_time (time_t *last, time_t now)
  *
  * On fatal error this exits the process.
  *
- * @param[in,out] t   Periodic timestamps; updates t->last_schedule on success.
+ * @param[in,out] last_schedule   Periodic timestamp; updates on success.
+ * @param[in]     sigmask_current Current signal mask.
  */
 static void
-run_schedule (periodic_times_t *t)
+run_schedule (time_t* last_schedule, sigset_t* sigmask_current)
 {
   time_t start = time (NULL);
-  if (!time_to_run (t->last_schedule, SCHEDULE_PERIOD, start))
+  if (!time_to_run (*last_schedule, SCHEDULE_PERIOD, start))
     return;
 
-  int rc = manage_schedule (fork_connection_for_scheduler,
-                            scheduling_enabled,
-                            sigmask_normal);
+  int rc = manage_schedule (scheduling_enabled, sigmask_current);
   switch (rc)
     {
     case 0:
       {
         time_t end = time (NULL);
-        set_last_run_time (&t->last_schedule, end);
-        g_debug ("%s: last_schedule_time: %li", __func__, t->last_schedule);
+        set_last_run_time (last_schedule, end);
+        g_debug ("%s: last_schedule_time: %li", __func__, *last_schedule);
         break;
       }
     case 1:
@@ -1876,11 +2291,16 @@ run_schedule (periodic_times_t *t)
 static void
 run_feed_sync (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_feed_sync, SCHEDULE_PERIOD, now))
     return;
-  fork_feed_sync ();
-  set_last_run_time (&t->last_feed_sync, time (NULL));
+
+  ret = fork_feed_sync ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_feed_sync, time (NULL));
 }
 
 /**
@@ -1891,15 +2311,25 @@ run_feed_sync (periodic_times_t *t)
 static void
 run_queue (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_queue, QUEUE_PERIOD, now))
     return;
-  fork_queued_task_actions ();
-  set_last_run_time (&t->last_queue, time (NULL));
+
+  ret = fork_queued_task_actions ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_queue, time (NULL));
 }
 
+/**
+ * @brief Run integration report export if due; updates last timestamp when executed.
+ *
+ * @param t [in,out] Periodic timestamps; updates t->last_report_export on run.
+ */
 static void
-run_report_export (periodic_times_t *t)
+run_integration_report_export (periodic_times_t *t)
 {
   if (!feature_enabled (FEATURE_ID_SECURITY_INTELLIGENCE_EXPORT))
     {
@@ -1909,12 +2339,16 @@ run_report_export (periodic_times_t *t)
       return;
     }
 
+  int ret;
   time_t now = time (NULL);
-  if (!time_to_run (t->last_report_export, REPORT_EXPORT_PERIOD, now))
+
+  if (!time_to_run (t->last_integration_report_export, INTEGRATION_REPORT_EXPORT_PERIOD, now))
     return;
 
-  fork_report_export_scheduler();
-  set_last_run_time (&t->last_report_export, time (NULL));
+  ret = fork_integration_report_export_scheduler();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_integration_report_export, time (NULL));
 }
 
 /**
@@ -1932,11 +2366,17 @@ run_agents_sync (periodic_times_t *t)
               __func__);
       return;
     }
+
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_agents_sync, AGENT_SYNC_SCHEDULE_PERIOD, now))
     return;
-  fork_agents_sync ();
-  set_last_run_time (&t->last_agents_sync, time (NULL));
+
+  ret = fork_agents_sync ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_agents_sync, time (NULL));
 #else
   (void)t;
 #endif
@@ -1950,12 +2390,80 @@ run_agents_sync (periodic_times_t *t)
 static void
 run_asset_snapshot_delete_stale (periodic_times_t *t)
 {
+  int ret;
   time_t now = time (NULL);
+
   if (!time_to_run (t->last_asset_snapshot_stale_delete,
                     ASSET_SNAPSHOT_STALE_DELETE_PERIOD, now))
     return;
-  fork_asset_snapshot_delete_stale ();
-  set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
+
+  ret = fork_asset_snapshot_delete_stale ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_asset_snapshot_stale_delete, time (NULL));
+}
+
+/**
+ * @brief Run to export reports.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_ on run.
+ */
+static void
+run_report_exports (periodic_times_t *t)
+{
+  int ret = 0;
+  time_t now = time (NULL);
+
+  if (!time_to_run (t->last_report_export,
+                    REPORT_EXPORT_PERIOD, now))
+    return;
+
+  ret = fork_report_export_scheduler ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_report_export, time (NULL));
+}
+
+/**
+ * @brief Run to clean up old report exports.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_ on run.
+ */
+static void
+run_cleanup_old_report_exports (periodic_times_t *t)
+{
+  int ret;
+  time_t now = time (NULL);
+
+  if (!time_to_run (t->last_cleanup_old_report_export,
+                    REPORT_EXPORT_CLEANUP_PERIOD, now))
+    return;
+
+  ret = fork_cleanup_old_report_exports ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_cleanup_old_report_export, time (NULL));
+}
+
+/**
+ * @brief Run to process cancel-requested report exports.
+ *
+ * @param[in,out] t   Periodic timestamps; updates t->last_ on run.
+ */
+static void
+run_process_cancel_requested_report_exports (periodic_times_t *t)
+{
+  int ret;
+  time_t now = time (NULL);
+
+  if (!time_to_run (t->last_process_cancel_requested_report_export,
+                    REPORT_EXPORT_CANCEL_PERIOD, now))
+    return;
+
+  ret = fork_process_cancel_requested_report_exports ();
+
+  if (ret == 0)
+    set_last_run_time (&t->last_process_cancel_requested_report_export, time (NULL));
 }
 
 /**
@@ -1966,12 +2474,269 @@ run_asset_snapshot_delete_stale (periodic_times_t *t)
 static void
 run_periodic_block (periodic_times_t *t)
 {
-  run_schedule (t);
   run_feed_sync (t);
   run_agents_sync (t);
   run_queue (t);
-  run_report_export (t);
+  run_integration_report_export (t);
   run_asset_snapshot_delete_stale (t);
+  run_report_exports (t);
+  run_cleanup_old_report_exports (t);
+  run_process_cancel_requested_report_exports (t);
+}
+
+/**
+ * @brief Run periodic jobs in a loop, sleeping 1 second between runs.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ */
+static void
+run_periodic_job_runner_loop (sigset_t *sigmask_current)
+{
+  periodic_times_t times = {0};
+
+  init_sentry ();
+  is_parent = 0;
+  setproctitle ("Periodic jobs");
+
+  if (sigmask_normal)
+    pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+  else
+    pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+  cleanup_manage_process (FALSE);
+  // might not be needed if manage_schedule() is called from a forked process.
+  init_manage_process (&database);
+
+  /* This worker does not serve client sockets. */
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
+  while (1)
+    {
+      run_periodic_block (&times);
+      gvm_sleep (1);
+      if (termination_signal)
+        {
+          g_debug ("%s, Received %s signal",
+                   __func__, strsignal (termination_signal));
+          break;
+        }
+    }
+
+  cleanup_manage_process (FALSE);
+  gvm_close_sentry ();
+  exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Run the schedule in a loop.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the loop.
+ */
+static void
+run_scheduler_loop (sigset_t *sigmask_current)
+{
+  init_sentry ();
+  setproctitle ("Scheduler");
+
+  /* Reset SIGCHLD to default so manage_schedule can reap its own children. */
+  setup_signal_handler (SIGCHLD, SIG_DFL, 0);
+
+  if (sigmask_normal)
+    pthread_sigmask (SIG_SETMASK, sigmask_normal, NULL);
+  else
+    pthread_sigmask (SIG_SETMASK, sigmask_current, NULL);
+
+  cleanup_manage_process (FALSE);
+  init_manage_process (&database);
+
+  /* This worker does not serve client sockets. */
+  if (manager_socket > -1)
+    {
+      close (manager_socket);
+      manager_socket = -1;
+    }
+  if (manager_socket_2 > -1)
+    {
+      close (manager_socket_2);
+      manager_socket_2 = -1;
+    }
+
+  time_t last_schedule = 0;
+  while (1)
+    {
+      gvm_sleep (1);
+      run_schedule (&last_schedule, sigmask_current);
+
+      if (termination_signal)
+        {
+          g_debug ("%s, Received %s signal",
+                   __func__, strsignal (termination_signal));
+          break;
+        }
+    }
+
+  cleanup_manage_process (FALSE);
+  gvm_close_sentry ();
+  exit (EXIT_SUCCESS);
+}
+
+/**
+ * @brief Start the scheduler in a child process.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ *
+ * @return 0 on success, -1 on error.
+ */
+static int
+start_scheduler (sigset_t *sigmask_current)
+{
+  pid_t pid;
+
+  /* fork() is used instead of fork_with_handlers() for graceful shutdown */
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        run_scheduler_loop (sigmask_current);
+        exit (EXIT_FAILURE); /* should never be reached */
+
+      case -1:
+        g_warning ("%s: failed to fork scheduler: %s",
+                   __func__, strerror (errno));
+        return -1;
+
+      default:
+        scheduler_pid = pid;
+        scheduler_terminated = 0;
+        g_debug ("%s: started scheduler %d", __func__, pid);
+        return 0;
+    }
+
+  return -1;
+}
+
+/*
+ * @brief Start the periodic job runner loop in a child process.
+ *
+ * @param[in] sigmask_current  Signal mask to use in the child process.
+ *
+ * @return 0 on success, -1 on error.
+*/
+static int
+start_periodic_job_runner (sigset_t *sigmask_current)
+{
+  pid_t pid;
+
+  /* fork() is used instead of fork_with_handlers() for graceful shutdown */
+  pid = fork ();
+  switch (pid)
+    {
+      case 0:
+        run_periodic_job_runner_loop (sigmask_current);
+        exit (EXIT_FAILURE); /* should never be reached */
+
+      case -1:
+        g_warning ("%s: failed to fork periodic job runner: %s",
+                   __func__, strerror (errno));
+        return -1;
+
+      default:
+        periodic_job_runner_pid = pid;
+        periodic_job_runner_terminated = 0;
+        g_debug ("%s: started periodic job runner %d", __func__, pid);
+        return 0;
+    }
+
+  return -1;
+}
+
+/**
+ * @brief Terminate a child process gracefully.
+ *
+ * @param[in,out] pid_ptr     Pointer to the PID of the process to terminate.
+ * @param[in,out] term_ptr    Pointer to the termination flag.
+ * @param[in]     name        Name of the process for logging.
+ */
+static void
+terminate_child_process (pid_t *pid_ptr, volatile sig_atomic_t *term_ptr, const char *name)
+{
+  int status;
+  pid_t pid;
+  int reaped = 0;
+
+  if (pid_ptr == NULL || *pid_ptr <= 0)
+    return;
+
+  pid = *pid_ptr;
+
+  if (kill (pid, SIGTERM) == -1 && errno != ESRCH)
+    g_warning ("%s: failed to send SIGTERM to %s %d: %s",
+               __func__, name, pid, strerror (errno));
+
+  for (int i = 0; i < 5; i++)
+    {
+      pid_t ret = waitpid (pid, &status, WNOHANG);
+      if (ret == pid)
+        {
+          reaped = 1;
+          break;
+        }
+      if (ret == -1)
+        {
+          if (errno == EINTR)
+            continue;
+          if (errno == ECHILD)
+            reaped = 1;
+          break;
+        }
+      if (ret == 0)
+        gvm_sleep (1);
+    }
+
+  if (!reaped)
+    {
+      if (kill (pid, SIGKILL) == -1 && errno != ESRCH)
+        g_warning ("%s: failed to send SIGKILL to %s %d: %s",
+                   __func__, name, pid, strerror (errno));
+
+      while (waitpid (pid, &status, 0) == -1)
+        {
+          if (errno == EINTR)
+            continue;
+          if (errno == ECHILD)
+            break;
+          g_warning ("%s: failed to wait for %s %d: %s",
+                     __func__, name, pid, strerror (errno));
+          break;
+        }
+    }
+
+  *pid_ptr = -1;
+  if (term_ptr)
+    *term_ptr = 0;
+}
+
+/**
+ * @brief Terminate the periodic job runner and scheduler processes.
+ */
+static void
+terminate_processes (void)
+{
+  terminate_child_process (&periodic_job_runner_pid,
+                           &periodic_job_runner_terminated,
+                           "periodic job runner");
+  terminate_child_process (&scheduler_pid,
+                           &scheduler_terminated,
+                           "scheduler");
 }
 
 /**
@@ -1985,13 +2750,6 @@ run_periodic_block (periodic_times_t *t)
 static void
 serve_and_schedule ()
 {
-  periodic_times_t times = {
-    .last_schedule = 0,
-    .last_feed_sync = 0,
-    .last_queue = 0,
-    .last_agents_sync = 0,
-  };
-
   sigset_t sigmask_all;
   static sigset_t sigmask_current;
 
@@ -2009,6 +2767,20 @@ serve_and_schedule ()
     }
   sigmask_normal = &sigmask_current;
 
+  if (start_periodic_job_runner (&sigmask_current))
+    {
+      g_critical ("%s: Failed to start periodic job runner", __func__);
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
+  if (start_scheduler (&sigmask_current))
+    {
+      g_critical ("%s: Failed to start scheduler", __func__);
+      terminate_processes ();
+      gvm_close_sentry ();
+      exit (EXIT_FAILURE);
+    }
+
   g_info ("gvmd is ready to accept GMP connections");
 
   while (1)
@@ -2017,7 +2789,31 @@ serve_and_schedule ()
       fd_set readfds, exceptfds;
       struct timespec timeout;
 
-      run_periodic_block (&times);
+      if (periodic_job_runner_terminated && !termination_signal)
+        {
+          g_warning ("%s: periodic job runner exited; restarting", __func__);
+          periodic_job_runner_terminated = 0;
+          if (start_periodic_job_runner (&sigmask_current))
+            {
+              g_critical ("%s: Failed to restart periodic job runner", __func__);
+              cleanup ();
+              gvm_close_sentry ();
+              exit (EXIT_FAILURE);
+            }
+        }
+
+      if (scheduler_terminated && !termination_signal)
+        {
+          g_warning ("%s: scheduler exited; restarting", __func__);
+          scheduler_terminated = 0;
+          if (start_scheduler (&sigmask_current))
+            {
+              g_critical ("%s: Failed to restart scheduler", __func__);
+              cleanup ();
+              gvm_close_sentry ();
+              exit (EXIT_FAILURE);
+            }
+        }
 
       FD_ZERO (&readfds);
       FD_SET (manager_socket, &readfds);
@@ -2037,6 +2833,7 @@ serve_and_schedule ()
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
+          terminate_processes ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -2082,12 +2879,11 @@ serve_and_schedule ()
             accept_and_maybe_fork (manager_socket_2, sigmask_normal);
         }
 
-      run_periodic_block (&times);
-
       if (termination_signal)
         {
           g_debug ("Received %s signal",
                    strsignal (termination_signal));
+          terminate_processes ();
           cleanup ();
           /* Raise signal again, to exit with the correct return value. */
           setup_signal_handler (termination_signal, SIG_DFL, 0);
@@ -2406,6 +3202,7 @@ gvmd (int argc, char** argv, char *env[])
   static gboolean foreground = FALSE;
   static gboolean print_version = FALSE;
   static int max_ips_per_target = MANAGE_MAX_HOSTS;
+  static int max_images_per_oci_target = MANAGE_MAX_OCI_IMAGES;
   static int max_email_attachment_size = 0;
   static int max_email_include_size = 0;
   static int max_email_message_size = 0;
@@ -2709,6 +3506,11 @@ gvmd (int argc, char** argv, char *env[])
         { "max-ips-per-target", '\0', 0, G_OPTION_ARG_INT,
           &max_ips_per_target,
           "Maximum number of IPs per target.",
+          "<number>" },
+        { "max-images-per-oci-target", '\0', 0, G_OPTION_ARG_INT,
+          &max_images_per_oci_target,
+          "Maximum number of images per OCI target."
+          " Default: "G_STRINGIFY (MANAGE_MAX_OCI_IMAGES),
           "<number>" },
         { "mem-wait-retries", '\0', 0, G_OPTION_ARG_INT,
           &mem_wait_retries,
@@ -3023,6 +3825,9 @@ gvmd (int argc, char** argv, char *env[])
 #endif
 #if ENABLE_WEB_APPLICATION_SCANNING == 1
       printf ("Web application scanning is enabled\n");
+#endif
+#if ENABLE_AD_INTEGRATION == 1
+      printf ("AD integration is enabled\n");
 #endif
       printf ("Copyright (C) 2009-2026 Greenbone AG\n");
       printf ("License: AGPL-3.0-or-later\n");
@@ -3362,6 +4167,10 @@ gvmd (int argc, char** argv, char *env[])
             g_warning ("%s: cannot migrate CERT database",
                        __func__);
             return EXIT_FAILURE;
+          case 13:
+            g_warning ("%s: cannot migrate Web Application VTs database",
+                       __func__);
+            return EXIT_FAILURE;
           case -1:
             g_critical ("%s: database migration failed",
                         __func__);
@@ -3372,6 +4181,10 @@ gvmd (int argc, char** argv, char *env[])
             return EXIT_FAILURE;
           case -12:
             g_critical ("%s: CERT database migration failed",
+                        __func__);
+            return EXIT_FAILURE;
+          case -13:
+            g_critical ("%s: Web Application VTs database migration failed",
                         __func__);
             return EXIT_FAILURE;
           default:
@@ -3395,6 +4208,12 @@ gvmd (int argc, char** argv, char *env[])
 #if ENABLE_JWT_AUTH
   if (feature_enabled (FEATURE_ID_JWT_AUTH))
     load_authentication_config ();
+#endif
+
+  /* Setup agent inventory authentication */
+#if ENABLE_AGENTS
+  if (feature_enabled (FEATURE_ID_AGENTS))
+    load_agent_inventory_authentication_config ();
 #endif
 
   /* Handle non-migrate options.
@@ -3966,7 +4785,7 @@ gvmd (int argc, char** argv, char *env[])
 
   switch (init_gmpd (log_config, &database, max_ips_per_target,
                      max_email_attachment_size, max_email_include_size,
-                     max_email_message_size,
+                     max_email_message_size, max_images_per_oci_target,
                      fork_connection_for_event, 0))
     {
       case 0:
@@ -3996,6 +4815,16 @@ gvmd (int argc, char** argv, char *env[])
                     __func__,
                     MANAGE_ABSOLUTE_MAX_IPS_PER_TARGET,
                     max_ips_per_target);
+        log_config_free ();
+        gvm_close_sentry ();
+        exit (EXIT_FAILURE);
+        break;
+      case -6:
+        g_critical ("%s: --max-images-per-oci-target out of range"
+                    " (min=1, max=%i, requested=%i)",
+                    __func__,
+                    MANAGE_ABSOLUTE_MAX_OCI_IMAGES,
+                    max_images_per_oci_target);
         log_config_free ();
         gvm_close_sentry ();
         exit (EXIT_FAILURE);
@@ -4156,6 +4985,9 @@ gvmd (int argc, char** argv, char *env[])
       gvm_close_sentry ();
       exit (EXIT_FAILURE);
     }
+
+  /* Recover report exports left active by the previous gvmd instance. */
+  recover_report_exports (REPORT_EXPORT_MAX_RETRIES);
 
   /* Load discovery OID cache once in the parent, before forking children. */
   nvts_discovery_oid_cache_reload ();
