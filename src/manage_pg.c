@@ -1467,11 +1467,16 @@ manage_create_sql_functions ()
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
-               "         (SELECT report_severity ((SELECT id FROM reports"
-               "                                   WHERE task = $1"
-               "                                   AND scan_run_status = %u"
-               "                                   ORDER BY creation_time DESC"
-               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               /* Only look up the severity when the task has a report.  Calling
+                * report_severity with NULL returns NULL as well, but it costs a
+                * full evaluation of the severity query for every task that never
+                * ran, which dominates aggregates over many tasks. */
+               "         (SELECT report_severity (last_report.id, $2, $3)"
+               "          FROM (SELECT id FROM reports"
+               "                WHERE task = $1"
+               "                AND scan_run_status = %u"
+               "                ORDER BY creation_time DESC"
+               "                LIMIT 1 OFFSET 0) AS last_report)"
                "         END;"
                "$$ LANGUAGE SQL;",
                TASK_STATUS_DONE);
@@ -1492,11 +1497,16 @@ manage_create_sql_functions ()
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
-               "         (SELECT report_severity ((SELECT id FROM reports"
-               "                                   WHERE task = $1"
-               "                                   AND scan_run_status = %u"
-               "                                   ORDER BY creation_time DESC"
-               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               /* Only look up the severity when the task has a report.  Calling
+                * report_severity with NULL returns NULL as well, but it costs a
+                * full evaluation of the severity query for every task that never
+                * ran, which dominates aggregates over many tasks. */
+               "         (SELECT report_severity (last_report.id, $2, $3)"
+               "          FROM (SELECT id FROM reports"
+               "                WHERE task = $1"
+               "                AND scan_run_status = %u"
+               "                ORDER BY creation_time DESC"
+               "                LIMIT 1 OFFSET 0) AS last_report)"
                "         END;"
                "$$ LANGUAGE SQL;",
                TASK_STATUS_DONE);
@@ -1514,11 +1524,16 @@ manage_create_sql_functions ()
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
-               "         (SELECT report_severity ((SELECT id FROM reports"
-               "                                   WHERE task = $1"
-               "                                   AND scan_run_status = %u"
-               "                                   ORDER BY creation_time DESC"
-               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               /* Only look up the severity when the task has a report.  Calling
+                * report_severity with NULL returns NULL as well, but it costs a
+                * full evaluation of the severity query for every task that never
+                * ran, which dominates aggregates over many tasks. */
+               "         (SELECT report_severity (last_report.id, $2, $3)"
+               "          FROM (SELECT id FROM reports"
+               "                WHERE task = $1"
+               "                AND scan_run_status = %u"
+               "                ORDER BY creation_time DESC"
+               "                LIMIT 1 OFFSET 0) AS last_report)"
                "         END;"
                "$$ LANGUAGE SQL;",
                TASK_STATUS_DONE);
@@ -1536,11 +1551,16 @@ manage_create_sql_functions ()
                "               FROM tasks WHERE id = $1)"
                "         THEN CAST (NULL AS double precision)"
                "         ELSE"
-               "         (SELECT report_severity ((SELECT id FROM reports"
-               "                                   WHERE task = $1"
-               "                                   AND scan_run_status = %u"
-               "                                   ORDER BY date DESC"
-               "                                   LIMIT 1 OFFSET 0), $2, $3))"
+               /* Only look up the severity when the task has a report.  Calling
+                * report_severity with NULL returns NULL as well, but it costs a
+                * full evaluation of the severity query for every task that never
+                * ran, which dominates aggregates over many tasks. */
+               "         (SELECT report_severity (last_report.id, $2, $3)"
+               "          FROM (SELECT id FROM reports"
+               "                WHERE task = $1"
+               "                AND scan_run_status = %u"
+               "                ORDER BY date DESC"
+               "                LIMIT 1 OFFSET 0) AS last_report)"
                "         END;"
                "$$ LANGUAGE SQL;",
                TASK_STATUS_DONE);
