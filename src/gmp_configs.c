@@ -324,6 +324,8 @@ parse_config_entity (entity_t config, const char **config_id, char **name,
                                                 preference_name,
                                                 preference_type,
                                                 preference_value ?: "");
+
+                  g_ptr_array_free (import_alts, TRUE);
                 }
               else
                 {
