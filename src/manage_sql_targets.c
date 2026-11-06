@@ -2155,11 +2155,12 @@ target_task_iterator_readable (iterator_t* iterator)
 int
 target_in_use (target_t target)
 {
-  return !!sql_int ("SELECT count(*) FROM tasks"
-                    " WHERE target = %llu"
-                    " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
-                    " AND hidden = 0;",
-                    target);
+  return !!sql_int_ps ("SELECT count(*) FROM tasks"
+                       " WHERE target = $1"
+                       " AND target_location = " G_STRINGIFY (LOCATION_TABLE)
+                       " AND hidden = 0;",
+                       SQL_RESOURCE_PARAM (target),
+                       NULL);
 }
 
 /**
