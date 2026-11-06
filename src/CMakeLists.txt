@@ -585,6 +585,11 @@ set_target_properties(
     LINK_FLAGS
       "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator"
 )
+add_unit_test(gmp-configs "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+set_target_properties(
+  gmp-configs-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,get_nvt_preference_by_id"
+)
 
 set(
   ALL_OBJECTS
