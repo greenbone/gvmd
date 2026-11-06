@@ -1776,6 +1776,60 @@ init_target_iterator (iterator_t* iterator, get_data_t *get)
 }
 
 /**
+ * @brief Initialize a permission-filtered iterator of possible hostname matches.
+ *
+ * @param iterator        Iterator to initialize.
+ * @param get             GET parameters.
+ * @param hostname_index  Borrowed table of unique, lowercase hostname keys.
+ *                        Values are ignored.
+ *
+ * Substring matching returns a superset. The caller must verify
+ * exact normalized host tokens and apply target exclusions. An empty table
+ * selects no targets.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_target_hostname_candidate_iterator (iterator_t *iterator,
+                                         const get_data_t *get,
+                                         GHashTable *hostname_index)
+{
+  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
+  GHashTableIter hostnames;
+  gpointer hostname;
+  GString *where;
+  gboolean first = TRUE;
+  int ret;
+
+  if (!iterator || !get || !hostname_index)
+    return -1;
+
+  where = g_string_new (" AND (");
+  g_hash_table_iter_init (&hostnames, hostname_index);
+  while (g_hash_table_iter_next (&hostnames, &hostname, NULL))
+    {
+      gchar *quoted = sql_quote (hostname);
+
+      g_string_append_printf (where, "%sstrpos(lower(hosts), '%s') > 0",
+                              first ? "" : " OR ", quoted);
+      first = FALSE;
+      g_free (quoted);
+    }
+  if (first)
+    g_string_append (where, "FALSE");
+  g_string_append_c (where, ')');
+
+  ret = init_get_iterator2 (iterator, "target", get, columns, trash_columns,
+                            NULL, NULL, filter_columns, 0, NULL,
+                            where->str, where->str, TRUE, FALSE, NULL);
+  g_string_free (where, TRUE);
+  return ret;
+}
+
+/**
  * @brief Get the hosts of the target from a target iterator.
  *
  * @param[in]  iterator  Iterator.

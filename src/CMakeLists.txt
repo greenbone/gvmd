@@ -528,7 +528,6 @@ target_link_libraries(
   ${LIBGVM_CONTAINER_IMAGE_SCANNER_LDFLAGS}
   ${LIBGVM_SECURITY_INTELLIGENCE_LDFLAGS}
   ${LIBGVM_WEB_APPLICATION_SCANNER_LDFLAGS}
-  ${LIBGVM_GVM_LDAP_LDFLAGS}
   ${LIBGVM_AD_CONNECTOR_LDFLAGS}
   ${LIBICAL_LDFLAGS}
   ${LINKER_HARDENING_FLAGS}
@@ -755,7 +754,7 @@ if(ENABLE_AD_INTEGRATION)
     manage-active-directory-test
     PROPERTIES
       LINK_FLAGS
-        "-Wl,-wrap,feature_enabled,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,credential_value,-wrap,credential_encrypted_value,-wrap,ad_connector_new,-wrap,ad_connector_free,-wrap,ad_connector_builder,-wrap,ad_connector_connect"
+        "-Wl,-wrap,feature_enabled,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,credential_value,-wrap,credential_encrypted_value,-wrap,ad_connector_new,-wrap,ad_connector_free,-wrap,ad_connector_builder,-wrap,ad_connector_connect,-wrap,ad_connector_search_objects,-wrap,ad_search_config_builder"
   )
 endif()
 
