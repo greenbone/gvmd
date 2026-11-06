@@ -35,7 +35,7 @@
 # (Organization unit)
 # GVM_CA_CERTIFICATE_ORG_UNIT="Certificate Authority for $GVM_CERTIFICATE_HOSTNAME"
 
-# Key size for private keys in byte
+# Key size for private keys in bits
 # If not set, gvm-manage-certs will take the default from the
 # GnuTLS security level (see below)
 # GVM_CERTIFICATE_KEYSIZE=
