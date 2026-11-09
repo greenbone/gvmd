@@ -686,6 +686,8 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(utils "${ALL_OBJECTS}" "${ALL_MISC_SRC}")
+add_unit_test(gmpd "${ALL_OBJECTS}" "${ALL_MISC_SRC}")
+set_tests_properties(gmpd-test PROPERTIES TIMEOUT 20)
 
 set(
   ALL_OBJECTS
