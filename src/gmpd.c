@@ -20,6 +20,7 @@
 
 #include "gmpd.h"
 #include "gmp.h"
+#include "gvmd_config.h"
 
 #include <assert.h>
 #include <dirent.h>
@@ -344,6 +345,40 @@ write_to_client (gvm_connection_t *client_connection)
 }
 
 /**
+ * @brief Get the GMP buffer drain timeout in seconds.
+ *
+ *@return Write timeout in seconds, or
+ *        WRITE_CLIENT_TIMEOUT if no timeout is set.
+ */
+static int
+gmp_write_timeout (void)
+{
+  gchar *value, *end;
+  gint64 timeout;
+
+  value = gvmd_get_env_or_config_string ("GVMD_GMP_WRITE_TIMEOUT",
+                                         get_gvmd_config (), "gmp",
+                                         "write_timeout");
+  if (value == NULL)
+    return WRITE_CLIENT_TIMEOUT;
+
+  g_strstrip (value);
+  errno = 0;
+  timeout = g_ascii_strtoll (value, &end, 10);
+  if (errno == ERANGE || end == value || *end != '\0'
+      || timeout <= 0 || timeout > G_MAXINT / 1000)
+    {
+      g_warning ("%s: Invalid GMP write timeout '%s'; using default %d seconds",
+                 __func__, value, WRITE_CLIENT_TIMEOUT);
+      g_free (value);
+      return WRITE_CLIENT_TIMEOUT;
+    }
+
+  g_free (value);
+  return (int) timeout;
+}
+
+/**
  * @brief Send pending data to the client, waiting if the socket is not ready.
  *
  * Retry when the socket becomes ready, keeping unsent data in the buffer.
@@ -434,7 +469,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
       /* Too little space in to_client buffer for message. */
 
       switch (flush_to_client (write_to_client_data,
-                               WRITE_CLIENT_TIMEOUT * 1000))
+                               gmp_write_timeout () * 1000))
         {
           case  0:      /* Wrote everything in to_client. */
             break;
