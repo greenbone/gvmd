@@ -29,8 +29,8 @@
 /**
  * @brief Default maximum seconds spent draining a full client output buffer.
  */
-#ifndef WRITE_CLIENT_TIMEOUT
-#define WRITE_CLIENT_TIMEOUT 30
+#ifndef WRITE_CLIENT_TIMEOUT_DEFAULT
+#define WRITE_CLIENT_TIMEOUT_DEFAULT 30
 #endif
 
 /**
