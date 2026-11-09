@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
+#include <poll.h>
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -343,6 +344,73 @@ write_to_client (gvm_connection_t *client_connection)
 }
 
 /**
+ * @brief Send pending data to the client, waiting if the socket is not ready.
+ *
+ * Retry when the socket becomes ready, keeping unsent data in the buffer.
+ * Stop if an error occurs or the timeout is reached.
+ *
+ * @param[in] client_connection  Client connection.
+ * @param[in] timeout_ms         Timeout in milliseconds.
+ *
+ * @return 0 on success, -1 on error or timeout.
+ */
+static int
+flush_to_client (gvm_connection_t *client_connection, int timeout_ms)
+{
+  gint64 deadline =
+    g_get_monotonic_time () + timeout_ms * G_TIME_SPAN_MILLISECOND;
+
+  while (1)
+    {
+      struct pollfd fd;
+      int ret = write_to_client (client_connection);
+
+      if (ret != -2)
+        return ret;
+
+      fd.fd = client_connection->socket;
+      fd.events =
+        client_connection->tls
+            && !gnutls_record_get_direction (client_connection->session)
+          ? POLLIN
+          : POLLOUT;
+      fd.revents = 0;
+
+      do
+        {
+          gint64 remaining = deadline - g_get_monotonic_time ();
+
+          if (remaining <= 0)
+            {
+              g_warning ("%s: timed out writing to client", __func__);
+              return -1;
+            }
+          /* Round up so poll does not expire before the deadline. */
+          ret = poll (&fd, 1,
+                      (remaining + G_TIME_SPAN_MILLISECOND - 1)
+                        / G_TIME_SPAN_MILLISECOND);
+        }
+      while (ret < 0 && errno == EINTR);
+
+      if (ret < 0)
+        {
+          g_warning ("%s: client poll failed: %s", __func__, strerror (errno));
+          return -1;
+        }
+      if (ret == 0)
+        {
+          g_warning ("%s: timed out writing to client", __func__);
+          return -1;
+        }
+      if (fd.revents & (POLLERR | POLLHUP | POLLNVAL))
+        {
+          g_warning ("%s: client connection closed or failed", __func__);
+          return -1;
+        }
+    }
+}
+
+/**
  * @brief Send a response message to the client.
  *
  * Queue a message in \ref to_client.
@@ -365,7 +433,8 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 
       /* Too little space in to_client buffer for message. */
 
-      switch (write_to_client (write_to_client_data))
+      switch (flush_to_client (write_to_client_data,
+                               WRITE_CLIENT_TIMEOUT * 1000))
         {
           case  0:      /* Wrote everything in to_client. */
             break;
@@ -375,8 +444,6 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
                     ((buffer_size_t) TO_CLIENT_BUFFER_SIZE) - to_client_end,
                     strlen (msg));
             return TRUE;
-          case -2:      /* Wrote as much as client was willing to accept. */
-            break;
           default:      /* Programming error. */
             assert (0);
         }
@@ -385,8 +452,6 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 
       if (length > strlen (msg))
         break;
-
-      /* length can be 0 if write_to_client returns -2. */
 
       if (length > 0)
         {
