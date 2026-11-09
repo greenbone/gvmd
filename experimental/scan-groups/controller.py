@@ -17,6 +17,7 @@ import json
 import os
 import re
 import sqlite3
+import socketserver
 import threading
 import time
 import uuid
@@ -38,6 +39,7 @@ PASSWORD = os.environ.get("REVIEW_PASSWORD", "")
 GMP_USERNAME = os.environ.get("GMP_USERNAME", "admin")
 GMP_PASSWORD = os.environ.get("GMP_PASSWORD", "admin")
 TRUST_GSA_PROXY = os.environ.get("TRUST_GSA_PROXY", "0") == "1"
+HTTP_SOCKET = os.environ.get("REVIEW_HTTP_SOCKET", "")
 SERVICES = ("ssh", "ssh_elevate", "smb", "esxi", "snmp", "krb5")
 CREDENTIAL_TYPES = {
     "ssh": {"up", "usk"}, "ssh_elevate": {"up"},
@@ -818,22 +820,27 @@ def stop_group(gmp, group: dict) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
+    def address_string(self):
+        if isinstance(self.client_address, str):
+            return "local-socket"
+        return super().address_string()
+
     def _authorized(self):
-        # nginx alone sets this header after an auth_request against the
-        # existing GSAD session. The controller has no published port when
-        # proxy authentication is enabled in the integrated review stack.
+        # Only nginx can reach the private Unix socket in proxy mode. It sets
+        # this header after GSAD confirms the session belongs to the GMP user.
+        if TRUST_GSA_PROXY:
+            if self.headers.get("X-Review-Authenticated") == "1":
+                return True
+            self.send_response(401)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return False
         if not USERNAME or not PASSWORD:
             self.send_response(503)
             self.send_header("Content-Length", "0")
             self.end_headers()
             return False
-        if TRUST_GSA_PROXY and self.headers.get("X-Review-Authenticated") != "1":
-            self.send_response(401)
-            self.send_header("Content-Length", "0")
-            self.end_headers()
-            return False
-        auth = self.headers.get(
-            "X-Review-Operator-Authorization" if TRUST_GSA_PROXY else "Authorization", "")
+        auth = self.headers.get("Authorization", "")
         expected = "Basic " + base64.b64encode(f"{USERNAME}:{PASSWORD}".encode()).decode()
         if hmac.compare_digest(auth, expected):
             return True
@@ -965,7 +972,17 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    if TRUST_GSA_PROXY and not HTTP_SOCKET:
+        raise SystemExit("REVIEW_HTTP_SOCKET is required in proxy mode")
     init_db()
     threading.Thread(target=synchronize_native_reports, daemon=True,
                      name="native-report-reconciliation").start()
-    ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+    if TRUST_GSA_PROXY:
+        socket_path = Path(HTTP_SOCKET)
+        socket_path.parent.mkdir(parents=True, exist_ok=True)
+        socket_path.unlink(missing_ok=True)
+        with socketserver.ThreadingUnixStreamServer(str(socket_path), Handler) as server:
+            os.chmod(socket_path, 0o666)
+            server.serve_forever()
+    else:
+        ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
