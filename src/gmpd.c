@@ -348,7 +348,7 @@ write_to_client (gvm_connection_t *client_connection)
  * @brief Get the GMP buffer drain timeout in seconds.
  *
  *@return Write timeout in seconds, or
- *        WRITE_CLIENT_TIMEOUT if no timeout is set.
+ *        WRITE_CLIENT_TIMEOUT_DEFAULT if no timeout is set.
  */
 static int
 gmp_write_timeout (void)
@@ -360,7 +360,7 @@ gmp_write_timeout (void)
                                          get_gvmd_config (), "gmp",
                                          "write_timeout");
   if (value == NULL)
-    return WRITE_CLIENT_TIMEOUT;
+    return WRITE_CLIENT_TIMEOUT_DEFAULT;
 
   g_strstrip (value);
   errno = 0;
@@ -369,9 +369,9 @@ gmp_write_timeout (void)
       || timeout <= 0 || timeout > G_MAXINT / 1000)
     {
       g_warning ("%s: Invalid GMP write timeout '%s'; using default %d seconds",
-                 __func__, value, WRITE_CLIENT_TIMEOUT);
+                 __func__, value, WRITE_CLIENT_TIMEOUT_DEFAULT);
       g_free (value);
-      return WRITE_CLIENT_TIMEOUT;
+      return WRITE_CLIENT_TIMEOUT_DEFAULT;
     }
 
   g_free (value);
@@ -390,7 +390,7 @@ gmp_write_timeout (void)
  * @return 0 on success, -1 on error or timeout.
  */
 static int
-flush_to_client (gvm_connection_t *client_connection, int timeout_ms)
+write_to_client_with_timeout (gvm_connection_t *client_connection, int timeout_ms)
 {
   gint64 deadline =
     g_get_monotonic_time () + timeout_ms * G_TIME_SPAN_MILLISECOND;
@@ -468,7 +468,7 @@ gmpd_send_to_client (const char* msg, void* write_to_client_data)
 
       /* Too little space in to_client buffer for message. */
 
-      switch (flush_to_client (write_to_client_data,
+      switch (write_to_client_with_timeout (write_to_client_data,
                                gmp_write_timeout () * 1000))
         {
           case  0:      /* Wrote everything in to_client. */

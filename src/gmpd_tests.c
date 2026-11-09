@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-#define WRITE_CLIENT_TIMEOUT 1
+#define WRITE_CLIENT_TIMEOUT_DEFAULT 1
 #include "gmp.h"
 #include "gmpd.h"
 
@@ -230,9 +230,11 @@ load_timeout_config (const char *contents)
 
 Ensure (gmpd, write_timeout_uses_default_when_unconfigured)
 {
-  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  assert_that (gmp_write_timeout (),
+               is_equal_to (WRITE_CLIENT_TIMEOUT_DEFAULT));
   load_timeout_config ("[gmp]\n");
-  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  assert_that (gmp_write_timeout (),
+               is_equal_to (WRITE_CLIENT_TIMEOUT_DEFAULT));
 }
 
 Ensure (gmpd, write_timeout_environment_overrides_config)
@@ -248,18 +250,21 @@ Ensure (gmpd, write_timeout_environment_overrides_config)
 Ensure (gmpd, invalid_write_timeout_keeps_wait_bounded)
 {
   const char *invalid[] = {
-    "",   "invalid", "30seconds",  "0",
+    "", "invalid", "30seconds", "0",
     "-1", "2147484", "4294967297", "9223372036854775808"};
 
   load_timeout_config ("[gmp]\nwrite_timeout = 0\n");
-  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  assert_that (gmp_write_timeout (),
+               is_equal_to (WRITE_CLIENT_TIMEOUT_DEFAULT));
   load_timeout_config ("[gmp]\nwrite_timeout = invalid\n");
-  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  assert_that (gmp_write_timeout (),
+               is_equal_to (WRITE_CLIENT_TIMEOUT_DEFAULT));
   load_timeout_config ("[gmp]\nwrite_timeout = 60\n");
   for (size_t i = 0; i < G_N_ELEMENTS (invalid); i++)
     {
       g_setenv ("GVMD_GMP_WRITE_TIMEOUT", invalid[i], TRUE);
-      assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+      assert_that (gmp_write_timeout (),
+                   is_equal_to (WRITE_CLIENT_TIMEOUT_DEFAULT));
     }
 }
 
@@ -289,7 +294,8 @@ Ensure (gmpd, callback_uses_configured_write_timeout)
 Ensure (gmpd, tls_retries_preserve_arguments_and_wait_in_both_directions)
 {
   queue_tls_output ();
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (0));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (0));
   assert_that (tls_step, is_equal_to (4));
   assert_that (poll_step, is_equal_to (2));
   assert_that (to_client_start, is_equal_to (0));
@@ -300,7 +306,8 @@ Ensure (gmpd, interrupted_wait_retries_without_repeating_tls_send)
 {
   queue_tls_output ();
   mock_poll_eintr = 1;
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (0));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (0));
   assert_that (tls_step, is_equal_to (4));
   assert_that (poll_step, is_equal_to (3));
 }
@@ -309,7 +316,8 @@ Ensure (gmpd, socket_error_preserves_pending_tls_output)
 {
   queue_tls_output ();
   mock_poll_error = POLLERR;
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (-1));
   assert_that (to_client_start, is_equal_to (3));
   assert_that (to_client_end, is_equal_to (6));
   assert_that (memcmp (to_client + to_client_start, "def", 3), is_equal_to (0));
@@ -319,7 +327,8 @@ Ensure (gmpd, tls_timeout_and_poll_failure_preserve_offsets)
 {
   queue_tls_output ();
   mock_poll_timeout = 1;
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (-1));
   assert_that (to_client_start, is_equal_to (3));
   assert_that (to_client_end, is_equal_to (6));
 
@@ -327,7 +336,8 @@ Ensure (gmpd, tls_timeout_and_poll_failure_preserve_offsets)
   tls_step = 0;
   mock_poll_timeout = 0;
   mock_poll_failure = 1;
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (-1));
   assert_that (to_client_start, is_equal_to (3));
   assert_that (to_client_end, is_equal_to (6));
 }
@@ -336,7 +346,8 @@ Ensure (gmpd, tls_fatal_send_error_is_propagated)
 {
   queue_tls_output ();
   mock_tls_failure = 1;
-  assert_that (flush_to_client (&connection, 1000), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 1000),
+               is_equal_to (-1));
   assert_that (poll_step, is_equal_to (0));
   assert_that (to_client_start, is_equal_to (1));
   assert_that (to_client_end, is_equal_to (6));
@@ -346,7 +357,8 @@ Ensure (gmpd, repeated_readiness_does_not_restart_deadline)
 {
   queue_tls_output ();
   mock_clock = 1;
-  assert_that (flush_to_client (&connection, 15), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 15),
+               is_equal_to (-1));
   assert_that (tls_step, is_equal_to (3));
   assert_that (poll_step, is_equal_to (1));
   assert_that (to_client_start, is_equal_to (3));
@@ -358,7 +370,8 @@ Ensure (gmpd, repeated_interruptions_do_not_restart_deadline)
   queue_tls_output ();
   mock_clock = 1;
   mock_poll_eintr = 10;
-  assert_that (flush_to_client (&connection, 25), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 25),
+               is_equal_to (-1));
   assert_that (tls_step, is_equal_to (2));
   assert_that (poll_step, is_equal_to (2));
   assert_that (to_client_start, is_equal_to (3));
@@ -391,7 +404,8 @@ Ensure (gmpd, non_reading_client_times_out_with_low_cpu_and_keeps_offsets)
   to_client_end = TO_CLIENT_BUFFER_SIZE;
   start = g_get_monotonic_time ();
   cpu = cpu_seconds ();
-  assert_that (flush_to_client (&connection, 200), is_equal_to (-1));
+  assert_that (write_to_client_with_timeout (&connection, 200),
+               is_equal_to (-1));
   assert_that (g_get_monotonic_time () - start >= 180000, is_true);
   assert_that (g_get_monotonic_time () - start < 2000000, is_true);
   assert_that (cpu_seconds () - cpu < 0.1, is_true);
@@ -437,7 +451,8 @@ Ensure (gmpd, slow_client_receives_large_response_without_loss_or_duplication)
 
   cpu = cpu_seconds ();
   assert_that (gmpd_send_to_client (message, &connection), is_false);
-  assert_that (flush_to_client (&connection, 2000), is_equal_to (0));
+  assert_that (write_to_client_with_timeout (&connection, 2000),
+               is_equal_to (0));
   shutdown (sockets[0], SHUT_WR);
   assert_that (waitpid (reader, &status, 0), is_equal_to (reader));
   assert_that (WIFEXITED (status), is_true);
