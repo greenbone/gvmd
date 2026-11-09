@@ -72,6 +72,29 @@ The configuration of gvmd is handled via the following methods:
 * A configuration file (`gvmd.conf`) that is located in `${GVM_SYSCONF_DIR}`
   (`etc/gvm` in the given installation prefix for the default build setup).
 
+#### GMP socket timeout
+
+The `[gmp]` section configures the timeout for draining a full GMP client output
+buffer.
+
+| Config file key | Environment variable   | Type    | Default value | Description                                                  |
+|-----------------|------------------------|---------|---------------|--------------------------------------------------------------|
+| write_timeout   | GVMD_GMP_WRITE_TIMEOUT | integer | 30            | Maximum time in seconds to drain a full client output buffer |
+
+The environment variable takes precedence over the config file value. If neither
+is set, the default is 30 seconds. Values must be between 1 and 2147483; invalid
+values produce a warning and use the default. The client connection is closed if
+the timeout expires.
+
+For example, set `GVMD_GMP_WRITE_TIMEOUT=60`, or add this to `gvmd.conf`:
+
+```ini
+[gmp]
+write_timeout = 60
+```
+
+Restart gvmd after changing the configuration.
+
 #### Authentication options
 
 Options for the GMP authentication can be found in `[authentication]` section
