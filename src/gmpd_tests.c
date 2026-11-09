@@ -52,6 +52,7 @@ static int tls_step, poll_step, mock_poll_error, mock_poll_eintr;
 static int mock_poll_timeout, mock_poll_failure, mock_tls_failure;
 static gint64 mock_clock;
 static int connection_freed, callback_failed;
+static int observed_poll_timeout;
 static const void *retry_pointer;
 static size_t retry_length;
 
@@ -59,6 +60,7 @@ BeforeEach (gmpd)
 {
   int size = 4096;
 
+  g_unsetenv ("GVMD_GMP_WRITE_TIMEOUT");
   assert_that (socketpair (AF_UNIX, SOCK_STREAM, 0, sockets), is_equal_to (0));
   assert_that (
     setsockopt (sockets[0], SOL_SOCKET, SO_SNDBUF, &size, sizeof (size)),
@@ -71,12 +73,14 @@ BeforeEach (gmpd)
   mock_poll_timeout = mock_poll_failure = mock_tls_failure = 0;
   mock_clock = 0;
   connection_freed = callback_failed = 0;
+  observed_poll_timeout = 0;
   retry_pointer = NULL;
   retry_length = 0;
 }
 
 AfterEach (gmpd)
 {
+  g_unsetenv ("GVMD_GMP_WRITE_TIMEOUT");
   close (sockets[0]);
   close (sockets[1]);
 }
@@ -136,6 +140,7 @@ test_poll (struct pollfd *fds, nfds_t count, int timeout)
   assert_that (count, is_equal_to (1));
   assert_that (fds->fd, is_equal_to (sockets[0]));
   assert_that (timeout > 0, is_true);
+  observed_poll_timeout = timeout;
   assert_that (fds->events, is_equal_to (tls_step == 2 ? POLLIN : POLLOUT));
   poll_step++;
   if (mock_poll_timeout)
@@ -207,6 +212,78 @@ queue_tls_output (void)
   memcpy (to_client, "abcdef", 6);
   to_client_start = 1;
   to_client_end = 6;
+}
+
+static void
+load_timeout_config (const char *contents)
+{
+  gchar *path = NULL;
+  int fd = g_file_open_tmp ("gvmd-gmp-timeout-XXXXXX", &path, NULL);
+
+  assert_that (fd >= 0, is_true);
+  close (fd);
+  assert_that (g_file_set_contents (path, contents, -1, NULL), is_true);
+  assert_that (load_gvmd_config (path), is_equal_to (0));
+  unlink (path);
+  g_free (path);
+}
+
+Ensure (gmpd, write_timeout_uses_default_when_unconfigured)
+{
+  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  load_timeout_config ("[gmp]\n");
+  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+}
+
+Ensure (gmpd, write_timeout_environment_overrides_config)
+{
+  load_timeout_config ("[gmp]\nwrite_timeout = 60\n");
+  assert_that (gmp_write_timeout (), is_equal_to (60));
+  g_setenv ("GVMD_GMP_WRITE_TIMEOUT", " 120 ", TRUE);
+  assert_that (gmp_write_timeout (), is_equal_to (120));
+  g_unsetenv ("GVMD_GMP_WRITE_TIMEOUT");
+  assert_that (gmp_write_timeout (), is_equal_to (60));
+}
+
+Ensure (gmpd, invalid_write_timeout_keeps_wait_bounded)
+{
+  const char *invalid[] = {
+    "",   "invalid", "30seconds",  "0",
+    "-1", "2147484", "4294967297", "9223372036854775808"};
+
+  load_timeout_config ("[gmp]\nwrite_timeout = 0\n");
+  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  load_timeout_config ("[gmp]\nwrite_timeout = invalid\n");
+  assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+  load_timeout_config ("[gmp]\nwrite_timeout = 60\n");
+  for (size_t i = 0; i < G_N_ELEMENTS (invalid); i++)
+    {
+      g_setenv ("GVMD_GMP_WRITE_TIMEOUT", invalid[i], TRUE);
+      assert_that (gmp_write_timeout (), is_equal_to (WRITE_CLIENT_TIMEOUT));
+    }
+}
+
+Ensure (gmpd, write_timeout_accepts_conversion_boundaries)
+{
+  gchar *maximum = g_strdup_printf ("%d", G_MAXINT / 1000);
+
+  g_setenv ("GVMD_GMP_WRITE_TIMEOUT", "1", TRUE);
+  assert_that (gmp_write_timeout (), is_equal_to (1));
+  g_setenv ("GVMD_GMP_WRITE_TIMEOUT", maximum, TRUE);
+  assert_that (gmp_write_timeout (), is_equal_to (G_MAXINT / 1000));
+  g_free (maximum);
+}
+
+Ensure (gmpd, callback_uses_configured_write_timeout)
+{
+  gchar *message = g_strnfill (TO_CLIENT_BUFFER_SIZE - 5, 'A');
+
+  queue_tls_output ();
+  g_setenv ("GVMD_GMP_WRITE_TIMEOUT", "7", TRUE);
+  assert_that (gmpd_send_to_client (message, &connection), is_false);
+  assert_that (observed_poll_timeout > 6000, is_true);
+  assert_that (observed_poll_timeout <= 7000, is_true);
+  g_free (message);
 }
 
 Ensure (gmpd, tls_retries_preserve_arguments_and_wait_in_both_directions)
@@ -376,6 +453,14 @@ main (int argc, char **argv)
   TestSuite *suite = create_test_suite ();
   int ret;
 
+  add_test_with_context (suite, gmpd,
+                         write_timeout_uses_default_when_unconfigured);
+  add_test_with_context (suite, gmpd,
+                         write_timeout_environment_overrides_config);
+  add_test_with_context (suite, gmpd, invalid_write_timeout_keeps_wait_bounded);
+  add_test_with_context (suite, gmpd,
+                         write_timeout_accepts_conversion_boundaries);
+  add_test_with_context (suite, gmpd, callback_uses_configured_write_timeout);
   add_test_with_context (
     suite, gmpd, tls_retries_preserve_arguments_and_wait_in_both_directions);
   add_test_with_context (suite, gmpd,
