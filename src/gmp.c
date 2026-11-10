@@ -972,6 +972,7 @@ typedef struct
   char *snmp_credential_id;         ///< SNMP credential for new target.
   char *krb5_credential_id;         ///< Kerberos 5 credential for new target.
   char *name;                       ///< Name of new target.
+  char *source;                     ///< Source of new target.
 } create_target_data_t;
 
 /**
@@ -1008,6 +1009,7 @@ create_target_data_reset (create_target_data_t *data)
   free (data->snmp_credential_id);
   free (data->krb5_credential_id);
   free (data->name);
+  free (data->source);
 
   memset (data, 0, sizeof (create_target_data_t));
 }
@@ -2866,6 +2868,7 @@ typedef struct
   char *snmp_credential_id;          ///< SNMP credential for target.
   char *krb5_credential_id;          ///< Kerberos 5 credential for target.
   char *target_id;                   ///< Target UUID.
+  char *source;                      ///< Source of target.
 } modify_target_data_t;
 
 /**
@@ -2900,6 +2903,7 @@ modify_target_data_reset (modify_target_data_t *data)
   free (data->snmp_credential_id);
   free (data->krb5_credential_id);
   free (data->target_id);
+  free (data->source);
 
   memset (data, 0, sizeof (modify_target_data_t));
 }
@@ -4258,6 +4262,7 @@ typedef enum
   CLIENT_CREATE_TARGET_ESXI_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_HOSTS,
   CLIENT_CREATE_TARGET_NAME,
+  CLIENT_CREATE_TARGET_SOURCE,
   CLIENT_CREATE_TARGET_PORT_LIST,
   CLIENT_CREATE_TARGET_PORT_RANGE,
   CLIENT_CREATE_TARGET_KRB5_CREDENTIAL,
@@ -4572,6 +4577,7 @@ typedef enum
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_ONLY,
   CLIENT_MODIFY_TARGET_REVERSE_LOOKUP_UNIFY,
   CLIENT_MODIFY_TARGET_NAME,
+  CLIENT_MODIFY_TARGET_SOURCE,
   CLIENT_MODIFY_TARGET_PORT_LIST,
   CLIENT_MODIFY_TARGET_KRB5_CREDENTIAL,
   CLIENT_MODIFY_TARGET_SMB_CREDENTIAL,
@@ -6983,6 +6989,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             gvm_append_string (&modify_target_data->name, "");
             set_client_state (CLIENT_MODIFY_TARGET_NAME);
           }
+        else if (strcasecmp ("SOURCE", element_name) == 0)
+          {
+            gvm_append_string (&modify_target_data->source, "");
+            set_client_state (CLIENT_MODIFY_TARGET_SOURCE);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_MODIFY_TARGET_ALIVE_TESTS:
@@ -7993,6 +8004,11 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
           {
             gvm_append_string (&create_target_data->name, "");
             set_client_state (CLIENT_CREATE_TARGET_NAME);
+          }
+        else if (strcasecmp ("SOURCE", element_name) == 0)
+          {
+            gvm_append_string (&create_target_data->source, "");
+            set_client_state (CLIENT_CREATE_TARGET_SOURCE);
           }
         ELSE_READ_OVER;
 
@@ -19118,7 +19134,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           char *ssh_elevate_name, *ssh_elevate_uuid;
           char *krb5_name, *krb5_uuid;
           const char *port_list_uuid, *port_list_name, *ssh_port;
-          const char *hosts, *exclude_hosts, *reverse_lookup_only;
+          const char *hosts, *exclude_hosts, *reverse_lookup_only, *source;
           const char *reverse_lookup_unify, *allow_simultaneous_ips;
           int alive_tests;
           credential_t ssh_credential, smb_credential;
@@ -19359,6 +19375,7 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
 
           SEND_GET_COMMON (target, &get_targets_data->get, &targets);
 
+          source = target_iterator_source (&targets);
           hosts = target_iterator_hosts (&targets);
           exclude_hosts = target_iterator_exclude_hosts (&targets);
           max_hosts = manage_count_hosts_max (hosts, exclude_hosts, 0);
@@ -19369,12 +19386,14 @@ handle_get_targets (gmp_parser_t *gmp_parser, GError **error)
           allow_simultaneous_ips
             = target_iterator_allow_simultaneous_ips (&targets);
 
-          SENDF_TO_CLIENT_OR_FAIL ("<hosts>%s</hosts>"
+          SENDF_TO_CLIENT_OR_FAIL ("<source>%s</source>"
+                                   "<hosts>%s</hosts>"
                                    "<exclude_hosts>%s</exclude_hosts>"
                                    "<max_hosts>%i</max_hosts>"
                                    "<port_list id=\"%s\">"
                                    "<name>%s</name>"
                                    "<trash>%i</trash>",
+                                   source,
                                    hosts,
                                    exclude_hosts ? exclude_hosts : "",
                                    max_hosts,
@@ -24646,7 +24665,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
           credential_t krb5_credential = 0;
           target_t new_target;
 
-          if (create_target_data->copy)
+          if (create_target_data->copy && create_target_data->source)
+            SEND_TO_CLIENT_OR_FAIL
+              (XML_ERROR_SYNTAX ("create_target",
+                                 "Source cannot be set when copying a target"));
+          else if (create_target_data->copy)
             switch (copy_target (create_target_data->name,
                                  create_target_data->comment,
                                  create_target_data->copy,
@@ -24870,6 +24893,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                           ? g_strstrip (create_target_data->alive_tests_str)
                           : NULL,
                          create_target_data->allow_simultaneous_ips,
+                         create_target_data->source,
                          &new_target))
             {
               case 1:
@@ -24989,6 +25013,11 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                     " or sub-elements, but not both."));
                 log_event_fail ("target", "Target", NULL, "created");
                 break;
+              case 31:
+                SEND_TO_CLIENT_OR_FAIL
+                 (XML_ERROR_SYNTAX ("create_target", "Invalid source"));
+                log_event_fail ("target", "Target", NULL, "created");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("create_target",
@@ -25034,6 +25063,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET, COPY);
       CLOSE (CLIENT_CREATE_TARGET, HOSTS);
       CLOSE (CLIENT_CREATE_TARGET, NAME);
+      CLOSE (CLIENT_CREATE_TARGET, SOURCE);
       CLOSE (CLIENT_CREATE_TARGET, PORT_LIST);
       CLOSE (CLIENT_CREATE_TARGET, PORT_RANGE);
       CLOSE (CLIENT_CREATE_TARGET, KRB5_CREDENTIAL);
@@ -27607,7 +27637,8 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                          modify_target_data->alive_tests_str
                           ? g_strstrip (modify_target_data->alive_tests_str)
                           : NULL,
-                         modify_target_data->allow_simultaneous_ips))
+                         modify_target_data->allow_simultaneous_ips,
+                         modify_target_data->source))
             {
               case 1:
                 SEND_TO_CLIENT_OR_FAIL
@@ -27891,6 +27922,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                 modify_target_data->target_id,
                                 "modified");
                 break;
+              case 31:
+                SEND_TO_CLIENT_OR_FAIL
+                  (XML_ERROR_SYNTAX ("modify_target", "Invalid source"));
+                log_event_fail ("target", "Target",
+                                modify_target_data->target_id, "modified");
+                break;
               case 99:
                 SEND_TO_CLIENT_OR_FAIL
                  (XML_ERROR_SYNTAX ("modify_target",
@@ -27937,6 +27974,7 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_MODIFY_TARGET, COMMENT);
       CLOSE (CLIENT_MODIFY_TARGET, HOSTS);
       CLOSE (CLIENT_MODIFY_TARGET, NAME);
+      CLOSE (CLIENT_MODIFY_TARGET, SOURCE);
       CLOSE (CLIENT_MODIFY_TARGET, PORT_LIST);
       CLOSE (CLIENT_MODIFY_TARGET, KRB5_CREDENTIAL);
       CLOSE (CLIENT_MODIFY_TARGET, SSH_CREDENTIAL);
@@ -29960,6 +29998,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
       APPEND (CLIENT_CREATE_TARGET_NAME,
               &create_target_data->name);
 
+      APPEND (CLIENT_CREATE_TARGET_SOURCE,
+              &create_target_data->source);
+
       APPEND (CLIENT_CREATE_TARGET_PORT_RANGE,
               &create_target_data->port_range);
 
@@ -30310,6 +30351,9 @@ gmp_xml_handle_text (/* unused */ GMarkupParseContext* context,
 
       APPEND (CLIENT_MODIFY_TARGET_NAME,
               &modify_target_data->name);
+
+      APPEND (CLIENT_MODIFY_TARGET_SOURCE,
+              &modify_target_data->source);
 
       APPEND (CLIENT_MODIFY_TARGET_SSH_CREDENTIAL_PORT,
               &modify_target_data->ssh_port);

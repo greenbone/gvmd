@@ -6482,9 +6482,16 @@ END:VCALENDAR
         also be set. The SSH elevate credential and the SSH credential
         must differ.
       </p>
+      <p>
+        The optional source element labels how the target was created.
+        It is supplied by the client and defaults to manual. When copying a
+        target, source is copied from the original and the element must be
+        omitted.
+      </p>
     </description>
     <pattern>
       <e>name</e>
+      <o><e>source</e></o>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <or>
@@ -6520,6 +6527,11 @@ END:VCALENDAR
       <pattern>
         <t>name</t>
       </pattern>
+    </ele>
+    <ele>
+      <name>source</name>
+      <summary>Target source: manual or active_directory; defaults to manual</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>comment</name>
@@ -6769,6 +6781,16 @@ END:VCALENDAR
                                 id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_target_response>
       </response>
+    </example>
+    <example>
+      <summary>Create a target from an Active Directory computer</summary>
+      <request>
+        <create_target>
+          <name>AD computer</name>
+          <source>active_directory</source>
+          <hosts>computer.example.com</hosts>
+        </create_target>
+      </request>
     </example>
   </command>
   <command>
@@ -33374,6 +33396,7 @@ END:VCALENDAR
           <e>in_use</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
+          <e>source</e>
           <e>hosts</e>
           <e>exclude_hosts</e>
           <e>max_hosts</e>
@@ -33423,6 +33446,11 @@ END:VCALENDAR
           <name>modification_time</name>
           <summary>Date and time the target was last modified</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>source</name>
+          <summary>How the target was created: manual or active_directory</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -33949,6 +33977,7 @@ END:VCALENDAR
             <modification_time>2018-08-29T20:21:33Z</modification_time>
             <writable>0</writable>
             <in_use>7</in_use>
+            <source>manual</source>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="">
@@ -33980,6 +34009,7 @@ END:VCALENDAR
             <modification_time>2018-08-29T20:21:33Z</modification_time>
             <writable>0</writable>
             <in_use>4</in_use>
+            <source>manual</source>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
@@ -41289,6 +41319,7 @@ END:VCALENDAR
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <o><e>source</e></o>
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>hosts</e></o>
@@ -41321,6 +41352,11 @@ END:VCALENDAR
       <name>name</name>
       <summary>Name of target</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>source</name>
+      <summary>Target source: manual or active_directory; omitted to keep the current source</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>hosts</name>

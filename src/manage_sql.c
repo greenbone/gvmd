@@ -24828,11 +24828,11 @@ manage_restore (const char *id)
         }
 
       sql ("INSERT INTO targets"
-           " (uuid, owner, name, hosts, exclude_hosts, comment,"
+           " (uuid, owner, name, source, hosts, exclude_hosts, comment,"
            "  port_list, reverse_lookup_only, reverse_lookup_unify,"
            "  alive_test, allow_simultaneous_ips,"
            "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
+           " SELECT uuid, owner, name, source, hosts, exclude_hosts, comment,"
            "        port_list, reverse_lookup_only, reverse_lookup_unify,"
            "        alive_test, allow_simultaneous_ips,"
            "        creation_time, modification_time"
