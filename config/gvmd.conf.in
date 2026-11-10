@@ -32,3 +32,6 @@ agent_jwt_access_duration = 600
 
 agent_jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/agent-inventory-secret
 # agent_jwt_encode_secret = <INSERT_SHARED_SECRET_HERE>
+
+[gmp]
+write_timeout = 30

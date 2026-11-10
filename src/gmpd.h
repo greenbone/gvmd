@@ -27,6 +27,13 @@
 #endif
 
 /**
+ * @brief Default maximum seconds spent draining a full client output buffer.
+ */
+#ifndef WRITE_CLIENT_TIMEOUT_DEFAULT
+#define WRITE_CLIENT_TIMEOUT_DEFAULT 30
+#endif
+
+/**
  * @brief Size of \ref from_client data buffers, in bytes.
  */
 #define FROM_BUFFER_SIZE 1048576
