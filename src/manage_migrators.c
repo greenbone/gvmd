@@ -4279,6 +4279,37 @@ migrate_281_to_282 ()
   return 0;
 }
 
+/**
+ * @brief Migrate the database from version 282 to version 283.
+ *
+ * Add a source to active and trashed targets. Existing targets are manual.
+ *
+ * @return 0 success, -1 error.
+ */
+int
+migrate_282_to_283 ()
+{
+  sql_begin_immediate ();
+
+  if (manage_db_version () != 282)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  sql ("ALTER TABLE targets"
+       " ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'manual';");
+
+  sql ("ALTER TABLE targets_trash"
+       " ADD COLUMN IF NOT EXISTS source text NOT NULL DEFAULT 'manual';");
+
+  set_db_version (283);
+
+  sql_commit ();
+
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4367,6 +4398,7 @@ static migrator_t database_migrators[] = {
   {280, migrate_279_to_280},
   {281, migrate_280_to_281},
   {282, migrate_281_to_282},
+  {283, migrate_282_to_283},
   /* End marker. */
   {-1, NULL}};
 

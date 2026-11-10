@@ -93,14 +93,15 @@ create_target (const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, credential_t,
                credential_t, const char *, credential_t, credential_t,
                credential_t, credential_t, const char *, const char *,
-               GPtrArray *, const char *, const char *, target_t*);
+               GPtrArray *, const char *, const char *, const char *,
+               target_t*);
 
 int
 modify_target (const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, GPtrArray *,
-               const char *, const char *);
+               const char *, const char *, const char *);
 
 int
 target_count (const get_data_t *);
@@ -114,6 +115,9 @@ init_ad_target_candidate_iterator_by_hostname (iterator_t *, const get_data_t *,
 
 const char *
 target_iterator_hosts (iterator_t *);
+
+const char *
+target_iterator_source (iterator_t *);
 
 const char *
 target_iterator_exclude_hosts (iterator_t *);
