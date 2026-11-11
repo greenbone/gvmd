@@ -4546,6 +4546,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         denial returns status 400, "Active Directory destination is not allowed."
         Ordinary credential use and referrals are unaffected.
       </p>
+      <p>
+        Creating or copying an Active Directory credential additionally requires the
+        verify_active_directory_credential permission.
+      </p>
       @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
@@ -10916,6 +10920,8 @@ END:VCALENDAR
         Objects are returned for processing without being persisted by this
         command. The command requires ENABLE_AD_INTEGRATION at build time and
         the Active Directory integration runtime feature to be enabled.
+        Admin and Super Admin have access by default. Other users require an
+        explicit get_active_directory_objects permission.
       </p>
       <p>
         An optional group_dn restricts results to explicit direct members of
@@ -39569,6 +39575,10 @@ END:VCALENDAR
         "Active Directory destination is not allowed." Ordinary credential use
         and referrals are unaffected.
       </p>
+      <p>
+        Modifying an Active Directory credential also requires the
+        verify_active_directory_credential permission.
+      </p>
       @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
@@ -42672,7 +42682,9 @@ END:VCALENDAR
     <description>
       <p>
         The client uses the verify_active_directory_credential command to test
-        an Active Directory connection and bind credentials.
+        an Active Directory connection and bind credentials. Admin and Super
+        Admin have access by default. Other users require an explicit
+        verify_active_directory_credential permission.
       </p>
       <p>
         The request must contain either only the credential_id attribute to
