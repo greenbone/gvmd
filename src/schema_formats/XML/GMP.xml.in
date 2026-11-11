@@ -4538,6 +4538,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         the manager creates a password only credential.  Otherwise the
         manager autogenerates a key-based credential.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        Creating or copying an Active Directory credential additionally requires the
+        verify_active_directory_credential permission.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <e>name</e>
@@ -10907,6 +10913,8 @@ END:VCALENDAR
         Objects are returned for processing without being persisted by this
         command. The command requires ENABLE_AD_INTEGRATION at build time and
         the Active Directory integration runtime feature to be enabled.
+        Admin and Super Admin have access by default. Other users require an
+        explicit get_active_directory_objects permission.
       </p>
       <p>
         An optional group_dn restricts results to explicit direct members of
@@ -39550,6 +39558,12 @@ END:VCALENDAR
         The login and password can only be changed for password credentials.
         Modification of login or password on package credentials is forbidden.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        Modifying an Active Directory credential also requires the
+        verify_active_directory_credential permission.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <attrib>
@@ -42652,7 +42666,9 @@ END:VCALENDAR
     <description>
       <p>
         The client uses the verify_active_directory_credential command to test
-        an Active Directory connection and bind credentials.
+        an Active Directory connection and bind credentials. Admin and Super
+        Admin have access by default. Other users require an explicit
+        verify_active_directory_credential permission.
       </p>
       <p>
         The request must contain either only the credential_id attribute to

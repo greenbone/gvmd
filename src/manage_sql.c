@@ -4221,12 +4221,15 @@ check_db_permissions ()
     {
       if (strstr (command[0].name, "DESCRIBE_AUTH") == NULL
           && strcmp (command[0].name, "GET_VERSION")
+          && strcmp (command[0].name, "GET_ACTIVE_DIRECTORY_OBJECTS")
           && strcmp (command[0].name, "MODIFY_AUTH")
           && strcmp (command[0].name, "MODIFY_LICENSE")
           && strstr (command[0].name, "GROUP") == NULL
           && strstr (command[0].name, "ROLE") == NULL
           && strstr (command[0].name, "SYNC") == NULL
-          && strstr (command[0].name, "USER") == NULL)
+          && strstr (command[0].name, "USER") == NULL
+          && strcmp (command[0].name,
+                     "VERIFY_ACTIVE_DIRECTORY_CREDENTIAL"))
         add_role_permission (ROLE_UUID_USER, command[0].name);
       command++;
     }
@@ -4247,6 +4250,7 @@ check_db_permissions ()
   while (command[0].name)
     {
       if ((strstr (command[0].name, "GET") == command[0].name)
+          && strcmp (command[0].name, "GET_ACTIVE_DIRECTORY_OBJECTS")
           && strcmp (command[0].name, "GET_GROUPS")
           && strcmp (command[0].name, "GET_ROLES")
           && strcmp (command[0].name, "GET_USERS")
@@ -4267,6 +4271,9 @@ check_db_permissions ()
   // Delete revoked permissions for built-in roles
   sql ("DELETE FROM permissions"
        " WHERE name = 'modify_auth' AND owner IS NULL;");
+  sql ("DELETE FROM permissions"
+       " WHERE name = 'verify_active_directory_credential'"
+       " AND owner IS NULL;");
 }
 
 /**
