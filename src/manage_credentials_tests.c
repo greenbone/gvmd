@@ -32,7 +32,6 @@ static const gchar *retained_ad_tls_mode;
 static gchar *previous_ad_hosts_env;
 static gchar *previous_ad_ports_env;
 #endif
-static int credential_permission_allowed;
 static int transaction_active;
 static int transaction_begins;
 static int transaction_commits;
@@ -41,6 +40,11 @@ static int common_writes;
 static int pending_common_writes;
 static int pending_ad_writes;
 static int ad_connector_calls;
+static gboolean may_create_credential;
+static gboolean may_modify_credential;
+static gboolean may_verify_ad_credential;
+static gboolean may_get_ad_objects;
+static const gchar *stored_credential_type;
 
 /* Mocks */
 credential_return_t
@@ -100,6 +104,43 @@ __wrap_copy_credential_rows (const char *name,
     *new_credential = 123;
 
   return copy_rows_result;
+}
+
+int
+__wrap_acl_user_may (const char *permission)
+{
+  if (g_str_equal (permission, "create_credential"))
+    return may_create_credential;
+  if (g_str_equal (permission, "modify_credential"))
+    return may_modify_credential;
+  if (g_str_equal (permission, "verify_active_directory_credential"))
+    return may_verify_ad_credential;
+  if (g_str_equal (permission, "get_active_directory_objects"))
+    return may_get_ad_objects;
+  return FALSE;
+}
+
+gboolean
+__wrap_resource_with_name_exists (const char *name,
+                                  const char *type,
+                                  resource_t except)
+{
+  return FALSE;
+}
+
+gboolean
+__wrap_find_credential_with_permission (const char *id,
+                                        credential_t *credential,
+                                        const char *permission)
+{
+  *credential = 42;
+  return FALSE;
+}
+
+char *
+__wrap_credential_type (credential_t credential)
+{
+  return g_strdup (stored_credential_type);
 }
 
 void
@@ -164,31 +205,6 @@ __wrap_sql_rollback (void)
   pending_ad_writes = 0;
 }
 
-int
-__wrap_acl_user_may (const char *permission)
-{
-  (void) permission;
-  return credential_permission_allowed;
-}
-
-gboolean
-__wrap_find_credential_with_permission (const char *uuid,
-                                        credential_t *credential,
-                                        const char *permission)
-{
-  (void) uuid;
-  (void) permission;
-  *credential = 42;
-  return FALSE;
-}
-
-char *
-__wrap_credential_type (credential_t credential)
-{
-  (void) credential;
-  return g_strdup ("ad");
-}
-
 gchar *
 __wrap_credential_value (credential_t credential, const char *name)
 {
@@ -201,16 +217,6 @@ __wrap_credential_value (credential_t credential, const char *name)
     return g_strdup (retained_ad_tls_mode);
   fail_test ("Unexpected retained credential field");
   return NULL;
-}
-
-int
-__wrap_resource_with_name_exists (const char *name, const char *type,
-                                  resource_t resource)
-{
-  (void) name;
-  (void) type;
-  (void) resource;
-  return FALSE;
 }
 
 int
@@ -294,7 +300,6 @@ BeforeEach (manage_credentials)
 
   check_private_key_result = 0;
   ad_test_enabled = TRUE;
-  credential_permission_allowed = TRUE;
   retained_ad_host = "dc.example.com";
   retained_ad_port = "636";
   retained_ad_tls_mode = "ldaps";
@@ -309,6 +314,12 @@ BeforeEach (manage_credentials)
   g_setenv ("GVMD_AD_ALLOWED_PORTS", "389,636,3268,3269", TRUE);
   load_active_directory_config ();
 #endif
+
+  may_create_credential = TRUE;
+  may_modify_credential = TRUE;
+  may_verify_ad_credential = TRUE;
+  may_get_ad_objects = FALSE;
+  stored_credential_type = "ad";
 }
 
 AfterEach (manage_credentials)
@@ -1764,7 +1775,8 @@ Ensure (manage_credentials, ad_command_permissions_precede_policy)
   data.type = "ad";
   data.credential_id = "credential-id";
   data.ad_credential_data.host = "invalid:636";
-  credential_permission_allowed = FALSE;
+  may_create_credential = FALSE;
+  may_modify_credential = FALSE;
   expect_no_storage_calls ();
   assert_that (create_credential (&data, &credential),
                is_equal_to (CREDENTIAL_PERMISSION_DENIED));
@@ -1960,6 +1972,104 @@ Ensure (manage_credentials, modify_ad_updates_host_port_tls_and_password)
   assert_that (modify_active_directory_credential (&data, 42),
                is_equal_to (CREDENTIAL_OK));
 }
+
+Ensure (manage_credentials, create_ad_rejects_get_only_permission)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 42;
+  data.type = "ad";
+  may_verify_ad_credential = FALSE;
+  may_get_ad_objects = TRUE;
+
+  expect_no_storage_calls ();
+  assert_that (create_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, create_ad_accepts_ad_permission)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 42;
+  data.type = "ad";
+  data.ad_credential_data.host = NULL;
+  may_verify_ad_credential = TRUE;
+
+  expect_no_storage_calls ();
+  assert_that (create_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_HOST_REQUIRED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, modify_ad_requires_ad_permission)
+{
+  credential_data_t data = {.credential_id = "credential-id"};
+  stored_credential_type = "ad";
+  may_verify_ad_credential = FALSE;
+
+  expect_no_storage_calls ();
+  assert_that (modify_credential (&data),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+}
+
+Ensure (manage_credentials, modify_ad_rejects_get_only_permission)
+{
+  credential_data_t data = {.credential_id = "credential-id"};
+  stored_credential_type = "ad";
+  may_verify_ad_credential = FALSE;
+  may_get_ad_objects = TRUE;
+
+  expect_no_storage_calls ();
+  assert_that (modify_credential (&data),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+}
+
+Ensure (manage_credentials, modify_ad_accepts_verify_permission)
+{
+  credential_data_t data = {.credential_id = "credential-id"};
+  stored_credential_type = "ad";
+  may_verify_ad_credential = TRUE;
+
+  expect_no_storage_calls ();
+  assert_that (modify_credential (&data), is_equal_to (CREDENTIAL_OK));
+}
+
+Ensure (manage_credentials, copy_ad_rejects_get_only_permission)
+{
+  credential_t credential = 42;
+  ad_test_enabled = TRUE;
+  stored_credential_type = "ad";
+  may_verify_ad_credential = FALSE;
+  may_get_ad_objects = TRUE;
+
+  assert_that (copy_credential (NULL, NULL, "source-id", &credential),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, copy_ad_unavailable_when_feature_disabled)
+{
+  credential_t credential = 42;
+  ad_test_enabled = FALSE;
+  stored_credential_type = "ad";
+
+  assert_that (copy_credential (NULL, NULL, "source-id", &credential),
+               is_equal_to (CREDENTIAL_AD_INTEGRATION_UNAVAILABLE));
+  assert_that (credential, is_equal_to (0));
+  ad_test_enabled = TRUE;
+}
+
+Ensure (manage_credentials, copy_ad_accepts_verify_permission)
+{
+  credential_t credential = 42;
+  ad_test_enabled = TRUE;
+  stored_credential_type = "ad";
+  may_verify_ad_credential = TRUE;
+
+  assert_that (copy_credential (NULL, NULL, "source-id", &credential),
+               is_equal_to (CREDENTIAL_OK));
+  assert_that (credential, is_equal_to (123));
+}
 #endif
 
 int
@@ -2133,6 +2243,22 @@ main (int argc, char **argv)
                          modify_ad_rejects_invalid_ca_certificate);
   add_test_with_context (suite, manage_credentials,
                          modify_ad_updates_host_port_tls_and_password);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_get_only_permission);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_accepts_ad_permission);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_requires_ad_permission);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_rejects_get_only_permission);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_accepts_verify_permission);
+  add_test_with_context (suite, manage_credentials,
+                         copy_ad_rejects_get_only_permission);
+  add_test_with_context (suite, manage_credentials,
+                         copy_ad_unavailable_when_feature_disabled);
+  add_test_with_context (suite, manage_credentials,
+                         copy_ad_accepts_verify_permission);
 #endif
 
   if (argc > 1)
