@@ -269,11 +269,6 @@ verify_active_directory_credential_run (gmp_parser_t *gmp_parser,
         "verify_active_directory_credential",
         "Could not connect to Active Directory");
       break;
-    case VERIFY_AD_CREDENTIAL_BIND_FAILED:
-      response = XML_ERROR_UNAVAILABLE (
-        "verify_active_directory_credential",
-        "Active Directory bind failed");
-      break;
     case VERIFY_AD_CREDENTIAL_FEATURE_DISABLED:
       response = XML_ERROR_SYNTAX (
         "verify_active_directory_credential",

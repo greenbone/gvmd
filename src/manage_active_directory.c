@@ -342,15 +342,19 @@ verify_active_directory_credential (const gchar *credential_id,
       result = VERIFY_AD_CREDENTIAL_OK;
       break;
     case AD_CONNECTOR_BIND_ERROR:
-      result = VERIFY_AD_CREDENTIAL_BIND_FAILED;
+      g_warning ("Active Directory bind failed");
+      result = VERIFY_AD_CREDENTIAL_CONNECTION_FAILED;
       break;
     case AD_CONNECTOR_CONNECTION_ERROR:
+      g_warning ("Could not connect to Active Directory");
       result = VERIFY_AD_CREDENTIAL_CONNECTION_FAILED;
       break;
     case AD_CONNECTOR_INVALID_VALUE:
-      result = supplied
-                 ? VERIFY_AD_CREDENTIAL_INTERNAL_ERROR
-                 : VERIFY_AD_CREDENTIAL_INVALID_STORED_CONFIGURATION;
+      if (supplied)
+        g_warning ("Internal error connecting to Active Directory");
+      else
+        g_warning ("Invalid stored Active Directory configuration");
+      result = VERIFY_AD_CREDENTIAL_CONNECTION_FAILED;
       break;
     default:
       result = VERIFY_AD_CREDENTIAL_INTERNAL_ERROR;
