@@ -3910,7 +3910,7 @@ handle_cve_references (resource_t cve_db_id, char *cve_id,
  * @param[out] config_operator Return of the operator joining the config nodes
  * @param[out] negate          Return whether the node selection is negated
  *
- * @return 0 on success, -1 on error
+ * @return 0 on success, 1 if this configuration should be skipped, -1 on error
  */
 static int
 get_cve_configuration_fields (cJSON* configuration_item,
@@ -3931,6 +3931,13 @@ get_cve_configuration_fields (cJSON* configuration_item,
   *config_operator = json_object_item_string (configuration_item,
                                               "operator");
   *negate = json_object_item_boolean (configuration_item, "negate", 0);
+  if (*config_operator == NULL && cJSON_GetArraySize (*nodes_array) > 1)
+    {
+      g_warning ("%s: Skipping multiple nodes without a configuration operator"
+                 " for %s.",
+                 __func__, cve_id);
+      return 1;
+    }
 
   return 0;
 }
@@ -4365,13 +4372,16 @@ handle_cve_configurations (resource_t cve_db_id,
       cJSON *nodes_array, *node_item;
       resource_t root_id;
       char *config_operator;
-      int negate;
+      int negate, fields_status;
 
-      if (get_cve_configuration_fields (configuration_item,
-                                        cve_id,
-                                        &nodes_array,
-                                        &config_operator,
-                                        &negate))
+      fields_status = get_cve_configuration_fields (configuration_item,
+                                                    cve_id,
+                                                    &nodes_array,
+                                                    &config_operator,
+                                                    &negate);
+      if (fields_status > 0)
+        continue;
+      if (fields_status < 0)
         {
           g_string_free (software, TRUE);
           g_hash_table_destroy (current_cve_hashed_cpes);
