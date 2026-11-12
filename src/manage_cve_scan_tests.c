@@ -234,6 +234,19 @@ arrange_hardware_first (evaluation_fixture_t *data)
   data->root->children->pdata[1] = data->fxos;
 }
 
+/**
+ * @brief Replace the CPE being evaluated in a fixture.
+ *
+ * @param[in,out] data  Fixture owning the target.
+ * @param[in] uri       New target CPE URI.
+ */
+static void
+arrange_target (evaluation_fixture_t *data, const char *uri)
+{
+  free_cpe_host_product (data->target);
+  data->target = new_cpe_host_product (uri);
+}
+
 Describe (manage_cve_scan);
 BeforeEach (manage_cve_scan)
 {
@@ -353,6 +366,207 @@ Ensure (manage_cve_scan, or_children_match_when_hardware_is_first)
   assert_that (configuration_query_count, is_equal_to (0));
 }
 
+Ensure (manage_cve_scan, negated_and_matches_when_hardware_is_absent)
+{
+  cpe_evaluation_t result;
+  fixture->root->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_and_rejects_matching_operands)
+{
+  cpe_evaluation_t result;
+  fixture->root->negate = TRUE;
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_or_rejects_matching_application)
+{
+  cpe_evaluation_t result;
+  fixture->root->operator= CPE_OPERATOR_OR;
+  fixture->root->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_or_rejects_matching_application_and_hardware)
+{
+  cpe_evaluation_t result;
+  fixture->root->operator= CPE_OPERATOR_OR;
+  fixture->root->negate = TRUE;
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_environment_matches_when_absent)
+{
+  cpe_evaluation_t result;
+  fixture->hardware->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_true);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_environment_matches_when_absent_and_first)
+{
+  cpe_evaluation_t result;
+  fixture->hardware->negate = TRUE;
+  arrange_hardware_first (fixture);
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_true);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_environment_rejects_present_hardware)
+{
+  cpe_evaluation_t result;
+  fixture->hardware->negate = TRUE;
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan,
+        negated_environment_rejects_present_hardware_when_first)
+{
+  cpe_evaluation_t result;
+  fixture->hardware->negate = TRUE;
+  arrange_hardware_first (fixture);
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, nested_negation_matches_when_hardware_is_present)
+{
+  cpe_evaluation_t result;
+  fixture->root->negate = TRUE;
+  fixture->hardware->negate = TRUE;
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, nested_negation_rejects_absent_hardware)
+{
+  cpe_evaluation_t result;
+  fixture->root->negate = TRUE;
+  fixture->hardware->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan,
+        negated_leaf_matches_absence_without_creating_vulnerability)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->hardware;
+  fixture->hardware->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_leaf_rejects_present_hardware)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->hardware;
+  fixture->hardware->negate = TRUE;
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negate_applies_after_and_criterion_short_circuit)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->range;
+  fixture->range->operator= CPE_OPERATOR_AND;
+  fixture->range->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negate_applies_after_or_criterion_short_circuit)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->fxos;
+  fixture->fxos->negate = TRUE;
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
 Ensure (manage_cve_scan, empty_platform_does_not_satisfy_and_configuration)
 {
   cpe_evaluation_t result;
@@ -383,6 +597,22 @@ Ensure (manage_cve_scan, empty_and_does_not_match)
   assert_that (configuration_query_count, is_equal_to (0));
 }
 
+Ensure (manage_cve_scan, negated_empty_and_matches)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->fxos;
+  fixture->fxos->operator= CPE_OPERATOR_AND;
+  fixture->fxos->negate = TRUE;
+  g_ptr_array_set_size (fixture->fxos->criteria, 0);
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
 Ensure (manage_cve_scan, empty_or_does_not_match)
 {
   cpe_evaluation_t result;
@@ -395,6 +625,22 @@ Ensure (manage_cve_scan, empty_or_does_not_match)
     fixture->configuration, fixture->inventory, &fixture->target->cpe);
 
   assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (0));
+}
+
+Ensure (manage_cve_scan, negated_empty_or_matches)
+{
+  cpe_evaluation_t result;
+  fixture->configuration->root = fixture->fxos;
+  fixture->fxos->operator= CPE_OPERATOR_OR;
+  fixture->fxos->negate = TRUE;
+  g_ptr_array_set_size (fixture->fxos->criteria, 0);
+
+  result = evaluate_cpe_configuration (
+    fixture->configuration, fixture->inventory, &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
   assert_that (result.vulnerable, is_false);
   assert_that (configuration_query_count, is_equal_to (0));
 }
@@ -426,12 +672,59 @@ Ensure (manage_cve_scan, loads_complete_configuration_in_one_query)
   assert_that (criterion->vulnerable, is_true);
 }
 
+Ensure (manage_cve_scan, loaded_configuration_evaluates_without_more_queries)
+{
+  cpe_evaluation_t result;
+  arrange_target (fixture, "cpe:/o:cisco:fxos:7.0");
+  g_ptr_array_add (fixture->inventory,
+                   new_cpe_host_product (fixture->target->uri));
+  loaded_configuration = load_cpe_configuration (ROOT_NODE);
+
+  result = evaluate_cpe_configuration (loaded_configuration, fixture->inventory,
+                                       &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_true);
+  assert_that (configuration_query_count, is_equal_to (1));
+}
+
+Ensure (manage_cve_scan,
+        another_inventory_version_does_not_mark_target_vulnerable)
+{
+  cpe_evaluation_t result;
+  g_ptr_array_add (fixture->inventory,
+                   new_cpe_host_product ("cpe:/o:cisco:fxos:7.0"));
+  loaded_configuration = load_cpe_configuration (ROOT_NODE);
+
+  result = evaluate_cpe_configuration (loaded_configuration, fixture->inventory,
+                                       &fixture->target->cpe);
+
+  assert_that (result.match, is_true);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (1));
+}
+
+Ensure (manage_cve_scan, loaded_configuration_rejects_excluded_hardware)
+{
+  cpe_evaluation_t result;
+  arrange_target (fixture, "cpe:/o:cisco:fxos:7.0");
+  g_ptr_array_add (fixture->inventory,
+                   new_cpe_host_product (fixture->target->uri));
+  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
+  loaded_configuration = load_cpe_configuration (ROOT_NODE);
+
+  result = evaluate_cpe_configuration (loaded_configuration, fixture->inventory,
+                                       &fixture->target->cpe);
+
+  assert_that (result.match, is_false);
+  assert_that (result.vulnerable, is_false);
+  assert_that (configuration_query_count, is_equal_to (1));
+}
+
 Ensure (manage_cve_scan, missing_match_string_preserves_other_or_matches)
 {
   cpe_evaluation_t result;
   stored_rows[2].criteria = NULL;
-  stored_rows[3].negate = FALSE;
-  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
   loaded_configuration = load_cpe_configuration (ROOT_NODE);
 
   result = evaluate_cpe_configuration (loaded_configuration, fixture->inventory,
@@ -448,8 +741,6 @@ Ensure (manage_cve_scan, missing_match_string_remains_false_in_and_node)
   stored_rows[2].criteria = NULL;
   stored_rows[1].operator= "AND";
   stored_rows[2].operator= "AND";
-  stored_rows[3].negate = FALSE;
-  g_ptr_array_add (fixture->inventory, new_cpe_host_product (hardware_cpe));
   loaded_configuration = load_cpe_configuration (ROOT_NODE);
 
   result = evaluate_cpe_configuration (loaded_configuration, fixture->inventory,
@@ -483,6 +774,29 @@ Ensure (manage_cve_scan, invalid_operator_rejects_configuration)
 Ensure (manage_cve_scan, empty_configuration_query_returns_no_configuration)
 {
   stored_row_count = 0;
+
+  loaded_configuration = load_cpe_configuration (ROOT_NODE);
+
+  assert_that (loaded_configuration, is_null);
+  assert_that (configuration_query_count, is_equal_to (1));
+}
+
+Ensure (manage_cve_scan, unavailable_criterion_under_negated_root_is_rejected)
+{
+  stored_rows[2].criteria = NULL;
+  stored_rows[0].negate = TRUE;
+
+  loaded_configuration = load_cpe_configuration (ROOT_NODE);
+
+  assert_that (loaded_configuration, is_null);
+  assert_that (configuration_query_count, is_equal_to (1));
+}
+
+Ensure (manage_cve_scan, unavailable_criterion_under_negated_node_is_rejected)
+{
+  stored_rows[2].criteria = NULL;
+  stored_rows[1].negate = TRUE;
+  stored_rows[2].negate = TRUE;
 
   loaded_configuration = load_cpe_configuration (ROOT_NODE);
 
@@ -560,11 +874,50 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_cve_scan,
                          or_children_match_when_hardware_is_first);
   add_test_with_context (suite, manage_cve_scan,
+                         negated_and_matches_when_hardware_is_absent);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_and_rejects_matching_operands);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_or_rejects_matching_application);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_or_rejects_matching_application_and_hardware);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_environment_matches_when_absent);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_environment_matches_when_absent_and_first);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_environment_rejects_present_hardware);
+  add_test_with_context (
+    suite, manage_cve_scan,
+    negated_environment_rejects_present_hardware_when_first);
+  add_test_with_context (suite, manage_cve_scan,
+                         nested_negation_matches_when_hardware_is_present);
+  add_test_with_context (suite, manage_cve_scan,
+                         nested_negation_rejects_absent_hardware);
+  add_test_with_context (
+    suite, manage_cve_scan,
+    negated_leaf_matches_absence_without_creating_vulnerability);
+  add_test_with_context (suite, manage_cve_scan,
+                         negated_leaf_rejects_present_hardware);
+  add_test_with_context (suite, manage_cve_scan,
+                         negate_applies_after_and_criterion_short_circuit);
+  add_test_with_context (suite, manage_cve_scan,
+                         negate_applies_after_or_criterion_short_circuit);
+  add_test_with_context (suite, manage_cve_scan,
                          empty_platform_does_not_satisfy_and_configuration);
   add_test_with_context (suite, manage_cve_scan, empty_and_does_not_match);
+  add_test_with_context (suite, manage_cve_scan, negated_empty_and_matches);
   add_test_with_context (suite, manage_cve_scan, empty_or_does_not_match);
+  add_test_with_context (suite, manage_cve_scan, negated_empty_or_matches);
   add_test_with_context (suite, manage_cve_scan,
                          loads_complete_configuration_in_one_query);
+  add_test_with_context (suite, manage_cve_scan,
+                         loaded_configuration_evaluates_without_more_queries);
+  add_test_with_context (
+    suite, manage_cve_scan,
+    another_inventory_version_does_not_mark_target_vulnerable);
+  add_test_with_context (suite, manage_cve_scan,
+                         loaded_configuration_rejects_excluded_hardware);
   add_test_with_context (suite, manage_cve_scan,
                          missing_match_string_preserves_other_or_matches);
   add_test_with_context (suite, manage_cve_scan,
@@ -575,6 +928,10 @@ main (int argc, char **argv)
                          invalid_operator_rejects_configuration);
   add_test_with_context (suite, manage_cve_scan,
                          empty_configuration_query_returns_no_configuration);
+  add_test_with_context (suite, manage_cve_scan,
+                         unavailable_criterion_under_negated_root_is_rejected);
+  add_test_with_context (suite, manage_cve_scan,
+                         unavailable_criterion_under_negated_node_is_rejected);
   add_test_with_context (suite, manage_cve_scan,
                          loads_inventory_once_and_parses_all_products);
   add_test_with_context (suite, manage_cve_scan, caches_successful_loads);
