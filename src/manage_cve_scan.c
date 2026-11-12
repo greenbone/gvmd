@@ -260,7 +260,8 @@ new_cpe_node (resource_t id, cpe_operator_t operator, gboolean negate)
  * @brief Load all nodes and criteria of one NVD 2.0 configuration.
  *
  * Nodes are ordered so repeated criterion rows can be attached to their node.
- * Empty nodes and unavailable match strings survive the outer joins.
+ * Empty nodes survive the outer joins. Unavailable match strings remain false
+ * operands; reject them under negation to avoid inventing positive matches.
  *
  * @param[in] root_id  Configuration root node ID.
  *
@@ -336,6 +337,19 @@ load_cpe_configuration (resource_t root_id)
   for (guint i = 0; i < configuration->nodes->len; i++)
     {
       node = g_ptr_array_index (configuration->nodes, i);
+      for (guint j = 0; j < node->criteria->len; j++)
+        {
+          const cpe_criterion_t *criterion =
+            g_ptr_array_index (node->criteria, j);
+          if (criterion->unavailable
+              && (node->negate || configuration->root->negate))
+            {
+              g_warning ("%s: Unavailable criterion under negation in %llu",
+                         __func__, root_id);
+              free_cpe_configuration (configuration);
+              return NULL;
+            }
+        }
       if (node != configuration->root)
         g_ptr_array_add (configuration->root->children, node);
     }
@@ -512,6 +526,11 @@ evaluate_cpe_node (const cpe_node_t *node, const GPtrArray *inventory,
     }
 complete:
   result.vulnerable &= result.match;
+  if (node->negate)
+    {
+      result.match = !result.match;
+      result.vulnerable = FALSE;
+    }
   return result;
 }
 
