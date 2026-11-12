@@ -10920,11 +10920,12 @@ END:VCALENDAR
         An optional group_dn restricts results to explicit direct members of
         that group. The base_dn remains the directory location in which members
         are searched, defaulting to the credential's base DN. A supplied
-        base_dn must be equal to or below the credential's base DN. The scope
+        base_dn and group_dn must be equal to or below the credential's base
+        DN. The group_dn may be outside a narrower supplied base_dn. The scope
         defaults to onelevel: only matching entries immediately below base_dn
-        are returned. Use subtree to find members at all directory depths.
-        The containment check may reject equivalent DNs with differently
-        cased attribute values.
+        are returned. Use subtree to find members at all directory depths. The
+        containment checks may reject equivalent DNs with differently cased
+        attribute values.
       </p>
     </description>
     <pattern>
@@ -10981,7 +10982,7 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>group_dn</name>
-      <summary>Optional nonempty LDAPv3 DN selecting explicit direct group members within the search base and scope</summary>
+      <summary>Optional nonempty LDAPv3 DN within the credential's base DN, selecting explicit direct group members within the search base and scope</summary>
       <pattern>text</pattern>
     </ele>
     <ele>

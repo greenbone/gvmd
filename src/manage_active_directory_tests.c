@@ -374,11 +374,13 @@ Ensure (manage_active_directory, object_map_selects_actual_object_type)
   add_object_attribute (source, "cn", "group", NULL);
   add_object_attribute (source, "ou", "hosts", NULL);
   add_object_attribute (source, "dNSHostName", "host.example.com", NULL);
+  add_object_attribute (source, "displayName", "Test group", NULL);
   add_object_attribute (source, "memberOf", "CN=parent,DC=example,DC=com", NULL);
   copy = ad_directory_object_from_search_object (source);
   assert_that (g_hash_table_size (copy->attributes), is_equal_to (2));
-  assert_that (ad_object_attribute_value (copy, "memberOf"),
-               is_equal_to_string ("CN=parent,DC=example,DC=com"));
+  assert_that (ad_object_attribute_value (copy, "displayName"),
+               is_equal_to_string ("Test group"));
+  assert_that (ad_object_attribute_value (copy, "memberOf"), is_null);
   assert_that (ad_object_attribute_value (copy, "ou"), is_null);
   assert_that (ad_object_attribute_value (copy, "dNSHostName"),
                is_null);
@@ -738,7 +740,7 @@ Ensure (manage_active_directory, configure_search_accepts_valid_options)
   assert_that (requested_attributes, is_equal_to_string (
     "description,cn,objectcategory,ou,dnshostname,samaccountname,operatingsystem,"
     "useraccountcontrol,displayname,"
-    "grouptype,memberof"));
+    "grouptype"));
 
   ad_search_config_free (config);
   config = ad_search_config_new ();
@@ -747,7 +749,44 @@ Ensure (manage_active_directory, configure_search_accepts_valid_options)
   assert_that (configure_ad_search (config, &params, credential_base_dn),
                is_equal_to (AD_CONNECTOR_OK));
   assert_that (requested_attributes, is_equal_to_string (
-    "description,cn,objectcategory,samaccountname,displayname,grouptype,memberof"));
+    "description,cn,objectcategory,samaccountname,displayname,grouptype"));
+  ad_search_config_free (config);
+}
+
+Ensure (manage_active_directory,
+        configure_search_accepts_group_within_credential_base)
+{
+  ad_search_config_t config = ad_search_config_new ();
+  get_ad_objects_params_t params = {
+    .base_dn = "OU=Computers,DC=example,DC=com",
+    .group_dn = "CN=Servers,OU=Groups,DC=example,DC=com",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_COMPUTER,
+    .max_results = 100
+  };
+
+  assert_that (configure_ad_search (config, &params,
+                                    "DC=example,DC=com"),
+               is_equal_to (AD_CONNECTOR_OK));
+
+  ad_search_config_free (config);
+}
+
+Ensure (manage_active_directory,
+        configure_search_rejects_group_outside_credential_base)
+{
+  ad_search_config_t config = ad_search_config_new ();
+  get_ad_objects_params_t params = {
+    .group_dn = "CN=Servers,DC=other,DC=com",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_COMPUTER,
+    .max_results = 100
+  };
+
+  assert_that (configure_ad_search (config, &params,
+                                    "DC=example,DC=com"),
+               is_equal_to (AD_CONNECTOR_INVALID_VALUE));
+
   ad_search_config_free (config);
 }
 
@@ -1105,6 +1144,12 @@ main (int argc, char **argv)
                          search_params_reject_invalid_values);
   add_test_with_context (suite, manage_active_directory,
                          configure_search_accepts_valid_options);
+  add_test_with_context (
+    suite, manage_active_directory,
+    configure_search_accepts_group_within_credential_base);
+  add_test_with_context (
+    suite, manage_active_directory,
+    configure_search_rejects_group_outside_credential_base);
   add_test_with_context (suite, manage_active_directory,
                          configure_search_propagates_invalid_values);
   add_test_with_context (suite, manage_active_directory,

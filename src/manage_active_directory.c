@@ -51,8 +51,7 @@ static const ad_directory_attribute_t ad_basic_attributes[] = {
   { AD_OBJECT_TYPE_COMPUTER, "operatingsystem" },
   { AD_OBJECT_TYPE_COMPUTER, "useraccountcontrol" },
   { AD_OBJECT_TYPE_GROUP, "displayname" },
-  { AD_OBJECT_TYPE_GROUP, "grouptype" },
-  { AD_OBJECT_TYPE_GROUP, "memberof" }
+  { AD_OBJECT_TYPE_GROUP, "grouptype" }
 };
 
 static const ad_directory_attribute_t ad_detail_attributes[] = {
@@ -1099,6 +1098,11 @@ configure_ad_search (ad_search_config_t config,
 
   if (params->base_dn
       && !ad_search_base_dn_is_within (params->base_dn, credential_base_dn))
+    return AD_CONNECTOR_INVALID_VALUE;
+
+  if (params->group_dn
+      && !ad_search_base_dn_is_within (params->group_dn,
+                                       credential_base_dn))
     return AD_CONNECTOR_INVALID_VALUE;
 
   base_dn = params->base_dn ? params->base_dn : credential_base_dn;
