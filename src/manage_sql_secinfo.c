@@ -3704,8 +3704,8 @@ save_node (resource_t cve_id, const char *operator, gboolean negate)
 static void
 set_root_id (long int id, long int root_id)
 {
-  sql ("UPDATE scap2.cpe_match_nodes set root_id = %i"
-       " WHERE id = %i;",
+  sql ("UPDATE scap2.cpe_match_nodes set root_id = %li"
+       " WHERE id = %li;",
        root_id,
        id);
 }
@@ -3930,8 +3930,7 @@ get_cve_configuration_fields (cJSON* configuration_item,
 
   *config_operator = json_object_item_string (configuration_item,
                                               "operator");
-  if (*config_operator)
-    *negate = json_object_item_boolean (configuration_item, "negate", 0);
+  *negate = json_object_item_boolean (configuration_item, "negate", 0);
 
   return 0;
 }
@@ -4127,8 +4126,8 @@ handle_cve_configuration_node (resource_t cve_db_id,
     {
       *node_id_ptr = save_node (cve_db_id, node_operator, negate);
 
-      if (*node_id_ptr < 0)
-        *node_id_ptr = *node_id_ptr;
+      if (*root_id_ptr < 0)
+        *root_id_ptr = *node_id_ptr;
 
       set_root_id (*node_id_ptr, *root_id_ptr);
     }
