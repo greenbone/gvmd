@@ -541,9 +541,9 @@ sign_certificate ()
   log_write "Signed certificate request in $GVM_CERT_REQUEST_FILENAME with CA certificate in $GVM_SIGNING_CA_CERT_FILENAME to generate certificate in $GVM_CERT_FILENAME"
 }
 
-# Install a certificate
+# Install a certificate and key
 # Where should the certificate and the key be installed to?
-install_cert ()
+install_cert_key ()
 {
   log_verbose "Installing certificate and key."
 
@@ -843,7 +843,7 @@ then
     create_private_key "$GVM_KEY_FILENAME"
     create_certificate
     log_verbose "  CA certificate generated."
-    install_cert "${GVM_CERT_PREFIX}"
+    install_cert_key "${GVM_CERT_PREFIX}"
     log_verbose "  CA certificate and key installed."
     CREATE_SELF_SIGNED=0
   else
@@ -856,7 +856,7 @@ then
   create_certificate
   sign_certificate
   log_verbose "  Server certificate generated."
-  install_cert "${GVM_CERT_PREFIX}"
+  install_cert_key "${GVM_CERT_PREFIX}"
   log_verbose "  Server certificate and key installed."
 
   CERTIFICATE_TYPE=$CLIENT_CERTIFICATE
@@ -865,7 +865,7 @@ then
   create_certificate
   sign_certificate
   log_verbose "  Client certificate generated."
-  install_cert "${GVM_CERT_PREFIX}"
+  install_cert_key "${GVM_CERT_PREFIX}"
   log_verbose "  Client certificate and key installed."
 
   clean_up
@@ -903,7 +903,7 @@ fi
 if [ $INSTALL_CA -eq 1 ]
 then
   set_up
-  install_cert "ca"
+  install_cert_key "ca"
 fi
 
 if [ $CREATE_CERTIFICATE -eq 1 ]
@@ -918,7 +918,7 @@ then
 
   if [ $INSTALL_CERTIFICATE -eq 1 ]
   then
-    install_cert "$GVM_CERT_PREFIX"
+    install_cert_key "$GVM_CERT_PREFIX"
   fi
 fi
 
@@ -931,7 +931,7 @@ fi
 if [ $INSTALL_CERTIFICATE -eq 1 ]
 then
   set_up
-  install_cert "$GVM_CERT_PREFIX"
+  install_cert_key "$GVM_CERT_PREFIX"
 fi
 
 # If the files have been installed, clean up the generation directory.
