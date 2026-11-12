@@ -2251,21 +2251,40 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Convert a CPE name from formatted string to URI and SQL quote it.
  *
+ * Preserve CPE wildcard escapes, escaped literal wildcards and percent signs
+ * while decoding other URI escapes for the stored name.
+ *
  * @param[in]  name        Name.
  * @param[in]  quote_func  Function for quoting.
  *
- * @return URI converted uoted name.
+ * @return Newly allocated, URI converted and SQL quoted name.
  */
 static gchar *
 fs_to_uri_convert_and_quote_cpe_name (const char *name,
-                                      gchar* (*quote_func)(const char*))
+                                      gchar *(*quote_func) (const char *) )
 {
   gchar *name_converted, *name_decoded, *name_tilde, *quoted_name;
+  GString *name_protected;
 
   name_converted = fs_cpe_to_uri_cpe (name);
-  name_decoded = g_uri_unescape_string (name_converted, NULL);
-  name_tilde = string_replace (name_decoded,
-                               "~", "%7E", "%7e", NULL);
+  name_protected = g_string_sized_new (strlen (name_converted));
+  for (const gchar *cursor = name_converted; *cursor; cursor++)
+    {
+      /* Add one escaping layer to CPE-sensitive sequences so URI decoding
+       * leaves them intact. Protect literal percent signs in the same pass
+       * to avoid turning text such as %2502 into an active wildcard. */
+      if (*cursor == '%'
+          && (strncmp (cursor, "%01", 3) == 0 || strncmp (cursor, "%02", 3) == 0
+              || g_ascii_strncasecmp (cursor, "%2a", 3) == 0
+              || g_ascii_strncasecmp (cursor, "%3f", 3) == 0
+              || strncmp (cursor, "%25", 3) == 0))
+        g_string_append (name_protected, "%25");
+      else
+        g_string_append_c (name_protected, *cursor);
+    }
+  name_decoded = g_uri_unescape_string (name_protected->str, NULL);
+  g_string_free (name_protected, TRUE);
+  name_tilde = string_replace (name_decoded, "~", "%7E", "%7e", NULL);
   g_free (name_decoded);
   g_free (name_converted);
   quoted_name = quote_func (name_tilde);
