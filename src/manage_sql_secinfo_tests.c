@@ -25,6 +25,18 @@ typedef struct
 
 static import_fixture_t *import_fixture;
 
+static gchar *converted_name;
+
+typedef struct
+{
+  inserts_t inserts, matches_inserts;
+  db_copy_buffer_t copy_buffer, matches_copy_buffer;
+  gchar **stored_fields;
+  cpe_struct_t criterion, target, excluded_target, longer_target;
+} match_string_fixture_t;
+
+static match_string_fixture_t *match_string_fixture;
+
 Describe (manage_sql_secinfo);
 BeforeEach (manage_sql_secinfo)
 {
@@ -34,10 +46,33 @@ BeforeEach (manage_sql_secinfo)
   test_item = NULL;
   copy_buffer_initialized = FALSE;
   import_fixture = NULL;
+  match_string_fixture = NULL;
+  converted_name = NULL;
 }
 AfterEach (manage_sql_secinfo)
 {
   cJSON_Delete (test_item);
+  g_free (converted_name);
+  if (match_string_fixture)
+    {
+      inserts_t *inserts = &match_string_fixture->inserts;
+      inserts_t *matches = &match_string_fixture->matches_inserts;
+      if (inserts->statement)
+        g_string_free (inserts->statement, TRUE);
+      if (matches->statement)
+        g_string_free (matches->statement, TRUE);
+      inserts_free (inserts);
+      inserts_free (matches);
+      db_copy_buffer_cleanup (&match_string_fixture->copy_buffer);
+      db_copy_buffer_cleanup (&match_string_fixture->matches_copy_buffer);
+      g_strfreev (match_string_fixture->stored_fields);
+      cpe_struct_free (&match_string_fixture->criterion);
+      cpe_struct_free (&match_string_fixture->target);
+      cpe_struct_free (&match_string_fixture->excluded_target);
+      cpe_struct_free (&match_string_fixture->longer_target);
+      g_free (match_string_fixture);
+    }
+
   if (copy_buffer_initialized)
     db_copy_buffer_cleanup (&copy_buffer);
   if (import_fixture)
@@ -253,6 +288,270 @@ Ensure (manage_sql_secinfo, fast_import_continues_after_skipped_configuration)
                is_equal_to_string ("1\t1\t7\tOR\t0\n2\t2\t7\tAND\t0\n"));
 }
 
+/**
+ * @brief Arrange a match-string feed entry and parsed host CPEs.
+ *
+ * @param[in] version         Formatted-string version of the criterion.
+ * @param[in] target_version  Host version expected to match.
+ * @param[in] longer_version  Longer host version to check wildcard length.
+ *
+ * @return Owned fixture, released by the test teardown.
+ */
+static match_string_fixture_t *
+new_match_string_fixture (const char *version, const char *target_version,
+                          const char *longer_version)
+{
+  match_string_fixture_t *data = g_new0 (match_string_fixture_t, 1);
+  cJSON *match_string = cJSON_CreateObject ();
+  gchar *criteria =
+    g_strdup_printf ("cpe:2.3:o:vendor:product:%s:*:*:*:*:*:*:*", version);
+
+  test_item = cJSON_CreateObject ();
+  cJSON_AddItemToObject (test_item, "matchString", match_string);
+  cJSON_AddStringToObject (match_string, "criteria", criteria);
+  cJSON_AddStringToObject (match_string, "matchCriteriaId", "match-id");
+  cJSON_AddStringToObject (match_string, "status", "Active");
+  g_free (criteria);
+  inserts_init (&data->inserts, 10, 0, "INSERT INTO unused VALUES", NULL);
+  inserts_init (&data->matches_inserts, 10, 0,
+                "INSERT INTO unused_matches VALUES", NULL);
+  db_copy_buffer_init (&data->copy_buffer, 1024, "COPY unused FROM STDIN");
+  db_copy_buffer_init (&data->matches_copy_buffer, 1024,
+                       "COPY unused_matches FROM STDIN");
+  cpe_struct_init (&data->criterion);
+  cpe_struct_init (&data->target);
+  cpe_struct_init (&data->excluded_target);
+  cpe_struct_init (&data->longer_target);
+  gchar *uri = g_strdup_printf ("cpe:/o:vendor:product:%s", target_version);
+  uri_cpe_to_cpe_struct (uri, &data->target);
+  g_free (uri);
+  uri_cpe_to_cpe_struct ("cpe:/o:vendor:product:9.1", &data->excluded_target);
+  uri = g_strdup_printf ("cpe:/o:vendor:product:%s", longer_version);
+  uri_cpe_to_cpe_struct (uri, &data->longer_target);
+  g_free (uri);
+  return data;
+}
+
+Ensure (manage_sql_secinfo, insert_preserves_star_criterion_matching)
+{
+  int result;
+  gboolean matches, excluded_matches, longer_matches;
+  match_string_fixture = new_match_string_fixture ("8.*", "8.1", "8.12");
+
+  result = handle_json_cpe_match_string (
+    &match_string_fixture->inserts, &match_string_fixture->matches_inserts,
+    &match_string_fixture->copy_buffer,
+    &match_string_fixture->matches_copy_buffer, FALSE, test_item);
+  match_string_fixture->stored_fields =
+    g_strsplit (match_string_fixture->inserts.statement->str, "'", -1);
+  uri_cpe_to_cpe_struct (match_string_fixture->stored_fields[3],
+                         &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+  excluded_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                       &match_string_fixture->excluded_target);
+  longer_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                     &match_string_fixture->longer_target);
+
+  assert_that (result, is_equal_to (0));
+  assert_that (match_string_fixture->stored_fields[3],
+               is_equal_to_string ("cpe:/o:vendor:product:8.%02"));
+  assert_that (matches, is_true);
+  assert_that (excluded_matches, is_false);
+  assert_that (longer_matches, is_true);
+}
+
+Ensure (manage_sql_secinfo, insert_preserves_question_mark_criterion_matching)
+{
+  int result;
+  gboolean matches, excluded_matches, longer_matches;
+  match_string_fixture = new_match_string_fixture ("8?", "81", "812");
+
+  result = handle_json_cpe_match_string (
+    &match_string_fixture->inserts, &match_string_fixture->matches_inserts,
+    &match_string_fixture->copy_buffer,
+    &match_string_fixture->matches_copy_buffer, FALSE, test_item);
+  match_string_fixture->stored_fields =
+    g_strsplit (match_string_fixture->inserts.statement->str, "'", -1);
+  uri_cpe_to_cpe_struct (match_string_fixture->stored_fields[3],
+                         &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+  excluded_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                       &match_string_fixture->excluded_target);
+  longer_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                     &match_string_fixture->longer_target);
+
+  assert_that (result, is_equal_to (0));
+  assert_that (match_string_fixture->stored_fields[3],
+               is_equal_to_string ("cpe:/o:vendor:product:8%01"));
+  assert_that (matches, is_true);
+  assert_that (excluded_matches, is_false);
+  assert_that (longer_matches, is_false);
+}
+
+Ensure (manage_sql_secinfo, copy_preserves_star_criterion_matching)
+{
+  int result;
+  gboolean matches, excluded_matches, longer_matches;
+  match_string_fixture = new_match_string_fixture ("8.*", "8.1", "8.12");
+
+  result = handle_json_cpe_match_string (
+    &match_string_fixture->inserts, &match_string_fixture->matches_inserts,
+    &match_string_fixture->copy_buffer,
+    &match_string_fixture->matches_copy_buffer, TRUE, test_item);
+  match_string_fixture->stored_fields =
+    g_strsplit (match_string_fixture->copy_buffer.data->str, "\t", -1);
+  uri_cpe_to_cpe_struct (match_string_fixture->stored_fields[1],
+                         &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+  excluded_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                       &match_string_fixture->excluded_target);
+  longer_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                     &match_string_fixture->longer_target);
+
+  assert_that (result, is_equal_to (0));
+  assert_that (match_string_fixture->stored_fields[1],
+               is_equal_to_string ("cpe:/o:vendor:product:8.%02"));
+  assert_that (matches, is_true);
+  assert_that (excluded_matches, is_false);
+  assert_that (longer_matches, is_true);
+}
+
+Ensure (manage_sql_secinfo, copy_preserves_question_mark_criterion_matching)
+{
+  int result;
+  gboolean matches, excluded_matches, longer_matches;
+  match_string_fixture = new_match_string_fixture ("8?", "81", "812");
+
+  result = handle_json_cpe_match_string (
+    &match_string_fixture->inserts, &match_string_fixture->matches_inserts,
+    &match_string_fixture->copy_buffer,
+    &match_string_fixture->matches_copy_buffer, TRUE, test_item);
+  match_string_fixture->stored_fields =
+    g_strsplit (match_string_fixture->copy_buffer.data->str, "\t", -1);
+  uri_cpe_to_cpe_struct (match_string_fixture->stored_fields[1],
+                         &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+  excluded_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                       &match_string_fixture->excluded_target);
+  longer_matches = cpe_struct_match (&match_string_fixture->criterion,
+                                     &match_string_fixture->longer_target);
+
+  assert_that (result, is_equal_to (0));
+  assert_that (match_string_fixture->stored_fields[1],
+               is_equal_to_string ("cpe:/o:vendor:product:8%01"));
+  assert_that (matches, is_true);
+  assert_that (excluded_matches, is_false);
+  assert_that (longer_matches, is_false);
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_dotted_question_mark)
+{
+  gboolean matches;
+  match_string_fixture = new_match_string_fixture ("8.?", "8.1", "8.12");
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (
+    "cpe:2.3:o:vendor:product:8.?:*:*:*:*:*:*:*", g_strdup);
+  uri_cpe_to_cpe_struct (converted_name, &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.%01"));
+  assert_that (matches, is_true);
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_literal_star)
+{
+  gboolean matches;
+  match_string_fixture = new_match_string_fixture ("8.1", "8.1", "8.12");
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (
+    "cpe:2.3:o:vendor:product:8.\\*:*:*:*:*:*:*:*", g_strdup);
+  uri_cpe_to_cpe_struct (converted_name, &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.%2A"));
+  assert_that (matches, is_false);
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_literal_question_mark)
+{
+  gboolean matches;
+  match_string_fixture = new_match_string_fixture ("8.1", "8.1", "8.12");
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (
+    "cpe:2.3:o:vendor:product:8.\\?:*:*:*:*:*:*:*", g_strdup);
+  uri_cpe_to_cpe_struct (converted_name, &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.%3F"));
+  assert_that (matches, is_false);
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_literal_percent_escape)
+{
+  gboolean matches;
+  match_string_fixture = new_match_string_fixture ("8.1", "8.1", "8.12");
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (
+    "cpe:2.3:o:vendor:product:8.\\%02:*:*:*:*:*:*:*", g_strdup);
+  uri_cpe_to_cpe_struct (converted_name, &match_string_fixture->criterion);
+  matches = cpe_struct_match (&match_string_fixture->criterion,
+                              &match_string_fixture->target);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.%2502"));
+  assert_that (matches, is_false);
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_ordinary_name)
+{
+  const char *name = "cpe:2.3:o:vendor:product:8.1:*:*:*:*:*:*:*";
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_quote);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.1"));
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_tilde)
+{
+  const char *name = "cpe:2.3:o:vendor:product:8.1\\~test:*:*:*:*:*:*:*";
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_quote);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.1~test"));
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_sql_quoting)
+{
+  const char *name = "cpe:2.3:o:vendor:product:8.\\':*:*:*:*:*:*:*";
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_quote);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.''"));
+}
+
+Ensure (manage_sql_secinfo, conversion_preserves_copy_escaping)
+{
+  const char *name = "cpe:2.3:o:vendor:product:8.\\\\:*:*:*:*:*:*:*";
+
+  converted_name = fs_to_uri_convert_and_quote_cpe_name (name, sql_copy_escape);
+
+  assert_that (converted_name,
+               is_equal_to_string ("cpe:/o:vendor:product:8.\\\\"));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -280,6 +579,29 @@ main (int argc, char **argv)
                          normal_import_continues_after_skipped_configuration);
   add_test_with_context (suite, manage_sql_secinfo,
                          fast_import_continues_after_skipped_configuration);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         insert_preserves_star_criterion_matching);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         insert_preserves_question_mark_criterion_matching);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         copy_preserves_star_criterion_matching);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         copy_preserves_question_mark_criterion_matching);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_literal_star);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_literal_question_mark);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_literal_percent_escape);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_ordinary_name);
+  add_test_with_context (suite, manage_sql_secinfo, conversion_preserves_tilde);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_sql_quoting);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_copy_escaping);
+  add_test_with_context (suite, manage_sql_secinfo,
+                         conversion_preserves_dotted_question_mark);
   if (argc > 1)
     ret = run_single_test (suite, argv[1], create_text_reporter ());
   else
