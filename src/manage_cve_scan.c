@@ -419,57 +419,100 @@ load_cpe_host_inventory (report_host_t report_host)
 }
 
 /**
- * @brief Evaluate a loaded node using the existing shared matching state.
+ * @brief Check a parsed CPE against a criterion and its version bounds.
  *
- * @param[in] node          Node to evaluate.
- * @param[in] inventory     Parsed host product inventory.
- * @param[in] host_cpe      CPE for which vulnerable evidence is required.
- * @param[in,out] result    Matching state shared by all operands.
+ * @param[in] criterion  Criterion to evaluate.
+ * @param[in] target     Parsed CPE being checked.
+ *
+ * @return TRUE if the CPE and version satisfy the criterion.
+ */
+static gboolean
+cpe_criterion_matches (const cpe_criterion_t *criterion,
+                       const cpe_struct_t *target)
+{
+  /* The library matcher does not modify either CPE, but its API lacks const. */
+  cpe_struct_t source = criterion->cpe;
+  cpe_struct_t candidate = *target;
+
+  return cpe_struct_match (&source, &candidate)
+         && check_version (target->version, criterion->version_start_incl,
+                           criterion->version_start_excl,
+                           criterion->version_end_incl,
+                           criterion->version_end_excl)
+              == 1;
+}
+
+/**
+ * @brief Combine independent operand results, retaining vulnerable evidence.
+ *
+ * @param[in,out] result  Accumulated evaluation.
+ * @param[in] operand     Independent operand evaluation.
+ * @param[in] is_and      TRUE for conjunction, FALSE for disjunction.
  */
 static void
+combine_cpe_evaluation (cpe_evaluation_t *result, cpe_evaluation_t operand,
+                        gboolean is_and)
+{
+  result->match =
+    is_and ? result->match && operand.match : result->match || operand.match;
+  result->vulnerable |= operand.match && operand.vulnerable;
+}
+
+/**
+ * @brief Evaluate an immutable node without storage access.
+ *
+ * @param[in] node       Node to evaluate.
+ * @param[in] inventory  Parsed host product inventory.
+ * @param[in] host_cpe   CPE for which vulnerable evidence is required.
+ *
+ * @return Node applicability and vulnerable-product evidence.
+ */
+static cpe_evaluation_t
 evaluate_cpe_node (const cpe_node_t *node, const GPtrArray *inventory,
-                   const cpe_struct_t *host_cpe, cpe_evaluation_t *result)
+                   const cpe_struct_t *host_cpe)
 {
   gboolean is_and = node->operator== CPE_OPERATOR_AND;
+  cpe_evaluation_t result = {is_and, FALSE};
+
+  if (node->children->len == 0 && node->criteria->len == 0)
+    {
+      result.match = FALSE;
+      goto complete;
+    }
 
   for (guint i = 0; i < node->children->len; i++)
     {
-      evaluate_cpe_node (g_ptr_array_index (node->children, i), inventory,
-                         host_cpe, result);
-      if ((is_and && !result->match)
-          || (!is_and && result->match && result->vulnerable))
-        return;
+      cpe_evaluation_t child = evaluate_cpe_node (
+        g_ptr_array_index (node->children, i), inventory, host_cpe);
+      combine_cpe_evaluation (&result, child, is_and);
+      if ((is_and && !result.match)
+          || (!is_and && result.match && result.vulnerable))
+        goto complete;
     }
   for (guint i = 0; i < node->criteria->len; i++)
     {
       const cpe_criterion_t *criterion = g_ptr_array_index (node->criteria, i);
-      if (criterion->unavailable)
-        continue;
-      for (guint j = 0; j < inventory->len; j++)
+      cpe_evaluation_t operand = {FALSE, FALSE};
+      for (guint j = 0; !criterion->unavailable && j < inventory->len; j++)
         {
           const cpe_host_product_t *product = g_ptr_array_index (inventory, j);
-          cpe_struct_t source = criterion->cpe;
-          cpe_struct_t target = product->cpe;
           if (g_str_has_prefix (product->uri, criterion->product)
-              && cpe_struct_match (&source, &target)
-              && check_version (target.version, criterion->version_start_incl,
-                                criterion->version_start_excl,
-                                criterion->version_end_incl,
-                                criterion->version_end_excl)
-                   == 1)
-            result->match = TRUE;
+              && cpe_criterion_matches (criterion, &product->cpe))
+            {
+              operand.match = TRUE;
+              break;
+            }
         }
-      if (result->match && criterion->vulnerable)
-        {
-          cpe_struct_t source = criterion->cpe;
-          cpe_struct_t target = *host_cpe;
-          if (cpe_struct_match (&source, &target))
-            result->vulnerable = TRUE;
-        }
-      if ((is_and && !result->match)
-          || (!is_and && result->match && result->vulnerable))
-        return;
+      operand.vulnerable = operand.match && criterion->vulnerable
+                           && cpe_criterion_matches (criterion, host_cpe);
+      combine_cpe_evaluation (&result, operand, is_and);
+      if ((is_and && !result.match)
+          || (!is_and && result.match && result.vulnerable))
+        goto complete;
     }
+complete:
+  result.vulnerable &= result.match;
+  return result;
 }
 
 /**
@@ -486,9 +529,7 @@ evaluate_cpe_configuration (const cpe_configuration_t *configuration,
                             const GPtrArray *inventory,
                             const cpe_struct_t *host_cpe)
 {
-  cpe_evaluation_t result = {FALSE, FALSE};
-  evaluate_cpe_node (configuration->root, inventory, host_cpe, &result);
-  return result;
+  return evaluate_cpe_node (configuration->root, inventory, host_cpe);
 }
 
 /**
