@@ -38,12 +38,12 @@ Verify existing GVM certificate infrastructure
 Create a certificate authority (CA)
 .TP
 \fB\-I\fR
-Install a CA certificate, use with the GVM_CERT_DIR and
+Install a CA certificate and key, use with the GVM_CERT_DIR and
 GVM_CERT_PREFIX environment variables
 .TP
 \fB\-i\fR
-Install a certificate, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
-environment variables
+Install a certificate and key, use with the GVM_CERT_DIR and
+GVM_CERT_PREFIX environment variables
 .TP
 \fB\-R\fR
 Create a request for a certificate with the CA basic constraint true
