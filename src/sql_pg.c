@@ -64,6 +64,52 @@ extern int log_errors;
  */
 static PGconn *conn = NULL;
 
+/**
+ * @brief Server side prepared statements, SQL text to statement name.
+ *
+ * Without this every statement is parsed and planned again on each
+ * call: PQexecParams sends the statement text every time and PostgreSQL
+ * plans it every time.  Only PQprepare plus PQexecPrepared lets the
+ * server keep the parsed statement, and once PostgreSQL settles on a
+ * generic plan for it (it tries custom plans for the first few
+ * executions), the plan as well.
+ *
+ * Keyed by the statement text, which is a compile time constant at each
+ * of the call sites that pass parameters, so the table stays bounded by
+ * the number of such call sites.
+ *
+ * Only statements that actually bind parameters are cached.  The printf
+ * style calls format their values straight into the text, so every call
+ * would produce a different key and the table would grow without limit -
+ * and there would be nothing to gain, because a plan for
+ * "WHERE id = 4711" is of no use to "WHERE id = 4712". */
+static GHashTable *prepared_statements = NULL;
+
+/**
+ * @brief Counter for generating prepared statement names.
+ */
+static unsigned int prepared_statement_count = 0;
+
+/**
+ * @brief Forget all prepared statements.
+ *
+ * Prepared statements live in the database session.  Whenever the connection
+ * goes away the names become meaningless, and reusing one would make the
+ * next PQexecPrepared fail with "prepared statement does not exist".  So this
+ * has to run everywhere conn is dropped, including sql_close_fork, where the
+ * child abandons the parent's connection without closing it.
+ */
+static void
+sql_prepared_statements_clear ()
+{
+  if (prepared_statements)
+    {
+      g_hash_table_destroy (prepared_statements);
+      prepared_statements = NULL;
+    }
+  prepared_statement_count = 0;
+}
+
 
 /* Helpers. */
 
@@ -378,6 +424,7 @@ sql_open (const db_conn_info_t *database)
 fail:
   PQfinish (conn);
   conn = NULL;
+  sql_prepared_statements_clear ();
   semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
   return -1;
 }
@@ -390,6 +437,7 @@ sql_close ()
 {
   PQfinish (conn);
   conn = NULL;
+  sql_prepared_statements_clear ();
   semaphore_op (SEMAPHORE_DB_CONNECTIONS, +1, 0);
 }
 
@@ -400,6 +448,7 @@ void
 sql_close_fork ()
 {
   conn = NULL;
+  sql_prepared_statements_clear ();
 }
 
 /**
@@ -527,6 +576,66 @@ sql_prepare_ps_internal (int log, const char *sql, va_list args,
 }
 
 /**
+ * @brief Get the name of the server side prepared statement for a statement.
+ *
+ * Prepares it on first use.  Statements without parameters are not cached,
+ * see the comment on prepared_statements.
+ *
+ * A failed PQprepare is handed back to the caller as the result of the
+ * statement, so that it goes through the same error handling as a failed
+ * execution.  The statement must not be retried with PQexecParams: the
+ * failure may be a cancellation (57014) or a broken connection, and in a
+ * transaction any further statement would only fail with 25P02.
+ *
+ * @param[in]   stmt   Statement.
+ * @param[out]  name   Statement name, or NULL if the statement is not
+ *                     prepared.
+ * @param[out]  error  Result of a failed PQprepare, which may be NULL.
+ *
+ * @return 0 success, -1 PQprepare failed.
+ */
+static int
+sql_prepared_statement_name (sql_stmt_t *stmt, const char **name,
+                             PGresult **error)
+{
+  gchar *new_name;
+  PGresult *result;
+
+  *name = NULL;
+  *error = NULL;
+
+  /* Nothing bound means the values are already in the text.  See the comment
+   * on prepared_statements for why caching those would be pointless. */
+  if (stmt->param_values->len == 0)
+    return 0;
+
+  if (prepared_statements == NULL)
+    prepared_statements = g_hash_table_new_full (g_str_hash, g_str_equal,
+                                                 g_free, g_free);
+
+  *name = g_hash_table_lookup (prepared_statements, stmt->sql);
+  if (*name)
+    return 0;
+
+  new_name = g_strdup_printf ("gvmd_ps_%u", prepared_statement_count);
+
+  result = PQprepare (conn, new_name, stmt->sql, stmt->param_values->len,
+                      NULL); /* Default param types. */
+  if (PQresultStatus (result) != PGRES_COMMAND_OK)
+    {
+      g_free (new_name);
+      *error = result;
+      return -1;
+    }
+  PQclear (result);
+
+  prepared_statement_count++;
+  g_hash_table_insert (prepared_statements, g_strdup (stmt->sql), new_name);
+  *name = new_name;
+  return 0;
+}
+
+/**
  * @brief Execute a statement.
  *
  * @param[in]  stmt   Statement.
@@ -543,12 +652,27 @@ sql_exec_internal (sql_stmt_t *stmt)
 
   if (stmt->executed == 0)
     {
-      result = PQexecParams (conn, stmt->sql, stmt->param_values->len,
-                             NULL, /* Default param types. */
-                             (const char *const *) stmt->param_values->pdata,
-                             (const int *) stmt->param_lengths->data,
-                             (const int *) stmt->param_formats->data,
-                             0); /* Results as text. */
+      const char *statement_name;
+      PGresult *prepare_error;
+
+      if (sql_prepared_statement_name (stmt, &statement_name,
+                                       &prepare_error))
+        result = prepare_error;
+      else if (statement_name)
+        result = PQexecPrepared (conn, statement_name,
+                                 stmt->param_values->len,
+                                 (const char *const *)
+                                   stmt->param_values->pdata,
+                                 (const int *) stmt->param_lengths->data,
+                                 (const int *) stmt->param_formats->data,
+                                 0); /* Results as text. */
+      else
+        result = PQexecParams (conn, stmt->sql, stmt->param_values->len,
+                               NULL, /* Default param types. */
+                               (const char *const *) stmt->param_values->pdata,
+                               (const int *) stmt->param_lengths->data,
+                               (const int *) stmt->param_formats->data,
+                               0); /* Results as text. */
       ExecStatusType status = PQresultStatus (result);
 
       if (status != PGRES_TUPLES_OK && status != PGRES_COMMAND_OK
