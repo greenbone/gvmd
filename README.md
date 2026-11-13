@@ -167,9 +167,12 @@ port for AD `create_credential`, `modify_credential`, and
 | allowed_ports | GVMD_AD_ALLOWED_PORTS | Comma-separated decimal ports, 1–65535 | 389,636,3268,3269 |
 
 Overrides replace each list independently.
-Empty lists allow all valid values; both lists must permit the destination.
-Unreadable or invalid lists warn and use that option's default, without retrying
-a lower-priority source. **Invalid host lists therefore allow all valid hosts.**
+Missing options use their built-in defaults. Explicitly empty or whitespace-only
+lists allow all valid values; both lists must permit the destination.
+**An unreadable or invalid selected host or port list denies every destination.**
+Such failures warn without using defaults, retaining partial lists, or retrying
+a lower-priority source. Unreadable file values overridden by environment values
+are ignored. General configuration-file loading failures retain existing behavior.
 
 Duplicates are ignored; empty entries in nonempty lists and quoting are invalid.
 Only individual hosts and decimal ports are accepted, not patterns, CIDRs,
@@ -198,7 +201,8 @@ Ordinary credential use and scans are unaffected. Referrals and referral chains
 remain trusted outside the lists; there is no DNS pinning/rebinding protection.
 This is not a comprehensive outbound network policy.
 
-AD-enabled builds load the policy even when the runtime feature is disabled;
+The policy is loaded at startup; changes require restart. AD-enabled builds load
+the policy even when the runtime feature is disabled;
 other builds ignore these options and environment
 variables. The policy does not enable AD integration.
 

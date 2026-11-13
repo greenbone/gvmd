@@ -400,10 +400,40 @@ gvmd_get_env_or_config_string (const char *env_name,
                                const char *kf_group,
                                const char *kf_key)
 {
+  return gvmd_get_env_or_config_string_full (env_name, kf, kf_group, kf_key,
+                                            NULL);
+}
+
+/**
+ * @brief Select an environment/config string, distinguishing read errors.
+ *
+ * Environment values (including empty strings) take precedence and are copied
+ * literally; overridden file values are not read. Missing configuration, groups
+ * and keys return NULL silently. Other string read/decoding errors warn with
+ * only the group/key, free any partial value, and return NULL.
+ *
+ * @param[in] env_name    Non-NULL environment variable name.
+ * @param[in] kf          Borrowed configuration, or NULL if unavailable.
+ * @param[in] kf_group    Non-NULL configuration group.
+ * @param[in] kf_key      Non-NULL configuration key.
+ * @param[out] read_error Optional caller-owned flag, always initialized: TRUE
+ *                       only for a selected file value's read/decoding failure,
+ *                       FALSE for absence or a successfully selected value.
+ *
+ * @return Newly allocated string (possibly empty), or NULL for absence/error.
+ *         Free with g_free(). No input ownership is transferred.
+ */
+gchar *
+gvmd_get_env_or_config_string_full (const char *env_name, GKeyFile *kf,
+                                    const char *kf_group, const char *kf_key,
+                                    gboolean *read_error)
+{
   const char *env_value = g_getenv (env_name);
   gchar *value;
   GError *error = NULL;
 
+  if (read_error)
+    *read_error = FALSE;
   if (env_value)
     return g_strdup (env_value);
   if (kf == NULL)
@@ -416,8 +446,12 @@ gvmd_get_env_or_config_string (const char *env_name,
                             G_KEY_FILE_ERROR_KEY_NOT_FOUND)
           && !g_error_matches (error, G_KEY_FILE_ERROR,
                                G_KEY_FILE_ERROR_GROUP_NOT_FOUND))
-        g_warning ("%s: %s.%s: could not read string",
-                   __func__, kf_group, kf_key);
+        {
+          if (read_error)
+            *read_error = TRUE;
+          g_warning ("gvmd_get_env_or_config_string: %s.%s: could not read string",
+                     kf_group, kf_key);
+        }
       g_free (value);
       g_clear_error (&error);
       return NULL;

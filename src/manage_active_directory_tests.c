@@ -658,6 +658,15 @@ Ensure (manage_active_directory, loader_defaults_for_missing_configuration)
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (0));
   assert_default_ad_ports ();
+  assert_that (check_active_directory_destination ("outside.invalid", NULL,
+                                                   "starttls", NULL),
+               is_equal_to (AD_DESTINATION_OK));
+  assert_that (check_active_directory_destination ("outside.invalid", NULL,
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_OK));
+  assert_that (check_active_directory_destination ("outside.invalid", "1389",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
   assert_that (policy_warning_count, is_equal_to (0));
 }
 
@@ -780,8 +789,8 @@ Ensure (manage_active_directory, loader_discards_invalid_selected_host_lists)
     {
       g_setenv ("GVMD_AD_ALLOWED_HOSTS", invalid[i], TRUE);
       load_active_directory_config ();
-      /* Invalid env goes to allow-all, not the valid file restriction. */
-      assert_that (ad_allowed_hosts->len, is_equal_to (0));
+      /* Invalid env denies all, without retrying the valid file restriction. */
+      assert_that (ad_allowed_hosts, is_null);
       assert_that (ad_allowed_ports->len, is_equal_to (1));
       assert_that (g_array_index (ad_allowed_ports, guint, 0),
                    is_equal_to (1389));
@@ -789,7 +798,10 @@ Ensure (manage_active_directory, loader_discards_invalid_selected_host_lists)
       assert_that (strstr (last_policy_warning, "allowed_hosts"), is_not_null);
       assert_that (check_active_directory_destination ("outside.invalid", "1389",
                                                        "ldaps", NULL),
-                   is_equal_to (AD_DESTINATION_OK));
+                   is_equal_to (AD_DESTINATION_NOT_ALLOWED));
+      assert_that (check_active_directory_destination ("file.example.com", "1389",
+                                                       "ldaps", NULL),
+                   is_equal_to (AD_DESTINATION_NOT_ALLOWED));
       assert_that (check_active_directory_destination ("outside.invalid", "636",
                                                        "ldaps", NULL),
                    is_equal_to (AD_DESTINATION_NOT_ALLOWED));
@@ -812,12 +824,12 @@ Ensure (manage_active_directory, loader_discards_invalid_selected_port_lists)
       g_setenv ("GVMD_AD_ALLOWED_PORTS", invalid[i], TRUE);
       load_active_directory_config ();
       assert_that (ad_allowed_hosts->len, is_equal_to (1));
-      assert_default_ad_ports ();
+      assert_that (ad_allowed_ports, is_null);
       assert_that (policy_warning_count, is_equal_to (i + 1));
       assert_that (strstr (last_policy_warning, "allowed_ports"), is_not_null);
       assert_that (check_active_directory_destination ("file.example.com", "636",
                                                        "ldaps", NULL),
-                   is_equal_to (AD_DESTINATION_OK));
+                   is_equal_to (AD_DESTINATION_NOT_ALLOWED));
       assert_that (check_active_directory_destination ("file.example.com", "1389",
                                                        "ldaps", NULL),
                    is_equal_to (AD_DESTINATION_NOT_ALLOWED));
@@ -835,9 +847,12 @@ Ensure (manage_active_directory, loader_handles_file_errors_independently)
                       "allowed_hosts = dc.example.com,\n"
                       "allowed_ports = 1389\n");
   load_active_directory_config ();
-  assert_that (ad_allowed_hosts->len, is_equal_to (0));
+  assert_that (ad_allowed_hosts, is_null);
   assert_that (g_array_index (ad_allowed_ports, guint, 0), is_equal_to (1389));
   assert_that (policy_warning_count, is_equal_to (1));
+  assert_that (check_active_directory_destination ("dc.example.com", "1389",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
 
   set_test_ad_config ("[active_directory]\n"
                       "allowed_hosts = dc.example.com\n"
@@ -845,45 +860,64 @@ Ensure (manage_active_directory, loader_handles_file_errors_independently)
   load_active_directory_config ();
   host = g_ptr_array_index (ad_allowed_hosts, 0);
   assert_that (host->value.name, is_equal_to_string ("dc.example.com"));
-  assert_default_ad_ports ();
+  assert_that (ad_allowed_ports, is_null);
   assert_that (policy_warning_count, is_equal_to (2));
+  assert_that (check_active_directory_destination ("dc.example.com", "389",
+                                                   "starttls", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
 
   /* Invalid string escapes pass general file parsing but fail string reads. */
   set_test_ad_config ("[active_directory]\n"
                       "allowed_hosts = hidden\\q\n"
                       "allowed_ports = 1389\n");
   load_active_directory_config ();
-  assert_that (ad_allowed_hosts->len, is_equal_to (0));
+  assert_that (ad_allowed_hosts, is_null);
   assert_that (g_array_index (ad_allowed_ports, guint, 0), is_equal_to (1389));
   assert_that (policy_warning_count, is_equal_to (3));
   assert_that (last_policy_warning, is_equal_to_string (
     "gvmd_get_env_or_config_string: active_directory.allowed_hosts: "
     "could not read string"));
   assert_that (strstr (last_policy_warning, "hidden"), is_null);
+  assert_that (check_active_directory_destination ("dc.example.com", "1389",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
 
   set_test_ad_config ("[active_directory]\n"
                       "allowed_hosts = dc.example.com\n"
                       "allowed_ports = hidden\\q\n");
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (1));
-  assert_default_ad_ports ();
+  assert_that (ad_allowed_ports, is_null);
   assert_that (policy_warning_count, is_equal_to (4));
   assert_that (last_policy_warning, is_equal_to_string (
     "gvmd_get_env_or_config_string: active_directory.allowed_ports: "
     "could not read string"));
+  assert_that (check_active_directory_destination ("dc.example.com", NULL,
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
+  assert_no_ad_connector_calls ();
 }
 
 Ensure (manage_active_directory, loader_ignores_overridden_file_lists)
 {
   set_test_ad_config ("[active_directory]\n"
                       "allowed_hosts = hidden\\q\n"
-                      "allowed_ports = 389,0\n");
+                      "allowed_ports = hidden\\q\n");
   g_setenv ("GVMD_AD_ALLOWED_HOSTS", "env.example.com", TRUE);
   g_setenv ("GVMD_AD_ALLOWED_PORTS", "1389", TRUE);
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (1));
   assert_that (ad_allowed_ports->len, is_equal_to (1));
   assert_that (g_array_index (ad_allowed_ports, guint, 0), is_equal_to (1389));
+  assert_that (check_active_directory_destination ("env.example.com", "1389",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_OK));
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "", TRUE);
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", " \t ", TRUE);
+  load_active_directory_config ();
+  assert_that (check_active_directory_destination ("outside.invalid", "1636",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_OK));
   assert_that (policy_warning_count, is_equal_to (0));
 }
 
@@ -902,16 +936,92 @@ Ensure (manage_active_directory, loader_reinitializes_when_runtime_disabled)
   assert_that (ad_allowed_hosts->len, is_equal_to (1));
   assert_that (g_array_index (ad_allowed_ports, guint, 0), is_equal_to (1389));
   load_active_directory_config ();
-  assert_that (ad_allowed_hosts->len, is_equal_to (0));
+  assert_that (ad_allowed_hosts, is_null);
   assert_default_ad_ports ();
   assert_that (policy_warning_count, is_equal_to (1));
   assert_that (builder_calls, is_equal_to (0));
+  assert_that (check_active_directory_destination ("dc.example.com", "636",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
 
   g_setenv ("GVMD_AD_ALLOWED_HOSTS", "", TRUE);
   g_setenv ("GVMD_AD_ALLOWED_PORTS", "", TRUE);
+  /* A repaired source cannot change the failed snapshot without a reload. */
+  assert_that (check_active_directory_destination ("dc.example.com", "636",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (0));
   assert_that (ad_allowed_ports->len, is_equal_to (0));
+  assert_that (check_active_directory_destination ("dc.example.com", "1389",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_OK));
+}
+
+Ensure (manage_active_directory, failed_policy_preserves_syntax_and_denies_commands)
+{
+  const gchar *configs[] = {
+    "[active_directory]\nallowed_hosts = dc.example.com,\nallowed_ports = \n",
+    "[active_directory]\nallowed_hosts = \nallowed_ports = 636,0\n",
+    "[active_directory]\nallowed_hosts = hidden\\q\nallowed_ports = \n",
+    "[active_directory]\nallowed_hosts = \nallowed_ports = hidden\\q\n",
+    "[active_directory]\nallowed_hosts = hidden\\q\nallowed_ports = hidden\\q\n",
+    "[active_directory]\nallowed_hosts = hidden\377\nallowed_ports = \n",
+    "[active_directory]\nallowed_hosts = \nallowed_ports = hidden\377\n",
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (configs); i++)
+    {
+      ad_credential_data_t data = valid_ad_data ();
+      guint port = 42;
+
+      reset_test_state ();
+      set_test_ad_config (configs[i]);
+      load_active_directory_config ();
+      assert_that (check_active_directory_destination ("*.invalid", "bad", "ldap",
+                                                       &port),
+                   is_equal_to (AD_DESTINATION_INVALID_HOST));
+      assert_that (check_active_directory_destination (data.host, "bad", "ldap",
+                                                       &port),
+                   is_equal_to (AD_DESTINATION_INVALID_PORT));
+      assert_that (check_active_directory_destination (data.host, "636", "ldap",
+                                                       &port),
+                   is_equal_to (AD_DESTINATION_INVALID_TLS_MODE));
+      assert_that (check_active_directory_destination (data.host, "636", "ldaps",
+                                                       &port),
+                   is_equal_to (AD_DESTINATION_NOT_ALLOWED));
+      assert_that (port, is_equal_to (42));
+      assert_that (verify_active_directory_credential (NULL, &data),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
+      assert_that (verify_active_directory_credential ("credential-id", NULL),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
+      data.port = NULL;
+      saved_port = NULL;
+      assert_that (verify_active_directory_credential (NULL, &data),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
+      assert_that (verify_active_directory_credential ("credential-id", NULL),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
+      data.port = "bad";
+      saved_port = "bad";
+      assert_that (verify_active_directory_credential (NULL, &data),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_INVALID_PORT));
+      assert_that (verify_active_directory_credential ("credential-id", NULL),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_INVALID_STORED_CONFIGURATION));
+      permission_allowed = FALSE;
+      assert_that (verify_active_directory_credential (NULL, &data),
+                   is_equal_to (VERIFY_AD_CREDENTIAL_PERMISSION_DENIED));
+      assert_no_ad_connector_calls ();
+    }
+
+  /* Uninitialized also denies, and checking must not lazily repair it. */
+  g_clear_pointer (&ad_allowed_hosts, g_ptr_array_unref);
+  g_clear_pointer (&ad_allowed_ports, g_array_unref);
+  set_test_ad_config ("[active_directory]\nallowed_hosts = \nallowed_ports = \n");
+  assert_that (check_active_directory_destination ("dc.example.com", "636",
+                                                   "ldaps", NULL),
+               is_equal_to (AD_DESTINATION_NOT_ALLOWED));
+  assert_that (ad_allowed_hosts, is_null);
+  assert_that (ad_allowed_ports, is_null);
 }
 
 Ensure (manage_active_directory, validation_accepts_valid_connection_data)
@@ -1346,6 +1456,8 @@ main (int argc, char **argv)
 
   suite = create_test_suite ();
 
+  add_test_with_context (suite, manage_active_directory,
+                         failed_policy_preserves_syntax_and_denies_commands);
   add_test_with_context (suite, manage_active_directory,
                          verify_empty_lists_allow_nonstandard_not_invalid_ports);
   add_test_with_context (suite, manage_active_directory,

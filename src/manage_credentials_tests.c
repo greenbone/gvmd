@@ -9,6 +9,9 @@
 #include <cgreen/mocks.h>
 
 #if ENABLE_AD_INTEGRATION
+#include "gvmd_config.h"
+
+#include <glib/gstdio.h>
 #include <gvm/ad_connector/ad_connector.h>
 #endif
 
@@ -1324,6 +1327,105 @@ Ensure (manage_credentials, create_ad_rejects_policy_and_host_before_storage)
                is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
 }
 
+Ensure (manage_credentials, failed_ad_policy_rejects_creation_and_modification)
+{
+  const struct {
+    const gchar *file;
+    const gchar *hosts_env;
+    const gchar *ports_env;
+  } cases[] = {
+    { "[active_directory]\nallowed_hosts = dc.example.com\nallowed_ports = 636\n",
+      "dc.example.com,", "636" },
+    { "[active_directory]\nallowed_hosts = dc.example.com\nallowed_ports = 636\n",
+      "dc.example.com", "636,0" },
+    { "[active_directory]\nallowed_hosts = dc.example.com,\nallowed_ports = \n",
+      NULL, NULL },
+    { "[active_directory]\nallowed_hosts = \nallowed_ports = 636,0\n",
+      NULL, NULL },
+    { "[active_directory]\nallowed_hosts = hidden\\q\nallowed_ports = \n",
+      NULL, NULL },
+    { "[active_directory]\nallowed_hosts = \nallowed_ports = hidden\\q\n",
+      NULL, NULL },
+  };
+  GKeyFile *previous_config = get_gvmd_config ();
+  gchar *previous_contents = previous_config
+                              ? g_key_file_to_data (previous_config, NULL, NULL)
+                              : NULL;
+  gchar *path = NULL;
+  gint fd = g_file_open_tmp ("gvmd-ad-policy-XXXXXX", &path, NULL);
+  credential_data_t create = valid_ad_test_data ();
+  credential_data_t update = {
+    .credential_id = "credential-id",
+    .name = "new-name",
+    .comment = "new-comment",
+    .allow_insecure = "1",
+    .ad_credential_data = { .bind_dn = "new-user" },
+  };
+
+  assert_that (fd >= 0, is_equal_to (TRUE));
+  assert_that (g_close (fd, NULL), is_equal_to (TRUE));
+  expect_no_storage_calls ();
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      credential_t credential = 42;
+
+      assert_that (g_file_set_contents (path, cases[i].file, -1, NULL),
+                   is_equal_to (TRUE));
+      assert_that (load_gvmd_config (path), is_equal_to (0));
+      if (cases[i].hosts_env)
+        g_setenv ("GVMD_AD_ALLOWED_HOSTS", cases[i].hosts_env, TRUE);
+      else
+        g_unsetenv ("GVMD_AD_ALLOWED_HOSTS");
+      if (cases[i].ports_env)
+        g_setenv ("GVMD_AD_ALLOWED_PORTS", cases[i].ports_env, TRUE);
+      else
+        g_unsetenv ("GVMD_AD_ALLOWED_PORTS");
+      load_active_directory_config ();
+      assert_that (create_active_directory_credential (&create, &credential),
+                   is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+      assert_that (credential, is_equal_to (0));
+      assert_that (modify_credential (&update),
+                   is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+      assert_that (transaction_begins, is_equal_to (i + 1));
+      assert_that (transaction_rollbacks, is_equal_to (i + 1));
+      assert_that (transaction_commits, is_equal_to (0));
+      assert_that (common_writes, is_equal_to (3 * (i + 1)));
+      assert_that (pending_common_writes, is_equal_to (0));
+      assert_that (pending_ad_writes, is_equal_to (0));
+      assert_that (ad_connector_calls, is_equal_to (0));
+    }
+
+  /* Even an unreadable policy must not mask existing credential syntax. */
+  create.ad_credential_data.port = "bad";
+  update.ad_credential_data.port = "bad";
+  {
+    credential_t credential = 42;
+    assert_that (create_active_directory_credential (&create, &credential),
+                 is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+    assert_that (credential, is_equal_to (0));
+    assert_that (modify_active_directory_credential (&update, 42),
+                 is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  }
+
+  /* Restore the shared cache, including a previously absent configuration.
+   * Explicit missing-file loading clears the cache and emits an expected
+   * general-loader warning; policy read failures above do not abort loading. */
+  if (previous_contents)
+    {
+      assert_that (g_file_set_contents (path, previous_contents, -1, NULL),
+                   is_equal_to (TRUE));
+      assert_that (load_gvmd_config (path), is_equal_to (0));
+    }
+  assert_that (g_unlink (path), is_equal_to (0));
+  if (previous_contents == NULL)
+    {
+      assert_that (load_gvmd_config (path), is_equal_to (-1));
+      assert_that (get_gvmd_config (), is_null);
+    }
+  g_free (previous_contents);
+  g_free (path);
+}
+
 Ensure (manage_credentials, create_ad_empty_lists_store_nonstandard_original_values)
 {
   credential_data_t data = valid_ad_test_data ();
@@ -1944,6 +2046,8 @@ main (int argc, char **argv)
                          modify_pgp_clears_empty_public_key);
 
 #if ENABLE_AD_INTEGRATION
+  add_test_with_context (suite, manage_credentials,
+                         failed_ad_policy_rejects_creation_and_modification);
   add_test_with_context (suite, manage_credentials,
                          create_ad_rejects_policy_and_host_before_storage);
   add_test_with_context (suite, manage_credentials,

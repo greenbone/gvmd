@@ -58,12 +58,16 @@ typedef struct
 } ad_policy_host_t;
 
 /**
- * @brief Array of allowed Active Directory hosts. Empty means allow all.
+ * @brief Owned startup host policy: empty allows all, NULL denies all.
+ *
+ * NULL means uninitialized or invalid/unreadable selected configuration.
  */
 static GPtrArray *ad_allowed_hosts;
 
 /**
- * @brief Array of allowed Active Directory ports. Empty means allow all.
+ * @brief Owned startup port policy: empty allows all, NULL denies all.
+ *
+ * NULL means uninitialized or invalid/unreadable selected configuration.
  */
 static GArray *ad_allowed_ports;
 
@@ -174,8 +178,8 @@ ad_policy_hosts_equal (const ad_policy_host_t *a, const ad_policy_host_t *b)
 /**
  * @brief Select one option independently, preserving explicit empty values.
  *
- * Use the shared getter without distinguishing sources. It logs string read
- * errors; any NULL result uses the built-in default.
+ * The shared getter logs selected string read errors and distinguishes them
+ * from absence. Only absence uses the built-in default; no source retry occurs.
  *
  * @param[in] kf             Parsed configuration, or NULL if unavailable.
  * @param[in] env_name       Non-NULL environment override name.
@@ -183,16 +187,18 @@ ad_policy_hosts_equal (const ad_policy_host_t *a, const ad_policy_host_t *b)
  * @param[in] default_value  Non-NULL built-in default string.
  *
  * @return Newly allocated selected string, including explicit empty values.
- *         Missing/unreadable values use the default. Free with g_free().
+ *         Missing values use the default; unreadable values return NULL.
+ *         Free non-NULL results with g_free().
  */
 static gchar *
 ad_policy_config_string (GKeyFile *kf, const gchar *env_name,
                          const gchar *key, const gchar *default_value)
 {
-  gchar *value = gvmd_get_env_or_config_string (
-    env_name, kf, ACTIVE_DIRECTORY_CONFIG_GROUP, key);
+  gboolean read_error;
+  gchar *value = gvmd_get_env_or_config_string_full (
+    env_name, kf, ACTIVE_DIRECTORY_CONFIG_GROUP, key, &read_error);
 
-  return value ? value : g_strdup (default_value);
+  return value || read_error ? value : g_strdup (default_value);
 }
 
 /**
@@ -291,9 +297,11 @@ parse_ad_allowed_ports (gchar *text)
 /**
  * @brief Load the startup AD connection policy, even if runtime AD is disabled.
  *
- * Invalid selected lists warn and use independent built-in defaults. Publish
- * only complete lists, freeing previous policy on repeated initialization.
- * This does not enforce the policy on any command or connector.
+ * Missing options use independent defaults; explicit empty lists allow all.
+ * Invalid/unreadable selected lists warn and publish NULL (deny all), never a
+ * default or lower-priority value. Publish complete lists or failure states,
+ * freeing previous policy on repeated initialization, including valid-to-invalid
+ * transitions. The checker reads only this snapshot; startup is not aborted.
  */
 void
 load_active_directory_config (void)
@@ -305,31 +313,21 @@ load_active_directory_config (void)
 
   text = ad_policy_config_string (kf, "GVMD_AD_ALLOWED_HOSTS", "allowed_hosts",
                                   AD_ALLOWED_HOSTS_DEFAULT);
-  hosts = parse_ad_allowed_hosts (text);
+  hosts = text ? parse_ad_allowed_hosts (text) : NULL;
+  if (text && hosts == NULL)
+    g_warning ("%s: active_directory.allowed_hosts: expected comma-separated "
+               "individual names or IP addresses with no empty entries; "
+               "AD destinations denied", __func__);
   g_free (text);
-  if (hosts == NULL)
-    {
-      g_warning ("%s: active_directory.allowed_hosts: expected comma-separated "
-                 "individual names or IP addresses with no empty entries; "
-                 "using built-in default (all hosts)", __func__);
-      text = g_strdup (AD_ALLOWED_HOSTS_DEFAULT);
-      hosts = parse_ad_allowed_hosts (text);
-      g_free (text);
-    }
 
   text = ad_policy_config_string (kf, "GVMD_AD_ALLOWED_PORTS", "allowed_ports",
                                   AD_ALLOWED_PORTS_DEFAULT);
-  ports = parse_ad_allowed_ports (text);
+  ports = text ? parse_ad_allowed_ports (text) : NULL;
+  if (text && ports == NULL)
+    g_warning ("%s: active_directory.allowed_ports: expected comma-separated "
+               "decimal ports in range 1-65535 with no empty entries; "
+               "AD destinations denied", __func__);
   g_free (text);
-  if (ports == NULL)
-    {
-      g_warning ("%s: active_directory.allowed_ports: expected comma-separated "
-                 "decimal ports in range 1-65535 with no empty entries; "
-                 "using built-in default", __func__);
-      text = g_strdup (AD_ALLOWED_PORTS_DEFAULT);
-      ports = parse_ad_allowed_ports (text);
-      g_free (text);
-    }
 
   g_clear_pointer (&ad_allowed_hosts, g_ptr_array_unref);
   g_clear_pointer (&ad_allowed_ports, g_array_unref);
@@ -430,7 +428,8 @@ active_directory_effective_port (const gchar *port_text, const gchar *tls_mode,
  *
  * @return Independent destination result. Invalid host, port, then TLS mode
  *         precede membership denial. Valid input is also denied if startup
- *         initialization has not occurred; no policy is loaded lazily.
+ *         initialization has not occurred or either selected policy option was
+ *         invalid/unreadable; no policy is loaded lazily or defaulted on failure.
  *         No input is modified, retained or owned;
  *         temporary normalization keys are freed before return.
  */
@@ -455,7 +454,7 @@ check_active_directory_destination (const gchar *host, const gchar *port,
       return result;
     }
 
-  /* Initialization is a startup precondition, not implicit allow-all. */
+  /* NULL is uninitialized/failed policy, never implicit allow-all. */
   if (ad_allowed_hosts == NULL || ad_allowed_ports == NULL)
     {
       ad_policy_host_free (key);

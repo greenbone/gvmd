@@ -301,6 +301,71 @@ Ensure (gvmd_config, environment_strings_override_even_when_empty)
   assert_that (string_warning_count, is_equal_to (0));
 }
 
+Ensure (gvmd_config, full_string_getter_distinguishes_read_errors_from_absence)
+{
+  gboolean read_error = TRUE;
+  gchar *value;
+  const gchar *invalid[] = { "hidden-secret\\q", "hidden-secret\377" };
+  const gchar *overrides[] = { "env", "", " \t " };
+
+  assert_that (gvmd_get_env_or_config_string_full (
+    "GVMD_TEST_CONFIG_STRING", NULL, "strings", "value", &read_error), is_null);
+  assert_that (read_error, is_equal_to (FALSE));
+  read_error = TRUE;
+  assert_that (gvmd_get_env_or_config_string_full (
+    "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error),
+    is_null);
+  assert_that (read_error, is_equal_to (FALSE));
+  g_key_file_set_string (string_config, "strings", "other", "present");
+  read_error = TRUE;
+  assert_that (gvmd_get_env_or_config_string_full (
+    "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error),
+    is_null);
+  assert_that (read_error, is_equal_to (FALSE));
+  assert_that (string_warning_count, is_equal_to (0));
+
+  for (guint i = 0; i < G_N_ELEMENTS (invalid); i++)
+    {
+      g_key_file_set_value (string_config, "strings", "value", invalid[i]);
+      read_error = FALSE;
+      assert_that (gvmd_get_env_or_config_string_full (
+        "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error),
+        is_null);
+      assert_that (read_error, is_equal_to (TRUE));
+      assert_that (string_warning_count, is_equal_to (i + 1));
+      assert_that (last_string_warning, is_equal_to_string (
+        "gvmd_get_env_or_config_string: strings.value: could not read string"));
+    }
+
+  for (guint i = 0; i < G_N_ELEMENTS (overrides); i++)
+    {
+      g_setenv ("GVMD_TEST_CONFIG_STRING", overrides[i], TRUE);
+      read_error = TRUE;
+      value = gvmd_get_env_or_config_string_full (
+        "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error);
+      assert_that (value, is_equal_to_string (overrides[i]));
+      assert_that (read_error, is_equal_to (FALSE));
+      g_free (value);
+    }
+  assert_that (string_warning_count, is_equal_to (G_N_ELEMENTS (invalid)));
+
+  g_unsetenv ("GVMD_TEST_CONFIG_STRING");
+  g_key_file_set_value (string_config, "strings", "value", "file\\svalue\\n");
+  read_error = TRUE;
+  value = gvmd_get_env_or_config_string_full (
+    "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error);
+  assert_that (value, is_equal_to_string ("file value\n"));
+  assert_that (read_error, is_equal_to (FALSE));
+  g_free (value);
+  g_key_file_set_string (string_config, "strings", "value", "");
+  read_error = TRUE;
+  value = gvmd_get_env_or_config_string_full (
+    "GVMD_TEST_CONFIG_STRING", string_config, "strings", "value", &read_error);
+  assert_that (value, is_equal_to_string (""));
+  assert_that (read_error, is_equal_to (FALSE));
+  g_free (value);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -309,6 +374,8 @@ main (int argc, char **argv)
 
   suite = create_test_suite ();
 
+  add_test_with_context (suite, gvmd_config,
+                         full_string_getter_distinguishes_read_errors_from_absence);
   add_test_with_context (suite, gvmd_config,
                          can_handle_missing_config);
   add_test_with_context (suite, gvmd_config,
