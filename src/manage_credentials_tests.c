@@ -8,6 +8,10 @@
 #include <cgreen/cgreen.h>
 #include <cgreen/mocks.h>
 
+#if ENABLE_AD_INTEGRATION
+#include <gvm/ad_connector/ad_connector.h>
+#endif
+
 static int saved_disable_encrypted_credentials;
 static int copy_rows_result;
 static int check_private_key_result;
@@ -18,6 +22,22 @@ static const gchar *copy_rows_comment;
 static const gchar *copy_rows_credential_id;
 static int ad_test_enabled = TRUE;
 static int fail_gpgme_new;
+static const gchar *retained_ad_host;
+static const gchar *retained_ad_port;
+static const gchar *retained_ad_tls_mode;
+#if ENABLE_AD_INTEGRATION
+static gchar *previous_ad_hosts_env;
+static gchar *previous_ad_ports_env;
+#endif
+static int credential_permission_allowed;
+static int transaction_active;
+static int transaction_begins;
+static int transaction_commits;
+static int transaction_rollbacks;
+static int common_writes;
+static int pending_common_writes;
+static int pending_ad_writes;
+static int ad_connector_calls;
 
 /* Mocks */
 credential_return_t
@@ -36,6 +56,8 @@ __wrap_set_credential_data (credential_t credential,
                             const char *type,
                             const char *value)
 {
+  if (transaction_active)
+    pending_ad_writes++;
   mock (credential, type, value);
   return 0;
 }
@@ -116,9 +138,111 @@ __wrap_gpgme_new (gpgme_ctx_t *ctx)
   return __real_gpgme_new (ctx);
 }
 
-void __wrap_sql_begin_immediate (void) {}
-void __wrap_sql_commit (void) {}
-void __wrap_sql_rollback (void) {}
+void
+__wrap_sql_begin_immediate (void)
+{
+  transaction_active = TRUE;
+  transaction_begins++;
+}
+
+void
+__wrap_sql_commit (void)
+{
+  transaction_active = FALSE;
+  transaction_commits++;
+}
+
+void
+__wrap_sql_rollback (void)
+{
+  transaction_active = FALSE;
+  transaction_rollbacks++;
+  pending_common_writes = 0;
+  pending_ad_writes = 0;
+}
+
+int
+__wrap_acl_user_may (const char *permission)
+{
+  (void) permission;
+  return credential_permission_allowed;
+}
+
+gboolean
+__wrap_find_credential_with_permission (const char *uuid,
+                                        credential_t *credential,
+                                        const char *permission)
+{
+  (void) uuid;
+  (void) permission;
+  *credential = 42;
+  return FALSE;
+}
+
+char *
+__wrap_credential_type (credential_t credential)
+{
+  (void) credential;
+  return g_strdup ("ad");
+}
+
+gchar *
+__wrap_credential_value (credential_t credential, const char *name)
+{
+  assert_that (credential, is_equal_to (42));
+  if (g_str_equal (name, "ad_host"))
+    return g_strdup (retained_ad_host);
+  if (g_str_equal (name, "ad_port"))
+    return g_strdup (retained_ad_port);
+  if (g_str_equal (name, "ad_tls_mode"))
+    return g_strdup (retained_ad_tls_mode);
+  fail_test ("Unexpected retained credential field");
+  return NULL;
+}
+
+int
+__wrap_resource_with_name_exists (const char *name, const char *type,
+                                  resource_t resource)
+{
+  (void) name;
+  (void) type;
+  (void) resource;
+  return FALSE;
+}
+
+int
+__wrap_set_credential_name (credential_t credential, const char *name)
+{
+  (void) credential;
+  (void) name;
+  assert_that (transaction_active, is_equal_to (TRUE));
+  common_writes++;
+  pending_common_writes++;
+  return 0;
+}
+
+int
+__wrap_set_credential_comment (credential_t credential, const char *comment)
+{
+  return __wrap_set_credential_name (credential, comment);
+}
+
+int
+__wrap_set_credential_allow_insecure (credential_t credential, int value)
+{
+  (void) value;
+  return __wrap_set_credential_name (credential, NULL);
+}
+
+#if ENABLE_AD_INTEGRATION
+ad_connector_t
+__wrap_ad_connector_new (void)
+{
+  ad_connector_calls++;
+  fail_test ("Credential creation/modification must not create a connector");
+  return NULL;
+}
+#endif
 
 static void
 expect_no_storage_calls (void)
@@ -130,6 +254,11 @@ expect_no_storage_calls (void)
 
 #if ENABLE_AD_INTEGRATION
 
+/**
+ * @brief Construct valid creation data without allocating owned strings.
+ *
+ * @return Credential data borrowing string literals; callers may replace fields.
+ */
 static credential_data_t
 valid_ad_test_data (void)
 {
@@ -161,12 +290,42 @@ BeforeEach (manage_credentials)
   copy_rows_credential_id = NULL;
 
   check_private_key_result = 0;
+  ad_test_enabled = TRUE;
+  credential_permission_allowed = TRUE;
+  retained_ad_host = "dc.example.com";
+  retained_ad_port = "636";
+  retained_ad_tls_mode = "ldaps";
+  transaction_active = FALSE;
+  transaction_begins = transaction_commits = transaction_rollbacks = 0;
+  common_writes = pending_common_writes = pending_ad_writes = 0;
+  ad_connector_calls = 0;
+#if ENABLE_AD_INTEGRATION
+  previous_ad_hosts_env = g_strdup (g_getenv ("GVMD_AD_ALLOWED_HOSTS"));
+  previous_ad_ports_env = g_strdup (g_getenv ("GVMD_AD_ALLOWED_PORTS"));
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "", TRUE);
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", "389,636,3268,3269", TRUE);
+  load_active_directory_config ();
+#endif
 }
 
 AfterEach (manage_credentials)
 {
   disable_encrypted_credentials = saved_disable_encrypted_credentials;
   current_credentials.uuid = saved_current_credentials_uuid;
+#if ENABLE_AD_INTEGRATION
+  assert_that (ad_connector_calls, is_equal_to (0));
+  if (previous_ad_hosts_env)
+    g_setenv ("GVMD_AD_ALLOWED_HOSTS", previous_ad_hosts_env, TRUE);
+  else
+    g_unsetenv ("GVMD_AD_ALLOWED_HOSTS");
+  if (previous_ad_ports_env)
+    g_setenv ("GVMD_AD_ALLOWED_PORTS", previous_ad_ports_env, TRUE);
+  else
+    g_unsetenv ("GVMD_AD_ALLOWED_PORTS");
+  g_clear_pointer (&previous_ad_hosts_env, g_free);
+  g_clear_pointer (&previous_ad_ports_env, g_free);
+  load_active_directory_config ();
+#endif
 }
 
 /* Test suite. */
@@ -1131,6 +1290,389 @@ Ensure (manage_credentials, create_ad_stores_valid_data)
   assert_that (credential, is_equal_to (123));
 }
 
+Ensure (manage_credentials, create_ad_rejects_policy_and_host_before_storage)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 42;
+  const gchar *bad_hosts[] = { "dc.example.com:636", "*.example.com",
+                              "192.0.2.0/24", " dc.example.com", "\t" };
+
+  expect_no_storage_calls ();
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "other.invalid", TRUE);
+  load_active_directory_config ();
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+  assert_that (credential, is_equal_to (0));
+  for (guint i = 0; i < G_N_ELEMENTS (bad_hosts); i++)
+    {
+      data.ad_credential_data.host = (gchar *) bad_hosts[i];
+      assert_that (create_active_directory_credential (&data, &credential),
+                   is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+    }
+  data = valid_ad_test_data ();
+  data.ad_credential_data.port = "invalid";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "", TRUE);
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", "389", TRUE);
+  load_active_directory_config ();
+  data.ad_credential_data.port = NULL;
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+  data.ad_credential_data.port = "1389";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+}
+
+Ensure (manage_credentials, create_ad_empty_lists_store_nonstandard_original_values)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 0;
+  const gchar *fields[] = {
+    "ad_host", "ad_bind_dn", "ad_base_dn", "ad_port", "ad_tls_mode",
+    "ad_ca_certificate", "secret", "password", "private_key"
+  };
+  const gchar *values[] = {
+    "UNRESOLVABLE.invalid.", " \t ", "\t", "001389", "ldaps",
+    NULL, NULL, " password\t ", NULL
+  };
+
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", " \t ", TRUE);
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", "", TRUE);
+  load_active_directory_config ();
+  data.ad_credential_data.host = (gchar *) values[0];
+  data.ad_credential_data.bind_dn = (gchar *) values[1];
+  data.ad_credential_data.base_dn = (gchar *) values[2];
+  data.ad_credential_data.port = (gchar *) values[3];
+  data.ad_credential_data.bind_password = (gchar *) values[7];
+  expect (__wrap_insert_credential_base,
+          when (type, is_equal_to_string ("ad")));
+  for (guint i = 0; i < G_N_ELEMENTS (fields); i++)
+    expect (__wrap_set_credential_data,
+            when (credential, is_equal_to (123)),
+            when (type, is_equal_to_string (fields[i])),
+            when (value, values[i] ? is_equal_to_string (values[i]) : is_null));
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_OK));
+  assert_that (credential, is_equal_to (123));
+}
+
+Ensure (manage_credentials, ad_whitespace_and_creation_syntax_precede_policy)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 42;
+  const gchar *whitespace[] = { " ", "\t", " \t " };
+
+  expect_no_storage_calls ();
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "other.invalid", TRUE);
+  load_active_directory_config ();
+  for (guint i = 0; i < G_N_ELEMENTS (whitespace); i++)
+    {
+      credential_data_t update = { 0 };
+      data.ad_credential_data.host = (gchar *) whitespace[i];
+      update.ad_credential_data.host = (gchar *) whitespace[i];
+      assert_that (create_active_directory_credential (&data, &credential),
+                   is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+      assert_that (modify_active_directory_credential (&update, 42),
+                   is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+      data.ad_credential_data.host = "dc.example.com";
+      data.ad_credential_data.port = (gchar *) whitespace[i];
+      update.ad_credential_data.host = NULL;
+      update.ad_credential_data.port = (gchar *) whitespace[i];
+      assert_that (create_active_directory_credential (&data, &credential),
+                   is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+      assert_that (modify_active_directory_credential (&update, 42),
+                   is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+      data.ad_credential_data.port = NULL;
+    }
+
+  /* Multiple invalid fields preserve the existing create validation order. */
+  data.ad_credential_data.host = "\tdc.example.com";
+  data.ad_credential_data.bind_dn = "";
+  data.ad_credential_data.port = "636\t";
+  data.ad_credential_data.tls_mode = "ldaps ";
+  data.ad_credential_data.ca_certificate = "invalid";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_BIND_DN_REQUIRED));
+  data.ad_credential_data.bind_dn = " \t ";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  data.ad_credential_data.port = "636";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+  data.ad_credential_data.host = "dc.example.com";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_TLS_MODE));
+  data.ad_credential_data.tls_mode = "ldaps";
+  assert_that (create_active_directory_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_AD_INVALID_CA_CERTIFICATE));
+  assert_that (credential, is_equal_to (0));
+}
+
+Ensure (manage_credentials, modify_ad_empty_lists_preserve_nonstandard_and_whitespace)
+{
+  credential_data_t data = {
+    .ad_credential_data = {
+      .host = "UNRESOLVABLE.invalid.",
+      .port = "001389",
+      .bind_dn = " \t ",
+      .base_dn = "\t",
+    },
+  };
+
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "", TRUE);
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", " \t ", TRUE);
+  load_active_directory_config ();
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_host")),
+          when (value, is_equal_to_string ("UNRESOLVABLE.invalid.")));
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_bind_dn")),
+          when (value, is_equal_to_string (" \t ")));
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_base_dn")),
+          when (value, is_equal_to_string ("\t")));
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_port")),
+          when (value, is_equal_to_string ("001389")));
+  expect (__wrap_update_credential_modification_time);
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_OK));
+}
+
+Ensure (manage_credentials, modify_ad_checks_merged_destination_before_writes)
+{
+  const struct
+  {
+    const gchar *host;
+    const gchar *port;
+    const gchar *tls_mode;
+    const gchar *saved_host;
+    const gchar *saved_port;
+    const gchar *allowed_ports;
+  } cases[] = {
+    { "other.invalid", NULL, NULL, "dc.example.com", "636", "636" },
+    { NULL, "1389", NULL, "dc.example.com", "636", "636" },
+    { NULL, NULL, "starttls", "dc.example.com", NULL, "636" },
+    { NULL, "", NULL, "dc.example.com", "1389", "1389" },
+    { NULL, NULL, NULL, "other.invalid", "636", "636" },
+    { NULL, NULL, NULL, "dc.example.com", "1389", "636" },
+  };
+
+  expect_no_storage_calls ();
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "dc.example.com", TRUE);
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      credential_data_t data = { 0 };
+      data.ad_credential_data.host = (gchar *) cases[i].host;
+      data.ad_credential_data.port = (gchar *) cases[i].port;
+      data.ad_credential_data.tls_mode = (gchar *) cases[i].tls_mode;
+      retained_ad_host = cases[i].saved_host;
+      retained_ad_port = cases[i].saved_port;
+      g_setenv ("GVMD_AD_ALLOWED_PORTS", cases[i].allowed_ports, TRUE);
+      load_active_directory_config ();
+      assert_that (modify_active_directory_credential (&data, 42),
+                   is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+    }
+}
+
+Ensure (manage_credentials, modify_ad_accepts_merged_defaults_and_original_values)
+{
+  const struct
+  {
+    const gchar *field;
+    const gchar *value;
+    const gchar *saved_port;
+    const gchar *allowed_ports;
+  } cases[] = {
+    { "ad_host", "DC.Example.COM.", "636", "636" },
+    { "ad_port", "0003268", "636", "3268" },
+    { "ad_tls_mode", "starttls", NULL, "389" },
+    { "ad_port", "", "1389", "636" },
+  };
+
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "dc.example.com", TRUE);
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      credential_data_t data = { 0 };
+      if (g_str_equal (cases[i].field, "ad_host"))
+        data.ad_credential_data.host = (gchar *) cases[i].value;
+      else if (g_str_equal (cases[i].field, "ad_port"))
+        data.ad_credential_data.port = (gchar *) cases[i].value;
+      else
+        data.ad_credential_data.tls_mode = (gchar *) cases[i].value;
+      retained_ad_port = cases[i].saved_port;
+      g_setenv ("GVMD_AD_ALLOWED_PORTS", cases[i].allowed_ports, TRUE);
+      load_active_directory_config ();
+      expect (__wrap_set_credential_data,
+              when (type, is_equal_to_string (cases[i].field)),
+              when (value, *cases[i].value
+                             ? is_equal_to_string (cases[i].value) : is_null));
+      expect (__wrap_update_credential_modification_time);
+      assert_that (modify_active_directory_credential (&data, 42),
+                   is_equal_to (CREDENTIAL_OK));
+    }
+}
+
+Ensure (manage_credentials, modify_ad_syntax_precedes_policy_without_partial_writes)
+{
+  credential_data_t data = { 0 };
+
+  expect_no_storage_calls ();
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "other.invalid", TRUE);
+  load_active_directory_config ();
+  data.ad_credential_data.host = "dc.example.com";
+  data.ad_credential_data.bind_dn = "new-user";
+  data.ad_credential_data.port = "0";
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+  data.ad_credential_data.port = NULL;
+  data.ad_credential_data.host = " dc.example.com";
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+  data.ad_credential_data.host = NULL;
+  retained_ad_host = "*.example.com";
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_HOST));
+  retained_ad_host = "dc.example.com";
+  retained_ad_port = "invalid";
+  assert_that (modify_active_directory_credential (&data, 42),
+               is_equal_to (CREDENTIAL_AD_INVALID_PORT));
+}
+
+Ensure (manage_credentials, modify_ad_denial_rolls_back_common_fields)
+{
+  credential_data_t data = {
+    .credential_id = "credential-id",
+    .name = "new-name",
+    .comment = "new-comment",
+    .allow_insecure = "1",
+    .ad_credential_data = { .bind_dn = "new-user", .port = "1389" },
+  };
+
+  expect_no_storage_calls ();
+  assert_that (modify_credential (&data),
+               is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+  assert_that (common_writes, is_equal_to (3));
+  assert_that (transaction_begins, is_equal_to (1));
+  assert_that (transaction_rollbacks, is_equal_to (1));
+  assert_that (transaction_commits, is_equal_to (0));
+  assert_that (pending_common_writes, is_equal_to (0));
+  assert_that (pending_ad_writes, is_equal_to (0));
+  assert_that (transaction_active, is_equal_to (FALSE));
+
+  /* A common-field-only update must also recheck the retained endpoint. */
+  data.ad_credential_data = (ad_credential_data_t) { 0 };
+  retained_ad_host = "other.invalid";
+  g_setenv ("GVMD_AD_ALLOWED_HOSTS", "dc.example.com", TRUE);
+  load_active_directory_config ();
+  assert_that (modify_credential (&data),
+               is_equal_to (CREDENTIAL_AD_DESTINATION_NOT_ALLOWED));
+  assert_that (common_writes, is_equal_to (6));
+  assert_that (transaction_rollbacks, is_equal_to (2));
+  assert_that (transaction_commits, is_equal_to (0));
+  assert_that (pending_common_writes, is_equal_to (0));
+  assert_that (pending_ad_writes, is_equal_to (0));
+}
+
+Ensure (manage_credentials, modify_ad_merged_defaults_and_syntax_roll_back)
+{
+  const struct {
+    const gchar *port;
+    const gchar *tls_mode;
+    const gchar *saved_host;
+    const gchar *saved_port;
+    const gchar *saved_tls_mode;
+    const gchar *allowed_ports;
+    credential_return_t result;
+  } cases[] = {
+    { "", "starttls", "dc.example.com", "1389", "ldaps", "636",
+      CREDENTIAL_AD_DESTINATION_NOT_ALLOWED },
+    { "", "ldaps", "dc.example.com", "1389", "starttls", "389",
+      CREDENTIAL_AD_DESTINATION_NOT_ALLOWED },
+    { NULL, NULL, "dc.example.com", "636\t", "ldaps", "636",
+      CREDENTIAL_AD_INVALID_PORT },
+    { NULL, NULL, "dc.example.com", NULL, NULL, "636",
+      CREDENTIAL_AD_INVALID_TLS_MODE },
+    { NULL, NULL, NULL, "636", "ldaps", "636",
+      CREDENTIAL_AD_HOST_REQUIRED },
+  };
+
+  expect_no_storage_calls ();
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      credential_data_t data = {
+        .credential_id = "credential-id",
+        .name = "new-name",
+        .comment = "new-comment",
+        .allow_insecure = "1",
+        .ad_credential_data = {
+          .port = (gchar *) cases[i].port,
+          .tls_mode = (gchar *) cases[i].tls_mode,
+          .bind_dn = "new-user",
+        },
+      };
+
+      retained_ad_host = cases[i].saved_host;
+      retained_ad_port = cases[i].saved_port;
+      retained_ad_tls_mode = cases[i].saved_tls_mode;
+      g_setenv ("GVMD_AD_ALLOWED_PORTS", cases[i].allowed_ports, TRUE);
+      load_active_directory_config ();
+      assert_that (modify_credential (&data), is_equal_to (cases[i].result));
+      assert_that (common_writes, is_equal_to (3 * (i + 1)));
+      assert_that (transaction_begins, is_equal_to (i + 1));
+      assert_that (transaction_rollbacks, is_equal_to (i + 1));
+      assert_that (transaction_commits, is_equal_to (0));
+      assert_that (pending_common_writes, is_equal_to (0));
+      assert_that (pending_ad_writes, is_equal_to (0));
+      assert_that (transaction_active, is_equal_to (FALSE));
+    }
+}
+
+Ensure (manage_credentials, modify_ad_allowed_update_commits_common_and_ad_fields)
+{
+  credential_data_t data = {
+    .credential_id = "credential-id",
+    .comment = "new-comment",
+    .ad_credential_data = { .port = "", .tls_mode = "starttls" },
+  };
+
+  retained_ad_port = "1389";
+  g_setenv ("GVMD_AD_ALLOWED_PORTS", "389", TRUE);
+  load_active_directory_config ();
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_port")), when (value, is_null));
+  expect (__wrap_set_credential_data,
+          when (type, is_equal_to_string ("ad_tls_mode")),
+          when (value, is_equal_to_string ("starttls")));
+  expect (__wrap_update_credential_modification_time);
+  assert_that (modify_credential (&data), is_equal_to (CREDENTIAL_OK));
+  assert_that (common_writes, is_equal_to (1));
+  assert_that (pending_common_writes, is_equal_to (1));
+  assert_that (pending_ad_writes, is_equal_to (2));
+  assert_that (transaction_commits, is_equal_to (1));
+  assert_that (transaction_rollbacks, is_equal_to (0));
+}
+
+Ensure (manage_credentials, ad_command_permissions_precede_policy)
+{
+  credential_data_t data = valid_ad_test_data ();
+  credential_t credential = 42;
+
+  data.type = "ad";
+  data.credential_id = "credential-id";
+  data.ad_credential_data.host = "invalid:636";
+  credential_permission_allowed = FALSE;
+  expect_no_storage_calls ();
+  assert_that (create_credential (&data, &credential),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+  assert_that (modify_credential (&data),
+               is_equal_to (CREDENTIAL_PERMISSION_DENIED));
+  assert_that (transaction_rollbacks, is_equal_to (2));
+  assert_that (common_writes, is_equal_to (0));
+  assert_that (transaction_commits, is_equal_to (0));
+}
+
 Ensure (manage_credentials, modify_ad_unavailable_when_feature_disabled)
 {
   credential_data_t data = { 0 };
@@ -1402,6 +1944,28 @@ main (int argc, char **argv)
                          modify_pgp_clears_empty_public_key);
 
 #if ENABLE_AD_INTEGRATION
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_rejects_policy_and_host_before_storage);
+  add_test_with_context (suite, manage_credentials,
+                         create_ad_empty_lists_store_nonstandard_original_values);
+  add_test_with_context (suite, manage_credentials,
+                         ad_whitespace_and_creation_syntax_precede_policy);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_empty_lists_preserve_nonstandard_and_whitespace);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_merged_defaults_and_syntax_roll_back);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_checks_merged_destination_before_writes);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_accepts_merged_defaults_and_original_values);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_syntax_precedes_policy_without_partial_writes);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_denial_rolls_back_common_fields);
+  add_test_with_context (suite, manage_credentials,
+                         modify_ad_allowed_update_commits_common_and_ad_fields);
+  add_test_with_context (suite, manage_credentials,
+                         ad_command_permissions_precede_policy);
   add_test_with_context (suite, manage_credentials,
                          create_ad_unavailable_when_feature_disabled);
   add_test_with_context (suite, manage_credentials,

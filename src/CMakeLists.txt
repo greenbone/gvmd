@@ -583,8 +583,14 @@ set_target_properties(
   gmp-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator"
+      "-Wl,-wrap,modify_permission -Wl,-wrap,acl_user_may -Wl,-wrap,find_report_export_with_permission -Wl,-wrap,load_report_export_data -Wl,-wrap,report_uuid -Wl,-wrap,report_format_uuid -Wl,-wrap,manage_delete_report_export -Wl,-wrap,init_get -Wl,-wrap,init_report_export_iterator -Wl,-wrap,create_credential -Wl,-wrap,modify_credential -Wl,-wrap,log_event_fail"
 )
+if(ENABLE_AD_INTEGRATION)
+  set_property(
+    TARGET gmp-test APPEND_STRING PROPERTY LINK_FLAGS
+    " -Wl,-wrap,verify_active_directory_credential"
+  )
+endif()
 
 set(
   ALL_OBJECTS
@@ -741,7 +747,7 @@ set_target_properties(
   manage-credentials-test
   PROPERTIES
     LINK_FLAGS
-      "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private,-wrap,feature_enabled,-wrap,gpgme_new"
+      "-Wl,-wrap,insert_credential_base,-wrap,set_credential_data,-wrap,update_credential_modification_time,-wrap,init_credential_iterator_one,-wrap,next,-wrap,cleanup_iterator,-wrap,copy_credential_rows,-wrap,sql_begin_immediate,-wrap,sql_commit,-wrap,sql_rollback,-wrap,check_private_key,-wrap,gvm_ssh_public_from_private,-wrap,feature_enabled,-wrap,gpgme_new,-wrap,credential_value,-wrap,acl_user_may,-wrap,find_credential_with_permission,-wrap,credential_type,-wrap,resource_with_name_exists,-wrap,set_credential_name,-wrap,set_credential_comment,-wrap,set_credential_allow_insecure,-wrap,ad_connector_new"
 )
 
 if(ENABLE_AD_INTEGRATION)

@@ -381,15 +381,18 @@ gvmd_config_resolve_int (const char *env_name,
 /**
  * @brief Get a string from env variable or a config file value.
  *
- * If the env variable is set, it will take precedence over the value from
- *  the config file.
+ * A set environment variable takes precedence, including an empty value.
+ * Missing configuration, groups, and keys return NULL silently. Other string
+ * read or decoding errors warn with only the group/key, never the raw error
+ * message or value, and return NULL.
  *
- * @param[in]  env_name   Name of the environment variable.
- * @param[in]  kf         Config as a GKeyFile*
- * @param[in]  kf_group   Group in the config to get value from.
- * @param[in]  kf_key     Key in the config to get value from.
+ * @param[in]  env_name   Non-NULL name of the environment variable.
+ * @param[in]  kf         Borrowed configuration, or NULL if unavailable.
+ * @param[in]  kf_group   Non-NULL group in the config to get value from.
+ * @param[in]  kf_key     Non-NULL key in the config to get value from.
  *
- * @return Value if available, else NULL.
+ * @return Newly allocated value, including an empty string, or NULL if absent
+ *         or unreadable. The caller must free the value with g_free().
  */
 gchar *
 gvmd_get_env_or_config_string (const char *env_name,
@@ -398,10 +401,27 @@ gvmd_get_env_or_config_string (const char *env_name,
                                const char *kf_key)
 {
   const char *env_value = g_getenv (env_name);
+  gchar *value;
+  GError *error = NULL;
+
   if (env_value)
     return g_strdup (env_value);
-  else if (kf)
-    return g_key_file_get_string (kf, kf_group, kf_key, NULL);
+  if (kf == NULL)
+    return NULL;
 
-  return NULL;
+  value = g_key_file_get_string (kf, kf_group, kf_key, &error);
+  if (error)
+    {
+      if (!g_error_matches (error, G_KEY_FILE_ERROR,
+                            G_KEY_FILE_ERROR_KEY_NOT_FOUND)
+          && !g_error_matches (error, G_KEY_FILE_ERROR,
+                               G_KEY_FILE_ERROR_GROUP_NOT_FOUND))
+        g_warning ("%s: %s.%s: could not read string",
+                   __func__, kf_group, kf_key);
+      g_free (value);
+      g_clear_error (&error);
+      return NULL;
+    }
+
+  return value;
 }

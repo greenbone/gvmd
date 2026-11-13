@@ -1472,10 +1472,12 @@ fail:
 /**
  * @brief Create an Active Directory credential.
  *
- * @param data The credential data.
- * @param new_credential The newly created credential.
+ * The caller owns the transaction and must roll back errors.
  *
- * @return CREDENTIAL_OK on success, or an error code on failure.
+ * @param[in]  data Borrowed credential data, not modified or retained.
+ * @param[out] new_credential Caller-owned row ID; zeroed before validation.
+ *
+ * @return CREDENTIAL_OK or a structural/policy/storage error.
  */
 static credential_return_t
 create_active_directory_credential (const credential_data_t *data,
@@ -1508,6 +1510,9 @@ create_active_directory_credential (const credential_data_t *data,
   if (!valid_ad_port (ad->port))
     return CREDENTIAL_AD_INVALID_PORT;
 
+  if (!valid_ad_host (ad->host))
+    return CREDENTIAL_AD_INVALID_HOST;
+
   if (!g_str_equal (ad->tls_mode, "ldaps")
       && !g_str_equal (ad->tls_mode, "starttls"))
     return CREDENTIAL_AD_INVALID_TLS_MODE;
@@ -1515,6 +1520,10 @@ create_active_directory_credential (const credential_data_t *data,
   if (ad->ca_certificate != NULL
       && !valid_ad_ca_certificate (ad->ca_certificate))
     return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;
+
+  if (check_active_directory_destination (ad->host, ad->port, ad->tls_mode,
+                                          NULL) != AD_DESTINATION_OK)
+    return CREDENTIAL_AD_DESTINATION_NOT_ALLOWED;
 
   ret = insert_credential_base (data, "ad", new_credential);
   if (ret != CREDENTIAL_OK)
@@ -2564,10 +2573,13 @@ modify_credential_common_fields (const credential_data_t *data,
 /**
  * @brief Modify an Active Directory credential.
  *
- * @param data  The credential data.
- * @param credential  The credential row ID.
+ * The caller owns the transaction and must roll back errors.
  *
- * @return CREDENTIAL_OK on success, or an error code on failure.
+ * @param[in] data Borrowed partial update, not modified or retained. Absent
+ *                 destination fields retain stored values; empty port clears it.
+ * @param[in] credential Existing credential row ID.
+ *
+ * @return CREDENTIAL_OK or a structural/policy/storage error.
  */
 static credential_return_t
 modify_active_directory_credential (const credential_data_t *data,
@@ -2585,10 +2597,66 @@ modify_active_directory_credential (const credential_data_t *data,
 
   ad = &data->ad_credential_data;
 
+  /* Preserve supplied-field validation order before checking membership. */
+  if (ad->host && !*ad->host)
+    return CREDENTIAL_AD_HOST_REQUIRED;
+  if (ad->bind_dn && !*ad->bind_dn)
+    return CREDENTIAL_AD_BIND_DN_REQUIRED;
+  if (ad->base_dn && !*ad->base_dn)
+    return CREDENTIAL_AD_BASE_DN_REQUIRED;
+  if (ad->port && *ad->port && !valid_ad_port (ad->port))
+    return CREDENTIAL_AD_INVALID_PORT;
+  if (ad->tls_mode && !g_str_equal (ad->tls_mode, "ldaps")
+      && !g_str_equal (ad->tls_mode, "starttls"))
+    return CREDENTIAL_AD_INVALID_TLS_MODE;
+  if (ad->ca_certificate && *ad->ca_certificate
+      && !valid_ad_ca_certificate (ad->ca_certificate))
+    return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;
+  if (ad->bind_password && !*ad->bind_password)
+    return CREDENTIAL_AD_BIND_PASSWORD_REQUIRED;
+
+  {
+    gchar *saved_host = ad->host ? NULL
+                                 : credential_value (credential, "ad_host");
+    gchar *saved_port = ad->port ? NULL
+                                 : credential_value (credential, "ad_port");
+    gchar *saved_tls_mode = ad->tls_mode ? NULL
+                           : credential_value (credential, "ad_tls_mode");
+    const gchar *host = ad->host ? ad->host : saved_host;
+    const gchar *port = ad->port ? (*ad->port ? ad->port : NULL) : saved_port;
+    const gchar *tls_mode = ad->tls_mode ? ad->tls_mode : saved_tls_mode;
+    ad_destination_return_t destination;
+
+    destination = check_active_directory_destination (host, port, tls_mode,
+                                                      NULL);
+    switch (destination)
+      {
+      case AD_DESTINATION_OK:
+        ret = CREDENTIAL_OK;
+        break;
+      case AD_DESTINATION_INVALID_HOST:
+        ret = host && *host ? CREDENTIAL_AD_INVALID_HOST
+                            : CREDENTIAL_AD_HOST_REQUIRED;
+        break;
+      case AD_DESTINATION_INVALID_PORT:
+        ret = CREDENTIAL_AD_INVALID_PORT;
+        break;
+      case AD_DESTINATION_INVALID_TLS_MODE:
+        ret = CREDENTIAL_AD_INVALID_TLS_MODE;
+        break;
+      case AD_DESTINATION_NOT_ALLOWED:
+        ret = CREDENTIAL_AD_DESTINATION_NOT_ALLOWED;
+        break;
+      }
+    g_free (saved_host);
+    g_free (saved_port);
+    g_free (saved_tls_mode);
+    if (ret != CREDENTIAL_OK)
+      return ret;
+  }
+
   if (ad->host != NULL)
     {
-      if (*ad->host == '\0')
-        return CREDENTIAL_AD_HOST_REQUIRED;
       if (set_credential_data (credential, "ad_host", ad->host))
         return CREDENTIAL_INTERNAL_ERROR;
       changed = TRUE;
@@ -2596,8 +2664,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->bind_dn != NULL)
     {
-      if (*ad->bind_dn == '\0')
-        return CREDENTIAL_AD_BIND_DN_REQUIRED;
       if (set_credential_data (credential, "ad_bind_dn", ad->bind_dn))
         return CREDENTIAL_INTERNAL_ERROR;
       changed = TRUE;
@@ -2605,8 +2671,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->base_dn != NULL)
     {
-      if (*ad->base_dn == '\0')
-        return CREDENTIAL_AD_BASE_DN_REQUIRED;
       if (set_credential_data (credential, "ad_base_dn", ad->base_dn))
         return CREDENTIAL_INTERNAL_ERROR;
       changed = TRUE;
@@ -2614,10 +2678,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->port != NULL)
     {
-      // Allow clearing the port
-      if (*ad->port != '\0' && !valid_ad_port (ad->port))
-        return CREDENTIAL_AD_INVALID_PORT;
-
       if (set_credential_data (credential, "ad_port",
                                *ad->port ? ad->port : NULL))
         return CREDENTIAL_INTERNAL_ERROR;
@@ -2626,9 +2686,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->tls_mode != NULL)
     {
-      if (!g_str_equal (ad->tls_mode, "ldaps")
-          && !g_str_equal (ad->tls_mode, "starttls"))
-        return CREDENTIAL_AD_INVALID_TLS_MODE;
       if (set_credential_data (credential, "ad_tls_mode", ad->tls_mode))
         return CREDENTIAL_INTERNAL_ERROR;
       changed = TRUE;
@@ -2636,10 +2693,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->ca_certificate != NULL)
     {
-      // Allow clearing the CA certificate
-      if (*ad->ca_certificate != '\0'
-          && !valid_ad_ca_certificate (ad->ca_certificate))
-        return CREDENTIAL_AD_INVALID_CA_CERTIFICATE;
       if (set_credential_data (credential, "ad_ca_certificate",
                                *ad->ca_certificate
                                  ? ad->ca_certificate : NULL))
@@ -2649,8 +2702,6 @@ modify_active_directory_credential (const credential_data_t *data,
 
   if (ad->bind_password != NULL)
     {
-      if (*ad->bind_password == '\0')
-        return CREDENTIAL_AD_BIND_PASSWORD_REQUIRED;
       ret = store_credential_password (credential, ad->bind_password);
       if (ret != CREDENTIAL_OK)
         return ret;
