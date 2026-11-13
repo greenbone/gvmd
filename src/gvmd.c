@@ -91,6 +91,7 @@
 #include "debug_utils.h"
 #include "ipc.h"
 #include "manage.h"
+#include "manage_active_directory.h"
 #include "manage_secinfo.h"
 #include "manage_authentication.h"
 #include "manage_nvts.h"
@@ -3787,6 +3788,11 @@ gvmd (int argc, char** argv, char *env[])
 
   /* Initialize runtime flags */
   runtime_flags_init ();
+
+#if ENABLE_AD_INTEGRATION
+  /* Validate AD policy regardless of the runtime feature flag. */
+  load_active_directory_config ();
+#endif
 
   /* Handle --version option */
   if (print_version)

@@ -4524,6 +4524,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         the manager creates a password only credential.  Otherwise the
         manager autogenerates a key-based credential.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        For AD credentials, the initial host and port must satisfy gvmd's
+        destination allow lists. Omitted ports use 389 for StartTLS or 636 for
+        LDAPS. Malformed hosts return status 400, "Invalid AD host"; policy
+        denial returns status 400, "Active Directory destination is not allowed."
+        Ordinary credential use and referrals are unaffected.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <e>name</e>
@@ -39151,6 +39160,17 @@ END:VCALENDAR
         The login and password can only be changed for password credentials.
         Modification of login or password on package credentials is forbidden.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        For AD credentials, the resulting supplied/retained host and port are
+        checked against gvmd's destination allow lists, even for unrelated
+        updates; rejection rolls back the modification. An empty port clears it
+        to the default (StartTLS 389, LDAPS 636). Malformed supplied hosts return
+        status 400, "Invalid AD host"; policy denial returns status 400,
+        "Active Directory destination is not allowed." Ordinary credential use
+        and referrals are unaffected.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <attrib>
@@ -42255,6 +42275,14 @@ END:VCALENDAR
         fields.  The two forms cannot be combined.  In the inline form, host,
         bind_dn, bind_password, base_dn, and tls_mode are required; port and
         ca_certificate are optional.
+      </p>
+      <p>
+        Both forms check the initial host and port against gvmd's destination
+        allow lists before connecting; referrals are unaffected. Omitted ports
+        use 389 for StartTLS or 636 for LDAPS. Malformed inline hosts return
+        status 400, "Invalid AD host"; policy denial returns status 400,
+        "Active Directory destination is not allowed." Invalid saved settings
+        return status 400, "Stored Active Directory credential configuration is invalid".
       </p>
       <p>
         This command is only available when gvmd is built with
