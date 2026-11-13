@@ -136,6 +136,7 @@ typedef struct
 typedef struct
 {
   guint ou;
+  guint container;
   guint group;
   guint computer_total;
   guint computer_disabled; /**< Disabled computers among the collected objects. */

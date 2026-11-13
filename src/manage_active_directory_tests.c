@@ -396,6 +396,44 @@ Ensure (manage_active_directory, object_map_selects_actual_object_type)
                is_equal_to_string ("hosts"));
   assert_that (ad_object_attribute_value (copy, "memberOf"), is_null);
   ad_directory_object_free (copy);
+
+  source = new_test_object (AD_OBJECT_TYPE_CONTAINER);
+  add_object_attribute (source, "cn", "Computers", NULL);
+  add_object_attribute (source, "ou", "ignored", NULL);
+  add_object_attribute (source, "description", "Default container", NULL);
+  copy = ad_directory_object_from_search_object (source);
+  assert_that (g_hash_table_size (copy->attributes), is_equal_to (2));
+  assert_that (ad_object_attribute_value (copy, "cn"),
+               is_equal_to_string ("Computers"));
+  assert_that (ad_object_attribute_value (copy, "description"),
+               is_equal_to_string ("Default container"));
+  assert_that (ad_object_attribute_value (copy, "ou"), is_null);
+  ad_directory_object_free (copy);
+}
+
+Ensure (manage_active_directory, collection_counts_non_computer_types)
+{
+  GPtrArray *objects = g_ptr_array_new_with_free_func (
+    (GDestroyNotify) ad_directory_object_free);
+  get_ad_objects_result_t result = { .objects = objects };
+  ad_object_t *source;
+
+  source = new_test_object (AD_OBJECT_TYPE_OU);
+  assert_that (collect_ad_object (source, &result),
+               is_equal_to (AD_OBJECT_CALLBACK_CONTINUE));
+  source = new_test_object (AD_OBJECT_TYPE_CONTAINER);
+  assert_that (collect_ad_object (source, &result),
+               is_equal_to (AD_OBJECT_CALLBACK_CONTINUE));
+  source = new_test_object (AD_OBJECT_TYPE_GROUP);
+  assert_that (collect_ad_object (source, &result),
+               is_equal_to (AD_OBJECT_CALLBACK_CONTINUE));
+
+  assert_that (objects->len, is_equal_to (3));
+  assert_that (result.counts.ou, is_equal_to (1));
+  assert_that (result.counts.container, is_equal_to (1));
+  assert_that (result.counts.group, is_equal_to (1));
+  assert_that (result.counts.computer_total, is_equal_to (0));
+  g_ptr_array_unref (objects);
 }
 
 Ensure (manage_active_directory, collection_accepts_large_attributes)
@@ -659,6 +697,8 @@ Ensure (manage_active_directory, search_params_accept_valid_boundaries)
   assert_that (valid_ad_object_search_params (&params), is_true);
   params.object_types = AD_OBJECT_TYPE_COMPUTER;
   assert_that (valid_ad_object_search_params (&params), is_true);
+  params.object_types = AD_OBJECT_TYPE_CONTAINER;
+  assert_that (valid_ad_object_search_params (&params), is_true);
   params.object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_COMPUTER;
   assert_that (valid_ad_object_search_params (&params), is_true);
   params.object_types = AD_OBJECT_TYPE_GROUP;
@@ -750,6 +790,14 @@ Ensure (manage_active_directory, configure_search_accepts_valid_options)
                is_equal_to (AD_CONNECTOR_OK));
   assert_that (requested_attributes, is_equal_to_string (
     "description,cn,objectcategory,samaccountname,displayname,grouptype"));
+  ad_search_config_free (config);
+
+  config = ad_search_config_new ();
+  params.object_types = AD_OBJECT_TYPE_CONTAINER;
+  assert_that (configure_ad_search (config, &params, credential_base_dn),
+               is_equal_to (AD_CONNECTOR_OK));
+  assert_that (requested_attributes,
+               is_equal_to_string ("description,cn,objectcategory"));
   ad_search_config_free (config);
 }
 
@@ -1124,6 +1172,8 @@ main (int argc, char **argv)
                          object_map_owns_all_selected_values);
   add_test_with_context (suite, manage_active_directory,
                          object_map_selects_actual_object_type);
+  add_test_with_context (suite, manage_active_directory,
+                         collection_counts_non_computer_types);
   add_test_with_context (suite, manage_active_directory,
                          collection_accepts_large_attributes);
   add_test_with_context (suite, manage_active_directory,

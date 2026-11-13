@@ -1172,6 +1172,7 @@ collect_ad_object (ad_object_t *object, gpointer user_data)
     goto reject;
 
   if (object->type != AD_OBJECT_TYPE_OU
+      && object->type != AD_OBJECT_TYPE_CONTAINER
       && object->type != AD_OBJECT_TYPE_COMPUTER
       && object->type != AD_OBJECT_TYPE_GROUP)
     goto reject;
@@ -1185,6 +1186,8 @@ collect_ad_object (ad_object_t *object, gpointer user_data)
 
   if (entry->type == AD_OBJECT_TYPE_OU)
     result->counts.ou++;
+  else if (entry->type == AD_OBJECT_TYPE_CONTAINER)
+    result->counts.container++;
   else if (entry->type == AD_OBJECT_TYPE_GROUP)
     result->counts.group++;
   else if (entry->type == AD_OBJECT_TYPE_COMPUTER)

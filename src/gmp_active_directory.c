@@ -564,6 +564,9 @@ append_ad_object_xml (const ad_directory_object_t *object, GString *xml,
     case AD_OBJECT_TYPE_OU:
       type = "ou";
       break;
+    case AD_OBJECT_TYPE_CONTAINER:
+      type = "container";
+      break;
     case AD_OBJECT_TYPE_COMPUTER:
       type = "computer";
       break;
@@ -659,6 +662,8 @@ ad_object_parse_types (entity_t types_entity, ad_object_type_t *types)
       text = entity_text (child);
       if (g_strcmp0 (text, "ou") == 0)
         bit = AD_OBJECT_TYPE_OU;
+      else if (g_strcmp0 (text, "container") == 0)
+        bit = AD_OBJECT_TYPE_CONTAINER;
       else if (g_strcmp0 (text, "computer") == 0)
         bit = AD_OBJECT_TYPE_COMPUTER;
       else if (g_strcmp0 (text, "group") == 0)
@@ -861,11 +866,13 @@ buffer_active_directory_objects_xml (const get_ad_objects_result_t *result,
     "<objects truncated=\"%d\">"
     "<count>"
     "<ou>%u</ou>"
+    "<container>%u</container>"
     "<group>%u</group>"
     "<computer>"
     "<total>%u</total>",
     result->truncated ? 1 : 0,
     result->counts.ou,
+    result->counts.container,
     result->counts.group,
     result->counts.computer_total
   );
@@ -912,7 +919,7 @@ get_active_directory_objects_run (gmp_parser_t *gmp_parser, GError **error)
 
   get_ad_objects_params_t request = {
     .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
-    .object_types = AD_OBJECT_TYPE_ALL,
+    .object_types = AD_OBJECT_TYPE_DEFAULT,
     .max_results = AD_OBJECTS_DEFAULT_MAX_RESULTS,
     .include_disabled_computers = TRUE,
     .targets = FALSE,

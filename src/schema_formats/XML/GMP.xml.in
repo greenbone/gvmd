@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
   <type>
     <name>ad_object_type</name>
     <summary>An Active Directory object type</summary>
-    <pattern>xsd:token { pattern = "ou|computer|group" }</pattern>
+    <pattern>xsd:token { pattern = "ou|container|computer|group" }</pattern>
   </type>
   @ENDIF_ENABLE_AD_INTEGRATION@
   <type>
@@ -10987,11 +10987,11 @@ END:VCALENDAR
     </ele>
     <ele>
       <name>object_types</name>
-      <summary>Nonempty selection of distinct object types; defaults to all types</summary>
+      <summary>Nonempty selection of distinct object types; defaults to ou, computer, and group</summary>
       <pattern><any><e>object_type</e></any></pattern>
       <ele>
         <name>object_type</name>
-        <summary>Object type to include: ou, computer, or group</summary>
+        <summary>Object type to include: ou, container, computer, or group</summary>
         <pattern><t>ad_object_type</t></pattern>
       </ele>
     </ele>
@@ -11027,12 +11027,18 @@ END:VCALENDAR
           <summary>Per-type counts within the fetched subset</summary>
           <pattern>
             <e>ou</e>
+            <e>container</e>
             <e>group</e>
             <e>computer</e>
           </pattern>
           <ele>
             <name>ou</name>
             <summary>Number of returned organizational units</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>container</name>
+            <summary>Number of returned containers</summary>
             <pattern><t>integer</t></pattern>
           </ele>
           <ele>
@@ -11061,11 +11067,11 @@ END:VCALENDAR
         </ele>
         <ele>
           <name>object</name>
-          <summary>An organizational unit, computer, or group</summary>
+          <summary>An organizational unit, container, computer, or group</summary>
           <pattern>
             <attrib>
               <name>type</name>
-              <summary>Object type: ou, computer, or group</summary>
+              <summary>Object type: ou, container, computer, or group</summary>
               <type>ad_object_type</type>
               <required>1</required>
             </attrib>
@@ -11225,6 +11231,7 @@ END:VCALENDAR
           <objects truncated="0">
             <count>
               <ou>0</ou>
+              <container>0</container>
               <group>0</group>
               <computer><total>1</total></computer>
             </count>
