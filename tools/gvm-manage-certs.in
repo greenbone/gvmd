@@ -128,16 +128,27 @@ print_help ()
   echo "  $0 [OPTION] - Manage certificate infrastructure for a GVM installation"
   echo
   echo "Options:"
-  echo "  -h             Print help"
   echo "  -a             Automatically set up default infrastructure for GVM"
   echo "  -V             Verify existing GVM certificate infrastructure"
   echo "  -C             Create a certificate authority (CA)"
-  echo "  -I             Install a CA certificate"
-  echo "  -R             Create a certificate request for a CA"
-  echo "  -r             Create a certificate request"
-  echo "  -c             Create a certificate request and sign it"
-  echo "  -i             Install a certificate"
-  echo "  -S             Sign a certificate request"
+  echo "  -I             Install a CA certificate and key, use with the"
+  echo "                      GVM_CERT_DIR and GVM_CERT_PREFIX environment"
+  echo "                      variables"
+  echo "  -i             Install a certificate and key, use with the"
+  echo "                      GVM_CERT_DIR and GVM_CERT_PREFIX environment"
+  echo "                      variables"
+  echo "  -n             Install a ca certificate, use with the GVM_CERT_DIR"
+  echo "                      and GVM_CERT_PREFIX environment variables"
+  echo "  -R             Create a request for a certificate with the"
+  echo "                     CA basic constraint true"
+  echo "  -r             Create a certificate request, use with -E or -L and"
+  echo "                     the GVM_CERT_PREFIX environment variable"
+  echo "  -c             Create a certificate request and sign it, use with -E"
+  echo "                     or -L and the GVM_CERT_PREFIX environment variable"
+  echo "  -S             Sign a certificate request, use with the GVM_CERT_DIR"
+  echo "                     and GVM_CERT_PREFIX environment variables"
+  echo "  -s             Create a self signed certificate, use with -E or -L"
+  echo "                     and the GVM_CERT_PREFIX environment variable"
   echo "  -f             Force overwriting of existing files"
   echo
   echo "Certificate options:"
@@ -153,8 +164,11 @@ print_help ()
   echo "Configuration:"
   echo "  -e <file>      Read configuration from <file>"
   echo
-  echo "All certificate generation options can be set either through the configuration"
-  echo "  file or through environment variables like the following:"
+  echo "Other options:"
+  echo "  -h             Print help"
+  echo
+  echo "All certificate generation options can be set either through the"
+  echo "configuration file or through environment variables like the following:"
   echo
   echo "  GVM_CERTIFICATE_LIFETIME   Days until the certificate will expire"
   echo "  GVM_CERTIFICATE_HOSTNAME   Name to use for the certificate"
@@ -167,9 +181,11 @@ print_help ()
   echo "  GVM_CERT_DIR               Directory where keys and certificates are stored"
   echo "                                 before installation"
   echo
-  echo "  GVM_CERT_PREFIX            Prefix for certificate filename (e.g. \"server\")"
+  echo "  GVM_CERT_PREFIX            Prefix for certificate filename"
+  echo "                                 (e.g. \"server\", \"client\")"
   echo
-  echo "For a complete list of options, please refer to the documentation."
+  echo "For a complete list of environment variable, please refer to"
+  echo "the example configuration file included in the documentation."
   echo
 
   exit 0
@@ -191,7 +207,7 @@ set_up ()
   if [ -z "$GVM_CERT_DIR" ]
   then
     USE_TEMP_DIR=1
-    GVM_CERT_DIR=`mktemp -d`
+    GVM_CERT_DIR="$(mktemp --directory --tmpdir gvmca-XXXXXXXXXX)"
     log_verbose "Using $GVM_CERT_DIR to temporarily store files."
   else
     USE_TEMP_DIR=0
@@ -444,6 +460,8 @@ create_certificate ()
     echo "tls_www_client" >> $GVM_CERT_TEMPLATE_FILENAME
   fi
 
+  log_write "Generated certtool template in $GVM_CERT_TEMPLATE_FILENAME."
+
   if [ $DEBUG -eq 1 ]
   then
     echo "DEBUG: Using the following template ($GVM_CERT_TEMPLATE_FILENAME):" >> "$CERTTOOL_LOGFILE"
@@ -525,9 +543,9 @@ sign_certificate ()
   log_write "Signed certificate request in $GVM_CERT_REQUEST_FILENAME with CA certificate in $GVM_SIGNING_CA_CERT_FILENAME to generate certificate in $GVM_CERT_FILENAME"
 }
 
-# Install a certificate
+# Install a certificate and key
 # Where should the certificate and the key be installed to?
-install_cert ()
+install_cert_key ()
 {
   log_verbose "Installing certificate and key."
 
@@ -557,7 +575,7 @@ install_cert ()
     echo "Use '-f' parameter to overwrite existing files."
     exit 1
   else
-    cp "$GVM_KEY_FILENAME" "$KEY_INSTALL"
+    install -T -m 0600 "$GVM_KEY_FILENAME" "$KEY_INSTALL"
     if [ $? -ne 0 ]
     then
       log_err "Failed to install $GVM_KEY_FILENAME to $KEY_INSTALL.  Aborting."
@@ -574,10 +592,48 @@ install_cert ()
     echo "Use '-f' parameter to overwrite existing files."
     exit 1
   else
-    cp "$GVM_CERT_FILENAME" "$CERT_INSTALL"
+    install -T -m 0644 "$GVM_CERT_FILENAME" "$CERT_INSTALL"
     if [ $? -ne 0 ]
     then
       log_err "Failed to install $GVM_CERT_FILENAME to $CERT_INSTALL.  Aborting."
+      exit 1
+    else
+      log_write "Installed certificate to $CERT_INSTALL."
+    fi
+  fi
+}
+
+# Install a certificate
+# Where should the certificate be installed to?
+install_cert ()
+{
+  log_verbose "Installing certificate."
+
+  if ! [ -s "$GVM_CERT_FILENAME" ]; then
+    log_err "ERROR: File to install ($GVM_CERT_FILENAME) not found. Aborting."
+    exit 1
+  fi
+
+  if ! [ -d "$GVM_CERT_LOCATION" ]; then
+    log_verbose "Install destinations do not exist as directories, attempting to create them."
+    set_up_directories
+  fi
+
+
+  if [ ! -w "$GVM_CERT_LOCATION" ]; then
+    log_err "ERROR: Install destinations are not writable. Aborting."
+    exit 1
+  fi
+
+  CERT_INSTALL="$GVM_CERT_LOCATION/${1}cert.pem"
+  if [ -f "$CERT_INSTALL" ] && [ $FORCE -ne 1 ]; then
+    echo "$CERT_INSTALL exists already, not overwriting."
+    echo "Use '-f' parameter to overwrite existing files."
+    exit 1
+  else
+    install -T -m 0644 "$GVM_CERT_FILENAME" "$CERT_INSTALL"
+    if [ $? -ne 0 ]; then
+      log_err "Failed to install $GVM_CERT_FILENAME to $CERT_INSTALL. Aborting."
       exit 1
     else
       log_write "Installed certificate to $CERT_INSTALL."
@@ -688,6 +744,7 @@ AUTO=0
 AUTO_SKIP_CA=0
 INSTALL_CERTIFICATE=0
 INSTALL_CA=0
+INSTALL_CA_SANS_KEY=0
 CREATE_CERTIFICATE=0
 CREATE_SELF_SIGNED=0
 CERTIFICATE_TYPE=0
@@ -702,7 +759,7 @@ DEBUG=0
 QUIET=0
 FORCE=0
 
-while getopts haAsiIcfdCSVvqe:ELrR OPTION
+while getopts haAsiIncfdCSVvqe:ELrR OPTION
 do
   case "$OPTION" in
     h)
@@ -723,6 +780,9 @@ do
       ;;
     I)
       INSTALL_CA=1
+      ;;
+    n)
+      INSTALL_CA_SANS_KEY=1
       ;;
     c)
       CREATE_CERTIFICATE=1
@@ -827,7 +887,7 @@ then
     create_private_key "$GVM_KEY_FILENAME"
     create_certificate
     log_verbose "  CA certificate generated."
-    install_cert "${GVM_CERT_PREFIX}"
+    install_cert_key "${GVM_CERT_PREFIX}"
     log_verbose "  CA certificate and key installed."
     CREATE_SELF_SIGNED=0
   else
@@ -840,7 +900,7 @@ then
   create_certificate
   sign_certificate
   log_verbose "  Server certificate generated."
-  install_cert "${GVM_CERT_PREFIX}"
+  install_cert_key "${GVM_CERT_PREFIX}"
   log_verbose "  Server certificate and key installed."
 
   CERTIFICATE_TYPE=$CLIENT_CERTIFICATE
@@ -849,7 +909,7 @@ then
   create_certificate
   sign_certificate
   log_verbose "  Client certificate generated."
-  install_cert "${GVM_CERT_PREFIX}"
+  install_cert_key "${GVM_CERT_PREFIX}"
   log_verbose "  Client certificate and key installed."
 
   clean_up
@@ -887,6 +947,12 @@ fi
 if [ $INSTALL_CA -eq 1 ]
 then
   set_up
+  install_cert_key "ca"
+fi
+
+if [ $INSTALL_CA_SANS_KEY -eq 1 ]
+then
+  set_up
   install_cert "ca"
 fi
 
@@ -902,7 +968,7 @@ then
 
   if [ $INSTALL_CERTIFICATE -eq 1 ]
   then
-    install_cert "$GVM_CERT_PREFIX"
+    install_cert_key "$GVM_CERT_PREFIX"
   fi
 fi
 
@@ -915,7 +981,7 @@ fi
 if [ $INSTALL_CERTIFICATE -eq 1 ]
 then
   set_up
-  install_cert "$GVM_CERT_PREFIX"
+  install_cert_key "$GVM_CERT_PREFIX"
 fi
 
 # If the files have been installed, clean up the generation directory.
