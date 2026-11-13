@@ -704,7 +704,8 @@ init_task_schedule_iterator (iterator_t* iterator)
                  " schedules.id, tasks.schedule_next_time,"
                  " schedules.icalendar, schedules.timezone,"
                  " schedules.duration,"
-                 " users.uuid, users.name"
+                 " users.uuid, users.name,"
+                 " tasks.run_status"
                  " FROM tasks, schedules, users"
                  " WHERE tasks.schedule = schedules.id"
                  " AND tasks.hidden = 0"
@@ -821,6 +822,24 @@ DEF_ACCESS (task_schedule_iterator_owner_uuid, 7);
 DEF_ACCESS (task_schedule_iterator_owner_name, 8);
 
 /**
+ * @brief Get the run status from a task schedule iterator.
+ *
+ * The status is read when the iterator is initialised, so it can be out of
+ * date by the time a row is handled.  It only serves to rule rows out; before
+ * acting on a row, check the current status with task_run_status().
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Task run status.
+ */
+static task_status_t
+task_schedule_iterator_run_status (iterator_t* iterator)
+{
+  if (iterator->done) return TASK_STATUS_DONE;
+  return (task_status_t) iterator_int (iterator, 9);
+}
+
+/**
  * @brief Get the start due state from a task schedule iterator.
  *
  * @param[in]  iterator  Iterator.
@@ -838,7 +857,7 @@ task_schedule_iterator_start_due (iterator_t* iterator)
   if (task_schedule_iterator_next_time (iterator) == 0)
     return FALSE;
 
-  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  run_status = task_schedule_iterator_run_status (iterator);
   start_time = task_schedule_iterator_next_time (iterator);
 
   if ((run_status == TASK_STATUS_DONE
@@ -847,7 +866,13 @@ task_schedule_iterator_start_due (iterator_t* iterator)
        || run_status == TASK_STATUS_STOPPED)
       && (start_time > 0)
       && (start_time <= time (NULL)))
-    return TRUE;
+    {
+      run_status = task_run_status (task_schedule_iterator_task (iterator));
+      return run_status == TASK_STATUS_DONE
+             || run_status == TASK_STATUS_INTERRUPTED
+             || run_status == TASK_STATUS_NEW
+             || run_status == TASK_STATUS_STOPPED;
+    }
 
   return FALSE;
 }
@@ -923,24 +948,34 @@ task_schedule_iterator_stop_due (iterator_t* iterator)
       report_t report;
       task_status_t run_status;
 
-      report = task_running_report (task_schedule_iterator_task (iterator));
-      if (report && (report_scheduled (report) == 0))
-        return FALSE;
-
-      run_status = task_run_status (task_schedule_iterator_task (iterator));
+      run_status = task_schedule_iterator_run_status (iterator);
 
       if (run_status == TASK_STATUS_RUNNING
           || run_status == TASK_STATUS_REQUESTED
           || run_status == TASK_STATUS_QUEUED)
         {
+          task_t task;
           time_t now, start;
 
           now = time (NULL);
 
           start = icalendar_next_time_from_string (icalendar, time(NULL), zone,
                                                    -1);
-          if ((start + duration) < now)
-            return TRUE;
+          if ((start + duration) >= now)
+            return FALSE;
+
+          task = task_schedule_iterator_task (iterator);
+          run_status = task_run_status (task);
+          if (run_status != TASK_STATUS_RUNNING
+              && run_status != TASK_STATUS_REQUESTED
+              && run_status != TASK_STATUS_QUEUED)
+            return FALSE;
+
+          report = task_running_report (task);
+          if (report && (report_scheduled (report) == 0))
+            return FALSE;
+
+          return TRUE;
         }
     }
 
@@ -1010,9 +1045,14 @@ task_schedule_iterator_timed_out (iterator_t* iterator)
   if (start_time == 0)
     return FALSE;
 
-  run_status = task_run_status (task_schedule_iterator_task (iterator));
+  run_status = task_schedule_iterator_run_status (iterator);
   duration = task_schedule_iterator_duration (iterator);
 
+  if (task_schedule_is_timed_out_common (run_status, start_time, duration)
+      == FALSE)
+    return FALSE;
+
+  run_status = task_run_status (task_schedule_iterator_task (iterator));
   return task_schedule_is_timed_out_common (run_status, start_time, duration);
 }
 
