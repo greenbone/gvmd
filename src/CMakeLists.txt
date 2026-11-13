@@ -587,8 +587,9 @@ set_target_properties(
 )
 if(ENABLE_AD_INTEGRATION)
   set_property(
-    TARGET gmp-test APPEND_STRING PROPERTY LINK_FLAGS
-    " -Wl,-wrap,verify_active_directory_credential"
+    TARGET gmp-test
+    APPEND_STRING
+    PROPERTY LINK_FLAGS " -Wl,-wrap,verify_active_directory_credential"
   )
 endif()
 
