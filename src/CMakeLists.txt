@@ -626,6 +626,28 @@ set(
 )
 add_unit_test(manage-filter-utils "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
 
+set(
+  ALL_OBJECTS
+  $<TARGET_OBJECTS:all-gmp-obj>
+  $<TARGET_OBJECTS:all-manage-sql-obj>
+  $<TARGET_OBJECTS:all-misc-obj>
+  $<TARGET_OBJECTS:all-sql-obj>
+)
+add_unit_test(manage-cve-scan "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
+target_link_options(
+  manage-cve-scan-test
+  PRIVATE
+    "-Wl,--wrap=init_host_details_cpe_iterator"
+    "-Wl,--wrap=host_details_cpe_iterator_cpe"
+    "-Wl,--wrap=init_iterator"
+    "-Wl,--wrap=iterator_string"
+    "-Wl,--wrap=iterator_int"
+    "-Wl,--wrap=iterator_int64"
+    "-Wl,--wrap=iterator_null"
+    "-Wl,--wrap=next"
+    "-Wl,--wrap=cleanup_iterator"
+)
+
 if(ENABLE_CONTAINER_SCANNING)
   set(
     ALL_OBJECTS
@@ -670,7 +692,7 @@ set_target_properties(
 add_unit_test(manage-sql-secinfo "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 set_target_properties(
   manage-sql-secinfo-test
-  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_int64_0"
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,sql_int64_0,-wrap,sql"
 )
 
 set(

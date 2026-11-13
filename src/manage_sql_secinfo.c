@@ -2251,21 +2251,40 @@ update_cert_bund_advisories (int last_cert_update)
 /**
  * @brief Convert a CPE name from formatted string to URI and SQL quote it.
  *
+ * Preserve CPE wildcard escapes, escaped literal wildcards and percent signs
+ * while decoding other URI escapes for the stored name.
+ *
  * @param[in]  name        Name.
  * @param[in]  quote_func  Function for quoting.
  *
- * @return URI converted uoted name.
+ * @return Newly allocated, URI converted and SQL quoted name.
  */
 static gchar *
 fs_to_uri_convert_and_quote_cpe_name (const char *name,
-                                      gchar* (*quote_func)(const char*))
+                                      gchar *(*quote_func) (const char *) )
 {
   gchar *name_converted, *name_decoded, *name_tilde, *quoted_name;
+  GString *name_protected;
 
   name_converted = fs_cpe_to_uri_cpe (name);
-  name_decoded = g_uri_unescape_string (name_converted, NULL);
-  name_tilde = string_replace (name_decoded,
-                               "~", "%7E", "%7e", NULL);
+  name_protected = g_string_sized_new (strlen (name_converted));
+  for (const gchar *cursor = name_converted; *cursor; cursor++)
+    {
+      /* Add one escaping layer to CPE-sensitive sequences so URI decoding
+       * leaves them intact. Protect literal percent signs in the same pass
+       * to avoid turning text such as %2502 into an active wildcard. */
+      if (*cursor == '%'
+          && (strncmp (cursor, "%01", 3) == 0 || strncmp (cursor, "%02", 3) == 0
+              || g_ascii_strncasecmp (cursor, "%2a", 3) == 0
+              || g_ascii_strncasecmp (cursor, "%3f", 3) == 0
+              || strncmp (cursor, "%25", 3) == 0))
+        g_string_append (name_protected, "%25");
+      else
+        g_string_append_c (name_protected, *cursor);
+    }
+  name_decoded = g_uri_unescape_string (name_protected->str, NULL);
+  g_string_free (name_protected, TRUE);
+  name_tilde = string_replace (name_decoded, "~", "%7E", "%7e", NULL);
   g_free (name_decoded);
   g_free (name_converted);
   quoted_name = quote_func (name_tilde);
@@ -3704,8 +3723,8 @@ save_node (resource_t cve_id, const char *operator, gboolean negate)
 static void
 set_root_id (long int id, long int root_id)
 {
-  sql ("UPDATE scap2.cpe_match_nodes set root_id = %i"
-       " WHERE id = %i;",
+  sql ("UPDATE scap2.cpe_match_nodes set root_id = %li"
+       " WHERE id = %li;",
        root_id,
        id);
 }
@@ -3910,7 +3929,7 @@ handle_cve_references (resource_t cve_db_id, char *cve_id,
  * @param[out] config_operator Return of the operator joining the config nodes
  * @param[out] negate          Return whether the node selection is negated
  *
- * @return 0 on success, -1 on error
+ * @return 0 on success, 1 if this configuration should be skipped, -1 on error
  */
 static int
 get_cve_configuration_fields (cJSON* configuration_item,
@@ -3930,8 +3949,14 @@ get_cve_configuration_fields (cJSON* configuration_item,
 
   *config_operator = json_object_item_string (configuration_item,
                                               "operator");
-  if (*config_operator)
-    *negate = json_object_item_boolean (configuration_item, "negate", 0);
+  *negate = json_object_item_boolean (configuration_item, "negate", 0);
+  if (*config_operator == NULL && cJSON_GetArraySize (*nodes_array) > 1)
+    {
+      g_warning ("%s: Skipping multiple nodes without a configuration operator"
+                 " for %s.",
+                 __func__, cve_id);
+      return 1;
+    }
 
   return 0;
 }
@@ -4127,8 +4152,8 @@ handle_cve_configuration_node (resource_t cve_db_id,
     {
       *node_id_ptr = save_node (cve_db_id, node_operator, negate);
 
-      if (*node_id_ptr < 0)
-        *node_id_ptr = *node_id_ptr;
+      if (*root_id_ptr < 0)
+        *root_id_ptr = *node_id_ptr;
 
       set_root_id (*node_id_ptr, *root_id_ptr);
     }
@@ -4366,13 +4391,16 @@ handle_cve_configurations (resource_t cve_db_id,
       cJSON *nodes_array, *node_item;
       resource_t root_id;
       char *config_operator;
-      int negate;
+      int negate, fields_status;
 
-      if (get_cve_configuration_fields (configuration_item,
-                                        cve_id,
-                                        &nodes_array,
-                                        &config_operator,
-                                        &negate))
+      fields_status = get_cve_configuration_fields (configuration_item,
+                                                    cve_id,
+                                                    &nodes_array,
+                                                    &config_operator,
+                                                    &negate);
+      if (fields_status > 0)
+        continue;
+      if (fields_status < 0)
         {
           g_string_free (software, TRUE);
           g_hash_table_destroy (current_cve_hashed_cpes);
