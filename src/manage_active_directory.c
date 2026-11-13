@@ -1655,7 +1655,8 @@ reject:
  *                       failure. Release with get_ad_objects_result_reset().
  *
  * @return GET_AD_OBJECTS_OK on success, including empty or truncated results,
- *         or an input, feature, permission, credential, connection, search,
+ *         or an input, feature, permission, credential, destination policy,
+ *         connection, search,
  *         result-processing, or internal error.
  */
 get_ad_objects_return_t
@@ -1670,6 +1671,7 @@ get_active_directory_objects (const get_ad_objects_params_t *params,
   ad_connector_return_t connector_result;
   get_ad_objects_return_t ret = GET_AD_OBJECTS_INTERNAL_ERROR;
   ad_credential_load_return_t cred_ret;
+  ad_destination_return_t destination_result;
 
   if (!result || result->objects
       || !valid_ad_object_search_params (params))
@@ -1694,6 +1696,20 @@ get_active_directory_objects (const get_ad_objects_params_t *params,
       ret = GET_AD_OBJECTS_INVALID_TYPE;
       goto cleanup;
     case AD_CREDENTIAL_LOAD_INTERNAL_ERROR:
+      goto cleanup;
+    }
+
+  if (validate_supplied_ad_connection_data (&saved) != VERIFY_AD_CREDENTIAL_OK)
+    {
+      ret = GET_AD_OBJECTS_INVALID_STORED_CONFIGURATION;
+      goto cleanup;
+    }
+
+  destination_result = check_active_directory_destination (
+    saved.host, saved.port, saved.tls_mode, NULL);
+  if (destination_result != AD_DESTINATION_OK)
+    {
+      ret = GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED;
       goto cleanup;
     }
 
@@ -1723,12 +1739,23 @@ get_active_directory_objects (const get_ad_objects_params_t *params,
   connector_result = ad_connector_connect (connector, saved.bind_password);
   if (connector_result != AD_CONNECTOR_OK)
     {
-      if (connector_result == AD_CONNECTOR_BIND_ERROR)
-        ret = GET_AD_OBJECTS_BIND_FAILED;
-      else if (connector_result == AD_CONNECTOR_CONNECTION_ERROR)
-        ret = GET_AD_OBJECTS_CONNECTION_FAILED;
-      else if (connector_result == AD_CONNECTOR_INVALID_VALUE)
-        ret = GET_AD_OBJECTS_INVALID_STORED_CONFIGURATION;
+      switch (connector_result)
+        {
+        case AD_CONNECTOR_BIND_ERROR:
+          g_warning ("Active Directory bind failed");
+          ret = GET_AD_OBJECTS_CONNECTION_FAILED;
+          break;
+        case AD_CONNECTOR_CONNECTION_ERROR:
+          g_warning ("Could not connect to Active Directory");
+          ret = GET_AD_OBJECTS_CONNECTION_FAILED;
+          break;
+        case AD_CONNECTOR_INVALID_VALUE:
+          g_warning ("Invalid stored Active Directory configuration");
+          ret = GET_AD_OBJECTS_CONNECTION_FAILED;
+          break;
+        default:
+          break;
+        }
       goto cleanup;
     }
 

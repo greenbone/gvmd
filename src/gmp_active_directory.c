@@ -968,6 +968,11 @@ get_active_directory_objects_run (gmp_parser_t *gmp_parser, GError **error)
         "get_active_directory_objects",
         "Stored Active Directory credential configuration is invalid");
       break;
+    case GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED:
+      error_response = XML_ERROR_SYNTAX (
+        "get_active_directory_objects",
+        "Active Directory destination is not allowed.");
+      break;
     case GET_AD_OBJECTS_PERMISSION_DENIED:
       error_response = XML_ERROR_ACCESS ("get_active_directory_objects");
       break;
@@ -978,11 +983,6 @@ get_active_directory_objects_run (gmp_parser_t *gmp_parser, GError **error)
       error_response = XML_ERROR_UNAVAILABLE (
         "get_active_directory_objects",
         "Could not connect to Active Directory");
-      break;
-    case GET_AD_OBJECTS_BIND_FAILED:
-      error_response = XML_ERROR_UNAVAILABLE (
-        "get_active_directory_objects",
-        "Active Directory bind failed");
       break;
     case GET_AD_OBJECTS_SEARCH_FAILED:
       error_response = XML_ERROR_UNAVAILABLE (

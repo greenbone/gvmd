@@ -1415,6 +1415,163 @@ assert_search_rejects_invalid_input (get_ad_objects_params_t *params)
   assert_that (connected_password, is_null);
 }
 
+static void
+assert_search_rejected_before_connector (get_ad_objects_return_t expected)
+{
+  get_ad_objects_params_t params = {
+    .credential_id = "credential-id",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_OU,
+    .max_results = 1
+  };
+  get_ad_objects_result_t result = { 0 };
+
+  expected_permission = "get_active_directory_objects";
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (expected));
+  assert_that (result.objects, is_null);
+  assert_that (result.truncated, is_false);
+  assert_no_ad_connector_calls ();
+}
+
+Ensure (manage_active_directory, search_maps_connection_failures_to_generic_error)
+{
+  const ad_connector_return_t failures[] = {
+    AD_CONNECTOR_BIND_ERROR,
+    AD_CONNECTOR_CONNECTION_ERROR,
+    AD_CONNECTOR_INVALID_VALUE
+  };
+  get_ad_objects_params_t params = {
+    .credential_id = "credential-id",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_OU,
+    .max_results = 1
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (failures); i++)
+    {
+      get_ad_objects_result_t result = { 0 };
+
+      reset_test_state ();
+      expected_permission = "get_active_directory_objects";
+      connector_connect_result = failures[i];
+      assert_that (get_active_directory_objects (&params, &result),
+                   is_equal_to (GET_AD_OBJECTS_CONNECTION_FAILED));
+      assert_that (connector_new_calls, is_equal_to (1));
+      assert_that (connector_connect_calls, is_equal_to (1));
+      assert_that (result.objects, is_null);
+      assert_that (result.truncated, is_false);
+      assert_that (collected_objects_freed, is_equal_to (0));
+      get_ad_objects_result_reset (&result);
+    }
+}
+
+Ensure (manage_active_directory, search_checks_allowed_destination_and_port)
+{
+  const gchar *ports[] = { NULL, NULL, "0003268", "3269" };
+  const gchar *modes[] = { "starttls", "ldaps", "ldaps", "starttls" };
+  const guint expected_ports[] = { 389, 636, 3268, 3269 };
+  get_ad_objects_params_t params = {
+    .credential_id = "credential-id",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_OU,
+    .max_results = 1
+  };
+
+  set_test_ad_config ("[active_directory]\nallowed_hosts = dc.example.com\n"
+                      "allowed_ports = 389,636,3268,3269\n");
+  load_active_directory_config ();
+  for (guint i = 0; i < G_N_ELEMENTS (ports); i++)
+    {
+      reset_test_state ();
+      expected_permission = "get_active_directory_objects";
+      saved_host = "DC.Example.COM.";
+      saved_port = ports[i];
+      saved_tls_mode = modes[i];
+      assert_search_succeeds (&params);
+      assert_that (builder_port, is_equal_to (expected_ports[i]));
+      assert_that (connector_new_calls, is_equal_to (1));
+      assert_that (connector_connect_calls, is_equal_to (1));
+      assert_that (connected_password, is_equal_to_string ("password"));
+    }
+}
+
+Ensure (manage_active_directory, search_rejects_disallowed_destination)
+{
+  const gchar *configs[] = {
+    "[active_directory]\nallowed_hosts = other.invalid\nallowed_ports = 636\n",
+    "[active_directory]\nallowed_hosts = dc.example.com\nallowed_ports = 389\n"
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (configs); i++)
+    {
+      reset_test_state ();
+      set_test_ad_config (configs[i]);
+      load_active_directory_config ();
+      assert_search_rejected_before_connector (
+        GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED);
+    }
+}
+
+Ensure (manage_active_directory, search_rejects_disallowed_default_ports)
+{
+  const gchar *modes[] = { "starttls", "ldaps" };
+
+  set_test_ad_config ("[active_directory]\nallowed_ports = 3269\n");
+  load_active_directory_config ();
+  for (guint i = 0; i < G_N_ELEMENTS (modes); i++)
+    {
+      reset_test_state ();
+      saved_port = NULL;
+      saved_tls_mode = modes[i];
+      assert_search_rejected_before_connector (
+        GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED);
+    }
+}
+
+Ensure (manage_active_directory, search_rejects_failed_or_uninitialized_policy)
+{
+  const gchar *configs[] = {
+    "[active_directory]\nallowed_hosts = dc.example.com,\n",
+    "[active_directory]\nallowed_ports = 636,0\n"
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (configs); i++)
+    {
+      reset_test_state ();
+      set_test_ad_config (configs[i]);
+      load_active_directory_config ();
+      assert_search_rejected_before_connector (
+        GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED);
+    }
+
+  g_clear_pointer (&ad_allowed_hosts, g_ptr_array_unref);
+  g_clear_pointer (&ad_allowed_ports, g_array_unref);
+  assert_search_rejected_before_connector (
+    GET_AD_OBJECTS_DESTINATION_NOT_ALLOWED);
+}
+
+Ensure (manage_active_directory, search_validates_stored_fields_before_policy)
+{
+  const gchar **fields[] = {
+    &saved_host, &saved_host, &saved_port, &saved_tls_mode,
+    &saved_bind_dn, &saved_bind_password, &saved_ca_certificate
+  };
+  const gchar *invalid[] = {
+    NULL, " invalid host ", "bad", "ldap", "", NULL, "not-a-certificate"
+  };
+
+  set_test_ad_config ("[active_directory]\nallowed_hosts = other.invalid\n");
+  load_active_directory_config ();
+  for (guint i = 0; i < G_N_ELEMENTS (fields); i++)
+    {
+      reset_test_state ();
+      *fields[i] = invalid[i];
+      assert_search_rejected_before_connector (
+        GET_AD_OBJECTS_INVALID_STORED_CONFIGURATION);
+    }
+}
+
 Ensure (manage_active_directory, search_accepts_base_within_credential)
 {
   get_ad_objects_params_t params = {
@@ -1471,17 +1628,19 @@ Ensure (manage_active_directory, search_rejects_invalid_stored_base)
   };
   expected_permission = "get_active_directory_objects";
 
-  saved_base_dn = NULL;
-  params.base_dn = NULL;
-  assert_search_rejects_invalid_input (&params);
-  params.base_dn = "OU=Child,DC=example,DC=com";
-  assert_search_rejects_invalid_input (&params);
+  const gchar *missing_bases[] = { NULL, "" };
+  for (guint i = 0; i < G_N_ELEMENTS (missing_bases); i++)
+    for (guint supplied = 0; supplied < 2; supplied++)
+      {
+        get_ad_objects_result_t result = { 0 };
 
-  saved_base_dn = "";
-  params.base_dn = NULL;
-  assert_search_rejects_invalid_input (&params);
-  params.base_dn = "OU=Child,DC=example,DC=com";
-  assert_search_rejects_invalid_input (&params);
+        saved_base_dn = missing_bases[i];
+        params.base_dn = supplied ? "OU=Child,DC=example,DC=com" : NULL;
+        assert_that (get_active_directory_objects (&params, &result),
+                     is_equal_to (GET_AD_OBJECTS_INVALID_STORED_CONFIGURATION));
+        assert_that (result.objects, is_null);
+        assert_no_ad_connector_calls ();
+      }
 
   saved_base_dn = "not-a-dn";
   params.base_dn = NULL;
@@ -2300,6 +2459,18 @@ main (int argc, char **argv)
                          search_transfers_owned_collection);
   add_test_with_context (suite, manage_active_directory,
                          search_discards_partial_collection_on_failure);
+  add_test_with_context (suite, manage_active_directory,
+                         search_maps_connection_failures_to_generic_error);
+  add_test_with_context (suite, manage_active_directory,
+                         search_checks_allowed_destination_and_port);
+  add_test_with_context (suite, manage_active_directory,
+                         search_rejects_disallowed_destination);
+  add_test_with_context (suite, manage_active_directory,
+                         search_rejects_disallowed_default_ports);
+  add_test_with_context (suite, manage_active_directory,
+                         search_rejects_failed_or_uninitialized_policy);
+  add_test_with_context (suite, manage_active_directory,
+                         search_validates_stored_fields_before_policy);
   add_test_with_context (suite, manage_active_directory,
                          search_accepts_base_within_credential);
   add_test_with_context (suite, manage_active_directory,

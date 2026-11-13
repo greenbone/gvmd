@@ -10924,6 +10924,15 @@ END:VCALENDAR
         explicit get_active_directory_objects permission.
       </p>
       <p>
+        Before connecting, the saved credential's initial host and port must
+        satisfy the destination allow lists loaded at gvmd startup. Omitted
+        ports use 389 for StartTLS or 636 for LDAPS. Policy denial returns
+        status 400, "Active Directory destination is not allowed." Invalid
+        saved settings return status 400,
+        "Stored Active Directory credential configuration is invalid".
+        Referrals are unaffected.
+      </p>
+      <p>
         An optional group_dn restricts results to explicit direct members of
         that group. The base_dn remains the directory location in which members
         are searched, defaulting to the credential's base DN. A supplied
