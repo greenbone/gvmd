@@ -575,7 +575,7 @@ install_cert_key ()
     echo "Use '-f' parameter to overwrite existing files."
     exit 1
   else
-    cp "$GVM_KEY_FILENAME" "$KEY_INSTALL"
+    install -T -m 0600 "$GVM_KEY_FILENAME" "$KEY_INSTALL"
     if [ $? -ne 0 ]
     then
       log_err "Failed to install $GVM_KEY_FILENAME to $KEY_INSTALL.  Aborting."
@@ -592,7 +592,7 @@ install_cert_key ()
     echo "Use '-f' parameter to overwrite existing files."
     exit 1
   else
-    cp "$GVM_CERT_FILENAME" "$CERT_INSTALL"
+    install -T -m 0644 "$GVM_CERT_FILENAME" "$CERT_INSTALL"
     if [ $? -ne 0 ]
     then
       log_err "Failed to install $GVM_CERT_FILENAME to $CERT_INSTALL.  Aborting."
@@ -631,7 +631,7 @@ install_cert ()
     echo "Use '-f' parameter to overwrite existing files."
     exit 1
   else
-    cp "$GVM_CERT_FILENAME" "$CERT_INSTALL"
+    install -T -m 0644 "$GVM_CERT_FILENAME" "$CERT_INSTALL"
     if [ $? -ne 0 ]; then
       log_err "Failed to install $GVM_CERT_FILENAME to $CERT_INSTALL. Aborting."
       exit 1
