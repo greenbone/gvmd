@@ -592,6 +592,12 @@ if(ENABLE_AD_INTEGRATION)
   )
 endif()
 
+add_unit_test(gmp-configs "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+set_target_properties(
+  gmp-configs-test
+  PROPERTIES LINK_FLAGS "-Wl,-wrap,get_nvt_preference_by_id"
+)
+
 set(
   ALL_OBJECTS
   $<TARGET_OBJECTS:all-manage-obj>
