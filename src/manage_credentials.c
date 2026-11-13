@@ -69,6 +69,26 @@ typedef enum
 #endif
 } credential_type_t;
 
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Check that AD integration is enabled and the user may manage AD
+ *        credentials.
+ *
+ * @return CREDENTIAL_OK if allowed, a credential_return_t error otherwise.
+ */
+static credential_return_t
+check_ad_credential_access (void)
+{
+  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
+    return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+
+  if (!acl_user_may ("verify_active_directory_credential"))
+    return CREDENTIAL_PERMISSION_DENIED;
+
+  return CREDENTIAL_OK;
+}
+#endif
+
 /**
  * @brief Reset the credential data structure.
  *
@@ -366,6 +386,19 @@ copy_credential (const char *name,
         result = CREDENTIAL_INTERNAL_ERROR;
         break;
     }
+
+#if ENABLE_AD_INTEGRATION
+  if (result == CREDENTIAL_OK)
+    {
+      gchar *type = credential_type (*new_credential);
+
+      if (type == NULL)
+        result = CREDENTIAL_INTERNAL_ERROR;
+      else if (g_str_equal (type, "ad"))
+        result = check_ad_credential_access ();
+      g_free (type);
+    }
+#endif
 
   if (result == CREDENTIAL_OK)
     sql_commit ();
@@ -1489,8 +1522,9 @@ create_active_directory_credential (const credential_data_t *data,
 
   *new_credential = 0;
 
-  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
-    return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+  ret = check_ad_credential_access ();
+  if (ret != CREDENTIAL_OK)
+    return ret;
 
   ad = &data->ad_credential_data;
 
@@ -2580,8 +2614,9 @@ modify_active_directory_credential (const credential_data_t *data,
   if (data == NULL || credential == 0)
     return CREDENTIAL_INTERNAL_ERROR;
 
-  if (!feature_enabled (FEATURE_ID_AD_INTEGRATION))
-    return CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+  ret = check_ad_credential_access ();
+  if (ret != CREDENTIAL_OK)
+    return ret;
 
   ad = &data->ad_credential_data;
 

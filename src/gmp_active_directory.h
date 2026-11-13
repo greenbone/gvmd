@@ -39,4 +39,19 @@ verify_active_directory_credential_element_end (gmp_parser_t *,
                                                 GError **,
                                                 const gchar *);
 
+void
+get_active_directory_objects_start (gmp_parser_t *, const gchar **,
+                                    const gchar **);
+
+void
+get_active_directory_objects_element_start (gmp_parser_t *, const gchar *,
+                                            const gchar **, const gchar **);
+
+void
+get_active_directory_objects_element_text (const gchar *, gsize);
+
+int
+get_active_directory_objects_element_end (gmp_parser_t *, GError **,
+                                          const gchar *);
+
 #endif // not _GVMD_GMP_ACTIVE_DIRECTORY_H

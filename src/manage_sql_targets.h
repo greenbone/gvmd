@@ -84,6 +84,7 @@
    { "allow_simultaneous_ips",                                 \
      NULL,                                                     \
      KEYWORD_TYPE_INTEGER },                                   \
+   { "source", NULL, KEYWORD_TYPE_STRING },                    \
    {                                                           \
      "(SELECT name FROM credentials"                           \
      " WHERE credentials.id"                                   \
@@ -224,6 +225,7 @@
    { "allow_simultaneous_ips",                                          \
      NULL,                                                              \
      KEYWORD_TYPE_INTEGER },                                            \
+   { "source", NULL, KEYWORD_TYPE_STRING },                             \
    { NULL, NULL, KEYWORD_TYPE_UNKNOWN }                                 \
  }
 

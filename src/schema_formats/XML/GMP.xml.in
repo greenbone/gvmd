@@ -14,6 +14,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 
   <!-- Types. -->
 
+  @IF_ENABLE_AD_INTEGRATION@
+  <type>
+    <name>ad_search_scope</name>
+    <summary>The scope of an Active Directory search</summary>
+    <pattern>
+      xsd:token { pattern = "base|onelevel|subtree" }
+    </pattern>
+  </type>
+  <type>
+    <name>ad_object_type</name>
+    <summary>An Active Directory object type</summary>
+    <pattern>xsd:token { pattern = "ou|container|computer|group" }</pattern>
+  </type>
+  @ENDIF_ENABLE_AD_INTEGRATION@
   <type>
     <name>alive_test</name>
     <summary>An alive test</summary>
@@ -4524,6 +4538,12 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         the manager creates a password only credential.  Otherwise the
         manager autogenerates a key-based credential.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        Creating or copying an Active Directory credential additionally requires the
+        verify_active_directory_credential permission.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <e>name</e>
@@ -6468,9 +6488,16 @@ END:VCALENDAR
         also be set. The SSH elevate credential and the SSH credential
         must differ.
       </p>
+      <p>
+        The optional source element labels how the target was created.
+        It is supplied by the client and defaults to manual. When copying a
+        target, source is copied from the original and the element must be
+        omitted.
+      </p>
     </description>
     <pattern>
       <e>name</e>
+      <o><e>source</e></o>
       <o><e>comment</e></o>
       <o><e>copy</e></o>
       <or>
@@ -6506,6 +6533,11 @@ END:VCALENDAR
       <pattern>
         <t>name</t>
       </pattern>
+    </ele>
+    <ele>
+      <name>source</name>
+      <summary>Target source: manual or active_directory; defaults to manual</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>comment</name>
@@ -6755,6 +6787,16 @@ END:VCALENDAR
                                 id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6">
         </create_target_response>
       </response>
+    </example>
+    <example>
+      <summary>Create a target from an Active Directory computer</summary>
+      <request>
+        <create_target>
+          <name>AD computer</name>
+          <source>active_directory</source>
+          <hosts>computer.example.com</hosts>
+        </create_target>
+      </request>
     </example>
   </command>
   <command>
@@ -10861,6 +10903,371 @@ END:VCALENDAR
     </example>
   </command>
   @ENDIF_ENABLE_AGENTS@
+  @IF_ENABLE_AD_INTEGRATION@
+  <command>
+    <name>get_active_directory_objects</name>
+    <summary>Search Active Directory objects</summary>
+    <description>
+      <p>
+        Search a live Active Directory using a saved Active Directory credential.
+        Objects are returned for processing without being persisted by this
+        command. The command requires ENABLE_AD_INTEGRATION at build time and
+        the Active Directory integration runtime feature to be enabled.
+        Admin and Super Admin have access by default. Other users require an
+        explicit get_active_directory_objects permission.
+      </p>
+      <p>
+        An optional group_dn restricts results to explicit direct members of
+        that group. The base_dn remains the directory location in which members
+        are searched, defaulting to the credential's base DN. A supplied
+        base_dn and group_dn must be equal to or below the credential's base
+        DN. The group_dn may be outside a narrower supplied base_dn. The scope
+        defaults to onelevel: only matching entries immediately below base_dn
+        are returned. Use subtree to find members at all directory depths. The
+        containment checks may reject equivalent DNs with differently cased
+        attribute values.
+      </p>
+    </description>
+    <pattern>
+      <attrib>
+        <name>credential_id</name>
+        <summary>ID of a saved Active Directory credential</summary>
+        <type>uuid</type>
+        <required>1</required>
+      </attrib>
+      <attrib>
+        <name>scope</name>
+        <summary>Search scope: base, onelevel (default), or subtree</summary>
+        <type>ad_search_scope</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>max_results</name>
+        <summary>Maximum number of directory objects to fetch after LDAP filtering</summary>
+        <type>integer</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>include_disabled_computers</name>
+        <summary>Whether to include disabled computers in the LDAP search; default 1</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>targets</name>
+        <summary>Whether to include matching target UUIDs and names for computers; default 0</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>tasks</name>
+        <summary>Include task and readable configuration UUIDs and names; requires targets="1"; default 0</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <attrib>
+        <name>details</name>
+        <summary>Include computer OS version and service principal names; default 0</summary>
+        <type>boolean</type>
+        <required>0</required>
+      </attrib>
+      <o><e>base_dn</e></o>
+      <o><e>group_dn</e></o>
+      <o><e>object_types</e></o>
+    </pattern>
+    <ele>
+      <name>base_dn</name>
+      <summary>Nonempty search base DN within the credential's base DN; defaults to that base DN</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>group_dn</name>
+      <summary>Optional nonempty LDAPv3 DN within the credential's base DN, selecting explicit direct group members within the search base and scope</summary>
+      <pattern>text</pattern>
+    </ele>
+    <ele>
+      <name>object_types</name>
+      <summary>Nonempty selection of distinct object types; defaults to ou, computer, and group</summary>
+      <pattern><any><e>object_type</e></any></pattern>
+      <ele>
+        <name>object_type</name>
+        <summary>Object type to include: ou, container, computer, or group</summary>
+        <pattern><t>ad_object_type</t></pattern>
+      </ele>
+    </ele>
+    <response>
+      <pattern>
+        <attrib>
+          <name>status</name>
+          <type>status</type>
+          <required>1</required>
+        </attrib>
+        <attrib>
+          <name>status_text</name>
+          <type>text</type>
+          <required>1</required>
+        </attrib>
+        <o><e>objects</e></o>
+      </pattern>
+      <ele>
+        <name>objects</name>
+        <summary>Directory objects</summary>
+        <pattern>
+          <attrib>
+            <name>truncated</name>
+            <summary>Whether more directory objects were available</summary>
+            <type>boolean</type>
+            <required>1</required>
+          </attrib>
+          <e>count</e>
+          <any><e>object</e></any>
+        </pattern>
+        <ele>
+          <name>count</name>
+          <summary>Per-type counts within the fetched subset</summary>
+          <pattern>
+            <e>ou</e>
+            <e>container</e>
+            <e>group</e>
+            <e>computer</e>
+          </pattern>
+          <ele>
+            <name>ou</name>
+            <summary>Number of returned organizational units</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>container</name>
+            <summary>Number of returned containers</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>group</name>
+            <summary>Number of returned groups</summary>
+            <pattern><t>integer</t></pattern>
+          </ele>
+          <ele>
+            <name>computer</name>
+            <summary>Returned computer counts</summary>
+            <pattern>
+              <e>total</e>
+              <o><e>disabled</e></o>
+            </pattern>
+            <ele>
+              <name>total</name>
+              <summary>Number of returned computers after LDAP filtering</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+            <ele>
+              <name>disabled</name>
+              <summary>Number of returned disabled computers; present only when include_disabled_computers="1"</summary>
+              <pattern><t>integer</t></pattern>
+            </ele>
+          </ele>
+        </ele>
+        <ele>
+          <name>object</name>
+          <summary>An organizational unit, container, computer, or group</summary>
+          <pattern>
+            <attrib>
+              <name>type</name>
+              <summary>Object type: ou, container, computer, or group</summary>
+              <type>ad_object_type</type>
+              <required>1</required>
+            </attrib>
+            <e>name</e>
+            <e>distinguished_name</e>
+            <e>parent_dn</e>
+            <e>description</e>
+            <o><e>dns_hostname</e></o>
+            <o><e>operating_system</e></o>
+            <o><e>operating_system_version</e></o>
+            <o><e>service_principal_names</e></o>
+            <o><e>disabled</e></o>
+            <o><e>targets</e></o>
+          </pattern>
+          <ele>
+            <name>name</name>
+            <summary>Directory object name</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>distinguished_name</name>
+            <summary>Directory object distinguished name</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>parent_dn</name>
+            <summary>Parent distinguished name, or empty if unavailable</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>description</name>
+            <summary>Description of the directory object, or empty if unavailable</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>dns_hostname</name>
+            <summary>Computer DNS hostname, when available</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>operating_system</name>
+            <summary>Computer operating system, when available</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>operating_system_version</name>
+            <summary>Computer operating system version, when available and details="1"</summary>
+            <pattern>text</pattern>
+          </ele>
+          <ele>
+            <name>service_principal_names</name>
+            <summary>
+              All computer service principal names. Present for computers when
+              details="1", including an empty element when no values are
+              available; omitted otherwise.
+            </summary>
+            <pattern><any><e>service_principal_name</e></any></pattern>
+            <ele>
+              <name>service_principal_name</name>
+              <summary>A service principal name registered on the computer account</summary>
+              <pattern>text</pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>disabled</name>
+            <summary>
+              Whether the computer account is disabled. Omitted for
+              non-computer objects.
+            </summary>
+            <pattern><t>boolean</t></pattern>
+          </ele>
+          <ele>
+            <name>targets</name>
+            <summary>
+              Matching targets for a computer. Omitted unless targets="1";
+              empty when matching was requested but no readable
+              targets matched. A target with no readable tasks still matches.
+            </summary>
+            <pattern>
+              <any><e>target</e></any>
+            </pattern>
+            <ele>
+              <name>target</name>
+              <summary>A matching readable target</summary>
+              <pattern>
+                <attrib>
+                  <name>id</name>
+                  <type>uuid</type>
+                  <required>1</required>
+                </attrib>
+                <e>name</e>
+                <o><e>tasks</e></o>
+              </pattern>
+              <ele>
+                <name>name</name>
+                <summary>Target name</summary>
+                <pattern>text</pattern>
+              </ele>
+              <ele>
+                <name>tasks</name>
+                <summary>Readable non-trash tasks; present only with tasks="1", even when empty</summary>
+                <pattern><any><e>task</e></any></pattern>
+                <ele>
+                  <name>task</name>
+                  <summary>A readable task using this target</summary>
+                  <pattern>
+                    <attrib>
+                      <name>id</name>
+                      <type>uuid</type>
+                      <required>1</required>
+                    </attrib>
+                    <e>name</e>
+                    <o><e>config</e></o>
+                  </pattern>
+                  <ele>
+                    <name>name</name>
+                    <summary>Task name</summary>
+                    <pattern>text</pattern>
+                  </ele>
+                  <ele>
+                    <name>config</name>
+                    <summary>Task configuration, omitted unless readable and non-trash</summary>
+                    <pattern>
+                      <attrib>
+                        <name>id</name>
+                        <type>uuid</type>
+                        <required>1</required>
+                      </attrib>
+                      <e>name</e>
+                    </pattern>
+                    <ele>
+                      <name>name</name>
+                      <summary>Configuration name</summary>
+                      <pattern>text</pattern>
+                    </ele>
+                  </ele>
+                </ele>
+              </ele>
+            </ele>
+          </ele>
+        </ele>
+      </ele>
+    </response>
+    <example>
+      <summary>Search computers with details, matching targets, tasks and configurations</summary>
+      <request>
+        <get_active_directory_objects
+            credential_id="254cd3ef-bbe1-4d58-859d-21b8d0c046c6"
+            scope="subtree" max_results="200"
+            include_disabled_computers="0" targets="1" tasks="1" details="1">
+          <base_dn>OU=Computers,DC=example,DC=com</base_dn>
+          <object_types><object_type>computer</object_type></object_types>
+        </get_active_directory_objects>
+      </request>
+      <response>
+        <get_active_directory_objects_response status="200" status_text="OK">
+          <objects truncated="0">
+            <count>
+              <ou>0</ou>
+              <container>0</container>
+              <group>0</group>
+              <computer><total>1</total></computer>
+            </count>
+            <object type="computer">
+              <name>workstation</name>
+              <distinguished_name>CN=workstation,OU=Computers,DC=example,DC=com</distinguished_name>
+              <parent_dn>OU=Computers,DC=example,DC=com</parent_dn>
+              <description>Office workstation</description>
+              <dns_hostname>workstation.example.com</dns_hostname>
+              <operating_system>Windows 11 Enterprise</operating_system>
+              <operating_system_version>10.0 (22631)</operating_system_version>
+              <service_principal_names>
+                <service_principal_name>HOST/workstation.example.com</service_principal_name>
+                <service_principal_name>HOST/workstation</service_principal_name>
+              </service_principal_names>
+              <disabled>0</disabled>
+              <targets>
+                <target id="1f28d970-17ef-4c69-ba8a-13827059f2b9">
+                  <name>Workstations</name>
+                  <tasks>
+                    <task id="8e12f1c0-d786-4f4c-82db-6ac77e596882">
+                      <name>Weekly workstation scan</name>
+                      <config id="daba56c8-73ec-11df-a475-002264764cea">
+                        <name>Full and fast</name>
+                      </config>
+                    </task>
+                  </tasks>
+                </target>
+              </targets>
+            </object>
+          </objects>
+        </get_active_directory_objects_response>
+      </response>
+    </example>
+  </command>
+  @ENDIF_ENABLE_AD_INTEGRATION@
   <command>
     <name>get_aggregates</name>
     <summary>Get aggregates of various resources</summary>
@@ -33005,6 +33412,7 @@ END:VCALENDAR
           <e>in_use</e>
           <e>permissions</e>
           <o><e>user_tags</e></o>
+          <e>source</e>
           <e>hosts</e>
           <e>exclude_hosts</e>
           <e>max_hosts</e>
@@ -33054,6 +33462,11 @@ END:VCALENDAR
           <name>modification_time</name>
           <summary>Date and time the target was last modified</summary>
           <pattern><t>iso_time</t></pattern>
+        </ele>
+        <ele>
+          <name>source</name>
+          <summary>How the target was created: manual or active_directory</summary>
+          <pattern>text</pattern>
         </ele>
         <ele>
           <name>hosts</name>
@@ -33580,6 +33993,7 @@ END:VCALENDAR
             <modification_time>2018-08-29T20:21:33Z</modification_time>
             <writable>0</writable>
             <in_use>7</in_use>
+            <source>manual</source>
             <hosts>localhost</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="">
@@ -33611,6 +34025,7 @@ END:VCALENDAR
             <modification_time>2018-08-29T20:21:33Z</modification_time>
             <writable>0</writable>
             <in_use>4</in_use>
+            <source>manual</source>
             <hosts>dik.example.org</hosts>
             <max_hosts>1</max_hosts>
             <ssh_credential id="58ff2793-2dc7-43fe-85f9-20bfac5a87e4">
@@ -39151,6 +39566,12 @@ END:VCALENDAR
         The login and password can only be changed for password credentials.
         Modification of login or password on package credentials is forbidden.
       </p>
+      @IF_ENABLE_AD_INTEGRATION@
+      <p>
+        Modifying an Active Directory credential also requires the
+        verify_active_directory_credential permission.
+      </p>
+      @ENDIF_ENABLE_AD_INTEGRATION@
     </description>
     <pattern>
       <attrib>
@@ -40920,6 +41341,7 @@ END:VCALENDAR
         <type>uuid</type>
         <required>1</required>
       </attrib>
+      <o><e>source</e></o>
       <o><e>comment</e></o>
       <o><e>name</e></o>
       <o><e>hosts</e></o>
@@ -40952,6 +41374,11 @@ END:VCALENDAR
       <name>name</name>
       <summary>Name of target</summary>
       <pattern><t>name</t></pattern>
+    </ele>
+    <ele>
+      <name>source</name>
+      <summary>Target source: manual or active_directory; omitted to keep the current source</summary>
+      <pattern>text</pattern>
     </ele>
     <ele>
       <name>hosts</name>
@@ -42247,7 +42674,9 @@ END:VCALENDAR
     <description>
       <p>
         The client uses the verify_active_directory_credential command to test
-        an Active Directory connection and bind credentials.
+        an Active Directory connection and bind credentials. Admin and Super
+        Admin have access by default. Other users require an explicit
+        verify_active_directory_credential permission.
       </p>
       <p>
         The request must contain either only the credential_id attribute to

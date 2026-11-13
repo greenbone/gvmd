@@ -14,6 +14,7 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <string.h>
 
 /**
  * @file
@@ -395,7 +396,7 @@ copy_target (const char* name, const char* comment, const char *target_id,
   ret = copy_resource ("target", name, comment, target_id,
                        "hosts, exclude_hosts, port_list, reverse_lookup_only,"
                        " reverse_lookup_unify, alive_test,"
-                       " allow_simultaneous_ips",
+                       " allow_simultaneous_ips, source",
                        1, new_target, &old_target);
   if (ret)
     return ret;
@@ -489,12 +490,12 @@ delete_target (const char *target_id, int ultimate)
         }
 
       sql ("INSERT INTO targets_trash"
-           " (uuid, owner, name, hosts, exclude_hosts, comment,"
+           " (uuid, owner, name, source, hosts, exclude_hosts, comment,"
            "  port_list, port_list_location,"
            "  reverse_lookup_only, reverse_lookup_unify, alive_test,"
            "  allow_simultaneous_ips,"
            "  creation_time, modification_time)"
-           " SELECT uuid, owner, name, hosts, exclude_hosts, comment,"
+           " SELECT uuid, owner, name, source, hosts, exclude_hosts, comment,"
            "        port_list, " G_STRINGIFY (LOCATION_TABLE) ","
            "        reverse_lookup_only, reverse_lookup_unify, alive_test,"
            "        allow_simultaneous_ips,"
@@ -765,6 +766,7 @@ set_target_login_data (target_t target, const char* type,
  * @param[in]   alive_tests             Alive tests array.
  * @param[in]   alive_test_str          Legacy alive tests string.
  * @param[in]   allow_simultaneous_ips  Scanner preference allow_simultaneous_ips.
+ * @param[in]   source                  Target source, or NULL for manual.
  * @param[out]  target                  Created target.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
@@ -777,6 +779,7 @@ set_target_login_data (target_t target, const char* type,
  *         15 elevate credential must be different from the SSH credential,
  *         16 invalid Kerberos 5 credential type,
  *         30 cannot use both alive_tests string and sub-elements,
+ *         31 invalid source,
  *         99 permission denied, -1 error.
  */
 int
@@ -793,6 +796,7 @@ create_target (const char* name, const char* asset_hosts_filter,
                GPtrArray *alive_tests,
                const char *alive_test_str,
                const char *allow_simultaneous_ips,
+               const char *source,
                target_t* target)
 {
   gchar *quoted_name, *quoted_hosts, *quoted_exclude_hosts, *quoted_comment;
@@ -803,6 +807,11 @@ create_target (const char* name, const char* asset_hosts_filter,
   target_t new_target;
 
   assert (current_credentials.uuid);
+
+  if (source == NULL)
+    source = "manual";
+  if (strcmp (source, "manual") && strcmp (source, "active_directory"))
+    return 31;
 
   if (port_range && validate_port_range (port_range))
     return 4;
@@ -957,16 +966,16 @@ create_target (const char* name, const char* asset_hosts_filter,
     quoted_comment = sql_quote ("");
 
   sql ("INSERT INTO targets"
-       " (uuid, name, owner, hosts, exclude_hosts, comment, "
+       " (uuid, name, owner, source, hosts, exclude_hosts, comment, "
        "  port_list, reverse_lookup_only, reverse_lookup_unify, alive_test,"
        "  allow_simultaneous_ips,"
        "  creation_time, modification_time)"
        " VALUES (make_uuid (), '%s',"
        " (SELECT id FROM users WHERE users.uuid = '%s'),"
-       " '%s', '%s', '%s', %llu, '%s', '%s', %i,"
+       " '%s', '%s', '%s', '%s', %llu, '%s', '%s', %i,"
        " %s,"
        " m_now (), m_now ());",
-        quoted_name, current_credentials.uuid,
+        quoted_name, current_credentials.uuid, source,
         quoted_hosts, quoted_exclude_hosts, quoted_comment, port_list,
         reverse_lookup_only, reverse_lookup_unify, alive_test,
         allow_simultaneous_ips);
@@ -1129,6 +1138,7 @@ create_target (const char* name, const char* asset_hosts_filter,
  * @param[in]   alive_tests            Alive tests array.
  * @param[in]   alive_test_str         Alive test string.
  * @param[in]   allow_simultaneous_ips Scanner preference allow_simultaneous_ips.
+ * @param[in]   source               Target source, or NULL to keep it unchanged.
  *
  * @return 0 success, 1 target exists already, 2 error in host specification,
  *         3 too many hosts, 4 error in port range, 5 error in SSH port,
@@ -1147,6 +1157,7 @@ create_target (const char* name, const char* asset_hosts_filter,
  *         27 invalid Kerberos 5 credential type,
  *         28 cannot use both SMB and Kerberos 5 credential,
  *         30 cannot use both alive_tests string and sub-elements,
+ *         31 invalid source,
  *         99 permission denied, -1 error.
  */
 int
@@ -1161,7 +1172,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
                const char *reverse_lookup_unify,
                GPtrArray *alive_tests,
                const char *alive_test_str,
-               const char *allow_simultaneous_ips)
+               const char *allow_simultaneous_ips, const char *source)
 {
   target_t target;
   credential_t ssh_credential = 0;
@@ -1198,6 +1209,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
     {
       sql_rollback ();
       return 9;
+    }
+
+  if (source && strcmp (source, "manual")
+      && strcmp (source, "active_directory"))
+    {
+      sql_rollback ();
+      return 31;
     }
 
   if (name)
@@ -1725,6 +1743,13 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
+  if (source)
+    sql ("UPDATE targets SET"
+         " source = '%s',"
+         " modification_time = m_now ()"
+         " WHERE id = %llu;",
+         source, target);
+
   sql_commit ();
 
   return 0;
@@ -1773,6 +1798,60 @@ init_target_iterator (iterator_t* iterator, get_data_t *get)
                             NULL,
                             NULL,
                             TRUE);
+}
+
+/**
+ * @brief Initialize a permission-filtered iterator of possible host matches.
+ *
+ * @param iterator        Iterator to initialize.
+ * @param get             GET parameters.
+ * @param hostname_index  Borrowed table of unique, lowercase hostname keys.
+ *                        Values are ignored.
+ *
+ * Selects only targets with source active_directory. Substring matching
+ * returns a superset; the caller must verify exact normalized host tokens
+ * and apply target exclusions. An empty table selects no targets.
+ *
+ * @return 0 success, 1 failed to find target, 2 failed to find filter,
+ *         -1 error.
+ */
+int
+init_ad_target_candidate_iterator_by_hostname (iterator_t *iterator,
+                                               const get_data_t *get,
+                                               GHashTable *hostname_index)
+{
+  static const char *filter_columns[] = TARGET_ITERATOR_FILTER_COLUMNS;
+  static column_t columns[] = TARGET_ITERATOR_COLUMNS;
+  static column_t trash_columns[] = TARGET_ITERATOR_TRASH_COLUMNS;
+  GHashTableIter hostnames;
+  gpointer hostname;
+  GString *where;
+  gboolean first = TRUE;
+  int ret;
+
+  if (!iterator || !get || !hostname_index)
+    return -1;
+
+  where = g_string_new (" AND source = 'active_directory' AND (");
+  g_hash_table_iter_init (&hostnames, hostname_index);
+  while (g_hash_table_iter_next (&hostnames, &hostname, NULL))
+    {
+      gchar *quoted = sql_quote (hostname);
+
+      g_string_append_printf (where, "%sstrpos(lower(hosts), '%s') > 0",
+                              first ? "" : " OR ", quoted);
+      first = FALSE;
+      g_free (quoted);
+    }
+  if (first)
+    g_string_append (where, "FALSE");
+  g_string_append_c (where, ')');
+
+  ret = init_get_iterator2 (iterator, "target", get, columns, trash_columns,
+                            NULL, NULL, filter_columns, 0, NULL,
+                            where->str, where->str, TRUE, FALSE, NULL);
+  g_string_free (where, TRUE);
+  return ret;
 }
 
 /**
@@ -2072,6 +2151,15 @@ target_iterator_krb5_trash (iterator_t* iterator)
  */
 DEF_ACCESS (target_iterator_allow_simultaneous_ips,
             GET_ITERATOR_COLUMN_COUNT + 22);
+
+/**
+ * @brief Get the source of a target from a target iterator.
+ *
+ * @param[in]  iterator  Iterator.
+ *
+ * @return Source of the target or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_iterator_source, GET_ITERATOR_COLUMN_COUNT + 23);
 
 /**
  * @brief Initialise a target task iterator.
