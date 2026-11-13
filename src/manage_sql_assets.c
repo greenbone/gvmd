@@ -3150,7 +3150,8 @@ init_asset_os_iterator (iterator_t *iterator, const get_data_t *get)
                                  NULL,
                                  NULL,
                                  0,
-                                 0);
+                                 0,
+                                 NULL);
 
   g_free (extra_tables);
 
@@ -3401,7 +3402,8 @@ init_resource_names_os_iterator (iterator_t *iterator, get_data_t *get)
                                  NULL,
                                  NULL,
                                  0,
-                                 0);
+                                 0,
+                                 NULL);
 
   return ret;
 }
