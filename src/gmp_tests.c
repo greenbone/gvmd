@@ -22,6 +22,16 @@ static GString *captured_output;
 static gchar *report_export_path;
 static int report_export_delete_count;
 static int mock_missing_report_export;
+static gboolean mock_ad_response;
+static credential_return_t mock_credential_result;
+static int credential_command_calls;
+static int credential_failure_logs;
+#if ENABLE_AD_INTEGRATION
+static verify_ad_return_t mock_verify_result;
+static const gchar *expected_ad_host;
+static const gchar *expected_ad_port;
+static gboolean expected_stored_ad;
+#endif
 
 BeforeEach (gmp)
 {
@@ -29,6 +39,9 @@ BeforeEach (gmp)
   report_export_path = NULL;
   report_export_delete_count = 0;
   mock_missing_report_export = 0;
+  mock_ad_response = FALSE;
+  credential_command_calls = 0;
+  credential_failure_logs = 0;
 }
 
 AfterEach (gmp)
@@ -59,6 +72,319 @@ capture_client_writer (const char *message, void *data)
   g_string_append (captured_output, message);
   return 0;
 }
+
+credential_return_t __real_create_credential (const credential_data_t *,
+                                             credential_t *);
+credential_return_t __real_modify_credential (const credential_data_t *);
+void __real_log_event_fail (const char *, const char *, const char *,
+                            const char *);
+
+#if ENABLE_AD_INTEGRATION
+/**
+ * @brief Assert that the real GMP parser preserves the response fixture fields.
+ *
+ * @param[in] ad  Borrowed parsed connection data, owned by the command handler.
+ *
+ * @return Nothing. Field mismatches are reported as failed test assertions.
+ */
+static void
+assert_ad_response_data (const ad_credential_data_t *ad)
+{
+  if (expected_ad_host)
+    assert_that (ad->host, is_equal_to_string (expected_ad_host));
+  else
+    assert_that (ad->host, is_null);
+  if (expected_ad_port)
+    assert_that (ad->port, is_equal_to_string (expected_ad_port));
+  else
+    assert_that (ad->port, is_null);
+  if (expected_stored_ad)
+    assert_that (ad->bind_password, is_null);
+  else
+    {
+      assert_that (ad->tls_mode, is_equal_to_string ("starttls"));
+      assert_that (ad->bind_password, is_equal_to_string ("test-secret"));
+    }
+}
+#endif
+
+credential_return_t
+__wrap_create_credential (const credential_data_t *data,
+                          credential_t *credential)
+{
+  if (!mock_ad_response)
+    return __real_create_credential (data, credential);
+  credential_command_calls++;
+  assert_that (data->name, is_equal_to_string ("AD response test"));
+  assert_that (data->type, is_equal_to_string ("ad"));
+#if ENABLE_AD_INTEGRATION
+  assert_ad_response_data (&data->ad_credential_data);
+#endif
+  return mock_credential_result;
+}
+
+credential_return_t
+__wrap_modify_credential (const credential_data_t *data)
+{
+  if (!mock_ad_response)
+    return __real_modify_credential (data);
+  credential_command_calls++;
+  assert_that (data->credential_id,
+               is_equal_to_string ("response-credential"));
+#if ENABLE_AD_INTEGRATION
+  assert_ad_response_data (&data->ad_credential_data);
+#endif
+  return mock_credential_result;
+}
+
+void
+__wrap_log_event_fail (const char *type, const char *name, const char *id,
+                       const char *action)
+{
+  if (!mock_ad_response)
+    {
+      __real_log_event_fail (type, name, id, action);
+      return;
+    }
+  assert_that (type, is_equal_to_string ("credential"));
+  credential_failure_logs++;
+}
+
+#if ENABLE_AD_INTEGRATION
+verify_ad_return_t
+__wrap_verify_active_directory_credential (const gchar *credential_id,
+                                           const ad_credential_data_t *ad)
+{
+  assert_that (mock_ad_response, is_true);
+  credential_command_calls++;
+  if (expected_stored_ad)
+    assert_that (credential_id, is_equal_to_string ("response-credential"));
+  else
+    assert_that (credential_id, is_null);
+  assert_ad_response_data (ad);
+  return mock_verify_result;
+}
+
+/**
+ * @brief Run a response-only fixture through the real authenticated GMP parser.
+ *
+ * Management results and failure logging are mocked; no policy, SQL or network
+ * operation is performed. Also checks reset by processing get_version afterward.
+ *
+ * @param[in] command  Command name.
+ * @param[in] host     Host text, or NULL to omit the element.
+ * @param[in] port     Port text, or NULL to omit the element.
+ * @param[in] stored   Whether verification uses a stored credential ID.
+ * @param[in] status   Expected exact GMP status.
+ * @param[in] text     Expected exact status text.
+ *
+ * @return Nothing. Assert exact XML, parsed fields and subsequent command reset.
+ */
+static void
+assert_ad_command_response (const gchar *command, const gchar *host,
+                             const gchar *port, gboolean stored,
+                             const gchar *status, const gchar *text)
+{
+  const GMarkupParser parser = {
+    .start_element = gmp_xml_handle_start_element,
+    .end_element = gmp_xml_handle_end_element,
+    .text = gmp_xml_handle_text
+  };
+  gmp_parser_t gmp_parser = { 0 };
+  GMarkupParseContext *context;
+  GString *xml = g_string_new ("");
+  gchar *expected;
+  GError *error = NULL;
+  gboolean verify = !strcmp (command, "verify_active_directory_credential");
+
+  mock_ad_response = TRUE;
+  expected_ad_host = host;
+  expected_ad_port = port;
+  expected_stored_ad = stored;
+  credential_command_calls = 0;
+  credential_failure_logs = 0;
+  g_string_truncate (captured_output, 0);
+  gmp_parser.client_writer = capture_client_writer;
+  client_state = CLIENT_AUTHENTIC;
+  g_string_append_printf (xml, "<%s%s>", command,
+                          stored || !strcmp (command, "modify_credential")
+                            ? " credential_id=\"response-credential\"" : "");
+  if (!verify)
+    g_string_append (xml, "<name>AD response test</name><type>ad</type>");
+  if (host)
+    g_string_append_printf (xml, "<host>%s</host>", host);
+  if (port)
+    g_string_append_printf (xml, "<port>%s</port>", port);
+  if (!stored)
+    g_string_append (xml, "<tls_mode>starttls</tls_mode>"
+                         "<bind_dn>cn=test</bind_dn><base_dn>dc=example</base_dn>"
+                         "<bind_password>test-secret</bind_password>");
+  g_string_append_printf (xml, "</%s>", command);
+
+  context = g_markup_parse_context_new (&parser, 0, &gmp_parser, NULL);
+  assert_that (g_markup_parse_context_parse (context, xml->str, xml->len,
+                                             &error), is_true);
+  assert_that (g_markup_parse_context_end_parse (context, &error), is_true);
+  assert_that (error, is_null);
+  assert_that (credential_command_calls, is_equal_to (1));
+  assert_that (credential_failure_logs, is_equal_to (verify ? 0 : 1));
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  expected = g_markup_printf_escaped (
+    "<%s_response status=\"%s\" status_text=\"%s\"/>", command, status, text);
+  assert_that (captured_output->str, is_equal_to_string (expected));
+  g_free (expected);
+  g_markup_parse_context_free (context);
+  g_string_free (xml, TRUE);
+
+  g_string_truncate (captured_output, 0);
+  gmp_xml_handle_start_element (NULL, "get_version", NULL, NULL, &gmp_parser,
+                                &error);
+  gmp_xml_handle_end_element (NULL, "get_version", &gmp_parser, &error);
+  assert_that (error, is_null);
+  assert_that (client_state, is_equal_to (CLIENT_AUTHENTIC));
+  assert_that (captured_output->str,
+               contains_string ("<get_version_response status=\"200\""));
+  mock_ad_response = FALSE;
+}
+
+Ensure (gmp, create_ad_host_and_port_denial_responses)
+{
+  mock_credential_result = CREDENTIAL_AD_DESTINATION_NOT_ALLOWED;
+  assert_ad_command_response ("create_credential", "denied.invalid", "389",
+                              FALSE, "400",
+                              "Active Directory destination is not allowed.");
+  assert_ad_command_response ("create_credential", "allowed.invalid", "1389",
+                              FALSE, "400",
+                              "Active Directory destination is not allowed.");
+}
+
+Ensure (gmp, modify_ad_host_and_port_denial_responses)
+{
+  mock_credential_result = CREDENTIAL_AD_DESTINATION_NOT_ALLOWED;
+  assert_ad_command_response ("modify_credential", "denied.invalid", "389",
+                              FALSE, "400",
+                              "Active Directory destination is not allowed.");
+  assert_ad_command_response ("modify_credential", "allowed.invalid", "1389",
+                              FALSE, "400",
+                              "Active Directory destination is not allowed.");
+}
+
+Ensure (gmp, verify_inline_ad_host_and_port_denial_responses)
+{
+  mock_verify_result = VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED;
+  assert_ad_command_response ("verify_active_directory_credential",
+                              "denied.invalid", "389", FALSE, "400",
+                              "Active Directory destination is not allowed.");
+  assert_ad_command_response ("verify_active_directory_credential",
+                              "allowed.invalid", "1389", FALSE, "400",
+                              "Active Directory destination is not allowed.");
+}
+
+Ensure (gmp, verify_stored_ad_destination_denial_response)
+{
+  mock_verify_result = VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED;
+  assert_ad_command_response ("verify_active_directory_credential",
+                              NULL, NULL, TRUE, "400",
+                              "Active Directory destination is not allowed.");
+}
+
+Ensure (gmp, malformed_ad_host_responses)
+{
+  mock_credential_result = CREDENTIAL_AD_INVALID_HOST;
+  mock_verify_result = VERIFY_AD_CREDENTIAL_INVALID_HOST;
+  assert_ad_command_response ("create_credential", "bad/host", "389", FALSE,
+                              "400", "Invalid AD host");
+  assert_ad_command_response ("modify_credential", "bad/host", "389", FALSE,
+                              "400", "Invalid AD host");
+  assert_ad_command_response ("verify_active_directory_credential", "bad/host",
+                              "389", FALSE, "400", "Invalid AD host");
+}
+
+Ensure (gmp, ad_whitespace_fields_and_disabled_responses)
+{
+  mock_credential_result = CREDENTIAL_AD_INVALID_HOST;
+  mock_verify_result = VERIFY_AD_CREDENTIAL_INVALID_HOST;
+  assert_ad_command_response ("create_credential", "\tdc.example.com ", NULL,
+                              FALSE, "400", "Invalid AD host");
+  assert_ad_command_response ("modify_credential", " \t ", "", FALSE,
+                              "400", "Invalid AD host");
+  assert_ad_command_response ("verify_active_directory_credential", " \t ",
+                              NULL, FALSE, "400", "Invalid AD host");
+  mock_verify_result = VERIFY_AD_CREDENTIAL_INVALID_PORT;
+  assert_ad_command_response ("verify_active_directory_credential",
+                              "dc.example.com", "389\t", FALSE,
+                              "400", "Invalid AD port");
+
+  mock_credential_result = CREDENTIAL_AD_INTEGRATION_UNAVAILABLE;
+  mock_verify_result = VERIFY_AD_CREDENTIAL_FEATURE_DISABLED;
+  assert_ad_command_response ("create_credential", "denied.invalid", "1389",
+                              FALSE, "400", "AD integration feature is disabled");
+  assert_ad_command_response ("modify_credential", NULL, "", FALSE,
+                              "400", "AD integration feature is disabled");
+  assert_ad_command_response ("verify_active_directory_credential",
+                              "denied.invalid", "1389", FALSE, "400",
+                              "Active Directory integration is disabled");
+  assert_ad_command_response ("verify_active_directory_credential", NULL, NULL,
+                              TRUE, "400",
+                              "Active Directory integration is disabled");
+}
+
+Ensure (gmp, existing_ad_credential_error_responses_are_unchanged)
+{
+  const struct {
+    credential_return_t result;
+    const gchar *text;
+  } cases[] = {
+    { CREDENTIAL_AD_HOST_REQUIRED, "AD host is required" },
+    { CREDENTIAL_AD_INVALID_PORT, "Invalid AD port" },
+    { CREDENTIAL_AD_TLS_MODE_REQUIRED, "AD TLS mode is required" },
+    { CREDENTIAL_AD_INVALID_TLS_MODE, "Invalid AD TLS mode" },
+    { CREDENTIAL_AD_INVALID_CA_CERTIFICATE, "Invalid AD CA certificate" },
+    { CREDENTIAL_PERMISSION_DENIED, "Permission denied" }
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      mock_credential_result = cases[i].result;
+      assert_ad_command_response ("create_credential", NULL, NULL, FALSE,
+                                  "400", cases[i].text);
+      assert_ad_command_response ("modify_credential", "", NULL, FALSE,
+                                  "400", cases[i].text);
+    }
+}
+
+Ensure (gmp, existing_ad_verification_error_responses_are_unchanged)
+{
+  const struct {
+    verify_ad_return_t result;
+    const gchar *status;
+    const gchar *text;
+  } cases[] = {
+    { VERIFY_AD_CREDENTIAL_HOST_REQUIRED, "400", "AD host is required" },
+    { VERIFY_AD_CREDENTIAL_INVALID_PORT, "400", "Invalid AD port" },
+    { VERIFY_AD_CREDENTIAL_TLS_MODE_REQUIRED, "400", "AD TLS mode is required" },
+    { VERIFY_AD_CREDENTIAL_INVALID_TLS_MODE, "400", "Invalid AD TLS mode" },
+    { VERIFY_AD_CREDENTIAL_INVALID_CA_CERTIFICATE, "400",
+      "Invalid AD CA certificate" },
+    { VERIFY_AD_CREDENTIAL_PERMISSION_DENIED, "403",
+      "Access to resource forbidden" },
+    { VERIFY_AD_CREDENTIAL_CONNECTION_FAILED, "503",
+      "Could not connect to Active Directory" }
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      mock_verify_result = cases[i].result;
+      assert_ad_command_response ("verify_active_directory_credential", "",
+                                  NULL, FALSE, cases[i].status, cases[i].text);
+    }
+  mock_verify_result = VERIFY_AD_CREDENTIAL_INVALID_STORED_CONFIGURATION;
+  assert_ad_command_response ("verify_active_directory_credential", NULL, NULL,
+                              TRUE, "400",
+                              "Stored Active Directory credential configuration"
+                              " is invalid");
+}
+#endif
 
 int
 __wrap_modify_permission (const char *permission_id, const char *name,
@@ -563,6 +889,22 @@ main (int argc, char **argv)
 
   suite = create_test_suite ();
 
+#if ENABLE_AD_INTEGRATION
+  add_test_with_context
+    (suite, gmp, create_ad_host_and_port_denial_responses);
+  add_test_with_context
+    (suite, gmp, modify_ad_host_and_port_denial_responses);
+  add_test_with_context
+    (suite, gmp, verify_inline_ad_host_and_port_denial_responses);
+  add_test_with_context
+    (suite, gmp, verify_stored_ad_destination_denial_response);
+  add_test_with_context (suite, gmp, malformed_ad_host_responses);
+  add_test_with_context (suite, gmp, ad_whitespace_fields_and_disabled_responses);
+  add_test_with_context
+    (suite, gmp, existing_ad_credential_error_responses_are_unchanged);
+  add_test_with_context
+    (suite, gmp, existing_ad_verification_error_responses_are_unchanged);
+#endif
   add_test_with_context
     (suite, gmp, completed_download_report_export_is_repeatable);
   add_test_with_context

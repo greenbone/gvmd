@@ -36,4 +36,8 @@ gchar *
 gvmd_get_env_or_config_string (const char *, GKeyFile *, const char *,
                                const char *);
 
+gchar *
+gvmd_get_env_or_config_string_full (const char *, GKeyFile *, const char *,
+                                    const char *, gboolean *);
+
 #endif /* _GVMD_GVMD_CONFIG_H */
