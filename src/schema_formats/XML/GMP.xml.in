@@ -6802,6 +6802,7 @@ END:VCALENDAR
           <name>AD computer</name>
           <source>active_directory</source>
           <hosts>computer.example.com</hosts>
+          <port_list id="33d0cd82-57c6-11e1-8ed1-406186ea4fc5"/>
         </create_target>
       </request>
     </example>

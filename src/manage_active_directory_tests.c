@@ -2752,6 +2752,29 @@ Ensure (manage_active_directory, target_tasks_report_lookup_errors)
   assert_target_tasks_error (&row, 1);
 }
 
+Ensure (manage_active_directory, hostname_normalization_accepts_only_names)
+{
+  gchar *hostname = normalize_ad_hostname (" HOST.Example.COM. ");
+
+  assert_that (hostname, is_equal_to_string ("host.example.com"));
+  g_free (hostname);
+  assert_that (normalize_ad_hostname (NULL), is_null);
+  assert_that (normalize_ad_hostname (""), is_null);
+  assert_that (normalize_ad_hostname ("host.."), is_null);
+  assert_that (normalize_ad_hostname ("192.0.2.1"), is_null);
+  assert_that (normalize_ad_hostname ("::1"), is_null);
+}
+
+Ensure (manage_active_directory, hosts_string_normalization_keeps_other_hosts)
+{
+  gchar *hosts = normalize_ad_hosts_string (
+    "Host.Example.COM.,192.0.2.001\n192.0.2.1-5");
+
+  assert_that (hosts,
+               is_equal_to_string ("host.example.com, 192.0.2.1, 192.0.2.1-5"));
+  g_free (hosts);
+}
+
 static ad_directory_object_t *
 new_enrichment_computer (const gchar *hostname)
 {
@@ -2784,11 +2807,11 @@ set_enrichment_target (const gchar *hosts, const gchar *exclusions)
 
 Ensure (manage_active_directory, enrichment_matches_exact_hostname)
 {
-  GPtrArray *objects = new_enrichment_objects (" HOST.EXAMPLE.COM ", NULL);
+  GPtrArray *objects = new_enrichment_objects (" HOST.EXAMPLE.COM. ", NULL);
   ad_directory_object_t *computer = g_ptr_array_index (objects, 0);
   ad_target_match_t *target;
 
-  set_enrichment_target ("host.example.com,other.example.com", "");
+  set_enrichment_target ("host.example.com.,other.example.com", "");
   assert_that (match_ad_objects_to_targets (objects, TRUE),
                is_equal_to (GET_AD_OBJECTS_OK));
   assert_that (computer->target_matches, is_non_null);
@@ -2825,6 +2848,7 @@ Ensure (manage_active_directory, enrichment_skips_non_matching_targets)
                           TRUE);
   assert_no_target_match ("host.example.com,other.example.com",
                           "host.example.com", TRUE);
+  assert_no_target_match ("host.example.com", "host.example.com.", TRUE);
   assert_no_target_match ("host.example.com", "", FALSE);
 }
 
@@ -2972,6 +2996,10 @@ main (int argc, char **argv)
                          target_tasks_respect_config_command_permission);
   add_test_with_context (suite, manage_active_directory,
                          target_tasks_report_lookup_errors);
+  add_test_with_context (suite, manage_active_directory,
+                         hostname_normalization_accepts_only_names);
+  add_test_with_context (suite, manage_active_directory,
+                         hosts_string_normalization_keeps_other_hosts);
   add_test_with_context (suite, manage_active_directory,
                          enrichment_matches_exact_hostname);
   add_test_with_context (suite, manage_active_directory,
