@@ -244,6 +244,66 @@ you placed the request and template as dir.
 tells you where it wrote the certificate, send it back (with integrity
 guarantees) to the requester along with the ca certificate
 .RI "(typically " "/var/lib/gvm/CA/cacert.pem" ")."
+.SH "INTEGRATED OPERATIONS"
+This section describes creating a key and certificate from a
+certificate authority that you control. You should only use it if you
+don't care to avoid copying around private keys without good reason.
+
+If you need a certificate for another host from a certificate
+authority run by
+.B gvm-manage-certs
+and you've set the environment or configuration variables under the
+subheading static variables above use this process to create and
+install a certificate and ca certificate adding the
+.B -e
+option if you set variables that way and adjusting the
+.BR -u " argument to " runuser
+and adjusting the implied
+.B chown
+commands the same way if your Greenbone user is not named gvm.
+
+Create a key and certificate on the certificate authority node with
+for instance
+
+.EX
+GVM_CERT_PREFIX=server \[rs]
+    GVM_CERTIFICATE_HOSTNAME=remotescanner.example.net \[rs]
+    gvm-manage-certs -c -E
+.EE
+
+adjusting the prefix, hostname and choice of
+.BR -E " or " -L
+to your current requirements.
+.B gvm-manage-certs
+tells you where it wrote the key and certificate. Transfer (with
+confidentiality guarantee) the key and (with integrity guarantees) the
+certificate and ca certificate
+.RI "(typically " "/var/lib/gvm/CA/cacert.pem" ")"
+to the other host.
+
+Make the key and certificates readable to the gvm user and import them
+on the other host with
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=server GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -i
+.EE
+
+passing the same prefix you used with the
+.B gvm-manage-certs -c
+command and the directory where you placed the files as dir. If the ca
+certificate is not already installed import it with
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=ca GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -n
+.EE
+
+passing the directory where you placed the certificates as dir. After
+you've imported the key and certificate(s) make sure you shred all the
+transient copies of the key you had to create to import it.
 .SH "SEE ALSO"
 .BR openvas (8),
 .BR gvmd (8),
