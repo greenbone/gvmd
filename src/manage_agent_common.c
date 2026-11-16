@@ -26,12 +26,14 @@
  *
  * @param[in] count Number of UUID entries to allocate.
  *
- * @return A newly allocated agent_uuid_list_t, or NULL on allocation failure.
+ * Zero creates an explicit empty list.  A negative count is invalid.
+ *
+ * @return A newly allocated agent_uuid_list_t, or NULL for an invalid count.
  */
 agent_uuid_list_t
 agent_uuid_list_new (int count)
 {
-  if (count <= 0)
+  if (count < 0)
     return NULL;
 
   agent_uuid_list_t list = g_malloc0 (sizeof (struct agent_uuid_list));
