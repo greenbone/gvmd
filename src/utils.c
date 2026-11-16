@@ -1063,9 +1063,24 @@ gboolean
 path_is_in_directory (const gchar *path, const gchar *directory)
 {
   gchar *canonicalized_path = g_canonicalize_filename (path, NULL);
-  gboolean is_in_dir = g_str_has_prefix (canonicalized_path, directory);
+  gchar *canonicalized_directory = g_canonicalize_filename (directory, NULL);
+  gchar *directory_prefix;
+  gboolean is_in_dir;
+
+  /* The prefix needs the separator, so that a sibling directory that only
+   * shares the characters of the base directory name is not accepted. */
+  directory_prefix = g_strdup_printf (
+    "%s%s", canonicalized_directory,
+    g_str_has_suffix (canonicalized_directory, G_DIR_SEPARATOR_S)
+      ? ""
+      : G_DIR_SEPARATOR_S);
+
+  is_in_dir = (strcmp (canonicalized_path, canonicalized_directory) == 0
+               || g_str_has_prefix (canonicalized_path, directory_prefix));
 
   g_free (canonicalized_path);
+  g_free (canonicalized_directory);
+  g_free (directory_prefix);
   return is_in_dir;
 }
 
