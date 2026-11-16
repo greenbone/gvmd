@@ -1524,6 +1524,9 @@ create_port_range (const char *port_list_id, const char *type,
   if (last < 1 || last > 65535)
     return 2;
 
+  if (type == NULL)
+    return 4;
+
   if (strcasecmp (type, "TCP") == 0)
     port_type = PORT_PROTOCOL_TCP;
   else if (strcasecmp (type, "UDP") == 0)
