@@ -2234,6 +2234,122 @@ target_task_iterator_readable (iterator_t* iterator)
 }
 
 /**
+ * @brief Initialise a target task iterator with configuration metadata.
+ *
+ * @param[in] iterator Iterator.
+ * @param[in] target Target.
+ */
+void
+init_target_task_details_iterator (iterator_t *iterator, target_t target)
+{
+  gchar *available, *with_clause, *query;
+  get_data_t get = {0};
+  array_t *permissions;
+
+  assert (target);
+
+  get.trash = 0;
+  permissions = make_array ();
+  array_add (permissions, g_strdup ("get_tasks"));
+  available =
+    acl_where_owned ("task", &get, 1, "any", 0, permissions, 0, &with_clause);
+  array_free (permissions);
+
+  query = g_strdup_printf (
+    "%s"
+    " SELECT name, uuid, %s,"
+    " target_location = $2, config_location = $2,"
+    " (SELECT uuid FROM configs WHERE configs.id = tasks.config"
+    "  AND tasks.config_location = $3),"
+    " (SELECT name FROM configs WHERE configs.id = tasks.config"
+    "  AND tasks.config_location = $3)"
+    " FROM tasks"
+    " WHERE target = $1"
+    " AND hidden = 0"
+    " ORDER BY tasks.name ASC;",
+    with_clause ? with_clause : "", available);
+  init_ps_iterator (iterator, query, SQL_RESOURCE_PARAM (target),
+                    SQL_INT_PARAM (LOCATION_TRASH),
+                    SQL_INT_PARAM (LOCATION_TABLE), NULL);
+
+  g_free (query);
+
+  g_free (with_clause);
+  g_free (available);
+}
+
+/**
+ * @brief Get the task name from a target task details iterator.
+ * @param[in] iterator Iterator.
+ * @return Borrowed name, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_task_details_iterator_name, 0);
+
+/**
+ * @brief Get the task UUID from a target task details iterator.
+ * @param[in] iterator Iterator.
+ * @return Borrowed UUID, or NULL if iteration is complete.
+ */
+DEF_ACCESS (target_task_details_iterator_uuid, 1);
+
+/**
+ * @brief Get the task readability from a target task details iterator.
+ * @param[in] iterator Iterator.
+ * @return 1 if readable, otherwise 0.
+ */
+int
+target_task_details_iterator_readable (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int (iterator, 2);
+}
+
+/**
+ * @brief Return whether the task references a trashed target.
+ *
+ * @param[in] iterator Target task iterator.
+ * @return 1 if the target is trashed, otherwise 0.
+ */
+int
+target_task_details_iterator_target_in_trash (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int (iterator, 3);
+}
+
+/**
+ * @brief Return whether the task references a trashed configuration.
+ *
+ * @param[in] iterator Target task iterator.
+ * @return 1 if the configuration is trashed, otherwise 0.
+ */
+int
+target_task_details_iterator_config_in_trash (iterator_t *iterator)
+{
+  if (iterator->done)
+    return 0;
+  return iterator_int (iterator, 4);
+}
+
+/**
+ * @brief Get the active configuration UUID from a target task iterator.
+ *
+ * @param[in] iterator Target task iterator.
+ * @return Borrowed UUID, or NULL if unavailable or iteration is complete.
+ */
+DEF_ACCESS (target_task_details_iterator_config_uuid, 5);
+
+/**
+ * @brief Get the active configuration name from a target task iterator.
+ *
+ * @param[in] iterator Target task iterator.
+ * @return Borrowed name, or NULL if unavailable or iteration is complete.
+ */
+DEF_ACCESS (target_task_details_iterator_config_name, 6);
+
+/**
  * @brief Return whether a target is in use by a task.
  *
  * @param[in]  target  Target.

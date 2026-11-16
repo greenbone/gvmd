@@ -15,7 +15,7 @@
 #define TARGET_ITERATOR_FILTER_COLUMNS                                         \
  { GET_ITERATOR_FILTER_COLUMNS, "hosts", "exclude_hosts", "ips", "port_list",  \
    "ssh_credential", "smb_credential", "esxi_credential", "snmp_credential",   \
-   "ssh_elevate_credential", NULL }
+   "ssh_elevate_credential", "source", NULL }
 
 /**
  * @brief Target iterator columns.

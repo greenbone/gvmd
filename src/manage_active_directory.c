@@ -1214,52 +1214,52 @@ static get_ad_objects_return_t
 load_ad_target_tasks (target_t target, GPtrArray **result)
 {
   iterator_t tasks;
-  GPtrArray *matches = g_ptr_array_new_with_free_func (
-    (GDestroyNotify) ad_task_match_free);
+  gboolean may_get_configs = acl_user_may ("get_configs");
+  GPtrArray *matches =
+    g_ptr_array_new_with_free_func ((GDestroyNotify) ad_task_match_free);
 
-  init_target_task_iterator (&tasks, target);
+  init_target_task_details_iterator (&tasks, target);
   while (next (&tasks))
     {
       task_t task = 0;
       ad_task_match_t *match;
       const gchar *uuid;
 
-      if (!target_task_iterator_readable (&tasks))
+      if (!target_task_details_iterator_readable (&tasks))
         continue;
 
-      uuid = target_task_iterator_uuid (&tasks);
+      uuid = target_task_details_iterator_uuid (&tasks);
       if (!uuid || find_task_with_permission (uuid, &task, "get_tasks"))
         goto fail;
 
-      if (!task || task_target_in_trash (task))
+      if (!task || target_task_details_iterator_target_in_trash (&tasks))
         continue;
 
       match = g_new0 (ad_task_match_t, 1);
       match->resource.uuid = g_strdup (uuid);
-      match->resource.name = g_strdup (target_task_iterator_name (&tasks));
+      match->resource.name =
+        g_strdup (target_task_details_iterator_name (&tasks));
       g_ptr_array_add (matches, match);
 
-      if (!task_config_in_trash (task) && acl_user_may ("get_configs"))
+      if (!target_task_details_iterator_config_in_trash (&tasks)
+          && may_get_configs)
         {
-          gchar *config_uuid = task_config_uuid (task);
+          const gchar *config_uuid =
+            target_task_details_iterator_config_uuid (&tasks);
           config_t config = 0;
 
           if (config_uuid
               && find_config_with_permission (config_uuid, &config,
-                                               "get_configs"))
-            {
-              g_free (config_uuid);
-              goto fail;
-            }
+                                              "get_configs"))
+            goto fail;
 
           if (config)
             {
               match->config = g_new0 (ad_resource_ref_t, 1);
-              match->config->uuid = config_uuid;
-              match->config->name = task_config_name (task);
+              match->config->uuid = g_strdup (config_uuid);
+              match->config->name =
+                g_strdup (target_task_details_iterator_config_name (&tasks));
             }
-          else
-            g_free (config_uuid);
         }
     }
   cleanup_iterator (&tasks);
