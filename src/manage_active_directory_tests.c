@@ -4,7 +4,6 @@
  */
 
 #include <cgreen/cgreen.h>
-#include <cgreen/mocks.h>
 
 #if ENABLE_AD_INTEGRATION
 
@@ -179,7 +178,6 @@ static gboolean requested_include_disabled_computers;
 
 static int builder_calls;
 static ad_connector_opt_t builder_options[32];
-static ad_connector_opt_t builder_last_option;
 static const gchar *builder_host;
 static const gchar *builder_bind_dn;
 static const gchar *builder_ca_certificate;
@@ -273,8 +271,12 @@ __wrap_ad_connector_builder (ad_connector_t connector,
                              const void *value)
 {
   assert_that (connector, is_equal_to (test_connector));
+  if (builder_calls >= (int) G_N_ELEMENTS (builder_options))
+    {
+      fail_test ("Too many AD connector builder calls");
+      return AD_CONNECTOR_INVALID_VALUE;
+    }
   builder_options[builder_calls++] = option;
-  builder_last_option = option;
 
   switch (option)
     {
@@ -401,6 +403,30 @@ valid_ad_data (void)
   };
 }
 
+/**
+ * @brief Clear recorded connector and search calls without changing fixtures.
+ */
+static void
+reset_connector_observations (void)
+{
+  connector_new_calls = 0;
+  connector_connect_calls = 0;
+  collected_objects_freed = 0;
+  g_clear_pointer (&connected_password, g_free);
+  g_clear_pointer (&requested_attributes, g_free);
+  requested_include_disabled_computers = FALSE;
+
+  builder_calls = 0;
+  memset (builder_options, 0, sizeof (builder_options));
+  builder_host = NULL;
+  builder_bind_dn = NULL;
+  builder_ca_certificate = NULL;
+  builder_port = -1;
+  builder_network_timeout = -1;
+  builder_operation_timeout = -1;
+  builder_tls_mode = (ad_connector_tls_mode_t) -1;
+}
+
 static void
 reset_test_state (void)
 {
@@ -420,25 +446,11 @@ reset_test_state (void)
 
   test_connector = GINT_TO_POINTER (1);
   connector_connect_result = AD_CONNECTOR_OK;
-  connector_new_calls = 0;
-  connector_connect_calls = 0;
   connector_search_result = AD_CONNECTOR_OK;
   search_object_type = AD_OBJECT_TYPE_OU;
   search_account_control = NULL;
-  collected_objects_freed = 0;
-  g_clear_pointer (&connected_password, g_free);
-  g_clear_pointer (&requested_attributes, g_free);
+  reset_connector_observations ();
 
-  builder_calls = 0;
-  memset (builder_options, 0, sizeof (builder_options));
-  builder_last_option = (ad_connector_opt_t) -1;
-  builder_host = NULL;
-  builder_bind_dn = NULL;
-  builder_ca_certificate = NULL;
-  builder_port = -1;
-  builder_network_timeout = -1;
-  builder_operation_timeout = -1;
-  builder_tls_mode = (ad_connector_tls_mode_t) -1;
   builder_failure_enabled = FALSE;
   builder_failure_option = AD_CONNECTOR_OPT_HOST;
   builder_failure_result = AD_CONNECTOR_OK;
@@ -1397,7 +1409,7 @@ assert_search_succeeds (get_ad_objects_params_t *params)
 {
   get_ad_objects_result_t result = { 0 };
 
-  builder_calls = 0;
+  reset_connector_observations ();
   assert_that (get_active_directory_objects (params, &result),
                is_equal_to (GET_AD_OBJECTS_OK));
   get_ad_objects_result_reset (&result);
@@ -1408,10 +1420,11 @@ assert_search_rejects_invalid_input (get_ad_objects_params_t *params)
 {
   get_ad_objects_result_t result = { 0 };
 
-  builder_calls = 0;
+  reset_connector_observations ();
   assert_that (get_active_directory_objects (params, &result),
                is_equal_to (GET_AD_OBJECTS_INVALID_INPUT));
   assert_that (result.objects, is_null);
+  assert_that (connector_connect_calls, is_equal_to (0));
   assert_that (connected_password, is_null);
 }
 
@@ -1431,6 +1444,28 @@ assert_search_rejected_before_connector (get_ad_objects_return_t expected)
                is_equal_to (expected));
   assert_that (result.objects, is_null);
   assert_that (result.truncated, is_false);
+  assert_no_ad_connector_calls ();
+}
+
+Ensure (manage_active_directory, search_enforces_feature_and_permission)
+{
+  get_ad_objects_params_t params = {
+    .credential_id = "credential-id",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_OU,
+    .max_results = 1
+  };
+  get_ad_objects_result_t result = { 0 };
+
+  expected_permission = "get_active_directory_objects";
+  feature_is_enabled = FALSE;
+  permission_allowed = FALSE;
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (GET_AD_OBJECTS_FEATURE_DISABLED));
+  feature_is_enabled = TRUE;
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (GET_AD_OBJECTS_PERMISSION_DENIED));
+  assert_that (result.objects, is_null);
   assert_no_ad_connector_calls ();
 }
 
@@ -1679,6 +1714,10 @@ Ensure (manage_active_directory, search_params_accept_valid_boundaries)
   assert_that (valid_ad_object_search_params (&params), is_true);
   params.scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE;
   assert_that (valid_ad_object_search_params (&params), is_true);
+  params.targets = TRUE;
+  assert_that (valid_ad_object_search_params (&params), is_true);
+  params.tasks = TRUE;
+  assert_that (valid_ad_object_search_params (&params), is_true);
 }
 
 Ensure (manage_active_directory, search_params_reject_invalid_values)
@@ -1710,6 +1749,10 @@ Ensure (manage_active_directory, search_params_reject_invalid_values)
   params.object_types = 0;
   assert_that (valid_ad_object_search_params (&params), is_false);
   params.object_types = (ad_object_type_t) (AD_OBJECT_TYPE_ALL | (1 << 8));
+  assert_that (valid_ad_object_search_params (&params), is_false);
+  params.object_types = AD_OBJECT_TYPE_COMPUTER;
+
+  params.tasks = TRUE;
   assert_that (valid_ad_object_search_params (&params), is_false);
 }
 
@@ -1763,6 +1806,16 @@ Ensure (manage_active_directory, configure_search_accepts_valid_options)
                is_equal_to (AD_CONNECTOR_OK));
   assert_that (requested_attributes,
                is_equal_to_string ("description,cn,objectcategory"));
+  ad_search_config_free (config);
+
+  config = ad_search_config_new ();
+  params.object_types = AD_OBJECT_TYPE_COMPUTER;
+  params.details = TRUE;
+  assert_that (configure_ad_search (config, &params, credential_base_dn),
+               is_equal_to (AD_CONNECTOR_OK));
+  assert_that (requested_attributes, is_equal_to_string (
+    "description,cn,objectcategory,dnshostname,samaccountname,operatingsystem,"
+    "useraccountcontrol,operatingsystemversion,serviceprincipalname"));
   ad_search_config_free (config);
 }
 
@@ -2013,7 +2066,7 @@ Ensure (manage_active_directory, configure_rejects_and_propagates_errors)
   assert_that (configure_ad_connector (test_connector, &data, 12, 34),
                is_equal_to (AD_CONNECTOR_CONNECTION_ERROR));
   assert_that (builder_calls, is_equal_to (3));
-  assert_that (builder_last_option,
+  assert_that (builder_options[2],
                is_equal_to (builder_failure_option));
 }
 
@@ -2150,9 +2203,7 @@ Ensure (manage_active_directory, verify_denies_inline_and_stored_before_connecto
                is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
   assert_that (verify_active_directory_credential ("credential-id", NULL),
                is_equal_to (VERIFY_AD_CREDENTIAL_DESTINATION_NOT_ALLOWED));
-  assert_that (connector_new_calls, is_equal_to (0));
-  assert_that (builder_calls, is_equal_to (0));
-  assert_that (connector_connect_calls, is_equal_to (0));
+  assert_no_ad_connector_calls ();
 }
 
 Ensure (manage_active_directory, verify_syntax_and_permissions_precede_policy)
@@ -2190,8 +2241,7 @@ Ensure (manage_active_directory, verify_syntax_and_permissions_precede_policy)
                is_equal_to (VERIFY_AD_CREDENTIAL_PERMISSION_DENIED));
   assert_that (verify_active_directory_credential ("credential-id", NULL),
                is_equal_to (VERIFY_AD_CREDENTIAL_PERMISSION_DENIED));
-  assert_that (connector_new_calls, is_equal_to (0));
-  assert_that (connector_connect_calls, is_equal_to (0));
+  assert_no_ad_connector_calls ();
 }
 
 Ensure (manage_active_directory, verify_configures_checked_defaults_and_ports)
@@ -2357,7 +2407,7 @@ assert_account_control_case (get_ad_objects_params_t *params,
   get_ad_objects_result_t result = { 0 };
 
   search_account_control = account_control;
-  builder_calls = 0;
+  reset_connector_observations ();
   assert_that (get_active_directory_objects (params, &result),
                is_equal_to (GET_AD_OBJECTS_OK));
   assert_that (result.counts.computer_total, is_equal_to (1));
@@ -2392,6 +2442,9 @@ main (int argc, char **argv)
   TestSuite *suite;
 
   suite = create_test_suite ();
+
+  add_test_with_context (suite, manage_active_directory,
+                         search_enforces_feature_and_permission);
 
   add_test_with_context (suite, manage_active_directory,
                          failed_policy_preserves_syntax_and_denies_commands);

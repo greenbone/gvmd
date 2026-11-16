@@ -393,18 +393,17 @@ get_active_directory_objects_element_text (const gchar *text, gsize text_len)
 /**
  * @brief Append a computer's target, task and scan config matches as XML.
  *
- * @param[in]  targets  array of target matches.
- * @param[in]  xml      XML string to append to.
+ * @param[in]     targets       Target matches, or NULL for no readable matches.
+ * @param[in,out] xml           XML string to append to.
+ * @param[in]     include_tasks Whether tasks were requested.
  *
  * @return TRUE on success, FALSE on failure.
  */
 static gboolean
-append_ad_computer_targets_xml (const GPtrArray *targets, GString *xml)
+append_ad_computer_targets_xml (const GPtrArray *targets, GString *xml,
+                                gboolean include_tasks)
 {
-  if (!targets)
-    return TRUE;
-
-  if (!targets->len)
+  if (!targets || !targets->len)
     {
       g_string_append (xml, "<targets/>");
       return TRUE;
@@ -422,7 +421,10 @@ append_ad_computer_targets_xml (const GPtrArray *targets, GString *xml)
       buffer_xml_append_printf (xml, "<target id=\"%s\"><name>%s</name>",
                                 target->resource.uuid,
                                 target->resource.name);
-      if (target->tasks)
+      if (include_tasks
+          && (!target->tasks || !target->tasks->len))
+        g_string_append (xml, "<tasks/>");
+      else if (include_tasks)
         {
           g_string_append (xml, "<tasks>");
           for (guint task_index = 0;
@@ -476,12 +478,15 @@ append_ad_computer_targets_xml (const GPtrArray *targets, GString *xml)
  * @param[in]     object  Computer object to serialize.
  * @param[in,out] xml     Buffer to append XML to.
  * @param[in]     details Whether detailed computer fields were requested.
+ * @param[in]     include_targets Whether targets were requested.
+ * @param[in]     include_tasks Whether tasks were requested.
  *
  * @return TRUE on success, FALSE for invalid data.
  */
 static gboolean
 append_ad_computer_xml (const ad_directory_object_t *object, GString *xml,
-                        gboolean details)
+                        gboolean details, gboolean include_targets,
+                        gboolean include_tasks)
 {
   const gchar *value;
 
@@ -542,7 +547,9 @@ append_ad_computer_xml (const ad_directory_object_t *object, GString *xml,
                                 (account_control & 0x0002) != 0);
     }
 
-  return append_ad_computer_targets_xml (object->target_matches, xml);
+  return !include_targets
+         || append_ad_computer_targets_xml (object->target_matches, xml,
+                                             include_tasks);
 }
 
 /**
@@ -551,12 +558,15 @@ append_ad_computer_xml (const ad_directory_object_t *object, GString *xml,
  * @param[in]     object  Owned directory object to serialize.
  * @param[in,out] xml     Buffer to append XML to.
  * @param[in]     details Whether detailed computer fields were requested.
+ * @param[in]     include_targets Whether targets were requested.
+ * @param[in]     include_tasks Whether tasks were requested.
  *
  * @return TRUE on success, FALSE for invalid data.
  */
 static gboolean
 append_ad_object_xml (const ad_directory_object_t *object, GString *xml,
-                      gboolean details)
+                      gboolean details, gboolean include_targets,
+                      gboolean include_tasks)
 {
   const gchar *type;
   const gchar *description;
@@ -596,7 +606,8 @@ append_ad_object_xml (const ad_directory_object_t *object, GString *xml,
 
   if (object->type == AD_OBJECT_TYPE_COMPUTER)
     {
-      if (!append_ad_computer_xml (object, xml, details))
+      if (!append_ad_computer_xml (object, xml, details, include_targets,
+                                    include_tasks))
         return FALSE;
     }
 
@@ -852,13 +863,17 @@ parse_get_active_directory_objects (entity_t root,
  * @param[in] result Owned objects and search truncation status.
  * @param[in] details Whether detailed computer fields were requested.
  * @param[in] include_disabled_computers Whether to include the disabled count.
+ * @param[in] include_targets Whether targets were requested.
+ * @param[in] include_tasks Whether tasks were requested.
  *
  * @return Newly allocated response, or NULL for invalid data.
  */
 static GString *
 buffer_active_directory_objects_xml (const get_ad_objects_result_t *result,
                                      gboolean details,
-                                     gboolean include_disabled_computers)
+                                     gboolean include_disabled_computers,
+                                     gboolean include_targets,
+                                     gboolean include_tasks)
 {
   GString *response = g_string_new (NULL);
   guint count = result->objects ? result->objects->len : 0;
@@ -892,7 +907,8 @@ buffer_active_directory_objects_xml (const get_ad_objects_result_t *result,
       const ad_directory_object_t *object
         = g_ptr_array_index (result->objects, index);
 
-      if (!append_ad_object_xml (object, response, details))
+      if (!append_ad_object_xml (object, response, details, include_targets,
+                                  include_tasks))
         {
           g_string_free (response, TRUE);
           return NULL;
@@ -947,7 +963,9 @@ get_active_directory_objects_run (gmp_parser_t *gmp_parser, GError **error)
     {
       response = buffer_active_directory_objects_xml (&result,
                                                       request.details,
-                                                      request.include_disabled_computers);
+                                                      request.include_disabled_computers,
+                                                      request.targets,
+                                                      request.tasks);
       goto send;
     }
 
