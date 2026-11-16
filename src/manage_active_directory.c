@@ -143,6 +143,47 @@ ad_policy_host_free (gpointer data)
 }
 
 /**
+ * @brief Remove one optional root dot from a validated hostname in place.
+ *
+ * @param[in,out] hostname Non-NULL hostname.
+ */
+static void
+strip_ad_hostname_root_dot (gchar *hostname)
+{
+  gsize length = strlen (hostname);
+
+  if (length && hostname[length - 1] == '.')
+    hostname[length - 1] = '\0';
+}
+
+/**
+ * @brief Trim and lowercase an AD hostname and remove its optional root dot.
+ *
+ * @param[in] value Hostname to normalize.
+ *
+ * @return A newly allocated hostname to free with g_free(), or NULL for missing
+ *         or invalid hostnames, including IP address literals.
+ */
+static gchar *
+normalize_ad_hostname (const gchar *value)
+{
+  gchar *hostname;
+
+  if (!value)
+    return NULL;
+
+  hostname = g_strstrip (g_ascii_strdown (value, -1));
+  if (gvm_get_host_type (hostname) != HOST_TYPE_NAME)
+    {
+      g_free (hostname);
+      return NULL;
+    }
+
+  strip_ad_hostname_root_dot (hostname);
+  return hostname;
+}
+
+/**
  * @brief Parse an individual host without DNS or fallback parsing.
  *
  * @param[in] text  Hostname or IP literal, without surrounding whitespace.
@@ -165,12 +206,8 @@ parse_ad_policy_host (const gchar *text)
   host->type = type;
   if (type == HOST_TYPE_NAME)
     {
-      gsize length;
-
       host->value.name = g_ascii_strdown (text, -1);
-      length = strlen (host->value.name);
-      if (length && host->value.name[length - 1] == '.')
-        host->value.name[length - 1] = '\0';
+      strip_ad_hostname_root_dot (host->value.name);
     }
   else if ((type == HOST_TYPE_IPV4
             && inet_pton (AF_INET, text, &host->value.ipv4) != 1)
@@ -1071,30 +1108,38 @@ ad_directory_object_free (ad_directory_object_t *object)
 }
 
 /**
- * @brief Normalize an AD hostname by trimming whitespace and lowercasing it.
+ * @brief Remove root dots from hostnames in an AD target or exclusion list.
  *
- * @param[in] value Hostname to normalize.
- *
- * @return A newly allocated hostname to free with g_free(), or NULL for missing
- *         or invalid hostnames, including IP address literals.
+ * @param[in] value Comma- or newline-separated host specifications.
+ * @return Newly allocated list cleaned by clean_hosts_string(), or NULL for
+ *         NULL input. Other host specifications are left unchanged.
  */
 static gchar *
-normalize_ad_hostname (const gchar *value)
+normalize_ad_hosts_string (const gchar *value)
 {
-  gchar *hostname;
+  gchar **tokens;
+  gchar *joined, *cleaned;
 
   if (!value)
     return NULL;
 
-  hostname = g_ascii_strdown (value, -1);
-  g_strstrip (hostname);
-
-  if (gvm_get_host_type (hostname) != HOST_TYPE_NAME)
+  tokens = g_strsplit_set (value, ",\n", -1);
+  for (gchar **token = tokens; *token; token++)
     {
-      g_free (hostname);
-      return NULL;
+      gchar *hostname = normalize_ad_hostname (*token);
+
+      if (hostname)
+        {
+          g_free (*token);
+          *token = hostname;
+        }
     }
-  return hostname;
+
+  joined = g_strjoinv (",", tokens);
+  cleaned = clean_hosts_string (joined);
+  g_free (joined);
+  g_strfreev (tokens);
+  return cleaned;
 }
 
 /**
@@ -1324,7 +1369,8 @@ attach_target_to_matching_computers (GHashTable *computers_by_hostname,
   const gchar *name = get_iterator_name (target);
 
   guint max_hosts = manage_max_hosts ();
-  gchar *clean_hosts = clean_hosts_string (target_iterator_hosts (target));
+  gchar *clean_hosts =
+    normalize_ad_hosts_string (target_iterator_hosts (target));
   gvm_hosts_t *hosts = gvm_hosts_new_with_max (clean_hosts, max_hosts);
   g_free (clean_hosts);
 
@@ -1333,9 +1379,10 @@ attach_target_to_matching_computers (GHashTable *computers_by_hostname,
 
   if (exclude_hosts && *exclude_hosts)
     {
-      gchar *clean_exclude = clean_hosts_string (exclude_hosts);
-      int excluded = gvm_hosts_exclude_with_max (hosts, clean_exclude,
-                                                  max_hosts);
+      gchar *clean_exclude = normalize_ad_hosts_string (exclude_hosts);
+      int excluded;
+
+      excluded = gvm_hosts_exclude_with_max (hosts, clean_exclude, max_hosts);
 
       g_free (clean_exclude);
       if (excluded < 0)
