@@ -155,7 +155,7 @@ typedef struct
   gchar *distinguished_name;
   gchar *parent_dn;
   GHashTable *attributes;
-  GPtrArray *target_matches; /**< NULL when matching was not requested;
+  GPtrArray *target_matches; /**< NULL when not requested or get_targets permission is missing,
                                  empty when no readable targets matched. */
 } ad_directory_object_t;
 
