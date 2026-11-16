@@ -743,6 +743,148 @@ set_target_login_data (target_t target, const char* type,
 }
 
 /**
+ * @brief Check whether a credential ID denotes a stored credential.
+ *
+ * @param[in]  credential     Stored credential, or 0 when unset.
+ * @param[in]  credential_id  Requested credential UUID, or "0" to unset.
+ *
+ * @return TRUE when both denote the same effective credential.
+ */
+static gboolean
+credential_id_matches (credential_t credential, const char *credential_id)
+{
+  char *uuid;
+  gboolean matches;
+
+  if (strcmp (credential_id, "0") == 0)
+    return credential == 0;
+
+  if (credential == 0)
+    return FALSE;
+
+  uuid = credential_uuid (credential);
+  matches = uuid && strcmp (uuid, credential_id) == 0;
+  g_free (uuid);
+  return matches;
+}
+
+/**
+ * @brief Check whether a requested target credential is unchanged.
+ *
+ * @param[in]  target         Target.
+ * @param[in]  type           Login data type.
+ * @param[in]  credential_id  Requested credential UUID, or "0" to unset.
+ *
+ * @return TRUE when the requested credential is effectively unchanged.
+ */
+static gboolean
+target_credential_id_matches (target_t target, const char *type,
+                              const char *credential_id)
+{
+  return credential_id_matches (target_credential (target, type),
+                                credential_id);
+}
+
+/**
+ * @brief Check whether requested SSH login data is unchanged.
+ *
+ * @param[in]  target         Target.
+ * @param[in]  credential_id  Requested SSH credential UUID, or "0".
+ * @param[in]  port           Requested SSH port.
+ *
+ * @return TRUE when credential and effective port are both unchanged.
+ */
+static gboolean
+target_ssh_login_matches (target_t target, const char *credential_id,
+                          const char *port)
+{
+  credential_t credential;
+  int current_port, requested_port;
+
+  credential = target_ssh_credential (target);
+  if (credential_id_matches (credential, credential_id) == FALSE)
+    return FALSE;
+
+  if (credential == 0)
+    return TRUE;
+
+  if (port && strcmp (port, "0") && strcmp (port, ""))
+    {
+      if (validate_port (port))
+        return FALSE;
+      requested_port = atoi (port);
+    }
+  else
+    requested_port = 22;
+
+  current_port = target_login_port (target, "ssh");
+  if (current_port == 0)
+    current_port = 22;
+
+  return current_port == requested_port;
+}
+
+/**
+ * @brief Check whether requested target hosts are unchanged.
+ *
+ * @param[in]  target         Target.
+ * @param[in]  hosts          Requested hosts.
+ * @param[in]  exclude_hosts  Requested excluded hosts.
+ *
+ * @return TRUE when both normalized host lists are unchanged.
+ */
+static gboolean
+target_hosts_match (target_t target, const char *hosts,
+                    const char *exclude_hosts)
+{
+  gchar *clean, *clean_exclude, *current, *current_exclude;
+  gboolean matches;
+
+  if (hosts == NULL || exclude_hosts == NULL)
+    return FALSE;
+
+  clean = clean_hosts (hosts, NULL);
+  clean_exclude = clean_hosts (exclude_hosts, NULL);
+  current = target_hosts (target);
+  current_exclude = target_exclude_hosts (target);
+
+  matches = g_strcmp0 (clean, current) == 0
+            && g_strcmp0 (clean_exclude, current_exclude) == 0;
+
+  g_free (clean);
+  g_free (clean_exclude);
+  g_free (current);
+  g_free (current_exclude);
+  return matches;
+}
+
+/**
+ * @brief Check whether a requested port list is unchanged.
+ *
+ * @param[in]  target        Target.
+ * @param[in]  port_list_id  Requested port list UUID.
+ *
+ * @return TRUE when the requested port list is unchanged.
+ */
+static gboolean
+target_port_list_id_matches (target_t target, const char *port_list_id)
+{
+  port_list_t port_list;
+  char *uuid;
+  gboolean matches;
+
+  if (sql_int64 (&port_list,
+                 "SELECT port_list FROM targets WHERE id = %llu;",
+                 target))
+    return FALSE;
+
+  uuid = port_list_uuid (port_list);
+  matches = uuid && strcmp (uuid, port_list_id) == 0;
+  g_free (uuid);
+  return matches;
+}
+
+/**
  * @brief Create a target.
  *
  * @param[in]   name            Name of target.
@@ -1168,6 +1310,7 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   credential_t ssh_elevate_credential = 0;
   credential_t smb_credential;
   credential_t krb5_credential;
+  int in_use;
 
   assert (target_id);
 
@@ -1199,6 +1342,20 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       sql_rollback ();
       return 9;
     }
+
+  in_use = (allow_simultaneous_ips
+            || port_list_id
+            || ssh_credential_id
+            || ssh_elevate_credential_id
+            || smb_credential_id
+            || esxi_credential_id
+            || snmp_credential_id
+            || krb5_credential_id
+            || hosts
+            || exclude_hosts
+            || reverse_lookup_only
+            || reverse_lookup_unify)
+           && target_in_use (target);
 
   if (name)
     {
@@ -1239,14 +1396,22 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       g_free (quoted_comment);
     }
 
-  if (allow_simultaneous_ips)
+  if (allow_simultaneous_ips && in_use)
     {
-      if (target_in_use (target))
+      int requested;
+
+      requested = strcmp (allow_simultaneous_ips, "0") ? 1 : 0;
+      if (requested
+          != sql_int ("SELECT allow_simultaneous_ips FROM targets"
+                      " WHERE id = %llu;",
+                      target))
         {
           sql_rollback ();
           return 15;
         }
-
+    }
+  else if (allow_simultaneous_ips)
+    {
       sql ("UPDATE targets SET"
            " allow_simultaneous_ips = '%i',"
            " modification_time = m_now ()"
@@ -1257,7 +1422,10 @@ modify_target (const char *target_id, const char *name, const char *hosts,
 
   if (alive_tests && alive_tests->len
       && alive_test_str && strlen (alive_test_str))
-    return 30;
+    {
+      sql_rollback ();
+      return 30;
+    }
   else if (alive_tests && alive_tests->len)
     {
       int alive_test;
@@ -1293,15 +1461,17 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (port_list_id)
+  if (port_list_id && in_use)
     {
-      port_list_t port_list;
-
-      if (target_in_use (target))
+      if (target_port_list_id_matches (target, port_list_id) == FALSE)
         {
           sql_rollback ();
           return 15;
         }
+    }
+  else if (port_list_id)
+    {
+      port_list_t port_list;
 
       port_list = 0;
       if (find_port_list_with_permission (port_list_id, &port_list,
@@ -1325,14 +1495,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (ssh_credential_id)
+  if (ssh_credential_id && in_use)
     {
-      if (target_in_use (target))
+      if (target_ssh_login_matches (target, ssh_credential_id, ssh_port)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
-
+      ssh_credential = target_ssh_credential (target);
+    }
+  else if (ssh_credential_id)
+    {
       ssh_credential = 0;
       if (strcmp (ssh_credential_id, "0"))
         {
@@ -1383,14 +1557,19 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         set_target_login_data (target, "ssh", 0, 0);
     }
 
-  if (ssh_elevate_credential_id)
+  if (ssh_elevate_credential_id && in_use)
     {
-      if (target_in_use (target))
+      if (target_credential_id_matches (target, "elevate",
+                                        ssh_elevate_credential_id)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
-
+      ssh_elevate_credential = target_ssh_elevate_credential (target);
+    }
+  else if (ssh_elevate_credential_id)
+    {
       ssh_elevate_credential = 0;
       if (strcmp (ssh_elevate_credential_id, "0"))
         {
@@ -1427,14 +1606,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         set_target_login_data (target, "elevate", 0, 0);
     }
 
-  if (smb_credential_id)
+  if (smb_credential_id && in_use)
     {
-      if (target_in_use (target))
+      if (target_credential_id_matches (target, "smb", smb_credential_id)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
-
+      smb_credential = target_smb_credential (target);
+    }
+  else if (smb_credential_id)
+    {
       smb_credential = 0;
       if (strcmp (smb_credential_id, "0"))
         {
@@ -1473,15 +1656,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
   else
     smb_credential = target_smb_credential (target);
 
-  if (esxi_credential_id)
+  if (esxi_credential_id && in_use)
     {
-      credential_t esxi_credential;
-
-      if (target_in_use (target))
+      if (target_credential_id_matches (target, "esxi", esxi_credential_id)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
+    }
+  else if (esxi_credential_id)
+    {
+      credential_t esxi_credential;
 
       esxi_credential = 0;
       if (strcmp (esxi_credential_id, "0"))
@@ -1519,15 +1705,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         set_target_login_data (target, "esxi", 0, 0);
     }
 
-  if (snmp_credential_id)
+  if (snmp_credential_id && in_use)
     {
-      credential_t snmp_credential;
-
-      if (target_in_use (target))
+      if (target_credential_id_matches (target, "snmp", snmp_credential_id)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
+    }
+  else if (snmp_credential_id)
+    {
+      credential_t snmp_credential;
 
       snmp_credential = 0;
       if (strcmp (snmp_credential_id, "0"))
@@ -1584,14 +1773,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
         }
     }
 
-  if (krb5_credential_id)
+  if (krb5_credential_id && in_use)
     {
-      if (target_in_use (target))
+      if (target_credential_id_matches (target, "krb5", krb5_credential_id)
+          == FALSE)
         {
           sql_rollback ();
           return 15;
         }
-
+      krb5_credential = target_krb5_credential (target);
+    }
+  else if (krb5_credential_id)
+    {
       krb5_credential = 0;
       if (strcmp (krb5_credential_id, "0"))
         {
@@ -1633,16 +1826,18 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       return 28;
     }
 
-  if (exclude_hosts)
+  if (exclude_hosts && in_use)
     {
-      gchar *quoted_exclude_hosts, *quoted_hosts, *clean, *clean_exclude;
-      int max;
-
-      if (target_in_use (target))
+      if (target_hosts_match (target, hosts, exclude_hosts) == FALSE)
         {
           sql_rollback ();
           return 15;
         }
+    }
+  else if (exclude_hosts)
+    {
+      gchar *quoted_exclude_hosts, *quoted_hosts, *clean, *clean_exclude;
+      int max;
 
       if (hosts == NULL)
         {
@@ -1693,13 +1888,23 @@ modify_target (const char *target_id, const char *name, const char *hosts,
       g_free (quoted_exclude_hosts);
     }
 
-  if (reverse_lookup_only)
+  if (reverse_lookup_only && in_use)
     {
-      if (target_in_use (target))
+      gchar *current;
+      int requested;
+
+      current = target_reverse_lookup_only (target);
+      requested = strcmp (reverse_lookup_only, "0") ? 1 : 0;
+      if (requested != (current && strcmp (current, "0") ? 1 : 0))
         {
+          g_free (current);
           sql_rollback ();
           return 15;
         }
+      g_free (current);
+    }
+  else if (reverse_lookup_only)
+    {
 
       sql ("UPDATE targets SET"
            " reverse_lookup_only = '%i',"
@@ -1709,13 +1914,23 @@ modify_target (const char *target_id, const char *name, const char *hosts,
            target);
     }
 
-  if (reverse_lookup_unify)
+  if (reverse_lookup_unify && in_use)
     {
-      if (target_in_use (target))
+      gchar *current;
+      int requested;
+
+      current = target_reverse_lookup_unify (target);
+      requested = strcmp (reverse_lookup_unify, "0") ? 1 : 0;
+      if (requested != (current && strcmp (current, "0") ? 1 : 0))
         {
+          g_free (current);
           sql_rollback ();
           return 15;
         }
+      g_free (current);
+    }
+  else if (reverse_lookup_unify)
+    {
 
       sql ("UPDATE targets SET"
            " reverse_lookup_unify = '%i',"
