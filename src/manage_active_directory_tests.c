@@ -153,6 +153,8 @@ assert_default_ad_ports (void)
 static int feature_is_enabled;
 static int permission_allowed;
 static const gchar *expected_permission;
+static guint config_command_checks;
+static gboolean enrichment_permissions;
 static gboolean credential_lookup_failed;
 static credential_t saved_credential;
 static const gchar *saved_credential_type;
@@ -169,6 +171,7 @@ static ad_connector_return_t connector_connect_result;
 static ad_connector_return_t connector_search_result;
 static ad_object_type_t search_object_type;
 static const gchar *search_account_control;
+static const gchar *search_hostname;
 static guint collected_objects_freed;
 static gchar *connected_password;
 static guint connector_new_calls;
@@ -199,9 +202,203 @@ __wrap_feature_enabled (feature_id_t feature)
 int
 __wrap_acl_user_may (const char *permission)
 {
+  if (g_str_equal (permission, "get_configs"))
+    config_command_checks++;
+  if (enrichment_permissions)
+    {
+      assert_that (g_str_equal (permission, "get_active_directory_objects")
+                   || g_str_equal (permission, "get_targets")
+                   || g_str_equal (permission, "get_tasks")
+                   || g_str_equal (permission, "get_configs"),
+                   is_true);
+      return permission_allowed;
+    }
   assert_that (permission,
                is_equal_to_string (expected_permission));
   return permission_allowed;
+}
+
+#define TEST_TARGET 42
+#define TEST_TASK 100
+#define TEST_CONFIG 200
+
+typedef struct
+{
+  gboolean readable;
+  gboolean task_exists;
+  gboolean target_trashed;
+  gboolean config_trashed;
+  const gchar *config_uuid;
+  gboolean config_readable;
+  gboolean task_error;
+  gboolean config_error;
+} task_details_row_t;
+
+static const task_details_row_t *task_details_rows;
+static guint task_details_count;
+static gint task_details_index;
+static iterator_t *task_details_iterator;
+static guint task_permission_checks;
+static guint config_permission_checks;
+static guint task_iterator_cleanups;
+static iterator_t *target_candidate_iterator;
+static const gchar *target_candidate_hosts;
+static const gchar *target_candidate_exclusions;
+static gboolean target_candidate_readable;
+static gboolean target_candidate_available;
+
+int
+__wrap_init_ad_target_candidate_iterator_by_hostname (iterator_t *iterator,
+                                                      const get_data_t *get,
+                                                      GHashTable *hostnames)
+{
+  assert_that (get->trash, is_equal_to (0));
+  assert_that (g_hash_table_contains (hostnames, "host.example.com"), is_true);
+  target_candidate_iterator = iterator;
+  target_candidate_available = target_candidate_readable;
+  iterator->done = FALSE;
+  return 0;
+}
+
+void
+__wrap_init_target_task_details_iterator (iterator_t *iterator, target_t target)
+{
+  assert_that (target, is_equal_to (TEST_TARGET));
+  task_details_iterator = iterator;
+  task_details_index = -1;
+  iterator->done = FALSE;
+}
+
+gboolean
+__wrap_next (iterator_t *iterator)
+{
+  if (iterator == target_candidate_iterator)
+    {
+      iterator->done = !target_candidate_available;
+      target_candidate_available = FALSE;
+      return !iterator->done;
+    }
+  if (iterator == task_details_iterator)
+    {
+      task_details_index++;
+      iterator->done = task_details_index >= (gint) task_details_count;
+      return !iterator->done;
+    }
+  fail_test ("Unexpected iterator");
+  return FALSE;
+}
+
+void
+__wrap_cleanup_iterator (iterator_t *iterator)
+{
+  if (iterator == target_candidate_iterator)
+    target_candidate_iterator = NULL;
+  else if (iterator == task_details_iterator)
+    {
+      task_iterator_cleanups++;
+      task_details_iterator = NULL;
+    }
+  else
+    fail_test ("Unexpected iterator");
+}
+
+const char *
+__wrap_target_task_details_iterator_name (iterator_t *iterator)
+{
+  return "Task name";
+}
+
+const char *
+__wrap_target_task_details_iterator_uuid (iterator_t *iterator)
+{
+  return "task-id";
+}
+
+int
+__wrap_target_task_details_iterator_readable (iterator_t *iterator)
+{
+  return task_details_rows[task_details_index].readable;
+}
+
+int
+__wrap_target_task_details_iterator_target_in_trash (iterator_t *iterator)
+{
+  return task_details_rows[task_details_index].target_trashed;
+}
+
+int
+__wrap_target_task_details_iterator_config_in_trash (iterator_t *iterator)
+{
+  return task_details_rows[task_details_index].config_trashed;
+}
+
+const char *
+__wrap_target_task_details_iterator_config_uuid (iterator_t *iterator)
+{
+  return task_details_rows[task_details_index].config_uuid;
+}
+
+const char *
+__wrap_target_task_details_iterator_config_name (iterator_t *iterator)
+{
+  return "Configuration name";
+}
+
+resource_t
+__wrap_get_iterator_resource (iterator_t *iterator)
+{
+  assert_that (iterator, is_equal_to (target_candidate_iterator));
+  return TEST_TARGET;
+}
+
+const char *
+__wrap_get_iterator_uuid (iterator_t *iterator)
+{
+  assert_that (iterator, is_equal_to (target_candidate_iterator));
+  return "target-id";
+}
+
+const char *
+__wrap_get_iterator_name (iterator_t *iterator)
+{
+  assert_that (iterator, is_equal_to (target_candidate_iterator));
+  return "Target name";
+}
+
+const char *
+__wrap_target_iterator_hosts (iterator_t *iterator)
+{
+  return target_candidate_hosts;
+}
+
+const char *
+__wrap_target_iterator_exclude_hosts (iterator_t *iterator)
+{
+  return target_candidate_exclusions;
+}
+
+gboolean
+__wrap_find_task_with_permission (const char *uuid, task_t *task,
+                                  const char *permission)
+{
+  assert_that (uuid, is_equal_to_string ("task-id"));
+  assert_that (permission, is_equal_to_string ("get_tasks"));
+  task_permission_checks++;
+  *task = task_details_rows[task_details_index].task_exists ? TEST_TASK : 0;
+  return task_details_rows[task_details_index].task_error;
+}
+
+gboolean
+__wrap_find_config_with_permission (const char *uuid, config_t *config,
+                                    const char *permission)
+{
+  assert_that (uuid, is_equal_to_string ("config-id"));
+  assert_that (permission, is_equal_to_string ("get_configs"));
+  config_permission_checks++;
+  *config = task_details_rows[task_details_index].config_readable
+              ? TEST_CONFIG
+              : 0;
+  return task_details_rows[task_details_index].config_error;
 }
 
 gboolean
@@ -329,6 +526,21 @@ count_collected_object_free (gpointer object)
   ad_directory_object_free (object);
 }
 
+static void
+add_object_attribute (ad_object_t *object, const gchar *name,
+                      const gchar *first, const gchar *second)
+{
+  GPtrArray *values = g_ptr_array_new_with_free_func (g_free);
+
+  if (!object->attributes)
+    object->attributes = g_hash_table_new_full (
+      g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_ptr_array_unref);
+  g_ptr_array_add (values, g_strdup (first));
+  if (second)
+    g_ptr_array_add (values, g_strdup (second));
+  g_hash_table_insert (object->attributes, g_strdup (name), values);
+}
+
 ad_connector_return_t
 __real_ad_search_config_builder (ad_search_config_t, ad_search_config_opt_t,
                                  const void *);
@@ -363,16 +575,11 @@ __wrap_ad_connector_search_objects (ad_connector_t connector,
   object->distinguished_name = g_strdup ("OU=hosts,DC=example,DC=com");
   object->parent_dn = g_strdup ("DC=example,DC=com");
 
+  if (search_hostname)
+    add_object_attribute (object, "dNSHostName", search_hostname, NULL);
   if (search_account_control)
-    {
-      GPtrArray *values = g_ptr_array_new_with_free_func (g_free);
-
-      object->attributes = g_hash_table_new_full (
-        g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_ptr_array_unref);
-      g_ptr_array_add (values, g_strdup (search_account_control));
-      g_hash_table_insert (object->attributes,
-                           g_strdup ("useraccountcontrol"), values);
-    }
+    add_object_attribute (object, "userAccountControl",
+                          search_account_control, NULL);
 
   assert_that (connector, is_equal_to (test_connector));
   assert_that (config, is_non_null);
@@ -425,6 +632,11 @@ reset_connector_observations (void)
   builder_network_timeout = -1;
   builder_operation_timeout = -1;
   builder_tls_mode = (ad_connector_tls_mode_t) -1;
+
+  task_permission_checks = 0;
+  config_permission_checks = 0;
+  config_command_checks = 0;
+  task_iterator_cleanups = 0;
 }
 
 static void
@@ -432,6 +644,7 @@ reset_test_state (void)
 {
   feature_is_enabled = TRUE;
   permission_allowed = TRUE;
+  enrichment_permissions = FALSE;
   expected_permission = "verify_active_directory_credential";
   credential_lookup_failed = FALSE;
   saved_credential = 42;
@@ -449,6 +662,14 @@ reset_test_state (void)
   connector_search_result = AD_CONNECTOR_OK;
   search_object_type = AD_OBJECT_TYPE_OU;
   search_account_control = NULL;
+  search_hostname = NULL;
+  target_candidate_iterator = NULL;
+  target_candidate_hosts = NULL;
+  target_candidate_exclusions = NULL;
+  target_candidate_readable = FALSE;
+  task_details_iterator = NULL;
+  task_details_rows = NULL;
+  task_details_count = 0;
   reset_connector_observations ();
 
   builder_failure_enabled = FALSE;
@@ -492,21 +713,6 @@ AfterEach (manage_active_directory)
   g_clear_pointer (&previous_allowed_hosts_env, g_free);
   g_clear_pointer (&previous_allowed_ports_env, g_free);
   g_clear_pointer (&requested_attributes, g_free);
-}
-
-static void
-add_object_attribute (ad_object_t *object, const gchar *name,
-                      const gchar *first, const gchar *second)
-{
-  GPtrArray *values = g_ptr_array_new_with_free_func (g_free);
-
-  if (!object->attributes)
-    object->attributes = g_hash_table_new_full (
-      g_str_hash, g_str_equal, g_free, (GDestroyNotify) g_ptr_array_unref);
-  g_ptr_array_add (values, g_strdup (first));
-  if (second)
-    g_ptr_array_add (values, g_strdup (second));
-  g_hash_table_insert (object->attributes, g_strdup (name), values);
 }
 
 /* Test suite. */
@@ -2435,6 +2641,268 @@ Ensure (manage_active_directory, search_retains_and_counts_disabled_accounts)
   assert_account_control_case (&params, "514", 1);
 }
 
+static void
+set_task_details_rows (const task_details_row_t *rows, guint count)
+{
+  task_details_rows = rows;
+  task_details_count = count;
+}
+
+static void
+assert_task_match (const ad_task_match_t *match, const gchar *config_uuid)
+{
+  assert_that (match->resource.uuid, is_equal_to_string ("task-id"));
+  assert_that (match->resource.name, is_equal_to_string ("Task name"));
+  if (!config_uuid)
+    {
+      assert_that (match->config, is_null);
+      return;
+    }
+  assert_that (match->config, is_non_null);
+  assert_that (match->config->uuid, is_equal_to_string (config_uuid));
+  assert_that (match->config->name, is_equal_to_string ("Configuration name"));
+}
+
+Ensure (manage_active_directory, target_tasks_preserve_resource_permissions)
+{
+  const task_details_row_t rows[] = {
+    { .readable = FALSE },
+    { .readable = TRUE, .task_exists = FALSE },
+    { .readable = TRUE, .task_exists = TRUE, .target_trashed = TRUE },
+    { .readable = TRUE, .task_exists = TRUE, .config_trashed = TRUE },
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id" },
+    { .readable = TRUE, .task_exists = TRUE },
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+      .config_readable = TRUE }
+  };
+  GPtrArray *matches = NULL;
+
+  expected_permission = "get_configs";
+  set_task_details_rows (rows, G_N_ELEMENTS (rows));
+  assert_that (load_ad_target_tasks (TEST_TARGET, &matches),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  assert_that (matches->len, is_equal_to (4));
+  /* Trashed, unreadable and missing configurations are omitted. */
+  assert_task_match (g_ptr_array_index (matches, 0), NULL);
+  assert_task_match (g_ptr_array_index (matches, 1), NULL);
+  assert_task_match (g_ptr_array_index (matches, 2), NULL);
+  assert_task_match (g_ptr_array_index (matches, 3), "config-id");
+  assert_that (task_permission_checks, is_equal_to (6));
+  assert_that (config_permission_checks, is_equal_to (2));
+  assert_that (config_command_checks, is_equal_to (1));
+  assert_that (task_iterator_cleanups, is_equal_to (1));
+  g_ptr_array_unref (matches);
+}
+
+Ensure (manage_active_directory, target_tasks_respect_config_command_permission)
+{
+  const task_details_row_t rows[] = {
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+      .config_readable = TRUE },
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+      .config_readable = TRUE }
+  };
+  GPtrArray *matches = NULL;
+
+  expected_permission = "get_configs";
+  permission_allowed = FALSE;
+  set_task_details_rows (rows, G_N_ELEMENTS (rows));
+  assert_that (load_ad_target_tasks (TEST_TARGET, &matches),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  assert_that (matches->len, is_equal_to (2));
+  assert_task_match (g_ptr_array_index (matches, 0), NULL);
+  assert_task_match (g_ptr_array_index (matches, 1), NULL);
+  assert_that (task_permission_checks, is_equal_to (2));
+  assert_that (config_permission_checks, is_equal_to (0));
+  assert_that (config_command_checks, is_equal_to (1));
+  assert_that (task_iterator_cleanups, is_equal_to (1));
+  g_ptr_array_unref (matches);
+}
+
+static void
+assert_target_tasks_error (const task_details_row_t *row,
+                           guint config_checks)
+{
+  GPtrArray *matches = NULL;
+
+  reset_connector_observations ();
+  set_task_details_rows (row, 1);
+  assert_that (load_ad_target_tasks (TEST_TARGET, &matches),
+               is_equal_to (GET_AD_OBJECTS_INTERNAL_ERROR));
+  assert_that (matches, is_null);
+  assert_that (task_permission_checks, is_equal_to (1));
+  assert_that (config_permission_checks, is_equal_to (config_checks));
+  assert_that (task_iterator_cleanups, is_equal_to (1));
+}
+
+Ensure (manage_active_directory, target_tasks_report_lookup_errors)
+{
+  task_details_row_t row = {
+    .readable = TRUE,
+    .task_exists = TRUE,
+    .config_uuid = "config-id",
+    .config_readable = TRUE
+  };
+
+  expected_permission = "get_configs";
+  row.task_error = TRUE;
+  assert_target_tasks_error (&row, 0);
+  row.task_error = FALSE;
+  row.config_error = TRUE;
+  assert_target_tasks_error (&row, 1);
+}
+
+static ad_directory_object_t *
+new_enrichment_computer (const gchar *hostname)
+{
+  ad_object_t *source = new_test_object (AD_OBJECT_TYPE_COMPUTER);
+
+  add_object_attribute (source, "dNSHostName", hostname, NULL);
+  return ad_directory_object_from_search_object (source);
+}
+
+static GPtrArray *
+new_enrichment_objects (const gchar *first, const gchar *second)
+{
+  GPtrArray *objects = g_ptr_array_new_with_free_func (
+    (GDestroyNotify) ad_directory_object_free);
+
+  g_ptr_array_add (objects, new_enrichment_computer (first));
+  if (second)
+    g_ptr_array_add (objects, new_enrichment_computer (second));
+  return objects;
+}
+
+static void
+set_enrichment_target (const gchar *hosts, const gchar *exclusions)
+{
+  enrichment_permissions = TRUE;
+  target_candidate_hosts = hosts;
+  target_candidate_exclusions = exclusions;
+  target_candidate_readable = TRUE;
+}
+
+Ensure (manage_active_directory, enrichment_matches_exact_hostname)
+{
+  GPtrArray *objects = new_enrichment_objects (" HOST.EXAMPLE.COM ", NULL);
+  ad_directory_object_t *computer = g_ptr_array_index (objects, 0);
+  ad_target_match_t *target;
+
+  set_enrichment_target ("host.example.com,other.example.com", "");
+  assert_that (match_ad_objects_to_targets (objects, TRUE),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  assert_that (computer->target_matches, is_non_null);
+  assert_that (computer->target_matches->len, is_equal_to (1));
+  target = g_ptr_array_index (computer->target_matches, 0);
+  assert_that (target->resource.uuid, is_equal_to_string ("target-id"));
+  assert_that (target->resource.name, is_equal_to_string ("Target name"));
+  assert_that (target->tasks, is_non_null);
+  assert_that (target->tasks->len, is_equal_to (0));
+  g_ptr_array_unref (objects);
+}
+
+static void
+assert_no_target_match (const gchar *hosts, const gchar *exclusions,
+                        gboolean readable)
+{
+  GPtrArray *objects = new_enrichment_objects ("host.example.com", NULL);
+  ad_directory_object_t *computer = g_ptr_array_index (objects, 0);
+
+  reset_connector_observations ();
+  set_enrichment_target (hosts, exclusions);
+  target_candidate_readable = readable;
+  assert_that (match_ad_objects_to_targets (objects, TRUE),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  assert_that (computer->target_matches, is_non_null);
+  assert_that (computer->target_matches->len, is_equal_to (0));
+  assert_that (task_iterator_cleanups, is_equal_to (0));
+  g_ptr_array_unref (objects);
+}
+
+Ensure (manage_active_directory, enrichment_skips_non_matching_targets)
+{
+  assert_no_target_match ("prefixhost.example.com,host.example.com.other", "",
+                          TRUE);
+  assert_no_target_match ("host.example.com,other.example.com",
+                          "host.example.com", TRUE);
+  assert_no_target_match ("host.example.com", "", FALSE);
+}
+
+Ensure (manage_active_directory, enrichment_matches_computers_sharing_hostname)
+{
+  const task_details_row_t row = {
+    .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    .config_readable = TRUE
+  };
+  GPtrArray *objects =
+    new_enrichment_objects ("host.example.com", "HOST.EXAMPLE.COM");
+  ad_directory_object_t *first = g_ptr_array_index (objects, 0);
+  ad_directory_object_t *second = g_ptr_array_index (objects, 1);
+  ad_target_match_t *target;
+
+  set_enrichment_target ("host.example.com", "");
+  set_task_details_rows (&row, 1);
+  assert_that (match_ad_objects_to_targets (objects, TRUE),
+               is_equal_to (GET_AD_OBJECTS_OK));
+
+  assert_that (first->target_matches->len, is_equal_to (1));
+  target = g_ptr_array_index (first->target_matches, 0);
+  assert_that (target->resource.uuid, is_equal_to_string ("target-id"));
+  assert_that (target->tasks->len, is_equal_to (1));
+  assert_task_match (g_ptr_array_index (target->tasks, 0), "config-id");
+
+  assert_that (second->target_matches->len, is_equal_to (1));
+  target = g_ptr_array_index (second->target_matches, 0);
+  assert_that (target->resource.uuid, is_equal_to_string ("target-id"));
+  assert_that (target->tasks->len, is_equal_to (1));
+  assert_task_match (g_ptr_array_index (target->tasks, 0), "config-id");
+
+  assert_that (task_iterator_cleanups, is_equal_to (1));
+  g_ptr_array_unref (objects);
+}
+
+Ensure (manage_active_directory, search_enriches_targets_and_readable_tasks)
+{
+  get_ad_objects_params_t params = {
+    .credential_id = "credential-id",
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+    .object_types = AD_OBJECT_TYPE_COMPUTER,
+    .max_results = 1,
+    .targets = TRUE,
+    .tasks = TRUE
+  };
+  const task_details_row_t rows[] = {
+    { .readable = FALSE },
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id" },
+    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+      .config_readable = TRUE }
+  };
+  get_ad_objects_result_t result = { 0 };
+  ad_directory_object_t *computer;
+  ad_target_match_t *target;
+
+  set_enrichment_target ("host.example.com", "");
+  set_task_details_rows (rows, G_N_ELEMENTS (rows));
+  search_object_type = AD_OBJECT_TYPE_COMPUTER;
+  search_hostname = "HOST.EXAMPLE.COM";
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  assert_that (result.objects, is_non_null);
+  assert_that (result.objects->len, is_equal_to (1));
+  computer = g_ptr_array_index (result.objects, 0);
+  assert_that (computer->target_matches, is_non_null);
+  assert_that (computer->target_matches->len, is_equal_to (1));
+  target = g_ptr_array_index (computer->target_matches, 0);
+  assert_that (target->resource.uuid, is_equal_to_string ("target-id"));
+  assert_that (target->tasks, is_non_null);
+  assert_that (target->tasks->len, is_equal_to (2));
+  assert_task_match (g_ptr_array_index (target->tasks, 0), NULL);
+  assert_task_match (g_ptr_array_index (target->tasks, 1), "config-id");
+  assert_that (task_permission_checks, is_equal_to (2));
+  assert_that (config_permission_checks, is_equal_to (2));
+  get_ad_objects_result_reset (&result);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -2498,6 +2966,20 @@ main (int argc, char **argv)
                          account_control_detects_disabled_accounts);
   add_test_with_context (suite, manage_active_directory,
                          search_retains_and_counts_disabled_accounts);
+  add_test_with_context (suite, manage_active_directory,
+                         target_tasks_preserve_resource_permissions);
+  add_test_with_context (suite, manage_active_directory,
+                         target_tasks_respect_config_command_permission);
+  add_test_with_context (suite, manage_active_directory,
+                         target_tasks_report_lookup_errors);
+  add_test_with_context (suite, manage_active_directory,
+                         enrichment_matches_exact_hostname);
+  add_test_with_context (suite, manage_active_directory,
+                         enrichment_skips_non_matching_targets);
+  add_test_with_context (suite, manage_active_directory,
+                         enrichment_matches_computers_sharing_hostname);
+  add_test_with_context (suite, manage_active_directory,
+                         search_enriches_targets_and_readable_tasks);
   add_test_with_context (suite, manage_active_directory,
                          object_map_owns_all_selected_values);
   add_test_with_context (suite, manage_active_directory,

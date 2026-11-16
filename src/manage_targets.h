@@ -197,4 +197,28 @@ target_task_iterator_uuid (iterator_t *);
 int
 target_task_iterator_readable (iterator_t *);
 
+void
+init_target_task_details_iterator (iterator_t *, target_t);
+
+const char *
+target_task_details_iterator_name (iterator_t *);
+
+const char *
+target_task_details_iterator_uuid (iterator_t *);
+
+int
+target_task_details_iterator_readable (iterator_t *);
+
+int
+target_task_details_iterator_target_in_trash (iterator_t *);
+
+int
+target_task_details_iterator_config_in_trash (iterator_t *);
+
+const char *
+target_task_details_iterator_config_uuid (iterator_t *);
+
+const char *
+target_task_details_iterator_config_name (iterator_t *);
+
 #endif /* not _GVMD_MANAGE_TARGETS_H */
