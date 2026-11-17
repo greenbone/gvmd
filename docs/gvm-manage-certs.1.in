@@ -134,7 +134,7 @@ Size in bits of the generated key, if not set,
 will take the default from GVM_CERTIFICATE_SECPARAM (see below)
 .TP
 GVM_CERTIFICATE_SECPARAM
-GnuTLS security level [low|medium|high|ultra]
+GnuTLS security level [low|medium|high|ultra], default high
 .SS Dynamic variables
 These are variables you are likely to want to set for individual
 invocations of
