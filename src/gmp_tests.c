@@ -30,6 +30,7 @@ static int credential_failure_logs;
 static verify_ad_return_t mock_verify_result;
 static get_ad_objects_return_t mock_search_result;
 static guint search_command_calls;
+static const get_ad_objects_params_t *expected_search_params;
 static ad_directory_object_t *mock_search_object;
 static const gchar *expected_ad_host;
 static const gchar *expected_ad_port;
@@ -47,6 +48,7 @@ BeforeEach (gmp)
   credential_failure_logs = 0;
 #if ENABLE_AD_INTEGRATION
   mock_search_object = NULL;
+  expected_search_params = NULL;
 #endif
 }
 
@@ -160,6 +162,34 @@ __wrap_log_event_fail (const char *type, const char *name, const char *id,
 }
 
 #if ENABLE_AD_INTEGRATION
+/**
+ * @brief Assert that the GMP parser preserves all expected search options.
+ *
+ * @param[in] params    Parsed search parameters, borrowed from the handler.
+ * @param[in] expected  Expected search parameters for this request.
+ */
+static void
+assert_ad_search_params (const get_ad_objects_params_t *params,
+                         const get_ad_objects_params_t *expected)
+{
+  assert_that (params->scope, is_equal_to (expected->scope));
+  assert_that (params->max_results, is_equal_to (expected->max_results));
+  assert_that (params->object_types, is_equal_to (expected->object_types));
+  assert_that (params->include_disabled_computers,
+               is_equal_to (expected->include_disabled_computers));
+  assert_that (params->targets, is_equal_to (expected->targets));
+  assert_that (params->tasks, is_equal_to (expected->tasks));
+  assert_that (params->details, is_equal_to (expected->details));
+  if (expected->base_dn)
+    assert_that (params->base_dn, is_equal_to_string (expected->base_dn));
+  else
+    assert_that (params->base_dn, is_null);
+  if (expected->group_dn)
+    assert_that (params->group_dn, is_equal_to_string (expected->group_dn));
+  else
+    assert_that (params->group_dn, is_null);
+}
+
 get_ad_objects_return_t
 __wrap_get_active_directory_objects (const get_ad_objects_params_t *params,
                                      get_ad_objects_result_t *result)
@@ -167,15 +197,20 @@ __wrap_get_active_directory_objects (const get_ad_objects_params_t *params,
   assert_that (mock_ad_response, is_true);
   assert_that (params->credential_id,
                is_equal_to_string ("response-credential"));
+  if (expected_search_params)
+    assert_ad_search_params (params, expected_search_params);
   assert_that (result->objects, is_null);
   search_command_calls++;
   if (mock_search_result == GET_AD_OBJECTS_OK)
     {
       result->objects = g_ptr_array_new_with_free_func (
         (GDestroyNotify) ad_directory_object_free);
-      g_ptr_array_add (result->objects, mock_search_object);
-      mock_search_object = NULL;
-      result->counts.computer_total = 1;
+      if (mock_search_object)
+        {
+          g_ptr_array_add (result->objects, mock_search_object);
+          mock_search_object = NULL;
+          result->counts.computer_total = 1;
+        }
     }
   return mock_search_result;
 }
@@ -436,6 +471,191 @@ Ensure (gmp, search_emits_requested_empty_collections)
     TRUE, TRUE,
     "<targets><target id=\"target-id\"><name>AD target</name>"
     "<tasks/></target></targets>");
+}
+
+/**
+ * @brief Check parsed search options and authenticated parser recovery.
+ *
+ * The management mock checks the parameters and returns an empty successful
+ * result without LDAP access.
+ *
+ * @param[in] attributes  Request attributes following credential_id.
+ * @param[in] children    Child elements within the search request.
+ * @param[in] expected    Expected parsed search parameters.
+ */
+static void
+assert_ad_search_options (const gchar *attributes, const gchar *children,
+                          const get_ad_objects_params_t *expected)
+{
+  gchar *request = g_strdup_printf (
+    "<get_active_directory_objects credential_id=\"response-credential\" %s>"
+    "%s</get_active_directory_objects>", attributes, children);
+  gchar *response = g_strdup_printf (
+    "<get_active_directory_objects_response status=\"200\" status_text=\"OK\">"
+    "<objects truncated=\"0\"><count><ou>0</ou><container>0</container>"
+    "<group>0</group><computer><total>0</total>%s</computer></count>"
+    "</objects></get_active_directory_objects_response>",
+    expected->include_disabled_computers ? "<disabled>0</disabled>" : "");
+
+  mock_ad_response = TRUE;
+  mock_search_result = GET_AD_OBJECTS_OK;
+  search_command_calls = 0;
+  expected_search_params = expected;
+  assert_ad_request_xml (request, response);
+  assert_that (search_command_calls, is_equal_to (1));
+  expected_search_params = NULL;
+  mock_ad_response = FALSE;
+  g_free (response);
+  g_free (request);
+}
+
+Ensure (gmp, search_request_defaults)
+{
+  const get_ad_objects_params_t expected = {
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+    .object_types = AD_OBJECT_TYPE_DEFAULT,
+    .max_results = 200,
+    .include_disabled_computers = TRUE
+  };
+
+  assert_ad_search_options ("", "", &expected);
+}
+
+Ensure (gmp, search_request_valid_options)
+{
+  const struct
+  {
+    const gchar *attributes;
+    const gchar *children;
+    get_ad_objects_params_t expected;
+  } cases[] = {
+    { "scope=\"base\" max_results=\"1\" include_disabled_computers=\"0\" "
+      "targets=\"0\" tasks=\"0\" details=\"0\"", "",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_BASE,
+        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 1 } },
+    { "scope=\"onelevel\" max_results=\"1000\" "
+      "include_disabled_computers=\"1\" "
+      "targets=\"1\" tasks=\"1\" details=\"1\"", "",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 1000,
+        .include_disabled_computers = TRUE, .targets = TRUE,
+        .tasks = TRUE, .details = TRUE } },
+    { "scope=\"subtree\" targets=\"1\" tasks=\"0\"", "",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
+        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 200,
+        .include_disabled_computers = TRUE, .targets = TRUE } },
+    { "max_results=\"0001\"", "",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 1,
+        .include_disabled_computers = TRUE } },
+    { "", "<base_dn> </base_dn>",
+      { .base_dn = " ", .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 200,
+        .include_disabled_computers = TRUE } },
+    { "", "<object_types><object_type>ou</object_type>"
+            "<object_type>container</object_type>"
+            "<object_type>ou</object_type></object_types>",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_CONTAINER,
+        .max_results = 200, .include_disabled_computers = TRUE } },
+    { "", "<object_types><unknown>ignored</unknown>"
+            "<object_type>computer</object_type></object_types>",
+      { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_COMPUTER,
+        .max_results = 200, .include_disabled_computers = TRUE } },
+    { "", "<base_dn>OU=Hosts,DC=example</base_dn>"
+            "<group_dn>CN=Group,DC=example</group_dn>"
+            "<object_types><object_type>ou</object_type>"
+            "<object_type>container</object_type>"
+            "<object_type>computer</object_type>"
+            "<object_type>group</object_type></object_types>",
+      { .base_dn = "OU=Hosts,DC=example", .group_dn = "CN=Group,DC=example",
+        .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+        .object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_CONTAINER
+                        | AD_OBJECT_TYPE_COMPUTER | AD_OBJECT_TYPE_GROUP,
+        .max_results = 200, .include_disabled_computers = TRUE } }
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    assert_ad_search_options (cases[i].attributes, cases[i].children,
+                              &cases[i].expected);
+}
+
+/**
+ * @brief Reject invalid XML request fields before management is invoked.
+ *
+ * @param[in] request  Complete request XML.
+ * @param[in] message  Expected syntax error status text.
+ */
+static void
+assert_ad_search_rejected (const gchar *request, const gchar *message)
+{
+  mock_ad_response = TRUE;
+  mock_search_result = GET_AD_OBJECTS_CONNECTION_FAILED;
+  search_command_calls = 0;
+  assert_ad_request_response ("get_active_directory_objects", request,
+                              "400", message);
+  assert_that (search_command_calls, is_equal_to (0));
+  mock_ad_response = FALSE;
+}
+
+Ensure (gmp, search_request_rejects_invalid_options)
+{
+  const struct
+  {
+    const gchar *attributes;
+    const gchar *children;
+    const gchar *message;
+  } cases[] = {
+    { "scope=\"invalid\"", "", "Invalid scope" },
+    { "max_results=\"\"", "", "Invalid max_results" },
+    { "max_results=\"0\"", "", "Invalid max_results" },
+    { "max_results=\"1001\"", "", "Invalid max_results" },
+    { "max_results=\"1x\"", "", "Invalid max_results" },
+    { "max_results=\"18446744073709551616\"", "", "Invalid max_results" },
+    { "include_disabled_computers=\"2\"", "",
+      "Invalid include_disabled_computers" },
+    { "targets=\"2\"", "", "Invalid targets" },
+    { "tasks=\"2\"", "", "Invalid tasks" },
+    { "tasks=\"1\"", "", "tasks requires targets=1" },
+    { "targets=\"0\" tasks=\"1\"", "", "tasks requires targets=1" },
+    { "details=\"2\"", "", "Invalid details" },
+    { "", "<base_dn/>", "Empty base_dn element" },
+    { "", "<base_dn><name>DC=example</name></base_dn>",
+      "Invalid base_dn element" },
+    { "", "<group_dn/>", "Empty group_dn element" },
+    { "", "<group_dn><name>CN=Group</name></group_dn>",
+      "Invalid group_dn element" },
+    { "", "<object_types/>", "Invalid object_types element" },
+    { "", "<object_types><object_type/></object_types>",
+      "Invalid object_types element" },
+    { "", "<object_types><object_type>invalid</object_type></object_types>",
+      "Invalid object_types element" },
+    { "", "<object_types><object_type>computer</object_type>"
+          "<object_type>invalid</object_type></object_types>",
+      "Invalid object_types element" },
+    { "", "<object_types><object_type><name>computer</name>"
+          "</object_type></object_types>",
+      "Invalid object_types element" }
+  };
+
+  assert_ad_search_rejected ("<get_active_directory_objects/>",
+                             "Missing or empty credential_id attribute");
+  assert_ad_search_rejected (
+    "<get_active_directory_objects credential_id=\"\"/>",
+    "Missing or empty credential_id attribute");
+
+  for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
+    {
+      gchar *request = g_strdup_printf (
+        "<get_active_directory_objects "
+        "credential_id=\"response-credential\" %s>"
+        "%s</get_active_directory_objects>",
+        cases[i].attributes, cases[i].children);
+
+      assert_ad_search_rejected (request, cases[i].message);
+      g_free (request);
+    }
 }
 
 Ensure (gmp, search_ad_error_responses)
@@ -1110,6 +1330,9 @@ main (int argc, char **argv)
     (suite, gmp, existing_ad_credential_error_responses_are_unchanged);
   add_test_with_context
     (suite, gmp, existing_ad_verification_error_responses_are_unchanged);
+  add_test_with_context (suite, gmp, search_request_defaults);
+  add_test_with_context (suite, gmp, search_request_valid_options);
+  add_test_with_context (suite, gmp, search_request_rejects_invalid_options);
   add_test_with_context (suite, gmp, search_ad_error_responses);
   add_test_with_context (suite, gmp, search_omits_unrequested_collections);
   add_test_with_context (suite, gmp, search_emits_requested_empty_collections);
