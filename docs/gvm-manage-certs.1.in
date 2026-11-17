@@ -126,7 +126,7 @@ will try to guess the hostname and default to "localhost" if it cannot
 be guessed
 .TP
 GVM_CERTIFICATE_SIGNALG
-Hash algorithm to use for signing
+Hash algorithm to use for signing, default sha256
 .TP
 GVM_CERTIFICATE_KEYSIZE
 Size in bits of the generated key, if not set,
