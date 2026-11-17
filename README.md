@@ -72,6 +72,19 @@ The configuration of gvmd is handled via the following methods:
 * A configuration file (`gvmd.conf`) that is located in `${GVM_SYSCONF_DIR}`
   (`etc/gvm` in the given installation prefix for the default build setup).
 
+#### General configuration notes
+
+Configuration-file values and environment overrides are read at startup; restart
+gvmd to apply changes. 
+
+Environment overrides take precedence over their
+corresponding configuration keys. If neither is provided, the option's default
+applies, where defined. Missing sections or keys do not supply a value;
+explicitly empty values are distinct. Validation and empty-value behavior are
+option-specific.
+
+List values use comma-separated entries with surrounding whitespace trimmed.
+
 #### GMP socket timeout
 
 The `[gmp]` section configures the timeout for draining a full GMP client output
@@ -92,8 +105,6 @@ For example, set `GVMD_GMP_WRITE_TIMEOUT=60`, or add this to `gvmd.conf`:
 [gmp]
 write_timeout = 60
 ```
-
-Restart gvmd after changing the configuration.
 
 #### Authentication options
 
@@ -143,6 +154,57 @@ keys. The secret is selected in this order:
 2. `agent_jwt_encode_secret` in the configuration file.
 3. File contents from `GVMD_AGENT_JWT_ENCODE_SECRET_PATH`, or from
    `agent_jwt_encode_secret_path` if that environment variable is unset.
+
+#### Active Directory destination allow lists
+
+The `[active_directory]` section restricts the initial server host and effective
+port for AD `create_credential`, `modify_credential`, and
+`verify_active_directory_credential` (inline or saved credentials).
+
+| Config file key | Environment variable | Format | Built-in default |
+|-----------------|----------------------|--------|------------------|
+| allowed_hosts | GVMD_AD_ALLOWED_HOSTS | Comma-separated hostnames, IPv4 or IPv6 literals | Empty (all valid hosts) |
+| allowed_ports | GVMD_AD_ALLOWED_PORTS | Comma-separated decimal ports, 1–65535 | 389,636,3268,3269 |
+
+Overrides replace each list independently.
+Missing options use their built-in defaults. Explicitly empty or whitespace-only
+lists allow all valid values; both lists must permit the destination.
+**An unreadable or invalid selected host or port list denies every destination.**
+Such failures warn without using defaults, retaining partial lists, or retrying
+a lower-priority source. Unreadable file values overridden by environment values
+are ignored. General configuration-file loading failures retain existing behavior.
+
+Duplicates are ignored; empty entries in nonempty lists and quoting are invalid.
+Only individual hosts and decimal ports are accepted, not patterns, CIDRs,
+ranges, or URLs. Hostnames match without DNS lookups, case-insensitively and
+ignoring one trailing dot. IPs match only
+within the same family; names, IPs, and DNS aliases are not interchangeable.
+Credential input validation and stored values are unchanged.
+
+Example restrictions:
+
+```ini
+[active_directory]
+allowed_hosts = dc1.example.com,192.0.2.10
+allowed_ports = 389,636
+```
+
+Set both `allowed_hosts =` and `allowed_ports =` to allow all valid destinations.
+The default ports cover LDAP/StartTLS, LDAPS, and Global Catalog (3268/3269).
+Omitted credential ports select StartTLS 389 or LDAPS 636; Global Catalog ports
+must be explicit. Nonstandard ports require an override or an empty port list.
+Denial never retries another port.
+
+Modification checks supplied and retained destination fields, even for unrelated
+updates, and rolls back on rejection. Verification checks before connecting.
+Ordinary credential use and scans are unaffected. Referrals and referral chains
+remain trusted outside the lists; there is no DNS pinning/rebinding protection.
+This is not a comprehensive outbound network policy.
+
+The policy is loaded at startup; changes require restart. AD-enabled builds load
+the policy even when the runtime feature is disabled;
+other builds ignore these options and environment
+variables. The policy does not enable AD integration.
 
 #### Feature flags
 

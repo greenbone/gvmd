@@ -341,6 +341,12 @@ credential_error_status_text (credential_return_t response)
       case CREDENTIAL_AD_INVALID_PORT:
         return "Invalid AD port";
 
+      case CREDENTIAL_AD_INVALID_HOST:
+        return "Invalid AD host";
+
+      case CREDENTIAL_AD_DESTINATION_NOT_ALLOWED:
+        return "Active Directory destination is not allowed.";
+
       case CREDENTIAL_AD_INVALID_CA_CERTIFICATE:
         return "Invalid AD CA certificate";
 

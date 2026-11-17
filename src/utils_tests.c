@@ -160,6 +160,18 @@ Ensure (utils, path_is_in_directory_returns_false_if_path_is_not_in_dir)
   assert_that (path_is_in_directory (path4, directory), is_false);
 }
 
+Ensure (utils, path_is_in_directory_rejects_sibling_with_shared_prefix)
+{
+  const gchar *directory = "/home/gvmd";
+
+  assert_that (path_is_in_directory ("/home/gvmd2/payload", directory),
+               is_false);
+  assert_that (path_is_in_directory ("/home/gvmd.bak/payload", directory),
+               is_false);
+  assert_that (path_is_in_directory ("/home/gvmd/../gvmd2/payload", directory),
+               is_false);
+}
+
 Ensure (utils, str_blank_all_string_empty_cases)
 {
   assert_that (str_blank (NULL), is_equal_to (TRUE));
@@ -203,6 +215,8 @@ main (int argc, char **argv)
                          path_is_in_directory_returns_true_if_path_is_in_dir);
   add_test_with_context (
     suite, utils, path_is_in_directory_returns_false_if_path_is_not_in_dir);
+  add_test_with_context (
+    suite, utils, path_is_in_directory_rejects_sibling_with_shared_prefix);
 
   add_test_with_context (suite, utils, str_blank_all_string_empty_cases);
 

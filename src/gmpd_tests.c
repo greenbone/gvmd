@@ -81,6 +81,7 @@ BeforeEach (gmpd)
 AfterEach (gmpd)
 {
   g_unsetenv ("GVMD_GMP_WRITE_TIMEOUT");
+  load_gvmd_config (NULL);
   close (sockets[0]);
   close (sockets[1]);
 }

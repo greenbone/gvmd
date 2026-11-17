@@ -93,14 +93,15 @@ create_target (const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, credential_t,
                credential_t, const char *, credential_t, credential_t,
                credential_t, credential_t, const char *, const char *,
-               GPtrArray *, const char *, const char *, target_t*);
+               GPtrArray *, const char *, const char *, const char *,
+               target_t*);
 
 int
 modify_target (const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, const char *,
                const char *, const char *, const char *, GPtrArray *,
-               const char *, const char *);
+               const char *, const char *, const char *);
 
 int
 target_count (const get_data_t *);
@@ -108,8 +109,15 @@ target_count (const get_data_t *);
 int
 init_target_iterator (iterator_t *, get_data_t *);
 
+int
+init_ad_target_candidate_iterator_by_hostname (iterator_t *, const get_data_t *,
+                                               GHashTable *);
+
 const char *
 target_iterator_hosts (iterator_t *);
+
+const char *
+target_iterator_source (iterator_t *);
 
 const char *
 target_iterator_exclude_hosts (iterator_t *);
@@ -188,5 +196,29 @@ target_task_iterator_uuid (iterator_t *);
 
 int
 target_task_iterator_readable (iterator_t *);
+
+void
+init_target_task_details_iterator (iterator_t *, target_t);
+
+const char *
+target_task_details_iterator_name (iterator_t *);
+
+const char *
+target_task_details_iterator_uuid (iterator_t *);
+
+int
+target_task_details_iterator_readable (iterator_t *);
+
+int
+target_task_details_iterator_target_in_trash (iterator_t *);
+
+int
+target_task_details_iterator_config_in_trash (iterator_t *);
+
+const char *
+target_task_details_iterator_config_uuid (iterator_t *);
+
+const char *
+target_task_details_iterator_config_name (iterator_t *);
 
 #endif /* not _GVMD_MANAGE_TARGETS_H */
