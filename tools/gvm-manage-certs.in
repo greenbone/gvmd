@@ -541,6 +541,9 @@ sign_certificate ()
   fi
 
   log_write "Signed certificate request in $GVM_CERT_REQUEST_FILENAME with CA certificate in $GVM_SIGNING_CA_CERT_FILENAME to generate certificate in $GVM_CERT_FILENAME"
+
+  cp "${GVM_SIGNING_CA_CERT_FILENAME}" "${GVM_CERT_DIR}"
+  log_write "Copied ca certificate (${GVM_SIGNING_CA_CERT_FILENAME}) to ${GVM_CERT_DIR}"
 }
 
 # Install a certificate and key
