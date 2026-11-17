@@ -158,13 +158,16 @@ subheading static variables above and calling
 
 .EX
 runuser -u gvm -- gvm-manage-certs -a
+chown root:root /var/lib/gvm/private/CA/cakey.pem
 .EE
 
 adding the
 .B -e
-option if you set variables that way and adjusting the
+option if you set variables that way, adjusting the
 .BR -u " argument to " runuser
-if your Greenbone user is not named gvm.
+if your Greenbone user is not named gvm and adjusting the path to
+cakey.pem if your setting of environment or configuration variable
+GVM_KEY_LOCATION or compile time variable GVM_STATE_DIR require it.
 .SH "DECOUPLED OPERATIONS"
 This section describes getting a certificate from a certificate
 authority that you don't control and how the certificate authority
