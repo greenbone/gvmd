@@ -219,18 +219,15 @@ __wrap_acl_user_may (const char *permission)
 }
 
 #define TEST_TARGET 42
-#define TEST_TASK 100
 #define TEST_CONFIG 200
 
 typedef struct
 {
   gboolean readable;
-  gboolean task_exists;
   gboolean target_trashed;
   gboolean config_trashed;
   const gchar *config_uuid;
   gboolean config_readable;
-  gboolean task_error;
   gboolean config_error;
 } task_details_row_t;
 
@@ -238,7 +235,6 @@ static const task_details_row_t *task_details_rows;
 static guint task_details_count;
 static gint task_details_index;
 static iterator_t *task_details_iterator;
-static guint task_permission_checks;
 static guint config_permission_checks;
 static guint task_iterator_cleanups;
 static iterator_t *target_candidate_iterator;
@@ -375,17 +371,6 @@ const char *
 __wrap_target_iterator_exclude_hosts (iterator_t *iterator)
 {
   return target_candidate_exclusions;
-}
-
-gboolean
-__wrap_find_task_with_permission (const char *uuid, task_t *task,
-                                  const char *permission)
-{
-  assert_that (uuid, is_equal_to_string ("task-id"));
-  assert_that (permission, is_equal_to_string ("get_tasks"));
-  task_permission_checks++;
-  *task = task_details_rows[task_details_index].task_exists ? TEST_TASK : 0;
-  return task_details_rows[task_details_index].task_error;
 }
 
 gboolean
@@ -633,7 +618,6 @@ reset_connector_observations (void)
   builder_operation_timeout = -1;
   builder_tls_mode = (ad_connector_tls_mode_t) -1;
 
-  task_permission_checks = 0;
   config_permission_checks = 0;
   config_command_checks = 0;
   task_iterator_cleanups = 0;
@@ -2667,12 +2651,11 @@ Ensure (manage_active_directory, target_tasks_preserve_resource_permissions)
 {
   const task_details_row_t rows[] = {
     { .readable = FALSE },
-    { .readable = TRUE, .task_exists = FALSE },
-    { .readable = TRUE, .task_exists = TRUE, .target_trashed = TRUE },
-    { .readable = TRUE, .task_exists = TRUE, .config_trashed = TRUE },
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id" },
-    { .readable = TRUE, .task_exists = TRUE },
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    { .readable = TRUE, .target_trashed = TRUE },
+    { .readable = TRUE, .config_trashed = TRUE },
+    { .readable = TRUE, .config_uuid = "config-id" },
+    { .readable = TRUE },
+    { .readable = TRUE, .config_uuid = "config-id",
       .config_readable = TRUE }
   };
   GPtrArray *matches = NULL;
@@ -2687,7 +2670,6 @@ Ensure (manage_active_directory, target_tasks_preserve_resource_permissions)
   assert_task_match (g_ptr_array_index (matches, 1), NULL);
   assert_task_match (g_ptr_array_index (matches, 2), NULL);
   assert_task_match (g_ptr_array_index (matches, 3), "config-id");
-  assert_that (task_permission_checks, is_equal_to (6));
   assert_that (config_permission_checks, is_equal_to (2));
   assert_that (config_command_checks, is_equal_to (1));
   assert_that (task_iterator_cleanups, is_equal_to (1));
@@ -2697,9 +2679,9 @@ Ensure (manage_active_directory, target_tasks_preserve_resource_permissions)
 Ensure (manage_active_directory, target_tasks_respect_config_command_permission)
 {
   const task_details_row_t rows[] = {
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    { .readable = TRUE, .config_uuid = "config-id",
       .config_readable = TRUE },
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    { .readable = TRUE, .config_uuid = "config-id",
       .config_readable = TRUE }
   };
   GPtrArray *matches = NULL;
@@ -2712,7 +2694,6 @@ Ensure (manage_active_directory, target_tasks_respect_config_command_permission)
   assert_that (matches->len, is_equal_to (2));
   assert_task_match (g_ptr_array_index (matches, 0), NULL);
   assert_task_match (g_ptr_array_index (matches, 1), NULL);
-  assert_that (task_permission_checks, is_equal_to (2));
   assert_that (config_permission_checks, is_equal_to (0));
   assert_that (config_command_checks, is_equal_to (1));
   assert_that (task_iterator_cleanups, is_equal_to (1));
@@ -2730,7 +2711,6 @@ assert_target_tasks_error (const task_details_row_t *row,
   assert_that (load_ad_target_tasks (TEST_TARGET, &matches),
                is_equal_to (GET_AD_OBJECTS_INTERNAL_ERROR));
   assert_that (matches, is_null);
-  assert_that (task_permission_checks, is_equal_to (1));
   assert_that (config_permission_checks, is_equal_to (config_checks));
   assert_that (task_iterator_cleanups, is_equal_to (1));
 }
@@ -2739,15 +2719,11 @@ Ensure (manage_active_directory, target_tasks_report_lookup_errors)
 {
   task_details_row_t row = {
     .readable = TRUE,
-    .task_exists = TRUE,
     .config_uuid = "config-id",
     .config_readable = TRUE
   };
 
   expected_permission = "get_configs";
-  row.task_error = TRUE;
-  assert_target_tasks_error (&row, 0);
-  row.task_error = FALSE;
   row.config_error = TRUE;
   assert_target_tasks_error (&row, 1);
 }
@@ -2855,7 +2831,7 @@ Ensure (manage_active_directory, enrichment_skips_non_matching_targets)
 Ensure (manage_active_directory, enrichment_matches_computers_sharing_hostname)
 {
   const task_details_row_t row = {
-    .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    .readable = TRUE, .config_uuid = "config-id",
     .config_readable = TRUE
   };
   GPtrArray *objects =
@@ -2897,8 +2873,8 @@ Ensure (manage_active_directory, search_enriches_targets_and_readable_tasks)
   };
   const task_details_row_t rows[] = {
     { .readable = FALSE },
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id" },
-    { .readable = TRUE, .task_exists = TRUE, .config_uuid = "config-id",
+    { .readable = TRUE, .config_uuid = "config-id" },
+    { .readable = TRUE, .config_uuid = "config-id",
       .config_readable = TRUE }
   };
   get_ad_objects_result_t result = { 0 };
@@ -2922,7 +2898,6 @@ Ensure (manage_active_directory, search_enriches_targets_and_readable_tasks)
   assert_that (target->tasks->len, is_equal_to (2));
   assert_task_match (g_ptr_array_index (target->tasks, 0), NULL);
   assert_task_match (g_ptr_array_index (target->tasks, 1), "config-id");
-  assert_that (task_permission_checks, is_equal_to (2));
   assert_that (config_permission_checks, is_equal_to (2));
   get_ad_objects_result_reset (&result);
 }
