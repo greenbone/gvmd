@@ -1253,7 +1253,7 @@ index_ad_computers_for_target_matching (GPtrArray *objects)
  *                    failure. Release with g_ptr_array_unref().
  *
  * @return GET_AD_OBJECTS_OK on success, or GET_AD_OBJECTS_INTERNAL_ERROR if a
- *         task or configuration lookup fails.
+ *         configuration lookup fails.
  */
 static get_ad_objects_return_t
 load_ad_target_tasks (target_t target, GPtrArray **result)
@@ -1266,7 +1266,6 @@ load_ad_target_tasks (target_t target, GPtrArray **result)
   init_target_task_details_iterator (&tasks, target);
   while (next (&tasks))
     {
-      task_t task = 0;
       ad_task_match_t *match;
       const gchar *uuid;
 
@@ -1274,10 +1273,8 @@ load_ad_target_tasks (target_t target, GPtrArray **result)
         continue;
 
       uuid = target_task_details_iterator_uuid (&tasks);
-      if (!uuid || find_task_with_permission (uuid, &task, "get_tasks"))
-        goto fail;
 
-      if (!task || target_task_details_iterator_target_in_trash (&tasks))
+      if (target_task_details_iterator_target_in_trash (&tasks))
         continue;
 
       match = g_new0 (ad_task_match_t, 1);
