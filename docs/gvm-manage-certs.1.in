@@ -151,6 +151,20 @@ Prefix for certificate filename (e.g. "server", "client")
 .PP
 For a complete list of environment variables, please refer to the
 example configuration file included in the documentation.
+.SH "INITIAL OPERATIONS"
+Get the initial keys and certificates for a node running gvmd by
+setting the environment or configuration variables under the
+subheading static variables above and calling
+
+.EX
+runuser -u gvm -- gvm-manage-certs -a
+.EE
+
+adding the
+.B -e
+option if you set variables that way and adjusting the
+.BR -u " argument to " runuser
+if your Greenbone user is not named gvm.
 .SH "SEE ALSO"
 .BR openvas (8),
 .BR gvmd (8),
