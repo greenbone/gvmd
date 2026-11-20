@@ -401,6 +401,11 @@ configure_file(
   docs/example-gvm-manage-certs.conf
   @ONLY
 )
+configure_file(
+  docs/gvm-manage-certs.1.in
+  docs/gvm-manage-certs.1
+  @ONLY
+)
 configure_file(VERSION.in VERSION)
 configure_file(src/gvmd_log_conf.cmake_in src/gvmd_log.conf)
 configure_file(
@@ -771,7 +776,7 @@ install(
 )
 
 install(
-  FILES ${CMAKE_SOURCE_DIR}/docs/gvm-manage-certs.1
+  FILES ${CMAKE_BINARY_DIR}/docs/gvm-manage-certs.1
   DESTINATION ${DATADIR}/man/man1
 )
 

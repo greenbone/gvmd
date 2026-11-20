@@ -1,0 +1,309 @@
+.TH gvm-manage-certs "1" "@GVMD_VERSION@" "The OpenVAS Project" "User commands"
+.SH NAME
+gvm-manage-certs \- manage certificate infrastructure for a GVM installation
+.SH SYNOPSIS
+.B gvm-manage-certs
+[\fIOPTION\fR]...
+.SH DESCRIPTION
+.B gvm-manage-certs
+manages the certificate infrastructure for a GVM installation.
+The certificate infrastructure enables GVM daemons to communicate in a
+secure manner and is used for authentication and authorization before
+establishing TLS connections between the daemons.
+.PP
+The GVM certificate infrastructure consists of a certificate authority (CA)
+which is trusted by all GVM daemons.
+This CA is then used to sign certificates used by the various daemons.
+The certificates can be divided into two use cases:
+.IP \(bu 3
+Server certificates, primarily used for authentication
+.IP \(bu 3
+Client certificates, primarily used for authorization
+.PP
+.B gvm-manage-certs
+can perform an automatic creation of a default certificate infrastructure for a
+standard GVM installation.
+It can also verify an existing infrastructure and perform various certificate
+related tasks to support the setup of a more complex infrastructure.
+.SH OPTIONS
+.SS "Certificate infrastructure management"
+.TP
+\fB\-a\fR
+Automatically set up default infrastructure for GVM
+.TP
+\fB\-V\fR
+Verify existing GVM certificate infrastructure
+.TP
+\fB\-C\fR
+Create a certificate authority (CA)
+.TP
+\fB\-I\fR
+Install a CA certificate and key, use with the GVM_CERT_DIR and
+GVM_CERT_PREFIX environment variables
+.TP
+\fB\-i\fR
+Install a certificate and key, use with the GVM_CERT_DIR and
+GVM_CERT_PREFIX environment variables
+.TP
+\fB\-n\fR
+Install a ca certificate, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
+.TP
+\fB\-R\fR
+Create a request for a certificate with the CA basic constraint true
+.TP
+\fB\-r\fR
+Create a certificate request, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
+.TP
+\fB\-c\fR
+Create a certificate request and sign it, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
+.TP
+\fB\-S\fR
+Sign a certificate request, use with the GVM_CERT_DIR and GVM_CERT_PREFIX
+environment variables
+.TP
+\fB\-s\fR
+Create a self signed certificate, use with -E or -L and the
+GVM_CERT_PREFIX environment variable
+.TP
+\fB\-f\fR
+Force overwriting of existing files
+.SS "Certificate options"
+.TP
+\fB\-E\fR
+Create a server certificate.
+This sets the appropriate key usage constraints for a server certificate.
+.TP
+\fB\-L\fR
+Create a client certificate.
+This sets the appropriate key usage constraints for a client certificate.
+.TP
+\fB\-A\fR
+Skip CA generation in automatic mode.
+This automatically (re-)generates server and client certificates, but keeps the CA certificate.
+.SS "Output control"
+.TP
+\fB\-d\fR
+Print debug output
+.TP
+\fB\-v\fR
+Print verbose messages
+.TP
+\fB\-q\fR
+Be quiet, only print error messages
+.SS "Configuration"
+\fB\-e\fR \fIfile\fR
+Read configuration from
+.IR file
+(see below for configuration details)
+.SS "Other options"
+.TP
+\fB\-h\fR
+Print help
+.SH "EXIT STATUS"
+.TP
+.B 0
+The requested operation was successfully performed.
+.TP
+.B 1
+An error occurred, the requested operation could not be performed.
+.SH ENVIRONMENT
+All the below certificate generation options can be set either through
+the configuration file or through environment variables.
+.SS Static variables
+These are variables you are likely to want to set in your profile or
+the configuration file.
+.TP
+GVM_CERTIFICATE_LIFETIME
+Days until the certificate will expire
+.TP
+GVM_CERTIFICATE_HOSTNAME
+Name to use for the certificate, if not set,
+.B gvm-manage-certs
+will try to guess the hostname and default to "localhost" if it cannot
+be guessed
+.TP
+GVM_CERTIFICATE_SIGNALG
+Hash algorithm to use for signing, default sha256
+.TP
+GVM_CERTIFICATE_KEYSIZE
+Size in bits of the generated key, if not set,
+.B gvm-manage-certs
+will take the default from GVM_CERTIFICATE_SECPARAM (see below)
+.TP
+GVM_CERTIFICATE_SECPARAM
+GnuTLS security level [low|medium|high|ultra], default high
+.SS Dynamic variables
+These are variables you are likely to want to set for individual
+invocations of
+.BR gvm-manage-certs .
+.TP
+GVM_CERT_DIR
+Directory where keys and certificates are stored before installation,
+this directory has to exist and be writable; if not set,
+.B gvm-manage-certs
+will use a temporary directory
+.TP
+GVM_CERT_PREFIX
+Prefix for certificate filename (e.g. "server", "client")
+.PP
+For a complete list of environment variables, please refer to the
+example configuration file included in the documentation.
+.SH "INITIAL OPERATIONS"
+Get the initial keys and certificates for a node running gvmd by
+setting the environment or configuration variables under the
+subheading static variables above and calling
+
+.EX
+runuser -u gvm -- gvm-manage-certs -a
+chown root:root @GVM_STATE_DIR@/private/CA/cakey.pem
+.EE
+
+adding the
+.B -e
+option if you set variables that way, adjusting the
+.BR -u " argument to " runuser
+if your Greenbone user is not named gvm and adjusting the path to
+cakey.pem if your setting of environment or configuration variable
+GVM_KEY_LOCATION require it.
+.SH "DECOUPLED OPERATIONS"
+This section describes getting a certificate from a certificate
+authority that you don't control and how the certificate authority
+operator issues it. It also applies if you just want to avoid copying
+around private keys without good reason.
+
+If you need a certificate from a certificate authority run by
+.B gvm-manage-certs
+and you've set the environment or configuration variables under the
+subheading static variables above use this process to request and
+install a certificate and ca certificate adding the
+.B -e
+option if you set variables that way and adjusting the
+.BR -u " argument to " runuser
+and adjusting the implied
+.B chown
+commands the same way if your Greenbone user is not named gvm.
+
+Create a key and request with for instance
+
+.EX
+runuser -u gvm -- env GVM_CERT_PREFIX=server gvm-manage-certs -r -E
+.EE
+
+adjusting the prefix and choice of
+.BR -E " or " -L
+to your current requirements.
+.B gvm-manage-certs
+tells you where it wrote the key, request and certtool template.
+Transfer (with integrity guarantees) the request and certtool template
+to the certificate authority.
+
+If your request is approved you will get back a certificate and ca
+certificate. Place them alongside the key that was generated by the
+last command, make them readable to the gvm user and import the key
+and certificate with something like
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=server GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -i
+.EE
+
+passing the same prefix you used with the
+.B gvm-manage-certs -r
+command and the directory where it wrote the key as dir. If the ca
+certificate is not already installed import it with
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=ca GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -n
+.EE
+
+passing the directory where you placed the certificates as dir. After
+you've imported the key and certificate(s) make sure you shred the
+original copy of the key
+.B gvm-manage-certs
+created along with the certificate request.
+
+If you run a certificate authority with
+.B gvm-manage-certs
+and want to sign a certificate for someone else ask them for a
+certificate request and certtool template, verify their integrity,
+review them and if they look like you expect (id est what your own
+.B gvm-manage-certs
+would produce for the same conditions) then sign the request with
+
+.EX
+GVM_CERT_PREFIX=server GVM_CERT_DIR=. gvm-manage-certs -S
+.EE
+
+passing what precedes request.pem in the request as prefix and where
+you placed the request and template as dir.
+.B gvm-manage-certs
+tells you where it wrote the certificate and ca certificate, send them
+back (with integrity guarantees) to the requester.
+.SH "INTEGRATED OPERATIONS"
+This section describes creating a key and certificate from a
+certificate authority that you control. You should only use it if you
+don't care to avoid copying around private keys without good reason.
+
+If you need a certificate for another host from a certificate
+authority run by
+.B gvm-manage-certs
+and you've set the environment or configuration variables under the
+subheading static variables above use this process to create and
+install a certificate and ca certificate adding the
+.B -e
+option if you set variables that way and adjusting the
+.BR -u " argument to " runuser
+and adjusting the implied
+.B chown
+commands the same way if your Greenbone user is not named gvm.
+
+Create a key and certificate on the certificate authority node with
+for instance
+
+.EX
+GVM_CERT_PREFIX=server \[rs]
+    GVM_CERTIFICATE_HOSTNAME=remotescanner.example.net \[rs]
+    gvm-manage-certs -c -E
+.EE
+
+adjusting the prefix, hostname and choice of
+.BR -E " or " -L
+to your current requirements.
+.B gvm-manage-certs
+tells you where it wrote the key, certificate and ca certificate.
+Transfer (with confidentiality guarantee) the key and (with integrity
+guarantees) the certificate and ca certificate to the other host.
+
+Make the key and certificates readable to the gvm user and import them
+on the other host with
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=server GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -i
+.EE
+
+passing the same prefix you used with the
+.B gvm-manage-certs -c
+command and the directory where you placed the files as dir. If the ca
+certificate is not already installed import it with
+
+.EX
+runuser -u gvm -- \[rs]
+    env GVM_CERT_PREFIX=ca GVM_CERT_DIR=/tmp/gvmca-charsalad \[rs]
+    gvm-manage-certs -n
+.EE
+
+passing the directory where you placed the certificates as dir. After
+you've imported the key and certificate(s) make sure you shred all the
+transient copies of the key you had to create to import it.
+.SH "SEE ALSO"
+.BR openvas (8),
+.BR gvmd (8),
+.BR gsad (8)
