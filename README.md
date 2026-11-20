@@ -206,6 +206,33 @@ the policy even when the runtime feature is disabled;
 other builds ignore these options and environment
 variables. The policy does not enable AD integration.
 
+#### Active Directory timeouts
+
+The following `[active_directory]` settings are read at startup; changes require
+restart. Environment variables take precedence over configuration-file values.
+
+AD-enabled builds read these settings even when the AD runtime feature is
+disabled. Other builds ignore these settings and their environment overrides.
+
+| Config file key | Environment variable | Accepted range | Default |
+|-----------------|----------------------|----------------|---------|
+| network_timeout_seconds | GVMD_AD_NETWORK_TIMEOUT_SECONDS | 1–120 seconds | 10 |
+| operation_timeout_seconds | GVMD_AD_OPERATION_TIMEOUT_SECONDS | 1–300 seconds | 30 |
+
+The network timeout applies to connection establishment. The operation timeout
+applies to individual LDAP operations. Each LDAP page search receives a separate
+operation timeout, so fetching multiple pages can take longer than the configured
+timeout in total. The operation timeout does not limit local result processing or
+target/task enrichment and is not a deadline for the whole GMP command.
+
+The timeout ceilings are application policy limits. Zero is invalid and does not
+disable timeout protection. Values above the ceilings are invalid and follow the
+warning-and-default behavior described below.
+
+Missing settings use the built-in defaults. Invalid or unreadable selected
+settings log a warning and use the corresponding built-in default, without
+retrying a lower-priority source.
+
 #### Feature flags
 
 The `[features]` section of the configuration file and the corresponding

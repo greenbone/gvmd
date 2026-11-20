@@ -126,6 +126,7 @@ typedef struct
 } get_ad_objects_params_t;
 
 #define GET_AD_OBJECTS_MAX_RESULTS 1000
+#define GET_AD_OBJECTS_DEFAULT_MAX_RESULTS 200
 
 typedef struct
 {
