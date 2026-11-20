@@ -38770,6 +38770,10 @@ END:VCALENDAR
         The agent_group_id attribute is required to identify which group
         should be modified.
       </p>
+      <p>
+        Omitting agents preserves the current membership, a non-empty agents
+        element replaces it, and an empty agents element clears it.
+      </p>
     </description>
     <pattern>
       <attrib>

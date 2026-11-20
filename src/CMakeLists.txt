@@ -579,6 +579,9 @@ set(
 )
 add_unit_test(gmp-tickets "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
 add_unit_test(gmp "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+if(ENABLE_AGENTS)
+  add_unit_test(gmp-agent-groups "${ALL_OBJECTS}" "${ALL_GMP_SRC}")
+endif()
 set_target_properties(
   gmp-test
   PROPERTIES
@@ -684,6 +687,19 @@ set(
   $<TARGET_OBJECTS:all-sql-obj>
 )
 add_unit_test(manage-sql "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
+if(ENABLE_AGENTS)
+  add_unit_test(
+    manage-sql-agent-groups
+    "${ALL_OBJECTS}"
+    "${ALL_MANAGE_SQL_SRC}"
+  )
+  set_target_properties(
+    manage-sql-agent-groups-test
+    PROPERTIES
+      LINK_FLAGS
+        "-Wl,-wrap,sql_int_ps,-wrap,sql_int,-wrap,sql_begin_immediate,-wrap,sql_ps,-wrap,sql,-wrap,sql_commit,-wrap,sql_int64,-wrap,scanner_uuid,-wrap,acl_user_has_access_uuid,-wrap,agent_id_by_uuid_and_scanner,-wrap,agent_authorized,-wrap,db_copy_buffer_init,-wrap,db_copy_buffer_append_printf,-wrap,db_copy_buffer_commit,-wrap,db_copy_buffer_cleanup"
+  )
+endif()
 add_unit_test(manage-sql-port-lists "${ALL_OBJECTS}" "${ALL_MANAGE_SQL_SRC}")
 set_target_properties(
   manage-sql-port-lists-test
@@ -737,6 +753,7 @@ set(EXTRA_SRC ${ALL_MANAGE_SRC})
 add_unit_test(manage-runtime-flags "${ALL_OBJECTS}" "${EXTRA_SRC}")
 
 if(ENABLE_AGENTS)
+  add_unit_test(manage-agent-groups "${ALL_OBJECTS}" "${ALL_MANAGE_SRC}")
   add_unit_test(
     manage-agent-inventory-authentication
     "${ALL_OBJECTS}"

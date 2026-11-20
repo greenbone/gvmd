@@ -586,6 +586,65 @@ typedef struct
 static modify_agent_group_data_t modify_agent_group_data;
 
 /**
+ * @brief Parse an optional agent-group membership update.
+ *
+ * An omitted `<agents>` element is returned as NULL so membership is
+ * preserved.  A present empty element is returned as an allocated zero-count
+ * list so membership can be cleared.
+ *
+ * @param[in]  root          Modify command root entity.
+ * @param[out] agent_uuids   Parsed membership update.
+ * @param[out] invalid_uuid  Invalid UUID, when parsing fails.
+ *
+ * @return TRUE on success, FALSE if an agent UUID is invalid.
+ */
+static gboolean
+parse_agent_group_membership_update (entity_t root,
+                                     agent_uuid_list_t *agent_uuids,
+                                     const gchar **invalid_uuid)
+{
+  entity_t agents_elem;
+  GSList *agent_entities;
+  int count;
+  int index = 0;
+
+  *agent_uuids = NULL;
+  *invalid_uuid = NULL;
+  agents_elem = entity_child (root, "agents");
+
+  if (agents_elem == NULL)
+    return TRUE;
+
+  agent_entities = agents_elem->entities;
+  count = g_slist_length (agent_entities);
+  *agent_uuids = agent_uuid_list_new (count);
+
+  for (; agent_entities; agent_entities = g_slist_next (agent_entities))
+    {
+      entity_t agent_elem = agent_entities->data;
+      const gchar *uuid;
+
+      if (strcmp (entity_name (agent_elem), "agent") != 0)
+        continue;
+
+      uuid = entity_attribute (agent_elem, "id");
+
+      if (uuid == NULL || is_uuid (uuid) == FALSE)
+        {
+          *invalid_uuid = uuid;
+          agent_uuid_list_free (*agent_uuids);
+          *agent_uuids = NULL;
+          return FALSE;
+        }
+
+      (*agent_uuids)->agent_uuids[index++] = g_strdup (uuid);
+    }
+
+  (*agent_uuids)->count = index;
+  return TRUE;
+}
+
+/**
  * @brief Reset command data.
  */
 static void
@@ -684,9 +743,9 @@ void
 modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 {
 #if ENABLE_AGENTS
-  entity_t root, name, comment, scheduler_cron_time, agents_elem,
-           max_delay_seconds;
+  entity_t root, name, comment, scheduler_cron_time, max_delay_seconds;
   const char *agent_group_uuid, *name_text, *scheduler_cron_time_text;
+  const gchar *invalid_agent_uuid;
   GPtrArray *errs = NULL;
   agent_group_t agent_group;
 
@@ -765,37 +824,17 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
 
   comment = entity_child (root, "comment");
 
-  // Parse agent UUIDs
-  agents_elem = entity_child (root, "agents");
+  // Parse agent UUIDs while preserving omission versus explicit empty.
   agent_uuid_list_t agent_uuids = NULL;
-
-  if (agents_elem)
+  if (parse_agent_group_membership_update (root, &agent_uuids,
+                                           &invalid_agent_uuid)
+      == FALSE)
     {
-      GSList *agent_entities = agents_elem->entities;
-      int count = g_slist_length (agent_entities);
-      agent_uuids = agent_uuid_list_new (count);
-
-      int index = 0;
-      for (; agent_entities; agent_entities = g_slist_next (agent_entities))
-        {
-          entity_t agent_elem = agent_entities->data;
-
-          if (strcmp (entity_name (agent_elem), "agent") != 0)
-            continue;
-
-          const gchar *uuid = entity_attribute (agent_elem, "id");
-
-          if (uuid && is_uuid (uuid))
-            agent_uuids->agent_uuids[index++] = g_strdup (uuid);
-          else
-            {
-              agent_uuid_list_free (agent_uuids);
-              SENDF_TO_CLIENT_OR_FAIL (
-                XML_ERROR_SYNTAX ("modify_agent_group", "Agent UUID '%s' is invalid"), uuid);
-              modify_agent_group_reset ();
-              return;
-            }
-        }
+      SENDF_TO_CLIENT_OR_FAIL (
+        XML_ERROR_SYNTAX ("modify_agent_group", "Agent UUID '%s' is invalid"),
+        invalid_agent_uuid);
+      modify_agent_group_reset ();
+      return;
     }
 
   // Prepare agent group data

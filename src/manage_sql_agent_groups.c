@@ -366,7 +366,8 @@ modify_agent_group (agent_group_t agent_group,
           SQL_RESOURCE_PARAM (agent_group),
           NULL);
 
-  if (!agent_uuids || agent_uuids->count == 0)
+  /* NULL means that <agents> was omitted, so preserve membership. */
+  if (!agent_uuids)
     {
       sql_commit ();
       return AGENT_GROUP_RESP_SUCCESS;
@@ -374,6 +375,13 @@ modify_agent_group (agent_group_t agent_group,
 
   // Clean up old agents from db
   sql ("DELETE FROM agent_group_agents WHERE group_id = %llu;", agent_group);
+
+  /* A present empty <agents/> clears membership without entering COPY. */
+  if (agent_uuids->count == 0)
+    {
+      sql_commit ();
+      return AGENT_GROUP_RESP_SUCCESS;
+    }
 
   db_copy_buffer_t buffer;
   db_copy_buffer_init (&buffer, 16 * 1024,
@@ -527,7 +535,7 @@ get_agent_group_agent_uuids (agent_group_t agent_group,
 
   if (count <= 0)
     {
-      *agent_uuids = NULL;
+      *agent_uuids = agent_uuid_list_new (0);
       return AGENT_GROUP_RESP_SUCCESS;
     }
 
