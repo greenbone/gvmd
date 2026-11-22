@@ -443,7 +443,8 @@ create_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
               return;
             }
         }
-      agent_uuids->count = index;
+      if (agent_uuids)
+        agent_uuids->count = index;
     }
 
   // Execute creation
@@ -796,6 +797,18 @@ modify_agent_group_run (gmp_parser_t *gmp_parser, GError **error)
               return;
             }
         }
+
+      if (index == 0)
+        {
+          agent_uuid_list_free (agent_uuids);
+          SEND_TO_CLIENT_OR_FAIL (
+            XML_ERROR_SYNTAX ("modify_agent_group", "No agents provided"));
+          log_event_fail ("agent_group", "Agent Group", NULL, "modified");
+          modify_agent_group_reset ();
+          return;
+        }
+
+      agent_uuids->count = index;
     }
 
   // Prepare agent group data
