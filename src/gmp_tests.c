@@ -44,9 +44,16 @@ BeforeEach (gmp)
   report_export_delete_count = 0;
   mock_missing_report_export = 0;
   mock_ad_response = FALSE;
+  mock_credential_result = CREDENTIAL_OK;
   credential_command_calls = 0;
   credential_failure_logs = 0;
 #if ENABLE_AD_INTEGRATION
+  mock_search_result = GET_AD_OBJECTS_OK;
+  mock_verify_result = VERIFY_AD_CREDENTIAL_OK;
+  search_command_calls = 0;
+  expected_ad_host = NULL;
+  expected_ad_port = NULL;
+  expected_stored_ad = FALSE;
   mock_search_object = NULL;
   expected_search_params = NULL;
 #endif
@@ -303,8 +310,8 @@ assert_ad_request_response (const gchar *command, const gchar *request,
  */
 static void
 assert_ad_credential_command_response (const gchar *command, const gchar *host,
-                             const gchar *port, gboolean stored,
-                             const gchar *status, const gchar *text)
+                                       const gchar *port, gboolean stored,
+                                       const gchar *status, const gchar *text)
 {
   GString *xml = g_string_new ("");
   gboolean verify = !strcmp (command, "verify_active_directory_credential");
@@ -514,7 +521,7 @@ Ensure (gmp, search_request_defaults)
   const get_ad_objects_params_t expected = {
     .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
     .object_types = AD_OBJECT_TYPE_DEFAULT,
-    .max_results = 200,
+    .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
     .include_disabled_computers = TRUE
   };
 
@@ -542,7 +549,8 @@ Ensure (gmp, search_request_valid_options)
         .tasks = TRUE, .details = TRUE } },
     { "scope=\"subtree\" targets=\"1\" tasks=\"0\"", "",
       { .scope = AD_CONNECTOR_SEARCH_SCOPE_SUBTREE,
-        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 200,
+        .object_types = AD_OBJECT_TYPE_DEFAULT,
+        .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
         .include_disabled_computers = TRUE, .targets = TRUE } },
     { "max_results=\"0001\"", "",
       { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
@@ -550,19 +558,22 @@ Ensure (gmp, search_request_valid_options)
         .include_disabled_computers = TRUE } },
     { "", "<base_dn> </base_dn>",
       { .base_dn = " ", .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
-        .object_types = AD_OBJECT_TYPE_DEFAULT, .max_results = 200,
+        .object_types = AD_OBJECT_TYPE_DEFAULT,
+        .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
         .include_disabled_computers = TRUE } },
     { "", "<object_types><object_type>ou</object_type>"
             "<object_type>container</object_type>"
             "<object_type>ou</object_type></object_types>",
       { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
         .object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_CONTAINER,
-        .max_results = 200, .include_disabled_computers = TRUE } },
+        .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
+        .include_disabled_computers = TRUE } },
     { "", "<object_types><unknown>ignored</unknown>"
             "<object_type>computer</object_type></object_types>",
       { .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
         .object_types = AD_OBJECT_TYPE_COMPUTER,
-        .max_results = 200, .include_disabled_computers = TRUE } },
+        .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
+        .include_disabled_computers = TRUE } },
     { "", "<base_dn>OU=Hosts,DC=example</base_dn>"
             "<group_dn>CN=Group,DC=example</group_dn>"
             "<object_types><object_type>ou</object_type>"
@@ -573,7 +584,8 @@ Ensure (gmp, search_request_valid_options)
         .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
         .object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_CONTAINER
                         | AD_OBJECT_TYPE_COMPUTER | AD_OBJECT_TYPE_GROUP,
-        .max_results = 200, .include_disabled_computers = TRUE } }
+        .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
+        .include_disabled_computers = TRUE } }
   };
 
   for (guint i = 0; i < G_N_ELEMENTS (cases); i++)
@@ -656,6 +668,42 @@ Ensure (gmp, search_request_rejects_invalid_options)
       assert_ad_search_rejected (request, cases[i].message);
       g_free (request);
     }
+}
+
+Ensure (gmp, search_request_uses_configured_result_limit)
+{
+  gchar *previous = g_strdup (g_getenv ("GVMD_AD_MAX_RESULTS_LIMIT"));
+  get_ad_objects_params_t expected = {.scope =
+                                        AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+                                      .object_types = AD_OBJECT_TYPE_DEFAULT,
+                                      .max_results = 10000,
+                                      .include_disabled_computers = TRUE};
+
+  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "10000", TRUE);
+  load_active_directory_config ();
+  assert_ad_search_options ("", "", &expected);
+  assert_ad_search_options ("max_results=\"10000\"", "", &expected);
+  assert_ad_search_rejected (
+    "<get_active_directory_objects credential_id=\"response-credential\" "
+    "max_results=\"10001\"/>",
+    "Invalid max_results");
+
+  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "1", TRUE);
+  load_active_directory_config ();
+  expected.max_results = 1;
+  assert_ad_search_options ("", "", &expected);
+  assert_ad_search_options ("max_results=\"1\"", "", &expected);
+  assert_ad_search_rejected (
+    "<get_active_directory_objects credential_id=\"response-credential\" "
+    "max_results=\"2\"/>",
+    "Invalid max_results");
+
+  if (previous)
+    g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", previous, TRUE);
+  else
+    g_unsetenv ("GVMD_AD_MAX_RESULTS_LIMIT");
+  g_free (previous);
+  load_active_directory_config ();
 }
 
 Ensure (gmp, search_ad_error_responses)
@@ -1331,6 +1379,8 @@ main (int argc, char **argv)
   add_test_with_context
     (suite, gmp, existing_ad_verification_error_responses_are_unchanged);
   add_test_with_context (suite, gmp, search_request_defaults);
+  add_test_with_context (suite, gmp,
+                         search_request_uses_configured_result_limit);
   add_test_with_context (suite, gmp, search_request_valid_options);
   add_test_with_context (suite, gmp, search_request_rejects_invalid_options);
   add_test_with_context (suite, gmp, search_ad_error_responses);

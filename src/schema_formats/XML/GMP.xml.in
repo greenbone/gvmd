@@ -10960,7 +10960,7 @@ END:VCALENDAR
       </attrib>
       <attrib>
         <name>max_results</name>
-        <summary>Maximum number of directory objects to fetch after LDAP filtering</summary>
+        <summary>Maximum number of directory objects to fetch after LDAP filtering. Valid values are 1 through the configured [active_directory] max_results_limit. If omitted, that limit is used (1000 by default).</summary>
         <type>integer</type>
         <required>0</required>
       </attrib>
