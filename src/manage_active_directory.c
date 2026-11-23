@@ -115,6 +115,11 @@ static guint ad_operation_timeout_seconds =
   AD_OPERATION_TIMEOUT_SECONDS_DEFAULT;
 
 /**
+ * @brief Configured maximum number of AD objects per request.
+ */
+static guint ad_max_results_limit = AD_MAX_RESULTS_LIMIT_DEFAULT;
+
+/**
  * @brief Parse a required decimal port without trimming or fallback.
  *
  * @param[in]  text  Borrowed port string; NULL and empty input are invalid.
@@ -327,6 +332,17 @@ ad_config_uint (GKeyFile *kf, const gchar *env_name, const gchar *key,
 }
 
 /**
+ * @brief Return the configured AD object result ceiling.
+ *
+ * @return Maximum permitted result count.
+ */
+guint
+active_directory_max_results_limit (void)
+{
+  return ad_max_results_limit;
+}
+
+/**
  * @brief Parse and deduplicate a host list, discarding partial invalid lists.
  *
  * @param[in,out] text  Non-NULL writable comma-separated list. Surrounding
@@ -466,6 +482,9 @@ load_active_directory_config (void)
   ad_operation_timeout_seconds = ad_config_uint (
     kf, "GVMD_AD_OPERATION_TIMEOUT_SECONDS", "operation_timeout_seconds",
     AD_OPERATION_TIMEOUT_SECONDS_MAX, AD_OPERATION_TIMEOUT_SECONDS_DEFAULT);
+  ad_max_results_limit = ad_config_uint (
+    kf, "GVMD_AD_MAX_RESULTS_LIMIT", "max_results_limit", G_MAXINT,
+    AD_MAX_RESULTS_LIMIT_DEFAULT);
 }
 
 /**
@@ -1607,7 +1626,7 @@ valid_ad_object_search_params (const get_ad_objects_params_t *params)
     return FALSE;
 
   if (params->max_results < 1
-      || params->max_results > GET_AD_OBJECTS_MAX_RESULTS)
+      || params->max_results > active_directory_max_results_limit ())
     return FALSE;
 
   if (params->scope != AD_CONNECTOR_SEARCH_SCOPE_BASE

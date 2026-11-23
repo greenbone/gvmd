@@ -92,6 +92,8 @@ static gchar *previous_allowed_hosts_env;
 static gchar *previous_allowed_ports_env;
 static gchar *previous_network_timeout_env;
 static gchar *previous_operation_timeout_env;
+static gchar *previous_max_results_env;
+static guint result_limit_warning_count;
 static guint timeout_warning_count;
 static gchar *last_timeout_warning;
 static guint warning_handler;
@@ -125,6 +127,8 @@ capture_policy_warning (const gchar *domain, GLogLevelFlags level,
       g_free (last_timeout_warning);
       last_timeout_warning = g_strdup (message);
     }
+  else if (strstr (message, "active_directory.max_results_limit"))
+    result_limit_warning_count++;
   else
     g_log_default_handler (domain, level, message, data);
 }
@@ -687,6 +691,9 @@ BeforeEach (manage_active_directory)
     g_strdup (g_getenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS"));
   g_unsetenv ("GVMD_AD_NETWORK_TIMEOUT_SECONDS");
   g_unsetenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS");
+  previous_max_results_env = g_strdup (g_getenv ("GVMD_AD_MAX_RESULTS_LIMIT"));
+  g_unsetenv ("GVMD_AD_MAX_RESULTS_LIMIT");
+  result_limit_warning_count = 0;
   test_config = g_key_file_new ();
   policy_warning_count = 0;
   timeout_warning_count = 0;
@@ -723,6 +730,11 @@ AfterEach (manage_active_directory)
               previous_operation_timeout_env, TRUE);
   else
     g_unsetenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS");
+  if (previous_max_results_env)
+    g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", previous_max_results_env, TRUE);
+  else
+    g_unsetenv ("GVMD_AD_MAX_RESULTS_LIMIT");
+  g_clear_pointer (&previous_max_results_env, g_free);
   g_clear_pointer (&previous_network_timeout_env, g_free);
   g_clear_pointer (&previous_operation_timeout_env, g_free);
   g_clear_pointer (&previous_allowed_hosts_env, g_free);
@@ -976,20 +988,33 @@ Ensure (manage_active_directory, checker_reads_immutable_loaded_policy)
 
 Ensure (manage_active_directory, loader_defaults_for_missing_configuration)
 {
+  /* Exercise the NULL configuration path. */
   g_clear_pointer (&test_config, g_key_file_unref);
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (0));
   assert_default_ad_ports ();
+  assert_that (ad_network_timeout_seconds, is_equal_to (10));
+  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
 
   set_test_ad_config ("[unrelated]\nvalue = 1\n");
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (0));
   assert_default_ad_ports ();
+  assert_that (ad_network_timeout_seconds, is_equal_to (10));
+  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
 
   set_test_ad_config ("[active_directory]\nother = value\n");
   load_active_directory_config ();
   assert_that (ad_allowed_hosts->len, is_equal_to (0));
   assert_default_ad_ports ();
+  assert_that (ad_network_timeout_seconds, is_equal_to (10));
+  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
   assert_that (check_active_directory_destination ("outside.invalid", NULL,
                                                    "starttls", NULL),
                is_equal_to (AD_DESTINATION_OK));
@@ -1000,6 +1025,8 @@ Ensure (manage_active_directory, loader_defaults_for_missing_configuration)
                                                    "ldaps", NULL),
                is_equal_to (AD_DESTINATION_NOT_ALLOWED));
   assert_that (policy_warning_count, is_equal_to (0));
+  assert_that (timeout_warning_count, is_equal_to (0));
+  assert_that (result_limit_warning_count, is_equal_to (0));
 }
 
 Ensure (manage_active_directory, loader_resolves_options_independently)
@@ -1914,8 +1941,6 @@ Ensure (manage_active_directory, search_params_accept_valid_boundaries)
     .max_results = 1
   };
   assert_that (valid_ad_object_search_params (&params), is_true);
-  params.max_results = GET_AD_OBJECTS_MAX_RESULTS;
-  assert_that (valid_ad_object_search_params (&params), is_true);
   params.object_types = AD_OBJECT_TYPE_COMPUTER;
   assert_that (valid_ad_object_search_params (&params), is_true);
   params.object_types = AD_OBJECT_TYPE_CONTAINER;
@@ -1959,8 +1984,6 @@ Ensure (manage_active_directory, search_params_reject_invalid_values)
 
   params.max_results = 0;
   assert_that (valid_ad_object_search_params (&params), is_false);
-  params.max_results = GET_AD_OBJECTS_MAX_RESULTS + 1;
-  assert_that (valid_ad_object_search_params (&params), is_false);
   params.max_results = 1;
 
   params.scope = (ad_connector_search_scope_t) -1;
@@ -1977,16 +2000,37 @@ Ensure (manage_active_directory, search_params_reject_invalid_values)
   assert_that (valid_ad_object_search_params (&params), is_false);
 }
 
+Ensure (manage_active_directory, search_enforces_configured_result_limit)
+{
+  get_ad_objects_params_t params = {.credential_id = "credential-id",
+                                    .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+                                    .object_types = AD_OBJECT_TYPE_OU,
+                                    .max_results = 10000};
+  get_ad_objects_result_t result = {0};
+
+  set_test_ad_config ("[active_directory]\nmax_results_limit = 10000\n");
+  load_active_directory_config ();
+  expected_permission = "get_active_directory_objects";
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (GET_AD_OBJECTS_OK));
+  get_ad_objects_result_reset (&result);
+
+  reset_test_state ();
+  params.max_results = 10001;
+  assert_that (get_active_directory_objects (&params, &result),
+               is_equal_to (GET_AD_OBJECTS_INVALID_INPUT));
+  assert_no_ad_connector_calls ();
+}
+
 Ensure (manage_active_directory, configure_search_accepts_valid_options)
 {
   ad_search_config_t config = ad_search_config_new ();
   const gchar *credential_base_dn = "DC=example,DC=com";
-  get_ad_objects_params_t params = {
-    .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
-    .object_types = AD_OBJECT_TYPE_OU | AD_OBJECT_TYPE_COMPUTER,
-    .max_results = GET_AD_OBJECTS_MAX_RESULTS,
-    .include_disabled_computers = TRUE
-  };
+  get_ad_objects_params_t params = {.scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+                                    .object_types = AD_OBJECT_TYPE_OU
+                                                    | AD_OBJECT_TYPE_COMPUTER,
+                                    .max_results = AD_MAX_RESULTS_LIMIT_DEFAULT,
+                                    .include_disabled_computers = TRUE};
 
   assert_that (config, is_non_null);
   assert_that (configure_ad_search (config, &params, credential_base_dn),
@@ -2933,27 +2977,6 @@ Ensure (manage_active_directory, search_enriches_targets_and_readable_tasks)
   get_ad_objects_result_reset (&result);
 }
 
-Ensure (manage_active_directory,
-        loader_defaults_for_missing_timeout_configuration)
-{
-  /* Exercise the NULL configuration path. */
-  g_clear_pointer (&test_config, g_key_file_unref);
-  load_active_directory_config ();
-  assert_that (ad_network_timeout_seconds, is_equal_to (10));
-  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
-
-  set_test_ad_config ("[unrelated]\nvalue = 1\n");
-  load_active_directory_config ();
-  assert_that (ad_network_timeout_seconds, is_equal_to (10));
-  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
-
-  set_test_ad_config ("[active_directory]\nother = value\n");
-  load_active_directory_config ();
-  assert_that (ad_network_timeout_seconds, is_equal_to (10));
-  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
-  assert_that (timeout_warning_count, is_equal_to (0));
-}
-
 Ensure (manage_active_directory, loader_resolves_timeouts_independently)
 {
   set_test_ad_config ("[active_directory]\nnetwork_timeout_seconds = 12\n"
@@ -2981,38 +3004,51 @@ Ensure (manage_active_directory, loader_resolves_timeouts_independently)
   assert_that (timeout_warning_count, is_equal_to (0));
 }
 
+static void
+assert_invalid_result_limit_value (const gchar *value)
+{
+  guint warnings = result_limit_warning_count;
+
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        value);
+  assert_that (ad_config_uint (test_config, "GVMD_AD_MAX_RESULTS_LIMIT",
+                               "max_results_limit", G_MAXINT,
+                               AD_MAX_RESULTS_LIMIT_DEFAULT),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
+  assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
+}
+
+Ensure (manage_active_directory, config_uint_rejects_invalid_values)
+{
+  assert_invalid_result_limit_value ("");
+  assert_invalid_result_limit_value ("0");
+  assert_invalid_result_limit_value ("-1");
+  assert_invalid_result_limit_value ("+1");
+  assert_invalid_result_limit_value ("1object");
+  assert_invalid_result_limit_value ("1.5");
+  assert_invalid_result_limit_value ("999999999999999999999999999999");
+}
+
 Ensure (manage_active_directory, loader_invalid_timeouts_use_defaults)
 {
-  const gchar *invalid[] = {
-    "", "0", "-1", "+1", "1second", "1.5", "999999999999999999999999999999"};
+  guint warnings = timeout_warning_count;
 
-  for (guint i = 0; i < G_N_ELEMENTS (invalid); i++)
-    {
-      guint warnings;
+  set_test_ad_config ("[active_directory]\nnetwork_timeout_seconds = 0\n"
+                      "operation_timeout_seconds = 0\n");
+  load_active_directory_config ();
+  assert_that (ad_network_timeout_seconds, is_equal_to (10));
+  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
+  assert_that (timeout_warning_count, is_equal_to (warnings + 2));
 
-      set_test_ad_config ("[active_directory]\n");
-      g_key_file_set_value (test_config, "active_directory",
-                            "network_timeout_seconds", invalid[i]);
-      g_key_file_set_value (test_config, "active_directory",
-                            "operation_timeout_seconds", invalid[i]);
-      warnings = timeout_warning_count;
-      load_active_directory_config ();
-      assert_that (ad_network_timeout_seconds, is_equal_to (10));
-      assert_that (ad_operation_timeout_seconds, is_equal_to (30));
-      assert_that (timeout_warning_count, is_equal_to (warnings + 2));
-
-      set_test_ad_config ("[active_directory]\nnetwork_timeout_seconds = 12\n"
-                          "operation_timeout_seconds = 34\n");
-      g_setenv ("GVMD_AD_NETWORK_TIMEOUT_SECONDS", invalid[i], TRUE);
-      g_setenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS", invalid[i], TRUE);
-      warnings = timeout_warning_count;
-      load_active_directory_config ();
-      assert_that (ad_network_timeout_seconds, is_equal_to (10));
-      assert_that (ad_operation_timeout_seconds, is_equal_to (30));
-      assert_that (timeout_warning_count, is_equal_to (warnings + 2));
-      g_unsetenv ("GVMD_AD_NETWORK_TIMEOUT_SECONDS");
-      g_unsetenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS");
-    }
+  set_test_ad_config ("[active_directory]\nnetwork_timeout_seconds = 12\n"
+                      "operation_timeout_seconds = 34\n");
+  g_setenv ("GVMD_AD_NETWORK_TIMEOUT_SECONDS", "0", TRUE);
+  g_setenv ("GVMD_AD_OPERATION_TIMEOUT_SECONDS", "0", TRUE);
+  warnings = timeout_warning_count;
+  load_active_directory_config ();
+  assert_that (ad_network_timeout_seconds, is_equal_to (10));
+  assert_that (ad_operation_timeout_seconds, is_equal_to (30));
+  assert_that (timeout_warning_count, is_equal_to (warnings + 2));
   assert_that (policy_warning_count, is_equal_to (0));
 }
 
@@ -3083,6 +3119,67 @@ Ensure (manage_active_directory,
   assert_that (policy_warning_count, is_equal_to (0));
 }
 
+Ensure (manage_active_directory, loader_result_limit_defaults_and_overrides)
+{
+  set_test_ad_config ("[active_directory]\nmax_results_limit = 10000\n");
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (), is_equal_to (10000));
+
+  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "1", TRUE);
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (), is_equal_to (1));
+  assert_that (result_limit_warning_count, is_equal_to (0));
+}
+
+Ensure (manage_active_directory, loader_result_limit_bounds_and_fallbacks)
+{
+  gchar *maximum = g_strdup_printf ("%u", (guint) G_MAXINT);
+  gchar *overflow =
+    g_strdup_printf ("%" G_GUINT64_FORMAT, (guint64) G_MAXINT + 1);
+  guint warnings;
+
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        maximum);
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (), is_equal_to (G_MAXINT));
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        overflow);
+  warnings = result_limit_warning_count;
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
+  assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
+
+  g_free (maximum);
+  g_free (overflow);
+
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        "0");
+  warnings = result_limit_warning_count;
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
+  assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
+
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        "50");
+  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "1object", TRUE);
+  warnings = result_limit_warning_count;
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
+  assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
+  g_unsetenv ("GVMD_AD_MAX_RESULTS_LIMIT");
+
+  g_key_file_set_value (test_config, "active_directory", "max_results_limit",
+                        "\\q");
+  warnings = result_limit_warning_count;
+  load_active_directory_config ();
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
+  assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
+}
+
 Ensure (manage_active_directory, configured_timeouts_are_applied)
 {
   ad_credential_data_t data = valid_ad_data ();
@@ -3090,7 +3187,7 @@ Ensure (manage_active_directory, configured_timeouts_are_applied)
                                     .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
                                     .object_types = AD_OBJECT_TYPE_OU,
                                     .max_results =
-                                      GET_AD_OBJECTS_DEFAULT_MAX_RESULTS};
+                                      AD_MAX_RESULTS_LIMIT_DEFAULT};
   get_ad_objects_result_t result = {0};
 
   set_test_ad_config ("[active_directory]\nnetwork_timeout_seconds = 12\n"
@@ -3228,6 +3325,8 @@ main (int argc, char **argv)
   add_test_with_context (suite, manage_active_directory,
                          search_params_reject_invalid_values);
   add_test_with_context (suite, manage_active_directory,
+                         search_enforces_configured_result_limit);
+  add_test_with_context (suite, manage_active_directory,
                          configure_search_accepts_valid_options);
   add_test_with_context (
     suite, manage_active_directory,
@@ -3261,15 +3360,19 @@ main (int argc, char **argv)
                          verify_handles_saved_credentials);
 
   add_test_with_context (suite, manage_active_directory,
-                         loader_defaults_for_missing_timeout_configuration);
-  add_test_with_context (suite, manage_active_directory,
                          loader_resolves_timeouts_independently);
+  add_test_with_context (suite, manage_active_directory,
+                         config_uint_rejects_invalid_values);
   add_test_with_context (suite, manage_active_directory,
                          loader_invalid_timeouts_use_defaults);
   add_test_with_context (suite, manage_active_directory,
                          loader_checks_timeout_boundaries);
   add_test_with_context (suite, manage_active_directory,
                          loader_unreadable_timeouts_warn_and_use_defaults);
+  add_test_with_context (suite, manage_active_directory,
+                         loader_result_limit_defaults_and_overrides);
+  add_test_with_context (suite, manage_active_directory,
+                         loader_result_limit_bounds_and_fallbacks);
   add_test_with_context (suite, manage_active_directory,
                          configured_timeouts_are_applied);
 
