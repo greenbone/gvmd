@@ -208,6 +208,23 @@ init_report_host_os_iterator (iterator_t *iterator, report_host_t report_host)
 }
 
 /**
+ * @brief Get the FQDN for a report host.
+ *
+ * @param[in]  report_host  Report host whose FQDN is retrieved.
+ *
+ * @return FQDN of the report host, or NULL if unavailable.
+ */
+static char *
+get_report_host_fqdn (report_host_t report_host)
+{
+  return sql_string_ps ("SELECT value FROM report_host_details"
+                        "   WHERE report_host = $1 AND name = 'fqdn'"
+                        "   LIMIT 1;",
+                        SQL_RESOURCE_PARAM (report_host),
+                        NULL);
+}
+
+/**
  * @brief Get the hostname  for a report host.
  *
  * @param[in]  report_host  Report host whose OS information is retrieved.
@@ -250,7 +267,7 @@ print_report_host_summary_xml (print_report_context_t *ctx,
   int apps_count;
   const char *os_cpe = NULL;
   const char *os_name = NULL;
-  const char *hostname = NULL;
+  char *hostname = NULL;
 
   if (ctx == NULL || stream == NULL || host_key == NULL)
     return -1;
@@ -265,6 +282,11 @@ print_report_host_summary_xml (print_report_context_t *ctx,
     }
 
   hostname = get_report_host_hostname (report_host);
+  if (hostname == NULL || *hostname == '\0')
+    {
+      g_free (hostname);
+      hostname = get_report_host_fqdn (report_host);
+    }
 
   PRINT (stream,
          "<app_count><page>%d</page></app_count>",
@@ -307,6 +329,7 @@ print_report_host_summary_xml (print_report_context_t *ctx,
          "<threat>Log</threat>");
 
   cleanup_iterator (&os_iterator);
+  g_free (hostname);
 
   return 0;
 }
@@ -317,16 +340,22 @@ print_report_host_summary_xml (print_report_context_t *ctx,
  * @param[in]  stream   Stream to write to.
  * @param[in]  details  Report host details iterator.
  * @param[in]  lean     Whether to return reduced info.
+ * @param[in]  fqdn     Fallback value for an empty hostname detail.
  *
  * @return 0 success, -1 error.
  */
 static int
-print_report_host_detail (FILE *stream, iterator_t *details, int lean)
+print_report_host_detail (FILE *stream, iterator_t *details, int lean,
+                          const char *fqdn)
 {
   const char *name, *value;
 
   name = report_host_details_iterator_name (details);
   value = report_host_details_iterator_value (details);
+
+  if (fqdn && strcmp (name, "hostname") == 0
+      && (value == NULL || *value == '\0'))
+    value = fqdn;
 
   if (lean)
     {
@@ -406,17 +435,22 @@ print_report_host_details_xml (report_host_t report_host, FILE *stream,
                                int lean)
 {
   iterator_t details;
+  gchar *fqdn;
+
+  fqdn = get_report_host_fqdn (report_host);
 
   init_report_host_details_iterator (&details, report_host);
   while (next (&details))
     {
-      if (print_report_host_detail (stream, &details, lean))
+      if (print_report_host_detail (stream, &details, lean, fqdn))
         {
           cleanup_iterator (&details);
+          g_free (fqdn);
           return -1;
         }
     }
   cleanup_iterator (&details);
+  g_free (fqdn);
 
   return 0;
 }
