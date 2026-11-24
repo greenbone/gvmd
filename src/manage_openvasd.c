@@ -492,7 +492,7 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
     openvasd_build_scan_config_json(openvasd_target, scanner_options, vts);
 
   response = http_scanner_create_scan (connector, scan_config);
-  if (response->code == 201)
+  if (response->code >= 200 && response->code < 300)
     {
       http_scanner_response_cleanup (response);
       response = http_scanner_start_scan (connector);
@@ -525,7 +525,8 @@ launch_openvasd_openvas_task (task_t task, target_t target, const char *scan_id,
  *                                running
  * @param[out] discovery_out  Discovery flag for scan config.
  *
- * @return 0 success, -1 if error.
+ * @return 0 scan finished or start submitted without waiting,
+ *         2 scan queued or running after waiting, -1 if error.
  */
 int
 handle_openvasd_scan_start (task_t task, target_t target, const char *scan_id,
@@ -618,7 +619,7 @@ handle_openvasd_scan_start (task_t task, target_t target, const char *scan_id,
             break;
 
           // Exit loop if scan is queued or started
-          if (rc == 2)
+          if (rc == 2 && (queued_status_updated || started))
             break;
         }
 
@@ -628,7 +629,7 @@ handle_openvasd_scan_start (task_t task, target_t target, const char *scan_id,
   else
     rc = 0;
 
-  return rc < 0 ? -1 : 0;
+  return rc < 0 ? -1 : rc;
 }
 
 /**
