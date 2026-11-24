@@ -11064,10 +11064,11 @@ where_qod (int min_qod)
     { "results.qod_type", "qod_type", KEYWORD_TYPE_STRING },                  \
     { "(CASE WHEN (hostname IS NULL) OR (hostname = '')"                      \
       " THEN (SELECT value FROM report_host_details"                          \
-      "       WHERE name = 'hostname'"                                        \
+      "       WHERE name IN ('hostname', 'fqdn')"                             \
       "         AND report_host = (SELECT id FROM report_hosts"               \
       "                            WHERE report_hosts.host=results.host"      \
       "                            AND report_hosts.report = results.report)" \
+      "       ORDER BY (name = 'hostname') DESC"                              \
       "       LIMIT 1)"                                                       \
       " ELSE hostname"                                                        \
       " END)",                                                                \
@@ -11190,11 +11191,13 @@ where_qod (int min_qod)
       "(CASE WHEN (" hostname_col " IS NULL) "                                \
       "           OR (" hostname_col " = '')"                                 \
       " THEN (SELECT value FROM report_host_details"                          \
-      "       WHERE name = 'hostname'"                                        \
+      "       WHERE name IN ('hostname', 'fqdn')"                             \
       "         AND report_host = (SELECT id FROM report_hosts "              \
       "                            WHERE report_hosts.host = " host_col       \
       "                            AND"                                       \
       "                            report_hosts.report = " report_col ")"     \
+      "         AND value != '' "                                             \
+      "       ORDER BY (name = 'hostname') DESC"                              \
       "       LIMIT 1)"                                                       \
       " ELSE " hostname_col                                                   \
       " END)"
