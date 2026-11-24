@@ -7,6 +7,7 @@ import threading
 import unittest
 import uuid
 from pathlib import Path
+from unittest.mock import patch
 from xml.etree import ElementTree as ET
 
 import controller
@@ -111,6 +112,39 @@ class ControllerTests(unittest.TestCase):
                 "overrides": [{"host": "192.0.2.55", "asset_id": ASSET,
                                "service": "ssh", "credential_id": OVERRIDE}]}
 
+    def test_new_native_group_can_start_immediately(self):
+        class NativeGmp:
+            def send_command(self, command):
+                if command.startswith("<create_target"):
+                    return f'<create_target_response status="201" id="{PORTS}"/>'
+                if command.startswith("<create_multi_target_task"):
+                    return f'<create_multi_target_task_response status="201" id="{TASK_A}"/>'
+                raise AssertionError(command)
+
+            def start_task(self, task_id):
+                self.started = task_id
+                return '<start_task_response status="202"/>'
+
+        plan = controller.build_plan(FakeGmp(),
+                                     {**self.request(), "overrides": []})
+        native_record = ET.fromstring(
+            f'<multi_target_task><child task_id="{TASK_B}" target_id="{PORTS}" '
+            f'source_target_id="{TARGET}"/></multi_target_task>')
+        original_db = controller.DB
+        with tempfile.TemporaryDirectory() as directory:
+            controller.DB = Path(directory) / "groups.sqlite"
+            try:
+                controller.init_db()
+                gmp = NativeGmp()
+                with patch.object(controller, "native_group_record",
+                                  return_value=native_record):
+                    group = controller.create_native_group(gmp, plan)
+                self.assertTrue(group["plan"]["native_backend"])
+                controller.start_group(gmp, group)
+                self.assertEqual(gmp.started, TASK_A)
+            finally:
+                controller.DB = original_db
+
     def test_override_is_confined_to_asset_host(self):
         plan = controller.build_plan(FakeGmp(), self.request())
         self.assertEqual(len(plan["units"]), 2)
@@ -145,6 +179,16 @@ class ControllerTests(unittest.TestCase):
         target = ET.fromstring(controller.target_xml(
             "group", with_override["scan_units"][0]))
         self.assertEqual(target.findtext("hosts"), "192.0.2.1,192.0.2.2")
+
+    def test_plan_without_overrides_skips_asset_inventory(self):
+        class NoAssetReads(SixHostGmp):
+            def get_hosts(self, **_):
+                raise AssertionError("No asset inventory needed without overrides")
+
+        request = {**self.request(), "target_ids": [TARGET, TARGET_B],
+                   "overrides": []}
+        plan = controller.build_plan(NoAssetReads(), request)
+        self.assertEqual(len(plan["scan_units"]), 2)
 
     def test_create_group_creates_one_child_per_scan_unit(self):
         class CreatingGmp:
@@ -402,6 +446,10 @@ class ControllerTests(unittest.TestCase):
         class NativeReportGmp(FakeReportGmp):
             imports = []
 
+            def get_results(self, **_):
+                return ('<get_results_response status="200"><result_count>'
+                        '<filtered>1</filtered></result_count></get_results_response>')
+
             def get_report(self, report_id, **_):
                 host = "192.0.2.1" if report_id == REPORT_A else "192.0.2.2"
                 return (f'<get_reports_response status="200"><report><report>'
@@ -500,8 +548,9 @@ class ControllerTests(unittest.TestCase):
                 controller.save_group(TARGET, {"name": "Review"}, children, SCANNER)
                 gmp = PartiallyStartingGmp()
                 result = controller.start_group(gmp, controller.group_by_id(TARGET))
-                self.assertEqual(result["started"], [TASK_A])
-                self.assertEqual(len(result["failed"]), 1)
+                self.assertEqual(result["queued"], [TASK_A, TASK_B])
+                self.assertEqual(controller.dispatch_scan_queue_once(gmp), [TASK_A])
+                self.assertEqual(controller.dispatch_scan_queue_once(gmp), [])
                 group = controller.group_by_id(TARGET)
                 self.assertEqual(group["run_state"]["state"], "failed")
                 self.assertIsNone(controller.publish_native_report(gmp, group))
@@ -514,6 +563,12 @@ class ControllerTests(unittest.TestCase):
     def test_empty_source_report_does_not_block_combined_import(self):
         class EmptySourceGmp(FakeReportGmp):
             imported = ""
+
+            def get_results(self, *, filter_string, **_):
+                count = 1 if REPORT_B in filter_string else 0
+                return (f'<get_results_response status="200"><result_count>'
+                        f'<filtered>{count}</filtered></result_count>'
+                        '</get_results_response>')
 
             def get_report(self, report_id, **_):
                 host = "192.0.2.2" if report_id == REPORT_B else None

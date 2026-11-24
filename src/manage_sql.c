@@ -64,6 +64,7 @@
 #include "manage_sql_settings.h"
 #include "manage_sql_tags.h"
 #include "manage_sql_targets.h"
+#include "manage_targets.h"
 #include "manage_sql_tickets.h"
 #include "manage_sql_tls_certificates.h"
 #include "manage_sql_users.h"
@@ -18409,6 +18410,276 @@ make_task_complete (task_t task)
   cache_permissions_for_resource ("task", task, NULL);
 
   event (EVENT_TASK_RUN_STATUS_CHANGED, (void*) TASK_STATUS_NEW, task, 0);
+}
+
+/* Native rows belong to the authenticated GMP user.  The review UI may still
+ * keep its own display metadata and report-import bridge. */
+static GPtrArray *
+native_explicit_hosts (target_t target)
+{
+  gchar *raw = target_hosts (target);
+  gchar **parts;
+  GPtrArray *hosts;
+  guint i;
+  gboolean complete;
+
+  if (!raw || !raw[0] || strlen (raw) > 8192)
+    {
+      g_free (raw);
+      return NULL;
+    }
+  parts = g_strsplit (raw, ",", -1);
+  hosts = g_ptr_array_new_with_free_func (g_free);
+  for (i = 0; parts[i]; i++)
+    {
+      struct in_addr v4;
+      struct in6_addr v6;
+      char normalized[INET6_ADDRSTRLEN];
+      gchar *host = g_strstrip (parts[i]);
+      if (i >= 128 || !host[0])
+        break;
+      if (inet_pton (AF_INET, host, &v4) == 1)
+        inet_ntop (AF_INET, &v4, normalized, sizeof (normalized));
+      else if (inet_pton (AF_INET6, host, &v6) == 1)
+        inet_ntop (AF_INET6, &v6, normalized, sizeof (normalized));
+      else
+        break;
+      g_ptr_array_add (hosts, g_strdup (normalized));
+    }
+  complete = parts[i] == NULL;
+  g_strfreev (parts);
+  g_free (raw);
+  if (!complete || i == 0 || i > 128 || hosts->len != i)
+    {
+      g_ptr_array_free (hosts, TRUE);
+      return NULL;
+    }
+  return hosts;
+}
+
+/* All requested resources and explicit host membership are checked before
+ * any row is written.  Direct GMP callers get the same 128-host ceiling as
+ * the review GUI and cannot associate a child with an unrelated source. */
+int
+native_multi_target_create (const char *name, const char *config_id,
+                            const char *scanner_id, const char *mode,
+                            GPtrArray *source_ids, GPtrArray *target_ids,
+                            char **parent_uuid)
+{
+  config_t config = 0;
+  scanner_t scanner = 0;
+  target_t targets[16];
+  target_t sources[16];
+  GPtrArray *partition_hosts[16] = {0};
+  GHashTable *all_hosts;
+  task_t parent;
+  guint i, j, total_hosts = 0;
+  int result = 0;
+
+  if (parent_uuid)
+    *parent_uuid = NULL;
+  if (!name || !name[0] || !config_id || !scanner_id || !source_ids
+      || !target_ids || source_ids->len != target_ids->len
+      || target_ids->len < 1 || target_ids->len > 16 || !parent_uuid
+      || (g_strcmp0 (mode, "targets") && g_strcmp0 (mode, "overrides")))
+    return 1;
+  if (g_strcmp0 (g_getenv ("GVMD_NATIVE_MULTI_TARGET"), "1") != 0)
+    return 99;
+  if (!acl_user_may ("create_task"))
+    return 99;
+  if (find_config_with_permission (config_id, &config, "get_configs")
+      || !config
+      || find_scanner_with_permission (scanner_id, &scanner, "get_scanners")
+      || !scanner)
+    return 2;
+  if (scanner_type (scanner) != SCANNER_TYPE_OPENVAS
+      && scanner_type (scanner) != SCANNER_TYPE_OSP_SENSOR)
+    return 1;
+
+  for (i = 0; i < target_ids->len; i++)
+    {
+      const char *id = g_ptr_array_index (target_ids, i);
+      const char *source_id = g_ptr_array_index (source_ids, i);
+      if (!id || !id[0] || strcmp (id, "0") == 0)
+        return 1;
+      if (!source_id || !source_id[0] || strcmp (source_id, "0") == 0)
+        return 1;
+      for (j = 0; j < i; j++)
+        if (g_ascii_strcasecmp (id, g_ptr_array_index (target_ids, j)) == 0)
+          return 1;
+      targets[i] = 0;
+      sources[i] = 0;
+      if (find_target_with_permission (id, &targets[i], "get_targets")
+          || !targets[i]
+          || find_target_with_permission (source_id, &sources[i],
+                                          "get_targets")
+          || !sources[i])
+        return 2;
+    }
+
+  all_hosts = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+  for (i = 0; i < target_ids->len; i++)
+    {
+      GPtrArray *source_hosts = native_explicit_hosts (sources[i]);
+      GHashTable *source_set;
+      if (!source_hosts)
+        {
+          result = 1;
+          goto cleanup_hosts;
+        }
+      source_set = g_hash_table_new (g_str_hash, g_str_equal);
+      for (j = 0; j < source_hosts->len; j++)
+        g_hash_table_add (source_set, g_ptr_array_index (source_hosts, j));
+      partition_hosts[i] = native_explicit_hosts (targets[i]);
+      if (!partition_hosts[i] || total_hosts + partition_hosts[i]->len > 128)
+        result = 1;
+      else
+        for (j = 0; j < partition_hosts[i]->len; j++)
+          {
+            const char *host = g_ptr_array_index (partition_hosts[i], j);
+            if (!g_hash_table_contains (source_set, host)
+                || g_hash_table_contains (all_hosts, host))
+              {
+                result = 1;
+                break;
+              }
+            g_hash_table_add (all_hosts, g_strdup (host));
+            total_hosts++;
+          }
+      g_hash_table_destroy (source_set);
+      g_ptr_array_free (source_hosts, TRUE);
+      if (result)
+        goto cleanup_hosts;
+    }
+
+  sql_begin_immediate ();
+  parent = make_task (g_strdup (name),
+                      g_strdup ("Native multi-target scan task"), 0, 0);
+  set_task_target (parent, 0);
+  set_task_config (parent, config);
+  set_task_scanner (parent, scanner);
+  if (task_uuid (parent, parent_uuid))
+    {
+      sql_rollback ();
+      result = -1;
+      goto cleanup_hosts;
+    }
+  sql ("INSERT INTO multi_target_tasks (parent_task, mode, created_at)"
+       " VALUES (%llu, '%s', m_now ());", parent, mode);
+
+  for (i = 0; i < target_ids->len; i++)
+    {
+      task_t child;
+      gchar *child_name = g_strdup_printf ("%s [target %u]", name, i + 1);
+      gchar *comment = g_strdup_printf (
+        "Native multi-target child of %s", *parent_uuid);
+      child = make_task (child_name, comment, 1, 0);
+      set_task_target (child, targets[i]);
+      set_task_config (child, config);
+      set_task_scanner (child, scanner);
+      sql ("INSERT INTO multi_target_members"
+           " (parent_task, ordinal, source_target, child_target, child_task)"
+           " VALUES (%llu, %u, %llu, %llu, %llu);",
+           parent, i, sources[i], targets[i], child);
+      for (j = 0; j < partition_hosts[i]->len; j++)
+        {
+          gchar *quoted_host = sql_quote (
+            g_ptr_array_index (partition_hosts[i], j));
+          sql ("INSERT INTO multi_target_hosts"
+               " (parent_task, ordinal, host) VALUES (%llu, %u, '%s');",
+               parent, i, quoted_host);
+          g_free (quoted_host);
+        }
+      make_task_complete (child);
+    }
+  make_task_complete (parent);
+  sql_commit ();
+cleanup_hosts:
+  for (i = 0; i < 16; i++)
+    if (partition_hosts[i])
+      g_ptr_array_free (partition_hosts[i], TRUE);
+  g_hash_table_destroy (all_hosts);
+  return result;
+}
+
+/* Return only the authenticated owner's logical tasks.  An explicit task ID
+ * is still filtered by owner, so the command cannot disclose child mappings
+ * merely because another user knows a UUID. */
+char *
+native_multi_target_list_xml (const char *task_id, int first, int rows)
+{
+  iterator_t groups;
+  GString *out;
+  gchar *owner, *filter;
+
+  if (!current_credentials.uuid || first < 0 || rows < 1 || rows > 100)
+    return NULL;
+  owner = sql_quote (current_credentials.uuid);
+  if (task_id)
+    {
+      gchar *quoted_id = sql_quote (task_id);
+      filter = g_strdup_printf (" AND t.uuid = '%s'", quoted_id);
+      g_free (quoted_id);
+    }
+  else
+    filter = g_strdup ("");
+  out = g_string_new ("<get_multi_target_tasks_response status=\"200\""
+                      " status_text=\"OK\">");
+  init_iterator (&groups,
+    "SELECT t.id, t.uuid, t.name, mt.mode,"
+    " COALESCE(r.id, 0), COALESCE(r.state, 'new')"
+    " FROM multi_target_tasks mt JOIN tasks t ON t.id = mt.parent_task"
+    " LEFT JOIN LATERAL (SELECT id, state FROM multi_target_runs"
+    " WHERE parent_task = t.id ORDER BY id DESC LIMIT 1) r ON TRUE"
+    " WHERE t.owner = (SELECT id FROM users WHERE uuid = '%s') %s"
+    " ORDER BY t.id DESC LIMIT %d OFFSET %d;",
+    owner, filter, rows, first);
+  while (next (&groups))
+    {
+      task_t parent = iterator_int64 (&groups, 0);
+      const char *uuid = iterator_string (&groups, 1);
+      gchar *escaped_name = g_markup_escape_text (
+        iterator_string (&groups, 2) ?: "", -1);
+      const char *mode = iterator_string (&groups, 3);
+      long long run = iterator_int64 (&groups, 4);
+      const char *run_state = iterator_string (&groups, 5);
+      iterator_t children;
+
+      g_string_append_printf (out,
+        "<multi_target_task id=\"%s\" mode=\"%s\" run_state=\"%s\">"
+        "<name>%s</name>", uuid ?: "", mode ?: "", run_state ?: "",
+        escaped_name);
+      g_free (escaped_name);
+      init_iterator (&children,
+        "SELECT m.ordinal, child.uuid, source.uuid, target.uuid,"
+        " COALESCE(rc.state, 'new'), COALESCE(report.uuid, '')"
+        " FROM multi_target_members m"
+        " JOIN tasks child ON child.id = m.child_task"
+        " JOIN targets source ON source.id = m.source_target"
+        " JOIN targets target ON target.id = m.child_target"
+        " LEFT JOIN multi_target_run_children rc"
+        " ON rc.run_id = %lld AND rc.ordinal = m.ordinal"
+        " LEFT JOIN reports report ON report.id = rc.child_report"
+        " WHERE m.parent_task = %llu ORDER BY m.ordinal;", run, parent);
+      while (next (&children))
+        g_string_append_printf (out,
+          "<child ordinal=\"%d\" task_id=\"%s\""
+          " source_target_id=\"%s\" target_id=\"%s\""
+          " state=\"%s\" report_id=\"%s\"/>",
+          iterator_int (&children, 0),
+          iterator_string (&children, 1) ?: "",
+          iterator_string (&children, 2) ?: "",
+          iterator_string (&children, 3) ?: "",
+          iterator_string (&children, 4) ?: "",
+          iterator_string (&children, 5) ?: "");
+      cleanup_iterator (&children);
+      g_string_append (out, "</multi_target_task>");
+    }
+  cleanup_iterator (&groups);
+  g_free (owner);
+  g_free (filter);
+  g_string_append (out, "</get_multi_target_tasks_response>");
+  return g_string_free (out, FALSE);
 }
 
 /**

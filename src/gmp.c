@@ -1112,6 +1112,54 @@ create_task_data_reset (create_task_data_t *data)
   memset (data, 0, sizeof (create_task_data_t));
 }
 
+/* Experimental native GMP command.  Keeping its data outside the legacy
+ * command union avoids changing the ABI of unrelated command data. */
+typedef struct
+{
+  char *name;
+  char *config_id;
+  char *scanner_id;
+  char *mode;
+  GPtrArray *source_ids;
+  GPtrArray *target_ids;
+} native_multi_target_create_data_t;
+
+static native_multi_target_create_data_t native_multi_target_create_data;
+
+typedef struct
+{
+  char *task_id;
+  char *first;
+  char *rows;
+} native_multi_target_get_data_t;
+
+static native_multi_target_get_data_t native_multi_target_get_data;
+
+static void
+native_multi_target_create_data_reset (void)
+{
+  g_free (native_multi_target_create_data.name);
+  g_free (native_multi_target_create_data.config_id);
+  g_free (native_multi_target_create_data.scanner_id);
+  g_free (native_multi_target_create_data.mode);
+  if (native_multi_target_create_data.source_ids)
+    g_ptr_array_free (native_multi_target_create_data.source_ids, TRUE);
+  if (native_multi_target_create_data.target_ids)
+    g_ptr_array_free (native_multi_target_create_data.target_ids, TRUE);
+  memset (&native_multi_target_create_data, 0,
+          sizeof (native_multi_target_create_data));
+}
+
+static void
+native_multi_target_get_data_reset (void)
+{
+  g_free (native_multi_target_get_data.task_id);
+  g_free (native_multi_target_get_data.first);
+  g_free (native_multi_target_get_data.rows);
+  memset (&native_multi_target_get_data, 0,
+          sizeof (native_multi_target_get_data));
+}
+
 /* Command data passed between parser callbacks. */
 
 /**
@@ -4269,6 +4317,8 @@ typedef enum
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL,
   CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT,
   CLIENT_CREATE_TARGET_SSH_ELEVATE_CREDENTIAL,
+  CLIENT_CREATE_MULTI_TARGET_TASK,
+  CLIENT_CREATE_MULTI_TARGET_TASK_TARGET,
   CLIENT_CREATE_TASK,
 #if ENABLE_AGENTS
   CLIENT_CREATE_TASK_AGENT_GROUP,
@@ -4409,6 +4459,7 @@ typedef enum
   CLIENT_GET_SYSTEM_REPORTS,
   CLIENT_GET_TAGS,
   CLIENT_GET_TARGETS,
+  CLIENT_GET_MULTI_TARGET_TASKS,
   CLIENT_GET_TASKS,
   CLIENT_GET_TICKETS,
   CLIENT_GET_TIMEZONES,
@@ -4926,6 +4977,25 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
               = g_ptr_array_new_full (0, free);
             gvm_append_string (&create_target_data->comment, "");
             set_client_state (CLIENT_CREATE_TARGET);
+          }
+        else if (strcasecmp ("CREATE_MULTI_TARGET_TASK", element_name) == 0)
+          {
+            native_multi_target_create_data_reset ();
+            append_attribute (attribute_names, attribute_values, "name",
+                              &native_multi_target_create_data.name);
+            append_attribute (attribute_names, attribute_values, "config_id",
+                              &native_multi_target_create_data.config_id);
+            append_attribute (attribute_names, attribute_values, "scanner_id",
+                              &native_multi_target_create_data.scanner_id);
+            append_attribute (attribute_names, attribute_values, "mode",
+                              &native_multi_target_create_data.mode);
+            if (!native_multi_target_create_data.mode)
+              native_multi_target_create_data.mode = g_strdup ("targets");
+            native_multi_target_create_data.source_ids =
+              g_ptr_array_new_with_free_func (g_free);
+            native_multi_target_create_data.target_ids =
+              g_ptr_array_new_with_free_func (g_free);
+            set_client_state (CLIENT_CREATE_MULTI_TARGET_TASK);
           }
         else if (strcasecmp ("CREATE_TASK", element_name) == 0)
           {
@@ -5982,6 +6052,17 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
             else
               get_targets_data->tasks = 0;
             set_client_state (CLIENT_GET_TARGETS);
+          }
+        else if (strcasecmp ("GET_MULTI_TARGET_TASKS", element_name) == 0)
+          {
+            native_multi_target_get_data_reset ();
+            append_attribute (attribute_names, attribute_values, "task_id",
+                              &native_multi_target_get_data.task_id);
+            append_attribute (attribute_names, attribute_values, "first",
+                              &native_multi_target_get_data.first);
+            append_attribute (attribute_names, attribute_values, "rows",
+                              &native_multi_target_get_data.rows);
+            set_client_state (CLIENT_GET_MULTI_TARGET_TASKS);
           }
         else if (strcasecmp ("GET_TASKS", element_name) == 0)
           {
@@ -7996,6 +8077,24 @@ gmp_xml_handle_start_element (/* unused */ GMarkupParseContext* context,
       case CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL:
         if (strcasecmp ("PORT", element_name) == 0)
           set_client_state (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL_PORT);
+        ELSE_READ_OVER;
+
+      case CLIENT_CREATE_MULTI_TARGET_TASK:
+        if (strcasecmp ("TARGET", element_name) == 0)
+          {
+            const gchar *id = NULL;
+            const gchar *source_id = NULL;
+            if (find_attribute (attribute_names, attribute_values, "id", &id))
+              {
+                find_attribute (attribute_names, attribute_values,
+                                "source_target_id", &source_id);
+                g_ptr_array_add (native_multi_target_create_data.target_ids,
+                                 g_strdup (id));
+                g_ptr_array_add (native_multi_target_create_data.source_ids,
+                                 g_strdup (source_id ?: id));
+              }
+            set_client_state (CLIENT_CREATE_MULTI_TARGET_TASK_TARGET);
+          }
         ELSE_READ_OVER;
 
       case CLIENT_CREATE_TASK:
@@ -22400,6 +22499,60 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
         handle_get_targets (gmp_parser, error);
         break;
 
+      case CLIENT_GET_MULTI_TARGET_TASKS:
+        {
+          int first = 0, rows = 100, invalid = 0;
+          char *end = NULL;
+          char *xml;
+          if (native_multi_target_get_data.first)
+            {
+              gint64 parsed = g_ascii_strtoll (
+                native_multi_target_get_data.first, &end, 10);
+              if (end == native_multi_target_get_data.first || *end
+                  || parsed < 0 || parsed > 1000000)
+                invalid = 1;
+              else
+                first = parsed;
+            }
+          if (native_multi_target_get_data.rows)
+            {
+              gint64 parsed = g_ascii_strtoll (
+                native_multi_target_get_data.rows, &end, 10);
+              if (end == native_multi_target_get_data.rows || *end
+                  || parsed < 1 || parsed > 100)
+                invalid = 1;
+              else
+                rows = parsed;
+            }
+          if (invalid)
+            SEND_TO_CLIENT_OR_FAIL (
+              XML_ERROR_SYNTAX ("get_multi_target_tasks",
+                                "first must be nonnegative and rows 1 to 100"));
+          else
+            {
+              xml = native_multi_target_list_xml (
+                native_multi_target_get_data.task_id, first, rows);
+              if (!xml)
+                SEND_TO_CLIENT_OR_FAIL (
+                  XML_ERROR_SYNTAX ("get_multi_target_tasks",
+                                    "Permission denied"));
+              else
+                {
+                  if (send_to_client (xml, write_to_client,
+                                      write_to_client_data))
+                    {
+                      g_free (xml);
+                      error_send_to_client (error);
+                      return;
+                    }
+                  g_free (xml);
+                }
+            }
+          native_multi_target_get_data_reset ();
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+
       case CLIENT_GET_TASKS:
         handle_get_tasks (gmp_parser, error);
         break;
@@ -25027,6 +25180,52 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
       CLOSE (CLIENT_CREATE_TARGET_SSH_CREDENTIAL, PORT);
 
       CLOSE (CLIENT_CREATE_TARGET_SSH_LSC_CREDENTIAL, PORT);
+
+      case CLIENT_CREATE_MULTI_TARGET_TASK:
+        {
+          char *uuid = NULL;
+          int result = native_multi_target_create (
+            native_multi_target_create_data.name,
+            native_multi_target_create_data.config_id,
+            native_multi_target_create_data.scanner_id,
+            native_multi_target_create_data.mode,
+            native_multi_target_create_data.source_ids,
+            native_multi_target_create_data.target_ids, &uuid);
+          switch (result)
+            {
+              case 0:
+                SENDF_TO_CLIENT_OR_FAIL (
+                  XML_OK_CREATED_ID ("create_multi_target_task"), uuid);
+                log_event ("task", "Task", uuid, "created");
+                break;
+              case 1:
+                SEND_TO_CLIENT_OR_FAIL (
+                  XML_ERROR_SYNTAX ("create_multi_target_task",
+                                    "Select 1 to 16 distinct scan targets, a name,"
+                                    " a scan config, and an OSP scanner"));
+                break;
+              case 2:
+                SEND_TO_CLIENT_OR_FAIL (
+                  XML_ERROR_SYNTAX ("create_multi_target_task",
+                                    "A selected target, config, or scanner"
+                                    " is unavailable"));
+                break;
+              case 99:
+                SEND_TO_CLIENT_OR_FAIL (
+                  XML_ERROR_SYNTAX ("create_multi_target_task",
+                                    "Permission denied"));
+                break;
+              default:
+                SEND_TO_CLIENT_OR_FAIL (
+                  XML_INTERNAL_ERROR ("create_multi_target_task"));
+                break;
+            }
+          free (uuid);
+          native_multi_target_create_data_reset ();
+          set_client_state (CLIENT_AUTHENTIC);
+          break;
+        }
+      CLOSE (CLIENT_CREATE_MULTI_TARGET_TASK, TARGET);
 
       case CLIENT_CREATE_TASK:
         {
@@ -28781,6 +28980,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                                   resume_task_data->task_id,
                                   "resumed");
                   break;
+                case -10:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("resume_task",
+                                      "Native multi-target queue is at its"
+                                      " 64-child safety limit"));
+                  break;
                 case 22:
                   SEND_TO_CLIENT_OR_FAIL
                    (XML_ERROR_SYNTAX ("resume_task",
@@ -29058,6 +29263,12 @@ gmp_xml_handle_end_element (/* unused */ GMarkupParseContext* context,
                   log_event_fail ("task", "Task",
                                   start_task_data->task_id,
                                   "started");
+                  break;
+                case -10:
+                  SEND_TO_CLIENT_OR_FAIL
+                   (XML_ERROR_SYNTAX ("start_task",
+                                      "Native multi-target queue is at its"
+                                      " 64-child safety limit"));
                   break;
                 case 3:   /* Find failed. */
                   if (send_find_error_to_client ("start_task", "task",

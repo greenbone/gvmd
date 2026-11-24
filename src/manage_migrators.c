@@ -4279,6 +4279,107 @@ migrate_281_to_282 ()
   return 0;
 }
 
+/** Migrate to persisted logical multi-target tasks and scan partitions. */
+static int
+migrate_282_to_283 ()
+{
+  sql_begin_immediate ();
+  if (manage_db_version () != 282)
+    {
+      sql_rollback ();
+      return -1;
+    }
+
+  sql ("CREATE TABLE IF NOT EXISTS multi_target_tasks"
+       " (parent_task integer PRIMARY KEY REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  mode text NOT NULL CHECK (mode IN ('targets', 'overrides')),"
+       "  created_at integer NOT NULL);");
+  sql ("CREATE TABLE IF NOT EXISTS multi_target_members"
+       " (parent_task integer NOT NULL REFERENCES multi_target_tasks"
+       "   (parent_task) ON DELETE CASCADE,"
+       "  ordinal integer NOT NULL,"
+       "  source_target integer NOT NULL REFERENCES targets (id) ON DELETE RESTRICT,"
+       "  child_target integer NOT NULL REFERENCES targets (id) ON DELETE RESTRICT,"
+       "  child_task integer NOT NULL UNIQUE REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  PRIMARY KEY (parent_task, ordinal));");
+  sql ("CREATE TABLE IF NOT EXISTS multi_target_hosts"
+       " (parent_task integer NOT NULL,"
+       "  ordinal integer NOT NULL,"
+       "  host text NOT NULL,"
+       "  PRIMARY KEY (parent_task, ordinal, host),"
+       "  FOREIGN KEY (parent_task, ordinal) REFERENCES multi_target_members"
+       "   (parent_task, ordinal) ON DELETE CASCADE);");
+  sql ("CREATE TABLE IF NOT EXISTS multi_target_runs"
+       " (id BIGSERIAL PRIMARY KEY,"
+       "  parent_task integer NOT NULL REFERENCES multi_target_tasks"
+       "   (parent_task) ON DELETE RESTRICT,"
+       "  parent_report integer UNIQUE REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  state text NOT NULL,"
+       "  created_at integer NOT NULL,"
+       "  updated_at integer NOT NULL);");
+  sql ("CREATE TABLE IF NOT EXISTS multi_target_run_children"
+       " (run_id bigint NOT NULL REFERENCES multi_target_runs (id) ON DELETE CASCADE,"
+       "  ordinal integer NOT NULL,"
+       "  child_task integer NOT NULL REFERENCES tasks (id) ON DELETE RESTRICT,"
+       "  child_report integer REFERENCES reports (id) ON DELETE RESTRICT,"
+       "  state text NOT NULL,"
+       "  PRIMARY KEY (run_id, ordinal));");
+
+  set_db_version (283);
+  sql_commit ();
+  return 0;
+}
+
+/** Track uncertain native child dispatches across manager restarts. */
+static int
+migrate_283_to_284 ()
+{
+  sql_begin_immediate ();
+  if (manage_db_version () != 283)
+    {
+      sql_rollback ();
+      return -1;
+    }
+  sql ("ALTER TABLE multi_target_run_children"
+       " ADD COLUMN IF NOT EXISTS claimed_at integer NOT NULL DEFAULT 0;");
+  sql ("ALTER TABLE multi_target_tasks"
+       " DROP CONSTRAINT IF EXISTS multi_target_tasks_parent_task_fkey;");
+  sql ("ALTER TABLE multi_target_tasks"
+       " ADD CONSTRAINT multi_target_tasks_parent_task_fkey"
+       " FOREIGN KEY (parent_task) REFERENCES tasks (id) ON DELETE RESTRICT;");
+  sql ("CREATE INDEX IF NOT EXISTS multi_target_run_children_state_idx"
+       " ON multi_target_run_children (state, run_id);");
+  sql ("CREATE INDEX IF NOT EXISTS multi_target_runs_state_idx"
+       " ON multi_target_runs (state, updated_at);");
+  set_db_version (284);
+  sql_commit ();
+  return 0;
+}
+
+/** Keep terminal parent-status reconciliation proportional to active runs. */
+static int
+migrate_284_to_285 ()
+{
+  sql_begin_immediate ();
+  if (manage_db_version () != 284)
+    {
+      sql_rollback ();
+      return -1;
+    }
+  sql ("ALTER TABLE multi_target_runs"
+       " ADD COLUMN IF NOT EXISTS parent_status_synced"
+       " boolean NOT NULL DEFAULT FALSE;");
+  /* The version-284 worker already reconciled terminal parent status. */
+  sql ("UPDATE multi_target_runs SET parent_status_synced = TRUE"
+       " WHERE state IN ('done', 'partial', 'blocked', 'stopped');");
+  sql ("CREATE INDEX IF NOT EXISTS multi_target_runs_unsynced_terminal_idx"
+       " ON multi_target_runs (id) WHERE parent_status_synced = FALSE"
+       " AND state IN ('done', 'partial', 'blocked', 'stopped');");
+  set_db_version (285);
+  sql_commit ();
+  return 0;
+}
+
 #undef UPDATE_DASHBOARD_SETTINGS
 
 /**
@@ -4367,6 +4468,9 @@ static migrator_t database_migrators[] = {
   {280, migrate_279_to_280},
   {281, migrate_280_to_281},
   {282, migrate_281_to_282},
+  {283, migrate_282_to_283},
+  {284, migrate_283_to_284},
+  {285, migrate_284_to_285},
   /* End marker. */
   {-1, NULL}};
 

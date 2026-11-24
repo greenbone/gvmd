@@ -274,6 +274,16 @@ static GQueue *scheduled_task_queue = NULL;
  */
 static GSList *scheduled_task_runners = NULL;
 
+/* The proposal is opt-in.  Ordinary task starts retain their original path
+ * unless this flag is enabled in the isolated native test stack. */
+static gboolean native_dispatching_child = FALSE;
+
+static gboolean
+native_multi_target_enabled (void)
+{
+  return g_strcmp0 (g_getenv ("GVMD_NATIVE_MULTI_TARGET"), "1") == 0;
+}
+
 
 /* Certificate and key management. */
 
@@ -2304,6 +2314,80 @@ run_task (const char *task_id, char **report_id, int from)
   return -1; // Unknown scanner type
 }
 
+/* Persist the run before dispatch.  A queued row survives manager restart;
+ * the periodic manager worker claims one child at a time. */
+static int
+native_multi_target_enqueue (task_t parent, char **report_id)
+{
+  resource_t run;
+  gchar *owner_uuid;
+  gchar *quoted_owner;
+  int member_count;
+
+  owner_uuid = current_credentials.uuid;
+  if (!owner_uuid)
+    return 99;
+  quoted_owner = sql_quote (owner_uuid);
+  if (!sql_int ("SELECT COUNT(*) FROM tasks t JOIN users u ON t.owner = u.id"
+                " WHERE t.id = %llu AND u.uuid = '%s';",
+                parent, quoted_owner))
+    {
+      g_free (quoted_owner);
+      return 99;
+    }
+  g_free (quoted_owner);
+
+  if (sql_begin_immediate_giveup ())
+    return -1;
+  sql ("LOCK TABLE multi_target_runs IN SHARE ROW EXCLUSIVE MODE;");
+  member_count = sql_int ("SELECT COUNT(*) FROM multi_target_members"
+                          " WHERE parent_task = %llu;", parent);
+  if (member_count < 1 || member_count > 16)
+    {
+      sql_rollback ();
+      return -1;
+    }
+  if (sql_int ("SELECT COUNT(*) FROM multi_target_run_children"
+               " WHERE state IN ('pending', 'starting', 'running', 'uncertain');")
+      + member_count > 64)
+    {
+      sql_rollback ();
+      return -10;
+    }
+  if (sql_int ("SELECT COUNT(*) FROM multi_target_runs"
+               " WHERE parent_task = %llu"
+               " AND state IN ('queued', 'running', 'stopping', 'blocked');",
+               parent))
+    {
+      sql_rollback ();
+      return 1;
+    }
+  if (sql_int ("SELECT COUNT(*) FROM multi_target_members m"
+               " JOIN tasks t ON t.id = m.child_task"
+               " WHERE m.parent_task = %llu"
+               " AND t.run_status IN (%d, %d, %d, %d);",
+               parent, TASK_STATUS_REQUESTED, TASK_STATUS_RUNNING,
+               TASK_STATUS_QUEUED, TASK_STATUS_PROCESSING))
+    {
+      sql_rollback ();
+      return 1;
+    }
+
+  sql ("INSERT INTO multi_target_runs"
+       " (parent_task, state, created_at, updated_at)"
+       " VALUES (%llu, 'queued', m_now (), m_now ());", parent);
+  run = sql_last_insert_id ();
+  sql ("INSERT INTO multi_target_run_children"
+       " (run_id, ordinal, child_task, state)"
+       " SELECT %llu, ordinal, child_task, 'pending'"
+       " FROM multi_target_members WHERE parent_task = %llu;", run, parent);
+  set_task_run_status (parent, TASK_STATUS_QUEUED);
+  sql_commit ();
+  if (report_id)
+    *report_id = g_strdup ("0");
+  return 0;
+}
+
 /**
  * @brief Start a task.
  *
@@ -2314,6 +2398,7 @@ run_task (const char *task_id, char **report_id, int from)
  * @param[out]  report_id  The report ID.
  *
  * @return 1 task is active already,
+ *         -10 native multi-target outstanding-child ceiling reached,
  *         3 failed to find task,
  *         4 resuming task not supported,
  *         99 permission denied,
@@ -2328,8 +2413,24 @@ run_task (const char *task_id, char **report_id, int from)
 int
 start_task (const char *task_id, char **report_id)
 {
+  task_t task = 0;
   if (acl_user_may ("start_task") == 0)
     return 99;
+
+  if (native_multi_target_enabled ())
+    {
+      if (find_task_with_permission (task_id, &task, "start_task"))
+        return -1;
+      if (!task)
+        return 3;
+      if (sql_int ("SELECT COUNT(*) FROM multi_target_tasks"
+                   " WHERE parent_task = %llu;", task))
+        return native_multi_target_enqueue (task, report_id);
+      if (!native_dispatching_child
+          && sql_int ("SELECT COUNT(*) FROM multi_target_members"
+                       " WHERE child_task = %llu;", task))
+        return 99;
+    }
 
   return run_task (task_id, report_id, 0);
 }
@@ -2455,6 +2556,77 @@ stop_task (const char *task_id)
   if (task == 0)
     return 3;
 
+  if (native_multi_target_enabled ())
+    {
+      if (sql_int ("SELECT COUNT(*) FROM multi_target_tasks"
+                   " WHERE parent_task = %llu;", task))
+        {
+          iterator_t children;
+          GPtrArray *uuids = g_ptr_array_new_with_free_func (g_free);
+          gchar *quoted_owner;
+          long long run_id = 0;
+          guint i;
+
+          if (!current_credentials.uuid)
+            {
+              g_ptr_array_free (uuids, TRUE);
+              return 99;
+            }
+          quoted_owner = sql_quote (current_credentials.uuid);
+          if (!sql_int ("SELECT COUNT(*) FROM tasks t"
+                        " JOIN users u ON u.id = t.owner"
+                        " WHERE t.id = %llu AND u.uuid = '%s';",
+                        task, quoted_owner))
+            {
+              g_free (quoted_owner);
+              g_ptr_array_free (uuids, TRUE);
+              return 99;
+            }
+          g_free (quoted_owner);
+
+          if (sql_begin_immediate_giveup ())
+            {
+              g_ptr_array_free (uuids, TRUE);
+              return -1;
+            }
+          sql_int64 (&run_id,
+            "SELECT id FROM multi_target_runs WHERE parent_task = %llu"
+            " AND state IN ('queued', 'running') ORDER BY id DESC LIMIT 1;",
+            task);
+          if (!run_id)
+            {
+              sql_rollback ();
+              g_ptr_array_free (uuids, TRUE);
+              return 0;
+            }
+          init_iterator (&children,
+            "SELECT t.uuid FROM multi_target_run_children c"
+            " JOIN tasks t ON t.id = c.child_task"
+            " WHERE c.run_id = %lld AND c.state IN ('starting', 'running');",
+            run_id);
+          while (next (&children))
+            g_ptr_array_add (uuids, g_strdup (iterator_string (&children, 0)));
+          cleanup_iterator (&children);
+          sql ("UPDATE multi_target_run_children SET state = 'canceled'"
+               " WHERE run_id = %lld AND state = 'pending';", run_id);
+          sql ("UPDATE multi_target_runs SET state = 'stopping',"
+               " updated_at = m_now () WHERE id = %lld;", run_id);
+          set_task_run_status (task, TASK_STATUS_STOP_REQUESTED);
+          sql_commit ();
+
+          native_dispatching_child = TRUE;
+          for (i = 0; i < uuids->len; i++)
+            stop_task (g_ptr_array_index (uuids, i));
+          native_dispatching_child = FALSE;
+          g_ptr_array_free (uuids, TRUE);
+          return 0;
+        }
+      if (!native_dispatching_child
+          && sql_int ("SELECT COUNT(*) FROM multi_target_members"
+                       " WHERE child_task = %llu;", task))
+        return 99;
+    }
+
   if (scanner_type (task_scanner (task)) == SCANNER_TYPE_OPENVAS
       || scanner_type (task_scanner (task)) == SCANNER_TYPE_OSP_SENSOR)
     return stop_osp_task (task);
@@ -2488,6 +2660,7 @@ stop_task (const char *task_id)
  * @param[out]  report_id  If successful, ID of the resultant report.
  *
  * @return 1 task is active already,
+ *         -10 native multi-target outstanding-child ceiling reached,
  *         3 failed to find task,
  *         4 resuming task not supported,
  *         22 caller error (task must be in "stopped" or "interrupted" state),
@@ -2514,6 +2687,17 @@ resume_task (const char *task_id, char **report_id)
     return -1;
   if (task == 0)
     return 3;
+
+  if (native_multi_target_enabled ())
+    {
+      if (sql_int ("SELECT COUNT(*) FROM multi_target_tasks"
+                   " WHERE parent_task = %llu;", task))
+        return native_multi_target_enqueue (task, report_id);
+      if (!native_dispatching_child
+          && sql_int ("SELECT COUNT(*) FROM multi_target_members"
+                       " WHERE child_task = %llu;", task))
+        return 99;
+    }
 
   run_status = task_run_status (task);
   if ((run_status == TASK_STATUS_STOPPED)
@@ -4180,6 +4364,182 @@ manage_sync (sigset_t *sigmask_current,
     }
 }
 
+/* Reconcile committed child report states and claim at most one pending child.
+ * A claim is durable before its scan starts.  A lost acknowledgement leaves
+ * the run blocked for operator recovery; it is never retried blindly. */
+static void
+native_multi_target_dispatch (void)
+{
+  iterator_t pending;
+  long long run_id = 0;
+  int ordinal = -1;
+  task_t child = 0;
+  task_t parent = 0;
+  gchar *owner_uuid = NULL, *owner_name = NULL, *child_uuid = NULL;
+  gchar *report_uuid = NULL, *quoted_report = NULL;
+  int ret;
+
+  if (!native_multi_target_enabled ())
+    return;
+
+  if (sql_begin_immediate_giveup ())
+    return;
+  sql ("LOCK TABLE multi_target_run_children"
+       " IN SHARE ROW EXCLUSIVE MODE;");
+  sql ("UPDATE multi_target_run_children c SET state = 'done'"
+       " FROM reports r WHERE c.child_report = r.id"
+       " AND c.state = 'running' AND r.scan_run_status = %d;",
+       TASK_STATUS_DONE);
+  sql ("UPDATE multi_target_run_children c SET state = 'failed'"
+       " FROM reports r WHERE c.child_report = r.id"
+       " AND c.state = 'running'"
+       " AND r.scan_run_status IN (%d, %d);",
+       TASK_STATUS_STOPPED, TASK_STATUS_INTERRUPTED);
+  sql ("UPDATE multi_target_run_children SET state = 'uncertain'"
+       " WHERE state = 'starting' AND claimed_at < m_now () - 120;");
+  sql ("UPDATE multi_target_runs r SET state = 'blocked',"
+       " updated_at = m_now () WHERE state IN ('queued', 'running')"
+       " AND EXISTS (SELECT 1 FROM multi_target_run_children c"
+       " WHERE c.run_id = r.id AND c.state = 'uncertain');");
+  sql ("UPDATE multi_target_runs r SET state = 'done',"
+       " updated_at = m_now () WHERE state IN ('queued', 'running')"
+       " AND NOT EXISTS (SELECT 1 FROM multi_target_run_children c"
+       " WHERE c.run_id = r.id AND c.state <> 'done');");
+  sql ("UPDATE multi_target_runs r SET state = 'partial',"
+       " updated_at = m_now () WHERE state IN ('queued', 'running')"
+       " AND EXISTS (SELECT 1 FROM multi_target_run_children c"
+       " WHERE c.run_id = r.id AND c.state = 'failed')"
+       " AND NOT EXISTS (SELECT 1 FROM multi_target_run_children c"
+       " WHERE c.run_id = r.id"
+       " AND c.state IN ('pending', 'starting', 'running'));");
+  sql ("UPDATE multi_target_runs r SET state = 'stopped',"
+       " updated_at = m_now () WHERE state = 'stopping'"
+       " AND NOT EXISTS (SELECT 1 FROM multi_target_run_children c"
+       " WHERE c.run_id = r.id AND c.state IN ('starting', 'running'));");
+  sql ("UPDATE tasks t SET run_status = %d"
+       " FROM multi_target_runs r WHERE r.parent_task = t.id"
+       " AND r.id = (SELECT MAX(id) FROM multi_target_runs"
+       "             WHERE parent_task = t.id)"
+       " AND r.parent_status_synced = FALSE"
+       " AND r.state = 'done' AND t.run_status <> %d;",
+       TASK_STATUS_DONE, TASK_STATUS_DONE);
+  sql ("UPDATE tasks t SET run_status = %d"
+       " FROM multi_target_runs r WHERE r.parent_task = t.id"
+       " AND r.id = (SELECT MAX(id) FROM multi_target_runs"
+       "             WHERE parent_task = t.id)"
+       " AND r.parent_status_synced = FALSE"
+       " AND r.state IN ('partial', 'blocked')"
+       " AND t.run_status <> %d;",
+       TASK_STATUS_INTERRUPTED, TASK_STATUS_INTERRUPTED);
+  sql ("UPDATE tasks t SET run_status = %d"
+       " FROM multi_target_runs r WHERE r.parent_task = t.id"
+       " AND r.id = (SELECT MAX(id) FROM multi_target_runs"
+       "             WHERE parent_task = t.id)"
+       " AND r.parent_status_synced = FALSE"
+       " AND r.state = 'stopped' AND t.run_status <> %d;",
+       TASK_STATUS_STOPPED, TASK_STATUS_STOPPED);
+  sql ("UPDATE multi_target_runs SET parent_status_synced = TRUE"
+       " WHERE parent_status_synced = FALSE"
+       " AND state IN ('done', 'partial', 'blocked', 'stopped');");
+
+  if (sql_int ("SELECT COUNT(*) FROM multi_target_run_children"
+               " WHERE state IN ('starting', 'running');") >= 2)
+    {
+      sql_commit ();
+      return;
+    }
+
+  init_iterator (&pending,
+    "SELECT c.run_id, c.ordinal, c.child_task, r.parent_task,"
+    " u.uuid, u.name, t.uuid"
+    " FROM multi_target_run_children c"
+    " JOIN multi_target_runs r ON r.id = c.run_id"
+    " JOIN tasks t ON t.id = c.child_task"
+    " JOIN tasks p ON p.id = r.parent_task"
+    " JOIN users u ON u.id = p.owner"
+    " WHERE c.state = 'pending' AND r.state IN ('queued', 'running')"
+    " AND (SELECT COUNT(*) FROM multi_target_run_children active"
+    "      WHERE active.run_id = c.run_id"
+    "      AND active.state IN ('starting', 'running')) < 1"
+    " ORDER BY r.updated_at, c.run_id, c.ordinal LIMIT 1;");
+  if (next (&pending))
+    {
+      run_id = iterator_int64 (&pending, 0);
+      ordinal = iterator_int (&pending, 1);
+      child = iterator_int64 (&pending, 2);
+      parent = iterator_int64 (&pending, 3);
+      owner_uuid = g_strdup (iterator_string (&pending, 4));
+      owner_name = g_strdup (iterator_string (&pending, 5));
+      child_uuid = g_strdup (iterator_string (&pending, 6));
+    }
+  cleanup_iterator (&pending);
+  if (!child || !owner_uuid || !child_uuid)
+    {
+      sql_commit ();
+      g_free (owner_uuid);
+      g_free (owner_name);
+      g_free (child_uuid);
+      return;
+    }
+
+  /* This soft check also accounts for ordinary scans already running on the
+   * selected scanner.  It is not an atomic reservation against new ordinary
+   * starts; that needs a shared gvmd admission path before production. */
+  if (sql_int ("SELECT COUNT(*) FROM tasks"
+               " WHERE scanner = (SELECT scanner FROM tasks WHERE id = %llu)"
+               " AND NOT EXISTS (SELECT 1 FROM multi_target_tasks p"
+               " WHERE p.parent_task = tasks.id)"
+               " AND run_status IN (%d, %d);",
+               child, TASK_STATUS_RUNNING, TASK_STATUS_PROCESSING) >= 2)
+    {
+      sql_commit ();
+      g_free (owner_uuid);
+      g_free (owner_name);
+      g_free (child_uuid);
+      return;
+    }
+
+  sql ("UPDATE multi_target_run_children SET state = 'starting',"
+       " claimed_at = m_now () WHERE run_id = %lld AND ordinal = %d"
+       " AND state = 'pending';", run_id, ordinal);
+  sql ("UPDATE multi_target_runs SET state = 'running',"
+       " updated_at = m_now () WHERE id = %lld;", run_id);
+  sql ("UPDATE tasks SET run_status = %d WHERE id = %llu;",
+       TASK_STATUS_RUNNING, parent);
+  sql_commit ();
+
+  current_credentials.uuid = owner_uuid;
+  current_credentials.username = owner_name;
+  manage_session_init (owner_uuid);
+  native_dispatching_child = TRUE;
+  ret = start_task (child_uuid, &report_uuid);
+  native_dispatching_child = FALSE;
+
+  if (ret == 0 && report_uuid)
+    {
+      quoted_report = sql_quote (report_uuid);
+      if (sql_int ("SELECT COUNT(*) FROM reports WHERE uuid = '%s';",
+                   quoted_report))
+        sql ("UPDATE multi_target_run_children SET state = 'running',"
+             " child_report = (SELECT id FROM reports WHERE uuid = '%s')"
+             " WHERE run_id = %lld AND ordinal = %d AND state = 'starting';",
+             quoted_report, run_id, ordinal);
+      else
+        sql ("UPDATE multi_target_run_children SET state = 'uncertain'"
+             " WHERE run_id = %lld AND ordinal = %d AND state = 'starting';",
+             run_id, ordinal);
+      g_free (quoted_report);
+    }
+  else
+    sql ("UPDATE multi_target_run_children SET state = 'failed'"
+         " WHERE run_id = %lld AND ordinal = %d AND state = 'starting';",
+         run_id, ordinal);
+  g_free (report_uuid);
+  g_free (child_uuid);
+  /* The queue worker exits after this call; its owner credentials must remain
+   * valid until cleanup_manage_process has completed. */
+}
+
 /**
  * @brief Handle queued task actions like the scan queue or report processing.
  */
@@ -4193,6 +4553,8 @@ manage_queued_task_actions ()
   manage_process_report_imports ();
   setproctitle ("Manage scan queue");
   manage_handle_scan_queue ();
+  setproctitle ("Manage native multi-target queue");
+  native_multi_target_dispatch ();
 }
 
 /**

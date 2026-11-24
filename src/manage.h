@@ -836,6 +836,16 @@ task_false_positive_size (task_t);
 task_t
 make_task (char*, char*, int, int);
 
+/* Create one manager-owned logical task with one ordinary child per source
+ * target.  This is the multi-target-only tier; credential partitions refine
+ * the members in the combined tier.  The caller owns all arguments. */
+int
+native_multi_target_create (const char *, const char *, const char *,
+                            const char *, GPtrArray *, GPtrArray *, char **);
+
+char *
+native_multi_target_list_xml (const char *, int, int);
+
 void
 make_task_complete (task_t);
 
