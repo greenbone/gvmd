@@ -591,7 +591,7 @@ if(ENABLE_AD_INTEGRATION)
     APPEND_STRING
     PROPERTY
       LINK_FLAGS
-        " -Wl,-wrap,verify_active_directory_credential,-wrap,get_active_directory_objects"
+        " -Wl,-wrap,verify_active_directory_credential,-wrap,get_active_directory_objects,-wrap,active_directory_max_results_limit"
   )
 endif()
 
