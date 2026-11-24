@@ -35,3 +35,12 @@ agent_jwt_encode_secret_path = @GVMD_STATE_DIR@/jwt/agent-inventory-secret
 
 [gmp]
 write_timeout = 30
+
+[active_directory]
+# allowed_hosts =
+# allowed_ports = 389,636,3268,3269
+# Accepted range is 1 to 120 seconds.
+network_timeout_seconds = 10
+# Accepted range is 1 to 300 seconds.
+operation_timeout_seconds = 30
+max_results_limit = 1000

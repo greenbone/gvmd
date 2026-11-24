@@ -85,6 +85,9 @@ typedef enum
 void
 load_active_directory_config (void);
 
+guint
+active_directory_max_results_limit (void);
+
 ad_destination_return_t
 active_directory_effective_port (const gchar *, const gchar *, guint *);
 
@@ -125,7 +128,7 @@ typedef struct
   gboolean details;
 } get_ad_objects_params_t;
 
-#define GET_AD_OBJECTS_MAX_RESULTS 1000
+#define AD_MAX_RESULTS_LIMIT_DEFAULT 1000
 
 typedef struct
 {

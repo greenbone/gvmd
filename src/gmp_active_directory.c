@@ -25,10 +25,6 @@
  */
 #define G_LOG_DOMAIN "md    gmp"
 
-/* GET_ACTIVE_DIRECTORY_OBJECTS */
-
-#define AD_OBJECTS_DEFAULT_MAX_RESULTS 200
-
 /* VERIFY_ACTIVE_DIRECTORY_CREDENTIAL */
 
 typedef struct
@@ -638,7 +634,7 @@ ad_object_parse_max_results (const gchar *text, guint *max_results)
 
   value = g_ascii_strtoull (text, NULL, 10);
 
-  if (value < 1 || value > GET_AD_OBJECTS_MAX_RESULTS)
+  if (value < 1 || value > active_directory_max_results_limit ())
     return FALSE;
 
   *max_results = (guint) value;
@@ -941,7 +937,7 @@ get_active_directory_objects_run (gmp_parser_t *gmp_parser, GError **error)
   get_ad_objects_params_t request = {
     .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
     .object_types = AD_OBJECT_TYPE_DEFAULT,
-    .max_results = AD_OBJECTS_DEFAULT_MAX_RESULTS,
+    .max_results = active_directory_max_results_limit (),
     .include_disabled_computers = TRUE,
     .targets = FALSE,
     .tasks = FALSE,

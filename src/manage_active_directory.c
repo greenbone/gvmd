@@ -37,6 +37,8 @@
 
 #define AD_NETWORK_TIMEOUT_SECONDS_DEFAULT 10
 #define AD_OPERATION_TIMEOUT_SECONDS_DEFAULT 30
+#define AD_NETWORK_TIMEOUT_SECONDS_MAX 120
+#define AD_OPERATION_TIMEOUT_SECONDS_MAX 300
 
 #define ACTIVE_DIRECTORY_CONFIG_GROUP "active_directory"
 #define AD_ALLOWED_HOSTS_DEFAULT ""
@@ -100,6 +102,22 @@ static GPtrArray *ad_allowed_hosts;
  * NULL means uninitialized or invalid/unreadable selected configuration.
  */
 static GArray *ad_allowed_ports;
+
+/**
+ * @brief Configured AD connection timeout in seconds.
+ */
+static guint ad_network_timeout_seconds = AD_NETWORK_TIMEOUT_SECONDS_DEFAULT;
+
+/**
+ * @brief Configured timeout for individual LDAP operations in seconds.
+ */
+static guint ad_operation_timeout_seconds =
+  AD_OPERATION_TIMEOUT_SECONDS_DEFAULT;
+
+/**
+ * @brief Configured maximum number of AD objects per request.
+ */
+static guint ad_max_results_limit = AD_MAX_RESULTS_LIMIT_DEFAULT;
 
 /**
  * @brief Parse a required decimal port without trimming or fallback.
@@ -269,6 +287,62 @@ ad_policy_config_string (GKeyFile *kf, const gchar *env_name,
 }
 
 /**
+ * @brief Read a positive AD integer setting, preferring the environment.
+ *
+ * Invalid values warn and use the built-in default. The shared getter warns
+ * about unreadable values; this function then returns the default silently.
+ *
+ * @param[in] kf             Configuration, or NULL if unavailable.
+ * @param[in] env_name       Environment override name.
+ * @param[in] key            Key in the active_directory group.
+ * @param[in] maximum        Inclusive upper bound.
+ * @param[in] default_value  Default value within the accepted range.
+ *
+ * @return Value in range 1 to maximum, or default_value if absent, invalid
+ *         or unreadable.
+ */
+static guint
+ad_config_uint (GKeyFile *kf, const gchar *env_name, const gchar *key,
+                guint maximum, guint default_value)
+{
+  gchar *end;
+  guint64 value;
+  gchar *text = gvmd_get_env_or_config_string (
+    env_name, kf, ACTIVE_DIRECTORY_CONFIG_GROUP, key);
+
+  if (!text)
+    return default_value;
+
+  if (g_ascii_isdigit ((guchar) text[0]))
+    {
+      errno = 0;
+      value = g_ascii_strtoull (text, &end, 10);
+      if (errno != ERANGE && *end == '\0' && value >= 1 && value <= maximum)
+        {
+          g_free (text);
+          return (guint) value;
+        }
+    }
+
+  g_warning ("%s: active_directory.%s: expected an integer in range 1-%u; "
+             "using built-in default %u",
+             __func__, key, maximum, default_value);
+  g_free (text);
+  return default_value;
+}
+
+/**
+ * @brief Return the configured AD object result ceiling.
+ *
+ * @return Maximum permitted result count.
+ */
+guint
+active_directory_max_results_limit (void)
+{
+  return ad_max_results_limit;
+}
+
+/**
  * @brief Parse and deduplicate a host list, discarding partial invalid lists.
  *
  * @param[in,out] text  Non-NULL writable comma-separated list. Surrounding
@@ -369,6 +443,7 @@ parse_ad_allowed_ports (gchar *text)
  * default or lower-priority value. Publish complete lists or failure states,
  * freeing previous policy on repeated initialization, including valid-to-invalid
  * transitions. The checker reads only this snapshot; startup is not aborted.
+ * Invalid numeric settings warn and use their built-in defaults.
  */
 void
 load_active_directory_config (void)
@@ -400,6 +475,16 @@ load_active_directory_config (void)
   g_clear_pointer (&ad_allowed_ports, g_array_unref);
   ad_allowed_hosts = hosts;
   ad_allowed_ports = ports;
+
+  ad_network_timeout_seconds = ad_config_uint (
+    kf, "GVMD_AD_NETWORK_TIMEOUT_SECONDS", "network_timeout_seconds",
+    AD_NETWORK_TIMEOUT_SECONDS_MAX, AD_NETWORK_TIMEOUT_SECONDS_DEFAULT);
+  ad_operation_timeout_seconds = ad_config_uint (
+    kf, "GVMD_AD_OPERATION_TIMEOUT_SECONDS", "operation_timeout_seconds",
+    AD_OPERATION_TIMEOUT_SECONDS_MAX, AD_OPERATION_TIMEOUT_SECONDS_DEFAULT);
+  ad_max_results_limit = ad_config_uint (
+    kf, "GVMD_AD_MAX_RESULTS_LIMIT", "max_results_limit", G_MAXINT,
+    AD_MAX_RESULTS_LIMIT_DEFAULT);
 }
 
 /**
@@ -860,8 +945,8 @@ verify_active_directory_credential (const gchar *credential_id,
 
   connector_result = configure_ad_connector (connector,
                                              ad,
-                                             AD_NETWORK_TIMEOUT_SECONDS_DEFAULT,
-                                             AD_OPERATION_TIMEOUT_SECONDS_DEFAULT);
+                                             ad_network_timeout_seconds,
+                                             ad_operation_timeout_seconds);
   if (connector_result != AD_CONNECTOR_OK)
     {
       result = !supplied && connector_result == AD_CONNECTOR_INVALID_VALUE
@@ -1541,7 +1626,7 @@ valid_ad_object_search_params (const get_ad_objects_params_t *params)
     return FALSE;
 
   if (params->max_results < 1
-      || params->max_results > GET_AD_OBJECTS_MAX_RESULTS)
+      || params->max_results > active_directory_max_results_limit ())
     return FALSE;
 
   if (params->scope != AD_CONNECTOR_SEARCH_SCOPE_BASE
@@ -1761,8 +1846,8 @@ get_active_directory_objects (const get_ad_objects_params_t *params,
 
   connector_result = configure_ad_connector (connector,
                                              &saved,
-                                             AD_NETWORK_TIMEOUT_SECONDS_DEFAULT,
-                                             AD_OPERATION_TIMEOUT_SECONDS_DEFAULT);
+                                             ad_network_timeout_seconds,
+                                             ad_operation_timeout_seconds);
   if (connector_result != AD_CONNECTOR_OK)
     {
       if (connector_result == AD_CONNECTOR_INVALID_VALUE)
