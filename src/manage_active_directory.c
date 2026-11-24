@@ -39,6 +39,10 @@
 #define AD_OPERATION_TIMEOUT_SECONDS_DEFAULT 30
 #define AD_NETWORK_TIMEOUT_SECONDS_MAX 120
 #define AD_OPERATION_TIMEOUT_SECONDS_MAX 300
+#define AD_MAX_RESULTS_LIMIT_MAX 10000
+
+/* The result limit must fit in gint for the AD connector builder. */
+G_STATIC_ASSERT (AD_MAX_RESULTS_LIMIT_MAX <= G_MAXINT);
 
 #define ACTIVE_DIRECTORY_CONFIG_GROUP "active_directory"
 #define AD_ALLOWED_HOSTS_DEFAULT ""
@@ -482,9 +486,9 @@ load_active_directory_config (void)
   ad_operation_timeout_seconds = ad_config_uint (
     kf, "GVMD_AD_OPERATION_TIMEOUT_SECONDS", "operation_timeout_seconds",
     AD_OPERATION_TIMEOUT_SECONDS_MAX, AD_OPERATION_TIMEOUT_SECONDS_DEFAULT);
-  ad_max_results_limit = ad_config_uint (
-    kf, "GVMD_AD_MAX_RESULTS_LIMIT", "max_results_limit", G_MAXINT,
-    AD_MAX_RESULTS_LIMIT_DEFAULT);
+  ad_max_results_limit =
+    ad_config_uint (kf, "GVMD_AD_MAX_RESULTS_LIMIT", "max_results_limit",
+                    AD_MAX_RESULTS_LIMIT_MAX, AD_MAX_RESULTS_LIMIT_DEFAULT);
 }
 
 /**

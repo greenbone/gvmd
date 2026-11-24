@@ -30,6 +30,7 @@ static int credential_failure_logs;
 static verify_ad_return_t mock_verify_result;
 static get_ad_objects_return_t mock_search_result;
 static guint search_command_calls;
+static guint mock_ad_max_results_limit;
 static const get_ad_objects_params_t *expected_search_params;
 static ad_directory_object_t *mock_search_object;
 static const gchar *expected_ad_host;
@@ -51,6 +52,7 @@ BeforeEach (gmp)
   mock_search_result = GET_AD_OBJECTS_OK;
   mock_verify_result = VERIFY_AD_CREDENTIAL_OK;
   search_command_calls = 0;
+  mock_ad_max_results_limit = AD_MAX_RESULTS_LIMIT_DEFAULT;
   expected_ad_host = NULL;
   expected_ad_port = NULL;
   expected_stored_ad = FALSE;
@@ -195,6 +197,12 @@ assert_ad_search_params (const get_ad_objects_params_t *params,
     assert_that (params->group_dn, is_equal_to_string (expected->group_dn));
   else
     assert_that (params->group_dn, is_null);
+}
+
+guint
+__wrap_active_directory_max_results_limit (void)
+{
+  return mock_ad_max_results_limit;
 }
 
 get_ad_objects_return_t
@@ -672,38 +680,20 @@ Ensure (gmp, search_request_rejects_invalid_options)
 
 Ensure (gmp, search_request_uses_configured_result_limit)
 {
-  gchar *previous = g_strdup (g_getenv ("GVMD_AD_MAX_RESULTS_LIMIT"));
-  get_ad_objects_params_t expected = {.scope =
-                                        AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
-                                      .object_types = AD_OBJECT_TYPE_DEFAULT,
-                                      .max_results = 10000,
-                                      .include_disabled_computers = TRUE};
+  const get_ad_objects_params_t expected = {
+    .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
+    .object_types = AD_OBJECT_TYPE_DEFAULT,
+    .max_results = 50,
+    .include_disabled_computers = TRUE
+  };
 
-  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "10000", TRUE);
-  load_active_directory_config ();
+  mock_ad_max_results_limit = 50;
   assert_ad_search_options ("", "", &expected);
-  assert_ad_search_options ("max_results=\"10000\"", "", &expected);
+  assert_ad_search_options ("max_results=\"50\"", "", &expected);
   assert_ad_search_rejected (
     "<get_active_directory_objects credential_id=\"response-credential\" "
-    "max_results=\"10001\"/>",
+    "max_results=\"51\"/>",
     "Invalid max_results");
-
-  g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "1", TRUE);
-  load_active_directory_config ();
-  expected.max_results = 1;
-  assert_ad_search_options ("", "", &expected);
-  assert_ad_search_options ("max_results=\"1\"", "", &expected);
-  assert_ad_search_rejected (
-    "<get_active_directory_objects credential_id=\"response-credential\" "
-    "max_results=\"2\"/>",
-    "Invalid max_results");
-
-  if (previous)
-    g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", previous, TRUE);
-  else
-    g_unsetenv ("GVMD_AD_MAX_RESULTS_LIMIT");
-  g_free (previous);
-  load_active_directory_config ();
 }
 
 Ensure (gmp, search_ad_error_responses)

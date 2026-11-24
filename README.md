@@ -237,9 +237,9 @@ retrying a lower-priority source.
 
 `max_results_limit` in `[active_directory]` sets both the maximum permitted GMP
 `max_results` and the result limit when that attribute is omitted. Clients can
-request fewer objects explicitly. The default is 1000; accepted values are
-1 through `G_MAXINT`. `GVMD_AD_MAX_RESULTS_LIMIT` overrides the configuration file.
-Invalid values warn and use the built-in default.
+request fewer objects explicitly. Accepted values range from 1 to 10,000.
+`GVMD_AD_MAX_RESULTS_LIMIT` overrides the configuration file. Out-of-range or
+otherwise invalid values log a warning and use the built-in default of 1,000.
 
 Like AD timeouts, this setting is loaded at startup in AD-enabled builds,
 regardless of the runtime feature flag. Changes require restart. Larger limits

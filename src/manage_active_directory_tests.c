@@ -2005,10 +2005,11 @@ Ensure (manage_active_directory, search_enforces_configured_result_limit)
   get_ad_objects_params_t params = {.credential_id = "credential-id",
                                     .scope = AD_CONNECTOR_SEARCH_SCOPE_ONELEVEL,
                                     .object_types = AD_OBJECT_TYPE_OU,
-                                    .max_results = 10000};
+                                    .max_results = AD_MAX_RESULTS_LIMIT_MAX};
   get_ad_objects_result_t result = {0};
 
-  set_test_ad_config ("[active_directory]\nmax_results_limit = 10000\n");
+  set_test_ad_config ("[active_directory]\nmax_results_limit = " G_STRINGIFY (
+    AD_MAX_RESULTS_LIMIT_MAX) "\n");
   load_active_directory_config ();
   expected_permission = "get_active_directory_objects";
   assert_that (get_active_directory_objects (&params, &result),
@@ -2016,7 +2017,7 @@ Ensure (manage_active_directory, search_enforces_configured_result_limit)
   get_ad_objects_result_reset (&result);
 
   reset_test_state ();
-  params.max_results = 10001;
+  params.max_results = (guint) AD_MAX_RESULTS_LIMIT_MAX + 1;
   assert_that (get_active_directory_objects (&params, &result),
                is_equal_to (GET_AD_OBJECTS_INVALID_INPUT));
   assert_no_ad_connector_calls ();
@@ -3012,7 +3013,7 @@ assert_invalid_result_limit_value (const gchar *value)
   g_key_file_set_value (test_config, "active_directory", "max_results_limit",
                         value);
   assert_that (ad_config_uint (test_config, "GVMD_AD_MAX_RESULTS_LIMIT",
-                               "max_results_limit", G_MAXINT,
+                               "max_results_limit", AD_MAX_RESULTS_LIMIT_MAX,
                                AD_MAX_RESULTS_LIMIT_DEFAULT),
                is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
   assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
@@ -3121,9 +3122,11 @@ Ensure (manage_active_directory,
 
 Ensure (manage_active_directory, loader_result_limit_defaults_and_overrides)
 {
-  set_test_ad_config ("[active_directory]\nmax_results_limit = 10000\n");
+  set_test_ad_config ("[active_directory]\nmax_results_limit = " G_STRINGIFY (
+    AD_MAX_RESULTS_LIMIT_MAX) "\n");
   load_active_directory_config ();
-  assert_that (active_directory_max_results_limit (), is_equal_to (10000));
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_MAX));
 
   g_setenv ("GVMD_AD_MAX_RESULTS_LIMIT", "1", TRUE);
   load_active_directory_config ();
@@ -3133,25 +3136,25 @@ Ensure (manage_active_directory, loader_result_limit_defaults_and_overrides)
 
 Ensure (manage_active_directory, loader_result_limit_bounds_and_fallbacks)
 {
-  gchar *maximum = g_strdup_printf ("%u", (guint) G_MAXINT);
-  gchar *overflow =
-    g_strdup_printf ("%" G_GUINT64_FORMAT, (guint64) G_MAXINT + 1);
-  guint warnings;
+  gchar *above_maximum =
+    g_strdup_printf ("%u", (guint) AD_MAX_RESULTS_LIMIT_MAX + 1);
+  guint warnings = result_limit_warning_count;
 
   g_key_file_set_value (test_config, "active_directory", "max_results_limit",
-                        maximum);
+                        G_STRINGIFY (AD_MAX_RESULTS_LIMIT_MAX));
   load_active_directory_config ();
-  assert_that (active_directory_max_results_limit (), is_equal_to (G_MAXINT));
+  assert_that (active_directory_max_results_limit (),
+               is_equal_to (AD_MAX_RESULTS_LIMIT_MAX));
+  assert_that (result_limit_warning_count, is_equal_to (warnings));
+
   g_key_file_set_value (test_config, "active_directory", "max_results_limit",
-                        overflow);
+                        above_maximum);
+  g_free (above_maximum);
   warnings = result_limit_warning_count;
   load_active_directory_config ();
   assert_that (active_directory_max_results_limit (),
                is_equal_to (AD_MAX_RESULTS_LIMIT_DEFAULT));
   assert_that (result_limit_warning_count, is_equal_to (warnings + 1));
-
-  g_free (maximum);
-  g_free (overflow);
 
   g_key_file_set_value (test_config, "active_directory", "max_results_limit",
                         "0");
