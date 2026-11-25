@@ -66,7 +66,7 @@
  * of the scan, if the host has identifiers, then this decision is revised
  * by \ref hosts_set_identifiers to take the identifiers into account.
  *
- * Host identifiers can be ip, hostname, MAC, OS or ssh-key.
+ * Host identifiers can be ip, hostname, fqdn, agentID, MAC, OS or ssh-key.
  *
  * This documentation includes some pseudo-code and tabular definition.
  * Eventually one of them will repalce the other.
@@ -500,7 +500,9 @@ check_snapshot_identifier_name (const gchar *name)
 {
   return name
          && (strcmp (name, "hostname") == 0
-             || strcmp (name, "MAC") == 0);
+             || strcmp (name, "MAC") == 0
+             || strcmp (name, "fqdn") == 0
+             || strcmp (name, "agentID") == 0);
 }
 
 /**
@@ -547,8 +549,7 @@ add_host_identifier_to_arrays (array_t **ids, array_t **hosts,
 }
 
 /**
- * @brief Add a report host identifier into "snapshot" arrays
- *        and/or legacy arrays.
+ * @brief Add a report host identifier to the snapshot arrays.
  *
  * @param[in] ip            Host IP address.
  * @param[in] name          Identifier name.
@@ -664,13 +665,16 @@ manage_report_host_details (report_t report, const char *ip,
           /* Only add to assets if "Add to Assets" is set on the task. */
           if (in_assets)
             {
-              if (strcmp (entity_text (name), "hostname") == 0)
+              if (strcmp (entity_text (name), "hostname") == 0
+                  || ((strcmp (entity_text (name), "fqdn") == 0
+                       || strcmp (entity_text (name), "agentID") == 0)
+                      && entity_text (value) && *entity_text (value)))
                 {
                   identifier_t *identifier;
 
                   identifier = g_malloc (sizeof (identifier_t));
                   identifier->ip = g_strdup (ip);
-                  identifier->name = g_strdup ("hostname");
+                  identifier->name = g_strdup (entity_text (name));
                   identifier->value = g_strdup (entity_text (value));
                   identifier->source_id = g_strdup (uuid);
                   identifier->source_type = g_strdup ("Report Host Detail");
@@ -852,6 +856,8 @@ static int
 identifier_name (const char *name)
 {
   return (strcmp ("hostname", name) == 0)
+         || (strcmp ("fqdn", name) == 0)
+         || (strcmp ("agentID", name) == 0)
          || (strcmp ("MAC", name) == 0)
          || (strcmp ("OS", name) == 0)
          || (strcmp ("ssh-key", name) == 0);
@@ -1220,7 +1226,7 @@ asset_snapshot_insert_nic_ips_identifier (asset_snapshot_t asset_snapshot,
 /**
  * @brief Initialize iterator for asset identifiers from report host details.
  *
- * Reads NIC_IPS and MAC-Ifaces values for one host in a report.
+ * Reads IP, MAC, FQDN and agent ID details for one host in a report.
  *
  * @param[out] iterator  Iterator to initialize.
  * @param[in]  report    Report ID.
@@ -1246,7 +1252,8 @@ init_asset_snapshot_host_detail_identifier_iterator (iterator_t *iterator,
                     "   ON rhd.report_host = rh.id"
                     " WHERE rh.report = $1"
                     "   AND rh.host = $2"
-                    "   AND rhd.name IN ('NIC_IPS', 'MAC-Ifaces');",
+                    "   AND rhd.name IN ('NIC_IPS', 'MAC-Ifaces',"
+                    "                    'fqdn', 'agentID');",
                     SQL_RESOURCE_PARAM (report),
                     SQL_STR_PARAM (host),
                     NULL);
@@ -1255,8 +1262,7 @@ init_asset_snapshot_host_detail_identifier_iterator (iterator_t *iterator,
 /**
  * @brief Insert asset identifiers found in report host details.
  *
- * Reads NIC_IPS and MAC-Ifaces details for one host in a report and stores the
- * extracted IP and MAC identifiers for the given asset snapshot.
+ * Stores IP, MAC, FQDN and agent ID identifiers for the given asset snapshot.
  *
  * @param[in] asset_snapshot  Asset snapshot ID.
  * @param[in] report          Report ID.
@@ -1286,6 +1292,12 @@ asset_snapshot_insert_host_detail_identifiers (asset_snapshot_t asset_snapshot,
         asset_snapshot_insert_nic_ips_identifier (asset_snapshot, value);
       else if (strcmp (name, "MAC-Ifaces") == 0)
         asset_snapshot_insert_mac_iface_identifiers (asset_snapshot, value);
+      else if (strcmp (name, "fqdn") == 0)
+        asset_snapshot_insert_identifier (asset_snapshot,
+                                          ASSET_IDENTIFIER_TYPE_FQDN, value);
+      else if (strcmp (name, "agentID") == 0)
+        asset_snapshot_insert_identifier (asset_snapshot,
+                                          ASSET_IDENTIFIER_TYPE_AGENT_ID, value);
     }
 
   cleanup_iterator (&it);
