@@ -27318,40 +27318,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
 
   /* Add report host if it doesn't exist. */
   manage_report_host_add (rep_aux->report, host, 0, 0);
-  if (!strcmp (port, "general/Host_Details"))
-    {
-      gchar *hash_value = NULL;
-      gchar *r_uuid = report_uuid (rep_aux->report);
-      if (!check_host_detail_exists (rep_aux->report, host,
-                                     res->detail_source_type,
-                                     res->detail_source_name,
-                                     res->detail_source_description,
-                                     res->detail_name,
-                                     res->detail_value,
-                                     &hash_value,
-                                     rep_aux->hash_hostdetails))
-        {
-          insert_report_host_detail (rep_aux->report, host,
-                                     res->detail_source_type,
-                                     res->detail_source_name,
-                                     res->detail_source_description,
-                                     res->detail_name,
-                                     res->detail_value,
-                                     hash_value);
-        }
-      /* Add host identifiers to asset snapshot array */
-      asset_snapshot_add_report_host_identifier (host,
-                                                  res->detail_name,
-                                                  res->detail_value,
-                                                  r_uuid,
-                                                  res->detail_source_name);
-      desc = res->message;
-      g_free (hash_value);
-      g_free (type);
-      g_free (r_uuid);
-      return;
-    }
-  else if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
+  if (g_str_has_prefix (test_id, "1.3.6.1.4.1.25623.1."))
     {
       nvt_id = g_strdup (test_id);
       severity_str = nvt_severity (test_id, type);
@@ -27367,10 +27334,6 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
     {
       /* TODO: This should probably be handled by the "Host Detail"
        *        result type with extra source info in OSP.
-       *
-       * TODO: 17.12.2025 ozgen - For openvasd scans, host details do not pass through
-       *       manage_report_host_detail(). When "in_assets" is enabled, this may
-       *       prevent host identifiers from being added as assets.
        */
       if (manage_report_host_detail (rep_aux->report, host, desc,
                                      rep_aux->hash_hostdetails))
@@ -27410,6 +27373,7 @@ add_http_scanner_result_to_report (http_scanner_result_t res, gpointer *results_
 
   g_free (nvt_id);
   g_free (type);
+  g_free (severity_str);
 
   return;
 }
