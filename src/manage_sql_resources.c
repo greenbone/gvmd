@@ -784,7 +784,7 @@ resource_count (const char *type, const get_data_t *get)
   else
     count_get.filter = "rows=-1 first=1 permission=any min_qod=0";
 
-  extra_with = extra_tables = NULL;
+  extra_where = extra_with = extra_tables = NULL;
 
   if (strcasecmp (type, "config") == 0)
     {
@@ -946,8 +946,6 @@ resource_count (const char *type, const get_data_t *get)
       extra_with = vuln_iterator_extra_with_from_filter (count_get.filter);
       extra_tables = vuln_iterator_opts_from_filter (count_get.filter);
     }
-  else
-    extra_where = NULL;
 
   rc = count2 (get->subtype ? get->subtype : type,
                &count_get,
