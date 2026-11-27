@@ -18104,10 +18104,8 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                         {
                           const gchar *path =
                             g_ptr_array_index (excluded_paths, i);
-                          gchar *esc =
-                            g_markup_escape_text (path ? path : "", -1);
-                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
-                          g_free (esc);
+                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>",
+                                                   path ? path : "");
                         }
                       SEND_TO_CLIENT_OR_FAIL ("</excluded_paths>");
                     }
