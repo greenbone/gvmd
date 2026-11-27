@@ -10628,6 +10628,7 @@ END:VCALENDAR
             <e>agent_control</e>
             <e>agent_script_executor</e>
             <e>heartbeat</e>
+            <e>file_search</e>
           </pattern>
           <ele>
             <name>agent_control</name>
@@ -10711,6 +10712,34 @@ END:VCALENDAR
               <name>miss_until_inactive</name>
               <summary>Consecutive missed heartbeats before marking agent inactive</summary>
               <pattern><type>integer</type></pattern>
+            </ele>
+          </ele>
+          <ele>
+            <name>file_search</name>
+            <summary>File search configuration</summary>
+            <pattern><e>excluded_paths</e></pattern>
+            <ele>
+              <name>excluded_paths</name>
+              <summary>Paths excluded from file searches</summary>
+              <description>
+                <p>
+                  Paths are returned as text. An empty list has no item
+                  elements and an is_list value of 0.
+                </p>
+              </description>
+              <pattern>
+                <attrib>
+                  <name>is_list</name>
+                  <type>boolean</type>
+                  <required>0</required>
+                </attrib>
+                <any><e>item</e></any>
+              </pattern>
+              <ele>
+                <name>item</name>
+                <summary>Excluded file path</summary>
+                <pattern><type>text</type></pattern>
+              </ele>
             </ele>
           </ele>
         </ele>
@@ -10876,6 +10905,13 @@ END:VCALENDAR
                 <interval_in_seconds>600</interval_in_seconds>
                 <miss_until_inactive>1</miss_until_inactive>
               </heartbeat>
+              <file_search>
+                <excluded_paths is_list="1">
+                  <item>C:\ProgramData\Example\Cache</item>
+                  <item>/opt/private</item>
+                  <item>/var/lib/example/cache</item>
+                </excluded_paths>
+              </file_search>
             </config>
           </agent>
           <filters id="">
@@ -31721,6 +31757,7 @@ END:VCALENDAR
               <e>agent_control</e>
               <e>agent_script_executor</e>
               <e>heartbeat</e>
+              <e>file_search</e>
             </pattern>
             <ele>
               <name>agent_control</name>
@@ -31796,6 +31833,34 @@ END:VCALENDAR
                 <name>miss_until_inactive</name>
                 <summary>Consecutive missed heartbeats before marking agent inactive</summary>
                 <pattern><type>integer</type></pattern>
+              </ele>
+            </ele>
+            <ele>
+              <name>file_search</name>
+              <summary>File search configuration</summary>
+              <pattern><e>excluded_paths</e></pattern>
+              <ele>
+                <name>excluded_paths</name>
+                <summary>Paths excluded from file searches</summary>
+                <description>
+                  <p>
+                    Paths are returned as text. An empty list has no item
+                    elements and an is_list value of 0.
+                  </p>
+                </description>
+                <pattern>
+                  <attrib>
+                    <name>is_list</name>
+                    <type>boolean</type>
+                    <required>0</required>
+                  </attrib>
+                  <any><e>item</e></any>
+                </pattern>
+                <ele>
+                  <name>item</name>
+                  <summary>Excluded file path</summary>
+                  <pattern><type>text</type></pattern>
+                </ele>
               </ele>
             </ele>
           </ele>
@@ -32011,6 +32076,13 @@ END:VCALENDAR
                 <interval_in_seconds>600</interval_in_seconds>
                 <miss_until_inactive>1</miss_until_inactive>
               </heartbeat>
+              <file_search>
+                <excluded_paths is_list="1">
+                  <item>C:\ProgramData\Example\Cache</item>
+                  <item>/opt/private</item>
+                  <item>/var/lib/example/cache</item>
+                </excluded_paths>
+              </file_search>
             </agent_defaults>
             <agent_control_defaults>
               <update_to_latest>1</update_to_latest>
@@ -38622,6 +38694,7 @@ END:VCALENDAR
           <o><e>agent_control</e></o>
           <o><e>agent_script_executor</e></o>
           <o><e>heartbeat</e></o>
+          <o><e>file_search</e></o>
         </pattern>
         <ele>
           <name>agent_control</name>
@@ -38690,6 +38763,36 @@ END:VCALENDAR
             <pattern><type>integer</type></pattern>
           </ele>
         </ele>
+        <ele>
+          <name>file_search</name>
+          <summary>File search configuration</summary>
+          <pattern><o><e>excluded_paths</e></o></pattern>
+          <ele>
+            <name>excluded_paths</name>
+            <summary>Paths excluded from file searches</summary>
+            <description>
+              <p>
+                An empty excluded_paths element clears the excluded paths.
+                Backslash pairs are converted to single backslashes before
+                paths are sent to the Agent Controller. Single backslashes
+                are preserved.
+              </p>
+            </description>
+            <pattern>
+              <attrib>
+                <name>is_list</name>
+                <type>boolean</type>
+                <required>0</required>
+              </attrib>
+              <any><e>item</e></any>
+            </pattern>
+            <ele>
+              <name>item</name>
+              <summary>Excluded file path</summary>
+              <pattern><type>text</type></pattern>
+            </ele>
+          </ele>
+        </ele>
       </ele>
       <ele>
         <name>agent_control_defaults</name>
@@ -38750,6 +38853,13 @@ END:VCALENDAR
                 <interval_in_seconds>600</interval_in_seconds>
                 <miss_until_inactive>1</miss_until_inactive>
               </heartbeat>
+              <file_search>
+                <excluded_paths is_list="1">
+                  <item>C:\\ProgramData\\Example\\Cache</item>
+                  <item>/opt/private</item>
+                  <item>/var/lib/example/cache</item>
+                </excluded_paths>
+              </file_search>
             </agent_defaults>
             <agent_control_defaults>
               <update_to_latest>1</update_to_latest>
@@ -38918,6 +39028,7 @@ END:VCALENDAR
         <o><e>agent_control</e></o>
         <o><e>agent_script_executor</e></o>
         <o><e>heartbeat</e></o>
+        <o><e>file_search</e></o>
       </pattern>
       <ele>
         <name>agent_control</name>
@@ -38973,6 +39084,37 @@ END:VCALENDAR
           <pattern><type>integer</type></pattern>
         </ele>
       </ele>
+      <ele>
+        <name>file_search</name>
+        <summary>File search configuration</summary>
+        <pattern><o><e>excluded_paths</e></o></pattern>
+        <ele>
+          <name>excluded_paths</name>
+          <summary>Paths excluded from file searches</summary>
+          <description>
+            <p>
+              An empty excluded_paths element clears the excluded paths.
+              Backslash pairs are converted to single backslashes before
+              paths are sent to the Agent Controller. Single backslashes
+              are preserved.
+              Omit file_search to preserve the existing excluded paths.
+            </p>
+          </description>
+          <pattern>
+            <attrib>
+              <name>is_list</name>
+              <type>boolean</type>
+              <required>0</required>
+            </attrib>
+            <any><e>item</e></any>
+          </pattern>
+          <ele>
+            <name>item</name>
+            <summary>Excluded file path</summary>
+            <pattern><type>text</type></pattern>
+          </ele>
+        </ele>
+      </ele>
     </ele>
     <ele>
       <name>comment</name>
@@ -39023,6 +39165,13 @@ END:VCALENDAR
               <interval_in_seconds>300</interval_in_seconds>
               <miss_until_inactive>1</miss_until_inactive>
             </heartbeat>
+            <file_search>
+              <excluded_paths is_list="1">
+                <item>C:\\ProgramData\\Example\\Cache</item>
+                <item>/opt/private</item>
+                <item>/var/lib/example/cache</item>
+              </excluded_paths>
+            </file_search>
           </config>
           <comment>example update</comment>
         </modify_agent>
