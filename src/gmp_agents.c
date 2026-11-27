@@ -312,6 +312,25 @@ get_agents_run (gmp_parser_t *gmp_parser, GError **error)
                 cfg->heartbeat.miss_until_inactive);
               SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
 
+              /* file_search */
+              SEND_TO_CLIENT_OR_FAIL ("<file_search>");
+              GPtrArray *excluded_paths = cfg->file_search.excluded_paths;
+              if (excluded_paths && excluded_paths->len > 0)
+                {
+                  SEND_TO_CLIENT_OR_FAIL ("<excluded_paths is_list=\"1\">");
+                  for (guint k = 0; k < excluded_paths->len; ++k)
+                    {
+                      const gchar *path = g_ptr_array_index (excluded_paths, k);
+                      gchar *esc = g_markup_escape_text (path ? path : "", -1);
+                      SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                      g_free (esc);
+                    }
+                  SEND_TO_CLIENT_OR_FAIL ("</excluded_paths>");
+                }
+              else
+                SEND_TO_CLIENT_OR_FAIL ("<excluded_paths is_list=\"0\"/>");
+              SEND_TO_CLIENT_OR_FAIL ("</file_search>");
+
               SEND_TO_CLIENT_OR_FAIL ("</config>");
 
               agent_controller_agent_config_free (cfg);

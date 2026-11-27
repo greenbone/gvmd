@@ -18094,6 +18094,27 @@ handle_get_scanners (gmp_parser_t *gmp_parser, GError **error)
                     dflt->heartbeat.miss_until_inactive);
                   SEND_TO_CLIENT_OR_FAIL ("</heartbeat>");
 
+                  /* file_search */
+                  SEND_TO_CLIENT_OR_FAIL ("<file_search>");
+                  GPtrArray *excluded_paths = dflt->file_search.excluded_paths;
+                  if (excluded_paths && excluded_paths->len > 0)
+                    {
+                      SEND_TO_CLIENT_OR_FAIL ("<excluded_paths is_list=\"1\">");
+                      for (guint i = 0; i < excluded_paths->len; ++i)
+                        {
+                          const gchar *path =
+                            g_ptr_array_index (excluded_paths, i);
+                          gchar *esc =
+                            g_markup_escape_text (path ? path : "", -1);
+                          SENDF_TO_CLIENT_OR_FAIL ("<item>%s</item>", esc);
+                          g_free (esc);
+                        }
+                      SEND_TO_CLIENT_OR_FAIL ("</excluded_paths>");
+                    }
+                  else
+                    SEND_TO_CLIENT_OR_FAIL ("<excluded_paths is_list=\"0\"/>");
+                  SEND_TO_CLIENT_OR_FAIL ("</file_search>");
+
                   SEND_TO_CLIENT_OR_FAIL ("</agent_defaults>");
 
                   SEND_TO_CLIENT_OR_FAIL ("<agent_control_defaults>");

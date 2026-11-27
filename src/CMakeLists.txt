@@ -32,7 +32,7 @@ if(ENABLE_AGENTS)
   pkg_check_modules(
     LIBGVM_AGENT_CONTROLLER
     REQUIRED
-    libgvm_agent_controller>=23.14
+    libgvm_agent_controller>=23.18
   )
   pkg_check_modules(LIBGVM_AUTH REQUIRED libgvm_auth>=0.4)
 else(ENABLE_AGENTS)

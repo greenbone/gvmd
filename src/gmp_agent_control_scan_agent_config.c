@@ -281,6 +281,9 @@ modify_agent_control_scan_config_element_end (gmp_parser_t *gmp_parser,
 /**
  * @brief Populate an agent config from a <config> subtree.
  *
+ * Backslash pairs in excluded_paths are accepted as escaped input and
+ * converted to single path characters before forwarding to the controller.
+ *
  * @param[in] root Entity node representing the <config> subtree
  *                 (i.e., the parent of <agent_control>, <agent_script_executor>,
  *                 and <heartbeat> elements).
@@ -382,7 +385,7 @@ build_agent_config_from_entity (
         }
     }
 
-  /* <heartbeat>… */
+  /* <heartbeat> */
   entity_t hb = entity_child (root, "heartbeat");
   if (hb)
     {
@@ -395,6 +398,35 @@ build_agent_config_from_entity (
       if (e)
         out_cfg->heartbeat.miss_until_inactive =
           atoi (entity_text (e) ? entity_text (e) : "0");
+    }
+
+  /* <file_search>. */
+  entity_t fs = entity_child (root, "file_search");
+  if (fs)
+    {
+      entity_t eps = entity_child (fs, "excluded_paths");
+      if (eps)
+        {
+          GPtrArray *arr = g_ptr_array_new_with_free_func (g_free);
+          for (GSList *n = eps->entities; n; n = n->next)
+            {
+              entity_t it = n->data;
+              if (it && strcmp (entity_name (it), "item") == 0)
+                {
+                  const gchar *txt = entity_text (it);
+                  GString *path = g_string_new (NULL);
+                  for (const gchar *p = txt ? txt : ""; *p; ++p)
+                    {
+                      if (*p == '\\' && p[1] == '\\')
+                        ++p;
+                      g_string_append_c (path, *p);
+                    }
+                  g_ptr_array_add (arr, g_string_free (path, FALSE));
+                }
+            }
+
+          out_cfg->file_search.excluded_paths = arr;
+        }
     }
 
   return 0;
