@@ -1345,6 +1345,69 @@ Ensure (gmp, move_task_with_empty_task_id_restores_authenticated_state)
                                                         attribute_values);
 }
 
+#if ENABLE_AGENTS
+Ensure (gmp, scan_config_xml_decodes_excluded_path_backslash_pairs)
+{
+  const struct
+  {
+    const gchar *xml_path;
+    const gchar *expected;
+  } paths[] = {
+    {"C:\\\\ProgramData\\\\Example\\\\Cache",
+     "C:\\ProgramData\\Example\\Cache"},
+    {"C:\\ProgramData\\Example\\Cache", "C:\\ProgramData\\Example\\Cache"},
+    {"C:\\\\Cache\\\\", "C:\\Cache\\"},
+    {"\\\\\\\\server\\\\share", "\\\\server\\share"},
+    {"/opt/private", "/opt/private"},
+    {"/var/lib/example/cache", "/var/lib/example/cache"},
+    {"/tmp/\\n&<cache>", "/tmp/\\n&<cache>"},
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (paths); ++i)
+    {
+      gchar *xml = g_markup_printf_escaped (
+        "<config_defaults><agent_defaults>"
+        "<file_search><excluded_paths is_list=\"1\"><item>%s</item>"
+        "</excluded_paths></file_search>"
+        "</agent_defaults></config_defaults>",
+        paths[i].xml_path);
+      entity_t root = NULL;
+      assert_that (parse_entity (xml, &root), is_equal_to (0));
+      g_free (xml);
+      agent_controller_scan_agent_config_t cfg =
+        agent_controller_scan_agent_config_new ();
+      assert_that (build_scan_agent_config_from_entity (root, cfg),
+                   is_equal_to (0));
+      free_entity (root);
+
+      GPtrArray *excluded_paths =
+        cfg->agent_defaults->file_search.excluded_paths;
+      assert_that (excluded_paths, is_not_null);
+      assert_that (excluded_paths->len, is_equal_to (1));
+      assert_that (g_ptr_array_index (excluded_paths, 0),
+                   is_equal_to_string (paths[i].expected));
+
+      gchar *payload = agent_controller_convert_scan_agent_config_string (cfg);
+      assert_that (payload, is_not_null);
+      if (i == 0)
+        assert_that (payload, contains_string (
+                                "\"C:\\\\ProgramData\\\\Example\\\\Cache\""));
+      cJSON *json = cJSON_Parse (payload);
+      assert_that (json, is_not_null);
+      cJSON *defaults = cJSON_GetObjectItem (json, "agent_defaults");
+      cJSON *file_search = cJSON_GetObjectItem (defaults, "file_search");
+      cJSON *array = cJSON_GetObjectItem (file_search, "excluded_paths");
+      assert_that (cJSON_GetArraySize (array), is_equal_to (1));
+      cJSON *item = cJSON_GetArrayItem (array, 0);
+      assert_that (item, is_not_null);
+      assert_that (item->valuestring, is_equal_to_string (paths[i].expected));
+      cJSON_Delete (json);
+      cJSON_free (payload);
+      agent_controller_scan_agent_config_free (cfg);
+    }
+}
+#endif
+
 int
 main (int argc, char **argv)
 {
@@ -1352,6 +1415,11 @@ main (int argc, char **argv)
   TestSuite *suite;
 
   suite = create_test_suite ();
+
+#if ENABLE_AGENTS
+  add_test_with_context
+    (suite, gmp, scan_config_xml_decodes_excluded_path_backslash_pairs);
+#endif
 
 #if ENABLE_AD_INTEGRATION
   add_test_with_context

@@ -87,6 +87,43 @@ dup_scheduler_cron_array (const GPtrArray *src)
 }
 
 /**
+ * @brief Deep-copy a GPtrArray of char*.
+ *
+ * @param[in] src  Source pointer array to duplicate (may be NULL).
+ *
+ * @return A newly allocated #GPtrArray on success; NULL if @p src is NULL
+ *         or if an allocation fails.
+ */
+static GPtrArray *
+dup_str_ptr_array (const GPtrArray *src)
+{
+  if (!src)
+    return NULL;
+
+  GPtrArray *dst = g_ptr_array_sized_new (src->len);
+  if (!dst)
+    return NULL;
+
+  g_ptr_array_set_free_func (dst, g_free);
+
+  for (guint i = 0; i < src->len; ++i)
+    {
+      const char *s = g_ptr_array_index ((GPtrArray *) src, i);
+      char *copy = s ? g_strdup (s) : NULL;
+
+      if (s && !copy)
+        {
+          g_ptr_array_free (dst, TRUE);
+          return NULL;
+        }
+
+      g_ptr_array_add (dst, copy);
+    }
+
+  return dst;
+}
+
+/**
  * @brief Populate GVMD agent data list from agent controller list.
  *
  * Copies agent metadata from the agent controller representation to GVMD's
@@ -413,6 +450,10 @@ copy_agent_controller_scan_agent_config (
       agent_controller_agent_config_free (dst);
       return NULL;
     }
+
+  /* Deep copy of GPtrArray<char*> */
+  dst->file_search.excluded_paths =
+    dup_str_ptr_array (src->file_search.excluded_paths);
 
   return dst;
 }
